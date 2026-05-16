@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buscador de Guías — Cobro Coactivo</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0f2d5e;
+      --navy-mid: #16396e;
+      --blue: #1a6fc4;
+      --blue-light: #3b8fe8;
+      --gold: #e8a020;
+      --gold-light: #f5c050;
+      --bg: #f0f4fa;
+      --surface: #ffffff;
+      --surface2: #e8edf7;
+      --text: #0f1e35;
+      --text-soft: #4a5a72;
+      --border: #c8d5e8;
+      --yellow-hl: #fef08a;
+      --red: #dc2626;
+      --green: #16a34a;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(15,45,94,0.10);
+      --shadow-lg: 0 8px 40px rgba(15,45,94,0.18);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1a4a8a 100%);
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -40px; left: 10%;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(232,160,32,0.08);
+    }
+    .header-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 36px 24px 32px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .header-icon {
+      width: 56px; height: 56px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+      border: 1.5px solid rgba(255,255,255,0.18);
+    }
+    .header-text h1 {
+      font-family: 'DM Serif Display', serif;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+    .header-text p {
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      margin-top: 4px;
+      font-weight: 300;
+    }
+    .header-badge {
+      margin-left: auto;
+      background: rgba(232,160,32,0.18);
+      border: 1px solid rgba(232,160,32,0.35);
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* ── MAIN ── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 24px 60px;
+    }
+
+    /* ── SEARCH BOX ── */
+    .search-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+    .search-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .search-row {
+      display: flex;
+      gap: 10px;
+    }
+    .search-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+    .search-input-wrap svg {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-soft);
+      pointer-events: none;
+    }
+    input[type="text"] {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px 0 44px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      color: var(--text);
+      background: var(--bg);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,111,196,0.12);
+      background: #fff;
+    }
+    .btn-search {
+      height: 48px;
+      padding: 0 28px;
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .btn-search:hover { background: var(--blue); }
+    .btn-search:active { transform: scale(0.98); }
+    .btn-search:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .search-options {
+      display: flex;
+      gap: 20px;
+      margin-top: 14px;
+    }
+    .search-options label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--text-soft);
+      cursor: pointer;
+      user-select: none;
+    }
+    .search-options input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    /* ── STATUS ── */
+    .status-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    .status-bar.loading {
+      display: flex;
+      background: #eff6ff;
+      color: var(--blue);
+      border: 1px solid #bfdbfe;
+    }
+    .status-bar.success {
+      display: flex;
+      background: #f0fdf4;
+      color: var(--green);
+      border: 1px solid #bbf7d0;
+    }
+    .status-bar.error {
+      display: flex;
+      background: #fef2f2;
+      color: var(--red);
+      border: 1px solid #fecaca;
+    }
+    .status-bar.empty {
+      display: flex;
+      background: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(26,111,196,0.25);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESULTS ── */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .results-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .results-count {
+      font-size: 12px;
+      background: var(--navy);
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* Tabla */
+    .table-wrap {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .table-scroll { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead tr {
+      background: var(--navy);
+      color: #fff;
+    }
+    thead th {
+      padding: 13px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--surface2);
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f0f5ff; }
+    tbody tr:nth-child(even) { background: #f8fafd; }
+    tbody tr:nth-child(even):hover { background: #e8f0fc; }
+    td {
+      padding: 11px 14px;
+      vertical-align: top;
+      color: var(--text);
+      max-width: 220px;
+    }
+    td.val-encontrado {
+      background: var(--yellow-hl);
+      font-weight: 700;
+      color: #7c4a00;
+    }
+    tbody tr:hover td.val-encontrado { background: #fde047; }
+    .tag-hoja {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+    .otros-datos {
+      font-size: 12px;
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+
+    /* Cards en mobile */
+    .card-list { display: none; }
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+      animation: fadeUp 0.25s ease forwards;
+    }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .card-hoja { font-size: 11px; font-weight: 700; color: var(--navy); }
+    .card-fila { font-size: 11px; color: var(--text-soft); }
+    .card-valor {
+      font-size: 16px;
+      font-weight: 700;
+      color: #7c4a00;
+      background: var(--yellow-hl);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+    .card-fields { display: grid; gap: 6px; }
+    .card-field { font-size: 13px; color: var(--text); }
+    .card-field span { color: var(--text-soft); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 1px; }
+    .card-otros { font-size: 12px; color: var(--text-soft); margin-top: 8px; border-top: 1px solid var(--surface2); padding-top: 8px; line-height: 1.6; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── EMPTY STATE ── */
+    #empty-state {
+      display: none;
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-soft);
+    }
+    #empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    #empty-state p { font-size: 15px; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--text-soft);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .header-inner { padding: 24px 16px 20px; }
+      .header-badge { display: none; }
+      .search-row { flex-direction: column; }
+      .btn-search { width: 100%; justify-content: center; }
+      main { padding: 20px 16px 48px; }
+      .table-wrap { display: none; }
+      .card-list { display: block; }
+      .results-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-icon">🔍</div>
+    <div class="header-text">
+      <h1>Buscador de Guías</h1>
+      <p>Cobro Coactivo — Alcaldía de Bello</p>
+    </div>
+    <div class="header-badge">Consulta pública</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- BUSCADOR -->
+  <div class="search-card">
+    <div class="search-label">Buscar guía, contribuyente o radicado</div>
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="termino" placeholder="Ej: 10189528 · Carlos Mario López · 20242023843..." autocomplete="off" />
+      </div>
+      <button class="btn-search" id="btn-buscar" onclick="buscar()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        Buscar
+      </button>
+    </div>
+    <div class="search-options">
+      <label><input type="checkbox" id="exacto"> Coincidencia exacta</label>
+      <label><input type="checkbox" id="mayus"> Distinguir mayúsculas</label>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-bar" id="status-bar">
+    <div class="spinner" id="spinner" style="display:none"></div>
+    <span id="status-msg"></span>
+  </div>
+
+  <!-- RESULTADOS DESKTOP -->
+  <div id="results-area" style="display:none">
+    <div class="results-header">
+      <span class="results-title">Resultados</span>
+      <span class="results-count" id="results-count">0</span>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Hoja origen</th>
+              <th>Fila #</th>
+              <th>Columna encontrada</th>
+              <th>Valor encontrado</th>
+              <th>Contribuyente / Nombre</th>
+              <th>Cédula / NIT</th>
+              <th>Radicado</th>
+              <th>Otros datos</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RESULTADOS MOBILE (cards) -->
+    <div class="card-list" id="card-list"></div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="empty-state">
+    <div class="empty-icon">📂</div>
+    <p>Ingrese un término para buscar en las guías</p>
+  </div>
+
+</main>
+
+<footer>
+  Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello
+</footer>
+
+<script>
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY2gvsngkBlMuQfxUBpThMgGQ4la4HaBcF5b1q1X65fVd2NndnJ-u7nB6gFtt4S8ox/exec";
+
+  document.getElementById('termino').addEventListener('keydown', e => {
+    if (e.key === 'Enter') buscar();
+  });
+
+  function setStatus(tipo, msg, conSpinner) {
+    const bar = document.getElementById('status-bar');
+    const spinner = document.getElementById('spinner');
+    const msgEl = document.getElementById('status-msg');
+    bar.className = 'status-bar ' + tipo;
+    spinner.style.display = conSpinner ? 'block' : 'none';
+    msgEl.textContent = msg;
+  }
+
+  async function buscar() {
+    const termino = document.getElementById('termino').value.trim();
+    if (!termino) {
+      setStatus('error', '⚠️ Ingrese un término de búsqueda.');
+      return;
+    }
+
+    const exacto = document.getElementById('exacto').checked;
+    const mayus  = document.getElementById('mayus').checked;
+    const btn    = document.getElementById('btn-buscar');
+
+    btn.disabled = true;
+    document.getElementById('results-area').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'none';
+    setStatus('loading', 'Buscando en todas las hojas...', true);
+
+    try {
+      const params = new URLSearchParams({ termino, exacto, mayus });
+      const res = await fetch(`${APPS_SCRIPT_URL}?${params}`);
+      const data = await res.json();
+
+      if (data.error) {
+        setStatus('error', '❌ Error: ' + data.error);
+        document.getElementById('empty-state').style.display = 'block';
+        return;
+      }
+
+      const resultados = data.resultados || [];
+
+      if (resultados.length === 0) {
+        setStatus('empty', `⚠️ No se encontró "${termino}" en ninguna hoja.`);
+        document.getElementById('empty-state').style.display = 'block';
+        document.getElementById('empty-state').querySelector('p').textContent =
+          `No se encontraron resultados para "${termino}"`;
+        return;
+      }
+
+      setStatus('success', `✅ ${resultados.length} resultado(s) encontrado(s) para "${termino}"`);
+      renderResultados(resultados);
+
+    } catch (err) {
+      setStatus('error', '❌ Error de conexión. Verifique su acceso a internet.');
+      document.getElementById('empty-state').style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function renderResultados(datos) {
+    const area = document.getElementById('results-area');
+    const tbody = document.getElementById('tabla-body');
+    const cardList = document.getElementById('card-list');
+    document.getElementById('results-count').textContent = datos.length;
+
+    // Tabla desktop
+    tbody.innerHTML = datos.map((r, i) => `
+      <tr>
+        <td><span class="tag-hoja">${esc(r[0])}</span></td>
+        <td>${esc(r[1])}</td>
+        <td>${esc(r[2])}</td>
+        <td class="val-encontrado">${esc(r[3])}</td>
+        <td>${esc(r[4])}</td>
+        <td>${esc(r[5])}</td>
+        <td>${esc(r[6])}</td>
+        <td class="otros-datos">${esc(r[7])}</td>
+      </tr>
+    `).join('');
+
+    // Cards mobile
+    cardList.innerHTML = datos.map((r, i) => `
+      <div class="result-card" style="animation-delay:${i * 0.04}s">
+        <div class="card-top">
+          <span class="card-hoja">${esc(r[0])}</span>
+          <span class="card-fila">Fila ${esc(r[1])}</span>
+        </div>
+        <div class="card-valor">${esc(r[3])}</div>
+        <div class="card-fields">
+          ${r[4] ? `<div class="card-field"><span>Contribuyente</span>${esc(r[4])}</div>` : ''}
+          ${r[5] ? `<div class="card-field"><span>Cédula / NIT</span>${esc(r[5])}</div>` : ''}
+          ${r[6] ? `<div class="card-field"><span>Radicado</span>${esc(r[6])}</div>` : ''}
+          <div class="card-field"><span>Columna</span>${esc(r[2])}</div>
+        </div>
+        ${r[7] ? `<div class="card-otros">${esc(r[7])}</div>` : ''}
+      </div>
+    `).join('');
+
+    area.style.display = 'block';
+  }
+
+  function esc(val) {
+    if (val === null || val === undefined) return '';
+    return String(val)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Mostrar empty state inicial
+  document.getElementById('empty-state').style.display = 'block';
+</script>
+
+</body>
+</html>
