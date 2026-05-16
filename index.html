@@ -162,6 +162,95 @@ tbody td{padding:7px 10px;color:#374151}
 </head>
 <body>
 
+<!-- ═══ PIN DE ACCESO ════════════════════════════════════════════════════ -->
+<style>
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #d1d5db;background:#fff;transition:all .15s}
+.pin-dot.filled{background:#0f2d5e;border-color:#0f2d5e}
+.pin-dot.error{background:#dc2626;border-color:#dc2626}
+.pin-btn{padding:16px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:20px;font-weight:600;color:#1a1a2e;cursor:pointer;transition:all .15s}
+.pin-btn:hover{background:#f0f7ff;border-color:#1d5aab;color:#0f2d5e}
+.pin-btn:active{transform:scale(.94);background:#dbeafe}
+.pin-screen{display:none}.pin-screen.active{display:block}
+</style>
+
+<div id="pinOverlay" style="position:fixed;inset:0;background:linear-gradient(135deg,#0f2d5e 0%,#1d5aab 100%);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:18px;max-width:400px;width:100%;padding:36px 32px;box-shadow:0 12px 50px rgba(0,0,0,.3);text-align:center">
+    <div style="font-size:48px;margin-bottom:10px">🏛️</div>
+    <h1 style="font-size:19px;font-weight:700;color:#0f2d5e;margin-bottom:4px">Alcaldía de Bello</h1>
+    <p style="font-size:12.5px;color:#6b7280;margin-bottom:24px">Sistema de Oficios — Ejecuciones Fiscales</p>
+
+    <!-- PANTALLA A: Ingresar PIN -->
+    <div class="pin-screen active" id="screenPin">
+      <p style="font-size:13px;font-weight:600;color:#374151;margin-bottom:14px">Ingrese su PIN personal</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+      </div>
+      <div id="pinError" style="display:none;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;max-width:240px;margin:0 auto 16px">
+        <button class="pin-btn" onclick="presionarPin('1')">1</button>
+        <button class="pin-btn" onclick="presionarPin('2')">2</button>
+        <button class="pin-btn" onclick="presionarPin('3')">3</button>
+        <button class="pin-btn" onclick="presionarPin('4')">4</button>
+        <button class="pin-btn" onclick="presionarPin('5')">5</button>
+        <button class="pin-btn" onclick="presionarPin('6')">6</button>
+        <button class="pin-btn" onclick="presionarPin('7')">7</button>
+        <button class="pin-btn" onclick="presionarPin('8')">8</button>
+        <button class="pin-btn" onclick="presionarPin('9')">9</button>
+        <button class="pin-btn" onclick="borrarPin()" style="font-size:18px">⌫</button>
+        <button class="pin-btn" onclick="presionarPin('0')">0</button>
+        <button class="pin-btn" onclick="limpiarPinInput()" style="font-size:11px;color:#6b7280">Limpiar</button>
+      </div>
+      <button onclick="irARegistro()" style="background:none;border:none;color:#1d5aab;font-size:12px;cursor:pointer;text-decoration:underline">
+        ¿Primera vez? Regístrese aquí
+      </button>
+    </div>
+
+    <!-- PANTALLA B: Registro primera vez -->
+    <div class="pin-screen" id="screenRegistro">
+      <p style="font-size:13px;font-weight:600;color:#374151;margin-bottom:16px">Primer acceso — crear su PIN</p>
+      <div style="text-align:left;margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Nombre completo</label>
+        <input id="reg_nombre" type="text" placeholder="Ej. María López Gómez"
+          style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div style="text-align:left;margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Cargo / Dependencia</label>
+        <input id="reg_cargo" type="text" placeholder="Ej. Abogada Contratista"
+          style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div id="regError" style="display:none;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:9px">
+        <button onclick="irAPin()" style="flex:1;padding:11px;border:1.5px solid #d1d5db;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;color:#374151">← Volver</button>
+        <button onclick="registrarUsuario()" style="flex:2;padding:11px;background:#0f2d5e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Generar mi PIN →</button>
+      </div>
+    </div>
+
+    <!-- PANTALLA C: PIN generado -->
+    <div class="pin-screen" id="screenPinGenerado">
+      <div style="font-size:36px;margin-bottom:10px">🎉</div>
+      <p style="font-size:13.5px;font-weight:700;color:#065f46;margin-bottom:6px">¡Registro exitoso!</p>
+      <p style="font-size:12.5px;color:#374151;margin-bottom:16px">Bienvenido(a) <strong id="pg_nombre"></strong>.<br>Su PIN personal es:</p>
+      <div style="background:#0f2d5e;color:#fff;font-size:36px;font-weight:700;letter-spacing:12px;padding:16px;border-radius:12px;margin-bottom:12px" id="pg_pin"></div>
+      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:18px">
+        ⚠️ <strong>Anote este PIN.</strong> Solo se muestra una vez. Si lo olvida, contacte al administrador del sistema.
+      </div>
+      <button onclick="entrarConNuevoPin()" style="width:100%;padding:13px;background:#065f46;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer">
+        ✅ Entendido, ingresar al sistema
+      </button>
+    </div>
+
+    <!-- PANTALLA D: Cargando verificación -->
+    <div class="pin-screen" id="screenCargando">
+      <div style="font-size:32px;margin-bottom:12px">⏳</div>
+      <p style="font-size:13px;color:#6b7280" id="cargandoMsg">Verificando PIN…</p>
+    </div>
+
+  </div>
+</div>
+
 <!-- ═══ WIZARD DE CONFIGURACIÓN ════════════════════════════════════════ -->
 <div class="wizard-overlay" id="wizOverlay">
 <div class="wizard">
@@ -282,6 +371,10 @@ tbody td{padding:7px 10px;color:#374151}
   <button onclick="toggleDarkMode()" id="btnDark" title="Modo oscuro"
     style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.8);font-size:18px;padding:0 12px;display:flex;align-items:center">
     🌙
+  </button>
+  <button onclick="cerrarSesion()" title="Cerrar sesión"
+    style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.7);font-size:11.5px;padding:0 12px;display:flex;align-items:center;gap:4px;white-space:nowrap">
+    🚪 Salir
   </button>
 </div>
 
@@ -2869,6 +2962,221 @@ document.head.insertAdjacentHTML('beforeend', darkCSS.replace('<style id="dark-m
 const pulseCSS = document.createElement('style');
 pulseCSS.textContent = '@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }';
 document.head.appendChild(pulseCSS);
+
+
+// ════════════════════════════════════════════════════════════
+// SISTEMA DE PIN PERSONAL CON REGISTRO
+// ════════════════════════════════════════════════════════════
+const USUARIOS_KEY  = 'oficios_usuarios_local'; // cache local de usuarios
+const SESSION_KEY   = 'oficios_session';         // sesión activa
+let pinActual = '';
+let usuarioActual = null;
+let pinNuevoGenerado = '';
+
+// ── Inicialización ──────────────────────────────────────────
+(function initPin() {
+  // Verificar sesión activa (válida por 8 horas)
+  try {
+    const sess = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (sess && sess.expira > Date.now()) {
+      usuarioActual = sess;
+      document.getElementById('pinOverlay').style.display = 'none';
+      aplicarSesion(sess);
+      return;
+    }
+  } catch(e) {}
+  // Mostrar pantalla de PIN
+  irAPin();
+})();
+
+function aplicarSesion(u) {
+  // Configurar cfg con datos del usuario autenticado
+  cfg.nombre = u.nombre;
+  cfg.equipo  = u.cargo || cfg.equipo || '';
+  saveCfg();
+  actualizarBanner();
+  // Llenar campo proyectó
+  const pn = document.getElementById('f_proyn');
+  if (pn) pn.value = u.nombre;
+}
+
+// ── Navegación entre pantallas ──────────────────────────────
+function irAPin() {
+  ['screenPin','screenRegistro','screenPinGenerado','screenCargando']
+    .forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('screenPin').classList.add('active');
+  pinActual = '';
+  actualizarDots();
+  hideError('pinError');
+}
+
+function irARegistro() {
+  ['screenPin','screenRegistro','screenPinGenerado','screenCargando']
+    .forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('screenRegistro').classList.add('active');
+}
+
+function mostrarCargando(msg) {
+  ['screenPin','screenRegistro','screenPinGenerado','screenCargando']
+    .forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('cargandoMsg').textContent = msg || 'Procesando…';
+  document.getElementById('screenCargando').classList.add('active');
+}
+
+function hideError(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+// ── PIN input ───────────────────────────────────────────────
+function presionarPin(digit) {
+  if (pinActual.length >= 4) return;
+  pinActual += digit;
+  actualizarDots();
+  if (pinActual.length === 4) setTimeout(verificarPin, 150);
+}
+
+function borrarPin() {
+  pinActual = pinActual.slice(0, -1);
+  actualizarDots();
+  hideError('pinError');
+}
+
+function limpiarPinInput() {
+  pinActual = '';
+  actualizarDots();
+  hideError('pinError');
+}
+
+function actualizarDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('d' + i);
+    if (d) d.className = 'pin-dot' + (i < pinActual.length ? ' filled' : '');
+  }
+}
+
+// ── Verificar PIN contra Sheet ──────────────────────────────
+async function verificarPin() {
+  mostrarCargando('Verificando PIN…');
+
+  // Buscar en cache local primero (rápido)
+  const localUsers = JSON.parse(localStorage.getItem(USUARIOS_KEY) || '[]');
+  let usuario = localUsers.find(u => u.pin === pinActual);
+
+  // Si no está en local, consultar Sheet
+  if (!usuario && cfg.apiUrl) {
+    try {
+      const r = await fetch(cfg.apiUrl + '?accion=verificar_pin&pin=' + pinActual + '&t=' + Date.now());
+      const res = await r.json();
+      if (res && res.ok && res.usuario) {
+        usuario = res.usuario;
+        // Actualizar cache local
+        const idx = localUsers.findIndex(u => u.pin === pinActual);
+        if (idx > -1) localUsers[idx] = usuario;
+        else localUsers.push(usuario);
+        localStorage.setItem(USUARIOS_KEY, JSON.stringify(localUsers));
+      }
+    } catch(e) {
+      console.warn('No se pudo verificar contra Sheet:', e.message);
+    }
+  }
+
+  if (usuario) {
+    // PIN correcto — crear sesión de 8 horas
+    const sess = { ...usuario, expira: Date.now() + 8 * 60 * 60 * 1000 };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+    usuarioActual = sess;
+    document.getElementById('pinOverlay').style.display = 'none';
+    aplicarSesion(sess);
+  } else {
+    // PIN incorrecto
+    irAPin();
+    for (let i = 0; i < 4; i++) {
+      const d = document.getElementById('d' + i);
+      if (d) d.className = 'pin-dot error';
+    }
+    showError('pinError', '❌ PIN incorrecto. Intente de nuevo o regístrese si es primera vez.');
+    setTimeout(() => { pinActual = ''; actualizarDots(); }, 900);
+  }
+}
+
+// ── Registrar nuevo usuario ─────────────────────────────────
+async function registrarUsuario() {
+  const nombre = document.getElementById('reg_nombre').value.trim();
+  const cargo  = document.getElementById('reg_cargo').value.trim();
+
+  if (!nombre) { showError('regError', 'Ingrese su nombre completo.'); return; }
+
+  mostrarCargando('Registrando usuario…');
+
+  // Generar PIN único de 4 dígitos
+  const localUsers = JSON.parse(localStorage.getItem(USUARIOS_KEY) || '[]');
+  let pin;
+  let intentos = 0;
+  do {
+    pin = String(Math.floor(1000 + Math.random() * 9000));
+    intentos++;
+  } while (localUsers.some(u => u.pin === pin) && intentos < 100);
+
+  const nuevoUsuario = { pin, nombre, cargo, registrado: new Date().toLocaleDateString('es-CO') };
+
+  // Guardar en Sheet
+  if (cfg.apiUrl) {
+    try {
+      await apiPost({ accion: 'registrar_usuario', pin, nombre, cargo });
+    } catch(e) {
+      console.warn('No se pudo guardar en Sheet:', e.message);
+    }
+  }
+
+  // Guardar en local siempre
+  localUsers.push(nuevoUsuario);
+  localStorage.setItem(USUARIOS_KEY, JSON.stringify(localUsers));
+
+  // Mostrar PIN generado
+  pinNuevoGenerado = pin;
+  document.getElementById('pg_nombre').textContent = nombre;
+  document.getElementById('pg_pin').textContent = pin;
+  ['screenPin','screenRegistro','screenPinGenerado','screenCargando']
+    .forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('screenPinGenerado').classList.add('active');
+}
+
+function entrarConNuevoPin() {
+  const localUsers = JSON.parse(localStorage.getItem(USUARIOS_KEY) || '[]');
+  const usuario = localUsers.find(u => u.pin === pinNuevoGenerado);
+  if (usuario) {
+    const sess = { ...usuario, expira: Date.now() + 8 * 60 * 60 * 1000 };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+    usuarioActual = sess;
+    document.getElementById('pinOverlay').style.display = 'none';
+    aplicarSesion(sess);
+  }
+}
+
+// ── Cerrar sesión ───────────────────────────────────────────
+function cerrarSesion() {
+  localStorage.removeItem(SESSION_KEY);
+  usuarioActual = null;
+  pinActual = '';
+  document.getElementById('pinOverlay').style.display = 'flex';
+  irAPin();
+}
+
+// ── Teclado físico ──────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (document.getElementById('pinOverlay').style.display === 'none') return;
+  if (document.getElementById('screenPin').classList.contains('active')) {
+    if (e.key >= '0' && e.key <= '9') presionarPin(e.key);
+    if (e.key === 'Backspace') borrarPin();
+    if (e.key === 'Escape') limpiarPinInput();
+  }
+});
 
 </script>
 </body>
