@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ejecuciones Fiscales — Alcaldía de Bello</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.ico" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #0a1f3d;
+      --navy2: #0f2d5e;
+      --blue: #1a6fc4;
+      --blue2: #2d8de8;
+      --gold: #e8a020;
+      --gold2: #f5c050;
+      --surface: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.10);
+      --text: #ffffff;
+      --text-soft: rgba(255,255,255,0.55);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── FONDO ── */
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(26,111,196,0.25) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 100%, rgba(232,160,32,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 90% 20%, rgba(26,111,196,0.10) 0%, transparent 50%),
+        linear-gradient(160deg, #0a1f3d 0%, #0d2550 40%, #0a1a35 100%);
+    }
+
+    /* Líneas decorativas */
+    .bg::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    }
+
+    /* ── LAYOUT ── */
+    .wrap {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 24px;
+    }
+
+    /* ── ESCUDO / LOGO ── */
+    .logo-wrap {
+      margin-bottom: 20px;
+      animation: fadeDown 0.7s ease both;
+    }
+    .logo-circle {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px;
+      margin: 0 auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+    }
+
+    /* ── ENCABEZADO ── */
+    .header {
+      text-align: center;
+      margin-bottom: 16px;
+      animation: fadeDown 0.7s 0.1s ease both;
+    }
+    .header-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold2);
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 400;
+      line-height: 1.15;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .header h1 em {
+      font-style: italic;
+      color: var(--gold2);
+    }
+    .header-sub {
+      font-size: 14px;
+      color: var(--text-soft);
+      max-width: 400px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── SALUDO ── */
+    .saludo {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(232,160,32,0.12);
+      border: 1px solid rgba(232,160,32,0.25);
+      color: var(--gold2);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 36px;
+      animation: fadeDown 0.7s 0.2s ease both;
+    }
+
+    /* ── DIVISOR ── */
+    .divider {
+      width: 40px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 0 auto 36px;
+      animation: fadeDown 0.7s 0.15s ease both;
+    }
+
+    /* ── APPS GRID ── */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      max-width: 580px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+
+    .app-card {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      text-decoration: none;
+      color: #fff;
+      transition: all 0.25s ease;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+    }
+    .app-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .app-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.22); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+    .app-card:hover::before { opacity: 1; }
+    .app-card:active { transform: translateY(-2px); }
+
+    .app-card.primary {
+      background: linear-gradient(135deg, rgba(26,111,196,0.35), rgba(26,111,196,0.15));
+      border-color: rgba(26,111,196,0.4);
+    }
+    .app-card.primary:hover { border-color: rgba(45,141,232,0.6); box-shadow: 0 20px 50px rgba(26,111,196,0.25); }
+
+    .app-card.secondary {
+      background: linear-gradient(135deg, rgba(232,160,32,0.2), rgba(232,160,32,0.08));
+      border-color: rgba(232,160,32,0.3);
+    }
+    .app-card.secondary:hover { border-color: rgba(245,192,80,0.5); box-shadow: 0 20px 50px rgba(232,160,32,0.15); }
+
+    .app-icon {
+      font-size: 32px;
+      margin-bottom: 14px;
+      display: block;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
+    .app-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 17px;
+      font-weight: 400;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+    .app-desc {
+      font-size: 12px;
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+    .app-arrow {
+      position: absolute;
+      bottom: 18px; right: 18px;
+      font-size: 16px;
+      opacity: 0.4;
+      transition: all 0.2s;
+    }
+    .app-card:hover .app-arrow { opacity: 1; transform: translate(2px, -2px); }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 36px;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      color: var(--gold2);
+    }
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+    }
+    .stat-sep {
+      width: 1px;
+      background: var(--border);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative; z-index: 1;
+      text-align: center;
+      padding: 20px;
+      font-size: 11px;
+      color: var(--text-soft);
+      animation: fadeUp 0.7s 0.5s ease both;
+    }
+    footer strong { color: rgba(255,255,255,0.7); }
+
+    /* ── ANIMACIONES ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .apps-grid { grid-template-columns: 1fr; max-width: 340px; }
+      .stats-row { gap: 16px; }
+      .app-card { padding: 22px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="wrap">
+
+  <div class="logo-wrap">
+    <div class="logo-circle">🏛️</div>
+  </div>
+
+  <div class="header">
+    <div class="header-eyebrow">Alcaldía de Bello · Antioquia</div>
+    <h1>Ejecuciones <em>Fiscales</em></h1>
+    <p class="header-sub">Sistema de gestión de oficios y guías de Cobro Coactivo</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="saludo" id="saludo">👋 Bienvenido</div>
+
+  <div class="apps-grid">
+    <a href="index.html" class="app-card primary">
+      <span class="app-icon">📄</span>
+      <div class="app-name">Generar Oficios</div>
+      <div class="app-desc">Desembargos, tutelas y carga masiva de documentos</div>
+      <span class="app-arrow">↗</span>
+    </a>
+    <a href="buscador.html" class="app-card secondary">
+      <span class="app-icon">🔍</span>
+      <div class="app-name">Buscador de Guías</div>
+      <div class="app-desc">Consulta contribuyentes, radicados y expedientes</div>
+      <span class="app-arrow">↗</span>
+    </a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-num">v2.0</div>
+      <div class="stat-label">Versión</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat">
+      <div class="stat-num">31</div>
+      <div class="stat-label">Usuarios</div>
+    </div>
+    <div class="stat-sep"></div>
+    <div class="stat">
+      <div class="stat-num" id="stat-fecha">—</div>
+      <div class="stat-label">Hoy</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <strong>Dirección Administrativa de Ejecuciones Fiscales</strong><br>
+  Alcaldía de Bello · Antioquia · Colombia
+</footer>
+
+<script>
+  // Saludo según hora
+  function getSaludo() {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 12) return '☀️ Buenos días';
+    if (h >= 12 && h < 18) return '🌤️ Buenas tardes';
+    return '🌙 Buenas noches';
+  }
+
+  // Fecha actual
+  function getFecha() {
+    return new Date().toLocaleDateString('es-CO', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  }
+
+  // Verificar si hay sesión activa para personalizar saludo
+  function getNombre() {
+    try {
+      const sess = JSON.parse(localStorage.getItem('oficios_session') || 'null')
+                || JSON.parse(localStorage.getItem('buscador_session') || 'null');
+      if (sess && sess.expira > Date.now() && sess.nombre) {
+        return sess.nombre.split(' ')[0]; // Solo primer nombre
+      }
+    } catch(e) {}
+    return null;
+  }
+
+  const nombre = getNombre();
+  const saludo = getSaludo();
+  document.getElementById('saludo').textContent = nombre
+    ? `${saludo}, ${nombre}`
+    : saludo;
+
+  document.getElementById('stat-fecha').textContent = getFecha();
+</script>
+
+</body>
+</html>
