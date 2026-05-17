@@ -31,20 +31,21 @@
     .pin-dot.filled{background:var(--navy);border-color:var(--navy)}
     .pin-dot.error{background:var(--red);border-color:var(--red)}
     .pin-error{display:none;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px}
+    .pin-blocked{display:none;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:10px;padding:16px;font-size:13px;margin-bottom:12px;font-weight:600}
     .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
     .pin-btn{padding:14px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:18px;font-weight:600;color:#1a1a2e;cursor:pointer;transition:all .15s}
     .pin-btn:hover{background:#f0f7ff;border-color:var(--blue)}
     .pin-btn:active{transform:scale(.94);background:#dbeafe}
-    .pin-label{font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:10px}
+    .pin-btn:disabled{opacity:.4;cursor:not-allowed}
+    .pin-intentos{font-size:11px;color:#92400e;margin-bottom:8px;min-height:16px}
 
     /* ── HEADER ── */
     header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:relative;overflow:hidden}
-    header::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.04)}
-    .header-inner{max-width:960px;margin:0 auto;padding:20px 24px;position:relative;z-index:1;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-    .header-icon{width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
-    .header-text h1{font-family:'DM Serif Display',serif;color:#fff;font-size:18px;font-weight:400;line-height:1.2}
+    .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;position:relative;z-index:1;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .header-icon{width:44px;height:44px;background:rgba(255,255,255,.12);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
+    .header-text h1{font-family:'DM Serif Display',serif;color:#fff;font-size:17px;font-weight:400;line-height:1.2}
     .header-text p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
-    .header-user{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .header-user{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .user-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;white-space:nowrap}
     .btn-nav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:6px 13px;border-radius:8px;white-space:nowrap;transition:background .2s}
     .btn-nav:hover{background:rgba(255,255,255,.22)}
@@ -54,12 +55,16 @@
     /* ── NAV TABS ── */
     .nav-tabs{background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)}
     .nav-tabs-inner{max-width:960px;margin:0 auto;display:flex;padding:0 24px;gap:2px}
-    .nav-tab{padding:10px 16px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-decoration:none;display:flex;align-items:center;gap:5px}
+    .nav-tab{padding:10px 16px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-decoration:none;display:flex;align-items:center;gap:5px;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
     .nav-tab:hover{color:#fff;background:rgba(255,255,255,.07)}
     .nav-tab.active{color:#fff;border-bottom-color:var(--gold-light)}
 
     /* ── MAIN ── */
     main{max-width:960px;margin:0 auto;padding:22px 24px 60px}
+
+    /* ── PANELS ── */
+    .panel{display:none}
+    .panel.active{display:block}
 
     /* ── SEARCH ── */
     .search-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:16px;border:1px solid var(--border)}
@@ -163,6 +168,17 @@
     .btn-cerrar{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer}
     .btn-cerrar:hover{background:var(--blue)}
 
+    /* ── REPORTES ── */
+    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);text-align:center}
+    .stat-number{font-size:32px;font-weight:700;color:var(--navy);line-height:1}
+    .stat-label{font-size:11px;color:var(--text-soft);margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+    .rep-filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+    .rep-filter-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--text-soft);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+    .rep-filter-btn:hover{border-color:var(--blue);color:var(--blue)}
+    .rep-filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+    .rep-loading{text-align:center;padding:40px;color:var(--text-soft);font-size:14px}
+
     /* ── EMPTY ── */
     #empty-state{display:none;text-align:center;padding:55px 24px;color:var(--text-soft)}
     #empty-state .empty-icon{font-size:42px;margin-bottom:10px}
@@ -171,7 +187,7 @@
     footer{text-align:center;padding:16px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border)}
 
     @media(max-width:640px){
-      .header-inner{padding:16px}
+      .header-inner{padding:14px 16px}
       .search-row{flex-direction:column}
       .btn-search{width:100%;justify-content:center}
       main{padding:14px 14px 48px}
@@ -180,6 +196,7 @@
       .results-header{flex-direction:column;align-items:flex-start}
       .modal-fields{grid-template-columns:1fr}
       .modal-field.full{grid-column:1}
+      .stats-grid{grid-template-columns:1fr 1fr}
       .user-badge{display:none}
     }
   </style>
@@ -192,27 +209,31 @@
     <div class="pin-logo">🔍</div>
     <div class="pin-title">Buscador de Guías</div>
     <div class="pin-sub">Cobro Coactivo — Alcaldía de Bello</div>
-    <div class="pin-label">Ingrese su PIN personal</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="d0"></div>
-      <div class="pin-dot" id="d1"></div>
-      <div class="pin-dot" id="d2"></div>
-      <div class="pin-dot" id="d3"></div>
-    </div>
-    <div class="pin-error" id="pinError"></div>
-    <div class="pin-grid">
-      <button class="pin-btn" onclick="presionarPin('1')">1</button>
-      <button class="pin-btn" onclick="presionarPin('2')">2</button>
-      <button class="pin-btn" onclick="presionarPin('3')">3</button>
-      <button class="pin-btn" onclick="presionarPin('4')">4</button>
-      <button class="pin-btn" onclick="presionarPin('5')">5</button>
-      <button class="pin-btn" onclick="presionarPin('6')">6</button>
-      <button class="pin-btn" onclick="presionarPin('7')">7</button>
-      <button class="pin-btn" onclick="presionarPin('8')">8</button>
-      <button class="pin-btn" onclick="presionarPin('9')">9</button>
-      <button class="pin-btn" onclick="borrarPin()" style="font-size:16px">⌫</button>
-      <button class="pin-btn" onclick="presionarPin('0')">0</button>
-      <button class="pin-btn" onclick="limpiarPin()" style="font-size:10px;color:#6b7280">Limpiar</button>
+    <div class="pin-blocked" id="pinBlocked"></div>
+    <div id="pinIngreso">
+      <div style="font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:10px">Ingrese su PIN personal</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="pin-intentos" id="pinIntentos"></div>
+      <div class="pin-error" id="pinError"></div>
+      <div class="pin-grid">
+        <button class="pin-btn" onclick="presionarPin('1')">1</button>
+        <button class="pin-btn" onclick="presionarPin('2')">2</button>
+        <button class="pin-btn" onclick="presionarPin('3')">3</button>
+        <button class="pin-btn" onclick="presionarPin('4')">4</button>
+        <button class="pin-btn" onclick="presionarPin('5')">5</button>
+        <button class="pin-btn" onclick="presionarPin('6')">6</button>
+        <button class="pin-btn" onclick="presionarPin('7')">7</button>
+        <button class="pin-btn" onclick="presionarPin('8')">8</button>
+        <button class="pin-btn" onclick="presionarPin('9')">9</button>
+        <button class="pin-btn" onclick="borrarPin()" style="font-size:16px">⌫</button>
+        <button class="pin-btn" onclick="presionarPin('0')">0</button>
+        <button class="pin-btn" onclick="limpiarPin()" style="font-size:10px;color:#6b7280">Limpiar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -233,72 +254,99 @@
   </div>
   <div class="nav-tabs">
     <div class="nav-tabs-inner">
-      <span class="nav-tab active">🔍 Buscador</span>
+      <button class="nav-tab active" id="tab-buscar" onclick="goPanel('buscar')">🔍 Buscador</button>
+      <button class="nav-tab" id="tab-reportes" onclick="goPanel('reportes')" style="display:none">📊 Reportes</button>
       <a class="nav-tab" href="index.html">📄 Generar Oficios</a>
     </div>
   </div>
 </header>
 
 <main>
-  <div class="search-card">
-    <div class="search-label">Buscar guía, contribuyente o radicado</div>
-    <div class="search-row">
-      <div class="search-input-wrap">
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input type="text" id="termino" placeholder="Ej: 10189528 · Carlos Mario López · 20242023843..." autocomplete="off" />
+
+  <!-- PANEL BUSCADOR -->
+  <div class="panel active" id="panel-buscar">
+    <div class="search-card">
+      <div class="search-label">Buscar guía, contribuyente o radicado</div>
+      <div class="search-row">
+        <div class="search-input-wrap">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="termino" placeholder="Ej: 10189528 · Carlos Mario López · 20242023843..." autocomplete="off" />
+        </div>
+        <button class="btn-search" id="btn-buscar" onclick="buscar()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Buscar
+        </button>
       </div>
-      <button class="btn-search" id="btn-buscar" onclick="buscar()">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        Buscar
-      </button>
+      <div class="search-bottom">
+        <div class="search-options">
+          <label><input type="checkbox" id="exacto"> Coincidencia exacta</label>
+          <label><input type="checkbox" id="mayus"> Distinguir mayúsculas</label>
+        </div>
+        <div class="historial-wrap" id="historial-wrap" style="display:none">
+          <span class="historial-label">🕐 Recientes:</span>
+          <div id="historial-chips"></div>
+        </div>
+      </div>
     </div>
-    <div class="search-bottom">
-      <div class="search-options">
-        <label><input type="checkbox" id="exacto"> Coincidencia exacta</label>
-        <label><input type="checkbox" id="mayus"> Distinguir mayúsculas</label>
+
+    <div class="status-bar" id="status-bar">
+      <div class="spinner" id="spinner" style="display:none"></div>
+      <span id="status-msg"></span>
+    </div>
+
+    <div id="results-area" style="display:none">
+      <div class="results-header">
+        <span class="results-title">Resultados — <span id="results-count">0</span> encontrados</span>
+        <div class="results-actions">
+          <button class="btn-export" onclick="exportarExcel()">⬇️ Excel</button>
+          <span class="hint-click">👆 Clic en fila para ver detalle</span>
+        </div>
       </div>
-      <div class="historial-wrap" id="historial-wrap" style="display:none">
-        <span class="historial-label">🕐 Recientes:</span>
-        <div id="historial-chips"></div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Hoja origen</th><th>Fila #</th><th>Columna</th>
+                <th>Valor encontrado</th><th>Contribuyente</th>
+                <th>Cédula / NIT</th><th>Radicado</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
       </div>
+      <div class="card-list" id="card-list"></div>
+    </div>
+
+    <div id="empty-state">
+      <div class="empty-icon">📂</div>
+      <p>Ingrese un término para buscar en las guías</p>
     </div>
   </div>
 
-  <div class="status-bar" id="status-bar">
-    <div class="spinner" id="spinner" style="display:none"></div>
-    <span id="status-msg"></span>
+  <!-- PANEL REPORTES -->
+  <div class="panel" id="panel-reportes">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-number" id="stat-hoy">—</div><div class="stat-label">Búsquedas hoy</div></div>
+      <div class="stat-card"><div class="stat-number" id="stat-total">—</div><div class="stat-label">Total búsquedas</div></div>
+      <div class="stat-card"><div class="stat-number" id="stat-usuarios">—</div><div class="stat-label">Usuarios activos</div></div>
+    </div>
+    <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <span style="font-size:13px;font-weight:600;color:var(--navy)">📋 Historial de búsquedas</span>
+        <div class="rep-filters">
+          <button class="rep-filter-btn active" onclick="filtrarRep('todo',this)">Todo</button>
+          <button class="rep-filter-btn" onclick="filtrarRep('hoy',this)">Hoy</button>
+          <button class="rep-filter-btn" onclick="filtrarRep('semana',this)">Esta semana</button>
+          <button class="btn-export" onclick="exportarReportes()">⬇️ Excel</button>
+        </div>
+      </div>
+      <div id="rep-content" class="rep-loading">⏳ Cargando registros...</div>
+    </div>
   </div>
 
-  <div id="results-area" style="display:none">
-    <div class="results-header">
-      <span class="results-title">Resultados — <span id="results-count">0</span> encontrados</span>
-      <div class="results-actions">
-        <button class="btn-export" onclick="exportarExcel()">⬇️ Excel</button>
-        <span class="hint-click">👆 Clic en fila para ver detalle</span>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Hoja origen</th><th>Fila #</th><th>Columna</th>
-              <th>Valor encontrado</th><th>Contribuyente</th>
-              <th>Cédula / NIT</th><th>Radicado</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="tabla-body"></tbody>
-        </table>
-      </div>
-      <div class="pagination" id="pagination"></div>
-    </div>
-    <div class="card-list" id="card-list"></div>
-  </div>
-
-  <div id="empty-state">
-    <div class="empty-icon">📂</div>
-    <p>Ingrese un término para buscar en las guías</p>
-  </div>
 </main>
 
 <footer>Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello</footer>
@@ -326,9 +374,14 @@
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2C3ycs3-48DDTABp7cHvTTFVCQQlfl1p6DLHEj5xxP-FoV0eLIr2Mu9JK_LmDofll/exec";
 const SESSION_KEY     = 'buscador_session';
+const BLOQUEO_KEY     = 'buscador_bloqueo';
 const POR_PAGINA      = 20;
+const MAX_INTENTOS    = 5;
+const BLOQUEO_MIN     = 10; // minutos de bloqueo
 
-// ── USUARIOS FIJOS ──
+// Usuarios con acceso a reportes
+const ADMINS_REPORTES = ['JEISON MAYA', 'JUAN PABLO GOMEZ'];
+
 const USUARIOS = [
   {pin:'2824',nombre:'ANDERSON CORREA',cargo:'CONTRATISTA'},
   {pin:'1409',nombre:'ANDRES BEDOYA',cargo:'CONTRATISTA'},
@@ -363,14 +416,29 @@ const USUARIOS = [
   {pin:'6514',nombre:'DARIO BALDRICH',cargo:'PROFESIONAL UNIVERSITARIA'},
 ];
 
-let pinActual      = '';
-let usuarioActual  = null;
+let pinActual          = '';
+let intentosFallidos   = 0;
+let usuarioActual      = null;
 let todosLosResultados = [];
-let paginaActual   = 1;
-let historial      = JSON.parse(localStorage.getItem('buscador_historial')||'[]');
+let todosLosRegistros  = [];
+let paginaActual       = 1;
+let historial          = JSON.parse(localStorage.getItem('buscador_historial')||'[]');
+let repFiltro          = 'todo';
 
-// ── INIT PIN ──
-(function initPin(){
+// ── INIT ──
+(function init(){
+  // Verificar bloqueo
+  try {
+    const bloqueo = JSON.parse(localStorage.getItem(BLOQUEO_KEY)||'null');
+    if (bloqueo && bloqueo.hasta > Date.now()) {
+      mostrarBloqueo(bloqueo.hasta);
+      return;
+    } else if (bloqueo) {
+      localStorage.removeItem(BLOQUEO_KEY);
+    }
+  } catch(e){}
+
+  // Verificar sesión activa
   try {
     const sess = JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
     if (sess && sess.expira > Date.now()) {
@@ -382,13 +450,31 @@ let historial      = JSON.parse(localStorage.getItem('buscador_historial')||'[]'
   } catch(e){}
 })();
 
+function mostrarBloqueo(hasta) {
+  document.getElementById('pinIngreso').style.display = 'none';
+  const blk = document.getElementById('pinBlocked');
+  blk.style.display = 'block';
+  const actualizar = () => {
+    const resta = Math.ceil((hasta - Date.now()) / 1000);
+    if (resta <= 0) { localStorage.removeItem(BLOQUEO_KEY); location.reload(); return; }
+    const m = Math.floor(resta/60), s = resta%60;
+    blk.innerHTML = `🔒 Demasiados intentos fallidos.<br>Espere <strong>${m}:${s.toString().padStart(2,'0')}</strong> para intentar de nuevo.`;
+    setTimeout(actualizar, 1000);
+  };
+  actualizar();
+}
+
 function aplicarSesion(u) {
   document.getElementById('user-badge').textContent = '👤 ' + u.nombre;
+  // Mostrar pestaña de reportes solo a admins
+  if (ADMINS_REPORTES.includes(u.nombre)) {
+    document.getElementById('tab-reportes').style.display = 'flex';
+  }
   renderHistorial();
   document.getElementById('empty-state').style.display = 'block';
 }
 
-// ── TECLADO PIN ──
+// ── PIN ──
 function presionarPin(d) {
   if (pinActual.length >= 4) return;
   pinActual += d;
@@ -399,9 +485,9 @@ function borrarPin()  { pinActual = pinActual.slice(0,-1); actualizarDots(); }
 function limpiarPin() { pinActual = ''; actualizarDots(); }
 
 function actualizarDots() {
-  for (let i=0;i<4;i++) {
+  for(let i=0;i<4;i++){
     const d = document.getElementById('d'+i);
-    d.className = 'pin-dot' + (i < pinActual.length ? ' filled' : '');
+    d.className = 'pin-dot'+(i<pinActual.length?' filled':'');
   }
   document.getElementById('pinError').style.display = 'none';
 }
@@ -409,17 +495,31 @@ function actualizarDots() {
 function verificarPin() {
   const usuario = USUARIOS.find(u => u.pin === pinActual);
   if (usuario) {
+    intentosFallidos = 0;
+    localStorage.removeItem(BLOQUEO_KEY);
     const sess = {...usuario, expira: Date.now() + 8*60*60*1000};
     localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
     usuarioActual = sess;
     document.getElementById('pinOverlay').style.display = 'none';
     aplicarSesion(sess);
   } else {
+    intentosFallidos++;
     for(let i=0;i<4;i++) document.getElementById('d'+i).className='pin-dot error';
-    const err = document.getElementById('pinError');
-    err.textContent = '❌ PIN incorrecto. Intente de nuevo.';
-    err.style.display = 'block';
-    setTimeout(()=>{ pinActual=''; actualizarDots(); }, 900);
+    const restantes = MAX_INTENTOS - intentosFallidos;
+
+    if (intentosFallidos >= MAX_INTENTOS) {
+      // Bloquear por BLOQUEO_MIN minutos
+      const hasta = Date.now() + BLOQUEO_MIN * 60 * 1000;
+      localStorage.setItem(BLOQUEO_KEY, JSON.stringify({hasta}));
+      mostrarBloqueo(hasta);
+    } else {
+      const err = document.getElementById('pinError');
+      err.textContent = `❌ PIN incorrecto. ${restantes} intento(s) restante(s).`;
+      err.style.display = 'block';
+      const intentosEl = document.getElementById('pinIntentos');
+      intentosEl.textContent = restantes <= 2 ? `⚠️ ${restantes} intento(s) antes del bloqueo` : '';
+      setTimeout(()=>{ pinActual=''; actualizarDots(); }, 900);
+    }
   }
 }
 
@@ -428,87 +528,82 @@ function cerrarSesion() {
   location.reload();
 }
 
+// ── NAVEGACIÓN ──
+function goPanel(p) {
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('panel-'+p).classList.add('active');
+  document.getElementById('tab-'+p).classList.add('active');
+  if (p==='reportes') cargarReportes();
+}
+
 // ── HISTORIAL ──
 function renderHistorial() {
   if (!historial.length) return;
-  const wrap = document.getElementById('historial-wrap');
-  wrap.style.display = 'flex';
+  document.getElementById('historial-wrap').style.display='flex';
   document.getElementById('historial-chips').innerHTML =
     historial.slice(0,5).map(t=>`<span class="hist-chip" onclick="usarHistorial('${esc(t)}')">${esc(t)}</span>`).join('');
 }
 function usarHistorial(t) { document.getElementById('termino').value=t; buscar(); }
 function agregarHistorial(t) {
-  historial = [t,...historial.filter(h=>h!==t)].slice(0,8);
+  historial=[t,...historial.filter(h=>h!==t)].slice(0,8);
   localStorage.setItem('buscador_historial',JSON.stringify(historial));
   renderHistorial();
 }
 
 // ── BUSCAR ──
 function setStatus(tipo,msg,spin) {
-  const bar = document.getElementById('status-bar');
-  bar.className = 'status-bar '+tipo;
-  document.getElementById('spinner').style.display = spin?'block':'none';
-  document.getElementById('status-msg').textContent = msg;
+  const bar=document.getElementById('status-bar');
+  bar.className='status-bar '+tipo;
+  document.getElementById('spinner').style.display=spin?'block':'none';
+  document.getElementById('status-msg').textContent=msg;
 }
 
 async function buscar() {
-  const termino = document.getElementById('termino').value.trim();
-  if (!termino) { setStatus('error','⚠️ Ingrese un término de búsqueda.'); return; }
-  if (!usuarioActual) { setStatus('error','⚠️ Debe iniciar sesión primero.'); return; }
+  const termino=document.getElementById('termino').value.trim();
+  if(!termino){setStatus('error','⚠️ Ingrese un término de búsqueda.');return;}
+  if(!usuarioActual){setStatus('error','⚠️ Debe iniciar sesión primero.');return;}
 
-  const exacto = document.getElementById('exacto').checked;
-  const mayus  = document.getElementById('mayus').checked;
-  const btn    = document.getElementById('btn-buscar');
-
-  btn.disabled = true;
-  document.getElementById('results-area').style.display = 'none';
-  document.getElementById('empty-state').style.display  = 'none';
+  const exacto=document.getElementById('exacto').checked;
+  const mayus=document.getElementById('mayus').checked;
+  const btn=document.getElementById('btn-buscar');
+  btn.disabled=true;
+  document.getElementById('results-area').style.display='none';
+  document.getElementById('empty-state').style.display='none';
   setStatus('loading','Buscando en todas las hojas...',true);
 
   try {
-    const params = new URLSearchParams({
-      termino, exacto, mayus,
-      usuario: usuarioActual.nombre,
-      cargo:   usuarioActual.cargo
-    });
-    const res  = await fetch(`${APPS_SCRIPT_URL}?${params}`);
-    const data = await res.json();
-
-    if (data.error) { setStatus('error','❌ '+data.error); document.getElementById('empty-state').style.display='block'; return; }
-
-    todosLosResultados = data.resultados || [];
-
-    if (!todosLosResultados.length) {
+    const params=new URLSearchParams({termino,exacto,mayus,usuario:usuarioActual.nombre,cargo:usuarioActual.cargo});
+    const res=await fetch(`${APPS_SCRIPT_URL}?${params}`);
+    const data=await res.json();
+    if(data.error){setStatus('error','❌ '+data.error);document.getElementById('empty-state').style.display='block';return;}
+    todosLosResultados=data.resultados||[];
+    if(!todosLosResultados.length){
       setStatus('empty',`⚠️ No se encontró "${termino}" en ninguna hoja.`);
       document.getElementById('empty-state').style.display='block';
       document.getElementById('empty-state').querySelector('p').textContent=`Sin resultados para "${termino}"`;
       return;
     }
-
     agregarHistorial(termino);
     setStatus('success',`✅ ${todosLosResultados.length} resultado(s) para "${termino}"`);
-    paginaActual = 1;
+    paginaActual=1;
     renderResultados();
-
   } catch(err) {
     setStatus('error','❌ Error de conexión. Verifique su acceso a internet.');
     document.getElementById('empty-state').style.display='block';
-  } finally {
-    btn.disabled = false;
-  }
+  } finally { btn.disabled=false; }
 }
 
-// ── RENDER ──
+// ── RENDER RESULTADOS ──
 function renderResultados() {
-  const total  = todosLosResultados.length;
-  const totalPg= Math.ceil(total/POR_PAGINA);
-  const inicio = (paginaActual-1)*POR_PAGINA;
-  const fin    = Math.min(inicio+POR_PAGINA,total);
-  const pagina = todosLosResultados.slice(inicio,fin);
+  const total=todosLosResultados.length;
+  const totalPg=Math.ceil(total/POR_PAGINA);
+  const inicio=(paginaActual-1)*POR_PAGINA;
+  const fin=Math.min(inicio+POR_PAGINA,total);
+  const pagina=todosLosResultados.slice(inicio,fin);
+  document.getElementById('results-count').textContent=total;
 
-  document.getElementById('results-count').textContent = total;
-
-  document.getElementById('tabla-body').innerHTML = pagina.map((r,i)=>`
+  document.getElementById('tabla-body').innerHTML=pagina.map((r,i)=>`
     <tr onclick="abrirDetalle(${inicio+i})">
       <td><span class="tag-hoja">${esc(r[0])}</span></td>
       <td>${esc(r[1])}</td><td>${esc(r[2])}</td>
@@ -517,7 +612,7 @@ function renderResultados() {
       <td><button class="btn-ver" onclick="event.stopPropagation();abrirDetalle(${inicio+i})">Ver todo</button></td>
     </tr>`).join('');
 
-  document.getElementById('card-list').innerHTML = pagina.map((r,i)=>`
+  document.getElementById('card-list').innerHTML=pagina.map((r,i)=>`
     <div class="result-card" onclick="abrirDetalle(${inicio+i})" style="animation-delay:${i*.04}s">
       <div class="card-top"><span class="card-hoja">${esc(r[0])}</span><span class="card-fila">Fila ${esc(r[1])}</span></div>
       <div class="card-valor">${esc(r[3])}</div>
@@ -529,10 +624,9 @@ function renderResultados() {
       <div class="card-ver"><button class="btn-ver">Ver detalle →</button></div>
     </div>`).join('');
 
-  // Paginación
-  let pgHtml = '';
-  if (totalPg>1) {
-    pgHtml += `<button class="pg-btn" onclick="irPagina(${paginaActual-1})" ${paginaActual===1?'disabled':''}>‹</button>`;
+  let pgHtml='';
+  if(totalPg>1){
+    pgHtml+=`<button class="pg-btn" onclick="irPagina(${paginaActual-1})" ${paginaActual===1?'disabled':''}>‹</button>`;
     for(let p=1;p<=totalPg;p++){
       if(p===1||p===totalPg||Math.abs(p-paginaActual)<=1)
         pgHtml+=`<button class="pg-btn ${p===paginaActual?'active':''}" onclick="irPagina(${p})">${p}</button>`;
@@ -541,67 +635,135 @@ function renderResultados() {
     pgHtml+=`<button class="pg-btn" onclick="irPagina(${paginaActual+1})" ${paginaActual===totalPg?'disabled':''}>›</button>`;
     pgHtml+=`<span class="pg-info">${inicio+1}–${fin} de ${total}</span>`;
   }
-  document.getElementById('pagination').innerHTML = pgHtml;
-  document.getElementById('results-area').style.display = 'block';
+  document.getElementById('pagination').innerHTML=pgHtml;
+  document.getElementById('results-area').style.display='block';
 }
 
-function irPagina(p) {
-  const totalPg = Math.ceil(todosLosResultados.length/POR_PAGINA);
+function irPagina(p){
+  const totalPg=Math.ceil(todosLosResultados.length/POR_PAGINA);
   if(p<1||p>totalPg) return;
-  paginaActual = p;
-  renderResultados();
+  paginaActual=p; renderResultados();
   window.scrollTo({top:200,behavior:'smooth'});
 }
 
 // ── MODAL ──
-function abrirDetalle(idx) {
-  const r = todosLosResultados[idx];
-  if(!r) return;
-  const [hoja,fila,colFound,valFound,nombre,cedula,radicado,otros] = r;
-  document.getElementById('modal-titulo').textContent    = valFound||'Detalle';
-  document.getElementById('modal-subtitulo').textContent = `Hoja: ${hoja} · Fila ${fila}`;
-  document.getElementById('modal-origen').innerHTML =
+function abrirDetalle(idx){
+  const r=todosLosResultados[idx]; if(!r) return;
+  const [hoja,fila,colFound,valFound,nombre,cedula,radicado,otros]=r;
+  document.getElementById('modal-titulo').textContent=valFound||'Detalle';
+  document.getElementById('modal-subtitulo').textContent=`Hoja: ${hoja} · Fila ${fila}`;
+  document.getElementById('modal-origen').innerHTML=
     `<span>📋</span><span>Columna <strong>${colFound}</strong> — hoja <strong>${hoja}</strong>, fila <strong>${fila}</strong></span>`;
-
   let html='';
   [{label:'Valor encontrado',value:valFound,hi:true},{label:'Contribuyente',value:nombre},
    {label:'Cédula / NIT',value:cedula},{label:'Radicado',value:radicado}]
-    .forEach(f=>{ if(f.value) html+=`<div class="modal-field${f.hi?' highlight':''}"><div class="modal-field-label">${esc(f.label)}</div><div class="modal-field-value">${esc(f.value)}</div></div>`; });
-
+    .forEach(f=>{if(f.value) html+=`<div class="modal-field${f.hi?' highlight':''}"><div class="modal-field-label">${esc(f.label)}</div><div class="modal-field-value">${esc(f.value)}</div></div>`;});
   if(otros) otros.split(' | ').forEach(p=>{
-    const sep=p.indexOf(':');
-    if(sep>0){
-      const k=p.substring(0,sep).trim(), v=p.substring(sep+1).trim();
-      html+=`<div class="modal-field${v.length>40?' full':''}"><div class="modal-field-label">${esc(k)}</div><div class="modal-field-value">${esc(v)}</div></div>`;
-    }
+    const sep=p.indexOf(':'); if(sep<0) return;
+    const k=p.substring(0,sep).trim(),v=p.substring(sep+1).trim();
+    html+=`<div class="modal-field${v.length>40?' full':''}"><div class="modal-field-label">${esc(k)}</div><div class="modal-field-value">${esc(v)}</div></div>`;
   });
-
-  document.getElementById('modal-fields').innerHTML = html||'<p style="color:var(--text-soft);font-size:13px">Sin campos adicionales.</p>';
+  document.getElementById('modal-fields').innerHTML=html||'<p style="color:var(--text-soft);font-size:13px">Sin campos adicionales.</p>';
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow='hidden';
 }
-
-function cerrarModal(e) {
+function cerrarModal(e){
   if(e&&e.target!==document.getElementById('modal-overlay')) return;
   document.getElementById('modal-overlay').classList.remove('open');
   document.body.style.overflow='';
 }
 
-// ── EXPORTAR EXCEL ──
-function exportarExcel() {
+// ── REPORTES ──
+async function cargarReportes(){
+  document.getElementById('rep-content').innerHTML='<div class="rep-loading">⏳ Cargando registros...</div>';
+  try {
+    const res=await fetch(`${APPS_SCRIPT_URL}?accion=registros`);
+    const data=await res.json();
+    todosLosRegistros=data.registros||[];
+    renderReportes();
+  } catch(e){
+    document.getElementById('rep-content').innerHTML='<div class="rep-loading">❌ Error cargando registros.</div>';
+  }
+}
+
+function filtrarRep(f, btn){
+  repFiltro=f;
+  document.querySelectorAll('.rep-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderReportes();
+}
+
+function renderReportes(){
+  const hoy=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'/');
+  const ahora=new Date();
+
+  let filtrados=todosLosRegistros;
+  if(repFiltro==='hoy'){
+    filtrados=filtrados.filter(r=>r.fecha===hoy);
+  } else if(repFiltro==='semana'){
+    const hace7=new Date(ahora-7*24*60*60*1000);
+    filtrados=filtrados.filter(r=>{
+      const p=r.fecha.split('/');
+      if(p.length<3) return false;
+      const d=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
+      return d>=hace7;
+    });
+  }
+
+  // Stats
+  const busquedasHoy=todosLosRegistros.filter(r=>r.fecha===hoy).length;
+  const usuarios=new Set(todosLosRegistros.map(r=>r.usuario)).size;
+  document.getElementById('stat-hoy').textContent=busquedasHoy;
+  document.getElementById('stat-total').textContent=todosLosRegistros.length;
+  document.getElementById('stat-usuarios').textContent=usuarios;
+
+  if(!filtrados.length){
+    document.getElementById('rep-content').innerHTML='<div class="rep-loading">📭 No hay registros para este período.</div>';
+    return;
+  }
+
+  // Tabla invertida (más reciente primero)
+  const rows=[...filtrados].reverse().map(r=>`
+    <tr>
+      <td style="white-space:nowrap">${esc(r.fecha)}</td>
+      <td style="white-space:nowrap">${esc(r.hora)}</td>
+      <td style="font-weight:600">${esc(r.usuario)}</td>
+      <td style="color:var(--text-soft);font-size:11px">${esc(r.cargo)}</td>
+      <td style="background:var(--yellow-hl);font-weight:600;color:#7c4a00">${esc(r.termino)}</td>
+      <td style="text-align:center"><span style="background:var(--navy);color:#fff;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:600">${esc(r.total)}</span></td>
+    </tr>`).join('');
+
+  document.getElementById('rep-content').innerHTML=`
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th>Hora</th><th>Usuario</th><th>Cargo</th><th>Término buscado</th><th>Resultados</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function exportarReportes(){
+  if(!todosLosRegistros.length) return;
+  const ws=XLSX.utils.json_to_sheet(todosLosRegistros);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Registros');
+  XLSX.writeFile(wb,`registros_busquedas_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── EXPORTAR EXCEL RESULTADOS ──
+function exportarExcel(){
   if(!todosLosResultados.length) return;
-  const filas = todosLosResultados.map(r=>({
-    'Hoja':r[0],'Fila':r[1],'Columna':r[2],'Valor':r[3],
-    'Contribuyente':r[4],'Cédula/NIT':r[5],'Radicado':r[6],'Otros':r[7]
-  }));
-  const ws = XLSX.utils.json_to_sheet(filas);
-  const wb = XLSX.utils.book_new();
+  const filas=todosLosResultados.map(r=>({'Hoja':r[0],'Fila':r[1],'Columna':r[2],'Valor':r[3],'Contribuyente':r[4],'Cédula/NIT':r[5],'Radicado':r[6],'Otros':r[7]}));
+  const ws=XLSX.utils.json_to_sheet(filas);
+  const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Resultados');
-  const t = document.getElementById('termino').value.trim().replace(/[^a-zA-Z0-9]/g,'_');
+  const t=document.getElementById('termino').value.trim().replace(/[^a-zA-Z0-9]/g,'_');
   XLSX.writeFile(wb,`busqueda_${t}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-function esc(v) {
+function esc(v){
   if(v===null||v===undefined) return '';
   return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
