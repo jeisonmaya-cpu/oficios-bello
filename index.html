@@ -3161,19 +3161,6 @@ function iniciarAutoDash(){
   }, 2 * 60 * 1000); // cada 2 minutos
 }
 
-// ── Auto-refresh dashboard ──
-let _dashInterval=null;
-function iniciarAutoDash(){
-  if(_dashInterval) clearInterval(_dashInterval);
-  _dashInterval=setInterval(async()=>{
-    const panel=document.getElementById('panel-dashboard');
-    if(!panel||!panel.classList.contains('active')){clearInterval(_dashInterval);_dashInterval=null;return;}
-    await cargarRemoto(); renderDash();
-    const el=document.getElementById('dash_refresh');
-    if(el) el.textContent='Actualizado: '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-  },2*60*1000);
-}
-
 // ESTADÍSTICAS / RANKING POR FUNCIONARIO (dashboard)
 // ════════════════════════════════════════════════════════════
 function renderRankingFuncionarios() {
