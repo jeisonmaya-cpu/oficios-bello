@@ -8,159 +8,216 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
-      --navy: #0f2d5e; --navy-mid: #16396e; --blue: #1a6fc4;
-      --gold-light: #f5c050; --bg: #f0f4fa; --surface: #ffffff;
-      --surface2: #e8edf7; --text: #0f1e35; --text-soft: #4a5a72;
-      --border: #c8d5e8; --yellow-hl: #fef08a;
-      --red: #dc2626; --green: #16a34a;
-      --radius: 12px;
-      --shadow: 0 4px 24px rgba(15,45,94,0.10);
-      --shadow-lg: 0 8px 40px rgba(15,45,94,0.18);
+      --navy:#0f2d5e; --navy-mid:#16396e; --blue:#1a6fc4;
+      --gold-light:#f5c050; --bg:#f0f4fa; --surface:#fff;
+      --surface2:#e8edf7; --text:#0f1e35; --text-soft:#4a5a72;
+      --border:#c8d5e8; --yellow-hl:#fef08a;
+      --red:#dc2626; --green:#16a34a;
+      --radius:12px;
+      --shadow:0 4px 24px rgba(15,45,94,.10);
+      --shadow-lg:0 8px 40px rgba(15,45,94,.18);
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-    /* HEADER */
-    header { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1a4a8a 100%); position: relative; overflow: hidden; }
-    header::before { content:''; position:absolute; top:-60px; right:-60px; width:300px; height:300px; border-radius:50%; background:rgba(255,255,255,0.04); }
-    header::after  { content:''; position:absolute; bottom:-40px; left:10%; width:200px; height:200px; border-radius:50%; background:rgba(232,160,32,0.08); }
-    .header-inner { max-width:960px; margin:0 auto; padding:24px; position:relative; z-index:1; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-    .header-icon { width:50px; height:50px; background:rgba(255,255,255,0.12); border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; border:1.5px solid rgba(255,255,255,0.18); }
-    .header-text h1 { font-family:'DM Serif Display',serif; color:#fff; font-size:19px; font-weight:400; line-height:1.2; }
-    .header-text p { color:rgba(255,255,255,0.6); font-size:12px; margin-top:2px; }
-    .header-badge { margin-left:auto; background:rgba(232,160,32,0.18); border:1px solid rgba(232,160,32,0.35); color:var(--gold-light); font-size:11px; font-weight:600; padding:5px 12px; border-radius:20px; letter-spacing:0.05em; text-transform:uppercase; white-space:nowrap; }
-    .btn-nav { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.12); border:1.5px solid rgba(255,255,255,0.2); color:#fff; text-decoration:none; font-size:12px; font-weight:600; padding:7px 14px; border-radius:8px; white-space:nowrap; transition:background 0.2s; }
-    .btn-nav:hover { background:rgba(255,255,255,0.22); }
+    /* ── PIN OVERLAY ── */
+    #pinOverlay{position:fixed;inset:0;background:linear-gradient(135deg,#0f2d5e 0%,#1d5aab 100%);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+    .pin-card{background:#fff;border-radius:20px;padding:32px 28px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+    .pin-logo{font-size:36px;margin-bottom:8px}
+    .pin-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);margin-bottom:4px}
+    .pin-sub{font-size:12px;color:var(--text-soft);margin-bottom:20px}
+    .pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:16px}
+    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #d1d5db;background:#fff;transition:all .15s}
+    .pin-dot.filled{background:var(--navy);border-color:var(--navy)}
+    .pin-dot.error{background:var(--red);border-color:var(--red)}
+    .pin-error{display:none;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px}
+    .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+    .pin-btn{padding:14px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:18px;font-weight:600;color:#1a1a2e;cursor:pointer;transition:all .15s}
+    .pin-btn:hover{background:#f0f7ff;border-color:var(--blue)}
+    .pin-btn:active{transform:scale(.94);background:#dbeafe}
+    .pin-label{font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:10px}
 
-    /* MAIN */
-    main { max-width:960px; margin:0 auto; padding:24px 24px 60px; }
+    /* ── HEADER ── */
+    header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:relative;overflow:hidden}
+    header::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.04)}
+    .header-inner{max-width:960px;margin:0 auto;padding:20px 24px;position:relative;z-index:1;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .header-icon{width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
+    .header-text h1{font-family:'DM Serif Display',serif;color:#fff;font-size:18px;font-weight:400;line-height:1.2}
+    .header-text p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
+    .header-user{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .user-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;white-space:nowrap}
+    .btn-nav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:6px 13px;border-radius:8px;white-space:nowrap;transition:background .2s}
+    .btn-nav:hover{background:rgba(255,255,255,.22)}
+    .btn-logout{background:rgba(220,38,38,.25);border-color:rgba(220,38,38,.4);color:#fca5a5;cursor:pointer;font-family:'DM Sans',sans-serif}
+    .btn-logout:hover{background:rgba(220,38,38,.4)}
 
-    /* SEARCH */
-    .search-card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; margin-bottom:16px; border:1px solid var(--border); }
-    .search-label { font-size:11px; font-weight:600; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:9px; }
-    .search-row { display:flex; gap:10px; }
-    .search-input-wrap { flex:1; position:relative; }
-    .search-input-wrap svg { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--text-soft); pointer-events:none; }
-    input[type="text"] { width:100%; height:44px; padding:0 14px 0 42px; font-size:14px; font-family:'DM Sans',sans-serif; border:1.5px solid var(--border); border-radius:9px; outline:none; color:var(--text); background:var(--bg); transition:border-color 0.2s,box-shadow 0.2s; }
-    input[type="text"]:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(26,111,196,0.12); background:#fff; }
-    .btn-search { height:44px; padding:0 22px; background:var(--navy); color:#fff; border:none; border-radius:9px; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; display:flex; align-items:center; gap:7px; transition:background 0.2s,transform 0.1s; white-space:nowrap; }
-    .btn-search:hover { background:var(--blue); }
-    .btn-search:active { transform:scale(0.98); }
-    .btn-search:disabled { opacity:0.6; cursor:not-allowed; }
-    .search-bottom { display:flex; align-items:center; justify-content:space-between; margin-top:11px; flex-wrap:wrap; gap:8px; }
-    .search-options { display:flex; gap:18px; }
-    .search-options label { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-soft); cursor:pointer; user-select:none; }
-    .search-options input[type="checkbox"] { width:14px; height:14px; accent-color:var(--blue); cursor:pointer; }
+    /* ── NAV TABS ── */
+    .nav-tabs{background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)}
+    .nav-tabs-inner{max-width:960px;margin:0 auto;display:flex;padding:0 24px;gap:2px}
+    .nav-tab{padding:10px 16px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-decoration:none;display:flex;align-items:center;gap:5px}
+    .nav-tab:hover{color:#fff;background:rgba(255,255,255,.07)}
+    .nav-tab.active{color:#fff;border-bottom-color:var(--gold-light)}
 
-    /* HISTORIAL */
-    .historial-wrap { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
-    .historial-label { font-size:11px; color:var(--text-soft); font-weight:600; }
-    .hist-chip { background:var(--surface2); border:1px solid var(--border); color:var(--navy); font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; cursor:pointer; transition:background 0.15s; }
-    .hist-chip:hover { background:#dce8f8; }
+    /* ── MAIN ── */
+    main{max-width:960px;margin:0 auto;padding:22px 24px 60px}
 
-    /* STATUS */
-    .status-bar { display:none; align-items:center; gap:10px; padding:11px 15px; border-radius:9px; font-size:13px; margin-bottom:16px; font-weight:500; }
-    .status-bar.loading { display:flex; background:#eff6ff; color:var(--blue); border:1px solid #bfdbfe; }
-    .status-bar.success { display:flex; background:#f0fdf4; color:var(--green); border:1px solid #bbf7d0; }
-    .status-bar.error   { display:flex; background:#fef2f2; color:var(--red); border:1px solid #fecaca; }
-    .status-bar.empty   { display:flex; background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
-    .spinner { width:15px; height:15px; border:2.5px solid rgba(26,111,196,0.25); border-top-color:var(--blue); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
-    @keyframes spin { to { transform:rotate(360deg); } }
+    /* ── SEARCH ── */
+    .search-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:16px;border:1px solid var(--border)}
+    .search-label{font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:9px}
+    .search-row{display:flex;gap:10px}
+    .search-input-wrap{flex:1;position:relative}
+    .search-input-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-soft);pointer-events:none}
+    input[type="text"]{width:100%;height:44px;padding:0 14px 0 42px;font-size:14px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:9px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s,box-shadow .2s}
+    input[type="text"]:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12);background:#fff}
+    .btn-search{height:44px;padding:0 22px;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .2s,transform .1s;white-space:nowrap}
+    .btn-search:hover{background:var(--blue)}
+    .btn-search:active{transform:scale(.98)}
+    .btn-search:disabled{opacity:.6;cursor:not-allowed}
+    .search-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:11px;flex-wrap:wrap;gap:8px}
+    .search-options{display:flex;gap:18px}
+    .search-options label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-soft);cursor:pointer;user-select:none}
+    .search-options input[type="checkbox"]{width:14px;height:14px;accent-color:var(--blue);cursor:pointer}
+    .historial-wrap{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+    .historial-label{font-size:11px;color:var(--text-soft);font-weight:600}
+    .hist-chip{background:var(--surface2);border:1px solid var(--border);color:var(--navy);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;cursor:pointer;transition:background .15s}
+    .hist-chip:hover{background:#dce8f8}
 
-    /* RESULTS HEADER */
-    .results-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:11px; flex-wrap:wrap; gap:8px; }
-    .results-title { font-size:12px; font-weight:600; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.07em; }
-    .results-actions { display:flex; align-items:center; gap:8px; }
-    .results-count { font-size:11px; background:var(--navy); color:#fff; padding:3px 10px; border-radius:20px; font-weight:600; }
-    .btn-export { background:#16a34a; color:#fff; border:none; border-radius:7px; padding:5px 13px; font-size:11px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px; }
-    .btn-export:hover { background:#15803d; }
-    .hint-click { font-size:11px; color:var(--text-soft); font-style:italic; }
+    /* ── STATUS ── */
+    .status-bar{display:none;align-items:center;gap:10px;padding:11px 15px;border-radius:9px;font-size:13px;margin-bottom:16px;font-weight:500}
+    .status-bar.loading{display:flex;background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+    .status-bar.success{display:flex;background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+    .status-bar.error{display:flex;background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+    .status-bar.empty{display:flex;background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+    .spinner{width:15px;height:15px;border:2.5px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* TABLA */
-    .table-wrap { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); overflow:hidden; }
-    .table-scroll { overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; font-size:12px; }
-    thead tr { background:var(--navy); color:#fff; }
-    thead th { padding:10px 12px; text-align:left; font-weight:600; font-size:10.5px; letter-spacing:0.04em; white-space:nowrap; }
-    tbody tr { border-bottom:1px solid var(--surface2); transition:background 0.15s; cursor:pointer; }
-    tbody tr:last-child { border-bottom:none; }
-    tbody tr:hover { background:#e8f0fc; }
-    tbody tr:nth-child(even) { background:#f8fafd; }
-    tbody tr:nth-child(even):hover { background:#e0ecfc; }
-    td { padding:9px 12px; vertical-align:middle; color:var(--text); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    td.val-encontrado { background:var(--yellow-hl); font-weight:700; color:#7c4a00; }
-    tbody tr:hover td.val-encontrado { background:#fde047; }
-    .tag-hoja { display:inline-block; background:var(--surface2); color:var(--navy); font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
-    .btn-ver { background:var(--blue); color:#fff; border:none; border-radius:5px; padding:3px 9px; font-size:10.5px; font-weight:600; cursor:pointer; }
-    .btn-ver:hover { background:var(--navy); }
+    /* ── RESULTS ── */
+    .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;flex-wrap:wrap;gap:8px}
+    .results-title{font-size:12px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.07em}
+    .results-actions{display:flex;align-items:center;gap:8px}
+    .results-count{font-size:11px;background:var(--navy);color:#fff;padding:3px 10px;border-radius:20px;font-weight:600}
+    .btn-export{background:#16a34a;color:#fff;border:none;border-radius:7px;padding:5px 13px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+    .btn-export:hover{background:#15803d}
+    .hint-click{font-size:11px;color:var(--text-soft);font-style:italic}
 
-    /* PAGINACION */
-    .pagination { display:flex; align-items:center; justify-content:center; gap:6px; padding:14px 0 4px; flex-wrap:wrap; }
-    .pg-btn { background:var(--surface); border:1.5px solid var(--border); color:var(--navy); width:34px; height:34px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
-    .pg-btn:hover { background:var(--surface2); }
-    .pg-btn.active { background:var(--navy); color:#fff; border-color:var(--navy); }
-    .pg-btn:disabled { opacity:0.4; cursor:not-allowed; }
-    .pg-info { font-size:11px; color:var(--text-soft); padding:0 6px; }
+    /* ── TABLA ── */
+    .table-wrap{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden}
+    .table-scroll{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead tr{background:var(--navy);color:#fff}
+    thead th{padding:10px 12px;text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.04em;white-space:nowrap}
+    tbody tr{border-bottom:1px solid var(--surface2);transition:background .15s;cursor:pointer}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#e8f0fc}
+    tbody tr:nth-child(even){background:#f8fafd}
+    tbody tr:nth-child(even):hover{background:#e0ecfc}
+    td{padding:9px 12px;vertical-align:middle;color:var(--text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    td.val-encontrado{background:var(--yellow-hl);font-weight:700;color:#7c4a00}
+    tbody tr:hover td.val-encontrado{background:#fde047}
+    .tag-hoja{display:inline-block;background:var(--surface2);color:var(--navy);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+    .btn-ver{background:var(--blue);color:#fff;border:none;border-radius:5px;padding:3px 9px;font-size:10.5px;font-weight:600;cursor:pointer}
+    .btn-ver:hover{background:var(--navy)}
 
-    /* CARDS MOBILE */
-    .card-list { display:none; }
-    .result-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:13px; margin-bottom:9px; box-shadow:var(--shadow); animation:fadeUp 0.25s ease forwards; cursor:pointer; }
-    .result-card:hover { border-color:var(--blue); }
-    .card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:7px; }
-    .card-hoja { font-size:10px; font-weight:700; color:var(--navy); }
-    .card-fila { font-size:10px; color:var(--text-soft); }
-    .card-valor { font-size:14px; font-weight:700; color:#7c4a00; background:var(--yellow-hl); padding:3px 9px; border-radius:5px; margin-bottom:7px; display:inline-block; }
-    .card-fields { display:grid; gap:4px; }
-    .card-field { font-size:12px; color:var(--text); }
-    .card-field span { color:var(--text-soft); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; display:block; }
-    .card-ver { margin-top:9px; text-align:right; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+    /* ── PAGINACIÓN ── */
+    .pagination{display:flex;align-items:center;justify-content:center;gap:6px;padding:14px 0 4px;flex-wrap:wrap}
+    .pg-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--navy);width:32px;height:32px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .pg-btn:hover{background:var(--surface2)}
+    .pg-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+    .pg-btn:disabled{opacity:.4;cursor:not-allowed}
+    .pg-info{font-size:11px;color:var(--text-soft);padding:0 4px}
 
-    /* MODAL */
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(10,20,50,0.65); z-index:1000; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(3px); }
-    .modal-overlay.open { display:flex; }
-    .modal { background:var(--surface); border-radius:16px; box-shadow:var(--shadow-lg); width:100%; max-width:640px; max-height:85vh; display:flex; flex-direction:column; animation:modalIn 0.2s ease; }
-    @keyframes modalIn { from{opacity:0;transform:scale(0.96) translateY(10px);}to{opacity:1;transform:none;} }
-    .modal-header { background:linear-gradient(135deg,var(--navy),var(--navy-mid)); color:#fff; padding:16px 20px; border-radius:16px 16px 0 0; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .modal-header-info h2 { font-size:14px; font-weight:600; }
-    .modal-header-info p { font-size:10.5px; opacity:0.7; margin-top:2px; }
-    .modal-close { background:rgba(255,255,255,0.15); border:none; color:#fff; width:28px; height:28px; border-radius:7px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.2s; }
-    .modal-close:hover { background:rgba(255,255,255,0.25); }
-    .modal-body { padding:18px 20px; overflow-y:auto; }
-    .modal-origen { display:flex; align-items:center; gap:8px; background:var(--surface2); border-radius:7px; padding:9px 13px; margin-bottom:14px; font-size:12px; color:var(--text-soft); }
-    .modal-origen strong { color:var(--navy); }
-    .modal-fields { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-    .modal-field { background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:9px 12px; }
-    .modal-field.highlight { background:#fefce8; border-color:#fde047; }
-    .modal-field.full { grid-column:1/-1; }
-    .modal-field-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-soft); margin-bottom:3px; }
-    .modal-field-value { font-size:13px; color:var(--text); font-weight:500; word-break:break-word; }
-    .modal-footer { padding:12px 20px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; }
-    .btn-cerrar { background:var(--navy); color:#fff; border:none; border-radius:7px; padding:8px 18px; font-size:12px; font-weight:600; cursor:pointer; }
-    .btn-cerrar:hover { background:var(--blue); }
+    /* ── CARDS MOBILE ── */
+    .card-list{display:none}
+    .result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:9px;box-shadow:var(--shadow);animation:fadeUp .25s ease forwards;cursor:pointer}
+    .result-card:hover{border-color:var(--blue)}
+    .card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+    .card-hoja{font-size:10px;font-weight:700;color:var(--navy)}
+    .card-fila{font-size:10px;color:var(--text-soft)}
+    .card-valor{font-size:14px;font-weight:700;color:#7c4a00;background:var(--yellow-hl);padding:3px 9px;border-radius:5px;margin-bottom:7px;display:inline-block}
+    .card-fields{display:grid;gap:4px}
+    .card-field{font-size:12px;color:var(--text)}
+    .card-field span{color:var(--text-soft);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;display:block}
+    .card-ver{margin-top:9px;text-align:right}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-    /* EMPTY */
-    #empty-state { display:none; text-align:center; padding:55px 24px; color:var(--text-soft); }
-    #empty-state .empty-icon { font-size:42px; margin-bottom:10px; }
-    #empty-state p { font-size:14px; }
+    /* ── MODAL ── */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,50,.65);z-index:400;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;animation:modalIn .2s ease}
+    @keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}
+    .modal-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:15px 20px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .modal-header-info h2{font-size:14px;font-weight:600}
+    .modal-header-info p{font-size:10.5px;opacity:.7;margin-top:2px}
+    .modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+    .modal-close:hover{background:rgba(255,255,255,.25)}
+    .modal-body{padding:18px 20px;overflow-y:auto}
+    .modal-origen{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:7px;padding:9px 13px;margin-bottom:14px;font-size:12px;color:var(--text-soft)}
+    .modal-origen strong{color:var(--navy)}
+    .modal-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .modal-field{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px}
+    .modal-field.highlight{background:#fefce8;border-color:#fde047}
+    .modal-field.full{grid-column:1/-1}
+    .modal-field-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-soft);margin-bottom:3px}
+    .modal-field-value{font-size:13px;color:var(--text);font-weight:500;word-break:break-word}
+    .modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
+    .btn-cerrar{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer}
+    .btn-cerrar:hover{background:var(--blue)}
 
-    footer { text-align:center; padding:16px; font-size:11px; color:var(--text-soft); border-top:1px solid var(--border); }
+    /* ── EMPTY ── */
+    #empty-state{display:none;text-align:center;padding:55px 24px;color:var(--text-soft)}
+    #empty-state .empty-icon{font-size:42px;margin-bottom:10px}
+    #empty-state p{font-size:14px}
+
+    footer{text-align:center;padding:16px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border)}
 
     @media(max-width:640px){
-      .header-badge{display:none;}
-      .search-row{flex-direction:column;}
-      .btn-search{width:100%;justify-content:center;}
-      main{padding:14px 14px 48px;}
-      .table-wrap{display:none;}
-      .card-list{display:block;}
-      .results-header{flex-direction:column;align-items:flex-start;}
-      .modal-fields{grid-template-columns:1fr;}
-      .modal-field.full{grid-column:1;}
+      .header-inner{padding:16px}
+      .search-row{flex-direction:column}
+      .btn-search{width:100%;justify-content:center}
+      main{padding:14px 14px 48px}
+      .table-wrap{display:none}
+      .card-list{display:block}
+      .results-header{flex-direction:column;align-items:flex-start}
+      .modal-fields{grid-template-columns:1fr}
+      .modal-field.full{grid-column:1}
+      .user-badge{display:none}
     }
   </style>
 </head>
 <body>
 
+<!-- ── PIN OVERLAY ── -->
+<div id="pinOverlay">
+  <div class="pin-card">
+    <div class="pin-logo">🔍</div>
+    <div class="pin-title">Buscador de Guías</div>
+    <div class="pin-sub">Cobro Coactivo — Alcaldía de Bello</div>
+    <div class="pin-label">Ingrese su PIN personal</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="presionarPin('1')">1</button>
+      <button class="pin-btn" onclick="presionarPin('2')">2</button>
+      <button class="pin-btn" onclick="presionarPin('3')">3</button>
+      <button class="pin-btn" onclick="presionarPin('4')">4</button>
+      <button class="pin-btn" onclick="presionarPin('5')">5</button>
+      <button class="pin-btn" onclick="presionarPin('6')">6</button>
+      <button class="pin-btn" onclick="presionarPin('7')">7</button>
+      <button class="pin-btn" onclick="presionarPin('8')">8</button>
+      <button class="pin-btn" onclick="presionarPin('9')">9</button>
+      <button class="pin-btn" onclick="borrarPin()" style="font-size:16px">⌫</button>
+      <button class="pin-btn" onclick="presionarPin('0')">0</button>
+      <button class="pin-btn" onclick="limpiarPin()" style="font-size:10px;color:#6b7280">Limpiar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── HEADER ── -->
 <header>
   <div class="header-inner">
     <div class="header-icon">🔍</div>
@@ -168,13 +225,21 @@
       <h1>Buscador de Guías</h1>
       <p>Cobro Coactivo — Alcaldía de Bello</p>
     </div>
-    <div class="header-badge">Consulta pública</div>
-    <a href="index.html" class="btn-nav">📄 Ir a Oficios</a>
+    <div class="header-user">
+      <span class="user-badge" id="user-badge">👤 —</span>
+      <a href="index.html" class="btn-nav">📄 Oficios</a>
+      <button class="btn-nav btn-logout" onclick="cerrarSesion()">🔒 Salir</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tabs-inner">
+      <span class="nav-tab active">🔍 Buscador</span>
+      <a class="nav-tab" href="index.html">📄 Generar Oficios</a>
+    </div>
   </div>
 </header>
 
 <main>
-
   <div class="search-card">
     <div class="search-label">Buscar guía, contribuyente o radicado</div>
     <div class="search-row">
@@ -208,24 +273,18 @@
     <div class="results-header">
       <span class="results-title">Resultados — <span id="results-count">0</span> encontrados</span>
       <div class="results-actions">
-        <button class="btn-export" onclick="exportarExcel()">⬇️ Exportar Excel</button>
+        <button class="btn-export" onclick="exportarExcel()">⬇️ Excel</button>
         <span class="hint-click">👆 Clic en fila para ver detalle</span>
       </div>
     </div>
-
     <div class="table-wrap">
       <div class="table-scroll">
         <table>
           <thead>
             <tr>
-              <th>Hoja origen</th>
-              <th>Fila #</th>
-              <th>Columna encontrada</th>
-              <th>Valor encontrado</th>
-              <th>Contribuyente / Nombre</th>
-              <th>Cédula / NIT</th>
-              <th>Radicado</th>
-              <th></th>
+              <th>Hoja origen</th><th>Fila #</th><th>Columna</th>
+              <th>Valor encontrado</th><th>Contribuyente</th>
+              <th>Cédula / NIT</th><th>Radicado</th><th></th>
             </tr>
           </thead>
           <tbody id="tabla-body"></tbody>
@@ -233,7 +292,6 @@
       </div>
       <div class="pagination" id="pagination"></div>
     </div>
-
     <div class="card-list" id="card-list"></div>
   </div>
 
@@ -241,17 +299,16 @@
     <div class="empty-icon">📂</div>
     <p>Ingrese un término para buscar en las guías</p>
   </div>
-
 </main>
 
 <footer>Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello</footer>
 
-<!-- MODAL -->
+<!-- MODAL DETALLE -->
 <div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-header-info">
-        <h2 id="modal-titulo">Detalle de la guía</h2>
+        <h2 id="modal-titulo">Detalle</h2>
         <p id="modal-subtitulo"></p>
       </div>
       <button class="modal-close" onclick="cerrarModal()">✕</button>
@@ -267,214 +324,290 @@
 </div>
 
 <script>
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxC4JOVGez-bjUWi92dgsygnz5sylYO-jQ-A7dGBqHkGpdzeTz5CsKfyR3rioLwwUc0/exec";
-  const POR_PAGINA = 20;
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2C3ycs3-48DDTABp7cHvTTFVCQQlfl1p6DLHEj5xxP-FoV0eLIr2Mu9JK_LmDofll/exec";
+const SESSION_KEY     = 'buscador_session';
+const POR_PAGINA      = 20;
 
-  let todosLosResultados = [];
-  let paginaActual = 1;
-  let historial = JSON.parse(localStorage.getItem('buscador_historial') || '[]');
+// ── USUARIOS FIJOS ──
+const USUARIOS = [
+  {pin:'2824',nombre:'ANDERSON CORREA',cargo:'CONTRATISTA'},
+  {pin:'1409',nombre:'ANDRES BEDOYA',cargo:'CONTRATISTA'},
+  {pin:'5506',nombre:'CAMILA PUERTA',cargo:'CONTRATISTA'},
+  {pin:'5012',nombre:'CARLOS HURTADO',cargo:'CONTRATISTA'},
+  {pin:'4657',nombre:'DANIELA HIGUITA',cargo:'CONTRATISTA'},
+  {pin:'3286',nombre:'DARIO PELAEZ',cargo:'CONTRATISTA'},
+  {pin:'2679',nombre:'DAYSE NATHALY RODRIGUEZ',cargo:'CONTRATISTA'},
+  {pin:'9935',nombre:'MARCELA DUQUE',cargo:'CONTRATISTA'},
+  {pin:'2424',nombre:'HENRRY TRIANA',cargo:'CONTRATISTA'},
+  {pin:'7912',nombre:'ANDREA VALENCIA',cargo:'CONTRATISTA'},
+  {pin:'1520',nombre:'JEISON MAYA',cargo:'CONTRATISTA'},
+  {pin:'1488',nombre:'JESUS OSORIO',cargo:'CONTRATISTA'},
+  {pin:'2535',nombre:'JOSE FRANCINETH',cargo:'CONTRATISTA'},
+  {pin:'4582',nombre:'JOSE ZAPATA',cargo:'CONTRATISTA'},
+  {pin:'4811',nombre:'JUAN PABLO VILLA',cargo:'CONTRATISTA'},
+  {pin:'9279',nombre:'JULIAN PEREA',cargo:'CONTRATISTA'},
+  {pin:'1434',nombre:'JULIET DUQUE',cargo:'CONTRATISTA'},
+  {pin:'4257',nombre:'JULIANA',cargo:'CONTRATISTA'},
+  {pin:'9928',nombre:'LISETH MURILLO',cargo:'CONTRATISTA'},
+  {pin:'7873',nombre:'LUISA MIRA',cargo:'CONTRATISTA'},
+  {pin:'4611',nombre:'VERONICA SUAREZ',cargo:'CONTRATISTA'},
+  {pin:'8359',nombre:'WILSON ORTIZ',cargo:'CONTRATISTA'},
+  {pin:'5557',nombre:'VANESA PEREZ',cargo:'CONTRATISTA'},
+  {pin:'1106',nombre:'YENIFFER CHAVERRA',cargo:'CONTRATISTA'},
+  {pin:'3615',nombre:'YOBAN JIMENEZ',cargo:'CONTRATISTA'},
+  {pin:'7924',nombre:'JUAN PABLO GOMEZ',cargo:'DIRECTOR EJECUCIONES FISCALES'},
+  {pin:'6574',nombre:'CATALINA TAMAYO',cargo:'PROFESIONAL UNIVERSITARIA'},
+  {pin:'5552',nombre:'LEIDY PEREA',cargo:'PROFESIONAL UNIVERSITARIA'},
+  {pin:'3547',nombre:'ANDRES HENAO',cargo:'PROFESIONAL UNIVERSITARIA'},
+  {pin:'4527',nombre:'DEISY LOPEZ',cargo:'PROFESIONAL UNIVERSITARIA'},
+  {pin:'6514',nombre:'DARIO BALDRICH',cargo:'PROFESIONAL UNIVERSITARIA'},
+];
 
-  // Init
-  document.getElementById('termino').addEventListener('keydown', e => { if(e.key==='Enter') buscar(); });
-  document.addEventListener('keydown', e => { if(e.key==='Escape') cerrarModal(); });
+let pinActual      = '';
+let usuarioActual  = null;
+let todosLosResultados = [];
+let paginaActual   = 1;
+let historial      = JSON.parse(localStorage.getItem('buscador_historial')||'[]');
+
+// ── INIT PIN ──
+(function initPin(){
+  try {
+    const sess = JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+    if (sess && sess.expira > Date.now()) {
+      usuarioActual = sess;
+      document.getElementById('pinOverlay').style.display = 'none';
+      aplicarSesion(sess);
+      return;
+    }
+  } catch(e){}
+})();
+
+function aplicarSesion(u) {
+  document.getElementById('user-badge').textContent = '👤 ' + u.nombre;
   renderHistorial();
   document.getElementById('empty-state').style.display = 'block';
+}
 
-  // ── HISTORIAL ──
-  function renderHistorial() {
-    if (!historial.length) return;
-    const wrap = document.getElementById('historial-wrap');
-    const chips = document.getElementById('historial-chips');
-    wrap.style.display = 'flex';
-    chips.innerHTML = historial.slice(0,5).map(t =>
-      `<span class="hist-chip" onclick="usarHistorial('${esc(t)}')">${esc(t)}</span>`
-    ).join('');
+// ── TECLADO PIN ──
+function presionarPin(d) {
+  if (pinActual.length >= 4) return;
+  pinActual += d;
+  actualizarDots();
+  if (pinActual.length === 4) setTimeout(verificarPin, 150);
+}
+function borrarPin()  { pinActual = pinActual.slice(0,-1); actualizarDots(); }
+function limpiarPin() { pinActual = ''; actualizarDots(); }
+
+function actualizarDots() {
+  for (let i=0;i<4;i++) {
+    const d = document.getElementById('d'+i);
+    d.className = 'pin-dot' + (i < pinActual.length ? ' filled' : '');
   }
+  document.getElementById('pinError').style.display = 'none';
+}
 
-  function usarHistorial(t) {
-    document.getElementById('termino').value = t;
-    buscar();
+function verificarPin() {
+  const usuario = USUARIOS.find(u => u.pin === pinActual);
+  if (usuario) {
+    const sess = {...usuario, expira: Date.now() + 8*60*60*1000};
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+    usuarioActual = sess;
+    document.getElementById('pinOverlay').style.display = 'none';
+    aplicarSesion(sess);
+  } else {
+    for(let i=0;i<4;i++) document.getElementById('d'+i).className='pin-dot error';
+    const err = document.getElementById('pinError');
+    err.textContent = '❌ PIN incorrecto. Intente de nuevo.';
+    err.style.display = 'block';
+    setTimeout(()=>{ pinActual=''; actualizarDots(); }, 900);
   }
+}
 
-  function agregarHistorial(t) {
-    historial = [t, ...historial.filter(h => h !== t)].slice(0, 8);
-    localStorage.setItem('buscador_historial', JSON.stringify(historial));
-    renderHistorial();
-  }
+function cerrarSesion() {
+  localStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
 
-  // ── BUSCAR ──
-  function setStatus(tipo, msg, conSpinner) {
-    const bar = document.getElementById('status-bar');
-    bar.className = 'status-bar ' + tipo;
-    document.getElementById('spinner').style.display = conSpinner ? 'block' : 'none';
-    document.getElementById('status-msg').textContent = msg;
-  }
+// ── HISTORIAL ──
+function renderHistorial() {
+  if (!historial.length) return;
+  const wrap = document.getElementById('historial-wrap');
+  wrap.style.display = 'flex';
+  document.getElementById('historial-chips').innerHTML =
+    historial.slice(0,5).map(t=>`<span class="hist-chip" onclick="usarHistorial('${esc(t)}')">${esc(t)}</span>`).join('');
+}
+function usarHistorial(t) { document.getElementById('termino').value=t; buscar(); }
+function agregarHistorial(t) {
+  historial = [t,...historial.filter(h=>h!==t)].slice(0,8);
+  localStorage.setItem('buscador_historial',JSON.stringify(historial));
+  renderHistorial();
+}
 
-  async function buscar() {
-    const termino = document.getElementById('termino').value.trim();
-    if (!termino) { setStatus('error', '⚠️ Ingrese un término de búsqueda.'); return; }
+// ── BUSCAR ──
+function setStatus(tipo,msg,spin) {
+  const bar = document.getElementById('status-bar');
+  bar.className = 'status-bar '+tipo;
+  document.getElementById('spinner').style.display = spin?'block':'none';
+  document.getElementById('status-msg').textContent = msg;
+}
 
-    const exacto = document.getElementById('exacto').checked;
-    const mayus  = document.getElementById('mayus').checked;
-    const btn    = document.getElementById('btn-buscar');
+async function buscar() {
+  const termino = document.getElementById('termino').value.trim();
+  if (!termino) { setStatus('error','⚠️ Ingrese un término de búsqueda.'); return; }
+  if (!usuarioActual) { setStatus('error','⚠️ Debe iniciar sesión primero.'); return; }
 
-    btn.disabled = true;
-    document.getElementById('results-area').style.display = 'none';
-    document.getElementById('empty-state').style.display = 'none';
-    setStatus('loading', 'Buscando en todas las hojas...', true);
+  const exacto = document.getElementById('exacto').checked;
+  const mayus  = document.getElementById('mayus').checked;
+  const btn    = document.getElementById('btn-buscar');
 
-    try {
-      const res  = await fetch(`${APPS_SCRIPT_URL}?${new URLSearchParams({termino,exacto,mayus})}`);
-      const data = await res.json();
+  btn.disabled = true;
+  document.getElementById('results-area').style.display = 'none';
+  document.getElementById('empty-state').style.display  = 'none';
+  setStatus('loading','Buscando en todas las hojas...',true);
 
-      if (data.error) { setStatus('error','❌ Error: '+data.error); document.getElementById('empty-state').style.display='block'; return; }
+  try {
+    const params = new URLSearchParams({
+      termino, exacto, mayus,
+      usuario: usuarioActual.nombre,
+      cargo:   usuarioActual.cargo
+    });
+    const res  = await fetch(`${APPS_SCRIPT_URL}?${params}`);
+    const data = await res.json();
 
-      todosLosResultados = data.resultados || [];
+    if (data.error) { setStatus('error','❌ '+data.error); document.getElementById('empty-state').style.display='block'; return; }
 
-      if (!todosLosResultados.length) {
-        setStatus('empty', `⚠️ No se encontró "${termino}" en ninguna hoja.`);
-        document.getElementById('empty-state').style.display = 'block';
-        document.getElementById('empty-state').querySelector('p').textContent = `No se encontraron resultados para "${termino}"`;
-        return;
-      }
+    todosLosResultados = data.resultados || [];
 
-      agregarHistorial(termino);
-      setStatus('success', `✅ ${todosLosResultados.length} resultado(s) encontrado(s) para "${termino}"`);
-      paginaActual = 1;
-      renderResultados();
-
-    } catch(err) {
-      setStatus('error','❌ Error de conexión. Verifique su acceso a internet.');
-      document.getElementById('empty-state').style.display = 'block';
-    } finally {
-      btn.disabled = false;
+    if (!todosLosResultados.length) {
+      setStatus('empty',`⚠️ No se encontró "${termino}" en ninguna hoja.`);
+      document.getElementById('empty-state').style.display='block';
+      document.getElementById('empty-state').querySelector('p').textContent=`Sin resultados para "${termino}"`;
+      return;
     }
-  }
 
-  // ── RENDER CON PAGINACIÓN ──
-  function renderResultados() {
-    const total   = todosLosResultados.length;
-    const totalPg = Math.ceil(total / POR_PAGINA);
-    const inicio  = (paginaActual - 1) * POR_PAGINA;
-    const fin     = Math.min(inicio + POR_PAGINA, total);
-    const pagina  = todosLosResultados.slice(inicio, fin);
-
-    document.getElementById('results-count').textContent = total;
-
-    // Tabla desktop
-    document.getElementById('tabla-body').innerHTML = pagina.map((r, i) => `
-      <tr onclick="abrirDetalle(${inicio+i})" title="Clic para ver detalle completo">
-        <td><span class="tag-hoja">${esc(r[0])}</span></td>
-        <td>${esc(r[1])}</td>
-        <td>${esc(r[2])}</td>
-        <td class="val-encontrado">${esc(r[3])}</td>
-        <td>${esc(r[4])}</td>
-        <td>${esc(r[5])}</td>
-        <td>${esc(r[6])}</td>
-        <td><button class="btn-ver" onclick="event.stopPropagation();abrirDetalle(${inicio+i})">Ver todo</button></td>
-      </tr>`).join('');
-
-    // Cards mobile
-    document.getElementById('card-list').innerHTML = pagina.map((r, i) => `
-      <div class="result-card" onclick="abrirDetalle(${inicio+i})" style="animation-delay:${i*0.04}s">
-        <div class="card-top">
-          <span class="card-hoja">${esc(r[0])}</span>
-          <span class="card-fila">Fila ${esc(r[1])}</span>
-        </div>
-        <div class="card-valor">${esc(r[3])}</div>
-        <div class="card-fields">
-          ${r[4]?`<div class="card-field"><span>Contribuyente</span>${esc(r[4])}</div>`:''}
-          ${r[5]?`<div class="card-field"><span>Cédula / NIT</span>${esc(r[5])}</div>`:''}
-          ${r[6]?`<div class="card-field"><span>Radicado</span>${esc(r[6])}</div>`:''}
-        </div>
-        <div class="card-ver"><button class="btn-ver">Ver detalle →</button></div>
-      </div>`).join('');
-
-    // Paginación
-    let pgHtml = '';
-    if (totalPg > 1) {
-      pgHtml += `<button class="pg-btn" onclick="irPagina(${paginaActual-1})" ${paginaActual===1?'disabled':''}>‹</button>`;
-      for (let p = 1; p <= totalPg; p++) {
-        if (p===1 || p===totalPg || Math.abs(p-paginaActual)<=1) {
-          pgHtml += `<button class="pg-btn ${p===paginaActual?'active':''}" onclick="irPagina(${p})">${p}</button>`;
-        } else if (Math.abs(p-paginaActual)===2) {
-          pgHtml += `<span class="pg-info">…</span>`;
-        }
-      }
-      pgHtml += `<button class="pg-btn" onclick="irPagina(${paginaActual+1})" ${paginaActual===totalPg?'disabled':''}>›</button>`;
-      pgHtml += `<span class="pg-info">${inicio+1}–${fin} de ${total}</span>`;
-    }
-    document.getElementById('pagination').innerHTML = pgHtml;
-    document.getElementById('results-area').style.display = 'block';
-  }
-
-  function irPagina(p) {
-    const totalPg = Math.ceil(todosLosResultados.length / POR_PAGINA);
-    if (p < 1 || p > totalPg) return;
-    paginaActual = p;
+    agregarHistorial(termino);
+    setStatus('success',`✅ ${todosLosResultados.length} resultado(s) para "${termino}"`);
+    paginaActual = 1;
     renderResultados();
-    window.scrollTo({top: 200, behavior: 'smooth'});
+
+  } catch(err) {
+    setStatus('error','❌ Error de conexión. Verifique su acceso a internet.');
+    document.getElementById('empty-state').style.display='block';
+  } finally {
+    btn.disabled = false;
   }
+}
 
-  // ── MODAL DETALLE ──
-  function abrirDetalle(idx) {
-    const r = todosLosResultados[idx];
-    if (!r) return;
-    const [hoja,fila,colFound,valFound,nombre,cedula,radicado,otros] = r;
+// ── RENDER ──
+function renderResultados() {
+  const total  = todosLosResultados.length;
+  const totalPg= Math.ceil(total/POR_PAGINA);
+  const inicio = (paginaActual-1)*POR_PAGINA;
+  const fin    = Math.min(inicio+POR_PAGINA,total);
+  const pagina = todosLosResultados.slice(inicio,fin);
 
-    document.getElementById('modal-titulo').textContent = valFound || 'Detalle';
-    document.getElementById('modal-subtitulo').textContent = `Hoja: ${hoja} · Fila ${fila}`;
-    document.getElementById('modal-origen').innerHTML =
-      `<span>📋</span><span>Encontrado en columna <strong>${colFound}</strong> — hoja <strong>${hoja}</strong>, fila <strong>${fila}</strong></span>`;
+  document.getElementById('results-count').textContent = total;
 
-    let html = '';
-    [{label:'Valor encontrado',value:valFound,hi:true},{label:'Contribuyente / Nombre',value:nombre},{label:'Cédula / NIT',value:cedula},{label:'Radicado / Expediente',value:radicado}]
-      .forEach(f => {
-        if(f.value) html += `<div class="modal-field${f.hi?' highlight':''}"><div class="modal-field-label">${esc(f.label)}</div><div class="modal-field-value">${esc(f.value)}</div></div>`;
-      });
+  document.getElementById('tabla-body').innerHTML = pagina.map((r,i)=>`
+    <tr onclick="abrirDetalle(${inicio+i})">
+      <td><span class="tag-hoja">${esc(r[0])}</span></td>
+      <td>${esc(r[1])}</td><td>${esc(r[2])}</td>
+      <td class="val-encontrado">${esc(r[3])}</td>
+      <td>${esc(r[4])}</td><td>${esc(r[5])}</td><td>${esc(r[6])}</td>
+      <td><button class="btn-ver" onclick="event.stopPropagation();abrirDetalle(${inicio+i})">Ver todo</button></td>
+    </tr>`).join('');
 
-    if (otros) {
-      otros.split(' | ').forEach(p => {
-        const sep = p.indexOf(':');
-        if (sep>0) {
-          const clave = p.substring(0,sep).trim();
-          const valor = p.substring(sep+1).trim();
-          html += `<div class="modal-field${valor.length>40?' full':''}"><div class="modal-field-label">${esc(clave)}</div><div class="modal-field-value">${esc(valor)}</div></div>`;
-        }
-      });
+  document.getElementById('card-list').innerHTML = pagina.map((r,i)=>`
+    <div class="result-card" onclick="abrirDetalle(${inicio+i})" style="animation-delay:${i*.04}s">
+      <div class="card-top"><span class="card-hoja">${esc(r[0])}</span><span class="card-fila">Fila ${esc(r[1])}</span></div>
+      <div class="card-valor">${esc(r[3])}</div>
+      <div class="card-fields">
+        ${r[4]?`<div class="card-field"><span>Contribuyente</span>${esc(r[4])}</div>`:''}
+        ${r[5]?`<div class="card-field"><span>Cédula / NIT</span>${esc(r[5])}</div>`:''}
+        ${r[6]?`<div class="card-field"><span>Radicado</span>${esc(r[6])}</div>`:''}
+      </div>
+      <div class="card-ver"><button class="btn-ver">Ver detalle →</button></div>
+    </div>`).join('');
+
+  // Paginación
+  let pgHtml = '';
+  if (totalPg>1) {
+    pgHtml += `<button class="pg-btn" onclick="irPagina(${paginaActual-1})" ${paginaActual===1?'disabled':''}>‹</button>`;
+    for(let p=1;p<=totalPg;p++){
+      if(p===1||p===totalPg||Math.abs(p-paginaActual)<=1)
+        pgHtml+=`<button class="pg-btn ${p===paginaActual?'active':''}" onclick="irPagina(${p})">${p}</button>`;
+      else if(Math.abs(p-paginaActual)===2) pgHtml+=`<span class="pg-info">…</span>`;
     }
-
-    document.getElementById('modal-fields').innerHTML = html || '<p style="color:var(--text-soft);font-size:13px">Sin campos adicionales.</p>';
-    document.getElementById('modal-overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
+    pgHtml+=`<button class="pg-btn" onclick="irPagina(${paginaActual+1})" ${paginaActual===totalPg?'disabled':''}>›</button>`;
+    pgHtml+=`<span class="pg-info">${inicio+1}–${fin} de ${total}</span>`;
   }
+  document.getElementById('pagination').innerHTML = pgHtml;
+  document.getElementById('results-area').style.display = 'block';
+}
 
-  function cerrarModal(e) {
-    if (e && e.target !== document.getElementById('modal-overlay')) return;
-    document.getElementById('modal-overlay').classList.remove('open');
-    document.body.style.overflow = '';
-  }
+function irPagina(p) {
+  const totalPg = Math.ceil(todosLosResultados.length/POR_PAGINA);
+  if(p<1||p>totalPg) return;
+  paginaActual = p;
+  renderResultados();
+  window.scrollTo({top:200,behavior:'smooth'});
+}
 
-  // ── EXPORTAR EXCEL ──
-  function exportarExcel() {
-    if (!todosLosResultados.length) return;
-    const encabezados = ['Hoja origen','Fila #','Columna encontrada','Valor encontrado','Contribuyente / Nombre','Cédula / NIT','Radicado','Otros datos'];
-    const filas = todosLosResultados.map(r => ({
-      'Hoja origen': r[0], 'Fila #': r[1], 'Columna encontrada': r[2],
-      'Valor encontrado': r[3], 'Contribuyente / Nombre': r[4],
-      'Cédula / NIT': r[5], 'Radicado': r[6], 'Otros datos': r[7]
-    }));
-    const ws = XLSX.utils.json_to_sheet(filas, { header: encabezados });
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Resultados');
-    const termino = document.getElementById('termino').value.trim().replace(/[^a-zA-Z0-9]/g,'_');
-    XLSX.writeFile(wb, `busqueda_${termino}_${new Date().toISOString().slice(0,10)}.xlsx`);
-  }
+// ── MODAL ──
+function abrirDetalle(idx) {
+  const r = todosLosResultados[idx];
+  if(!r) return;
+  const [hoja,fila,colFound,valFound,nombre,cedula,radicado,otros] = r;
+  document.getElementById('modal-titulo').textContent    = valFound||'Detalle';
+  document.getElementById('modal-subtitulo').textContent = `Hoja: ${hoja} · Fila ${fila}`;
+  document.getElementById('modal-origen').innerHTML =
+    `<span>📋</span><span>Columna <strong>${colFound}</strong> — hoja <strong>${hoja}</strong>, fila <strong>${fila}</strong></span>`;
 
-  function esc(val) {
-    if (val===null||val===undefined) return '';
-    return String(val).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  let html='';
+  [{label:'Valor encontrado',value:valFound,hi:true},{label:'Contribuyente',value:nombre},
+   {label:'Cédula / NIT',value:cedula},{label:'Radicado',value:radicado}]
+    .forEach(f=>{ if(f.value) html+=`<div class="modal-field${f.hi?' highlight':''}"><div class="modal-field-label">${esc(f.label)}</div><div class="modal-field-value">${esc(f.value)}</div></div>`; });
+
+  if(otros) otros.split(' | ').forEach(p=>{
+    const sep=p.indexOf(':');
+    if(sep>0){
+      const k=p.substring(0,sep).trim(), v=p.substring(sep+1).trim();
+      html+=`<div class="modal-field${v.length>40?' full':''}"><div class="modal-field-label">${esc(k)}</div><div class="modal-field-value">${esc(v)}</div></div>`;
+    }
+  });
+
+  document.getElementById('modal-fields').innerHTML = html||'<p style="color:var(--text-soft);font-size:13px">Sin campos adicionales.</p>';
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function cerrarModal(e) {
+  if(e&&e.target!==document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+// ── EXPORTAR EXCEL ──
+function exportarExcel() {
+  if(!todosLosResultados.length) return;
+  const filas = todosLosResultados.map(r=>({
+    'Hoja':r[0],'Fila':r[1],'Columna':r[2],'Valor':r[3],
+    'Contribuyente':r[4],'Cédula/NIT':r[5],'Radicado':r[6],'Otros':r[7]
+  }));
+  const ws = XLSX.utils.json_to_sheet(filas);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Resultados');
+  const t = document.getElementById('termino').value.trim().replace(/[^a-zA-Z0-9]/g,'_');
+  XLSX.writeFile(wb,`busqueda_${t}_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function esc(v) {
+  if(v===null||v===undefined) return '';
+  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('termino').addEventListener('keydown',e=>{if(e.key==='Enter')buscar();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrarModal();});
 </script>
 </body>
 </html>
