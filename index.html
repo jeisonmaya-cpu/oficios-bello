@@ -649,7 +649,7 @@ tbody td{padding:7px 10px;color:#374151}
       <div style="display:flex;align-items:center;justify-content:space-between;margin:11px 0 8px;flex-wrap:wrap;gap:7px">
         <span style="font-size:13px;font-weight:700;color:var(--az)" id="loteCnt"></span>
         <div style="display:flex;gap:7px">
-          <button class="btn btn-p btn-sm" onclick="generarLote()">⬇️ Generar todos</button>
+          <button class="btn btn-p btn-sm" onclick="confirmarGenerarLote()">⬇️ Generar todos</button>
           <button class="btn btn-g btn-sm" onclick="limpiarLote()">✕ Cancelar</button>
         </div>
       </div>
@@ -996,7 +996,7 @@ function goPanel(n){
   const idx={form:0,lote:1,registro:2,dashboard:3,cola:4,historial:5,config:6}[n];
   if(idx!==undefined) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if(n==='registro')  cargarRemoto();
-  if(n==='dashboard') renderDash();
+  if(n==='dashboard'){ renderDash(); iniciarAutoDash(); }
   if(n==='cola')      cargarCola();
 }
 
@@ -1151,14 +1151,38 @@ function getDatos(){
 }
 function validar(d,id){
   const req=[['fecha','Fecha'],['nombre','Nombre'],['cedula','Cédula'],['fechaAuto','Fecha del auto']];
-  for(const[k,l]of req){if(!d[k]){showAlert(id,'e',`El campo "${l}" es obligatorio.`);return false;}}
-  if(!getMotivoReal()){showAlert(id,'e','Seleccione o escriba el motivo del levantamiento.');return false;}
-  if(!d.concepto){showAlert(id,'e','Seleccione o escriba un concepto.');return false;}
+  for(const[k,l]of req){if(!d[k]){showAlert(id,'e',`⚠️ El campo "${l}" es obligatorio.`);resaltarCampo(k);return false;}}
+  if(!getMotivoReal()){showAlert(id,'e','⚠️ Seleccione o escriba el motivo del levantamiento.');return false;}
+  if(!d.concepto){showAlert(id,'e','⚠️ Seleccione o escriba un concepto.');return false;}
+  // Cédula: solo números
+  if(d.cedula && !/^\d+$/.test(d.cedula.replace(/\s/g,''))){
+    showAlert(id,'e','⚠️ La cédula solo debe contener números.');resaltarCampo('cedula');return false;
+  }
+  // Nombre: mínimo 5 caracteres
+  if(d.nombre && d.nombre.trim().length < 5){
+    showAlert(id,'e','⚠️ El nombre parece muy corto. Verifique.');resaltarCampo('nombre');return false;
+  }
   // Radicado: no obligatorio si hay bancos seleccionados en la tabla
   const hayBancos = getBancosSeleccionados();
-  if(!hayBancos && !d.radicado){showAlert(id,'e','El campo "Radicado" es obligatorio.');return false;}
-  if(hayBancos && !hayBancos.length){showAlert(id,'e','Seleccione al menos un banco.');return false;}
+  if(!hayBancos && !d.radicado){showAlert(id,'e','⚠️ El campo "Radicado" es obligatorio.');resaltarCampo('radicado');return false;}
+  if(hayBancos && !hayBancos.length){showAlert(id,'e','⚠️ Seleccione al menos un banco.');return false;}
   return true;
+}
+
+function resaltarCampo(campo){
+  const ids = {
+    fecha:'f_fecha', nombre:'f_nombre', cedula:'f_cedula',
+    fechaAuto:'f_fauto', radicado:'f_radicado'
+  };
+  const id = ids[campo];
+  if(!id) return;
+  const el = document.getElementById(id);
+  if(!el) return;
+  const orig = el.style.border;
+  el.style.border = '2px solid #dc2626';
+  el.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.15)';
+  el.focus();
+  setTimeout(()=>{ el.style.border=orig; el.style.boxShadow=''; }, 3000);
 }
 function limpiarForm(){
   ['f_nombre','f_cedula','f_fauto','f_concepto_manual','f_comparendo','f_motivo_manual'].forEach(id=>{
@@ -1477,7 +1501,18 @@ function renderLote(){
   document.getElementById('loteWrap').style.display='block';
 }
 function limpiarLote(){lote=[];document.getElementById('loteWrap').style.display='none';document.getElementById('fileIn').value='';}
+function confirmarGenerarLote(){
+  if(!lote.length) return;
+  const n = lote.length;
+  document.getElementById('mConfirmLote_count').textContent = n;
+  document.getElementById('mConfirmLote').style.display = 'flex';
+}
+function cerrarConfirmLote(){
+  document.getElementById('mConfirmLote').style.display = 'none';
+}
+
 async function generarLote(){
+  cerrarConfirmLote();
   if(!lote.length)return;
   document.getElementById('lpWrap').style.display='block';
   let ok=0,err=0;
@@ -1551,6 +1586,30 @@ function exportPDF(){
       <div style="display:flex;gap:10px">
         <button onclick="cerrarConfirmCola()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
         <button onclick="confirmarEliminarCola()" style="flex:1;padding:11px;background:#dc2626;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CONFIRMAR GENERAR MASIVO ── -->
+<div id="mConfirmLote" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:400px;overflow:hidden;animation:modalIn .2s ease">
+    <div style="background:linear-gradient(135deg,#1e3a5f,#1a6fc4);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">📊</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:15px">¿Generar todos los oficios?</div>
+        <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Carga masiva</div>
+      </div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#1e3a5f" id="mConfirmLote_count">0</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px">oficios se van a generar y descargar</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px">⚠️ Se abrirán múltiples descargas en su navegador</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLote()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="generarLote()" style="flex:1;padding:11px;background:#1a6fc4;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">⬇️ Sí, generar todos</button>
       </div>
     </div>
   </div>
@@ -2889,6 +2948,30 @@ function exportarColaPDF() {
     </div>
   </div>
 </div>
+
+<!-- ── MODAL CONFIRMAR GENERAR MASIVO ── -->
+<div id="mConfirmLote" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:400px;overflow:hidden;animation:modalIn .2s ease">
+    <div style="background:linear-gradient(135deg,#1e3a5f,#1a6fc4);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">📊</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:15px">¿Generar todos los oficios?</div>
+        <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Carga masiva</div>
+      </div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#1e3a5f" id="mConfirmLote_count">0</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px">oficios se van a generar y descargar</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px">⚠️ Se abrirán múltiples descargas en su navegador</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLote()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="generarLote()" style="flex:1;padding:11px;background:#1a6fc4;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">⬇️ Sí, generar todos</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body></html>`;
 
   const w = window.open('', '_blank');
@@ -2972,6 +3055,20 @@ function mostrarNotificacion(nuevos) {
 }
 
 // ════════════════════════════════════════════════════════════
+// ── Auto-refresh del dashboard ──
+let _dashInterval = null;
+function iniciarAutoDash(){
+  if(_dashInterval) clearInterval(_dashInterval);
+  _dashInterval = setInterval(async ()=>{
+    const panel = document.getElementById('panel-dashboard');
+    if(!panel || !panel.classList.contains('active')) { clearInterval(_dashInterval); _dashInterval=null; return; }
+    await cargarRemoto();
+    renderDash();
+    const el = document.getElementById('dash_refresh');
+    if(el) el.textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  }, 2 * 60 * 1000); // cada 2 minutos
+}
+
 // ESTADÍSTICAS / RANKING POR FUNCIONARIO (dashboard)
 // ════════════════════════════════════════════════════════════
 function renderRankingFuncionarios() {
@@ -3700,6 +3797,30 @@ window.addEventListener('DOMContentLoaded', () => {
       <div style="display:flex;gap:10px">
         <button onclick="cerrarConfirmCola()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
         <button onclick="confirmarEliminarCola()" style="flex:1;padding:11px;background:#dc2626;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CONFIRMAR GENERAR MASIVO ── -->
+<div id="mConfirmLote" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:400px;overflow:hidden;animation:modalIn .2s ease">
+    <div style="background:linear-gradient(135deg,#1e3a5f,#1a6fc4);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">📊</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:15px">¿Generar todos los oficios?</div>
+        <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Carga masiva</div>
+      </div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#1e3a5f" id="mConfirmLote_count">0</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px">oficios se van a generar y descargar</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px">⚠️ Se abrirán múltiples descargas en su navegador</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLote()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="generarLote()" style="flex:1;padding:11px;background:#1a6fc4;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">⬇️ Sí, generar todos</button>
       </div>
     </div>
   </div>
