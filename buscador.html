@@ -74,7 +74,7 @@
     .search-row{display:flex;gap:10px}
     .search-input-wrap{flex:1;position:relative}
     .search-input-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-soft);pointer-events:none}
-    input[type="text"]{width:100%;height:44px;padding:0 14px 0 42px;font-size:14px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:9px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s,box-shadow .2s}
+    input[type="text"]{width:100%;height:44px;padding:0 38px 0 42px;font-size:14px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:9px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s,box-shadow .2s}
     input[type="text"]:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12);background:#fff}
     .btn-search{height:44px;padding:0 22px;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .2s,transform .1s;white-space:nowrap}
     .btn-search:hover{background:var(--blue)}
@@ -268,11 +268,11 @@
   <!-- PANEL BUSCADOR -->
   <div class="panel active" id="panel-buscar">
     <div class="search-card">
-      <div class="search-label">Buscar guía, contribuyente o radicado</div>
+      <div class="search-label">Buscar guía, contribuyente o radicado <span id="realtime-hint" style="font-weight:400;font-style:italic;text-transform:none;letter-spacing:0;color:var(--blue);display:none;font-size:10px">· buscando automáticamente...</span></div>
       <div class="search-row">
         <div class="search-input-wrap">
           <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="termino" placeholder="Ej: 10189528 · Carlos Mario López · 20242023843..." autocomplete="off" />
+          <input type="text" id="termino" placeholder="Ej: 10189528 · Carlos Mario López · 20242023843..." autocomplete="off" inputmode="search" enterkeyhint="search" />
         </div>
         <button class="btn-search" id="btn-buscar" onclick="buscar()">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -580,6 +580,8 @@ async function buscar() {
   document.getElementById('results-area').style.display='none';
   document.getElementById('empty-state').style.display='none';
   setStatus('loading','Buscando en todas las hojas...',true);
+  const rtHint = document.getElementById('realtime-hint');
+  if (rtHint) rtHint.style.display = 'inline';
 
   try {
     const params=new URLSearchParams({termino,exacto,mayus,usuario:usuarioActual.nombre,cargo:usuarioActual.cargo});
@@ -598,9 +600,19 @@ async function buscar() {
     paginaActual=1;
     renderResultados();
   } catch(err) {
-    setStatus('error','❌ Error de conexión. Verifique su acceso a internet.');
-    document.getElementById('empty-state').style.display='block';
-  } finally { btn.disabled=false; }
+    const esTimeout = err.message && err.message.includes('timeout');
+    setStatus('error', esTimeout
+      ? '⏱️ El sistema tardó demasiado en responder. Intente de nuevo.'
+      : '🔌 El sistema no está disponible en este momento. Intente en unos minutos.');
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('empty-state').querySelector('.empty-icon').textContent = '🔌';
+    document.getElementById('empty-state').querySelector('p').innerHTML =
+      'Sistema no disponible. <button onclick="buscar()" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-left:4px">Reintentar</button>';
+  } finally {
+    btn.disabled=false;
+    const rtHint = document.getElementById('realtime-hint');
+    if (rtHint) rtHint.style.display = 'none';
+  }
 }
 
 // ── RENDER RESULTADOS ──
@@ -777,8 +789,36 @@ function esc(v){
   return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-document.getElementById('termino').addEventListener('keydown',e=>{if(e.key==='Enter')buscar();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrarModal();});
+// ── Búsqueda en tiempo real ──
+let _searchTimer = null;
+document.getElementById('termino').addEventListener('input', e => {
+  const val = e.target.value.trim();
+  const btnClear = document.getElementById('btn-clear');
+  if (btnClear) btnClear.style.display = val ? 'block' : 'none';
+  clearTimeout(_searchTimer);
+  if (val.length >= 3) {
+    _searchTimer = setTimeout(() => buscar(), 600);
+  } else if (!val) {
+    // Limpiar resultados si borra todo
+    document.getElementById('results-area').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('empty-state').querySelector('p').textContent = 'Ingrese un término para buscar en las guías';
+    document.getElementById('status-bar').className = 'status-bar';
+  }
+});
+document.getElementById('termino').addEventListener('keydown', e => { if(e.key==='Enter') { clearTimeout(_searchTimer); buscar(); } });
+document.addEventListener('keydown', e => { if(e.key==='Escape') cerrarModal(); });
+
+function limpiarBusqueda() {
+  document.getElementById('termino').value = '';
+  document.getElementById('btn-clear').style.display = 'none';
+  document.getElementById('results-area').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('empty-state').querySelector('p').textContent = 'Ingrese un término para buscar en las guías';
+  document.getElementById('status-bar').className = 'status-bar';
+  todosLosResultados = [];
+  document.getElementById('termino').focus();
+}
 </script>
 </body>
 </html>
