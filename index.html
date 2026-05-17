@@ -1301,7 +1301,7 @@ async function generarDesdeForm(){
       showAlert('f_alert','w','Guardando en Google Sheets…');
       const res=await apiPost({accion:'guardar',tipoOficio:d.tipoOficio,numOficio:d.numOficio,
         fechaOficio:d.fecha,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,
-        radicado:d.radicado,fechaAuto:d.fechaAuto,motivo:motivoTexto,
+        radicado:d.radicado,fechaAuto:d.fechaAuto,motivo:d.motivo,
         proyNombre:d.proyNombre,funcionario:d.funcionario,equipo:d.equipo});
       if(res&&res.ok){
         guardarLocalCache({tipoOficio:d.tipoOficio,numOficio:d.numOficio,
@@ -1614,7 +1614,53 @@ function exportPDF(){
     </div>
   </div>
 </div>
-</body></html>`;
+
+<div id="mConfirmCola" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:420px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">⚠️</span>
+      <div><div style="color:#fff;font-weight:700;font-size:15px">¿Eliminar de la cola?</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Esta acción no se puede deshacer</div></div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+        <div style="font-size:11px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Vas a eliminar este oficio:</div>
+        <div style="display:grid;gap:6px">
+          <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Contribuyente</span><br><span style="font-size:14px;font-weight:700;color:#1a1a2e" id="mConfirmCola_nombre">—</span></div>
+          <div style="display:flex;gap:16px">
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Radicado</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_radicado">—</span></div>
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Tipo</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_tipo">—</span></div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="mConfirmCola_id" value="">
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmCola()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="confirmarEliminarCola()" style="flex:1;padding:11px;background:#dc2626;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="mConfirmLote" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:400px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1e3a5f,#1a6fc4);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">📊</span>
+      <div><div style="color:#fff;font-weight:700;font-size:15px">¿Generar todos los oficios?</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Carga masiva</div></div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#1e3a5f" id="mConfirmLote_count">0</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px">oficios se van a generar y descargar</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px">⚠️ Se abrirán múltiples descargas en su navegador</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLote()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="generarLote()" style="flex:1;padding:11px;background:#1a6fc4;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">⬇️ Sí, generar todos</button>
+      </div>
+    </div>
+  </div>
+</div></body></html>`;
   const w=window.open('','_blank');w.document.write(html);w.document.close();
   setTimeout(()=>{w.focus();w.print();},400);
 }
@@ -2972,7 +3018,53 @@ function exportarColaPDF() {
     </div>
   </div>
 </div>
-</body></html>`;
+
+<div id="mConfirmCola" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:420px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">⚠️</span>
+      <div><div style="color:#fff;font-weight:700;font-size:15px">¿Eliminar de la cola?</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Esta acción no se puede deshacer</div></div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+        <div style="font-size:11px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Vas a eliminar este oficio:</div>
+        <div style="display:grid;gap:6px">
+          <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Contribuyente</span><br><span style="font-size:14px;font-weight:700;color:#1a1a2e" id="mConfirmCola_nombre">—</span></div>
+          <div style="display:flex;gap:16px">
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Radicado</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_radicado">—</span></div>
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Tipo</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_tipo">—</span></div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="mConfirmCola_id" value="">
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmCola()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="confirmarEliminarCola()" style="flex:1;padding:11px;background:#dc2626;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="mConfirmLote" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:400px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1e3a5f,#1a6fc4);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">📊</span>
+      <div><div style="color:#fff;font-weight:700;font-size:15px">¿Generar todos los oficios?</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Carga masiva</div></div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#1e3a5f" id="mConfirmLote_count">0</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px">oficios se van a generar y descargar</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px">⚠️ Se abrirán múltiples descargas en su navegador</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLote()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="generarLote()" style="flex:1;padding:11px;background:#1a6fc4;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">⬇️ Sí, generar todos</button>
+      </div>
+    </div>
+  </div>
+</div></body></html>`;
 
   const w = window.open('', '_blank');
   w.document.write(html);
@@ -3067,6 +3159,19 @@ function iniciarAutoDash(){
     const el = document.getElementById('dash_refresh');
     if(el) el.textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
   }, 2 * 60 * 1000); // cada 2 minutos
+}
+
+// ── Auto-refresh dashboard ──
+let _dashInterval=null;
+function iniciarAutoDash(){
+  if(_dashInterval) clearInterval(_dashInterval);
+  _dashInterval=setInterval(async()=>{
+    const panel=document.getElementById('panel-dashboard');
+    if(!panel||!panel.classList.contains('active')){clearInterval(_dashInterval);_dashInterval=null;return;}
+    await cargarRemoto(); renderDash();
+    const el=document.getElementById('dash_refresh');
+    if(el) el.textContent='Actualizado: '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  },2*60*1000);
 }
 
 // ESTADÍSTICAS / RANKING POR FUNCIONARIO (dashboard)
@@ -3825,5 +3930,51 @@ window.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 </div>
-</body>
+
+<div id="mConfirmCola" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:420px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">⚠️</span>
+      <div><div style="color:#fff;font-weight:700;font-size:15px">¿Eliminar de la cola?</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Esta acción no se puede deshacer</div></div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+        <div style="font-size:11px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Vas a eliminar este oficio:</div>
+        <div style="display:grid;gap:6px">
+          <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Contribuyente</span><br><span style="font-size:14px;font-weight:700;color:#1a1a2e" id="mConfirmCola_nombre">—</span></div>
+          <div style="display:flex;gap:16px">
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Radicado</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_radicado">—</span></div>
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Tipo</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_tipo">—</span></div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="mConfirmCola_id" value="">
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmCola()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="confirmarEliminarCola()" style="flex:1;padding:11px;background:#dc2626;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="mConfirmLote" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:400px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#1e3a5f,#1a6fc4);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">📊</span>
+      <div><div style="color:#fff;font-weight:700;font-size:15px">¿Generar todos los oficios?</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Carga masiva</div></div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#1e3a5f" id="mConfirmLote_count">0</div>
+        <div style="font-size:13px;color:#374151;margin-top:4px">oficios se van a generar y descargar</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px">⚠️ Se abrirán múltiples descargas en su navegador</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLote()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="generarLote()" style="flex:1;padding:11px;background:#1a6fc4;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">⬇️ Sí, generar todos</button>
+      </div>
+    </div>
+  </div>
+</div></body>
 </html>
