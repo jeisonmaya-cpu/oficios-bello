@@ -626,7 +626,7 @@ tbody td{padding:7px 10px;color:#374151}
       <button class="btn btn-w" onclick="abrirPreview()">🔍 Vista previa</button>
       <button class="btn btn-p" id="btnGen" onclick="generarDesdeForm()">⬇️ Generar y descargar Word</button>
       <button class="btn" style="background:#e74c3c;color:#fff" id="btnEncolar" onclick="encolarDesdeForm()">🖨️ Enviar a cola de impresión</button>
-      <button class="btn btn-g" onclick="limpiarForm()">🗑 Limpiar</button>
+      <button class="btn btn-g" onclick="confirmarLimpiar()">🗑 Limpiar</button>
     </div>
     <div class="alert" id="f_alert"><span id="f_alertI"></span><span id="f_alertM"></span></div>
   </div>
@@ -984,6 +984,8 @@ if(cfg.apiUrl && cfg.nombre){
 function iniciarApp(){
   actualizarBanner();
   cargarConfigPanel();
+  // Restaurar borrador si existe
+  setTimeout(restaurarBorrador, 800);
   cargarRemoto();
   setTimeout(actualizarBadgeCola, 1500); // Badge cola al cargar
 }
@@ -1186,6 +1188,67 @@ function resaltarCampo(campo){
   el.focus();
   setTimeout(()=>{ el.style.border=orig; el.style.boxShadow=''; }, 3000);
 }
+// ── Autoguardado de borrador ──
+const BORRADOR_KEY = 'oficios_borrador';
+
+function guardarBorrador() {
+  try {
+    const campos = ['f_nombre','f_cedula','f_radicado','f_fauto','f_obs','f_comparendo'];
+    const borrador = {};
+    campos.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.value) borrador[id] = el.value;
+    });
+    const concepto = document.getElementById('f_concepto');
+    if (concepto) borrador['f_concepto'] = concepto.value;
+    const motivo = document.getElementById('f_motivo');
+    if (motivo) borrador['f_motivo'] = motivo.value;
+    borrador['_ts'] = Date.now();
+    if (Object.keys(borrador).length > 1) {
+      localStorage.setItem(BORRADOR_KEY, JSON.stringify(borrador));
+    }
+  } catch(e) {}
+}
+
+function restaurarBorrador() {
+  try {
+    const b = JSON.parse(localStorage.getItem(BORRADOR_KEY) || 'null');
+    if (!b || !b._ts) return;
+    const edad = (Date.now() - b._ts) / (1000 * 60);
+    if (edad > 120) { localStorage.removeItem(BORRADOR_KEY); return; } // borrador > 2 horas
+    const campos = ['f_nombre','f_cedula','f_radicado','f_fauto','f_obs','f_comparendo'];
+    let restaurado = false;
+    campos.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && b[id]) { el.value = b[id]; restaurado = true; }
+    });
+    if (b['f_concepto']) {
+      const el = document.getElementById('f_concepto');
+      if (el) { el.value = b['f_concepto']; el.dispatchEvent(new Event('change')); }
+    }
+    if (restaurado) {
+      showAlert('f_alert', 'w', '📋 Se restauró un borrador guardado automáticamente. Verifique los datos.');
+    }
+  } catch(e) {}
+}
+
+function limpiarBorrador() {
+  localStorage.removeItem(BORRADOR_KEY);
+}
+
+function confirmarLimpiar() {
+  // Si el formulario está vacío no pedir confirmación
+  const nombre = document.getElementById('f_nombre');
+  const cedula = document.getElementById('f_cedula');
+  if ((!nombre || !nombre.value) && (!cedula || !cedula.value)) {
+    limpiarForm(); return;
+  }
+  document.getElementById('mConfirmLimpiar').style.display = 'flex';
+}
+function cerrarConfirmLimpiar() {
+  document.getElementById('mConfirmLimpiar').style.display = 'none';
+}
+
 function limpiarForm(){
   ['f_nombre','f_cedula','f_fauto','f_concepto_manual','f_comparendo','f_motivo_manual'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
@@ -1213,6 +1276,7 @@ function limpiarForm(){
    't_cedula_acc','t_rad_pqrs','t_fecha_pqrs','t_rad_respuesta','t_resolucion']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   limpiarNotif(); limpiarPqrs();
+  limpiarBorrador();
   hideAlert('f_alert');hideAlert('f_dup');
 }
 
@@ -1267,8 +1331,8 @@ async function generarDesdeForm(){
     if(!d.concepto){ showAlert('f_alert','e','Seleccione un concepto.'); return; }
 
     btn.disabled = true;
-    btn.textContent = `⏳ Generando oficio con ${bancosSelec.length} banco(s)…`;
-    showAlert('f_alert','w',`Generando un oficio con ${bancosSelec.length} banco(s)…`);
+    btn.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px">⏳ Generando ${bancosSelec.length} banco(s)... <span style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block"></span></span>`;
+    showAlert('f_alert','w',`📄 Generando oficio con ${bancosSelec.length} banco(s), por favor espere...`);
 
     try {
       const blob = await generarDocxMulti(d, bancosSelec);
@@ -1296,11 +1360,13 @@ async function generarDesdeForm(){
   } else {
     // ── MODO INDIVIDUAL ──
     if(!validar(d,'f_alert'))return;
-    btn.disabled=true; btn.textContent='⏳ Generando…';
+    btn.disabled=true;
+    btn.innerHTML='<span style="display:inline-flex;align-items:center;gap:8px">⏳ Generando documento... <span style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block"></span></span>';
+    showAlert('f_alert','w','📄 Preparando el documento Word, por favor espere...');
     try{
       const blob=await generarDocx(d);
       dlBlob(blob,`Desembargo_${d.radicado.replace(/[^a-zA-Z0-9]/g,'_')}.docx`);
-      showAlert('f_alert','w','Guardando en Google Sheets…');
+      showAlert('f_alert','w','☁️ Guardando en Google Sheets…');
       const res=await apiPost({accion:'guardar',tipoOficio:d.tipoOficio,numOficio:d.numOficio,
         fechaOficio:d.fecha,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,
         radicado:d.radicado,fechaAuto:d.fechaAuto,motivo:d.motivo,
@@ -1662,7 +1728,27 @@ function exportPDF(){
       </div>
     </div>
   </div>
-</div></body></html>`;
+</div>
+<!-- ── MODAL CONFIRMAR LIMPIAR FORMULARIO ── -->
+<div id="mConfirmLimpiar" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:380px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:16px 20px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:22px">🗑️</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:14px">¿Limpiar el formulario?</div>
+        <div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px">Se borrarán todos los datos ingresados</div>
+      </div>
+    </div>
+    <div style="padding:18px 20px">
+      <p style="font-size:13px;color:#374151;margin-bottom:16px">Esta acción borrará el nombre, cédula, radicado y todos los campos del formulario. ¿Está seguro?</p>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLimpiar()" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="cerrarConfirmLimpiar();limpiarForm()" style="flex:1;padding:10px;background:#374151;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>`;
   const w=window.open('','_blank');w.document.write(html);w.document.close();
   setTimeout(()=>{w.focus();w.print();},400);
 }
@@ -3066,7 +3152,27 @@ function exportarColaPDF() {
       </div>
     </div>
   </div>
-</div></body></html>`;
+</div>
+<!-- ── MODAL CONFIRMAR LIMPIAR FORMULARIO ── -->
+<div id="mConfirmLimpiar" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:380px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:16px 20px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:22px">🗑️</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:14px">¿Limpiar el formulario?</div>
+        <div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px">Se borrarán todos los datos ingresados</div>
+      </div>
+    </div>
+    <div style="padding:18px 20px">
+      <p style="font-size:13px;color:#374151;margin-bottom:16px">Esta acción borrará el nombre, cédula, radicado y todos los campos del formulario. ¿Está seguro?</p>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLimpiar()" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="cerrarConfirmLimpiar();limpiarForm()" style="flex:1;padding:10px;background:#374151;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>`;
 
   const w = window.open('', '_blank');
   w.document.write(html);
@@ -3965,5 +4071,25 @@ window.addEventListener('DOMContentLoaded', () => {
       </div>
     </div>
   </div>
-</div></body>
+</div>
+<!-- ── MODAL CONFIRMAR LIMPIAR FORMULARIO ── -->
+<div id="mConfirmLimpiar" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:380px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:16px 20px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:22px">🗑️</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:14px">¿Limpiar el formulario?</div>
+        <div style="color:rgba(255,255,255,0.65);font-size:11px;margin-top:2px">Se borrarán todos los datos ingresados</div>
+      </div>
+    </div>
+    <div style="padding:18px 20px">
+      <p style="font-size:13px;color:#374151;margin-bottom:16px">Esta acción borrará el nombre, cédula, radicado y todos los campos del formulario. ¿Está seguro?</p>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmLimpiar()" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="cerrarConfirmLimpiar();limpiarForm()" style="flex:1;padding:10px;background:#374151;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
 </html>
