@@ -442,8 +442,12 @@ let repFiltro          = 'todo';
 
   // Verificar sesión activa
   try {
-    const sess = JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+    const sess = JSON.parse(localStorage.getItem(SESSION_KEY) || null)
+               || JSON.parse(localStorage.getItem('oficios_session') || 'null');
     if (sess && sess.expira > Date.now()) {
+      // Sincronizar ambas claves
+      localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+      localStorage.setItem('oficios_session', JSON.stringify(sess));
       usuarioActual = sess;
       document.getElementById('pinOverlay').style.display = 'none';
       aplicarSesion(sess);
@@ -501,6 +505,8 @@ function verificarPin() {
     localStorage.removeItem(BLOQUEO_KEY);
     const sess = {...usuario, expira: Date.now() + 8*60*60*1000};
     localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+    // Compartir sesión con el index
+    localStorage.setItem('oficios_session', JSON.stringify(sess));
     usuarioActual = sess;
     document.getElementById('pinOverlay').style.display = 'none';
     aplicarSesion(sess);
@@ -527,6 +533,7 @@ function verificarPin() {
 
 function cerrarSesion() {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem('oficios_session');
   location.reload();
 }
 
