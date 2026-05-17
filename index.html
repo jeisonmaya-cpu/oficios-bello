@@ -394,7 +394,6 @@ tbody td{padding:7px 10px;color:#374151}
     <button class="nav-tab" onclick="goPanel('dashboard')">📊 Dashboard</button>
     <button class="nav-tab" onclick="goPanel('cola')">🖨️ Cola <span class="badge" id="badgeCola">…</span></button>
     <button class="nav-tab" onclick="goPanel('historial')">🔍 Historial</button>
-    <a class="nav-tab" href="buscador.html" style="text-decoration:none">🔎 Buscador Guías</a>
     <button class="nav-tab" onclick="goPanel('config')">⚙️ Config</button>
   </div>
   <div class="sync-pill">
@@ -881,7 +880,11 @@ let TUTELA_B64 = null; // cargado bajo demanda;
 // ════════════════════════════════════════════════════════════
 const CK = 'oficios_cfg_v3';
 let cfg = {};
-function loadCfg(){ try{ cfg=JSON.parse(localStorage.getItem(CK)||'{}'); }catch{ cfg={}; } }
+function loadCfg(){
+  try{ cfg=JSON.parse(localStorage.getItem(CK)||'{}'); }catch{ cfg={}; }
+  // URL siempre fija — no depende de configuración manual
+  cfg.apiUrl = 'https://script.google.com/macros/s/AKfycbwzZWWIj2zx4_S-qNOK2SRtUsbKm8SIdsyTtIDDLOeKqmH7dsNcngboxo5c7XQ9dfFRlA/exec';
+}
 function saveCfg(){ localStorage.setItem(CK,JSON.stringify(cfg)); }
 
 let cache = [];
@@ -3095,31 +3098,46 @@ function actualizarDots() {
   }
 }
 
-// ── Verificar PIN contra Sheet ──────────────────────────────
+// ── Verificar PIN contra lista fija ──────────────────────────
+const USUARIOS_FIJOS = [
+  {pin:'2824',nombre:'ANDERSON CORREA',cargo:'CONTRATISTA'},
+  {pin:'1409',nombre:'ANDRES BEDOYA',cargo:'CONTRATISTA'},
+  {pin:'5506',nombre:'CAMILA PUERTA',cargo:'CONTRATISTA'},
+  {pin:'5012',nombre:'CARLOS HURTADO',cargo:'CONTRATISTA'},
+  {pin:'4657',nombre:'DANIELA HIGUITA',cargo:'CONTRATISTA'},
+  {pin:'3286',nombre:'DARIO PELAEZ',cargo:'CONTRATISTA'},
+  {pin:'2679',nombre:'DAYSE NATHALY RODRIGUEZ',cargo:'CONTRATISTA'},
+  {pin:'9935',nombre:'MARCELA DUQUE',cargo:'CONTRATISTA'},
+  {pin:'2424',nombre:'HENRRY TRIANA',cargo:'CONTRATISTA'},
+  {pin:'7912',nombre:'ANDREA VALENCIA',cargo:'CONTRATISTA'},
+  {pin:'1520',nombre:'JEISON MAYA',cargo:'CONTRATISTA'},
+  {pin:'1488',nombre:'JESUS OSORIO',cargo:'CONTRATISTA'},
+  {pin:'2535',nombre:'JOSE FRANCINETH',cargo:'CONTRATISTA'},
+  {pin:'4582',nombre:'JOSE ZAPATA',cargo:'CONTRATISTA'},
+  {pin:'4811',nombre:'JUAN PABLO VILLA',cargo:'CONTRATISTA'},
+  {pin:'9279',nombre:'JULIAN PEREA',cargo:'CONTRATISTA'},
+  {pin:'1434',nombre:'JULIET DUQUE',cargo:'CONTRATISTA'},
+  {pin:'4257',nombre:'JULIANA',cargo:'CONTRATISTA'},
+  {pin:'9928',nombre:'LISETH MURILLO',cargo:'CONTRATISTA'},
+  {pin:'7873',nombre:'LUISA MIRA',cargo:'CONTRATISTA'},
+  {pin:'4611',nombre:'VERONICA SUAREZ',cargo:'CONTRATISTA'},
+  {pin:'8359',nombre:'WILSON ORTIZ',cargo:'CONTRATISTA'},
+  {pin:'5557',nombre:'VANESA PEREZ',cargo:'CONTRATISTA'},
+  {pin:'1106',nombre:'YENIFFER CHAVERRA',cargo:'CONTRATISTA'},
+  {pin:'3615',nombre:'YOBAN JIMENEZ',cargo:'CONTRATISTA'},
+  {pin:'7924',nombre:'JUAN PABLO GOMEZ',cargo:'DIRECTOR EJECUCIONES FISCALES'},
+  {pin:'6574',nombre:'CATALINA TAMAYO',cargo:'PROFESIONAL UNIVERSITARIA'},
+  {pin:'5552',nombre:'LEIDY PEREA',cargo:'PROFESIONAL UNIVERSITARIA'},
+  {pin:'3547',nombre:'ANDRES HENAO',cargo:'PROFESIONAL UNIVERSITARIA'},
+  {pin:'4527',nombre:'DEISY LOPEZ',cargo:'PROFESIONAL UNIVERSITARIA'},
+  {pin:'6514',nombre:'DARIO BALDRICH',cargo:'PROFESIONAL UNIVERSITARIA'},
+];
+
 async function verificarPin() {
   mostrarCargando('Verificando PIN…');
 
-  // Buscar en cache local primero (rápido)
-  const localUsers = JSON.parse(localStorage.getItem(USUARIOS_KEY) || '[]');
-  let usuario = localUsers.find(u => u.pin === pinActual);
-
-  // Si no está en local, consultar Sheet
-  if (!usuario && cfg.apiUrl) {
-    try {
-      const r = await fetch(cfg.apiUrl + '?accion=verificar_pin&pin=' + pinActual + '&t=' + Date.now());
-      const res = await r.json();
-      if (res && res.ok && res.usuario) {
-        usuario = res.usuario;
-        // Actualizar cache local
-        const idx = localUsers.findIndex(u => u.pin === pinActual);
-        if (idx > -1) localUsers[idx] = usuario;
-        else localUsers.push(usuario);
-        localStorage.setItem(USUARIOS_KEY, JSON.stringify(localUsers));
-      }
-    } catch(e) {
-      console.warn('No se pudo verificar contra Sheet:', e.message);
-    }
-  }
+  // Buscar en lista fija de usuarios
+  const usuario = USUARIOS_FIJOS.find(u => u.pin === pinActual);
 
   if (usuario) {
     // PIN correcto — crear sesión de 8 horas
