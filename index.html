@@ -1525,7 +1525,37 @@ function exportExcel(){
 }
 function exportPDF(){
   if(!cache.length){alert('No hay datos.');return;}
-  const html=`<html><head><meta charset="UTF-8"><title>Registro</title><style>body{font-family:Arial;font-size:9px}h2{color:#0f2d5e;margin-bottom:8px}table{width:100%;border-collapse:collapse}th{background:#0f2d5e;color:#fff;padding:5px 7px;text-align:left}td{padding:4px 7px;border-bottom:1px solid #e5e7eb}tr:nth-child(even){background:#f8fafc}</style></head><body><h2>Registro de Oficios — Alcaldía de Bello — ${new Date().toLocaleDateString('es-CO')}</h2><table><thead><tr><th>#</th><th>Fecha</th><th>Funcionario</th><th>Tipo</th><th>N°Oficio</th><th>Contribuyente</th><th>Radicado</th><th>Motivo</th></tr></thead><tbody>${cache.map((r,i)=>`<tr><td>${cache.length-i}</td><td>${r['Fecha']||''}</td><td>${r['Funcionario']||''}</td><td>${r['Tipo Oficio']||''}</td><td>${r['N° Oficio']||''}</td><td>${r['Contribuyente']||''}</td><td>${r['Radicado']||''}</td><td>${r['Motivo']||''}</td></tr>`).join('')}</tbody></table></body></html>`;
+  const html=`<html><head><meta charset="UTF-8"><title>Registro</title><style>body{font-family:Arial;font-size:9px}h2{color:#0f2d5e;margin-bottom:8px}table{width:100%;border-collapse:collapse}th{background:#0f2d5e;color:#fff;padding:5px 7px;text-align:left}td{padding:4px 7px;border-bottom:1px solid #e5e7eb}tr:nth-child(even){background:#f8fafc}</style></head><body><h2>Registro de Oficios — Alcaldía de Bello — ${new Date().toLocaleDateString('es-CO')}</h2><table><thead><tr><th>#</th><th>Fecha</th><th>Funcionario</th><th>Tipo</th><th>N°Oficio</th><th>Contribuyente</th><th>Radicado</th><th>Motivo</th></tr></thead><tbody>${cache.map((r,i)=>`<tr><td>${cache.length-i}</td><td>${r['Fecha']||''}</td><td>${r['Funcionario']||''}</td><td>${r['Tipo Oficio']||''}</td><td>${r['N° Oficio']||''}</td><td>${r['Contribuyente']||''}</td><td>${r['Radicado']||''}</td><td>${r['Motivo']||''}</td></tr>`).join('')}</tbody></table>
+<!-- ── MODAL CONFIRMAR ELIMINAR COLA ── -->
+<div id="mConfirmCola" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:420px;overflow:hidden;animation:modalIn .2s ease">
+    <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">⚠️</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:15px">¿Eliminar de la cola?</div>
+        <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Esta acción no se puede deshacer</div>
+      </div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+        <div style="font-size:11px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Vas a eliminar este oficio:</div>
+        <div style="display:grid;gap:6px">
+          <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Contribuyente</span><br><span style="font-size:14px;font-weight:700;color:#1a1a2e" id="mConfirmCola_nombre">—</span></div>
+          <div style="display:flex;gap:16px">
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Radicado</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_radicado">—</span></div>
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Tipo</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_tipo">—</span></div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="mConfirmCola_id" value="">
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmCola()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="confirmarEliminarCola()" style="flex:1;padding:11px;background:#dc2626;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>`;
   const w=window.open('','_blank');w.document.write(html);w.document.close();
   setTimeout(()=>{w.focus();w.print();},400);
 }
@@ -2184,14 +2214,33 @@ async function generarEImprimir(item) {
   dlBlob(blob, nombre);
 }
 
-async function eliminarCola(id) {
-  if (!confirm('¿Eliminar este item de la cola?')) return;
+function eliminarCola(id) {
+  const item = colaCache.find(r => (r['ID']||r.id) === id);
+  const nombre    = item ? (item['Contribuyente'] || 'Sin nombre') : 'Sin nombre';
+  const radicado  = item ? (item['Radicado'] || item['N° Oficio'] || '—') : '—';
+  const tipo      = item ? (item['Tipo Oficio'] || '—') : '—';
+
+  document.getElementById('mConfirmCola_nombre').textContent   = nombre;
+  document.getElementById('mConfirmCola_radicado').textContent = radicado;
+  document.getElementById('mConfirmCola_tipo').textContent     = tipo;
+  document.getElementById('mConfirmCola_id').value            = id;
+  document.getElementById('mConfirmCola').style.display       = 'flex';
+}
+
+async function confirmarEliminarCola() {
+  const id = document.getElementById('mConfirmCola_id').value;
+  cerrarConfirmCola();
   await apiPost({ accion: 'eliminar_cola', id });
   const localElim = JSON.parse(localStorage.getItem('cola_local') || '[]');
   localStorage.setItem('cola_local', JSON.stringify(
     localElim.filter(x => x.id !== id && x['ID'] !== id)
   ));
   await cargarCola();
+}
+
+function cerrarConfirmCola() {
+  document.getElementById('mConfirmCola').style.display = 'none';
+  document.getElementById('mConfirmCola_id').value = '';
 }
 
 // ── Actualizar goPanel para cargar cola ──
@@ -2810,7 +2859,37 @@ function exportarColaPDF() {
       </tr>`).join('')}
     </tbody>
   </table>
-  </body></html>`;
+  
+<!-- ── MODAL CONFIRMAR ELIMINAR COLA ── -->
+<div id="mConfirmCola" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:420px;overflow:hidden;animation:modalIn .2s ease">
+    <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">⚠️</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:15px">¿Eliminar de la cola?</div>
+        <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Esta acción no se puede deshacer</div>
+      </div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+        <div style="font-size:11px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Vas a eliminar este oficio:</div>
+        <div style="display:grid;gap:6px">
+          <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Contribuyente</span><br><span style="font-size:14px;font-weight:700;color:#1a1a2e" id="mConfirmCola_nombre">—</span></div>
+          <div style="display:flex;gap:16px">
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Radicado</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_radicado">—</span></div>
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Tipo</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_tipo">—</span></div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="mConfirmCola_id" value="">
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmCola()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="confirmarEliminarCola()" style="flex:1;padding:11px;background:#dc2626;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>`;
 
   const w = window.open('', '_blank');
   w.document.write(html);
@@ -3595,5 +3674,35 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+
+<!-- ── MODAL CONFIRMAR ELIMINAR COLA ── -->
+<div id="mConfirmCola" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:100%;max-width:420px;overflow:hidden;animation:modalIn .2s ease">
+    <div style="background:linear-gradient(135deg,#7f1d1d,#dc2626);padding:18px 22px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">⚠️</span>
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:15px">¿Eliminar de la cola?</div>
+        <div style="color:rgba(255,255,255,0.75);font-size:11px;margin-top:2px">Esta acción no se puede deshacer</div>
+      </div>
+    </div>
+    <div style="padding:20px 22px">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-bottom:18px">
+        <div style="font-size:11px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Vas a eliminar este oficio:</div>
+        <div style="display:grid;gap:6px">
+          <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Contribuyente</span><br><span style="font-size:14px;font-weight:700;color:#1a1a2e" id="mConfirmCola_nombre">—</span></div>
+          <div style="display:flex;gap:16px">
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Radicado</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_radicado">—</span></div>
+            <div><span style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase">Tipo</span><br><span style="font-size:13px;font-weight:600;color:#374151" id="mConfirmCola_tipo">—</span></div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="mConfirmCola_id" value="">
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarConfirmCola()" style="flex:1;padding:11px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="confirmarEliminarCola()" style="flex:1;padding:11px;background:#dc2626;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
