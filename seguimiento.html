@@ -140,6 +140,73 @@
       .stats-grid{grid-template-columns:1fr}
       main{padding:14px 14px 48px}
     }
+
+    /* ── MODAL PDF ── */
+    .pdf-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,50,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+    .pdf-overlay.open{display:flex}
+    .pdf-modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:860px;max-height:92vh;display:flex;flex-direction:column}
+    .pdf-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:16px 22px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between}
+    .pdf-header h3{font-size:15px;font-weight:600}
+    .pdf-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+    .pdf-close:hover{background:rgba(255,255,255,.25)}
+    .pdf-body{padding:0;overflow-y:auto;flex:1}
+    .pdf-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+    .btn-print{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer}
+    .btn-print:hover{background:var(--blue)}
+    .btn-cancel{background:#f3f4f6;border:1.5px solid #e5e7eb;color:#374151;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}
+
+    /* ── REPORTE IMPRIMIBLE ── */
+    #reporte-pdf{padding:32px 36px;font-family:'DM Sans',sans-serif;color:#1a1a2e;min-height:600px}
+    .rep-portada{text-align:center;padding:24px 0 32px;border-bottom:2px solid #0f2d5e;margin-bottom:28px}
+    .rep-escudo{font-size:48px;margin-bottom:12px}
+    .rep-alcaldia{font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#4a5a72;margin-bottom:6px}
+    .rep-titulo{font-family:'DM Serif Display',serif;font-size:26px;color:#0f2d5e;margin-bottom:4px}
+    .rep-subtitulo{font-size:13px;color:#4a5a72;margin-bottom:16px}
+    .rep-meta{display:flex;justify-content:center;gap:24px;font-size:11px;color:#6b7280}
+    .rep-meta span{display:flex;align-items:center;gap:4px}
+    .rep-seccion{margin-bottom:28px}
+    .rep-seccion-titulo{font-size:14px;font-weight:700;color:#0f2d5e;border-bottom:1.5px solid #c8d5e8;padding-bottom:6px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .rep-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+    .rep-stat{background:#f8fafd;border:1px solid #c8d5e8;border-radius:8px;padding:12px;text-align:center}
+    .rep-stat-val{font-family:'DM Serif Display',serif;font-size:22px;color:#0f2d5e}
+    .rep-stat-label{font-size:10px;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+    .rep-stat-sub{font-size:10px;color:#6b7280;margin-top:3px}
+    .rep-cartera-box{background:linear-gradient(135deg,#0f2d5e,#16396e);border-radius:10px;padding:18px 22px;color:#fff;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+    .rep-cartera-val{font-family:'DM Serif Display',serif;font-size:28px}
+    .rep-cartera-label{font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+    .rep-cartera-right{text-align:right}
+    .rep-cartera-recaudo{font-family:'DM Serif Display',serif;font-size:18px;color:#f5c050}
+    .rep-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
+    .rep-table thead tr{background:#0f2d5e;color:#fff}
+    .rep-table thead th{padding:8px 10px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.04em}
+    .rep-table tbody tr{border-bottom:1px solid #e8edf7}
+    .rep-table tbody tr:nth-child(even){background:#f8fafd}
+    .rep-table td{padding:7px 10px;color:#1a1a2e}
+    .rep-masivos{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+    .rep-masivo{background:#f0f4fa;border:1px solid #c8d5e8;border-radius:7px;padding:10px;text-align:center}
+    .rep-masivo-name{font-size:10px;font-weight:700;color:#0f2d5e;margin-bottom:4px}
+    .rep-masivo-exp{font-size:18px;font-weight:700;color:#1a6fc4}
+    .rep-masivo-val{font-size:9px;color:#4a5a72;margin-top:3px}
+    .rep-etapas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .rep-etapa{background:#f8fafd;border:1px solid #c8d5e8;border-radius:6px;padding:8px 10px}
+    .rep-etapa-name{font-size:10px;font-weight:700;color:#0f2d5e;margin-bottom:4px}
+    .rep-etapa-bar{background:#e5e7eb;border-radius:3px;height:5px;margin-bottom:4px}
+    .rep-etapa-fill{height:5px;border-radius:3px;background:#16a34a}
+    .rep-etapa-nums{font-size:9px;color:#4a5a72;display:flex;justify-content:space-between}
+    .rep-firma{margin-top:32px;padding-top:20px;border-top:1px solid #c8d5e8;display:flex;justify-content:space-between}
+    .rep-firma-linea{text-align:center;min-width:180px}
+    .rep-firma-linea div:first-child{border-top:1px solid #374151;padding-top:8px;font-size:11px;font-weight:600;color:#0f2d5e}
+    .rep-firma-linea div:last-child{font-size:10px;color:#4a5a72;margin-top:2px}
+    .rep-divider{border:none;border-top:1px solid #c8d5e8;margin:24px 0}
+    .rep-footer{text-align:center;font-size:9px;color:#6b7280;margin-top:16px;padding-top:12px;border-top:1px solid #e8edf7}
+
+    @media print {
+      body > *:not(#pdf-overlay) { display: none !important; }
+      #pdf-overlay { display: block !important; position: static !important; background: none !important; padding: 0 !important; }
+      .pdf-modal { box-shadow: none !important; max-height: none !important; border-radius: 0 !important; }
+      .pdf-header, .pdf-footer { display: none !important; }
+      #reporte-pdf { padding: 0 !important; }
+    }
   </style>
 </head>
 <body>
@@ -154,7 +221,8 @@
     <div class="header-actions">
       <span class="update-time" id="update-time"></span>
       <button class="btn-nav btn-actualizar" onclick="cargarDatos()">🔄 Actualizar</button>
-      <button class="btn-nav btn-exportar" onclick="exportarExcel()">⬇️ Exportar</button>
+      <button class="btn-nav btn-exportar" onclick="exportarExcel()">⬇️ Excel</button>
+      <button class="btn-nav" onclick="generarPDF()" style="background:rgba(220,38,38,.25);border-color:rgba(220,38,38,.4);color:#fca5a5">📄 PDF</button>
       <a href="home.html" class="btn-nav">🏛️ Inicio</a>
     </div>
   </div>
@@ -499,6 +567,217 @@ function pct(parte, total) {
   if (!total) return '0%';
   return (parte/total*100).toFixed(1) + '%';
 }
+
+function cerrarPDF() {
+  document.getElementById('pdf-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function generarPDF() {
+  if (!datosGlobales) { alert('Primero carga los datos con el botón Actualizar.'); return; }
+  const ou   = datosGlobales.ou;
+  const pred = datosGlobales.predial;
+  const ahora = new Date();
+  const fechaCorte = ahora.toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
+  const horaGen    = ahora.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+
+  // Estados OU
+  const estadosOU = ou.estados && Object.keys(ou.estados).length > 0
+    ? Object.entries(ou.estados).sort((a,b)=>b[1]-a[1]).slice(0,8)
+    : [['Activo',ou.activos],['Convenio',ou.convenios],['Cancelado',ou.cancelados],['Terminado',ou.terminados]];
+
+  // Etapas Predial
+  const etapasHTML = pred.etapas && Object.keys(pred.etapas).length > 0
+    ? Object.entries(pred.etapas).filter(([k])=>k.trim()).map(([nombre,vals])=>{
+        const p = pred.activos > 0 ? (vals.con/pred.activos*100).toFixed(1) : 0;
+        return `<div class="rep-etapa">
+          <div class="rep-etapa-name">${nombre}</div>
+          <div class="rep-etapa-bar"><div class="rep-etapa-fill" style="width:${p}%"></div></div>
+          <div class="rep-etapa-nums"><span>✅ ${vals.con.toLocaleString()}</span><span>${p}%</span><span>❌ ${vals.sin.toLocaleString()}</span></div>
+        </div>`;
+      }).join('')
+    : '<p style="font-size:12px;color:#6b7280">No disponible</p>';
+
+  document.getElementById('reporte-pdf').innerHTML = `
+    <!-- PORTADA -->
+    <div class="rep-portada">
+      <div class="rep-escudo">🏛️</div>
+      <div class="rep-alcaldia">Alcaldía de Bello · Antioquia · Colombia</div>
+      <div class="rep-titulo">Informe de Cartera Fiscal</div>
+      <div class="rep-subtitulo">Dirección Administrativa de Ejecuciones Fiscales</div>
+      <div class="rep-meta">
+        <span>📅 Fecha de corte: <strong>${fechaCorte}</strong></span>
+        <span>🕐 Generado a las: <strong>${horaGen}</strong></span>
+        <span>📋 Versión: <strong>v2.0</strong></span>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 1: OBLIGACIONES URBANÍSTICAS -->
+    <div class="rep-seccion">
+      <div class="rep-seccion-titulo">🏘️ Obligaciones Urbanísticas — Masivos 2, 3, 4, 5 y 6</div>
+
+      <div class="rep-cartera-box">
+        <div>
+          <div class="rep-cartera-label">Cartera Bruta Total</div>
+          <div class="rep-cartera-val">${fmt(ou.cartera)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:4px">${ou.totalExp.toLocaleString()} expedientes consolidados</div>
+        </div>
+        <div class="rep-cartera-right">
+          <div class="rep-cartera-label">Recaudo Registrado</div>
+          <div class="rep-cartera-recaudo">${fmt(ou.recaudo)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:4px">${pct(ou.recaudo, ou.cartera)} de la cartera</div>
+        </div>
+      </div>
+
+      <div class="rep-stats">
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#1a6fc4">${ou.activos.toLocaleString()}</div>
+          <div class="rep-stat-label">🔵 Activos</div>
+          <div class="rep-stat-sub">${pct(ou.activos,ou.totalExp)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#e8a020">${ou.convenios.toLocaleString()}</div>
+          <div class="rep-stat-label">🤝 Convenios</div>
+          <div class="rep-stat-sub">${pct(ou.convenios,ou.totalExp)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#16a34a">${ou.cancelados.toLocaleString()}</div>
+          <div class="rep-stat-label">✅ Cancelados</div>
+          <div class="rep-stat-sub">${pct(ou.cancelados,ou.totalExp)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#374151">${ou.terminados.toLocaleString()}</div>
+          <div class="rep-stat-label">📁 Terminados</div>
+          <div class="rep-stat-sub">${pct(ou.terminados,ou.totalExp)}</div>
+        </div>
+      </div>
+
+      <div style="font-size:12px;font-weight:700;color:#0f2d5e;margin-bottom:10px">📦 Distribución por Masivo</div>
+      <div class="rep-masivos">
+        ${ou.masivos.map((m,i)=>{
+          const cols=['#1a6fc4','#e8a020','#16a34a','#7c3aed','#dc2626'];
+          return `<div class="rep-masivo">
+            <div class="rep-masivo-name">${m.nombre}</div>
+            <div class="rep-masivo-exp" style="color:${cols[i]}">${m.expedientes.toLocaleString()}</div>
+            <div class="rep-masivo-val">${fmt(m.valor)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div style="font-size:12px;font-weight:700;color:#0f2d5e;margin-bottom:10px">📊 Distribución por Estado Consolidado</div>
+      <table class="rep-table">
+        <thead><tr><th>Estado</th><th>Expedientes</th><th>% del Total</th></tr></thead>
+        <tbody>
+          ${estadosOU.map(([estado,count])=>`
+            <tr>
+              <td>${estado}</td>
+              <td><strong>${count.toLocaleString()}</strong></td>
+              <td>${pct(count,ou.totalExp)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="rep-divider">
+
+    <!-- SECCIÓN 2: PREDIAL -->
+    <div class="rep-seccion">
+      <div class="rep-seccion-titulo">🏠 Predial — Carpetas FP 1 al 39</div>
+
+      <div class="rep-cartera-box">
+        <div>
+          <div class="rep-cartera-label">Cartera Total Consolidada</div>
+          <div class="rep-cartera-val">${fmt(pred.cartera)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:4px">${pred.totalExp.toLocaleString()} expedientes totales</div>
+        </div>
+        <div class="rep-cartera-right">
+          <div class="rep-cartera-label">Valor Activos en Proceso</div>
+          <div class="rep-cartera-recaudo">${fmt(pred.valorActivos)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:4px">${pct(pred.valorActivos,pred.cartera)} de la cartera</div>
+        </div>
+      </div>
+
+      <div class="rep-stats">
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#1a6fc4">${pred.activos.toLocaleString()}</div>
+          <div class="rep-stat-label">🔵 Activos</div>
+          <div class="rep-stat-sub">${fmt(pred.valorActivos)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#e8a020">${pred.convenios.toLocaleString()}</div>
+          <div class="rep-stat-label">🤝 Convenios</div>
+          <div class="rep-stat-sub">${fmt(pred.valorConvenios)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#16a34a">${pred.cancelados.toLocaleString()}</div>
+          <div class="rep-stat-label">✅ Cancelados</div>
+          <div class="rep-stat-sub">${fmt(pred.valorCancelados)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#374151">${pred.terminados.toLocaleString()}</div>
+          <div class="rep-stat-label">📁 Terminados</div>
+          <div class="rep-stat-sub">${fmt(pred.valorTerminados)}</div>
+        </div>
+      </div>
+
+      <table class="rep-table" style="margin-bottom:20px">
+        <thead><tr><th>Estado</th><th>Expedientes</th><th>Valor ($)</th><th>% del Total</th></tr></thead>
+        <tbody>
+          <tr><td>🔵 Activos en Proceso</td><td><strong>${pred.activos.toLocaleString()}</strong></td><td>${fmt(pred.valorActivos)}</td><td>${pct(pred.activos,pred.totalExp)}</td></tr>
+          <tr><td>🤝 Convenios de Pago</td><td><strong>${pred.convenios.toLocaleString()}</strong></td><td>${fmt(pred.valorConvenios)}</td><td>${pct(pred.convenios,pred.totalExp)}</td></tr>
+          <tr><td>✅ Cancelados</td><td><strong>${pred.cancelados.toLocaleString()}</strong></td><td>${fmt(pred.valorCancelados)}</td><td>${pct(pred.cancelados,pred.totalExp)}</td></tr>
+          <tr><td>📁 Terminados</td><td><strong>${pred.terminados.toLocaleString()}</strong></td><td>${fmt(pred.valorTerminados)}</td><td>${pct(pred.terminados,pred.totalExp)}</td></tr>
+          <tr style="font-weight:700;background:#f0f4fa"><td>TOTAL</td><td>${pred.totalExp.toLocaleString()}</td><td>${fmt(pred.cartera)}</td><td>100%</td></tr>
+        </tbody>
+      </table>
+
+      <div style="font-size:12px;font-weight:700;color:#0f2d5e;margin-bottom:10px">⚖️ Avance de Etapas Procesales — Expedientes Activos</div>
+      <div class="rep-etapas">${etapasHTML}</div>
+    </div>
+
+    <!-- FIRMA -->
+    <div class="rep-firma">
+      <div class="rep-firma-linea">
+        <div>Director Ejecuciones Fiscales</div>
+        <div>Alcaldía de Bello</div>
+      </div>
+      <div class="rep-firma-linea">
+        <div>Elaboró</div>
+        <div>Dirección Administrativa</div>
+      </div>
+      <div class="rep-firma-linea">
+        <div>Revisó</div>
+        <div>Control Interno</div>
+      </div>
+    </div>
+
+    <div class="rep-footer">
+      Informe generado automáticamente por el Sistema de Ejecuciones Fiscales · Alcaldía de Bello · ${fechaCorte} · ${horaGen}<br>
+      Este documento es de carácter informativo y refleja el estado de la cartera a la fecha de corte indicada.
+    </div>
+  `;
+
+  document.getElementById('pdf-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
 </script>
+
+<!-- ── MODAL PDF ── -->
+<div class="pdf-overlay" id="pdf-overlay">
+  <div class="pdf-modal">
+    <div class="pdf-header">
+      <h3>📄 Vista previa del reporte</h3>
+      <button class="pdf-close" onclick="cerrarPDF()">✕</button>
+    </div>
+    <div class="pdf-body">
+      <div id="reporte-pdf"></div>
+    </div>
+    <div class="pdf-footer">
+      <button class="btn-cancel" onclick="cerrarPDF()">Cerrar</button>
+      <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
