@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seguimiento — Cartera Fiscal Bello</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --navy:#0f2d5e; --navy-mid:#16396e; --blue:#1a6fc4;
+      --gold:#e8a020; --gold2:#f5c050;
+      --green:#16a34a; --green2:#22c55e;
+      --orange:#ea580c; --red:#dc2626;
+      --bg:#f0f4fa; --surface:#fff;
+      --surface2:#e8edf7; --text:#0f1e35;
+      --text-soft:#4a5a72; --border:#c8d5e8;
+      --radius:12px;
+      --shadow:0 4px 24px rgba(15,45,94,.10);
+      --shadow-lg:0 8px 40px rgba(15,45,94,.18);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* HEADER */
+    header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:relative;overflow:hidden}
+    header::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.04)}
+    .header-inner{max-width:1100px;margin:0 auto;padding:20px 24px;position:relative;z-index:1;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .header-icon{width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
+    .header-text h1{font-family:'DM Serif Display',serif;color:#fff;font-size:18px;font-weight:400;line-height:1.2}
+    .header-text p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
+    .header-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .btn-nav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;white-space:nowrap;transition:background .2s;cursor:pointer;font-family:'DM Sans',sans-serif}
+    .btn-nav:hover{background:rgba(255,255,255,.22)}
+    .btn-actualizar{background:rgba(22,163,74,.3);border-color:rgba(34,197,94,.4);color:#86efac}
+    .btn-actualizar:hover{background:rgba(22,163,74,.5)}
+    .btn-exportar{background:rgba(232,160,32,.2);border-color:rgba(245,192,80,.35);color:var(--gold2)}
+    .btn-exportar:hover{background:rgba(232,160,32,.35)}
+    .update-time{font-size:11px;color:rgba(255,255,255,.5)}
+
+    /* TABS */
+    .tabs{background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)}
+    .tabs-inner{max-width:1100px;margin:0 auto;display:flex;padding:0 24px;gap:2px}
+    .tab{padding:10px 18px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
+    .tab:hover{color:#fff;background:rgba(255,255,255,.07)}
+    .tab.active{color:#fff;border-bottom-color:var(--gold2)}
+
+    /* MAIN */
+    main{max-width:1100px;margin:0 auto;padding:24px 24px 60px}
+
+    /* LOADING */
+    #loading{text-align:center;padding:60px 24px}
+    .load-spinner{width:40px;height:40px;border:3px solid rgba(26,111,196,.2);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #loading p{font-size:14px;color:var(--text-soft)}
+
+    /* ERROR */
+    #error-state{display:none;background:#fef2f2;border:1.5px solid #fecaca;border-radius:var(--radius);padding:24px;text-align:center;color:var(--red)}
+
+    /* PANELS */
+    .panel{display:none}
+    .panel.active{display:block}
+
+    /* STATS GRID */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .stat-card.blue::before{background:var(--blue)}
+    .stat-card.green::before{background:var(--green)}
+    .stat-card.gold::before{background:var(--gold)}
+    .stat-card.red::before{background:var(--red)}
+    .stat-card.navy::before{background:var(--navy)}
+    .stat-card.orange::before{background:var(--orange)}
+    .stat-label{font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+    .stat-value{font-family:'DM Serif Display',serif;font-size:28px;color:var(--navy);line-height:1}
+    .stat-sub{font-size:11px;color:var(--text-soft);margin-top:6px}
+    .stat-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:6px}
+    .stat-badge.green{background:#dcfce7;color:#15803d}
+    .stat-badge.blue{background:#dbeafe;color:#1d4ed8}
+    .stat-badge.gold{background:#fef3c7;color:#92400e}
+    .stat-badge.red{background:#fee2e2;color:#991b1b}
+
+    /* CARTERA HIGHLIGHT */
+    .cartera-card{background:linear-gradient(135deg,var(--navy),#1a4a8a);border-radius:var(--radius);padding:24px 28px;margin-bottom:24px;color:#fff;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+    .cartera-main{flex:1}
+    .cartera-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:8px}
+    .cartera-value{font-family:'DM Serif Display',serif;font-size:36px;color:#fff;line-height:1}
+    .cartera-sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:6px}
+    .cartera-recaudo{text-align:right}
+    .cartera-recaudo-label{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+    .cartera-recaudo-val{font-family:'DM Serif Display',serif;font-size:20px;color:var(--gold2)}
+    .cartera-pct{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px}
+
+    /* MASIVOS / DISTRIBUCIÓN */
+    .section-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+    .masivos-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px}
+    .masivo-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:var(--shadow);text-align:center}
+    .masivo-name{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px}
+    .masivo-exp{font-family:'DM Serif Display',serif;font-size:22px;color:var(--blue)}
+    .masivo-val{font-size:10px;color:var(--text-soft);margin-top:4px}
+
+    /* ESTADOS TABLE */
+    .estados-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px}
+    .estados-header{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--navy)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead tr{background:var(--navy);color:#fff}
+    thead th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.04em}
+    tbody tr{border-bottom:1px solid var(--surface2);transition:background .15s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#f0f5ff}
+    tbody tr:nth-child(even){background:#f8fafd}
+    td{padding:10px 14px;color:var(--text)}
+
+    /* BARRA PROGRESO */
+    .bar-wrap{background:#e5e7eb;border-radius:4px;height:6px;flex:1}
+    .bar-fill{height:6px;border-radius:4px;transition:width .5s ease}
+
+    /* ETAPAS PREDIAL */
+    .etapas-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+    .etapa-row{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;box-shadow:var(--shadow)}
+    .etapa-name{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:6px}
+    .etapa-nums{display:flex;gap:12px;font-size:11px;color:var(--text-soft);margin-bottom:6px}
+    .etapa-con{color:var(--green);font-weight:600}
+    .etapa-sin{color:var(--red);font-weight:600}
+
+    /* FOOTER */
+    footer{text-align:center;padding:16px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border)}
+
+    @media(max-width:768px){
+      .stats-grid{grid-template-columns:1fr 1fr}
+      .masivos-grid{grid-template-columns:1fr 1fr}
+      .etapas-grid{grid-template-columns:1fr}
+      .cartera-card{flex-direction:column;text-align:center}
+      .cartera-recaudo{text-align:center}
+    }
+    @media(max-width:480px){
+      .stats-grid{grid-template-columns:1fr}
+      main{padding:14px 14px 48px}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-icon">📋</div>
+    <div class="header-text">
+      <h1>Seguimiento de Cartera</h1>
+      <p>Estadísticas — Ejecuciones Fiscales · Alcaldía de Bello</p>
+    </div>
+    <div class="header-actions">
+      <span class="update-time" id="update-time"></span>
+      <button class="btn-nav btn-actualizar" onclick="cargarDatos()">🔄 Actualizar</button>
+      <button class="btn-nav btn-exportar" onclick="exportarExcel()">⬇️ Exportar</button>
+      <a href="home.html" class="btn-nav">🏛️ Inicio</a>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tabs-inner">
+      <button class="tab active" id="tab-ou" onclick="goTab('ou')">🏘️ Obligaciones Urbanísticas</button>
+      <button class="tab" id="tab-predial" onclick="goTab('predial')">🏠 Predial</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="load-spinner"></div>
+    <p>Cargando estadísticas...</p>
+  </div>
+
+  <!-- ERROR -->
+  <div id="error-state">
+    <div style="font-size:32px;margin-bottom:12px">🔌</div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:8px">No se pudo cargar la información</div>
+    <div style="font-size:13px;margin-bottom:16px" id="error-msg"></div>
+    <button onclick="cargarDatos()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer">Reintentar</button>
+  </div>
+
+  <!-- PANEL OU -->
+  <div class="panel" id="panel-ou">
+
+    <!-- Cartera total -->
+    <div class="cartera-card" id="ou-cartera"></div>
+
+    <!-- Stats principales -->
+    <div class="stats-grid" id="ou-stats"></div>
+
+    <!-- Distribución por masivo -->
+    <div class="section-title">📦 Distribución por Masivo</div>
+    <div class="masivos-grid" id="ou-masivos"></div>
+
+    <!-- Tabla de estados -->
+    <div class="section-title">📊 Distribución por Estado</div>
+    <div class="estados-wrap">
+      <table>
+        <thead><tr><th>Estado</th><th>Expedientes</th><th>% del total</th><th>Distribución</th></tr></thead>
+        <tbody id="ou-estados"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- PANEL PREDIAL -->
+  <div class="panel" id="panel-predial">
+
+    <!-- Cartera total -->
+    <div class="cartera-card" id="pred-cartera"></div>
+
+    <!-- Stats principales -->
+    <div class="stats-grid" id="pred-stats"></div>
+
+    <!-- Etapas procesales -->
+    <div class="section-title">⚖️ Etapas Procesales — Expedientes Activos</div>
+    <div class="etapas-grid" id="pred-etapas"></div>
+
+    <!-- Tabla distribución -->
+    <div class="section-title">📊 Distribución por Estado</div>
+    <div class="estados-wrap">
+      <table>
+        <thead><tr><th>Estado</th><th>Expedientes</th><th>Valor ($)</th><th>% del total</th><th>Distribución</th></tr></thead>
+        <tbody id="pred-estados"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello</footer>
+
+<script>
+const URL_OU      = "https://script.google.com/macros/s/AKfycbzx1qwma1Xqbpfk2SqFG0mOJWC4P3h_WevQceiA7cB6wFScJYgXljkc9MgYRjt_yxs9KQ/exec";
+const URL_PREDIAL = "https://script.google.com/macros/s/AKfycbydwEvBzVzV_QN4yYtZem7ytX_RwWvMBXiwZJ29s1FznIkRL1eDh4jDqfiefu3332ow/exec";
+let datosGlobales = null;
+let tabActual = 'ou';
+
+// ── INIT ──
+cargarDatos();
+
+async function cargarDatos() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('error-state').style.display = 'none';
+  document.getElementById('panel-ou').classList.remove('active');
+  document.getElementById('panel-predial').classList.remove('active');
+
+  try {
+    // Llamar a los dos Apps Script en paralelo
+    const [resOU, resPred] = await Promise.all([
+      fetch(URL_OU      + '?t=' + Date.now()),
+      fetch(URL_PREDIAL + '?t=' + Date.now())
+    ]);
+
+    const [dataOU, dataPred] = await Promise.all([
+      resOU.json(),
+      resPred.json()
+    ]);
+
+    if (dataOU.error)   throw new Error('OU: '      + dataOU.error);
+    if (dataPred.error) throw new Error('Predial: ' + dataPred.error);
+
+    datosGlobales = {
+      ou:          dataOU,
+      predial:     dataPred,
+      actualizado: new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+    };
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('update-time').textContent = '🕐 ' + datosGlobales.actualizado;
+    renderOU(datosGlobales.ou);
+    renderPredial(datosGlobales.predial);
+    goTab(tabActual);
+
+  } catch(err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-state').style.display = 'block';
+    document.getElementById('error-msg').textContent = err.message || 'Error de conexión';
+  }
+}
+
+function goTab(t) {
+  tabActual = t;
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+}
+
+// ── RENDER OU ──
+function renderOU(d) {
+  // Cartera
+  document.getElementById('ou-cartera').innerHTML = `
+    <div class="cartera-main">
+      <div class="cartera-label">🏘️ Obligaciones Urbanísticas — Cartera Total</div>
+      <div class="cartera-value">${fmt(d.cartera)}</div>
+      <div class="cartera-sub">${d.totalExp.toLocaleString()} expedientes · Masivos 2, 3, 4, 5 y 6</div>
+    </div>
+    <div class="cartera-recaudo">
+      <div class="cartera-recaudo-label">Recaudo registrado</div>
+      <div class="cartera-recaudo-val">${fmt(d.recaudo)}</div>
+      <div class="cartera-pct">${pct(d.recaudo, d.cartera)} de la cartera</div>
+    </div>`;
+
+  // Stats
+  document.getElementById('ou-stats').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-label">🔵 Activos en Proceso</div>
+      <div class="stat-value">${d.activos.toLocaleString()}</div>
+      <div class="stat-sub">expedientes</div>
+      <span class="stat-badge blue">${pct(d.activos, d.totalExp)}</span>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">🤝 Convenios Activos</div>
+      <div class="stat-value">${d.convenios.toLocaleString()}</div>
+      <div class="stat-sub">expedientes</div>
+      <span class="stat-badge gold">${pct(d.convenios, d.totalExp)}</span>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">✅ Cancelados</div>
+      <div class="stat-value">${d.cancelados.toLocaleString()}</div>
+      <div class="stat-sub">expedientes</div>
+      <span class="stat-badge green">${pct(d.cancelados, d.totalExp)}</span>
+    </div>
+    <div class="stat-card navy">
+      <div class="stat-label">📁 Terminados</div>
+      <div class="stat-value">${d.terminados.toLocaleString()}</div>
+      <div class="stat-sub">expedientes</div>
+      <span class="stat-badge blue">${pct(d.terminados, d.totalExp)}</span>
+    </div>`;
+
+  // Masivos
+  const colores = ['#1a6fc4','#e8a020','#16a34a','#7c3aed','#dc2626'];
+  document.getElementById('ou-masivos').innerHTML = d.masivos.map((m,i) => `
+    <div class="masivo-card">
+      <div class="masivo-name">${m.nombre}</div>
+      <div class="masivo-exp" style="color:${colores[i]}">${m.expedientes.toLocaleString()}</div>
+      <div class="masivo-val">${fmt(m.valor)}</div>
+    </div>`).join('');
+
+  // Estados
+  const estados = d.estados && Object.keys(d.estados).length > 0
+    ? d.estados
+    : { 'Activo': d.activos, 'Convenio': d.convenios, 'Cancelado': d.cancelados, 'Terminado': d.terminados };
+
+  const total = Object.values(estados).reduce((a,b) => a+b, 0);
+  const coloresEstado = {'Activo':'#1a6fc4','Activo ':'#1a6fc4','Convenio':'#e8a020','Cancelado':'#16a34a','Terminado':'#374151'};
+
+  document.getElementById('ou-estados').innerHTML = Object.entries(estados)
+    .sort((a,b) => b[1]-a[1])
+    .map(([estado, count]) => {
+      const p = total > 0 ? (count/total*100).toFixed(1) : 0;
+      const color = coloresEstado[estado] || '#6b7280';
+      return `<tr>
+        <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block"></span>${estado}</span></td>
+        <td><strong>${count.toLocaleString()}</strong></td>
+        <td>${p}%</td>
+        <td style="min-width:120px"><div style="display:flex;align-items:center;gap:8px"><div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:${color}"></div></div></div></td>
+      </tr>`;
+    }).join('');
+}
+
+// ── RENDER PREDIAL ──
+function renderPredial(d) {
+  // Cartera
+  document.getElementById('pred-cartera').innerHTML = `
+    <div class="cartera-main">
+      <div class="cartera-label">🏠 Predial — Cartera Total Consolidada</div>
+      <div class="cartera-value">${fmt(d.cartera)}</div>
+      <div class="cartera-sub">${d.totalExp.toLocaleString()} expedientes totales · Carpetas FP 1–39</div>
+    </div>
+    <div class="cartera-recaudo">
+      <div class="cartera-recaudo-label">Valor activos en proceso</div>
+      <div class="cartera-recaudo-val">${fmt(d.valorActivos)}</div>
+      <div class="cartera-pct">${pct(d.valorActivos, d.cartera)} de la cartera</div>
+    </div>`;
+
+  // Stats
+  document.getElementById('pred-stats').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-label">🔵 Activos en Proceso</div>
+      <div class="stat-value">${d.activos.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(d.valorActivos)}</div>
+      <span class="stat-badge blue">${pct(d.activos, d.totalExp)}</span>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">🤝 Convenios</div>
+      <div class="stat-value">${d.convenios.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(d.valorConvenios)}</div>
+      <span class="stat-badge gold">${pct(d.convenios, d.totalExp)}</span>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">✅ Cancelados</div>
+      <div class="stat-value">${d.cancelados.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(d.valorCancelados)}</div>
+      <span class="stat-badge green">${pct(d.cancelados, d.totalExp)}</span>
+    </div>
+    <div class="stat-card navy">
+      <div class="stat-label">📁 Terminados</div>
+      <div class="stat-value">${d.terminados.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(d.valorTerminados)}</div>
+      <span class="stat-badge blue">${pct(d.terminados, d.totalExp)}</span>
+    </div>`;
+
+  // Etapas procesales
+  const etapas = d.etapas || {};
+  if (Object.keys(etapas).length > 0) {
+    document.getElementById('pred-etapas').innerHTML = Object.entries(etapas)
+      .filter(([k]) => k.trim())
+      .map(([nombre, vals]) => {
+        const pctCon = d.activos > 0 ? (vals.con/d.activos*100).toFixed(1) : 0;
+        return `<div class="etapa-row">
+          <div class="etapa-name">${nombre}</div>
+          <div class="etapa-nums">
+            <span>Con diligencia: <span class="etapa-con">${vals.con.toLocaleString()}</span></span>
+            <span>Sin diligencia: <span class="etapa-sin">${vals.sin.toLocaleString()}</span></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="bar-wrap"><div class="bar-fill" style="width:${pctCon}%;background:var(--green)"></div></div>
+            <span style="font-size:11px;color:var(--text-soft);white-space:nowrap">${pctCon}%</span>
+          </div>
+        </div>`;
+      }).join('');
+  } else {
+    document.getElementById('pred-etapas').innerHTML = '<p style="color:var(--text-soft);font-size:13px;padding:12px">No se pudieron cargar las etapas procesales.</p>';
+  }
+
+  // Tabla distribución
+  const filas = [
+    { estado: '🔵 Activos', count: d.activos, valor: d.valorActivos, color: '#1a6fc4' },
+    { estado: '🤝 Convenios', count: d.convenios, valor: d.valorConvenios, color: '#e8a020' },
+    { estado: '✅ Cancelados', count: d.cancelados, valor: d.valorCancelados, color: '#16a34a' },
+    { estado: '📁 Terminados', count: d.terminados, valor: d.valorTerminados, color: '#374151' },
+  ];
+
+  document.getElementById('pred-estados').innerHTML = filas.map(f => {
+    const p = d.totalExp > 0 ? (f.count/d.totalExp*100).toFixed(1) : 0;
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${f.color};display:inline-block"></span>${f.estado}</span></td>
+      <td><strong>${f.count.toLocaleString()}</strong></td>
+      <td>${fmt(f.valor)}</td>
+      <td>${p}%</td>
+      <td style="min-width:120px"><div style="display:flex;align-items:center;gap:8px"><div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:${f.color}"></div></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── EXPORTAR EXCEL ──
+function exportarExcel() {
+  if (!datosGlobales) return;
+  const wb = XLSX.utils.book_new();
+
+  // Hoja OU
+  const ou = datosGlobales.ou;
+  const wsOU = XLSX.utils.aoa_to_sheet([
+    ['OBLIGACIONES URBANÍSTICAS — ESTADÍSTICAS'],
+    [],
+    ['Indicador', 'Valor'],
+    ['Total expedientes', ou.totalExp],
+    ['Cartera bruta', ou.cartera],
+    ['Activos en proceso', ou.activos],
+    ['Convenios activos', ou.convenios],
+    ['Cancelados', ou.cancelados],
+    ['Terminados', ou.terminados],
+    ['Recaudo registrado', ou.recaudo],
+    [],
+    ['DISTRIBUCIÓN POR MASIVO'],
+    ['Masivo', 'Expedientes', 'Valor ($)'],
+    ...ou.masivos.map(m => [m.nombre, m.expedientes, m.valor])
+  ]);
+  XLSX.utils.book_append_sheet(wb, wsOU, 'Oblig. Urbanísticas');
+
+  // Hoja Predial
+  const pred = datosGlobales.predial;
+  const wsPred = XLSX.utils.aoa_to_sheet([
+    ['PREDIAL — ESTADÍSTICAS'],
+    [],
+    ['Estado', 'Expedientes', 'Valor ($)'],
+    ['Activos', pred.activos, pred.valorActivos],
+    ['Convenios', pred.convenios, pred.valorConvenios],
+    ['Cancelados', pred.cancelados, pred.valorCancelados],
+    ['Terminados', pred.terminados, pred.valorTerminados],
+    ['TOTAL', pred.totalExp, pred.cartera],
+  ]);
+  XLSX.utils.book_append_sheet(wb, wsPred, 'Predial');
+
+  XLSX.writeFile(wb, `cartera_fiscal_bello_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── UTILS ──
+function fmt(n) {
+  if (!n) return '$0';
+  return '$ ' + Math.round(n).toLocaleString('es-CO');
+}
+function pct(parte, total) {
+  if (!total) return '0%';
+  return (parte/total*100).toFixed(1) + '%';
+}
+</script>
+</body>
+</html>
