@@ -1,999 +1,407 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Acuerdos de Pago — Alcaldía de Bello</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-  <style>
-    :root {
-      --navy:#0f2d5e; --navy-mid:#16396e; --blue:#1a6fc4;
-      --gold:#e8a020; --gold2:#f5c050;
-      --green:#16a34a; --red:#dc2626;
-      --bg:#f0f4fa; --surface:#fff;
-      --surface2:#e8edf7; --text:#0f1e35;
-      --text-soft:#4a5a72; --border:#c8d5e8;
-      --radius:12px; --shadow:0 4px 24px rgba(15,45,94,.10);
-    }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-
-    /* HEADER */
-    header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:relative;overflow:hidden}
-    .header-inner{max-width:960px;margin:0 auto;padding:20px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-    .header-icon{width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
-    .header-text h1{font-family:'DM Serif Display',serif;color:#fff;font-size:18px;font-weight:400}
-    .header-text p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
-    .header-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-    .btn-nav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;white-space:nowrap;transition:background .2s;cursor:pointer;font-family:'DM Sans',sans-serif}
-    .btn-nav:hover{background:rgba(255,255,255,.22)}
-
-    /* MAIN */
-    main{max-width:960px;margin:0 auto;padding:24px 24px 60px;display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
-
-    /* SECCIONES */
-    .seccion{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
-    .sec-header{background:var(--navy);color:#fff;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
-    .sec-body{padding:18px}
-    .campo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .campo-grid.tres{grid-template-columns:1fr 1fr 1fr}
-    .campo-full{grid-column:1/-1}
-    .campo label{display:block;font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-    .campo input,.campo select,.campo textarea{width:100%;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:8px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s,box-shadow .2s}
-    .campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12);background:#fff}
-    .campo input.highlight{background:#fefce8;border-color:#f59e0b}
-    .campo-check{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .campo-check label{font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0}
-    .campo-check input[type="radio"],.campo-check input[type="checkbox"]{width:14px;height:14px;accent-color:var(--blue)}
-
-    /* CALCULADORA */
-    .calc-panel{position:sticky;top:20px}
-    .calc-card{background:linear-gradient(135deg,var(--navy),#1a4a8a);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:16px;box-shadow:0 8px 32px rgba(15,45,94,.25)}
-    .calc-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:14px}
-    .calc-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-    .calc-item:last-child{border-bottom:none}
-    .calc-label{font-size:12px;color:rgba(255,255,255,.7)}
-    .calc-val{font-size:14px;font-weight:700;color:#fff}
-    .calc-val.gold{color:var(--gold2);font-size:18px}
-    .calc-val.green{color:#86efac}
-    .calc-tabla{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;max-height:320px;overflow-y:auto}
-    .calc-tabla-title{background:var(--navy);color:#fff;padding:10px 14px;font-size:12px;font-weight:700}
-    .calc-tabla table{width:100%;border-collapse:collapse;font-size:11px}
-    .calc-tabla thead tr{background:#e8edf7}
-    .calc-tabla thead th{padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--navy)}
-    .calc-tabla thead th:first-child{text-align:center}
-    .calc-tabla tbody tr{border-bottom:1px solid #f0f4fa}
-    .calc-tabla tbody tr:hover{background:#f8fafd}
-    .calc-tabla td{padding:6px 10px;text-align:right;color:var(--text)}
-    .calc-tabla td:first-child{text-align:center;font-weight:700;color:var(--navy)}
-
-    /* BOTONES ACCIÓN */
-    .acciones{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
-    .btn-accion{width:100%;padding:12px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
-    .btn-accion:last-child{margin-bottom:0}
-    .btn-generar{background:var(--navy);color:#fff}
-    .btn-generar:hover{background:var(--blue)}
-    .btn-proyeccion{background:#16a34a;color:#fff}
-    .btn-proyeccion:hover{background:#15803d}
-    .btn-limpiar{background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb}
-    .btn-limpiar:hover{background:#e5e7eb}
-    .btn-accion:disabled{opacity:.6;cursor:not-allowed}
-
-    /* STATUS */
-    .status{display:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:8px;align-items:center;gap:8px}
-    .status.ok{display:flex;background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
-    .status.err{display:flex;background:#fef2f2;color:var(--red);border:1px solid #fecaca}
-    .status.loading{display:flex;background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
-    .spin{width:14px;height:14px;border:2px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
-    @keyframes spin{to{transform:rotate(360deg)}}
-
-    /* RESUMEN MES */
-    .resumen-mes{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
-    .resumen-title{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:6px}
-    .resumen-stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--surface2);font-size:12px}
-    .resumen-stat:last-child{border-bottom:none}
-    .resumen-stat-val{font-weight:700;color:var(--navy)}
-
-    @media(max-width:768px){
-      main{grid-template-columns:1fr}
-      .calc-panel{position:static}
-      .campo-grid{grid-template-columns:1fr}
-      .campo-grid.tres{grid-template-columns:1fr}
-    }
-
-    /* ── MODAL VISTA PREVIA ── */
-    .preview-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
-    .preview-overlay.open{display:flex}
-    .preview-modal{background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:720px;max-height:92vh;display:flex;flex-direction:column}
-    .preview-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid,#16396e));color:#fff;padding:14px 20px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
-    .preview-header h3{font-size:14px;font-weight:600}
-    .preview-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
-    .preview-close:hover{background:rgba(255,255,255,.25)}
-    .preview-body{padding:20px;overflow-y:auto;flex:1;background:#f5f5f5}
-    .preview-doc{background:#fff;margin:0 auto;padding:2cm 2.2cm;box-shadow:0 2px 20px rgba(0,0,0,.12);min-height:26cm;font-family:Arial,sans-serif;font-size:10pt;color:#1a1a2e;max-width:21cm}
-    .preview-footer{padding:12px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
-    .btn-print-pdf{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px}
-    .btn-print-pdf:hover{background:var(--blue)}
-    .btn-cancel-preview{background:#f3f4f6;border:1.5px solid #e5e7eb;color:#374151;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}
-
-    /* ── ESTILOS DEL DOCUMENTO ── */
-    .doc-header-table{width:100%;border-collapse:collapse;margin-bottom:14pt}
-    .doc-header-table td{border:2px solid #0f2d5e;padding:6px 10px;font-size:10pt}
-    .doc-header-blue{background:#0f2d5e;color:white;text-align:center;font-weight:bold;font-size:12pt;padding:10px}
-    .doc-seccion{background:#0f2d5e;color:white;font-weight:bold;padding:5px 10px;margin:10pt 0 7pt;font-size:10pt}
-    .doc-fila{margin-bottom:6pt;font-size:10pt;line-height:1.5}
-    .doc-fila b{color:#0f2d5e}
-    .doc-nota{font-size:8.5pt;margin:4pt 0;line-height:1.4;text-align:justify}
-    .doc-firmas{width:100%;border-collapse:collapse;margin-top:28pt}
-    .doc-firmas td{text-align:center;padding-top:8px;border-top:1.5px solid #333;font-size:9pt;color:#4a5a72;font-weight:bold;width:33%}
-    .doc-pie{width:100%;border-collapse:collapse;margin-top:12pt;font-size:8pt}
-    .doc-pie td{border:1.5px solid #0f2d5e;padding:4px 8px}
-    .doc-pie-blue{background:#0f2d5e;color:white;text-align:center}
-    .doc-datos{width:100%;border-collapse:collapse;margin:10pt 0}
-    .doc-datos td{border:1px solid #c8d5e8;padding:5px 9px;font-size:9.5pt}
-    .doc-datos td.lbl{background:#e8edf7;font-weight:bold;color:#0f2d5e;width:22%}
-    .doc-amort{width:100%;border-collapse:collapse;margin-top:12pt;font-size:9pt}
-    .doc-amort thead tr{background:#0f2d5e;color:white}
-    .doc-amort thead th{padding:6px 8px;text-align:center;font-size:9pt}
-    .doc-amort tbody tr:nth-child(even){background:#f8fafd}
-    .doc-amort tbody td{border:1px solid #e8edf7;padding:5px 8px}
-
-    /* ── MODAL DESEMBARGO ── */
-    .desembargo-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
-    .desembargo-overlay.open{display:flex}
-    .desembargo-modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:480px;overflow:hidden}
-    .desembargo-header{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px}
-    .desembargo-header h3{font-size:15px;font-weight:600}
-    .desembargo-body{padding:20px}
-    .desembargo-info{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:9px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#5b21b6}
-    .desembargo-info b{color:#4c1d95}
-
-    @media print{
-      body>*:not(#preview-overlay){display:none!important}
-      #preview-overlay{display:block!important;position:static!important;background:none!important;padding:0!important}
-      .preview-modal{box-shadow:none!important;max-height:none!important;border-radius:0!important;max-width:none!important}
-      .preview-header,.preview-footer{display:none!important}
-      .preview-body{padding:0!important;background:#fff!important;overflow:visible!important}
-      .preview-doc{box-shadow:none!important;margin:0!important;padding:1.5cm 2cm!important;max-width:none!important}
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Acuerdos de Pago — Alcaldía de Bello</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--navy:#0f2d5e;--navy-mid:#16396e;--blue:#1a6fc4;--gold:#e8a020;--gold2:#f5c050;--green:#16a34a;--red:#dc2626;--bg:#f0f4fa;--surface:#fff;--surface2:#e8edf7;--text:#0f1e35;--text-soft:#4a5a72;--border:#c8d5e8;--radius:12px;--shadow:0 4px 24px rgba(15,45,94,.10)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%)}
+.hi{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hico{width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
+.htx h1{font-family:'DM Serif Display',serif;color:#fff;font-size:18px;font-weight:400}
+.htx p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
+.hact{margin-left:auto;display:flex;gap:8px}
+.bnav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;white-space:nowrap;transition:background .2s;cursor:pointer;font-family:'DM Sans',sans-serif}
+.bnav:hover{background:rgba(255,255,255,.22)}
+.tabs{background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)}
+.tabsi{max-width:960px;margin:0 auto;display:flex;padding:0 24px;gap:2px}
+.tab{padding:10px 18px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;transition:all .2s}
+.tab:hover{color:#fff}
+main{max-width:960px;margin:0 auto;padding:24px 24px 60px}
+.seccion{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.seh{background:var(--navy);color:#fff;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.seb{padding:18px}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.campo label{display:block;font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.campo input,.campo select,.campo textarea{width:100%;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:8px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s}
+.campo input:focus,.campo select:focus{border-color:var(--blue);background:#fff}
+.hl{background:#fefce8;border-color:#f59e0b}
+.occ{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text)}
+.occ label{display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0}
+.calc{position:sticky;top:20px}
+.ccard{background:linear-gradient(135deg,var(--navy),#1a4a8a);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:16px;box-shadow:0 8px 32px rgba(15,45,94,.25)}
+.cct{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:14px}
+.ci{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ci:last-child{border-bottom:none}
+.cl{font-size:12px;color:rgba(255,255,255,.7)}
+.cv{font-size:14px;font-weight:700;color:#fff}
+.cv.gold{color:var(--gold2);font-size:18px}
+.cv.green{color:#86efac}
+.ctab{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;max-height:320px;overflow-y:auto}
+.ctabt{background:var(--navy);color:#fff;padding:10px 14px;font-size:12px;font-weight:700}
+.ctab table{width:100%;border-collapse:collapse;font-size:11px}
+.ctab thead tr{background:#e8edf7}
+.ctab thead th{padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--navy)}
+.ctab thead th:first-child{text-align:center}
+.ctab tbody tr{border-bottom:1px solid #f0f4fa}
+.ctab tbody tr:hover{background:#f8fafd}
+.ctab td{padding:6px 10px;text-align:right;color:var(--text)}
+.ctab td:first-child{text-align:center;font-weight:700;color:var(--navy)}
+.accs{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.ba{width:100%;padding:12px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.ba:last-child{margin-bottom:0}
+.ba:disabled{opacity:.6;cursor:not-allowed}
+.st{display:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:8px;align-items:center;gap:8px}
+.st.ok{display:flex;background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+.st.err{display:flex;background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+.st.load{display:flex;background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+.spin{width:14px;height:14px;border:2px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.resmes{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.rstt{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:12px}
+.rsti{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--surface2);font-size:12px}
+.rsti:last-child{border-bottom:none}
+.rstv{font-weight:700;color:var(--navy)}
+.pend-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.pend-hdr{background:var(--navy);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.pend-search{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:220px}
+.pend-search::placeholder{color:rgba(255,255,255,.5)}
+.pitem{padding:14px 18px;border-bottom:1px solid var(--surface2)}
+.pitem:last-child{border-bottom:none}
+.pitem:hover{background:#f8fafd}
+.pnombre{font-size:13px;font-weight:700;color:var(--navy)}
+.pdatos{display:flex;gap:12px;font-size:11px;color:var(--text-soft);margin:6px 0;flex-wrap:wrap}
+.pdatos b{color:var(--text)}
+.pbtns{display:flex;gap:8px;margin-top:8px}
+.pbpago{background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.pbpago:hover{background:#6d28d9}
+.pbdel{background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.pempty{text-align:center;padding:40px 20px;color:var(--text-soft)}
+.badge{background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px}
+.prev-ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.prev-ov.open{display:flex}
+.prev-mod{background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:720px;max-height:92vh;display:flex;flex-direction:column}
+.prev-hdr{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:14px 20px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.prev-hdr h3{font-size:14px;font-weight:600}
+.prev-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.prev-body{padding:20px;overflow-y:auto;flex:1;background:#f5f5f5}
+.prev-doc{background:#fff;margin:0 auto;padding:2cm 2.2cm;box-shadow:0 2px 20px rgba(0,0,0,.12);min-height:26cm;font-family:Arial,sans-serif;font-size:10pt;color:#1a1a2e;max-width:21cm}
+.prev-foot{padding:12px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
+.bprint{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer}
+.bprint:hover{background:var(--blue)}
+.bcancel{background:#f3f4f6;border:1.5px solid #e5e7eb;color:#374151;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}
+.dh-table{width:100%;border-collapse:collapse;margin-bottom:14pt}
+.dh-table td{border:2px solid #0f2d5e;padding:6px 10px;font-size:10pt}
+.dh-blue{background:#0f2d5e;color:white;text-align:center;font-weight:bold;font-size:12pt;padding:10px}
+.dsec{background:#0f2d5e;color:white;font-weight:bold;padding:5px 10px;margin:10pt 0 7pt;font-size:10pt}
+.dfila{margin-bottom:6pt;font-size:10pt;line-height:1.5}
+.dfila b{color:#0f2d5e}
+.dnota{font-size:8.5pt;margin:4pt 0;line-height:1.4;text-align:justify}
+.dfirmas{width:100%;border-collapse:collapse;margin-top:28pt}
+.dfirmas td{text-align:center;padding-top:8px;border-top:1.5px solid #333;font-size:9pt;color:#4a5a72;font-weight:bold;width:33%}
+.dpie{width:100%;border-collapse:collapse;margin-top:12pt;font-size:8pt}
+.dpie td{border:1.5px solid #0f2d5e;padding:4px 8px}
+.dpie-blue{background:#0f2d5e;color:white;text-align:center}
+.ddatos{width:100%;border-collapse:collapse;margin:10pt 0}
+.ddatos td{border:1px solid #c8d5e8;padding:5px 9px;font-size:9.5pt}
+.ddatos td.lbl{background:#e8edf7;font-weight:bold;color:#0f2d5e;width:22%}
+.damort{width:100%;border-collapse:collapse;margin-top:12pt;font-size:9pt}
+.damort thead tr{background:#0f2d5e;color:white}
+.damort thead th{padding:6px 8px;text-align:center;font-size:9pt}
+.damort tbody tr:nth-child(even){background:#f8fafd}
+.damort tbody td{border:1px solid #e8edf7;padding:5px 8px}
+.des-ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.des-ov.open{display:flex}
+.des-mod{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:480px;overflow:hidden}
+.des-hdr{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px}
+.des-hdr h3{font-size:15px;font-weight:600}
+.des-body{padding:20px}
+.des-info{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:9px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#5b21b6}
+.des-info b{color:#4c1d95}
+@media print{body>*:not(.prev-ov){display:none!important}.prev-ov{display:block!important;position:static!important;background:none!important;padding:0!important}.prev-mod{box-shadow:none!important;max-height:none!important;border-radius:0!important;max-width:none!important}.prev-hdr,.prev-foot{display:none!important}.prev-body{padding:0!important;background:#fff!important;overflow:visible!important}.prev-doc{box-shadow:none!important;margin:0!important;padding:1.5cm 2cm!important;max-width:none!important}}
+@media(max-width:768px){.cg{grid-template-columns:1fr}.cg3{grid-template-columns:1fr}.calc{position:static}}
+</style>
 </head>
 <body>
-
 <header>
-  <div class="header-inner">
-    <div class="header-icon">🤝</div>
-    <div class="header-text">
-      <h1>Acuerdos de Pago</h1>
-      <p>Predial · Industria y Comercio · Obligaciones Urbanísticas</p>
-    </div>
-    <div class="header-actions">
-      <a href="home.html" class="btn-nav">🏛️ Inicio</a>
-      <a href="index.html" class="btn-nav">📄 Oficios</a>
-    </div>
+<div class="hi">
+  <div class="hico">🤝</div>
+  <div class="htx"><h1>Acuerdos de Pago</h1><p>Predial · Industria y Comercio · Obligaciones Urbanísticas</p></div>
+  <div class="hact">
+    <a href="home.html" class="bnav">🏛️ Inicio</a>
+    <a href="index.html" class="bnav">📄 Oficios</a>
   </div>
-  <div style="background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)">
-    <div style="max-width:960px;margin:0 auto;display:flex;padding:0 24px;gap:2px">
-      <button id="tab-nuevo" onclick="goTab('nuevo')"
-        style="padding:10px 18px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid #f5c050;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;color:#fff">
-        ✏️ Nuevo acuerdo
-      </button>
-      <button id="tab-pendientes" onclick="goTab('pendientes')"
-        style="padding:10px 18px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif">
-        ⏳ Pendientes de pago <span id="badge-pendientes" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:4px">0</span>
-      </button>
-    </div>
+</div>
+<div class="tabs">
+  <div class="tabsi">
+    <button class="tab" id="tab-nuevo" onclick="goTab('nuevo')" style="border-bottom-color:#f5c050;color:#fff">✏️ Nuevo acuerdo</button>
+    <button class="tab" id="tab-pend" onclick="goTab('pendientes')">⏳ Pendientes <span class="badge" id="badge">0</span></button>
   </div>
+</div>
 </header>
 
-<main style="padding:24px 24px 60px;display:block">
+<main>
 
-  <!-- PANEL NUEVO ACUERDO -->
-  <div id="panel-nuevo" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;max-width:912px;margin:0 auto">
-  <!-- COLUMNA IZQUIERDA: FORMULARIO -->
-  <div>
+<!-- PANEL NUEVO ACUERDO -->
+<div id="panel-nuevo" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
 
-    <!-- CONFIGURACIÓN -->
-    <div class="seccion">
-      <div class="sec-header">⚙️ Configuración del acuerdo</div>
-      <div class="sec-body">
-        <div class="campo-grid tres">
-          <div class="campo">
-            <label>Tipo de obligación *</label>
-            <select id="tipoObligacion" onchange="calcular()">
-              <option value="">Seleccione...</option>
-              <option value="IP — Impuesto Predial">IP — Impuesto Predial</option>
-              <option value="ICO — Industria y Comercio">ICO — Industria y Comercio</option>
-              <option value="CONS — Obligaciones Urbanísticas">CONS — Obligaciones Urbanísticas</option>
-            </select>
-          </div>
-          <div class="campo">
-            <label>Tasa mensual (%) *</label>
-            <input type="number" id="tasaMensual" placeholder="Ej: 1.4445" step="0.0001" min="0" oninput="calcular()" onblur="calcular()" />
-          </div>
-          <div class="campo">
-            <label>Mes inicio cuotas</label>
-            <input type="month" id="mesInicio" />
-          </div>
-        </div>
-        <div class="campo" style="margin-top:12px">
-          <label>Funcionario que proyecta *</label>
-          <input type="text" id="funcionario" placeholder="Nombre del funcionario" />
-        </div>
+<!-- FORMULARIO -->
+<div>
+<div class="seccion">
+  <div class="seh">⚙️ Configuración del acuerdo</div>
+  <div class="seb">
+    <div class="cg3">
+      <div class="campo"><label>Tipo de obligación *</label>
+        <select id="tipoObligacion" onchange="calcular()">
+          <option value="">Seleccione...</option>
+          <option value="IP — Impuesto Predial">IP — Impuesto Predial</option>
+          <option value="ICO — Industria y Comercio">ICO — Industria y Comercio</option>
+          <option value="CONS — Obligaciones Urbanísticas">CONS — Obligaciones Urbanísticas</option>
+        </select>
+      </div>
+      <div class="campo"><label>Tasa mensual (%) *</label>
+        <input type="number" id="tasaMensual" placeholder="Ej: 1.4445" step="0.0001" min="0" oninput="calcular()" onchange="calcular()"/>
+      </div>
+      <div class="campo"><label>Mes inicio cuotas</label>
+        <input type="month" id="mesInicio"/>
       </div>
     </div>
-
-    <!-- CONTRIBUYENTE -->
-    <div class="seccion">
-      <div class="sec-header">👤 Información del contribuyente</div>
-      <div class="sec-body">
-        <div class="campo-grid">
-          <div class="campo">
-            <label>Nombres *</label>
-            <input type="text" id="nombres" placeholder="Nombres del contribuyente" />
-          </div>
-          <div class="campo">
-            <label>Apellidos *</label>
-            <input type="text" id="apellidos" placeholder="Apellidos" />
-          </div>
-        </div>
-        <div class="campo-grid tres" style="margin-top:12px">
-          <div class="campo">
-            <label>Tipo de documento</label>
-            <select id="tipoDoc">
-              <option value="C.C">C.C</option>
-              <option value="C.E">C.E</option>
-              <option value="NIT">NIT</option>
-            </select>
-          </div>
-          <div class="campo">
-            <label>Número documento *</label>
-            <input type="text" id="cedula" placeholder="Número" />
-          </div>
-          <div class="campo">
-            <label>Teléfono</label>
-            <input type="text" id="telefono" placeholder="Fijo" />
-          </div>
-        </div>
-        <div class="campo-grid" style="margin-top:12px">
-          <div class="campo">
-            <label>Celular</label>
-            <input type="text" id="celular" placeholder="Celular" />
-          </div>
-          <div class="campo">
-            <label>Correo electrónico</label>
-            <input type="email" id="correo" placeholder="correo@ejemplo.com" />
-          </div>
-        </div>
-        <div class="campo campo-full" style="margin-top:12px">
-          <label>Dirección</label>
-          <input type="text" id="direccion" placeholder="Dirección completa" />
-        </div>
-
-        <div style="margin-top:14px">
-          <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px">Ocupación</label>
-          <div class="campo-check">
-            <label><input type="radio" name="ocupacion" value="Empleado"> Empleado</label>
-            <label><input type="radio" name="ocupacion" value="Jubilado"> Jubilado</label>
-            <label><input type="radio" name="ocupacion" value="Pensionado"> Pensionado</label>
-            <label><input type="radio" name="ocupacion" value="Desempleado"> Desempleado</label>
-            <label><input type="radio" name="ocupacion" value="Independiente"> Independiente</label>
-            <label><input type="radio" name="ocupacion" value="Ama de casa"> Ama de casa</label>
-            <label><input type="radio" name="ocupacion" value="Estudiante"> Estudiante</label>
-          </div>
-        </div>
-
-        <div class="campo-grid" style="margin-top:12px">
-          <div class="campo">
-            <label>Cargo</label>
-            <input type="text" id="cargo" placeholder="Cargo o profesión" />
-          </div>
-          <div class="campo">
-            <label>Ingreso mensual ($)</label>
-            <input type="number" id="ingresoMensual" placeholder="0" min="0" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- VALORES -->
-    <div class="seccion">
-      <div class="sec-header">💰 Valores del acuerdo</div>
-      <div class="sec-body">
-        <div class="campo-grid tres">
-          <div class="campo">
-            <label>Valor total factura ($) *</label>
-            <input type="number" id="valorFactura" placeholder="0" min="0" oninput="calcular()" onblur="calcular()" class="highlight" />
-          </div>
-          <div class="campo">
-            <label>Cuota inicial ($) *</label>
-            <input type="number" id="cuotaInicial" placeholder="0" min="0" oninput="calcular()" onblur="calcular()" class="highlight" />
-          </div>
-          <div class="campo">
-            <label>N° cuotas solicitadas *</label>
-            <input type="number" id="numCuotas" placeholder="Ej: 12" min="1" max="36" oninput="calcular()" onblur="calcular()" class="highlight" />
-          </div>
-        </div>
-        <div class="campo-grid" style="margin-top:12px">
-          <div class="campo">
-            <label>Valor a financiar ($)</label>
-            <input type="number" id="valorFinanciar" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;color:var(--text-soft)" />
-          </div>
-          <div class="campo">
-            <label>Valor cuota mensual ($)</label>
-            <input type="number" id="valorCuota" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;color:var(--text-soft)" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- CODEUDOR -->
-    <div class="seccion">
-      <div class="sec-header">👥 Información del codeudor / referencia personal</div>
-      <div class="sec-body">
-        <div class="campo-grid">
-          <div class="campo">
-            <label>Nombres codeudor</label>
-            <input type="text" id="cod_nombres" placeholder="Nombres" />
-          </div>
-          <div class="campo">
-            <label>Apellidos codeudor</label>
-            <input type="text" id="cod_apellidos" placeholder="Apellidos" />
-          </div>
-        </div>
-        <div class="campo-grid tres" style="margin-top:12px">
-          <div class="campo">
-            <label>Tipo documento</label>
-            <select id="cod_tipoDoc">
-              <option value="C.C">C.C</option>
-              <option value="C.E">C.E</option>
-              <option value="NIT">NIT</option>
-            </select>
-          </div>
-          <div class="campo">
-            <label>Número documento</label>
-            <input type="text" id="cod_cedula" placeholder="Número" />
-          </div>
-          <div class="campo">
-            <label>Teléfono / Celular</label>
-            <input type="text" id="cod_telefono" placeholder="Teléfono" />
-          </div>
-        </div>
-        <div class="campo" style="margin-top:12px">
-          <label>Dirección codeudor</label>
-          <input type="text" id="cod_direccion" placeholder="Dirección" />
-        </div>
-        <div class="campo-grid" style="margin-top:12px">
-          <div class="campo">
-            <label>Matrícula inmueble</label>
-            <input type="text" id="matricula" placeholder="Número de matrícula" />
-          </div>
-          <div class="campo">
-            <label>Dirección predio</label>
-            <input type="text" id="cod_dirPredio" placeholder="Dirección del predio" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- COLUMNA DERECHA: CALCULADORA + ACCIONES -->
-  <div class="calc-panel">
-
-    <!-- RESUMEN MES -->
-    <div class="resumen-mes" id="resumen-mes" style="display:none">
-      <div class="resumen-title">📊 Acuerdos este mes</div>
-      <div class="resumen-stat"><span>Total acuerdos</span><span class="resumen-stat-val" id="res-total">—</span></div>
-      <div class="resumen-stat"><span>Valor total cartera</span><span class="resumen-stat-val" id="res-valor">—</span></div>
-      <div id="res-tipos"></div>
-    </div>
-
-    <!-- CALCULADORA -->
-    <div class="calc-card">
-      <div class="calc-title">📐 Proyección calculada</div>
-      <div class="calc-item">
-        <span class="calc-label">Valor factura</span>
-        <span class="calc-val" id="c-factura">$ 0</span>
-      </div>
-      <div class="calc-item">
-        <span class="calc-label">Cuota inicial</span>
-        <span class="calc-val" id="c-inicial">$ 0</span>
-      </div>
-      <div class="calc-item">
-        <span class="calc-label">Valor a financiar</span>
-        <span class="calc-val" id="c-financiar">$ 0</span>
-      </div>
-      <div class="calc-item">
-        <span class="calc-label">N° cuotas</span>
-        <span class="calc-val" id="c-cuotas">—</span>
-      </div>
-      <div class="calc-item">
-        <span class="calc-label">Tasa mensual</span>
-        <span class="calc-val" id="c-tasa">—</span>
-      </div>
-      <div class="calc-item">
-        <span class="calc-label">Total intereses</span>
-        <span class="calc-val green" id="c-intereses">$ 0</span>
-      </div>
-      <div class="calc-item">
-        <span class="calc-label">💰 Cuota mensual</span>
-        <span class="calc-val gold" id="c-cuota-val">$ 0</span>
-      </div>
-    </div>
-
-    <!-- TABLA PROYECCIÓN -->
-    <div class="calc-tabla" id="tabla-proyeccion" style="display:none">
-      <div class="calc-tabla-title">📅 Tabla de pagos</div>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Cuota</th>
-            <th>Interés</th>
-            <th>Capital</th>
-            <th>Saldo</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-proyeccion"></tbody>
-      </table>
-    </div>
-
-    <!-- ACCIONES -->
-    <div class="acciones" style="margin-top:16px">
-      <div class="status" id="status-msg"></div>
-      <button class="btn-accion btn-generar" onclick="generarFormulario()">
-        📄 Generar Formulario F-GAF-68
-      </button>
-      <button class="btn-accion btn-proyeccion" onclick="generarProyeccion()">
-        📊 Generar Proyección de Pagos
-      </button>
-      <button class="btn-accion btn-limpiar" onclick="confirmarLimpiar()">
-        🗑️ Limpiar formulario
-      </button>
-      <div style="border-top:1px solid #e5e7eb;margin:8px 0;padding-top:8px">
-        <button class="btn-accion" id="btn-desembargo" onclick="abrirModalDesembargo()"
-          style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;display:none">
-          ✅ Cuota inicial pagada — Enviar a desembargo
-        </button>
-      </div>
-    </div>
-
-  </div><!-- fin panel-nuevo -->
-
-  <!-- PANEL PENDIENTES -->
-  <div id="panel-pendientes" style="display:none;border:3px solid red;min-height:200px;background:yellow">
-    <div style="background:#fff;border:1px solid #c8d5e8;border-radius:12px;box-shadow:0 4px 24px rgba(15,45,94,.10);overflow:hidden">
-      <div style="background:#0f2d5e;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <span style="font-size:13px;font-weight:700">⏳ Acuerdos pendientes de pago de cuota inicial</span>
-        <input type="text" id="search-pendientes" placeholder="Buscar nombre o cédula..."
-          oninput="filtrarPendientes()"
-          style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:220px" />
-      </div>
-      <div id="lista-pendientes" style="border:3px solid blue;min-height:100px">
-        <div style="text-align:center;padding:40px 20px;color:#4a5a72">
-          <div style="font-size:36px;margin-bottom:8px">📋</div>
-          <p style="font-size:14px">No hay acuerdos pendientes de pago</p>
-        </div>
-      </div>
+    <div class="campo" style="margin-top:12px"><label>Funcionario que proyecta *</label>
+      <input type="text" id="funcionario" placeholder="Nombre del funcionario"/>
     </div>
   </div>
+</div>
 
-</main>
-
-<!-- MODAL CONFIRMAR LIMPIAR -->
-<div id="mLimpiar" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
-  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:380px;overflow:hidden">
-    <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:16px 20px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:22px">🗑️</span>
-      <div style="color:#fff;font-weight:700;font-size:14px">¿Limpiar el formulario?</div>
+<div class="seccion">
+  <div class="seh">👤 Información del contribuyente</div>
+  <div class="seb">
+    <div class="cg">
+      <div class="campo"><label>Nombres *</label><input type="text" id="nombres" placeholder="Nombres"/></div>
+      <div class="campo"><label>Apellidos *</label><input type="text" id="apellidos" placeholder="Apellidos"/></div>
     </div>
-    <div style="padding:18px 20px">
-      <p style="font-size:13px;color:#374151;margin-bottom:16px">Se borrarán todos los datos ingresados. ¿Está seguro?</p>
-      <div style="display:flex;gap:10px">
-        <button onclick="document.getElementById('mLimpiar').style.display='none'" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
-        <button onclick="limpiarFormulario()" style="flex:1;padding:10px;background:#374151;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, limpiar</button>
+    <div class="cg3" style="margin-top:12px">
+      <div class="campo"><label>Tipo documento</label>
+        <select id="tipoDoc"><option value="C.C">C.C</option><option value="C.E">C.E</option><option value="NIT">NIT</option></select>
+      </div>
+      <div class="campo"><label>Número documento *</label><input type="text" id="cedula" placeholder="Número"/></div>
+      <div class="campo"><label>Teléfono</label><input type="text" id="telefono" placeholder="Fijo"/></div>
+    </div>
+    <div class="cg" style="margin-top:12px">
+      <div class="campo"><label>Celular</label><input type="text" id="celular" placeholder="Celular"/></div>
+      <div class="campo"><label>Correo electrónico</label><input type="email" id="correo" placeholder="correo@ejemplo.com"/></div>
+    </div>
+    <div class="campo" style="margin-top:12px"><label>Dirección</label><input type="text" id="direccion" placeholder="Dirección completa"/></div>
+    <div style="margin-top:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px">Ocupación</label>
+      <div class="occ">
+        <label><input type="radio" name="ocu" value="Empleado"> Empleado</label>
+        <label><input type="radio" name="ocu" value="Jubilado"> Jubilado</label>
+        <label><input type="radio" name="ocu" value="Pensionado"> Pensionado</label>
+        <label><input type="radio" name="ocu" value="Desempleado"> Desempleado</label>
+        <label><input type="radio" name="ocu" value="Independiente"> Independiente</label>
+        <label><input type="radio" name="ocu" value="Ama de casa"> Ama de casa</label>
+        <label><input type="radio" name="ocu" value="Estudiante"> Estudiante</label>
+      </div>
+    </div>
+    <div class="cg" style="margin-top:12px">
+      <div class="campo"><label>Cargo</label><input type="text" id="cargo" placeholder="Cargo o profesión"/></div>
+      <div class="campo"><label>Ingreso mensual ($)</label><input type="number" id="ingresoMensual" placeholder="0" min="0"/></div>
+    </div>
+  </div>
+</div>
+
+<div class="seccion">
+  <div class="seh">💰 Valores del acuerdo</div>
+  <div class="seb">
+    <div class="cg3">
+      <div class="campo"><label>Valor total factura ($) *</label>
+        <input type="number" id="valorFactura" placeholder="0" min="0" oninput="calcular()" onchange="calcular()" class="hl"/>
+      </div>
+      <div class="campo"><label>Cuota inicial ($) *</label>
+        <input type="number" id="cuotaInicial" placeholder="0" min="0" oninput="calcular()" onchange="calcular()" class="hl"/>
+      </div>
+      <div class="campo"><label>N° cuotas solicitadas *</label>
+        <input type="number" id="numCuotas" placeholder="Ej: 12" min="1" max="36" oninput="calcular()" onchange="calcular()" class="hl"/>
+      </div>
+    </div>
+    <div class="cg" style="margin-top:12px">
+      <div class="campo"><label>Valor a financiar ($)</label>
+        <input type="number" id="valorFinanciar" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;color:var(--text-soft)"/>
+      </div>
+      <div class="campo"><label>Valor cuota mensual ($)</label>
+        <input type="number" id="valorCuota" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;color:var(--text-soft)"/>
       </div>
     </div>
   </div>
 </div>
 
+<div class="seccion">
+  <div class="seh">👥 Información del codeudor</div>
+  <div class="seb">
+    <div class="cg">
+      <div class="campo"><label>Nombres codeudor</label><input type="text" id="cod_nombres" placeholder="Nombres"/></div>
+      <div class="campo"><label>Apellidos codeudor</label><input type="text" id="cod_apellidos" placeholder="Apellidos"/></div>
+    </div>
+    <div class="cg3" style="margin-top:12px">
+      <div class="campo"><label>Tipo documento</label>
+        <select id="cod_tipoDoc"><option value="C.C">C.C</option><option value="C.E">C.E</option><option value="NIT">NIT</option></select>
+      </div>
+      <div class="campo"><label>Número documento</label><input type="text" id="cod_cedula" placeholder="Número"/></div>
+      <div class="campo"><label>Teléfono / Celular</label><input type="text" id="cod_telefono" placeholder="Teléfono"/></div>
+    </div>
+    <div class="campo" style="margin-top:12px"><label>Dirección codeudor</label><input type="text" id="cod_direccion" placeholder="Dirección"/></div>
+    <div class="cg" style="margin-top:12px">
+      <div class="campo"><label>Matrícula inmueble</label><input type="text" id="matricula" placeholder="Número de matrícula"/></div>
+      <div class="campo"><label>Dirección predio</label><input type="text" id="cod_dirPredio" placeholder="Dirección del predio"/></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- CALCULADORA -->
+<div class="calc">
+  <div class="resmes" id="resmes" style="display:none">
+    <div class="rstt">📊 Acuerdos este mes</div>
+    <div class="rsti"><span>Total acuerdos</span><span class="rstv" id="res-total">—</span></div>
+    <div class="rsti"><span>Valor total cartera</span><span class="rstv" id="res-valor">—</span></div>
+    <div id="res-tipos"></div>
+  </div>
+
+  <div class="ccard">
+    <div class="cct">📐 Proyección calculada</div>
+    <div class="ci"><span class="cl">Valor factura</span><span class="cv" id="c-fac">$ 0</span></div>
+    <div class="ci"><span class="cl">Cuota inicial</span><span class="cv" id="c-ini">$ 0</span></div>
+    <div class="ci"><span class="cl">Valor a financiar</span><span class="cv" id="c-fin">$ 0</span></div>
+    <div class="ci"><span class="cl">N° cuotas</span><span class="cv" id="c-ncu">—</span></div>
+    <div class="ci"><span class="cl">Tasa mensual</span><span class="cv" id="c-tas">—</span></div>
+    <div class="ci"><span class="cl">Total intereses</span><span class="cv green" id="c-int">$ 0</span></div>
+    <div class="ci"><span class="cl">💰 Cuota mensual</span><span class="cv gold" id="c-cuo">$ 0</span></div>
+  </div>
+
+  <div class="ctab" id="tabla-proy" style="display:none">
+    <div class="ctabt">📅 Tabla de pagos</div>
+    <table>
+      <thead><tr><th>#</th><th style="text-align:center">Cuota</th><th>Interés</th><th>Capital</th><th>Saldo</th></tr></thead>
+      <tbody id="tbody-proy"></tbody>
+    </table>
+  </div>
+
+  <div class="accs" style="margin-top:16px">
+    <div class="st" id="st"></div>
+    <button class="ba" onclick="generarFormulario()" style="background:var(--navy);color:#fff">📄 Generar Formulario F-GAF-68</button>
+    <button class="ba" onclick="generarProyeccion()" style="background:#16a34a;color:#fff">📊 Generar Proyección de Pagos</button>
+    <button class="ba" id="btn-des" onclick="abrirDes()" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;display:none">✅ Cuota inicial pagada — Enviar a desembargo</button>
+    <button class="ba" onclick="confirmarLimpiar()" style="background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb">🗑️ Limpiar formulario</button>
+  </div>
+</div>
+
+</div><!-- fin panel-nuevo -->
+
+<!-- PANEL PENDIENTES -->
+<div id="panel-pend" style="display:none">
+  <div class="pend-wrap">
+    <div class="pend-hdr">
+      <span style="font-size:13px;font-weight:700">⏳ Acuerdos pendientes de pago de cuota inicial</span>
+      <input type="text" class="pend-search" id="search-pend" placeholder="Buscar nombre o cédula..." oninput="filtrarPend()"/>
+    </div>
+    <div id="lista-pend"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL LIMPIAR -->
+<div id="mLimpiar" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:380px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:16px 20px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:22px">🗑️</span>
+      <div style="color:#fff;font-weight:700;font-size:14px">¿Limpiar el formulario?</div>
+    </div>
+    <div style="padding:18px 20px">
+      <p style="font-size:13px;color:#374151;margin-bottom:16px">Se borrarán todos los datos. ¿Está seguro?</p>
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('mLimpiar').style.display='none'" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="limpiarForm()" style="flex:1;padding:10px;background:#374151;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VISTA PREVIA PDF -->
+<div class="prev-ov" id="prev-ov">
+  <div class="prev-mod">
+    <div class="prev-hdr"><h3 id="prev-title">Vista previa</h3><button class="prev-close" onclick="cerrarPrev()">✕</button></div>
+    <div class="prev-body"><div class="prev-doc" id="prev-doc"></div></div>
+    <div class="prev-foot"><button class="bcancel" onclick="cerrarPrev()">Cerrar</button><button class="bprint" onclick="window.print()">🖨️ Imprimir / PDF</button></div>
+  </div>
+</div>
+
+<!-- MODAL ENVIAR A DESEMBARGO -->
+<div class="des-ov" id="des-ov">
+  <div class="des-mod">
+    <div class="des-hdr"><span style="font-size:22px">✅</span><h3>Enviar a cola de desembargo</h3></div>
+    <div class="des-body">
+      <div class="des-info">
+        <b>Contribuyente:</b> <span id="des-nom">—</span><br>
+        <b>Cédula:</b> <span id="des-ced">—</span><br>
+        <b>Tipo obligación:</b> <span id="des-tip">—</span>
+      </div>
+      <div class="campo" style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Radicado del proceso</label>
+        <input type="text" id="des-rad" placeholder="Ej: 20242023843" style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #ddd6fe;border-radius:8px;outline:none;font-family:inherit"/>
+        <div style="font-size:11px;color:#6b7280;margin-top:3px">Opcional — puede completarlo después en el generador de oficios.</div>
+      </div>
+      <div class="campo" style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Concepto / Radicados del desembargo</label>
+        <textarea id="des-conc" rows="3" placeholder="Describa los radicados y el motivo del desembargo..." style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #ddd6fe;border-radius:8px;outline:none;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <div class="campo" style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Observación</label>
+        <input type="text" id="des-obs" placeholder="Acuerdo de pago — cuota inicial cancelada" style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #c8d5e8;border-radius:8px;outline:none;font-family:inherit"/>
+      </div>
+      <div id="des-st" style="display:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarDes()" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="enviarDes()" style="flex:1;padding:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">🖨️ Enviar a cola</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer style="text-align:center;padding:16px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border)">
+  Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello
+</footer>
+
 <script>
-const GAS_INDEX_URL = "https://script.google.com/macros/s/AKfycbwzZWWIj2zx4_S-qNOK2SRtUsbKm8SIdsyTtIDDLOeKqmH7dsNcngboxo5c7XQ9dfFRlA/exec";
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEpNUeH2kZs2cxSw64rM9q8T6vWCfSZxPvCOwjXS41IGulD7Ud-TGWdnyHrEd6JJE/exec";
-
-// ── CALCULADORA ──
-let proyeccion = [];
-
-function calcular() {
-  const vFactura  = parseFloat(document.getElementById('valorFactura').value)  || 0;
-  const vInicial  = parseFloat(document.getElementById('cuotaInicial').value)  || 0;
-  const nCuotas   = parseInt(document.getElementById('numCuotas').value)       || 0;
-  const tasaPct   = parseFloat(document.getElementById('tasaMensual').value)   || 0;
-  const tasa      = tasaPct / 100;
-
-  const vFinanciar = Math.max(0, vFactura - vInicial);
-  document.getElementById('valorFinanciar').value = Math.round(vFinanciar);
-
-  let cuotaMensual = 0;
-  proyeccion = [];
-
-  if (vFinanciar > 0 && nCuotas > 0 && tasa > 0) {
-    // Fórmula de cuota fija
-    cuotaMensual = vFinanciar * (tasa * Math.pow(1+tasa, nCuotas)) / (Math.pow(1+tasa, nCuotas) - 1);
-    document.getElementById('valorCuota').value = Math.round(cuotaMensual);
-
-    // Generar tabla de amortización
-    let saldo = vFinanciar;
-    let totalIntereses = 0;
-    for (let i = 1; i <= nCuotas; i++) {
-      const interes  = saldo * tasa;
-      const capital  = cuotaMensual - interes;
-      saldo         -= capital;
-      totalIntereses += interes;
-      proyeccion.push({
-        cuota: i,
-        valorCuota: cuotaMensual,
-        interes,
-        capital,
-        saldo: Math.max(0, saldo)
-      });
-    }
-
-    // Actualizar calculadora visual
-    document.getElementById('c-intereses').textContent = fmt(totalIntereses);
-    document.getElementById('c-cuota-val').textContent = fmt(cuotaMensual);
-
-    // Tabla
-    const tbody = document.getElementById('tbody-proyeccion');
-    tbody.innerHTML = proyeccion.map(p => `
-      <tr>
-        <td>${p.cuota}</td>
-        <td>${fmtCorto(p.valorCuota)}</td>
-        <td>${fmtCorto(p.interes)}</td>
-        <td>${fmtCorto(p.capital)}</td>
-        <td>${fmtCorto(p.saldo)}</td>
-      </tr>`).join('');
-    document.getElementById('tabla-proyeccion').style.display = 'block';
-
-  } else {
-    document.getElementById('valorCuota').value = '';
-    document.getElementById('c-intereses').textContent = '$ 0';
-    document.getElementById('c-cuota-val').textContent = '$ 0';
-    document.getElementById('tabla-proyeccion').style.display = 'none';
-  }
-
-  document.getElementById('c-factura').textContent   = fmt(vFactura);
-  document.getElementById('c-inicial').textContent   = fmt(vInicial);
-  document.getElementById('c-financiar').textContent = fmt(vFinanciar);
-  document.getElementById('c-cuotas').textContent = nCuotas || '—';
-  document.getElementById('c-tasa').textContent   = tasaPct ? tasaPct + '%' : '—';
-  document.getElementById('c-factura').textContent  = fmt(vFactura);
-  document.getElementById('c-inicial').textContent  = fmt(vInicial);
-  document.getElementById('c-financiar').textContent= fmt(vFinanciar);
-}
-
-function fmt(n)      { return '$ ' + Math.round(n||0).toLocaleString('es-CO'); }
-function fmtCorto(n) { return Math.round(n||0).toLocaleString('es-CO'); }
-
-// ── VALIDAR ──
-function validar() {
-  const req = [
-    ['tipoObligacion','Tipo de obligación'],
-    ['tasaMensual','Tasa mensual'],
-    ['funcionario','Funcionario'],
-    ['nombres','Nombres'],
-    ['apellidos','Apellidos'],
-    ['cedula','Número de documento'],
-    ['valorFactura','Valor factura'],
-    ['cuotaInicial','Cuota inicial'],
-    ['numCuotas','Número de cuotas'],
-  ];
-  for (const [id, label] of req) {
-    const el = document.getElementById(id);
-    if (!el || !el.value.trim()) {
-      setStatus('err', `⚠️ El campo "${label}" es obligatorio.`);
-      el && el.focus();
-      return false;
-    }
-  }
-  if (proyeccion.length === 0) {
-    setStatus('err', '⚠️ Verifique los valores — la proyección no está calculada.');
-    return false;
-  }
-  return true;
-}
-
-function setStatus(tipo, msg) {
-  const el = document.getElementById('status-msg');
-  el.className = 'status ' + tipo;
-  el.innerHTML = tipo === 'loading'
-    ? `<div class="spin"></div><span>${msg}</span>`
-    : msg;
-}
-
-// ── REGISTRAR EN SHEET ──
-async function registrarEnSheet() {
-  const ocupacion = document.querySelector('input[name="ocupacion"]:checked');
-  const params = new URLSearchParams({
-    accion:         'registrar',
-    funcionario:    document.getElementById('funcionario').value,
-    tipoObligacion: document.getElementById('tipoObligacion').value,
-    nombres:        document.getElementById('nombres').value,
-    apellidos:      document.getElementById('apellidos').value,
-    cedula:         document.getElementById('cedula').value,
-    telefono:       document.getElementById('telefono').value,
-    celular:        document.getElementById('celular').value,
-    correo:         document.getElementById('correo').value,
-    direccion:      document.getElementById('direccion').value,
-    valorFactura:   document.getElementById('valorFactura').value,
-    cuotaInicial:   document.getElementById('cuotaInicial').value,
-    valorFinanciar: document.getElementById('valorFinanciar').value,
-    numCuotas:      document.getElementById('numCuotas').value,
-    valorCuota:     document.getElementById('valorCuota').value,
-    totalIntereses: proyeccion.reduce((s,p)=>s+p.interes, 0),
-    tasaMensual:    document.getElementById('tasaMensual').value,
-    mesInicio:      document.getElementById('mesInicio').value,
-    ocupacion:      ocupacion ? ocupacion.value : '',
-    ingresoMensual: document.getElementById('ingresoMensual').value,
-  });
-  try {
-    await fetch(APPS_SCRIPT_URL + '?' + params);
-  } catch(e) { console.warn('No se pudo registrar:', e.message); }
-}
-
-// ── GENERAR FORMULARIO F-GAF-68 ──
-async function generarFormulario() {
-  if (!validar()) return;
-  setStatus('loading', 'Generando formulario F-GAF-68...');
-
-  try {
-    await registrarEnSheet();
-    const d = getDatos();
-    generarWordFormulario(d);
-    const dG = getDatos();
-    guardarPendiente(dG);
-    setStatus('ok', '✅ Formulario generado. Quedó en la lista de pendientes de pago.');
-    cargarResumenMes();
-    document.getElementById('btn-desembargo').style.display = 'flex';
-  } catch(err) {
-    setStatus('err', '❌ Error: ' + err.message);
-    console.error(err);
-  }
-}
-
-function generarWordFormulario(d) {
-  const fecha = new Date().toLocaleDateString('es-CO');
-  const ocupacion = d.ocupacion || '_______________';
-
-  document.getElementById('preview-title').textContent = '📄 Formulario F-GAF-68 — ' + d.apellidos + ', ' + d.nombres;
-  document.getElementById('preview-doc').innerHTML = `
-    <table class="doc-header-table">
-      <tr>
-        <td style="width:15%;text-align:center;font-weight:bold;font-size:11pt">1070.02</td>
-        <td class="doc-header-blue">SOLICITUD ACUERDOS Y/O CONVENIOS DE PAGO</td>
-        <td style="width:18%;text-align:center"><b>FECHA:</b><br>${fecha}</td>
-      </tr>
-    </table>
-
-    <div class="doc-seccion">INFORMACIÓN DEL CONTRIBUYENTE</div>
-    <div class="doc-fila"><b>Nombres:</b> ${d.nombres} &nbsp;&nbsp;&nbsp; <b>Apellidos:</b> ${d.apellidos}</div>
-    <div class="doc-fila"><b>Tipo de documento:</b> ${d.tipoDoc} &nbsp;&nbsp;&nbsp; <b>Número documento:</b> ${d.cedula}</div>
-    <div class="doc-fila"><b>Origen de la obligación:</b> ${d.tipoObligacion}</div>
-    <div class="doc-fila"><b>Dirección:</b> ${d.direccion || '___________________________'}</div>
-    <div class="doc-fila"><b>Teléfono:</b> ${d.telefono || '_______________'} &nbsp;&nbsp;&nbsp; <b>Celular:</b> ${d.celular || '_______________'}</div>
-    <div class="doc-fila"><b>Correo electrónico:</b> ${d.correo || '___________________________'}</div>
-    <div class="doc-fila"><b>Valor total de la factura:</b> ${fmt(d.valorFactura)}</div>
-    <div class="doc-fila"><b>Cuota inicial:</b> ${fmt(d.cuotaInicial)} &nbsp;&nbsp;&nbsp; <b>Valor total a financiar:</b> ${fmt(d.valorFinanciar)} &nbsp;&nbsp;&nbsp; <b>N° cuotas:</b> ${d.numCuotas}</div>
-    <div class="doc-fila"><b>Ocupación:</b> ${ocupacion} &nbsp;&nbsp;&nbsp; <b>Ingreso mensual:</b> ${d.ingresoMensual ? fmt(d.ingresoMensual) : '_______________'}</div>
-
-    <div class="doc-seccion">INFORMACIÓN DEL CODEUDOR / REFERENCIA PERSONAL</div>
-    <div class="doc-fila"><b>Nombres:</b> ${d.cod_nombres || '___________________________'} &nbsp;&nbsp;&nbsp; <b>Apellidos:</b> ${d.cod_apellidos || '___________________________'}</div>
-    <div class="doc-fila"><b>Tipo de documento:</b> ${d.cod_tipoDoc} &nbsp;&nbsp;&nbsp; <b>Número documento:</b> ${d.cod_cedula || '_______________'}</div>
-    <div class="doc-fila"><b>Dirección:</b> ${d.cod_direccion || '___________________________'} &nbsp;&nbsp;&nbsp; <b>Teléfono:</b> ${d.cod_telefono || '_______________'}</div>
-    <div class="doc-fila"><b>Matrícula inmueble:</b> ${d.matricula || '_______________'} &nbsp;&nbsp;&nbsp; <b>Dirección predio:</b> ${d.cod_dirPredio || '_______________'}</div>
-
-    <div class="doc-seccion">AUTORIZACIÓN</div>
-    <p class="doc-nota">- REPORTE A CONTADURÍA GRAL DE LA NACIÓN: tanto el titular de la obligación, como el deudor solidario, a través del presente convenio autorizan a la administración Municipal para la consulta, reporte y suministro de información a la contaduría general de la nación, división de deudores morosos del estado; según la ley 1266 de 2008 en el artículo 3º y la sentencia c-1011 de 2008.</p>
-    <p class="doc-nota">- Así mismo autorizo recibir la notificación por correo electrónico en caso de inicio del cobro coactivo.</p>
-    <p class="doc-nota">- Autorizo que si pasados cinco (5) días hábiles NO SE HA LEGALIZADO el convenio solicitado por parte del contribuyente será anulado, y el saldo existente se cargará en el próximo periodo de facturación.</p>
-
-    <table class="doc-firmas">
-      <tr>
-        <td>${d.nombres} ${d.apellidos}<br><span style="font-size:8pt;font-weight:normal">${d.tipoDoc}: ${d.cedula}</span></td>
-        <td>FIRMA</td>
-        <td>AUTORIZO</td>
-      </tr>
-    </table>
-
-    <table class="doc-pie">
-      <tr>
-        <td>Código: F-GAF-68</td>
-        <td class="doc-pie-blue">Versión: 03 &nbsp;|&nbsp; Fecha: 2026/01/01</td>
-        <td style="text-align:center">Página 1 de 1</td>
-      </tr>
-    </table>`;
-
-  abrirPreview();
-}
-
-// ── GENERAR PROYECCIÓN ──
-async function generarProyeccion() {
-  if (!validar()) return;
-  setStatus('loading', 'Generando proyección de pagos...');
-
-  try {
-    const d = getDatos();
-    generarWordProyeccion(d);
-    setStatus('ok', '✅ Proyección de pagos generada.');
-  } catch(err) {
-    setStatus('err', '❌ Error: ' + err.message);
-    console.error(err);
-  }
-}
-
-function generarWordProyeccion(d) {
-  const mesInicio = document.getElementById('mesInicio').value;
-  const fechaBase = mesInicio ? new Date(mesInicio + '-01') : new Date();
-  const totalIntereses = proyeccion.reduce((s,p) => s + p.interes, 0);
-  const cuotaMensual   = proyeccion[0]?.valorCuota || 0;
-
-  const filas = proyeccion.map((p, i) => {
-    const fechaCuota = new Date(fechaBase);
-    fechaCuota.setMonth(fechaCuota.getMonth() + i);
-    const mes = fechaCuota.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
-    return `<tr>
-      <td style="text-align:center">${p.cuota}</td>
-      <td>${mes}</td>
-      <td style="text-align:right">${Math.round(p.valorCuota).toLocaleString('es-CO')}</td>
-      <td style="text-align:right">${Math.round(p.interes).toLocaleString('es-CO')}</td>
-      <td style="text-align:right">${Math.round(p.capital).toLocaleString('es-CO')}</td>
-      <td style="text-align:right">${Math.round(Math.max(0,p.saldo)).toLocaleString('es-CO')}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('preview-title').textContent = '📊 Proyección de Pagos — ' + d.apellidos + ', ' + d.nombres;
-  document.getElementById('preview-doc').innerHTML = `
-    <div style="background:#0f2d5e;color:white;text-align:center;padding:10px;font-weight:bold;font-size:12pt">
-      SECRETARÍA DE RECAUDOS Y PAGOS
-    </div>
-    <div style="text-align:center;font-size:10pt;color:#0f2d5e;margin:6pt 0;font-weight:bold">
-      DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES<br>
-      PROYECCIÓN DE PAGOS — CONVENIO DE PAGO
-    </div>
-    <table class="doc-datos">
-      <tr><td class="lbl">DEUDOR</td><td colspan="3">${d.nombres} ${d.apellidos}</td></tr>
-      <tr><td class="lbl">CÉDULA / NIT</td><td>${d.cedula}</td><td class="lbl">TELÉFONO</td><td>${d.celular || d.telefono || '—'}</td></tr>
-      <tr><td class="lbl">CONCEPTO</td><td>${d.tipoObligacion}</td><td class="lbl">TASA MENSUAL</td><td>${d.tasaMensual}%</td></tr>
-      <tr><td class="lbl">VALOR FACTURA</td><td>${fmt(d.valorFactura)}</td><td class="lbl">CUOTA INICIAL</td><td>${fmt(d.cuotaInicial)}</td></tr>
-      <tr><td class="lbl">V/FINANCIACIÓN</td><td>${fmt(d.valorFinanciar)}</td><td class="lbl">V/CUOTA MENSUAL</td><td>${fmt(cuotaMensual)}</td></tr>
-      <tr><td class="lbl">N° CUOTAS</td><td>${d.numCuotas}</td><td class="lbl">TOTAL INTERESES</td><td>${fmt(totalIntereses)}</td></tr>
-    </table>
-    <table class="doc-amort">
-      <thead>
-        <tr><th>#</th><th>MES</th><th>VALOR CUOTA</th><th>ABONO INTERÉS</th><th>ABONO CAPITAL</th><th>SALDO CAPITAL</th></tr>
-      </thead>
-      <tbody>${filas}</tbody>
-    </table>
-    <table class="doc-firmas">
-      <tr>
-        <td>${d.funcionario}</td>
-        <td>JUAN PABLO GÓMEZ</td>
-        <td>&nbsp;</td>
-      </tr>
-      <tr style="border:none">
-        <td style="border:none;font-size:8pt">ELABORÓ</td>
-        <td style="border:none;font-size:8pt">REVISÓ</td>
-        <td style="border:none;font-size:8pt">AUTORIZÓ</td>
-      </tr>
-    </table>`;
-
-  abrirPreview();
-}
-
-// ── HELPERS ──
-function getDatos() {
-  const ocupacion = document.querySelector('input[name="ocupacion"]:checked');
-  return {
-    tipoObligacion: document.getElementById('tipoObligacion').value,
-    tasaMensual:    document.getElementById('tasaMensual').value,
-    mesInicio:      document.getElementById('mesInicio').value,
-    funcionario:    document.getElementById('funcionario').value,
-    nombres:        document.getElementById('nombres').value,
-    apellidos:      document.getElementById('apellidos').value,
-    tipoDoc:        document.getElementById('tipoDoc').value,
-    cedula:         document.getElementById('cedula').value,
-    telefono:       document.getElementById('telefono').value,
-    celular:        document.getElementById('celular').value,
-    correo:         document.getElementById('correo').value,
-    direccion:      document.getElementById('direccion').value,
-    ocupacion:      ocupacion ? ocupacion.value : '',
-    cargo:          document.getElementById('cargo').value,
-    ingresoMensual: document.getElementById('ingresoMensual').value,
-    valorFactura:   parseFloat(document.getElementById('valorFactura').value)  || 0,
-    cuotaInicial:   parseFloat(document.getElementById('cuotaInicial').value)  || 0,
-    valorFinanciar: parseFloat(document.getElementById('valorFinanciar').value) || 0,
-    numCuotas:      parseInt(document.getElementById('numCuotas').value)        || 0,
-    cod_nombres:    document.getElementById('cod_nombres').value,
-    cod_apellidos:  document.getElementById('cod_apellidos').value,
-    cod_tipoDoc:    document.getElementById('cod_tipoDoc').value,
-    cod_cedula:     document.getElementById('cod_cedula').value,
-    cod_telefono:   document.getElementById('cod_telefono').value,
-    cod_direccion:  document.getElementById('cod_direccion').value,
-    matricula:      document.getElementById('matricula').value,
-    cod_dirPredio:  document.getElementById('cod_dirPredio').value,
-  };
-}
-
-function abrirPreview() {
-  document.getElementById('preview-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function cerrarPreview() {
-  document.getElementById('preview-overlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function confirmarLimpiar() {
-  document.getElementById('mLimpiar').style.display = 'flex';
-}
-
-function limpiarFormulario() {
-  document.getElementById('mLimpiar').style.display = 'none';
-  document.querySelectorAll('input[type="text"],input[type="number"],input[type="email"],input[type="month"],select')
-    .forEach(el => el.value = '');
-  document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
-  document.getElementById('tipoDoc').value = 'C.C';
-  document.getElementById('cod_tipoDoc').value = 'C.C';
-  proyeccion = [];
-  document.getElementById('tabla-proyeccion').style.display = 'none';
-  document.getElementById('tbody-proyeccion').innerHTML = '';
-  ['c-factura','c-inicial','c-financiar'].forEach(id => document.getElementById(id).textContent = '$ 0');
-  document.getElementById('c-cuotas').textContent = '—';
-  document.getElementById('c-tasa').textContent = '—';
-  document.getElementById('c-intereses').textContent = '$ 0';
-  document.getElementById('c-cuota-val').textContent = '$ 0';
-  document.getElementById('status-msg').className = 'status';
-}
-
-// ── RESUMEN MES ──
-async function cargarResumenMes() {
-  try {
-    const res  = await fetch(APPS_SCRIPT_URL + '?accion=resumen');
-    const data = await res.json();
-    if (data.error || data.total === 0) return;
-
-    document.getElementById('resumen-mes').style.display = 'block';
-    document.getElementById('res-total').textContent = data.total;
-    document.getElementById('res-valor').textContent = '$ ' + Math.round(data.valorTotal).toLocaleString('es-CO');
-
-    const tiposEl = document.getElementById('res-tipos');
-    tiposEl.innerHTML = Object.entries(data.porTipo || {}).map(([tipo, count]) =>
-      `<div class="resumen-stat"><span>${tipo.split('—')[0].trim()}</span><span class="resumen-stat-val">${count}</span></div>`
-    ).join('');
-  } catch(e) {}
-}
-
-// Inicializar mes
-// ── MODAL DESEMBARGO ──
-function abrirModalDesembargo() {
-  const d = getDatos();
-  document.getElementById('des-nombre').textContent  = d.nombres + ' ' + d.apellidos;
-  document.getElementById('des-cedula').textContent  = d.cedula;
-  document.getElementById('des-tipo').textContent    = d.tipoObligacion;
-  document.getElementById('des-obs').value = 'Acuerdo de pago — cuota inicial cancelada';
-  document.getElementById('des-status').style.display = 'none';
-  document.getElementById('desembargo-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function cerrarModalDesembargo() {
-  document.getElementById('desembargo-overlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-async function enviarADesembargo() {
-  const d        = getDatos();
-  const radicado = document.getElementById('des-radicado').value.trim();
-  const obs      = document.getElementById('des-obs').value.trim();
-  const statusEl = document.getElementById('des-status');
-
-  statusEl.style.display = 'flex';
-  statusEl.style.background = '#eff6ff';
-  statusEl.style.color = '#1d4ed8';
-  statusEl.style.border = '1px solid #bfdbfe';
-  statusEl.textContent = '⏳ Enviando a la cola...';
-
-  try {
-    const fecha = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const hora  = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-
-    const payload = {
-      accion:      'encolar',
-      tipoOficio:  'Desembargo',
-      numOficio:   '',
-      fechaOficio: fecha,
-      nombre:      d.nombres + ' ' + d.apellidos,
-      cedula:      d.cedula,
-      concepto:    d.tipoObligacion,
-      radicado:    radicado || '(Pendiente)',
-      fechaAuto:   fecha,
-      motivo:      'Acuerdo de pago suscrito y cuota inicial cancelada',
-      proyNombre:  d.funcionario,
-      funcionario: d.funcionario,
-      equipo:      '',
-      observacion: obs || 'Acuerdo de pago — cuota inicial cancelada',
-      comparendo:  '',
-    };
-
-    const params = new URLSearchParams(payload);
-    await fetch(GAS_INDEX_URL + '?' + params);
-
-    // Guardar también en cola local del index
-    const localCola = JSON.parse(localStorage.getItem('cola_local') || '[]');
-    localCola.unshift({
-      id: 'AC-' + Date.now(),
-      'Fecha': fecha,
-      'Hora': hora,
-      'Funcionario': d.funcionario || '',
-      'Estado': 'PENDIENTE',
-      'Tipo Oficio': 'Desembargo',
-      'N° Oficio': '',
-      'Contribuyente': d.nombres + ' ' + d.apellidos,
-      'Cédula': d.cedula,
-      'Radicado': radicado || '(Pendiente)',
-      'Concepto': d.tipoObligacion,
-      'Observación': obs,
-    });
-    localStorage.setItem('cola_local', JSON.stringify(localCola));
-
-    statusEl.style.background = '#f0fdf4';
-    statusEl.style.color = '#16a34a';
-    statusEl.style.border = '1px solid #bbf7d0';
-    statusEl.textContent = '✅ Enviado a la cola de desembargo correctamente.';
-
-    setTimeout(() => cerrarModalDesembargo(), 2000);
-
-  } catch(err) {
-    statusEl.style.background = '#fef2f2';
-    statusEl.style.color = '#dc2626';
-    statusEl.style.border = '1px solid #fecaca';
-    statusEl.textContent = '❌ Error al enviar: ' + err.message;
-  }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  const hoy = new Date();
-  document.getElementById('mesInicio').value = hoy.toISOString().slice(0,7);
-  cargarResumenMes();
-  // Forzar cálculo cuando se llena cualquier campo de valores
-  ['valorFactura','cuotaInicial','numCuotas','tasaMensual'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('change', calcular);
-      el.addEventListener('keyup', calcular);
-    }
-  });
-});
+const GAS_INDEX = "https://script.google.com/macros/s/AKfycbwzZWWIj2zx4_S-qNOK2SRtUsbKm8SIdsyTtIDDLOeKqmH7dsNcngboxo5c7XQ9dfFRlA/exec";
+const GAS_ACUERDOS = "https://script.google.com/macros/s/AKfycbzEpNUeH2kZs2cxSw64rM9q8T6vWCfSZxPvCOwjXS41IGulD7Ud-TGWdnyHrEd6JJE/exec";
+const PKEY = 'acuerdos_pendientes_v3';
+var proyeccion = [];
+var pendienteActivo = null;
 
 // ── TABS ──
-function goTab(tab) {
+function goTab(t) {
   var pN = document.getElementById('panel-nuevo');
-  var pP = document.getElementById('panel-pendientes');
+  var pP = document.getElementById('panel-pend');
   var tN = document.getElementById('tab-nuevo');
-  var tP = document.getElementById('tab-pendientes');
-  if (tab === 'pendientes') {
+  var tP = document.getElementById('tab-pend');
+  document.body.style.overflow = '';
+  if (t === 'pendientes') {
     pN.style.display = 'none';
     pP.style.display = 'block';
     tN.style.borderBottomColor = 'transparent';
     tN.style.color = 'rgba(255,255,255,.6)';
     tP.style.borderBottomColor = '#f5c050';
     tP.style.color = '#fff';
-    renderPendientes();
+    renderPend();
   } else {
     pN.style.display = 'grid';
     pP.style.display = 'none';
@@ -1004,155 +412,358 @@ function goTab(tab) {
   }
 }
 
+// ── PENDIENTES ──
+function getPend() { try { return JSON.parse(localStorage.getItem(PKEY) || '[]'); } catch(e) { return []; } }
+function setPend(lista) { localStorage.setItem(PKEY, JSON.stringify(lista)); updateBadge(); }
+function updateBadge() { var b = document.getElementById('badge'); if(b) b.textContent = getPend().length; }
 
-const PENDIENTES_KEY = 'acuerdos_pendientes';
-
-function guardarPendiente(d) {
-  const lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  lista.unshift({ id:'PEN-'+Date.now(), fecha:new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}), hora:new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}), ...d });
-  localStorage.setItem(PENDIENTES_KEY, JSON.stringify(lista));
-  actualizarBadge();
+function savePend(d) {
+  var lista = getPend();
+  lista.unshift({
+    id: 'P' + Date.now(),
+    fecha: new Date().toLocaleDateString('es-CO', {day:'2-digit',month:'2-digit',year:'numeric'}),
+    hora: new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}),
+    nombres: d.nombres, apellidos: d.apellidos, cedula: d.cedula,
+    tipoObligacion: d.tipoObligacion, valorFactura: d.valorFactura,
+    cuotaInicial: d.cuotaInicial, numCuotas: d.numCuotas,
+    funcionario: d.funcionario, tasaMensual: d.tasaMensual
+  });
+  setPend(lista);
 }
 
-function actualizarBadge() {
-  const lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  const b = document.getElementById('badge-pendientes');
-  if (b) b.textContent = lista.length;
-}
-
-function renderPendientes(filtro) {
-  var lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
+function renderPend(filtro) {
+  var lista = getPend();
   if (filtro) {
     var f = filtro.toLowerCase();
     lista = lista.filter(function(p) {
       return ((p.nombres||'')+' '+(p.apellidos||'')).toLowerCase().indexOf(f) >= 0 || (p.cedula||'').indexOf(f) >= 0;
     });
   }
-  var el = document.getElementById('lista-pendientes');
+  var el = document.getElementById('lista-pend');
   if (!el) return;
   if (!lista.length) {
-    el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#4a5a72"><div style="font-size:36px;margin-bottom:8px">📋</div><p style="font-size:14px">No hay acuerdos pendientes de pago</p></div>';
+    el.innerHTML = '<div class="pempty"><div style="font-size:36px;margin-bottom:8px">📋</div><p style="font-size:14px">No hay acuerdos pendientes de pago</p></div>';
     return;
   }
-  el.innerHTML = lista.map(function(p) {
-    return '<div style="padding:14px 18px;border-bottom:1px solid #e8edf7">' +
-      '<div style="display:flex;justify-content:space-between;margin-bottom:6px">' +
-        '<span style="font-size:13px;font-weight:700;color:#0f2d5e">' + escH(p.nombres) + ' ' + escH(p.apellidos) + '</span>' +
-        '<span style="font-size:11px;color:#4a5a72">' + escH(p.fecha) + ' ' + escH(p.hora) + '</span>' +
+  var html = '';
+  for (var i = 0; i < lista.length; i++) {
+    var p = lista[i];
+    html += '<div class="pitem">' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
+        '<span class="pnombre">' + eh(p.nombres) + ' ' + eh(p.apellidos) + '</span>' +
+        '<span style="font-size:11px;color:var(--text-soft)">' + eh(p.fecha) + ' ' + eh(p.hora) + '</span>' +
       '</div>' +
-      '<div style="display:flex;gap:12px;font-size:11px;color:#4a5a72;margin-bottom:8px;flex-wrap:wrap">' +
-        '<span><b style="color:#0f1e35">CC/NIT:</b> ' + escH(p.cedula) + '</span>' +
-        '<span><b style="color:#0f1e35">Tipo:</b> ' + escH(p.tipoObligacion) + '</span>' +
-        '<span><b style="color:#0f1e35">Factura:</b> $ ' + Math.round(p.valorFactura||0).toLocaleString('es-CO') + '</span>' +
-        '<span><b style="color:#0f1e35">Cuota inicial:</b> $ ' + Math.round(p.cuotaInicial||0).toLocaleString('es-CO') + '</span>' +
-        '<span><b style="color:#0f1e35">Funcionario:</b> ' + escH(p.funcionario) + '</span>' +
+      '<div class="pdatos">' +
+        '<span><b>CC/NIT:</b> ' + eh(p.cedula) + '</span>' +
+        '<span><b>Tipo:</b> ' + eh(p.tipoObligacion) + '</span>' +
+        '<span><b>Factura:</b> ' + fmtN(p.valorFactura) + '</span>' +
+        '<span><b>Cuota inicial:</b> ' + fmtN(p.cuotaInicial) + '</span>' +
+        '<span><b>Funcionario:</b> ' + eh(p.funcionario) + '</span>' +
       '</div>' +
-      '<div style="display:flex;gap:8px">' +
-        '<button onclick="abrirDesembargoDesde(&quot;' + p.id + '&quot;)" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">&#x2705; Pag&oacute; &mdash; Enviar a desembargo</button> ' +
-        '<button onclick="eliminarPendiente(&quot;' + p.id + '&quot;)" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">&#x1F5D1; Eliminar</button>' +
+      '<div class="pbtns">' +
+        '<button class="pbpago" onclick="abrirDesDe(\'' + p.id + '\')">✅ Pagó — Enviar a desembargo</button>' +
+        '<button class="pbdel" onclick="delPend(\'' + p.id + '\')">🗑️ Eliminar</button>' +
       '</div>' +
     '</div>';
-  }).join('');
+  }
+  el.innerHTML = html;
 }
 
-function filtrarPendientes() { renderPendientes(document.getElementById('search-pendientes').value); }
+function filtrarPend() { renderPend(document.getElementById('search-pend').value); }
 
-function eliminarPendiente(id) {
-  if (!confirm('¿Eliminar este acuerdo?')) return;
-  let lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  localStorage.setItem(PENDIENTES_KEY, JSON.stringify(lista.filter(p=>p.id!==id)));
-  actualizarBadge(); renderPendientes();
+function delPend(id) {
+  if (!confirm('¿Eliminar este acuerdo de la lista?')) return;
+  setPend(getPend().filter(function(p) { return p.id !== id; }));
+  renderPend();
 }
 
-function abrirDesembargoDesde(id) {
-  const lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  const p = lista.find(x=>x.id===id);
+function abrirDesDe(id) {
+  var p = getPend().filter(function(x) { return x.id === id; })[0];
   if (!p) return;
-  const ov = document.getElementById('desembargo-overlay');
-  ov.dataset.pid   = id;
-  ov.dataset.pdata = JSON.stringify(p);
-  document.getElementById('des-nombre').textContent = (p.nombres||'')+' '+(p.apellidos||'');
-  document.getElementById('des-cedula').textContent = p.cedula||'';
-  document.getElementById('des-tipo').textContent   = p.tipoObligacion||'';
+  pendienteActivo = p;
+  document.getElementById('des-nom').textContent = (p.nombres||'') + ' ' + (p.apellidos||'');
+  document.getElementById('des-ced').textContent = p.cedula || '';
+  document.getElementById('des-tip').textContent = p.tipoObligacion || '';
+  document.getElementById('des-rad').value = '';
+  document.getElementById('des-conc').value = '';
   document.getElementById('des-obs').value = 'Acuerdo de pago — cuota inicial cancelada';
-  document.getElementById('des-radicado').value = '';
-  const dc=document.getElementById('des-concepto'); if(dc) dc.value='';
-  document.getElementById('des-status').style.display='none';
-  ov.classList.add('open'); document.body.style.overflow='hidden';
+  document.getElementById('des-st').style.display = 'none';
+  document.getElementById('des-ov').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
-function escH(v) { if(!v&&v!==0)return''; return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// ── CALCULADORA ──
+function calcular() {
+  var vF = parseFloat(document.getElementById('valorFactura').value) || 0;
+  var vI = parseFloat(document.getElementById('cuotaInicial').value) || 0;
+  var nC = parseInt(document.getElementById('numCuotas').value) || 0;
+  var tP = parseFloat(document.getElementById('tasaMensual').value) || 0;
+  var ta = tP / 100;
+  var vFin = Math.max(0, vF - vI);
+  document.getElementById('valorFinanciar').value = Math.round(vFin);
+  proyeccion = [];
+  document.getElementById('c-fac').textContent = fmt(vF);
+  document.getElementById('c-ini').textContent = fmt(vI);
+  document.getElementById('c-fin').textContent = fmt(vFin);
+  document.getElementById('c-ncu').textContent = nC || '—';
+  document.getElementById('c-tas').textContent = tP ? tP + '%' : '—';
+  if (vFin > 0 && nC > 0 && ta > 0) {
+    var cuo = vFin * (ta * Math.pow(1+ta, nC)) / (Math.pow(1+ta, nC) - 1);
+    document.getElementById('valorCuota').value = Math.round(cuo);
+    var saldo = vFin, totalInt = 0;
+    for (var i = 1; i <= nC; i++) {
+      var interes = saldo * ta;
+      var capital = cuo - interes;
+      saldo -= capital;
+      totalInt += interes;
+      proyeccion.push({ cuota: i, valorCuota: cuo, interes: interes, capital: capital, saldo: Math.max(0, saldo) });
+    }
+    document.getElementById('c-int').textContent = fmt(totalInt);
+    document.getElementById('c-cuo').textContent = fmt(cuo);
+    var tbody = document.getElementById('tbody-proy');
+    tbody.innerHTML = proyeccion.map(function(p) {
+      return '<tr><td>' + p.cuota + '</td><td style="text-align:right">' + fc(p.valorCuota) + '</td><td>' + fc(p.interes) + '</td><td>' + fc(p.capital) + '</td><td>' + fc(p.saldo) + '</td></tr>';
+    }).join('');
+    document.getElementById('tabla-proy').style.display = 'block';
+  } else {
+    document.getElementById('valorCuota').value = '';
+    document.getElementById('c-int').textContent = '$ 0';
+    document.getElementById('c-cuo').textContent = '$ 0';
+    document.getElementById('tabla-proy').style.display = 'none';
+  }
+}
 
-actualizarBadge();
+function fmt(n)  { return '$ ' + Math.round(n||0).toLocaleString('es-CO'); }
+function fmtN(n) { return '$ ' + Math.round(n||0).toLocaleString('es-CO'); }
+function fc(n)   { return Math.round(n||0).toLocaleString('es-CO'); }
+function eh(v)   { if(!v&&v!==0)return''; return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// ── VALIDAR ──
+function validar() {
+  var req = [['tipoObligacion','Tipo de obligación'],['tasaMensual','Tasa mensual'],['funcionario','Funcionario'],['nombres','Nombres'],['apellidos','Apellidos'],['cedula','Cédula'],['valorFactura','Valor factura'],['cuotaInicial','Cuota inicial'],['numCuotas','Número de cuotas']];
+  for (var i = 0; i < req.length; i++) {
+    var el = document.getElementById(req[i][0]);
+    if (!el || !el.value.trim()) { setSt('err', '⚠️ El campo "' + req[i][1] + '" es obligatorio.'); if(el) el.focus(); return false; }
+  }
+  if (!proyeccion.length) { setSt('err', '⚠️ Verifique los valores — la proyección no está calculada.'); return false; }
+  return true;
+}
+
+function setSt(tipo, msg) {
+  var el = document.getElementById('st');
+  el.className = 'st ' + tipo;
+  el.innerHTML = tipo==='load' ? '<div class="spin"></div><span>' + msg + '</span>' : msg;
+}
+
+// ── GETDATOS ──
+function getDatos() {
+  var ocu = document.querySelector('input[name="ocu"]:checked');
+  return {
+    tipoObligacion: document.getElementById('tipoObligacion').value,
+    tasaMensual: document.getElementById('tasaMensual').value,
+    mesInicio: document.getElementById('mesInicio').value,
+    funcionario: document.getElementById('funcionario').value,
+    nombres: document.getElementById('nombres').value,
+    apellidos: document.getElementById('apellidos').value,
+    tipoDoc: document.getElementById('tipoDoc').value,
+    cedula: document.getElementById('cedula').value,
+    telefono: document.getElementById('telefono').value,
+    celular: document.getElementById('celular').value,
+    correo: document.getElementById('correo').value,
+    direccion: document.getElementById('direccion').value,
+    ocupacion: ocu ? ocu.value : '',
+    cargo: document.getElementById('cargo').value,
+    ingresoMensual: document.getElementById('ingresoMensual').value,
+    valorFactura: parseFloat(document.getElementById('valorFactura').value) || 0,
+    cuotaInicial: parseFloat(document.getElementById('cuotaInicial').value) || 0,
+    valorFinanciar: parseFloat(document.getElementById('valorFinanciar').value) || 0,
+    numCuotas: parseInt(document.getElementById('numCuotas').value) || 0,
+    cod_nombres: document.getElementById('cod_nombres').value,
+    cod_apellidos: document.getElementById('cod_apellidos').value,
+    cod_tipoDoc: document.getElementById('cod_tipoDoc').value,
+    cod_cedula: document.getElementById('cod_cedula').value,
+    cod_telefono: document.getElementById('cod_telefono').value,
+    cod_direccion: document.getElementById('cod_direccion').value,
+    matricula: document.getElementById('matricula').value,
+    cod_dirPredio: document.getElementById('cod_dirPredio').value
+  };
+}
+
+// ── REGISTRAR EN SHEET ──
+async function registrarSheet(d) {
+  try {
+    var p = new URLSearchParams({ accion:'registrar', funcionario:d.funcionario, tipoObligacion:d.tipoObligacion, nombres:d.nombres, apellidos:d.apellidos, cedula:d.cedula, telefono:d.telefono, celular:d.celular, correo:d.correo, direccion:d.direccion, valorFactura:d.valorFactura, cuotaInicial:d.cuotaInicial, valorFinanciar:d.valorFinanciar, numCuotas:d.numCuotas, valorCuota:proyeccion[0]?Math.round(proyeccion[0].valorCuota):0, totalIntereses:Math.round(proyeccion.reduce(function(s,x){return s+x.interes;},0)), tasaMensual:d.tasaMensual, mesInicio:d.mesInicio, ocupacion:d.ocupacion, ingresoMensual:d.ingresoMensual });
+    await fetch(GAS_ACUERDOS + '?' + p);
+  } catch(e) { console.warn('Sheet error:', e.message); }
+}
+
+// ── GENERAR FORMULARIO ──
+async function generarFormulario() {
+  if (!validar()) return;
+  setSt('load', 'Generando formulario F-GAF-68...');
+  try {
+    var d = getDatos();
+    await registrarSheet(d);
+    savePend(d);
+    updateBadge();
+    mostrarFormPrev(d);
+    setSt('ok', '✅ Formulario generado. Quedó en la lista de pendientes de pago.');
+    document.getElementById('btn-des').style.display = 'flex';
+    pendienteActivo = null;
+    cargarResumen();
+  } catch(e) { setSt('err', '❌ Error: ' + e.message); }
+}
+
+function mostrarFormPrev(d) {
+  var fecha = new Date().toLocaleDateString('es-CO');
+  document.getElementById('prev-title').textContent = '📄 F-GAF-68 — ' + d.apellidos + ', ' + d.nombres;
+  document.getElementById('prev-doc').innerHTML =
+    '<table class="dh-table"><tr><td style="width:15%;text-align:center;font-weight:bold;font-size:11pt">1070.02</td><td class="dh-blue">SOLICITUD ACUERDOS Y/O CONVENIOS DE PAGO</td><td style="width:18%;text-align:center"><b>FECHA:</b><br>' + fecha + '</td></tr></table>' +
+    '<div class="dsec">INFORMACIÓN DEL CONTRIBUYENTE</div>' +
+    '<div class="dfila"><b>Nombres:</b> ' + eh(d.nombres) + ' &nbsp;&nbsp; <b>Apellidos:</b> ' + eh(d.apellidos) + '</div>' +
+    '<div class="dfila"><b>Tipo documento:</b> ' + eh(d.tipoDoc) + ' &nbsp;&nbsp; <b>Número:</b> ' + eh(d.cedula) + '</div>' +
+    '<div class="dfila"><b>Origen obligación:</b> ' + eh(d.tipoObligacion) + '</div>' +
+    '<div class="dfila"><b>Dirección:</b> ' + eh(d.direccion||'___________________________') + '</div>' +
+    '<div class="dfila"><b>Teléfono:</b> ' + eh(d.telefono||'_______________') + ' &nbsp;&nbsp; <b>Celular:</b> ' + eh(d.celular||'_______________') + '</div>' +
+    '<div class="dfila"><b>Correo:</b> ' + eh(d.correo||'___________________________') + '</div>' +
+    '<div class="dfila"><b>Valor factura:</b> ' + fmt(d.valorFactura) + '</div>' +
+    '<div class="dfila"><b>Cuota inicial:</b> ' + fmt(d.cuotaInicial) + ' &nbsp;&nbsp; <b>Valor a financiar:</b> ' + fmt(d.valorFinanciar) + ' &nbsp;&nbsp; <b>N° cuotas:</b> ' + d.numCuotas + '</div>' +
+    '<div class="dfila"><b>Ocupación:</b> ' + eh(d.ocupacion||'_______________') + ' &nbsp;&nbsp; <b>Ingreso mensual:</b> ' + (d.ingresoMensual ? fmt(d.ingresoMensual) : '_______________') + '</div>' +
+    '<div class="dsec">INFORMACIÓN DEL CODEUDOR</div>' +
+    '<div class="dfila"><b>Nombres:</b> ' + eh(d.cod_nombres||'___________________________') + ' &nbsp;&nbsp; <b>Apellidos:</b> ' + eh(d.cod_apellidos||'___________________________') + '</div>' +
+    '<div class="dfila"><b>Tipo documento:</b> ' + eh(d.cod_tipoDoc) + ' &nbsp;&nbsp; <b>Número:</b> ' + eh(d.cod_cedula||'_______________') + '</div>' +
+    '<div class="dfila"><b>Dirección:</b> ' + eh(d.cod_direccion||'___________________________') + ' &nbsp;&nbsp; <b>Teléfono:</b> ' + eh(d.cod_telefono||'_______________') + '</div>' +
+    '<div class="dfila"><b>Matrícula:</b> ' + eh(d.matricula||'_______________') + ' &nbsp;&nbsp; <b>Dir. predio:</b> ' + eh(d.cod_dirPredio||'_______________') + '</div>' +
+    '<div class="dsec">AUTORIZACIÓN</div>' +
+    '<p class="dnota">- REPORTE A CONTADURÍA GRAL DE LA NACIÓN: tanto el titular de la obligación, como el deudor solidario, a través del presente convenio autorizan a la administración Municipal para la consulta, reporte y suministro de información a la contaduría general de la nación, división de deudores morosos del estado; según la ley 1266 de 2008 en el artículo 3º y la sentencia c-1011 de 2008.</p>' +
+    '<p class="dnota">- Así mismo autorizo recibir la notificación por correo electrónico en caso de inicio del cobro coactivo.</p>' +
+    '<p class="dnota">- Autorizo que si pasados cinco (5) días hábiles NO SE HA LEGALIZADO el convenio solicitado por parte del contribuyente será anulado, y el saldo existente se cargará en el próximo periodo de facturación.</p>' +
+    '<table class="dfirmas"><tr><td>' + eh(d.nombres) + ' ' + eh(d.apellidos) + '<br><span style="font-size:8pt;font-weight:normal">' + eh(d.tipoDoc) + ': ' + eh(d.cedula) + '</span></td><td>FIRMA</td><td>AUTORIZO</td></tr></table>' +
+    '<table class="dpie"><tr><td>Código: F-GAF-68</td><td class="dpie-blue">Versión: 03 | Fecha: 2026/01/01</td><td style="text-align:center">Página 1 de 1</td></tr></table>';
+  abrirPrev();
+}
+
+// ── GENERAR PROYECCIÓN ──
+async function generarProyeccion() {
+  if (!validar()) return;
+  setSt('load', 'Generando proyección de pagos...');
+  try {
+    var d = getDatos();
+    var mi = document.getElementById('mesInicio').value;
+    var fb = mi ? new Date(mi + '-01') : new Date();
+    var totalInt = proyeccion.reduce(function(s,p){return s+p.interes;},0);
+    var cuo = proyeccion[0] ? proyeccion[0].valorCuota : 0;
+    var filas = proyeccion.map(function(p, i) {
+      var fc2 = new Date(fb); fc2.setMonth(fc2.getMonth()+i);
+      var mes = fc2.toLocaleDateString('es-CO',{month:'long',year:'numeric'});
+      return '<tr><td style="text-align:center">' + p.cuota + '</td><td>' + mes + '</td><td style="text-align:right">' + fc(p.valorCuota) + '</td><td style="text-align:right">' + fc(p.interes) + '</td><td style="text-align:right">' + fc(p.capital) + '</td><td style="text-align:right">' + fc(p.saldo) + '</td></tr>';
+    }).join('');
+    document.getElementById('prev-title').textContent = '📊 Proyección — ' + d.apellidos + ', ' + d.nombres;
+    document.getElementById('prev-doc').innerHTML =
+      '<div style="background:#0f2d5e;color:white;text-align:center;padding:10px;font-weight:bold;font-size:12pt">SECRETARÍA DE RECAUDOS Y PAGOS</div>' +
+      '<div style="text-align:center;font-size:10pt;color:#0f2d5e;margin:6pt 0;font-weight:bold">DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES<br>PROYECCIÓN DE PAGOS — CONVENIO DE PAGO</div>' +
+      '<table class="ddatos"><tr><td class="lbl">DEUDOR</td><td colspan="3">' + eh(d.nombres) + ' ' + eh(d.apellidos) + '</td></tr><tr><td class="lbl">CÉDULA</td><td>' + eh(d.cedula) + '</td><td class="lbl">TELÉFONO</td><td>' + eh(d.celular||d.telefono||'—') + '</td></tr><tr><td class="lbl">CONCEPTO</td><td>' + eh(d.tipoObligacion) + '</td><td class="lbl">TASA MENSUAL</td><td>' + eh(d.tasaMensual) + '%</td></tr><tr><td class="lbl">VALOR FACTURA</td><td>' + fmt(d.valorFactura) + '</td><td class="lbl">CUOTA INICIAL</td><td>' + fmt(d.cuotaInicial) + '</td></tr><tr><td class="lbl">V/FINANCIACIÓN</td><td>' + fmt(d.valorFinanciar) + '</td><td class="lbl">V/CUOTA</td><td>' + fmt(cuo) + '</td></tr><tr><td class="lbl">N° CUOTAS</td><td>' + d.numCuotas + '</td><td class="lbl">TOTAL INTERESES</td><td>' + fmt(totalInt) + '</td></tr></table>' +
+      '<table class="damort"><thead><tr><th>#</th><th>MES</th><th>VALOR CUOTA</th><th>ABONO INTERÉS</th><th>ABONO CAPITAL</th><th>SALDO CAPITAL</th></tr></thead><tbody>' + filas + '</tbody></table>' +
+      '<table class="dfirmas"><tr><td>' + eh(d.funcionario) + '</td><td>JUAN PABLO GÓMEZ</td><td>&nbsp;</td></tr><tr style="border:none"><td style="border:none;font-size:8pt">ELABORÓ</td><td style="border:none;font-size:8pt">REVISÓ</td><td style="border:none;font-size:8pt">AUTORIZÓ</td></tr></table>';
+    abrirPrev();
+    setSt('ok', '✅ Proyección generada.');
+  } catch(e) { setSt('err', '❌ Error: ' + e.message); }
+}
+
+// ── VISTA PREVIA ──
+function abrirPrev() { document.getElementById('prev-ov').classList.add('open'); document.body.style.overflow='hidden'; }
+function cerrarPrev() { document.getElementById('prev-ov').classList.remove('open'); document.body.style.overflow=''; }
+
+// ── MODAL DESEMBARGO DESDE FORMULARIO ──
+function abrirDes() {
+  var d = getDatos();
+  pendienteActivo = null;
+  document.getElementById('des-nom').textContent = d.nombres + ' ' + d.apellidos;
+  document.getElementById('des-ced').textContent = d.cedula;
+  document.getElementById('des-tip').textContent = d.tipoObligacion;
+  document.getElementById('des-rad').value = '';
+  document.getElementById('des-conc').value = '';
+  document.getElementById('des-obs').value = 'Acuerdo de pago — cuota inicial cancelada';
+  document.getElementById('des-st').style.display = 'none';
+  document.getElementById('des-ov').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function cerrarDes() { document.getElementById('des-ov').classList.remove('open'); document.body.style.overflow=''; }
+
+async function enviarDes() {
+  var d = pendienteActivo || getDatos();
+  var rad = document.getElementById('des-rad').value.trim();
+  var conc = document.getElementById('des-conc').value.trim();
+  var obs = document.getElementById('des-obs').value.trim();
+  var stEl = document.getElementById('des-st');
+  stEl.style.cssText = 'display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe';
+  stEl.textContent = '⏳ Enviando a la cola...';
+  try {
+    var fecha = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+    var params = new URLSearchParams({ accion:'encolar', tipoOficio:'Desembargo', numOficio:'', fechaOficio:fecha, nombre:(d.nombres||'')+' '+(d.apellidos||''), cedula:d.cedula||'', concepto:conc||d.tipoObligacion||'', radicado:rad||'(Pendiente)', fechaAuto:fecha, motivo:'Acuerdo de pago suscrito y cuota inicial cancelada', proyNombre:d.funcionario||'', funcionario:d.funcionario||'', equipo:'', observacion:obs||'Acuerdo de pago — cuota inicial cancelada', comparendo:'' });
+    await fetch(GAS_INDEX + '?' + params);
+    var localCola = JSON.parse(localStorage.getItem('cola_local') || '[]');
+    localCola.unshift({ id:'AC-'+Date.now(), 'Fecha':fecha, 'Hora':new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}), 'Funcionario':d.funcionario||'', 'Estado':'PENDIENTE', 'Tipo Oficio':'Desembargo', 'N° Oficio':'', 'Contribuyente':(d.nombres||'')+' '+(d.apellidos||''), 'Cédula':d.cedula||'', 'Radicado':rad||'(Pendiente)', 'Concepto':conc||d.tipoObligacion||'', 'Observación':obs });
+    localStorage.setItem('cola_local', JSON.stringify(localCola));
+    if (pendienteActivo) {
+      setPend(getPend().filter(function(p) { return p.id !== pendienteActivo.id; }));
+      pendienteActivo = null;
+    }
+    stEl.style.cssText = 'display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0';
+    stEl.textContent = '✅ Enviado a la cola correctamente.';
+    setTimeout(function() { cerrarDes(); renderPend(); }, 2000);
+  } catch(e) {
+    stEl.style.cssText = 'display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca';
+    stEl.textContent = '❌ Error: ' + e.message;
+  }
+}
+
+// ── LIMPIAR ──
+function confirmarLimpiar() {
+  var n = document.getElementById('nombres');
+  var c = document.getElementById('cedula');
+  if ((!n||!n.value) && (!c||!c.value)) { limpiarForm(); return; }
+  document.getElementById('mLimpiar').style.display = 'flex';
+}
+function limpiarForm() {
+  document.getElementById('mLimpiar').style.display = 'none';
+  document.querySelectorAll('input[type=text],input[type=number],input[type=email],input[type=month],select').forEach(function(el){el.value='';});
+  document.querySelectorAll('input[type=radio]').forEach(function(el){el.checked=false;});
+  document.getElementById('tipoDoc').value = 'C.C';
+  document.getElementById('cod_tipoDoc').value = 'C.C';
+  proyeccion = [];
+  document.getElementById('tabla-proy').style.display = 'none';
+  document.getElementById('tbody-proy').innerHTML = '';
+  ['c-fac','c-ini','c-fin'].forEach(function(id){document.getElementById(id).textContent='$ 0';});
+  document.getElementById('c-ncu').textContent = '—';
+  document.getElementById('c-tas').textContent = '—';
+  document.getElementById('c-int').textContent = '$ 0';
+  document.getElementById('c-cuo').textContent = '$ 0';
+  document.getElementById('st').className = 'st';
+  document.getElementById('btn-des').style.display = 'none';
+  var mi = document.getElementById('mesInicio');
+  mi.value = new Date().toISOString().slice(0,7);
+}
+
+// ── RESUMEN MES ──
+async function cargarResumen() {
+  try {
+    var res = await fetch(GAS_ACUERDOS + '?accion=resumen');
+    var data = await res.json();
+    if (data.error || data.total === 0) return;
+    document.getElementById('resmes').style.display = 'block';
+    document.getElementById('res-total').textContent = data.total;
+    document.getElementById('res-valor').textContent = '$ ' + Math.round(data.valorTotal||0).toLocaleString('es-CO');
+    var tip = document.getElementById('res-tipos');
+    tip.innerHTML = Object.entries(data.porTipo||{}).map(function(e){ return '<div class="rsti"><span>' + e[0].split('—')[0].trim() + '</span><span class="rstv">' + e[1] + '</span></div>'; }).join('');
+  } catch(e) {}
+}
+
+// ── INIT ──
+document.getElementById('mesInicio').value = new Date().toISOString().slice(0,7);
+updateBadge();
+cargarResumen();
+renderPend();
 </script>
-
-<!-- ── MODAL VISTA PREVIA PDF ── -->
-<div class="preview-overlay" id="preview-overlay">
-  <div class="preview-modal">
-    <div class="preview-header">
-      <h3 id="preview-title">Vista previa del documento</h3>
-      <button class="preview-close" onclick="cerrarPreview()">✕</button>
-    </div>
-    <div class="preview-body">
-      <div class="preview-doc" id="preview-doc"></div>
-    </div>
-    <div class="preview-footer">
-      <button class="btn-cancel-preview" onclick="cerrarPreview()">Cerrar</button>
-      <button class="btn-print-pdf" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
-    </div>
-  </div>
-</div>
-
-
-<!-- ── MODAL ENVIAR A DESEMBARGO ── -->
-<div class="desembargo-overlay" id="desembargo-overlay">
-  <div class="desembargo-modal">
-    <div class="desembargo-header">
-      <span style="font-size:22px">✅</span>
-      <h3>Enviar a cola de desembargo</h3>
-    </div>
-    <div class="desembargo-body">
-      <div class="desembargo-info">
-        Se enviará a la cola de impresión del generador de oficios con los datos del contribuyente del acuerdo.
-        <br><br>
-        <b>Contribuyente:</b> <span id="des-nombre">—</span><br>
-        <b>Cédula:</b> <span id="des-cedula">—</span><br>
-        <b>Tipo obligación:</b> <span id="des-tipo">—</span>
-      </div>
-
-      <div class="campo" style="margin-bottom:14px">
-        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">
-          Radicado del proceso *
-        </label>
-        <input type="text" id="des-radicado" placeholder="Ej: 20242023843"
-          style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #ddd6fe;border-radius:8px;outline:none;font-family:inherit" />
-        <div style="font-size:11px;color:#6b7280;margin-top:4px">Si no lo tiene aún, puede dejarlo en blanco y completarlo en el generador de oficios.</div>
-      </div>
-
-      <div class="campo" style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">
-          Observación (opcional)
-        </label>
-        <input type="text" id="des-obs" placeholder="Ej: Acuerdo de pago — cuota inicial cancelada"
-          style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #c8d5e8;border-radius:8px;outline:none;font-family:inherit" />
-      </div>
-
-      <div id="des-status" style="display:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px"></div>
-
-      <div style="display:flex;gap:10px">
-        <button onclick="cerrarModalDesembargo()"
-          style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">
-          Cancelar
-        </button>
-        <button onclick="enviarADesembargo()"
-          style="flex:1;padding:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">
-          🖨️ Enviar a cola
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
