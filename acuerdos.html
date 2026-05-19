@@ -466,7 +466,7 @@
   </div><!-- fin panel-nuevo -->
 
   <!-- PANEL PENDIENTES -->
-  <div id="panel-pendientes" style="display:none">
+  <div id="panel-pendientes" style="display:none;border:3px solid red;min-height:200px;background:yellow">
     <div style="background:#fff;border:1px solid #c8d5e8;border-radius:12px;box-shadow:0 4px 24px rgba(15,45,94,.10);overflow:hidden">
       <div style="background:#0f2d5e;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <span style="font-size:13px;font-weight:700">⏳ Acuerdos pendientes de pago de cuota inicial</span>
@@ -474,7 +474,7 @@
           oninput="filtrarPendientes()"
           style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:220px" />
       </div>
-      <div id="lista-pendientes">
+      <div id="lista-pendientes" style="border:3px solid blue;min-height:100px">
         <div style="text-align:center;padding:40px 20px;color:#4a5a72">
           <div style="font-size:36px;margin-bottom:8px">📋</div>
           <p style="font-size:14px">No hay acuerdos pendientes de pago</p>
@@ -995,6 +995,7 @@ function goTab(tab) {
 const PENDIENTES_KEY = 'acuerdos_pendientes';
 
 function guardarPendiente(d) {
+  console.log('guardarPendiente llamado con:', d);
   const lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
   lista.unshift({ id:'PEN-'+Date.now(), fecha:new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}), hora:new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}), ...d });
   localStorage.setItem(PENDIENTES_KEY, JSON.stringify(lista));
@@ -1008,7 +1009,9 @@ function actualizarBadge() {
 }
 
 function renderPendientes(filtro) {
+  console.log('renderPendientes llamado');
   let lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
+  console.log('Lista pendientes:', lista);
   if (filtro) { const f=filtro.toLowerCase(); lista=lista.filter(p=>((p.nombres||'')+' '+(p.apellidos||'')).toLowerCase().includes(f)||(p.cedula||'').includes(f)); }
   const el = document.getElementById('lista-pendientes');
   if (!lista.length) { el.innerHTML='<div style="text-align:center;padding:40px 20px;color:#4a5a72"><div style="font-size:36px;margin-bottom:8px">📋</div><p style="font-size:14px">No hay acuerdos pendientes</p></div>'; return; }
