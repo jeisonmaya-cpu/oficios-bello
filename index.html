@@ -1047,26 +1047,25 @@ async function apiGet(params){
 
 async function apiPost(data){
   if(!cfg.apiUrl) return {ok:false,local:true};
-
-  // Intento 1: fetch con CORS normal (funciona si Apps Script tiene CORS headers)
   try {
     const r = await fetch(cfg.apiUrl, {
       method: 'POST',
+      redirect: 'follow',
       body: JSON.stringify(data),
-      headers: {'Content-Type': 'text/plain'} // text/plain evita preflight OPTIONS
+      headers: {'Content-Type': 'text/plain'}
     });
     const txt = await r.text();
     try { return JSON.parse(txt); } catch { return {ok: true}; }
-  } catch(e1) {
-    // Intento 2: no-cors (el POST llega pero no podemos leer la respuesta)
+  } catch(e) {
+    // Fallback no-cors: el POST llega al Sheet pero no podemos leer respuesta
     try {
       await fetch(cfg.apiUrl, {
         method: 'POST',
+        redirect: 'follow',
         body: JSON.stringify(data),
         mode: 'no-cors',
         headers: {'Content-Type': 'text/plain'}
       });
-      // no-cors siempre resuelve si la URL es válida — asumimos que llegó
       return {ok: true, nocors: true};
     } catch(e2) {
       return {ok: false, error: e2.message};
@@ -1280,6 +1279,9 @@ function limpiarForm(){
   limpiarNotif(); limpiarPqrs();
   limpiarBorrador();
   hideAlert('f_alert');hideAlert('f_dup');
+  // Limpiar checkboxes multi-concepto
+  document.querySelectorAll('.chk-concepto').forEach(c => c.checked = false);
+  const cc = document.getElementById('conceptos_count'); if(cc) cc.textContent = '';
 }
 
 // ════════════════════════════════════════════════════════════
@@ -2004,8 +2006,15 @@ function toggleTodos(estado) {
 }
 
 function getBancosSeleccionados() {
-  // Si es tutela, no hay bancos
   if (document.getElementById('f_tipo').value === 'Tutela-Admite') return null;
+  // Multi-concepto: si hay más de 1 concepto seleccionado
+  const conceptos = typeof getConceptosSeleccionados === 'function' ? getConceptosSeleccionados() : [];
+  if (conceptos.length > 1) {
+    const checks = [...document.querySelectorAll('.chk-banco-multi:checked')];
+    if (!checks.length) return null;
+    return checks.map(c => ({ banco: c.dataset.banco, radicado: c.dataset.radicado, concepto: c.dataset.concepto }));
+  }
+  // Un concepto: tabla normal
   const concepto = document.getElementById('f_concepto').value;
   if (!concepto || concepto === 'OTRO' || !CONCEPTOS[concepto]) return null;
   const bancos = CONCEPTOS[concepto];
@@ -2025,8 +2034,18 @@ function actualizarBotonGenerar(concepto) {
 }
 
 function getConceptoReal() {
+  // Multi-concepto: si hay checkboxes activos, usarlos
+  const conceptos = getConceptosSeleccionados ? getConceptosSeleccionados() : [];
+  const tieneOtro = [...document.querySelectorAll('.chk-concepto:checked')].some(c=>c.value==='OTRO');
+  const manual = (document.getElementById('f_concepto_manual')||{value:''}).value.trim();
+  if (conceptos.length > 0 || tieneOtro) {
+    if (conceptos.length === 1 && !tieneOtro) return conceptos[0];
+    if (tieneOtro && conceptos.length === 0) return manual;
+    return [...conceptos, ...(tieneOtro && manual ? [manual] : [])].join(' | ');
+  }
+  // Sin checkboxes: usar el select normal
   const sel = document.getElementById('f_concepto').value;
-  if (sel === 'OTRO') return (document.getElementById('f_concepto_manual')||{value:''}).value.trim();
+  if (sel === 'OTRO') return manual;
   return sel;
 }
 
@@ -2811,34 +2830,11 @@ function getMotivoReal() {
 // ════════════════════════════════════════════════════════════
 function leerSheetJSONP(accion, callback) {
   if (!cfg.apiUrl) { callback(null); return; }
-
   const url = cfg.apiUrl + '?accion=' + accion + '&t=' + Date.now();
-
-  // Intento 1: fetch normal (funciona si Apps Script tiene CORS)
-  fetch(url)
-    .then(r => r.json())
+  fetch(url, { redirect: 'follow' })
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => callback(data))
-    .catch(() => {
-      // Intento 2: fetch con mode no-cors (no podemos leer respuesta)
-      // En este caso usar iframe trick
-      leerViaIframe(url, callback);
-    });
-}
-
-function leerViaIframe(url, callback) {
-  // Crear iframe oculto — Apps Script responde con JSON
-  // El iframe puede leer cross-origin si Apps Script permite
-  const cbName = '_jsonp_' + Date.now();
-  
-  // Último intento: no-cors fetch como señal de que el script existe
-  // y confiar en el localStorage
-  fetch(cfg.apiUrl + '?accion=ping', {mode: 'no-cors'})
-    .then(() => {
-      // El script existe pero CORS bloquea — notificar al usuario
-      console.warn('Sheet accesible pero CORS bloquea lectura. Use el Apps Script v3.');
-      callback(null);
-    })
-    .catch(() => callback(null));
+    .catch(err => { console.warn('leerSheetJSONP error:', err.message); callback(null); });
 }
 
 // Sincronización manual forzada
@@ -3716,45 +3712,8 @@ function actualizarBancosMultiConcepto(conceptos) {
   actualizarConteo();
 }
 
-// Override getBancosSeleccionados para multi-concepto
-const _getBancosOrig = getBancosSeleccionados;
-function getBancosSeleccionados() {
-  if (document.getElementById('f_tipo').value === 'Tutela-Admite') return null;
 
-  const conceptos = getConceptosSeleccionados();
-  if (conceptos.length > 1) {
-    // Modo multi-concepto
-    const checks = [...document.querySelectorAll('.chk-banco-multi:checked')];
-    if (!checks.length) return null;
-    return checks.map(c => ({ banco: c.dataset.banco, radicado: c.dataset.radicado, concepto: c.dataset.concepto }));
-  }
-  return _getBancosOrig();
-}
 
-// Override getConceptoReal para multi-concepto
-const _getConceptoRealOrig = getConceptoReal;
-function getConceptoReal() {
-  if (document.getElementById('f_tipo').value === 'Tutela-Admite') return _getConceptoRealOrig();
-  const conceptos = getConceptosSeleccionados();
-  const tieneOtro = [...document.querySelectorAll('.chk-concepto:checked')].some(c=>c.value==='OTRO');
-  const manual = (document.getElementById('f_concepto_manual')||{value:''}).value.trim();
-  // Si no hay checkboxes activos, usar el select normal (getConceptoReal original)
-  if (conceptos.length === 0 && !tieneOtro) return _getConceptoRealOrig();
-  if (conceptos.length === 1 && !tieneOtro) return conceptos[0];
-  if (tieneOtro && conceptos.length === 0) return manual;
-  const todos = [...conceptos, ...(tieneOtro && manual ? [manual] : [])];
-  return todos.join(' | ');
-}
-
-// Override limpiarForm para limpiar checkboxes
-const _limpiarFormOrig = limpiarForm;
-function limpiarForm() {
-  _limpiarFormOrig();
-  document.querySelectorAll('.chk-concepto').forEach(c => c.checked = false);
-  document.getElementById('conceptos_count').textContent = '';
-  const grpTabla = document.getElementById('grp_bancos_tabla');
-  if (grpTabla) grpTabla.style.display = 'none';
-}
 
 // ════════════════════════════════════════════════════════════
 // PUNTO 7 — ESTADOS COMPLETOS DEL OFICIO
@@ -3802,26 +3761,6 @@ async function guardarEstado(id, nuevoEstado, modalEl) {
 }
 
 // Actualizar renderRegistro para mostrar estado y botón cambiar
-const _renderRegistroOrig = renderRegistro;
-function renderRegistro() {
-  _renderRegistroOrig();
-  // Reemplazar las filas con la columna Estado
-  const tbody = document.getElementById('tbReg');
-  if (!tbody) return;
-  const rows = tbody.querySelectorAll('tr');
-  rows.forEach((tr, i) => {
-    const tds = tr.querySelectorAll('td');
-    if (tds.length < 10) return;
-    // Insertar celda de Estado después de Motivo (posición 9)
-    // Solo si no existe ya
-    if (tr.querySelectorAll('td').length === tr.querySelectorAll('td').length) {
-      // Already handled by renderRegistro rebuild — skip
-    }
-  });
-}
-
-
-
 
 // ════════════════════════════════════════════════════════════
 // CARGA LAZY DE PLANTILLAS WORD
