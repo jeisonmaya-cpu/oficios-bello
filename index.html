@@ -1145,7 +1145,7 @@ function getDatos(){
     fecha:      document.getElementById('f_fecha').value,
     nombre:     document.getElementById('f_nombre').value.trim(),
     cedula:     document.getElementById('f_cedula').value.trim(),
-    concepto:   getConceptoReal ? getConceptoReal() : document.getElementById('f_concepto').value.trim(),
+    concepto:   getConceptoReal(),
     radicado:   document.getElementById('f_radicado').value.trim(),
     fechaAuto:  document.getElementById('f_fauto').value.trim(),
     motivo:     getMotivoReal(),
@@ -3738,11 +3738,10 @@ function getConceptoReal() {
   const conceptos = getConceptosSeleccionados();
   const tieneOtro = [...document.querySelectorAll('.chk-concepto:checked')].some(c=>c.value==='OTRO');
   const manual = (document.getElementById('f_concepto_manual')||{value:''}).value.trim();
-
+  // Si no hay checkboxes activos, usar el select normal (getConceptoReal original)
   if (conceptos.length === 0 && !tieneOtro) return _getConceptoRealOrig();
   if (conceptos.length === 1 && !tieneOtro) return conceptos[0];
   if (tieneOtro && conceptos.length === 0) return manual;
-
   const todos = [...conceptos, ...(tieneOtro && manual ? [manual] : [])];
   return todos.join(' | ');
 }
@@ -3821,72 +3820,7 @@ function renderRegistro() {
   });
 }
 
-// Override renderRegistro completamente para incluir Estado
-function renderRegistro() {
-  const txt  = document.getElementById('sTxt').value.toLowerCase();
-  const func = document.getElementById('sFunc').value;
-  const conc = document.getElementById('sConc').value;
-  const tipo = document.getElementById('sTipo').value;
-  const mes  = document.getElementById('sMes').value;
 
-  const funcs = [...new Set(cache.map(r=>r['Funcionario']).filter(Boolean))];
-  const concs = [...new Set(cache.map(r=>r['Concepto']).filter(Boolean))];
-  const tipos = [...new Set(cache.map(r=>r['Tipo Oficio']).filter(Boolean))];
-  const selF=document.getElementById('sFunc').value,
-        selC=document.getElementById('sConc').value,
-        selT=document.getElementById('sTipo').value;
-  document.getElementById('sFunc').innerHTML='<option value="">Todos los funcionarios</option>'+funcs.map(f=>`<option value="${f}"${f===selF?' selected':''}>${f}</option>`).join('');
-  document.getElementById('sConc').innerHTML='<option value="">Todos los conceptos</option>'+concs.map(c=>`<option value="${c}"${c===selC?' selected':''}>${c}</option>`).join('');
-  document.getElementById('sTipo').innerHTML='<option value="">Todos los tipos</option>'+tipos.map(t=>`<option value="${t}"${t===selT?' selected':''}>${t}</option>`).join('');
-
-  let fil=cache;
-  if(txt)  fil=fil.filter(r=>(r['Contribuyente']+r['Radicado']+r['Cédula/NIT']+r['N° Oficio']).toLowerCase().includes(txt));
-  if(func) fil=fil.filter(r=>r['Funcionario']===func);
-  if(conc) fil=fil.filter(r=>r['Concepto']===conc);
-  if(tipo) fil=fil.filter(r=>r['Tipo Oficio']===tipo);
-  if(mes)  fil=fil.filter(r=>(r['Fecha Oficio']||'').startsWith(mes));
-
-  const hoy=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-  document.getElementById('statsGrid').innerHTML=`
-    <div class="stat"><div class="sl">Total</div><div class="sv">${cache.length}</div><div class="ss">Google Sheets</div></div>
-    <div class="stat"><div class="sl">Hoy</div><div class="sv">${cache.filter(r=>r['Fecha']===hoy).length}</div></div>
-    <div class="stat"><div class="sl">Funcionarios</div><div class="sv">${funcs.length}</div></div>
-    <div class="stat"><div class="sl">Filtro activo</div><div class="sv">${fil.length}</div></div>
-  `;
-  document.getElementById('badgeCnt').textContent=cache.length;
-  document.getElementById('regInfo').textContent=fil.length!==cache.length
-    ?`Mostrando ${fil.length} de ${cache.length}`:`${cache.length} registros`;
-
-  if(!fil.length){
-    document.getElementById('tbReg').innerHTML=`<tr><td colspan="13"><div class="empty">📂 ${cache.length?'No hay registros con esos filtros.':'Aún no hay oficios.'}</div></td></tr>`;
-    return;
-  }
-
-  document.getElementById('tbReg').innerHTML=fil.map((r,i)=>`<tr>
-    <td>${fil.length-i}</td>
-    <td>${r['Fecha']||''} <span style="color:var(--gr);font-size:10px">${r['Hora']||''}</span></td>
-    <td><span class="tipo-pill">${r['Tipo Oficio']||''}</span></td>
-    <td class="mono">${r['N° Oficio']||''}</td>
-    <td style="font-weight:600">${r['Contribuyente']||''}</td>
-    <td class="mono">${r['Cédula/NIT']||''}</td>
-    <td class="mono">${r['Radicado']||''}</td>
-    <td style="font-size:11px">${r['Concepto']||''}</td>
-    <td style="font-size:11px">${r['Motivo']||''}</td>
-    <td>
-      <span onclick='cambiarEstado("${r['ID']||r.id||''}","${r['Estado']||'Generado'}")'
-        style="cursor:pointer" title="Clic para cambiar estado">
-        ${estadoBadge(r['Estado']||'Generado')}
-      </span>
-    </td>
-    <td>${r['Proyectó']||'—'}</td>
-    <td style="font-size:10.5px;color:var(--gr)">${r['Funcionario']||''}</td>
-    <td style="display:flex;gap:3px">
-      <button class="bi" onclick='abrirEdit(${JSON.stringify(r).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-      <button class="bi" onclick='regenById(${JSON.stringify(r).replace(/'/g,"&#39;")})' title="Regenerar">⬇️</button>
-      <button class="bi del" onclick='eliminar("${r['ID']||r.id||''}")' title="Eliminar">✕</button>
-    </td>
-  </tr>`).join('');
-}
 
 
 // ════════════════════════════════════════════════════════════
