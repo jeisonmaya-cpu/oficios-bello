@@ -466,7 +466,7 @@
   </div><!-- fin panel-nuevo -->
 
   <!-- PANEL PENDIENTES -->
-  <div id="panel-pendientes" style="display:none;border:3px solid red;min-height:200px;background:yellow">
+  <div id="panel-pendientes" style="display:none">
     <div style="background:#fff;border:1px solid #c8d5e8;border-radius:12px;box-shadow:0 4px 24px rgba(15,45,94,.10);overflow:hidden">
       <div style="background:#0f2d5e;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <span style="font-size:13px;font-weight:700">⏳ Acuerdos pendientes de pago de cuota inicial</span>
@@ -474,7 +474,7 @@
           oninput="filtrarPendientes()"
           style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:220px" />
       </div>
-      <div id="lista-pendientes" style="border:3px solid blue;min-height:100px">
+      <div id="lista-pendientes" style="min-height:80px">
         <div style="text-align:center;padding:40px 20px;color:#4a5a72">
           <div style="font-size:36px;margin-bottom:8px">📋</div>
           <p style="font-size:14px">No hay acuerdos pendientes de pago</p>
@@ -982,14 +982,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ── TABS ──
 function goTab(tab) {
-  ['nuevo','pendientes'].forEach(t => {
-    const btn   = document.getElementById('tab-' + t);
-    const panel = document.getElementById('panel-' + t);
-    const on    = t === tab;
-    if (btn)   { btn.style.borderBottomColor = on ? '#f5c050' : 'transparent'; btn.style.color = on ? '#fff' : 'rgba(255,255,255,.6)'; }
-    if (panel)   panel.style.display = on ? (t==='nuevo'?'grid':'block') : 'none';
-  });
-  if (tab === 'pendientes') renderPendientes();
+  document.body.style.overflow = '';
+  var pN = document.getElementById('panel-nuevo');
+  var pP = document.getElementById('panel-pendientes');
+  var tN = document.getElementById('tab-nuevo');
+  var tP = document.getElementById('tab-pendientes');
+  if (tab === 'pendientes') {
+    if (pN) pN.style.display = 'none';
+    if (pP) pP.style.display = 'block';
+    if (tN) { tN.style.borderBottomColor='transparent'; tN.style.color='rgba(255,255,255,.6)'; }
+    if (tP) { tP.style.borderBottomColor='#f5c050'; tP.style.color='#fff'; }
+    renderPendientes();
+  } else {
+    if (pN) pN.style.display = 'grid';
+    if (pP) pP.style.display = 'none';
+    if (tN) { tN.style.borderBottomColor='#f5c050'; tN.style.color='#fff'; }
+    if (tP) { tP.style.borderBottomColor='transparent'; tP.style.color='rgba(255,255,255,.6)'; }
+  }
 }
 
 const PENDIENTES_KEY = 'acuerdos_pendientes';
