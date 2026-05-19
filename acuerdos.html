@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acuerdos de Pago — Alcaldía de Bello</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.umd.min.js"></script>
+  <style>
+    :root {
+      --navy:#0f2d5e; --navy-mid:#16396e; --blue:#1a6fc4;
+      --gold:#e8a020; --gold2:#f5c050;
+      --green:#16a34a; --red:#dc2626;
+      --bg:#f0f4fa; --surface:#fff;
+      --surface2:#e8edf7; --text:#0f1e35;
+      --text-soft:#4a5a72; --border:#c8d5e8;
+      --radius:12px; --shadow:0 4px 24px rgba(15,45,94,.10);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* HEADER */
+    header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:relative;overflow:hidden}
+    .header-inner{max-width:960px;margin:0 auto;padding:20px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .header-icon{width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
+    .header-text h1{font-family:'DM Serif Display',serif;color:#fff;font-size:18px;font-weight:400}
+    .header-text p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
+    .header-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+    .btn-nav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;white-space:nowrap;transition:background .2s;cursor:pointer;font-family:'DM Sans',sans-serif}
+    .btn-nav:hover{background:rgba(255,255,255,.22)}
+
+    /* MAIN */
+    main{max-width:960px;margin:0 auto;padding:24px 24px 60px;display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+
+    /* SECCIONES */
+    .seccion{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+    .sec-header{background:var(--navy);color:#fff;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+    .sec-body{padding:18px}
+    .campo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .campo-grid.tres{grid-template-columns:1fr 1fr 1fr}
+    .campo-full{grid-column:1/-1}
+    .campo label{display:block;font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+    .campo input,.campo select,.campo textarea{width:100%;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:8px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s,box-shadow .2s}
+    .campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12);background:#fff}
+    .campo input.highlight{background:#fefce8;border-color:#f59e0b}
+    .campo-check{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .campo-check label{font-size:12px;color:var(--text);display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0}
+    .campo-check input[type="radio"],.campo-check input[type="checkbox"]{width:14px;height:14px;accent-color:var(--blue)}
+
+    /* CALCULADORA */
+    .calc-panel{position:sticky;top:20px}
+    .calc-card{background:linear-gradient(135deg,var(--navy),#1a4a8a);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:16px;box-shadow:0 8px 32px rgba(15,45,94,.25)}
+    .calc-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:14px}
+    .calc-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+    .calc-item:last-child{border-bottom:none}
+    .calc-label{font-size:12px;color:rgba(255,255,255,.7)}
+    .calc-val{font-size:14px;font-weight:700;color:#fff}
+    .calc-val.gold{color:var(--gold2);font-size:18px}
+    .calc-val.green{color:#86efac}
+    .calc-tabla{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;max-height:320px;overflow-y:auto}
+    .calc-tabla-title{background:var(--navy);color:#fff;padding:10px 14px;font-size:12px;font-weight:700}
+    .calc-tabla table{width:100%;border-collapse:collapse;font-size:11px}
+    .calc-tabla thead tr{background:#e8edf7}
+    .calc-tabla thead th{padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--navy)}
+    .calc-tabla thead th:first-child{text-align:center}
+    .calc-tabla tbody tr{border-bottom:1px solid #f0f4fa}
+    .calc-tabla tbody tr:hover{background:#f8fafd}
+    .calc-tabla td{padding:6px 10px;text-align:right;color:var(--text)}
+    .calc-tabla td:first-child{text-align:center;font-weight:700;color:var(--navy)}
+
+    /* BOTONES ACCIÓN */
+    .acciones{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+    .btn-accion{width:100%;padding:12px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+    .btn-accion:last-child{margin-bottom:0}
+    .btn-generar{background:var(--navy);color:#fff}
+    .btn-generar:hover{background:var(--blue)}
+    .btn-proyeccion{background:#16a34a;color:#fff}
+    .btn-proyeccion:hover{background:#15803d}
+    .btn-limpiar{background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb}
+    .btn-limpiar:hover{background:#e5e7eb}
+    .btn-accion:disabled{opacity:.6;cursor:not-allowed}
+
+    /* STATUS */
+    .status{display:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:8px;align-items:center;gap:8px}
+    .status.ok{display:flex;background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+    .status.err{display:flex;background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+    .status.loading{display:flex;background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+    .spin{width:14px;height:14px;border:2px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* RESUMEN MES */
+    .resumen-mes{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+    .resumen-title{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .resumen-stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--surface2);font-size:12px}
+    .resumen-stat:last-child{border-bottom:none}
+    .resumen-stat-val{font-weight:700;color:var(--navy)}
+
+    @media(max-width:768px){
+      main{grid-template-columns:1fr}
+      .calc-panel{position:static}
+      .campo-grid{grid-template-columns:1fr}
+      .campo-grid.tres{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-icon">🤝</div>
+    <div class="header-text">
+      <h1>Acuerdos de Pago</h1>
+      <p>Predial · Industria y Comercio · Obligaciones Urbanísticas</p>
+    </div>
+    <div class="header-actions">
+      <a href="home.html" class="btn-nav">🏛️ Inicio</a>
+      <a href="index.html" class="btn-nav">📄 Oficios</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- COLUMNA IZQUIERDA: FORMULARIO -->
+  <div>
+
+    <!-- CONFIGURACIÓN -->
+    <div class="seccion">
+      <div class="sec-header">⚙️ Configuración del acuerdo</div>
+      <div class="sec-body">
+        <div class="campo-grid tres">
+          <div class="campo">
+            <label>Tipo de obligación *</label>
+            <select id="tipoObligacion" onchange="calcular()">
+              <option value="">Seleccione...</option>
+              <option value="IP — Impuesto Predial">IP — Impuesto Predial</option>
+              <option value="ICO — Industria y Comercio">ICO — Industria y Comercio</option>
+              <option value="CONS — Obligaciones Urbanísticas">CONS — Obligaciones Urbanísticas</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Tasa mensual (%) *</label>
+            <input type="number" id="tasaMensual" placeholder="Ej: 1.4445" step="0.0001" min="0" oninput="calcular()" />
+          </div>
+          <div class="campo">
+            <label>Mes inicio cuotas</label>
+            <input type="month" id="mesInicio" />
+          </div>
+        </div>
+        <div class="campo" style="margin-top:12px">
+          <label>Funcionario que proyecta *</label>
+          <input type="text" id="funcionario" placeholder="Nombre del funcionario" />
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTRIBUYENTE -->
+    <div class="seccion">
+      <div class="sec-header">👤 Información del contribuyente</div>
+      <div class="sec-body">
+        <div class="campo-grid">
+          <div class="campo">
+            <label>Nombres *</label>
+            <input type="text" id="nombres" placeholder="Nombres del contribuyente" />
+          </div>
+          <div class="campo">
+            <label>Apellidos *</label>
+            <input type="text" id="apellidos" placeholder="Apellidos" />
+          </div>
+        </div>
+        <div class="campo-grid tres" style="margin-top:12px">
+          <div class="campo">
+            <label>Tipo de documento</label>
+            <select id="tipoDoc">
+              <option value="C.C">C.C</option>
+              <option value="C.E">C.E</option>
+              <option value="NIT">NIT</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Número documento *</label>
+            <input type="text" id="cedula" placeholder="Número" />
+          </div>
+          <div class="campo">
+            <label>Teléfono</label>
+            <input type="text" id="telefono" placeholder="Fijo" />
+          </div>
+        </div>
+        <div class="campo-grid" style="margin-top:12px">
+          <div class="campo">
+            <label>Celular</label>
+            <input type="text" id="celular" placeholder="Celular" />
+          </div>
+          <div class="campo">
+            <label>Correo electrónico</label>
+            <input type="email" id="correo" placeholder="correo@ejemplo.com" />
+          </div>
+        </div>
+        <div class="campo campo-full" style="margin-top:12px">
+          <label>Dirección</label>
+          <input type="text" id="direccion" placeholder="Dirección completa" />
+        </div>
+
+        <div style="margin-top:14px">
+          <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px">Ocupación</label>
+          <div class="campo-check">
+            <label><input type="radio" name="ocupacion" value="Empleado"> Empleado</label>
+            <label><input type="radio" name="ocupacion" value="Jubilado"> Jubilado</label>
+            <label><input type="radio" name="ocupacion" value="Pensionado"> Pensionado</label>
+            <label><input type="radio" name="ocupacion" value="Desempleado"> Desempleado</label>
+            <label><input type="radio" name="ocupacion" value="Independiente"> Independiente</label>
+            <label><input type="radio" name="ocupacion" value="Ama de casa"> Ama de casa</label>
+            <label><input type="radio" name="ocupacion" value="Estudiante"> Estudiante</label>
+          </div>
+        </div>
+
+        <div class="campo-grid" style="margin-top:12px">
+          <div class="campo">
+            <label>Cargo</label>
+            <input type="text" id="cargo" placeholder="Cargo o profesión" />
+          </div>
+          <div class="campo">
+            <label>Ingreso mensual ($)</label>
+            <input type="number" id="ingresoMensual" placeholder="0" min="0" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VALORES -->
+    <div class="seccion">
+      <div class="sec-header">💰 Valores del acuerdo</div>
+      <div class="sec-body">
+        <div class="campo-grid tres">
+          <div class="campo">
+            <label>Valor total factura ($) *</label>
+            <input type="number" id="valorFactura" placeholder="0" min="0" oninput="calcular()" class="highlight" />
+          </div>
+          <div class="campo">
+            <label>Cuota inicial ($) *</label>
+            <input type="number" id="cuotaInicial" placeholder="0" min="0" oninput="calcular()" class="highlight" />
+          </div>
+          <div class="campo">
+            <label>N° cuotas solicitadas *</label>
+            <input type="number" id="numCuotas" placeholder="Ej: 12" min="1" max="36" oninput="calcular()" class="highlight" />
+          </div>
+        </div>
+        <div class="campo-grid" style="margin-top:12px">
+          <div class="campo">
+            <label>Valor a financiar ($)</label>
+            <input type="number" id="valorFinanciar" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;color:var(--text-soft)" />
+          </div>
+          <div class="campo">
+            <label>Valor cuota mensual ($)</label>
+            <input type="number" id="valorCuota" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;color:var(--text-soft)" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CODEUDOR -->
+    <div class="seccion">
+      <div class="sec-header">👥 Información del codeudor / referencia personal</div>
+      <div class="sec-body">
+        <div class="campo-grid">
+          <div class="campo">
+            <label>Nombres codeudor</label>
+            <input type="text" id="cod_nombres" placeholder="Nombres" />
+          </div>
+          <div class="campo">
+            <label>Apellidos codeudor</label>
+            <input type="text" id="cod_apellidos" placeholder="Apellidos" />
+          </div>
+        </div>
+        <div class="campo-grid tres" style="margin-top:12px">
+          <div class="campo">
+            <label>Tipo documento</label>
+            <select id="cod_tipoDoc">
+              <option value="C.C">C.C</option>
+              <option value="C.E">C.E</option>
+              <option value="NIT">NIT</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Número documento</label>
+            <input type="text" id="cod_cedula" placeholder="Número" />
+          </div>
+          <div class="campo">
+            <label>Teléfono / Celular</label>
+            <input type="text" id="cod_telefono" placeholder="Teléfono" />
+          </div>
+        </div>
+        <div class="campo" style="margin-top:12px">
+          <label>Dirección codeudor</label>
+          <input type="text" id="cod_direccion" placeholder="Dirección" />
+        </div>
+        <div class="campo-grid" style="margin-top:12px">
+          <div class="campo">
+            <label>Matrícula inmueble</label>
+            <input type="text" id="matricula" placeholder="Número de matrícula" />
+          </div>
+          <div class="campo">
+            <label>Dirección predio</label>
+            <input type="text" id="cod_dirPredio" placeholder="Dirección del predio" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COLUMNA DERECHA: CALCULADORA + ACCIONES -->
+  <div class="calc-panel">
+
+    <!-- RESUMEN MES -->
+    <div class="resumen-mes" id="resumen-mes" style="display:none">
+      <div class="resumen-title">📊 Acuerdos este mes</div>
+      <div class="resumen-stat"><span>Total acuerdos</span><span class="resumen-stat-val" id="res-total">—</span></div>
+      <div class="resumen-stat"><span>Valor total cartera</span><span class="resumen-stat-val" id="res-valor">—</span></div>
+      <div id="res-tipos"></div>
+    </div>
+
+    <!-- CALCULADORA -->
+    <div class="calc-card">
+      <div class="calc-title">📐 Proyección calculada</div>
+      <div class="calc-item">
+        <span class="calc-label">Valor factura</span>
+        <span class="calc-val" id="c-factura">$ 0</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-label">Cuota inicial</span>
+        <span class="calc-val" id="c-inicial">$ 0</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-label">Valor a financiar</span>
+        <span class="calc-val" id="c-financiar">$ 0</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-label">N° cuotas</span>
+        <span class="calc-val" id="c-cuotas">—</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-label">Tasa mensual</span>
+        <span class="calc-val" id="c-tasa">—</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-label">Total intereses</span>
+        <span class="calc-val green" id="c-intereses">$ 0</span>
+      </div>
+      <div class="calc-item">
+        <span class="calc-label">💰 Cuota mensual</span>
+        <span class="calc-val gold" id="c-cuota-val">$ 0</span>
+      </div>
+    </div>
+
+    <!-- TABLA PROYECCIÓN -->
+    <div class="calc-tabla" id="tabla-proyeccion" style="display:none">
+      <div class="calc-tabla-title">📅 Tabla de pagos</div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cuota</th>
+            <th>Interés</th>
+            <th>Capital</th>
+            <th>Saldo</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-proyeccion"></tbody>
+      </table>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="acciones" style="margin-top:16px">
+      <div class="status" id="status-msg"></div>
+      <button class="btn-accion btn-generar" onclick="generarFormulario()">
+        📄 Generar Formulario F-GAF-68
+      </button>
+      <button class="btn-accion btn-proyeccion" onclick="generarProyeccion()">
+        📊 Generar Proyección de Pagos
+      </button>
+      <button class="btn-accion btn-limpiar" onclick="confirmarLimpiar()">
+        🗑️ Limpiar formulario
+      </button>
+    </div>
+
+  </div>
+</main>
+
+<!-- MODAL CONFIRMAR LIMPIAR -->
+<div id="mLimpiar" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:380px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:16px 20px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:22px">🗑️</span>
+      <div style="color:#fff;font-weight:700;font-size:14px">¿Limpiar el formulario?</div>
+    </div>
+    <div style="padding:18px 20px">
+      <p style="font-size:13px;color:#374151;margin-bottom:16px">Se borrarán todos los datos ingresados. ¿Está seguro?</p>
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('mLimpiar').style.display='none'" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="limpiarFormulario()" style="flex:1;padding:10px;background:#374151;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, limpiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEpNUeH2kZs2cxSw64rM9q8T6vWCfSZxPvCOwjXS41IGulD7Ud-TGWdnyHrEd6JJE/exec";
+
+// ── CALCULADORA ──
+let proyeccion = [];
+
+function calcular() {
+  const vFactura  = parseFloat(document.getElementById('valorFactura').value)  || 0;
+  const vInicial  = parseFloat(document.getElementById('cuotaInicial').value)  || 0;
+  const nCuotas   = parseInt(document.getElementById('numCuotas').value)       || 0;
+  const tasaPct   = parseFloat(document.getElementById('tasaMensual').value)   || 0;
+  const tasa      = tasaPct / 100;
+
+  const vFinanciar = Math.max(0, vFactura - vInicial);
+  document.getElementById('valorFinanciar').value = Math.round(vFinanciar);
+
+  let cuotaMensual = 0;
+  proyeccion = [];
+
+  if (vFinanciar > 0 && nCuotas > 0 && tasa > 0) {
+    // Fórmula de cuota fija
+    cuotaMensual = vFinanciar * (tasa * Math.pow(1+tasa, nCuotas)) / (Math.pow(1+tasa, nCuotas) - 1);
+    document.getElementById('valorCuota').value = Math.round(cuotaMensual);
+
+    // Generar tabla de amortización
+    let saldo = vFinanciar;
+    let totalIntereses = 0;
+    for (let i = 1; i <= nCuotas; i++) {
+      const interes  = saldo * tasa;
+      const capital  = cuotaMensual - interes;
+      saldo         -= capital;
+      totalIntereses += interes;
+      proyeccion.push({
+        cuota: i,
+        valorCuota: cuotaMensual,
+        interes,
+        capital,
+        saldo: Math.max(0, saldo)
+      });
+    }
+
+    // Actualizar calculadora visual
+    document.getElementById('c-intereses').textContent = fmt(totalIntereses);
+    document.getElementById('c-cuota-val').textContent = fmt(cuotaMensual);
+
+    // Tabla
+    const tbody = document.getElementById('tbody-proyeccion');
+    tbody.innerHTML = proyeccion.map(p => `
+      <tr>
+        <td>${p.cuota}</td>
+        <td>${fmtCorto(p.valorCuota)}</td>
+        <td>${fmtCorto(p.interes)}</td>
+        <td>${fmtCorto(p.capital)}</td>
+        <td>${fmtCorto(p.saldo)}</td>
+      </tr>`).join('');
+    document.getElementById('tabla-proyeccion').style.display = 'block';
+
+  } else {
+    document.getElementById('valorCuota').value = '';
+    document.getElementById('c-intereses').textContent = '$ 0';
+    document.getElementById('c-cuota-val').textContent = '$ 0';
+    document.getElementById('tabla-proyeccion').style.display = 'none';
+  }
+
+  document.getElementById('c-factura').textContent   = fmt(vFactura);
+  document.getElementById('c-inicial').textContent   = fmt(vInicial);
+  document.getElementById('c-financiar').textContent = fmt(vFinanciar);
+  document.getElementById('c-cuotas').textContent    = nCuotas || '—';
+  document.getElementById('c-tasa').textContent      = tasaPct ? tasaPct + '%' : '—';
+}
+
+function fmt(n)      { return '$ ' + Math.round(n||0).toLocaleString('es-CO'); }
+function fmtCorto(n) { return Math.round(n||0).toLocaleString('es-CO'); }
+
+// ── VALIDAR ──
+function validar() {
+  const req = [
+    ['tipoObligacion','Tipo de obligación'],
+    ['tasaMensual','Tasa mensual'],
+    ['funcionario','Funcionario'],
+    ['nombres','Nombres'],
+    ['apellidos','Apellidos'],
+    ['cedula','Número de documento'],
+    ['valorFactura','Valor factura'],
+    ['cuotaInicial','Cuota inicial'],
+    ['numCuotas','Número de cuotas'],
+  ];
+  for (const [id, label] of req) {
+    const el = document.getElementById(id);
+    if (!el || !el.value.trim()) {
+      setStatus('err', `⚠️ El campo "${label}" es obligatorio.`);
+      el && el.focus();
+      return false;
+    }
+  }
+  if (proyeccion.length === 0) {
+    setStatus('err', '⚠️ Verifique los valores — la proyección no está calculada.');
+    return false;
+  }
+  return true;
+}
+
+function setStatus(tipo, msg) {
+  const el = document.getElementById('status-msg');
+  el.className = 'status ' + tipo;
+  el.innerHTML = tipo === 'loading'
+    ? `<div class="spin"></div><span>${msg}</span>`
+    : msg;
+}
+
+// ── REGISTRAR EN SHEET ──
+async function registrarEnSheet() {
+  const ocupacion = document.querySelector('input[name="ocupacion"]:checked');
+  const params = new URLSearchParams({
+    accion:         'registrar',
+    funcionario:    document.getElementById('funcionario').value,
+    tipoObligacion: document.getElementById('tipoObligacion').value,
+    nombres:        document.getElementById('nombres').value,
+    apellidos:      document.getElementById('apellidos').value,
+    cedula:         document.getElementById('cedula').value,
+    telefono:       document.getElementById('telefono').value,
+    celular:        document.getElementById('celular').value,
+    correo:         document.getElementById('correo').value,
+    direccion:      document.getElementById('direccion').value,
+    valorFactura:   document.getElementById('valorFactura').value,
+    cuotaInicial:   document.getElementById('cuotaInicial').value,
+    valorFinanciar: document.getElementById('valorFinanciar').value,
+    numCuotas:      document.getElementById('numCuotas').value,
+    valorCuota:     document.getElementById('valorCuota').value,
+    totalIntereses: proyeccion.reduce((s,p)=>s+p.interes, 0),
+    tasaMensual:    document.getElementById('tasaMensual').value,
+    mesInicio:      document.getElementById('mesInicio').value,
+    ocupacion:      ocupacion ? ocupacion.value : '',
+    ingresoMensual: document.getElementById('ingresoMensual').value,
+  });
+  try {
+    await fetch(APPS_SCRIPT_URL + '?' + params);
+  } catch(e) { console.warn('No se pudo registrar:', e.message); }
+}
+
+// ── GENERAR FORMULARIO F-GAF-68 ──
+async function generarFormulario() {
+  if (!validar()) return;
+  setStatus('loading', 'Generando formulario F-GAF-68...');
+
+  try {
+    await registrarEnSheet();
+
+    const d = getDatos();
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+            AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign } = docx;
+
+    const borde = { style: BorderStyle.SINGLE, size: 4, color: "0f2d5e" };
+    const bordes = { top: borde, bottom: borde, left: borde, right: borde };
+    const sinBorde = { style: BorderStyle.NONE, size: 0, color: "ffffff" };
+    const sinBordes = { top: sinBorde, bottom: sinBorde, left: sinBorde, right: sinBorde };
+
+    const campo = (label, valor) => new Paragraph({
+      spacing: { after: 80 },
+      children: [
+        new TextRun({ text: label + ': ', bold: true, font: 'Arial', size: 20 }),
+        new TextRun({ text: valor || '___________________________', font: 'Arial', size: 20 }),
+      ]
+    });
+
+    const linea = (texto) => new Paragraph({
+      spacing: { after: 60 },
+      children: [new TextRun({ text: texto, font: 'Arial', size: 18 })]
+    });
+
+    const titulo = (texto) => new Paragraph({
+      spacing: { before: 160, after: 80 },
+      children: [new TextRun({ text: texto, bold: true, font: 'Arial', size: 20, color: '0f2d5e' })]
+    });
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 12240, height: 15840 },
+            margin: { top: 720, right: 900, bottom: 720, left: 900 }
+          }
+        },
+        children: [
+          // ENCABEZADO
+          new Table({
+            width: { size: 10440, type: WidthType.DXA },
+            columnWidths: [1800, 6840, 1800],
+            rows: [new TableRow({ children: [
+              new TableCell({ borders: bordes, width: { size: 1800, type: WidthType.DXA },
+                children: [new Paragraph({ alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: '1070.02', bold: true, font: 'Arial', size: 18 })] })] }),
+              new TableCell({ borders: bordes, width: { size: 6840, type: WidthType.DXA },
+                shading: { fill: '0f2d5e', type: ShadingType.CLEAR },
+                children: [new Paragraph({ alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: 'SOLICITUD ACUERDOS Y/O CONVENIOS DE PAGO', bold: true, font: 'Arial', size: 22, color: 'ffffff' })] })] }),
+              new TableCell({ borders: bordes, width: { size: 1800, type: WidthType.DXA },
+                children: [
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'FECHA:', bold: true, font: 'Arial', size: 18 })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: new Date().toLocaleDateString('es-CO'), font: 'Arial', size: 18 })] }),
+                ] }),
+            ]})]
+          }),
+
+          new Paragraph({ spacing: { after: 120 }, children: [] }),
+
+          // SECCIÓN CONTRIBUYENTE
+          titulo('INFORMACIÓN DEL CONTRIBUYENTE'),
+          campo('Nombres', d.nombres),
+          campo('Apellidos', d.apellidos),
+          new Paragraph({ spacing: { after: 80 }, children: [
+            new TextRun({ text: 'Tipo de documento: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.tipoDoc + '     ', font: 'Arial', size: 20 }),
+            new TextRun({ text: 'Número documento: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.cedula, font: 'Arial', size: 20 }),
+          ]}),
+          new Paragraph({ spacing: { after: 80 }, children: [
+            new TextRun({ text: 'Origen de la obligación: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.tipoObligacion, font: 'Arial', size: 20 }),
+          ]}),
+          campo('Dirección', d.direccion),
+          new Paragraph({ spacing: { after: 80 }, children: [
+            new TextRun({ text: 'Teléfono: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.telefono + '     ', font: 'Arial', size: 20 }),
+            new TextRun({ text: 'Celular: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.celular, font: 'Arial', size: 20 }),
+          ]}),
+          campo('Correo electrónico', d.correo),
+          new Paragraph({ spacing: { after: 80 }, children: [
+            new TextRun({ text: 'Valor total de la factura: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: fmt(d.valorFactura), font: 'Arial', size: 20 }),
+          ]}),
+          new Paragraph({ spacing: { after: 80 }, children: [
+            new TextRun({ text: 'Cuota inicial: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: fmt(d.cuotaInicial) + '     ', font: 'Arial', size: 20 }),
+            new TextRun({ text: 'Valor total a financiar: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: fmt(d.valorFinanciar) + '     ', font: 'Arial', size: 20 }),
+            new TextRun({ text: 'N° cuotas: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: String(d.numCuotas), font: 'Arial', size: 20 }),
+          ]}),
+          new Paragraph({ spacing: { after: 80 }, children: [
+            new TextRun({ text: 'Ocupación: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.ocupacion || '_______________', font: 'Arial', size: 20 }),
+            new TextRun({ text: '     Ingreso mensual: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.ingresoMensual ? fmt(d.ingresoMensual) : '_______________', font: 'Arial', size: 20 }),
+          ]}),
+
+          new Paragraph({ spacing: { after: 120 }, children: [] }),
+
+          // SECCIÓN CODEUDOR
+          titulo('INFORMACIÓN DEL CODEUDOR / REFERENCIA PERSONAL'),
+          campo('Nombres', d.cod_nombres),
+          campo('Apellidos', d.cod_apellidos),
+          new Paragraph({ spacing: { after: 80 }, children: [
+            new TextRun({ text: 'Tipo de documento: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.cod_tipoDoc + '     ', font: 'Arial', size: 20 }),
+            new TextRun({ text: 'Número documento: ', bold: true, font: 'Arial', size: 20 }),
+            new TextRun({ text: d.cod_cedula || '_______________', font: 'Arial', size: 20 }),
+          ]}),
+          campo('Dirección', d.cod_direccion),
+          campo('Teléfono / Celular', d.cod_telefono),
+          campo('Matrícula inmueble', d.matricula),
+          campo('Dirección predio', d.cod_dirPredio),
+
+          new Paragraph({ spacing: { after: 120 }, children: [] }),
+
+          // AUTORIZACIÓN
+          titulo('AUTORIZACIÓN'),
+          linea('- REPORTE A CONTADURÍA GRAL DE LA NACIÓN: tanto el titular de la obligación, como el deudor solidario, a través del presente convenio autorizan a la administración Municipal para la consulta, reporte y suministro de información a la contaduría general de la nación, división de deudores morosos del estado; según la ley 1266 de 2008 en el artículo 3º y la sentencia c-1011 de 2008.'),
+          linea('- Así mismo autorizo recibir la notificación por correo electrónico en caso de inicio del cobro coactivo.'),
+          linea('- Autorizo que si pasados cinco (5) días hábiles NO SE HA LEGALIZADO el convenio solicitado por parte del contribuyente será anulado, y el saldo existente se cargará en el próximo periodo de facturación.'),
+
+          new Paragraph({ spacing: { after: 200 }, children: [] }),
+
+          // FIRMAS
+          new Table({
+            width: { size: 10440, type: WidthType.DXA },
+            columnWidths: [3480, 3480, 3480],
+            rows: [new TableRow({ children: [
+              new TableCell({ borders: sinBordes, width: { size: 3480, type: WidthType.DXA },
+                children: [
+                  new Paragraph({ alignment: AlignmentType.CENTER, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: '374151' } },
+                    children: [new TextRun({ text: d.nombres + ' ' + d.apellidos, font: 'Arial', size: 18 })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'NOMBRE CONTRIBUYENTE', bold: true, font: 'Arial', size: 16, color: '4a5a72' })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: d.tipoDoc + ': ' + d.cedula, font: 'Arial', size: 16 })] }),
+                ] }),
+              new TableCell({ borders: sinBordes, width: { size: 3480, type: WidthType.DXA },
+                children: [
+                  new Paragraph({ alignment: AlignmentType.CENTER, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: '374151' } },
+                    children: [new TextRun({ text: ' ', font: 'Arial', size: 18 })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'FIRMA', bold: true, font: 'Arial', size: 16, color: '4a5a72' })] }),
+                ] }),
+              new TableCell({ borders: sinBordes, width: { size: 3480, type: WidthType.DXA },
+                children: [
+                  new Paragraph({ alignment: AlignmentType.CENTER, border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: '374151' } },
+                    children: [new TextRun({ text: ' ', font: 'Arial', size: 18 })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'AUTORIZO', bold: true, font: 'Arial', size: 16, color: '4a5a72' })] }),
+                ] }),
+            ]})]
+          }),
+
+          new Paragraph({ spacing: { after: 80 }, children: [] }),
+
+          // PIE
+          new Table({
+            width: { size: 10440, type: WidthType.DXA },
+            columnWidths: [2610, 5220, 2610],
+            rows: [new TableRow({ children: [
+              new TableCell({ borders: bordes, width: { size: 2610, type: WidthType.DXA },
+                children: [new Paragraph({ children: [new TextRun({ text: 'Código: F-GAF-68', font: 'Arial', size: 16 })] })] }),
+              new TableCell({ borders: bordes, width: { size: 5220, type: WidthType.DXA },
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Versión: 03  |  Fecha: 2026/01/01', font: 'Arial', size: 16 })] })] }),
+              new TableCell({ borders: bordes, width: { size: 2610, type: WidthType.DXA },
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Página 1 de 1', font: 'Arial', size: 16 })] })] }),
+            ]})]
+          }),
+        ]
+      }]
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement('a');
+    a.href       = url;
+    a.download   = `F-GAF-68_${d.apellidos}_${d.cedula}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    setStatus('ok', '✅ Formulario generado y registrado correctamente.');
+    cargarResumenMes();
+
+  } catch(err) {
+    setStatus('err', '❌ Error: ' + err.message);
+    console.error(err);
+  }
+}
+
+// ── GENERAR PROYECCIÓN ──
+async function generarProyeccion() {
+  if (!validar()) return;
+  setStatus('loading', 'Generando proyección de pagos...');
+
+  try {
+    const d = getDatos();
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+            AlignmentType, BorderStyle, WidthType, ShadingType } = docx;
+
+    const borde    = { style: BorderStyle.SINGLE, size: 4, color: '0f2d5e' };
+    const bordes   = { top: borde, bottom: borde, left: borde, right: borde };
+    const bordeTab = { style: BorderStyle.SINGLE, size: 2, color: 'c8d5e8' };
+    const bordesTab = { top: bordeTab, bottom: bordeTab, left: bordeTab, right: bordeTab };
+
+    // Calcular fecha de cada cuota
+    const mesInicio = document.getElementById('mesInicio').value;
+    const fechaBase = mesInicio ? new Date(mesInicio + '-01') : new Date();
+
+    const filas = proyeccion.map((p, i) => {
+      const fechaCuota = new Date(fechaBase);
+      fechaCuota.setMonth(fechaCuota.getMonth() + i);
+      const mes = fechaCuota.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+
+      return new TableRow({
+        children: [
+          new TableCell({ borders: bordesTab, width: { size: 600, type: WidthType.DXA },
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(p.cuota), font: 'Arial', size: 18 })] })] }),
+          new TableCell({ borders: bordesTab, width: { size: 2000, type: WidthType.DXA },
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: mes, font: 'Arial', size: 18 })] })] }),
+          new TableCell({ borders: bordesTab, width: { size: 1800, type: WidthType.DXA },
+            children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: Math.round(p.valorCuota).toLocaleString('es-CO'), font: 'Arial', size: 18 })] })] }),
+          new TableCell({ borders: bordesTab, width: { size: 1800, type: WidthType.DXA },
+            children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: Math.round(p.interes).toLocaleString('es-CO'), font: 'Arial', size: 18 })] })] }),
+          new TableCell({ borders: bordesTab, width: { size: 1800, type: WidthType.DXA },
+            children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: Math.round(p.capital).toLocaleString('es-CO'), font: 'Arial', size: 18 })] })] }),
+          new TableCell({ borders: bordesTab, width: { size: 1800, type: WidthType.DXA },
+            children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: Math.round(Math.max(0,p.saldo)).toLocaleString('es-CO'), font: 'Arial', size: 18 })] })] }),
+        ]
+      });
+    });
+
+    const encHdr = (txt) => new TableCell({
+      borders: bordesTab,
+      shading: { fill: '0f2d5e', type: ShadingType.CLEAR },
+      children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: txt, bold: true, font: 'Arial', size: 18, color: 'ffffff' })] })]
+    });
+
+    const totalIntereses = proyeccion.reduce((s,p)=>s+p.interes,0);
+    const cuotaMensual   = proyeccion[0]?.valorCuota || 0;
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 12240, height: 15840 },
+            margin: { top: 720, right: 900, bottom: 720, left: 900 }
+          }
+        },
+        children: [
+          // ENCABEZADO
+          new Table({
+            width: { size: 10440, type: WidthType.DXA },
+            columnWidths: [10440],
+            rows: [new TableRow({ children: [
+              new TableCell({ borders: bordes,
+                shading: { fill: '0f2d5e', type: ShadingType.CLEAR },
+                children: [
+                  new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 60, after: 40 },
+                    children: [new TextRun({ text: 'SECRETARÍA DE RECAUDOS Y PAGOS', bold: true, font: 'Arial', size: 20, color: 'f5c050' })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 40 },
+                    children: [new TextRun({ text: 'DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES', bold: true, font: 'Arial', size: 20, color: 'ffffff' })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 },
+                    children: [new TextRun({ text: 'PROYECCIÓN DE PAGOS — CONVENIO DE PAGO', bold: true, font: 'Arial', size: 22, color: 'ffffff' })] }),
+                ] }),
+            ]})]
+          }),
+
+          new Paragraph({ spacing: { after: 120 }, children: [] }),
+
+          // DATOS DEL DEUDOR
+          new Table({
+            width: { size: 10440, type: WidthType.DXA },
+            columnWidths: [1400, 3620, 1400, 4020],
+            rows: [
+              new TableRow({ children: [
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'DEUDOR', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab, columnSpan: 3,
+                  children: [new Paragraph({ children: [new TextRun({ text: d.nombres + ' ' + d.apellidos, font: 'Arial', size: 18 })] })] }),
+              ]}),
+              new TableRow({ children: [
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'CÉDULA / NIT', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: d.cedula, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'TELÉFONO', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: d.celular || d.telefono, font: 'Arial', size: 18 })] })] }),
+              ]}),
+              new TableRow({ children: [
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'CONCEPTO', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: d.tipoObligacion, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'TASA MENSUAL', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: d.tasaMensual + '%', font: 'Arial', size: 18 })] })] }),
+              ]}),
+              new TableRow({ children: [
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'VALOR FACTURA', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: fmt(d.valorFactura), font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'CUOTA INICIAL', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: fmt(d.cuotaInicial), font: 'Arial', size: 18 })] })] }),
+              ]}),
+              new TableRow({ children: [
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'V/FINANCIACIÓN', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: fmt(d.valorFinanciar), font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'V/CUOTA MENSUAL', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: fmt(cuotaMensual), font: 'Arial', size: 18 })] })] }),
+              ]}),
+              new TableRow({ children: [
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'N° CUOTAS', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: String(d.numCuotas), font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab, shading: { fill: 'e8edf7', type: ShadingType.CLEAR },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'TOTAL INTERESES', bold: true, font: 'Arial', size: 18 })] })] }),
+                new TableCell({ borders: bordesTab,
+                  children: [new Paragraph({ children: [new TextRun({ text: fmt(totalIntereses), font: 'Arial', size: 18 })] })] }),
+              ]}),
+            ]
+          }),
+
+          new Paragraph({ spacing: { after: 160 }, children: [] }),
+
+          // TABLA DE AMORTIZACIÓN
+          new Table({
+            width: { size: 10440, type: WidthType.DXA },
+            columnWidths: [600, 2000, 1960, 1960, 1960, 1960],
+            rows: [
+              new TableRow({ children: [
+                encHdr('#'), encHdr('MES'), encHdr('VALOR CUOTA'), encHdr('ABONO INTERÉS'), encHdr('ABONO CAPITAL'), encHdr('SALDO CAPITAL')
+              ]}),
+              ...filas,
+            ]
+          }),
+
+          new Paragraph({ spacing: { after: 200 }, children: [] }),
+
+          // FIRMAS
+          new Table({
+            width: { size: 10440, type: WidthType.DXA },
+            columnWidths: [3480, 3480, 3480],
+            rows: [new TableRow({ children: [
+              new TableCell({ borders: { top: borde, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                children: [
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: ' ', font: 'Arial', size: 18 })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'ELABORÓ', bold: true, font: 'Arial', size: 16, color: '4a5a72' })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: d.funcionario, font: 'Arial', size: 16 })] }),
+                ] }),
+              new TableCell({ borders: { top: borde, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                children: [
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: ' ', font: 'Arial', size: 18 })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'REVISÓ', bold: true, font: 'Arial', size: 16, color: '4a5a72' })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'JUAN PABLO GÓMEZ', font: 'Arial', size: 16 })] }),
+                ] }),
+              new TableCell({ borders: { top: borde, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
+                children: [
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: ' ', font: 'Arial', size: 18 })] }),
+                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'AUTORIZÓ', bold: true, font: 'Arial', size: 16, color: '4a5a72' })] }),
+                ] }),
+            ]})]
+          }),
+        ]
+      }]
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement('a');
+    a.href       = url;
+    a.download   = `Proyeccion_${d.apellidos}_${d.cedula}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    setStatus('ok', '✅ Proyección de pagos generada.');
+
+  } catch(err) {
+    setStatus('err', '❌ Error: ' + err.message);
+    console.error(err);
+  }
+}
+
+// ── HELPERS ──
+function getDatos() {
+  const ocupacion = document.querySelector('input[name="ocupacion"]:checked');
+  return {
+    tipoObligacion: document.getElementById('tipoObligacion').value,
+    tasaMensual:    document.getElementById('tasaMensual').value,
+    mesInicio:      document.getElementById('mesInicio').value,
+    funcionario:    document.getElementById('funcionario').value,
+    nombres:        document.getElementById('nombres').value,
+    apellidos:      document.getElementById('apellidos').value,
+    tipoDoc:        document.getElementById('tipoDoc').value,
+    cedula:         document.getElementById('cedula').value,
+    telefono:       document.getElementById('telefono').value,
+    celular:        document.getElementById('celular').value,
+    correo:         document.getElementById('correo').value,
+    direccion:      document.getElementById('direccion').value,
+    ocupacion:      ocupacion ? ocupacion.value : '',
+    cargo:          document.getElementById('cargo').value,
+    ingresoMensual: document.getElementById('ingresoMensual').value,
+    valorFactura:   parseFloat(document.getElementById('valorFactura').value)  || 0,
+    cuotaInicial:   parseFloat(document.getElementById('cuotaInicial').value)  || 0,
+    valorFinanciar: parseFloat(document.getElementById('valorFinanciar').value) || 0,
+    numCuotas:      parseInt(document.getElementById('numCuotas').value)        || 0,
+    cod_nombres:    document.getElementById('cod_nombres').value,
+    cod_apellidos:  document.getElementById('cod_apellidos').value,
+    cod_tipoDoc:    document.getElementById('cod_tipoDoc').value,
+    cod_cedula:     document.getElementById('cod_cedula').value,
+    cod_telefono:   document.getElementById('cod_telefono').value,
+    cod_direccion:  document.getElementById('cod_direccion').value,
+    matricula:      document.getElementById('matricula').value,
+    cod_dirPredio:  document.getElementById('cod_dirPredio').value,
+  };
+}
+
+function confirmarLimpiar() {
+  document.getElementById('mLimpiar').style.display = 'flex';
+}
+
+function limpiarFormulario() {
+  document.getElementById('mLimpiar').style.display = 'none';
+  document.querySelectorAll('input[type="text"],input[type="number"],input[type="email"],input[type="month"],select')
+    .forEach(el => el.value = '');
+  document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+  document.getElementById('tipoDoc').value = 'C.C';
+  document.getElementById('cod_tipoDoc').value = 'C.C';
+  proyeccion = [];
+  document.getElementById('tabla-proyeccion').style.display = 'none';
+  document.getElementById('tbody-proyeccion').innerHTML = '';
+  ['c-factura','c-inicial','c-financiar'].forEach(id => document.getElementById(id).textContent = '$ 0');
+  document.getElementById('c-cuotas').textContent = '—';
+  document.getElementById('c-tasa').textContent = '—';
+  document.getElementById('c-intereses').textContent = '$ 0';
+  document.getElementById('c-cuota-val').textContent = '$ 0';
+  document.getElementById('status-msg').className = 'status';
+}
+
+// ── RESUMEN MES ──
+async function cargarResumenMes() {
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL + '?accion=resumen');
+    const data = await res.json();
+    if (data.error || data.total === 0) return;
+
+    document.getElementById('resumen-mes').style.display = 'block';
+    document.getElementById('res-total').textContent = data.total;
+    document.getElementById('res-valor').textContent = '$ ' + Math.round(data.valorTotal).toLocaleString('es-CO');
+
+    const tiposEl = document.getElementById('res-tipos');
+    tiposEl.innerHTML = Object.entries(data.porTipo || {}).map(([tipo, count]) =>
+      `<div class="resumen-stat"><span>${tipo.split('—')[0].trim()}</span><span class="resumen-stat-val">${count}</span></div>`
+    ).join('');
+  } catch(e) {}
+}
+
+// Inicializar mes
+const hoy = new Date();
+document.getElementById('mesInicio').value = hoy.toISOString().slice(0,7);
+cargarResumenMes();
+</script>
+</body>
+</html>
