@@ -466,7 +466,7 @@
   </div><!-- fin panel-nuevo -->
 
   <!-- PANEL PENDIENTES -->
-  <div id="panel-pendientes" style="display:none">
+  <div id="panel-pendientes" style="display:none;border:3px solid red;min-height:200px;background:yellow">
     <div style="background:#fff;border:1px solid #c8d5e8;border-radius:12px;box-shadow:0 4px 24px rgba(15,45,94,.10);overflow:hidden">
       <div style="background:#0f2d5e;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <span style="font-size:13px;font-weight:700">⏳ Acuerdos pendientes de pago de cuota inicial</span>
@@ -474,7 +474,7 @@
           oninput="filtrarPendientes()"
           style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:220px" />
       </div>
-      <div id="lista-pendientes" style="min-height:80px">
+      <div id="lista-pendientes" style="border:3px solid blue;min-height:100px">
         <div style="text-align:center;padding:40px 20px;color:#4a5a72">
           <div style="font-size:36px;margin-bottom:8px">📋</div>
           <p style="font-size:14px">No hay acuerdos pendientes de pago</p>
@@ -982,29 +982,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ── TABS ──
 function goTab(tab) {
-  document.body.style.overflow = '';
   var pN = document.getElementById('panel-nuevo');
   var pP = document.getElementById('panel-pendientes');
   var tN = document.getElementById('tab-nuevo');
   var tP = document.getElementById('tab-pendientes');
   if (tab === 'pendientes') {
-    if (pN) pN.style.display = 'none';
-    if (pP) pP.style.display = 'block';
-    if (tN) { tN.style.borderBottomColor='transparent'; tN.style.color='rgba(255,255,255,.6)'; }
-    if (tP) { tP.style.borderBottomColor='#f5c050'; tP.style.color='#fff'; }
+    pN.style.display = 'none';
+    pP.style.display = 'block';
+    tN.style.borderBottomColor = 'transparent';
+    tN.style.color = 'rgba(255,255,255,.6)';
+    tP.style.borderBottomColor = '#f5c050';
+    tP.style.color = '#fff';
     renderPendientes();
   } else {
-    if (pN) pN.style.display = 'grid';
-    if (pP) pP.style.display = 'none';
-    if (tN) { tN.style.borderBottomColor='#f5c050'; tN.style.color='#fff'; }
-    if (tP) { tP.style.borderBottomColor='transparent'; tP.style.color='rgba(255,255,255,.6)'; }
+    pN.style.display = 'grid';
+    pP.style.display = 'none';
+    tN.style.borderBottomColor = '#f5c050';
+    tN.style.color = '#fff';
+    tP.style.borderBottomColor = 'transparent';
+    tP.style.color = 'rgba(255,255,255,.6)';
   }
 }
+
 
 const PENDIENTES_KEY = 'acuerdos_pendientes';
 
 function guardarPendiente(d) {
-  console.log('guardarPendiente llamado con:', d);
   const lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
   lista.unshift({ id:'PEN-'+Date.now(), fecha:new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}), hora:new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}), ...d });
   localStorage.setItem(PENDIENTES_KEY, JSON.stringify(lista));
@@ -1018,31 +1021,38 @@ function actualizarBadge() {
 }
 
 function renderPendientes(filtro) {
-  console.log('renderPendientes llamado');
-  let lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  console.log('Lista pendientes:', lista);
-  if (filtro) { const f=filtro.toLowerCase(); lista=lista.filter(p=>((p.nombres||'')+' '+(p.apellidos||'')).toLowerCase().includes(f)||(p.cedula||'').includes(f)); }
-  const el = document.getElementById('lista-pendientes');
-  if (!lista.length) { el.innerHTML='<div style="text-align:center;padding:40px 20px;color:#4a5a72"><div style="font-size:36px;margin-bottom:8px">📋</div><p style="font-size:14px">No hay acuerdos pendientes</p></div>'; return; }
-  el.innerHTML = lista.map(p=>`
-    <div style="padding:14px 18px;border-bottom:1px solid #e8edf7">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:13px;font-weight:700;color:#0f2d5e">${escH(p.nombres)} ${escH(p.apellidos)}</span>
-        <span style="font-size:11px;color:#4a5a72">${escH(p.fecha)} ${escH(p.hora)}</span>
-      </div>
-      <div style="display:flex;gap:12px;font-size:11px;color:#4a5a72;margin-bottom:8px;flex-wrap:wrap">
-        <span><b style="color:#0f1e35">CC/NIT:</b> ${escH(p.cedula)}</span>
-        <span><b style="color:#0f1e35">Tipo:</b> ${escH(p.tipoObligacion)}</span>
-        <span><b style="color:#0f1e35">Factura:</b> ${fmt(p.valorFactura)}</span>
-        <span><b style="color:#0f1e35">Cuota inicial:</b> ${fmt(p.cuotaInicial)}</span>
-        <span><b style="color:#0f1e35">Cuotas:</b> ${escH(String(p.numCuotas))}</span>
-        <span><b style="color:#0f1e35">Funcionario:</b> ${escH(p.funcionario)}</span>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="abrirDesembargoDesde('${p.id}')" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">✅ Pagó — Enviar a desembargo</button>
-        <button onclick="eliminarPendiente('${p.id}')" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">🗑️ Eliminar</button>
-      </div>
-    </div>`).join('');
+  var lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
+  if (filtro) {
+    var f = filtro.toLowerCase();
+    lista = lista.filter(function(p) {
+      return ((p.nombres||'')+' '+(p.apellidos||'')).toLowerCase().indexOf(f) >= 0 || (p.cedula||'').indexOf(f) >= 0;
+    });
+  }
+  var el = document.getElementById('lista-pendientes');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#4a5a72"><div style="font-size:36px;margin-bottom:8px">📋</div><p style="font-size:14px">No hay acuerdos pendientes de pago</p></div>';
+    return;
+  }
+  el.innerHTML = lista.map(function(p) {
+    return '<div style="padding:14px 18px;border-bottom:1px solid #e8edf7">' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:6px">' +
+        '<span style="font-size:13px;font-weight:700;color:#0f2d5e">' + escH(p.nombres) + ' ' + escH(p.apellidos) + '</span>' +
+        '<span style="font-size:11px;color:#4a5a72">' + escH(p.fecha) + ' ' + escH(p.hora) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:12px;font-size:11px;color:#4a5a72;margin-bottom:8px;flex-wrap:wrap">' +
+        '<span><b style="color:#0f1e35">CC/NIT:</b> ' + escH(p.cedula) + '</span>' +
+        '<span><b style="color:#0f1e35">Tipo:</b> ' + escH(p.tipoObligacion) + '</span>' +
+        '<span><b style="color:#0f1e35">Factura:</b> $ ' + Math.round(p.valorFactura||0).toLocaleString('es-CO') + '</span>' +
+        '<span><b style="color:#0f1e35">Cuota inicial:</b> $ ' + Math.round(p.cuotaInicial||0).toLocaleString('es-CO') + '</span>' +
+        '<span><b style="color:#0f1e35">Funcionario:</b> ' + escH(p.funcionario) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button onclick="abrirDesembargoDesde(&quot;' + p.id + '&quot;)" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">&#x2705; Pag&oacute; &mdash; Enviar a desembargo</button> ' +
+        '<button onclick="eliminarPendiente(&quot;' + p.id + '&quot;)" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">&#x1F5D1; Eliminar</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function filtrarPendientes() { renderPendientes(document.getElementById('search-pendientes').value); }
