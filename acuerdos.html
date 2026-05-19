@@ -100,7 +100,6 @@
 
     @media(max-width:768px){
       main{grid-template-columns:1fr}
-      .panel.active{grid-template-columns:1fr}
       .calc-panel{position:static}
       .campo-grid{grid-template-columns:1fr}
       .campo-grid.tres{grid-template-columns:1fr}
@@ -143,40 +142,6 @@
     .doc-amort tbody tr:nth-child(even){background:#f8fafd}
     .doc-amort tbody td{border:1px solid #e8edf7;padding:5px 8px}
 
-    /* ── TABS ── */
-    .tabs-bar{background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)}
-    .tabs-inner{max-width:960px;margin:0 auto;display:flex;padding:0 24px;gap:2px}
-    .tab-btn{padding:10px 18px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
-    .tab-btn:hover{color:#fff;background:rgba(255,255,255,.07)}
-    .tab-btn.active{color:#fff;border-bottom-color:#f5c050}
-    .panel{display:none}
-    .panel.active{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
-    .panel-full{display:none!important}
-    .panel-full.active{display:block!important}
-
-    /* ── LISTA PENDIENTES ── */
-    .pendientes-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-    .pendientes-header{background:var(--navy);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
-    .pendientes-header span{font-size:13px;font-weight:700}
-    .pendientes-search{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:200px}
-    .pendientes-search::placeholder{color:rgba(255,255,255,.5)}
-    .pendiente-item{padding:14px 18px;border-bottom:1px solid var(--surface2);transition:background .15s}
-    .pendiente-item:last-child{border-bottom:none}
-    .pendiente-item:hover{background:#f8fafd}
-    .pendiente-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-    .pendiente-nombre{font-size:13px;font-weight:700;color:var(--navy)}
-    .pendiente-fecha{font-size:11px;color:var(--text-soft)}
-    .pendiente-datos{display:flex;gap:16px;font-size:11px;color:var(--text-soft);margin-bottom:8px;flex-wrap:wrap}
-    .pendiente-datos span b{color:var(--text)}
-    .pendiente-acciones{display:flex;gap:8px}
-    .btn-pago{background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
-    .btn-pago:hover{background:#6d28d9}
-    .btn-ver-form{background:var(--surface2);color:var(--navy);border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
-    .btn-ver-form:hover{background:#dce8f8}
-    .empty-pendientes{text-align:center;padding:40px 20px;color:var(--text-soft)}
-    .empty-pendientes .ei{font-size:36px;margin-bottom:8px}
-    .badge-count{background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px}
-
     /* ── MODAL DESEMBARGO ── */
     .desembargo-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
     .desembargo-overlay.open{display:flex}
@@ -211,17 +176,24 @@
       <a href="index.html" class="btn-nav">📄 Oficios</a>
     </div>
   </div>
-  <div class="tabs-bar">
-    <div class="tabs-inner">
-      <button class="tab-btn active" id="tab-nuevo" onclick="goTab('nuevo')">✏️ Nuevo acuerdo</button>
-      <button class="tab-btn" id="tab-pendientes" onclick="goTab('pendientes')">
-        ⏳ Pendientes de pago <span class="badge-count" id="badge-pendientes">0</span>
+  <div style="background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)">
+    <div style="max-width:960px;margin:0 auto;display:flex;padding:0 24px;gap:2px">
+      <button id="tab-nuevo" onclick="goTab('nuevo')"
+        style="padding:10px 18px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid #f5c050;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;color:#fff">
+        ✏️ Nuevo acuerdo
+      </button>
+      <button id="tab-pendientes" onclick="goTab('pendientes')"
+        style="padding:10px 18px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif">
+        ⏳ Pendientes de pago <span id="badge-pendientes" style="background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:4px">0</span>
       </button>
     </div>
   </div>
 </header>
 
-<main style="max-width:960px;margin:0 auto;padding:24px 24px 60px;display:block">
+<main>
+
+  <!-- PANEL NUEVO ACUERDO -->
+  <div id="panel-nuevo" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
   <!-- COLUMNA IZQUIERDA: FORMULARIO -->
   <div>
 
@@ -491,7 +463,26 @@
       </div>
     </div>
 
+  </div><!-- fin panel-nuevo -->
+
+  <!-- PANEL PENDIENTES -->
+  <div id="panel-pendientes" style="display:none">
+    <div style="background:#fff;border:1px solid #c8d5e8;border-radius:12px;box-shadow:0 4px 24px rgba(15,45,94,.10);overflow:hidden">
+      <div style="background:#0f2d5e;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span style="font-size:13px;font-weight:700">⏳ Acuerdos pendientes de pago de cuota inicial</span>
+        <input type="text" id="search-pendientes" placeholder="Buscar nombre o cédula..."
+          oninput="filtrarPendientes()"
+          style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:220px" />
+      </div>
+      <div id="lista-pendientes">
+        <div style="text-align:center;padding:40px 20px;color:#4a5a72">
+          <div style="font-size:36px;margin-bottom:8px">📋</div>
+          <p style="font-size:14px">No hay acuerdos pendientes de pago</p>
+        </div>
+      </div>
+    </div>
   </div>
+
 </main>
 
 <!-- MODAL CONFIRMAR LIMPIAR -->
@@ -664,9 +655,9 @@ async function generarFormulario() {
     await registrarEnSheet();
     const d = getDatos();
     generarWordFormulario(d);
-    setStatus('ok', '✅ Formulario generado. El acuerdo quedó en la lista de pendientes.');
-    const dGuardar = getDatos();
-    guardarPendiente(dGuardar);
+    const dG = getDatos();
+    guardarPendiente(dG);
+    setStatus('ok', '✅ Formulario generado. Quedó en la lista de pendientes de pago.');
     cargarResumenMes();
     document.getElementById('btn-desembargo').style.display = 'flex';
   } catch(err) {
@@ -906,13 +897,8 @@ function cerrarModalDesembargo() {
 }
 
 async function enviarADesembargo() {
-  // Obtener datos — pueden venir del formulario activo o de un pendiente
-  const overlay     = document.getElementById('desembargo-overlay');
-  const pendienteId = overlay.dataset.pendienteId || null;
-  const pendienteData = overlay.dataset.pendienteData ? JSON.parse(overlay.dataset.pendienteData) : null;
-  const d        = pendienteData || getDatos();
+  const d        = getDatos();
   const radicado = document.getElementById('des-radicado').value.trim();
-  const concepto = document.getElementById('des-concepto').value.trim();
   const obs      = document.getElementById('des-obs').value.trim();
   const statusEl = document.getElementById('des-status');
 
@@ -931,14 +917,14 @@ async function enviarADesembargo() {
       tipoOficio:  'Desembargo',
       numOficio:   '',
       fechaOficio: fecha,
-      nombre:      (d.nombres || '') + ' ' + (d.apellidos || ''),
-      cedula:      d.cedula || '',
-      concepto:    concepto || d.tipoObligacion,
+      nombre:      d.nombres + ' ' + d.apellidos,
+      cedula:      d.cedula,
+      concepto:    d.tipoObligacion,
       radicado:    radicado || '(Pendiente)',
       fechaAuto:   fecha,
       motivo:      'Acuerdo de pago suscrito y cuota inicial cancelada',
-      proyNombre:  d.funcionario || '',
-      funcionario: d.funcionario || '',
+      proyNombre:  d.funcionario,
+      funcionario: d.funcionario,
       equipo:      '',
       observacion: obs || 'Acuerdo de pago — cuota inicial cancelada',
       comparendo:  '',
@@ -970,20 +956,7 @@ async function enviarADesembargo() {
     statusEl.style.border = '1px solid #bbf7d0';
     statusEl.textContent = '✅ Enviado a la cola de desembargo correctamente.';
 
-    // Eliminar de pendientes si vino desde la lista
-    if (pendienteId) {
-      let pendientes = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-      pendientes = pendientes.filter(p => p.id !== pendienteId);
-      localStorage.setItem(PENDIENTES_KEY, JSON.stringify(pendientes));
-      actualizarBadge();
-      overlay.dataset.pendienteId = '';
-      overlay.dataset.pendienteData = '';
-    }
-
-    setTimeout(() => {
-      cerrarModalDesembargo();
-      if (pendienteId) renderPendientes();
-    }, 2000);
+    setTimeout(() => cerrarModalDesembargo(), 2000);
 
   } catch(err) {
     statusEl.style.background = '#fef2f2';
@@ -993,126 +966,10 @@ async function enviarADesembargo() {
   }
 }
 
-// ── TABS ──
-function goTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  // Ocultar todos los paneles
-  document.querySelectorAll('[id^="panel-"]').forEach(p => {
-    p.classList.remove('active');
-  });
-  document.getElementById('tab-' + tab).classList.add('active');
-  document.getElementById('panel-' + tab).classList.add('active');
-  if (tab === 'pendientes') renderPendientes();
-}
-
-// ── PENDIENTES ──
-const PENDIENTES_KEY = 'acuerdos_pendientes';
-
-function guardarPendiente(d) {
-  const pendientes = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  const nuevo = {
-    id: 'PEN-' + Date.now(),
-    fecha: new Date().toLocaleDateString('es-CO', {day:'2-digit',month:'2-digit',year:'numeric'}),
-    hora:  new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}),
-    ...d
-  };
-  pendientes.unshift(nuevo);
-  localStorage.setItem(PENDIENTES_KEY, JSON.stringify(pendientes));
-  actualizarBadge();
-}
-
-function actualizarBadge() {
-  const pendientes = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  const badge = document.getElementById('badge-pendientes');
-  if (badge) badge.textContent = pendientes.length;
-}
-
-function renderPendientes(filtro) {
-  let pendientes = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  if (filtro) {
-    const f = filtro.toLowerCase();
-    pendientes = pendientes.filter(p =>
-      (p.nombres + ' ' + p.apellidos).toLowerCase().includes(f) ||
-      p.cedula.includes(f)
-    );
-  }
-
-  const el = document.getElementById('lista-pendientes');
-  if (!pendientes.length) {
-    el.innerHTML = '<div class="empty-pendientes"><div class="ei">📋</div><p>No hay acuerdos pendientes</p></div>';
-    return;
-  }
-
-  el.innerHTML = pendientes.map(p => `
-    <div class="pendiente-item" id="item-${p.id}">
-      <div class="pendiente-top">
-        <span class="pendiente-nombre">${esc(p.nombres)} ${esc(p.apellidos)}</span>
-        <span class="pendiente-fecha">${esc(p.fecha)} ${esc(p.hora)}</span>
-      </div>
-      <div class="pendiente-datos">
-        <span><b>CC/NIT:</b> ${esc(p.cedula)}</span>
-        <span><b>Tipo:</b> ${esc(p.tipoObligacion)}</span>
-        <span><b>Factura:</b> ${fmt(p.valorFactura)}</span>
-        <span><b>Cuota inicial:</b> ${fmt(p.cuotaInicial)}</span>
-        <span><b>Cuotas:</b> ${esc(p.numCuotas)}</span>
-        <span><b>Funcionario:</b> ${esc(p.funcionario)}</span>
-      </div>
-      <div class="pendiente-acciones">
-        <button class="btn-pago" onclick="abrirModalDesembargoDesde('${p.id}')">
-          ✅ Pagó — Enviar a desembargo
-        </button>
-        <button class="btn-ver-form" onclick="eliminarPendiente('${p.id}')">
-          🗑️ Eliminar
-        </button>
-      </div>
-    </div>`).join('');
-}
-
-function filtrarPendientes() {
-  const f = document.getElementById('search-pendientes').value;
-  renderPendientes(f);
-}
-
-function eliminarPendiente(id) {
-  if (!confirm('¿Eliminar este acuerdo de la lista de pendientes?')) return;
-  let pendientes = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  pendientes = pendientes.filter(p => p.id !== id);
-  localStorage.setItem(PENDIENTES_KEY, JSON.stringify(pendientes));
-  actualizarBadge();
-  renderPendientes();
-}
-
-function abrirModalDesembargoDesde(id) {
-  const pendientes = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
-  const p = pendientes.find(x => x.id === id);
-  if (!p) return;
-
-  // Guardar el id para usarlo al confirmar
-  document.getElementById('desembargo-overlay').dataset.pendienteId = id;
-
-  document.getElementById('des-nombre').textContent = p.nombres + ' ' + p.apellidos;
-  document.getElementById('des-cedula').textContent  = p.cedula;
-  document.getElementById('des-tipo').textContent    = p.tipoObligacion;
-  document.getElementById('des-obs').value = 'Acuerdo de pago — cuota inicial cancelada';
-  document.getElementById('des-radicado').value = '';
-  document.getElementById('des-status').style.display = 'none';
-
-  // Guardar datos del pendiente para enviarlos
-  document.getElementById('desembargo-overlay').dataset.pendienteData = JSON.stringify(p);
-  document.getElementById('desembargo-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function esc(v) {
-  if (v === null || v === undefined) return '';
-  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 document.addEventListener('DOMContentLoaded', function() {
   const hoy = new Date();
   document.getElementById('mesInicio').value = hoy.toISOString().slice(0,7);
   cargarResumenMes();
-  actualizarBadge();
   // Forzar cálculo cuando se llena cualquier campo de valores
   ['valorFactura','cuotaInicial','numCuotas','tasaMensual'].forEach(id => {
     const el = document.getElementById(id);
@@ -1122,6 +979,90 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
+// ── TABS ──
+function goTab(tab) {
+  ['nuevo','pendientes'].forEach(t => {
+    const btn   = document.getElementById('tab-' + t);
+    const panel = document.getElementById('panel-' + t);
+    const on    = t === tab;
+    if (btn)   { btn.style.borderBottomColor = on ? '#f5c050' : 'transparent'; btn.style.color = on ? '#fff' : 'rgba(255,255,255,.6)'; }
+    if (panel)   panel.style.display = on ? (t==='nuevo'?'grid':'block') : 'none';
+  });
+  if (tab === 'pendientes') renderPendientes();
+}
+
+const PENDIENTES_KEY = 'acuerdos_pendientes';
+
+function guardarPendiente(d) {
+  const lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
+  lista.unshift({ id:'PEN-'+Date.now(), fecha:new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}), hora:new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}), ...d });
+  localStorage.setItem(PENDIENTES_KEY, JSON.stringify(lista));
+  actualizarBadge();
+}
+
+function actualizarBadge() {
+  const lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
+  const b = document.getElementById('badge-pendientes');
+  if (b) b.textContent = lista.length;
+}
+
+function renderPendientes(filtro) {
+  let lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
+  if (filtro) { const f=filtro.toLowerCase(); lista=lista.filter(p=>((p.nombres||'')+' '+(p.apellidos||'')).toLowerCase().includes(f)||(p.cedula||'').includes(f)); }
+  const el = document.getElementById('lista-pendientes');
+  if (!lista.length) { el.innerHTML='<div style="text-align:center;padding:40px 20px;color:#4a5a72"><div style="font-size:36px;margin-bottom:8px">📋</div><p style="font-size:14px">No hay acuerdos pendientes</p></div>'; return; }
+  el.innerHTML = lista.map(p=>`
+    <div style="padding:14px 18px;border-bottom:1px solid #e8edf7">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:#0f2d5e">${escH(p.nombres)} ${escH(p.apellidos)}</span>
+        <span style="font-size:11px;color:#4a5a72">${escH(p.fecha)} ${escH(p.hora)}</span>
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;color:#4a5a72;margin-bottom:8px;flex-wrap:wrap">
+        <span><b style="color:#0f1e35">CC/NIT:</b> ${escH(p.cedula)}</span>
+        <span><b style="color:#0f1e35">Tipo:</b> ${escH(p.tipoObligacion)}</span>
+        <span><b style="color:#0f1e35">Factura:</b> ${fmt(p.valorFactura)}</span>
+        <span><b style="color:#0f1e35">Cuota inicial:</b> ${fmt(p.cuotaInicial)}</span>
+        <span><b style="color:#0f1e35">Cuotas:</b> ${escH(String(p.numCuotas))}</span>
+        <span><b style="color:#0f1e35">Funcionario:</b> ${escH(p.funcionario)}</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="abrirDesembargoDesde('${p.id}')" style="background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">✅ Pagó — Enviar a desembargo</button>
+        <button onclick="eliminarPendiente('${p.id}')" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">🗑️ Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+function filtrarPendientes() { renderPendientes(document.getElementById('search-pendientes').value); }
+
+function eliminarPendiente(id) {
+  if (!confirm('¿Eliminar este acuerdo?')) return;
+  let lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
+  localStorage.setItem(PENDIENTES_KEY, JSON.stringify(lista.filter(p=>p.id!==id)));
+  actualizarBadge(); renderPendientes();
+}
+
+function abrirDesembargoDesde(id) {
+  const lista = JSON.parse(localStorage.getItem(PENDIENTES_KEY) || '[]');
+  const p = lista.find(x=>x.id===id);
+  if (!p) return;
+  const ov = document.getElementById('desembargo-overlay');
+  ov.dataset.pid   = id;
+  ov.dataset.pdata = JSON.stringify(p);
+  document.getElementById('des-nombre').textContent = (p.nombres||'')+' '+(p.apellidos||'');
+  document.getElementById('des-cedula').textContent = p.cedula||'';
+  document.getElementById('des-tipo').textContent   = p.tipoObligacion||'';
+  document.getElementById('des-obs').value = 'Acuerdo de pago — cuota inicial cancelada';
+  document.getElementById('des-radicado').value = '';
+  const dc=document.getElementById('des-concepto'); if(dc) dc.value='';
+  document.getElementById('des-status').style.display='none';
+  ov.classList.add('open'); document.body.style.overflow='hidden';
+}
+
+function escH(v) { if(!v&&v!==0)return''; return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+actualizarBadge();
+
 </script>
 
 <!-- ── MODAL VISTA PREVIA PDF ── -->
@@ -1167,17 +1108,9 @@ document.addEventListener('DOMContentLoaded', function() {
         <div style="font-size:11px;color:#6b7280;margin-top:4px">Si no lo tiene aún, puede dejarlo en blanco y completarlo en el generador de oficios.</div>
       </div>
 
-      <div class="campo" style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">
-          Concepto / Radicados del desembargo *
-        </label>
-        <textarea id="des-concepto" rows="3" placeholder="Ej: Se levanta medida cautelar sobre cuenta bancaria según radicado 20242023843..."
-          style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #ddd6fe;border-radius:8px;outline:none;font-family:inherit;resize:vertical"></textarea>
-        <div style="font-size:11px;color:#6b7280;margin-top:3px">Describa los radicados y el motivo del desembargo.</div>
-      </div>
       <div class="campo" style="margin-bottom:16px">
         <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">
-          Observación adicional (opcional)
+          Observación (opcional)
         </label>
         <input type="text" id="des-obs" placeholder="Ej: Acuerdo de pago — cuota inicial cancelada"
           style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #c8d5e8;border-radius:8px;outline:none;font-family:inherit" />
