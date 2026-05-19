@@ -616,139 +616,55 @@ function generarWordFormulario(d) {
   const fecha = new Date().toLocaleDateString('es-CO');
   const ocupacion = d.ocupacion || '_______________';
 
-  const html = `
-  <html xmlns:o='urn:schemas-microsoft-com:office:office'
-        xmlns:w='urn:schemas-microsoft-com:office:word'
-        xmlns='http://www.w3.org/TR/REC-html40'>
-  <head><meta charset='utf-8'>
-  <style>
-    body { font-family: Arial, sans-serif; font-size: 10pt; margin: 1cm; }
-    h2 { text-align: center; font-size: 13pt; color: #0f2d5e; }
-    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }
-    .header-table td { border: 1.5px solid #0f2d5e; padding: 6px 10px; }
-    .header-blue { background: #0f2d5e; color: white; text-align: center; font-weight: bold; font-size: 12pt; }
-    .seccion { background: #0f2d5e; color: white; font-weight: bold; padding: 5px 10px; margin: 10pt 0 6pt; font-size: 10pt; }
-    .campo { margin-bottom: 6pt; }
-    .campo b { color: #0f2d5e; }
-    .linea { border-bottom: 1px solid #333; display: inline-block; min-width: 200px; }
-    .fila { margin-bottom: 5pt; }
-    .check { margin-right: 12px; }
-    .firmas { width: 100%; margin-top: 24pt; border-collapse: collapse; }
-    .firmas td { text-align: center; padding: 8px; border-top: 1px solid #333; font-size: 9pt; color: #4a5a72; font-weight: bold; }
-    .pie { width: 100%; border-collapse: collapse; margin-top: 10pt; font-size: 8pt; }
-    .pie td { border: 1px solid #0f2d5e; padding: 4px 8px; }
-    .pie-blue { background: #0f2d5e; color: white; text-align: center; }
-    p { margin: 4pt 0; font-size: 9pt; }
-    .nota { font-size: 8.5pt; margin: 4pt 0; }
-  </style>
-  </head><body>
-  <table class="header-table">
-    <tr>
-      <td style="width:15%;text-align:center;font-weight:bold">1070.02</td>
-      <td class="header-blue">SOLICITUD ACUERDOS Y/O CONVENIOS DE PAGO</td>
-      <td style="width:18%;text-align:center"><b>FECHA:</b><br>${fecha}</td>
-    </tr>
-  </table>
+  document.getElementById('preview-title').textContent = '📄 Formulario F-GAF-68 — ' + d.apellidos + ', ' + d.nombres;
+  document.getElementById('preview-doc').innerHTML = `
+    <table class="doc-header-table">
+      <tr>
+        <td style="width:15%;text-align:center;font-weight:bold;font-size:11pt">1070.02</td>
+        <td class="doc-header-blue">SOLICITUD ACUERDOS Y/O CONVENIOS DE PAGO</td>
+        <td style="width:18%;text-align:center"><b>FECHA:</b><br>${fecha}</td>
+      </tr>
+    </table>
 
-  <div class="seccion">INFORMACIÓN DEL CONTRIBUYENTE</div>
-  <div class="fila"><b>Nombres:</b> ${d.nombres} &nbsp;&nbsp;&nbsp; <b>Apellidos:</b> ${d.apellidos}</div>
-  <div class="fila"><b>Tipo de documento:</b> ${d.tipoDoc} &nbsp;&nbsp;&nbsp; <b>Número documento:</b> ${d.cedula}</div>
-  <div class="fila"><b>Origen de la obligación:</b> ${d.tipoObligacion}</div>
-  <div class="fila"><b>Dirección:</b> ${d.direccion || '___________________________'}</div>
-  <div class="fila"><b>Teléfono:</b> ${d.telefono || '_______________'} &nbsp;&nbsp;&nbsp; <b>Celular:</b> ${d.celular || '_______________'}</div>
-  <div class="fila"><b>Correo electrónico:</b> ${d.correo || '___________________________'}</div>
-  <div class="fila"><b>Valor total de la factura:</b> ${fmt(d.valorFactura)}</div>
-  <div class="fila"><b>Cuota inicial:</b> ${fmt(d.cuotaInicial)} &nbsp;&nbsp;&nbsp; <b>Valor total a financiar:</b> ${fmt(d.valorFinanciar)} &nbsp;&nbsp;&nbsp; <b>N° cuotas:</b> ${d.numCuotas}</div>
-  <div class="fila"><b>Ocupación:</b> ${ocupacion} &nbsp;&nbsp;&nbsp; <b>Ingreso mensual:</b> ${d.ingresoMensual ? fmt(d.ingresoMensual) : '_______________'}</div>
+    <div class="doc-seccion">INFORMACIÓN DEL CONTRIBUYENTE</div>
+    <div class="doc-fila"><b>Nombres:</b> ${d.nombres} &nbsp;&nbsp;&nbsp; <b>Apellidos:</b> ${d.apellidos}</div>
+    <div class="doc-fila"><b>Tipo de documento:</b> ${d.tipoDoc} &nbsp;&nbsp;&nbsp; <b>Número documento:</b> ${d.cedula}</div>
+    <div class="doc-fila"><b>Origen de la obligación:</b> ${d.tipoObligacion}</div>
+    <div class="doc-fila"><b>Dirección:</b> ${d.direccion || '___________________________'}</div>
+    <div class="doc-fila"><b>Teléfono:</b> ${d.telefono || '_______________'} &nbsp;&nbsp;&nbsp; <b>Celular:</b> ${d.celular || '_______________'}</div>
+    <div class="doc-fila"><b>Correo electrónico:</b> ${d.correo || '___________________________'}</div>
+    <div class="doc-fila"><b>Valor total de la factura:</b> ${fmt(d.valorFactura)}</div>
+    <div class="doc-fila"><b>Cuota inicial:</b> ${fmt(d.cuotaInicial)} &nbsp;&nbsp;&nbsp; <b>Valor total a financiar:</b> ${fmt(d.valorFinanciar)} &nbsp;&nbsp;&nbsp; <b>N° cuotas:</b> ${d.numCuotas}</div>
+    <div class="doc-fila"><b>Ocupación:</b> ${ocupacion} &nbsp;&nbsp;&nbsp; <b>Ingreso mensual:</b> ${d.ingresoMensual ? fmt(d.ingresoMensual) : '_______________'}</div>
 
-  <div class="seccion">INFORMACIÓN DEL CODEUDOR / REFERENCIA PERSONAL</div>
-  <div class="fila"><b>Nombres:</b> ${d.cod_nombres || '___________________________'} &nbsp;&nbsp;&nbsp; <b>Apellidos:</b> ${d.cod_apellidos || '___________________________'}</div>
-  <div class="fila"><b>Tipo de documento:</b> ${d.cod_tipoDoc} &nbsp;&nbsp;&nbsp; <b>Número documento:</b> ${d.cod_cedula || '_______________'}</div>
-  <div class="fila"><b>Dirección:</b> ${d.cod_direccion || '___________________________'} &nbsp;&nbsp;&nbsp; <b>Teléfono:</b> ${d.cod_telefono || '_______________'}</div>
-  <div class="fila"><b>Matrícula inmueble:</b> ${d.matricula || '_______________'} &nbsp;&nbsp;&nbsp; <b>Dirección predio:</b> ${d.cod_dirPredio || '_______________'}</div>
+    <div class="doc-seccion">INFORMACIÓN DEL CODEUDOR / REFERENCIA PERSONAL</div>
+    <div class="doc-fila"><b>Nombres:</b> ${d.cod_nombres || '___________________________'} &nbsp;&nbsp;&nbsp; <b>Apellidos:</b> ${d.cod_apellidos || '___________________________'}</div>
+    <div class="doc-fila"><b>Tipo de documento:</b> ${d.cod_tipoDoc} &nbsp;&nbsp;&nbsp; <b>Número documento:</b> ${d.cod_cedula || '_______________'}</div>
+    <div class="doc-fila"><b>Dirección:</b> ${d.cod_direccion || '___________________________'} &nbsp;&nbsp;&nbsp; <b>Teléfono:</b> ${d.cod_telefono || '_______________'}</div>
+    <div class="doc-fila"><b>Matrícula inmueble:</b> ${d.matricula || '_______________'} &nbsp;&nbsp;&nbsp; <b>Dirección predio:</b> ${d.cod_dirPredio || '_______________'}</div>
 
-  <div class="seccion">AUTORIZACIÓN</div>
-  <p class="nota">- REPORTE A CONTADURÍA GRAL DE LA NACIÓN: tanto el titular de la obligación, como el deudor solidario, a través del presente convenio autorizan a la administración Municipal para la consulta, reporte y suministro de información a la contaduría general de la nación, división de deudores morosos del estado; según la ley 1266 de 2008 en el artículo 3º y la sentencia c-1011 de 2008.</p>
-  <p class="nota">- Así mismo autorizo recibir la notificación por correo electrónico en caso de inicio del cobro coactivo.</p>
-  <p class="nota">- Autorizo que si pasados cinco (5) días hábiles NO SE HA LEGALIZADO el convenio solicitado por parte del contribuyente será anulado, y el saldo existente se cargará en el próximo periodo de facturación.</p>
+    <div class="doc-seccion">AUTORIZACIÓN</div>
+    <p class="doc-nota">- REPORTE A CONTADURÍA GRAL DE LA NACIÓN: tanto el titular de la obligación, como el deudor solidario, a través del presente convenio autorizan a la administración Municipal para la consulta, reporte y suministro de información a la contaduría general de la nación, división de deudores morosos del estado; según la ley 1266 de 2008 en el artículo 3º y la sentencia c-1011 de 2008.</p>
+    <p class="doc-nota">- Así mismo autorizo recibir la notificación por correo electrónico en caso de inicio del cobro coactivo.</p>
+    <p class="doc-nota">- Autorizo que si pasados cinco (5) días hábiles NO SE HA LEGALIZADO el convenio solicitado por parte del contribuyente será anulado, y el saldo existente se cargará en el próximo periodo de facturación.</p>
 
-  <br><br>
-  <table class="firmas">
-    <tr>
-      <td style="width:40%">${d.nombres} ${d.apellidos}<br><span style="font-size:8pt;font-weight:normal">${d.tipoDoc}: ${d.cedula}</span></td>
-      <td style="width:30%">FIRMA</td>
-      <td style="width:30%">AUTORIZO</td>
-    </tr>
-    <tr>
-      <td style="border:none;font-size:8pt;font-weight:normal;color:#666;text-align:center">NOMBRE CONTRIBUYENTE</td>
-      <td style="border:none"></td>
-      <td style="border:none"></td>
-    </tr>
-  </table>
+    <table class="doc-firmas">
+      <tr>
+        <td>${d.nombres} ${d.apellidos}<br><span style="font-size:8pt;font-weight:normal">${d.tipoDoc}: ${d.cedula}</span></td>
+        <td>FIRMA</td>
+        <td>AUTORIZO</td>
+      </tr>
+    </table>
 
-  <br>
-  <table class="pie">
-    <tr>
-      <td>Código: F-GAF-68</td>
-      <td class="pie-blue">Versión: 03 &nbsp;|&nbsp; Fecha de aprobación: 2026/01/01</td>
-      <td style="text-align:center">Página 1 de 1</td>
-    </tr>
-  </table>
-  
-<!-- ── MODAL VISTA PREVIA PDF ── -->
-<div class="preview-overlay" id="preview-overlay">
-  <div class="preview-modal">
-    <div class="preview-header">
-      <h3 id="preview-title">Vista previa del documento</h3>
-      <button class="preview-close" onclick="cerrarPreview()">✕</button>
-    </div>
-    <div class="preview-body">
-      <div class="preview-doc" id="preview-doc"></div>
-    </div>
-    <div class="preview-footer">
-      <button class="btn-cancel-preview" onclick="cerrarPreview()">Cerrar</button>
-      <button class="btn-print-pdf" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
-    </div>
-  </div>
-</div>
+    <table class="doc-pie">
+      <tr>
+        <td>Código: F-GAF-68</td>
+        <td class="doc-pie-blue">Versión: 03 &nbsp;|&nbsp; Fecha: 2026/01/01</td>
+        <td style="text-align:center">Página 1 de 1</td>
+      </tr>
+    </table>`;
 
-</body></html>`;
-
-  const blob = new Blob(['﻿', html], { type: 'application/msword' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `F-GAF-68_${d.apellidos}_${d.cedula}.doc`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-          AlignmentType, BorderStyle, WidthType, ShadingType, VerticalAlign } = window.docx;
-
-    const borde = { style: BorderStyle.SINGLE, size: 4, color: "0f2d5e" };
-    const bordes = { top: borde, bottom: borde, left: borde, right: borde };
-    const sinBorde = { style: BorderStyle.NONE, size: 0, color: "ffffff" };
-    const sinBordes = { top: sinBorde, bottom: sinBorde, left: sinBorde, right: sinBorde };
-
-    const campo = (label, valor) => new Paragraph({
-      spacing: { after: 80 },
-      children: [
-        new TextRun({ text: label + ': ', bold: true, font: 'Arial', size: 20 }),
-        new TextRun({ text: valor || '___________________________', font: 'Arial', size: 20 }),
-      ]
-    });
-
-    const linea = (texto) => new Paragraph({
-      spacing: { after: 60 },
-      children: [new TextRun({ text: texto, font: 'Arial', size: 18 })]
-    });
-
-    const titulo = (texto) => new Paragraph({
-      spacing: { before: 160, after: 80 },
-      children: [new TextRun({ text: texto, bold: true, font: 'Arial', size: 20, color: '0f2d5e' })]
-    });
-
+  abrirPreview();
 }
 
 // ── GENERAR PROYECCIÓN ──
@@ -786,136 +702,43 @@ function generarWordProyeccion(d) {
     </tr>`;
   }).join('');
 
-  const html = `
-  <html xmlns:o='urn:schemas-microsoft-com:office:office'
-        xmlns:w='urn:schemas-microsoft-com:office:word'
-        xmlns='http://www.w3.org/TR/REC-html40'>
-  <head><meta charset='utf-8'>
-  <style>
-    body { font-family: Arial, sans-serif; font-size: 10pt; margin: 1cm; }
-    .header { background: #0f2d5e; color: white; text-align: center; padding: 8px; font-weight: bold; font-size: 11pt; }
-    .sub-header { text-align: center; font-size: 10pt; color: #0f2d5e; margin: 4pt 0; font-weight: bold; }
-    .datos { width: 100%; border-collapse: collapse; margin: 10pt 0; }
-    .datos td { border: 1px solid #c8d5e8; padding: 5px 8px; font-size: 9.5pt; }
-    .datos td:first-child { background: #e8edf7; font-weight: bold; color: #0f2d5e; width: 25%; }
-    table.amort { width: 100%; border-collapse: collapse; margin-top: 12pt; font-size: 9pt; }
-    table.amort thead tr { background: #0f2d5e; color: white; }
-    table.amort thead th { padding: 6px 8px; text-align: center; }
-    table.amort tbody tr:nth-child(even) { background: #f8fafd; }
-    table.amort tbody td { border: 1px solid #e8edf7; padding: 5px 8px; }
-    .firmas { width: 100%; margin-top: 24pt; border-collapse: collapse; }
-    .firmas td { text-align: center; padding-top: 8px; border-top: 1px solid #333; font-size: 9pt; color: #4a5a72; font-weight: bold; }
-  </style>
-  </head><body>
-
-  <div class="header">SECRETARÍA DE RECAUDOS Y PAGOS</div>
-  <div class="sub-header">DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES<br>PROYECCIÓN DE PAGOS — CONVENIO DE PAGO</div>
-
-  <table class="datos">
-    <tr><td>DEUDOR</td><td colspan="3">${d.nombres} ${d.apellidos}</td></tr>
-    <tr><td>CÉDULA / NIT</td><td>${d.cedula}</td><td>TELÉFONO</td><td>${d.celular || d.telefono || '—'}</td></tr>
-    <tr><td>CONCEPTO</td><td>${d.tipoObligacion}</td><td>TASA MENSUAL</td><td>${d.tasaMensual}%</td></tr>
-    <tr><td>VALOR FACTURA</td><td>${fmt(d.valorFactura)}</td><td>CUOTA INICIAL</td><td>${fmt(d.cuotaInicial)}</td></tr>
-    <tr><td>V/FINANCIACIÓN</td><td>${fmt(d.valorFinanciar)}</td><td>V/CUOTA MENSUAL</td><td>${fmt(cuotaMensual)}</td></tr>
-    <tr><td>N° CUOTAS</td><td>${d.numCuotas}</td><td>TOTAL INTERESES</td><td>${fmt(totalIntereses)}</td></tr>
-  </table>
-
-  <table class="amort">
-    <thead>
+  document.getElementById('preview-title').textContent = '📊 Proyección de Pagos — ' + d.apellidos + ', ' + d.nombres;
+  document.getElementById('preview-doc').innerHTML = `
+    <div style="background:#0f2d5e;color:white;text-align:center;padding:10px;font-weight:bold;font-size:12pt">
+      SECRETARÍA DE RECAUDOS Y PAGOS
+    </div>
+    <div style="text-align:center;font-size:10pt;color:#0f2d5e;margin:6pt 0;font-weight:bold">
+      DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES<br>
+      PROYECCIÓN DE PAGOS — CONVENIO DE PAGO
+    </div>
+    <table class="doc-datos">
+      <tr><td class="lbl">DEUDOR</td><td colspan="3">${d.nombres} ${d.apellidos}</td></tr>
+      <tr><td class="lbl">CÉDULA / NIT</td><td>${d.cedula}</td><td class="lbl">TELÉFONO</td><td>${d.celular || d.telefono || '—'}</td></tr>
+      <tr><td class="lbl">CONCEPTO</td><td>${d.tipoObligacion}</td><td class="lbl">TASA MENSUAL</td><td>${d.tasaMensual}%</td></tr>
+      <tr><td class="lbl">VALOR FACTURA</td><td>${fmt(d.valorFactura)}</td><td class="lbl">CUOTA INICIAL</td><td>${fmt(d.cuotaInicial)}</td></tr>
+      <tr><td class="lbl">V/FINANCIACIÓN</td><td>${fmt(d.valorFinanciar)}</td><td class="lbl">V/CUOTA MENSUAL</td><td>${fmt(cuotaMensual)}</td></tr>
+      <tr><td class="lbl">N° CUOTAS</td><td>${d.numCuotas}</td><td class="lbl">TOTAL INTERESES</td><td>${fmt(totalIntereses)}</td></tr>
+    </table>
+    <table class="doc-amort">
+      <thead>
+        <tr><th>#</th><th>MES</th><th>VALOR CUOTA</th><th>ABONO INTERÉS</th><th>ABONO CAPITAL</th><th>SALDO CAPITAL</th></tr>
+      </thead>
+      <tbody>${filas}</tbody>
+    </table>
+    <table class="doc-firmas">
       <tr>
-        <th>#</th><th>MES</th><th>VALOR CUOTA</th>
-        <th>ABONO INTERÉS</th><th>ABONO CAPITAL</th><th>SALDO CAPITAL</th>
+        <td>${d.funcionario}</td>
+        <td>JUAN PABLO GÓMEZ</td>
+        <td>&nbsp;</td>
       </tr>
-    </thead>
-    <tbody>${filas}</tbody>
-  </table>
+      <tr style="border:none">
+        <td style="border:none;font-size:8pt">ELABORÓ</td>
+        <td style="border:none;font-size:8pt">REVISÓ</td>
+        <td style="border:none;font-size:8pt">AUTORIZÓ</td>
+      </tr>
+    </table>`;
 
-  <br><br>
-  <table class="firmas">
-    <tr>
-      <td style="width:33%">${d.funcionario}</td>
-      <td style="width:33%">JUAN PABLO GÓMEZ</td>
-      <td style="width:33%">&nbsp;</td>
-    </tr>
-    <tr style="border:none">
-      <td style="border:none;font-size:8pt">ELABORÓ</td>
-      <td style="border:none;font-size:8pt">REVISÓ</td>
-      <td style="border:none;font-size:8pt">AUTORIZÓ</td>
-    </tr>
-  </table>
-  
-<!-- ── MODAL VISTA PREVIA PDF ── -->
-<div class="preview-overlay" id="preview-overlay">
-  <div class="preview-modal">
-    <div class="preview-header">
-      <h3 id="preview-title">Vista previa del documento</h3>
-      <button class="preview-close" onclick="cerrarPreview()">✕</button>
-    </div>
-    <div class="preview-body">
-      <div class="preview-doc" id="preview-doc"></div>
-    </div>
-    <div class="preview-footer">
-      <button class="btn-cancel-preview" onclick="cerrarPreview()">Cerrar</button>
-      <button class="btn-print-pdf" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
-    </div>
-  </div>
-</div>
-
-</body></html>`;
-
-  const blob = new Blob(['﻿', html], { type: 'application/msword' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `Proyeccion_${d.apellidos}_${d.cedula}.doc`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-          AlignmentType, BorderStyle, WidthType, ShadingType } = window.docx;
-
-    const borde    = { style: BorderStyle.SINGLE, size: 4, color: '0f2d5e' };
-    const bordes   = { top: borde, bottom: borde, left: borde, right: borde };
-    const bordeTab = { style: BorderStyle.SINGLE, size: 2, color: 'c8d5e8' };
-    const bordesTab = { top: bordeTab, bottom: bordeTab, left: bordeTab, right: bordeTab };
-
-    // Calcular fecha de cada cuota
-    const mesInicio = document.getElementById('mesInicio').value;
-    const fechaBase = mesInicio ? new Date(mesInicio + '-01') : new Date();
-
-    const filas = proyeccion.map((p, i) => {
-      const fechaCuota = new Date(fechaBase);
-      fechaCuota.setMonth(fechaCuota.getMonth() + i);
-      const mes = fechaCuota.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
-
-      return new TableRow({
-        children: [
-          new TableCell({ borders: bordesTab, width: { size: 600, type: WidthType.DXA },
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(p.cuota), font: 'Arial', size: 18 })] })] }),
-          new TableCell({ borders: bordesTab, width: { size: 2000, type: WidthType.DXA },
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: mes, font: 'Arial', size: 18 })] })] }),
-          new TableCell({ borders: bordesTab, width: { size: 1800, type: WidthType.DXA },
-            children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: Math.round(p.valorCuota).toLocaleString('es-CO'), font: 'Arial', size: 18 })] })] }),
-          new TableCell({ borders: bordesTab, width: { size: 1800, type: WidthType.DXA },
-            children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: Math.round(p.interes).toLocaleString('es-CO'), font: 'Arial', size: 18 })] })] }),
-          new TableCell({ borders: bordesTab, width: { size: 1800, type: WidthType.DXA },
-            children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: Math.round(p.capital).toLocaleString('es-CO'), font: 'Arial', size: 18 })] })] }),
-          new TableCell({ borders: bordesTab, width: { size: 1800, type: WidthType.DXA },
-            children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: Math.round(Math.max(0,p.saldo)).toLocaleString('es-CO'), font: 'Arial', size: 18 })] })] }),
-        ]
-      });
-    });
-
-    const encHdr = (txt) => new TableCell({
-      borders: bordesTab,
-      shading: { fill: '0f2d5e', type: ShadingType.CLEAR },
-      children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: txt, bold: true, font: 'Arial', size: 18, color: 'ffffff' })] })]
-    });
-
-    const totalIntereses = proyeccion.reduce((s,p)=>s+p.interes,0);
-    const cuotaMensual   = proyeccion[0]?.valorCuota || 0;
-
+  abrirPreview();
 }
 
 // ── HELPERS ──
