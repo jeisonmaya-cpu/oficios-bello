@@ -151,8 +151,8 @@
     .tab-btn.active{color:#fff;border-bottom-color:#f5c050}
     .panel{display:none}
     .panel.active{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
-    .panel-full{display:none}
-    .panel-full.active{display:block}
+    .panel-full{display:none!important}
+    .panel-full.active{display:block!important}
 
     /* ── LISTA PENDIENTES ── */
     .pendientes-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
@@ -221,7 +221,7 @@
   </div>
 </header>
 
-<main style="max-width:960px;margin:0 auto;padding:24px 24px 60px">
+<main style="max-width:960px;margin:0 auto;padding:24px 24px 60px;display:block">
   <!-- COLUMNA IZQUIERDA: FORMULARIO -->
   <div>
 
@@ -996,10 +996,12 @@ async function enviarADesembargo() {
 // ── TABS ──
 function goTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.panel,.panel-full').forEach(p => p.classList.remove('active'));
+  // Ocultar todos los paneles
+  document.querySelectorAll('[id^="panel-"]').forEach(p => {
+    p.classList.remove('active');
+  });
   document.getElementById('tab-' + tab).classList.add('active');
-  const panel = document.getElementById('panel-' + tab);
-  panel.classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
   if (tab === 'pendientes') renderPendientes();
 }
 
