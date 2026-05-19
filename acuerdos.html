@@ -188,7 +188,7 @@
           </div>
           <div class="campo">
             <label>Tasa mensual (%) *</label>
-            <input type="number" id="tasaMensual" placeholder="Ej: 1.4445" step="0.0001" min="0" oninput="calcular()" />
+            <input type="number" id="tasaMensual" placeholder="Ej: 1.4445" step="0.0001" min="0" oninput="calcular()" onblur="calcular()" />
           </div>
           <div class="campo">
             <label>Mes inicio cuotas</label>
@@ -282,15 +282,15 @@
         <div class="campo-grid tres">
           <div class="campo">
             <label>Valor total factura ($) *</label>
-            <input type="number" id="valorFactura" placeholder="0" min="0" oninput="calcular()" class="highlight" />
+            <input type="number" id="valorFactura" placeholder="0" min="0" oninput="calcular()" onblur="calcular()" class="highlight" />
           </div>
           <div class="campo">
             <label>Cuota inicial ($) *</label>
-            <input type="number" id="cuotaInicial" placeholder="0" min="0" oninput="calcular()" class="highlight" />
+            <input type="number" id="cuotaInicial" placeholder="0" min="0" oninput="calcular()" onblur="calcular()" class="highlight" />
           </div>
           <div class="campo">
             <label>N° cuotas solicitadas *</label>
-            <input type="number" id="numCuotas" placeholder="Ej: 12" min="1" max="36" oninput="calcular()" class="highlight" />
+            <input type="number" id="numCuotas" placeholder="Ej: 12" min="1" max="36" oninput="calcular()" onblur="calcular()" class="highlight" />
           </div>
         </div>
         <div class="campo-grid" style="margin-top:12px">
@@ -825,9 +825,19 @@ async function cargarResumenMes() {
 }
 
 // Inicializar mes
-const hoy = new Date();
-document.getElementById('mesInicio').value = hoy.toISOString().slice(0,7);
-cargarResumenMes();
+document.addEventListener('DOMContentLoaded', function() {
+  const hoy = new Date();
+  document.getElementById('mesInicio').value = hoy.toISOString().slice(0,7);
+  cargarResumenMes();
+  // Forzar cálculo cuando se llena cualquier campo de valores
+  ['valorFactura','cuotaInicial','numCuotas','tasaMensual'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', calcular);
+      el.addEventListener('keyup', calcular);
+    }
+  });
+});
 </script>
 
 <!-- ── MODAL VISTA PREVIA PDF ── -->
