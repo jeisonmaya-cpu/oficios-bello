@@ -142,6 +142,16 @@
     .doc-amort tbody tr:nth-child(even){background:#f8fafd}
     .doc-amort tbody td{border:1px solid #e8edf7;padding:5px 8px}
 
+    /* ── MODAL DESEMBARGO ── */
+    .desembargo-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+    .desembargo-overlay.open{display:flex}
+    .desembargo-modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:480px;overflow:hidden}
+    .desembargo-header{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px}
+    .desembargo-header h3{font-size:15px;font-weight:600}
+    .desembargo-body{padding:20px}
+    .desembargo-info{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:9px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#5b21b6}
+    .desembargo-info b{color:#4c1d95}
+
     @media print{
       body>*:not(#preview-overlay){display:none!important}
       #preview-overlay{display:block!important;position:static!important;background:none!important;padding:0!important}
@@ -430,6 +440,12 @@
       <button class="btn-accion btn-limpiar" onclick="confirmarLimpiar()">
         🗑️ Limpiar formulario
       </button>
+      <div style="border-top:1px solid #e5e7eb;margin:8px 0;padding-top:8px">
+        <button class="btn-accion" id="btn-desembargo" onclick="abrirModalDesembargo()"
+          style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;display:none">
+          ✅ Cuota inicial pagada — Enviar a desembargo
+        </button>
+      </div>
     </div>
 
   </div>
@@ -453,6 +469,7 @@
 </div>
 
 <script>
+const GAS_INDEX_URL = "https://script.google.com/macros/s/AKfycbwzZWWIj2zx4_S-qNOK2SRtUsbKm8SIdsyTtIDDLOeKqmH7dsNcngboxo5c7XQ9dfFRlA/exec";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEpNUeH2kZs2cxSw64rM9q8T6vWCfSZxPvCOwjXS41IGulD7Ud-TGWdnyHrEd6JJE/exec";
 
 // ── CALCULADORA ──
@@ -606,6 +623,7 @@ async function generarFormulario() {
     generarWordFormulario(d);
     setStatus('ok', '✅ Formulario generado y registrado correctamente.');
     cargarResumenMes();
+    document.getElementById('btn-desembargo').style.display = 'flex';
   } catch(err) {
     setStatus('err', '❌ Error: ' + err.message);
     console.error(err);
@@ -825,6 +843,93 @@ async function cargarResumenMes() {
 }
 
 // Inicializar mes
+// ── MODAL DESEMBARGO ──
+function abrirModalDesembargo() {
+  const d = getDatos();
+  document.getElementById('des-nombre').textContent  = d.nombres + ' ' + d.apellidos;
+  document.getElementById('des-cedula').textContent  = d.cedula;
+  document.getElementById('des-tipo').textContent    = d.tipoObligacion;
+  document.getElementById('des-obs').value = 'Acuerdo de pago — cuota inicial cancelada';
+  document.getElementById('des-status').style.display = 'none';
+  document.getElementById('desembargo-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarModalDesembargo() {
+  document.getElementById('desembargo-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function enviarADesembargo() {
+  const d        = getDatos();
+  const radicado = document.getElementById('des-radicado').value.trim();
+  const obs      = document.getElementById('des-obs').value.trim();
+  const statusEl = document.getElementById('des-status');
+
+  statusEl.style.display = 'flex';
+  statusEl.style.background = '#eff6ff';
+  statusEl.style.color = '#1d4ed8';
+  statusEl.style.border = '1px solid #bfdbfe';
+  statusEl.textContent = '⏳ Enviando a la cola...';
+
+  try {
+    const fecha = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const hora  = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+
+    const payload = {
+      accion:      'encolar',
+      tipoOficio:  'Desembargo',
+      numOficio:   '',
+      fechaOficio: fecha,
+      nombre:      d.nombres + ' ' + d.apellidos,
+      cedula:      d.cedula,
+      concepto:    d.tipoObligacion,
+      radicado:    radicado || '(Pendiente)',
+      fechaAuto:   fecha,
+      motivo:      'Acuerdo de pago suscrito y cuota inicial cancelada',
+      proyNombre:  d.funcionario,
+      funcionario: d.funcionario,
+      equipo:      '',
+      observacion: obs || 'Acuerdo de pago — cuota inicial cancelada',
+      comparendo:  '',
+    };
+
+    const params = new URLSearchParams(payload);
+    await fetch(GAS_INDEX_URL + '?' + params);
+
+    // Guardar también en cola local del index
+    const localCola = JSON.parse(localStorage.getItem('cola_local') || '[]');
+    localCola.unshift({
+      id: 'AC-' + Date.now(),
+      'Fecha': fecha,
+      'Hora': hora,
+      'Funcionario': d.funcionario || '',
+      'Estado': 'PENDIENTE',
+      'Tipo Oficio': 'Desembargo',
+      'N° Oficio': '',
+      'Contribuyente': d.nombres + ' ' + d.apellidos,
+      'Cédula': d.cedula,
+      'Radicado': radicado || '(Pendiente)',
+      'Concepto': d.tipoObligacion,
+      'Observación': obs,
+    });
+    localStorage.setItem('cola_local', JSON.stringify(localCola));
+
+    statusEl.style.background = '#f0fdf4';
+    statusEl.style.color = '#16a34a';
+    statusEl.style.border = '1px solid #bbf7d0';
+    statusEl.textContent = '✅ Enviado a la cola de desembargo correctamente.';
+
+    setTimeout(() => cerrarModalDesembargo(), 2000);
+
+  } catch(err) {
+    statusEl.style.background = '#fef2f2';
+    statusEl.style.color = '#dc2626';
+    statusEl.style.border = '1px solid #fecaca';
+    statusEl.textContent = '❌ Error al enviar: ' + err.message;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const hoy = new Date();
   document.getElementById('mesInicio').value = hoy.toISOString().slice(0,7);
@@ -853,6 +958,56 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="preview-footer">
       <button class="btn-cancel-preview" onclick="cerrarPreview()">Cerrar</button>
       <button class="btn-print-pdf" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── MODAL ENVIAR A DESEMBARGO ── -->
+<div class="desembargo-overlay" id="desembargo-overlay">
+  <div class="desembargo-modal">
+    <div class="desembargo-header">
+      <span style="font-size:22px">✅</span>
+      <h3>Enviar a cola de desembargo</h3>
+    </div>
+    <div class="desembargo-body">
+      <div class="desembargo-info">
+        Se enviará a la cola de impresión del generador de oficios con los datos del contribuyente del acuerdo.
+        <br><br>
+        <b>Contribuyente:</b> <span id="des-nombre">—</span><br>
+        <b>Cédula:</b> <span id="des-cedula">—</span><br>
+        <b>Tipo obligación:</b> <span id="des-tipo">—</span>
+      </div>
+
+      <div class="campo" style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">
+          Radicado del proceso *
+        </label>
+        <input type="text" id="des-radicado" placeholder="Ej: 20242023843"
+          style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #ddd6fe;border-radius:8px;outline:none;font-family:inherit" />
+        <div style="font-size:11px;color:#6b7280;margin-top:4px">Si no lo tiene aún, puede dejarlo en blanco y completarlo en el generador de oficios.</div>
+      </div>
+
+      <div class="campo" style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">
+          Observación (opcional)
+        </label>
+        <input type="text" id="des-obs" placeholder="Ej: Acuerdo de pago — cuota inicial cancelada"
+          style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #c8d5e8;border-radius:8px;outline:none;font-family:inherit" />
+      </div>
+
+      <div id="des-status" style="display:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px"></div>
+
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarModalDesembargo()"
+          style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">
+          Cancelar
+        </button>
+        <button onclick="enviarADesembargo()"
+          style="flex:1;padding:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">
+          🖨️ Enviar a cola
+        </button>
+      </div>
     </div>
   </div>
 </div>
