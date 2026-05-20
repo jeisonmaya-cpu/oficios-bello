@@ -2959,11 +2959,20 @@ document.head.appendChild(pulseCSS);
 // ════════════════════════════════════════════════════════════
 // SISTEMA DE PIN PERSONAL CON REGISTRO
 // ════════════════════════════════════════════════════════════
-const USUARIOS_KEY  = 'oficios_usuarios_local'; // cache local de usuarios
-const SESSION_KEY   = 'oficios_session';         // sesión activa
+const SESSION_KEY = 'oficios_session_v2';
 let pinActual = '';
 let usuarioActual = null;
 let pinNuevoGenerado = '';
+
+// ── TABLA DE USUARIOS — el administrador edita esto ──────────
+// Para agregar usuarios: añadir una línea { pin:'XXXX', nombre:'Nombre', cargo:'Cargo' }
+// Para desactivar: eliminar la línea o cambiar activo a false
+const USUARIOS_SISTEMA = [
+  { pin:'0000', nombre:'Administrador',     cargo:'Admin',                activo:true },
+  // Agregue aquí los usuarios de su oficina:
+  // { pin:'1234', nombre:'María López',    cargo:'Abogada Contratista',  activo:true },
+  // { pin:'5678', nombre:'José Traspalacios', cargo:'Funcionario',       activo:true },
+];
 
 // ── Inicialización ──────────────────────────────────────────
 (function initPin() {
@@ -2977,7 +2986,8 @@ let pinNuevoGenerado = '';
       return;
     }
   } catch(e) {}
-  // Mostrar pantalla de PIN
+  // Limpiar sesión expirada y mostrar PIN
+  localStorage.removeItem(SESSION_KEY);
   irAPin();
 })();
 
@@ -3052,47 +3062,48 @@ function actualizarDots() {
   }
 }
 
-// ── Verificar PIN contra Sheet ──────────────────────────────
+// ── Verificar PIN ────────────────────────────────────────────
 async function verificarPin() {
-  mostrarCargando('Verificando PIN…');
+  mostrarCargando('Verificando…');
 
-  // Buscar en cache local primero (rápido)
-  const localUsers = JSON.parse(localStorage.getItem(USUARIOS_KEY) || '[]');
-  let usuario = localUsers.find(u => u.pin === pinActual);
+  // 1. Buscar en tabla estática del HTML (siempre disponible)
+  let usuario = USUARIOS_SISTEMA.find(u => u.pin === pinActual && u.activo !== false);
 
-  // Si no está en local, consultar Sheet
+  // 2. Si no está en tabla estática, buscar en Sheet (usuarios registrados en línea)
   if (!usuario && cfg.apiUrl) {
     try {
       const r = await fetch(cfg.apiUrl + '?accion=verificar_pin&pin=' + pinActual + '&t=' + Date.now());
       const res = await r.json();
       if (res && res.ok && res.usuario) {
         usuario = res.usuario;
-        // Actualizar cache local
-        const idx = localUsers.findIndex(u => u.pin === pinActual);
-        if (idx > -1) localUsers[idx] = usuario;
-        else localUsers.push(usuario);
-        localStorage.setItem(USUARIOS_KEY, JSON.stringify(localUsers));
       }
     } catch(e) {
-      console.warn('No se pudo verificar contra Sheet:', e.message);
+      console.warn('Sheet no disponible, usando solo tabla local');
     }
   }
 
+  // 3. También revisar registros locales (usuarios que se registraron en este computador)
+  if (!usuario) {
+    try {
+      const localReg = JSON.parse(localStorage.getItem('oficios_usuarios_local') || '[]');
+      usuario = localReg.find(u => u.pin === pinActual);
+    } catch(e) {}
+  }
+
   if (usuario) {
-    // PIN correcto — crear sesión de 8 horas
+    // Sesión de 8 horas
     const sess = { ...usuario, expira: Date.now() + 8 * 60 * 60 * 1000 };
     localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
     usuarioActual = sess;
     document.getElementById('pinOverlay').style.display = 'none';
     aplicarSesion(sess);
   } else {
-    // PIN incorrecto
     irAPin();
     for (let i = 0; i < 4; i++) {
       const d = document.getElementById('d' + i);
       if (d) d.className = 'pin-dot error';
     }
-    showError('pinError', '❌ PIN incorrecto. Intente de nuevo o regístrese si es primera vez.');
+    showError('pinError', '❌ PIN incorrecto. Verifique su PIN o regístrese si es primera vez.');
     setTimeout(() => { pinActual = ''; actualizarDots(); }, 900);
   }
 }
