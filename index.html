@@ -167,6 +167,30 @@ input#sTxt:focus, input#colaTxt:focus {
   box-shadow: 0 0 0 3px rgba(29,90,171,.12) !important;
   outline: none;
 }
+
+/* ─── PAGINACIÓN ─── */
+.pag{display:flex;align-items:center;justify-content:between;gap:6px;margin-top:12px;flex-wrap:wrap}
+.pag-info{font-size:12px;color:var(--gr);flex:1}
+.pag-btns{display:flex;gap:4px;flex-wrap:wrap}
+.pag-btn{padding:5px 10px;border:1.5px solid var(--br);border-radius:6px;background:#fff;
+  font-size:12px;font-weight:600;cursor:pointer;color:#374151;transition:all .15s;min-width:34px;text-align:center}
+.pag-btn:hover{background:var(--azc);border-color:var(--az2);color:var(--az)}
+.pag-btn.active{background:var(--az);color:#fff;border-color:var(--az)}
+.pag-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ─── ANTIGÜEDAD ─── */
+.edad-badge{font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;font-weight:600}
+.edad-nueva{background:#d1fae5;color:#065f46}
+.edad-media{background:#fef3c7;color:#92400e}
+.edad-vieja{background:#fee2e2;color:#991b1b}
+
+/* ─── MODAL SIGUIENTE ─── */
+.modal-sig{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;
+  align-items:center;justify-content:center;padding:16px}
+.modal-sig.open{display:flex}
+.modal-sig-box{background:#fff;border-radius:14px;padding:28px;max-width:380px;width:100%;
+  text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+
 </style>
 </head>
 <body>
@@ -392,9 +416,11 @@ input#sTxt:focus, input#colaTxt:focus {
 
 <!-- ═══ NAV ═════════════════════════════════════════════════════════════ -->
 <div class="nav">
-  <div class="nav-brand">📄 Oficios — Alcaldía de Bello</div>
+  <div class="nav-brand" onclick="goPanel('form')" style="cursor:pointer" title="Ir al inicio">
+    📄 Oficios — Alcaldía de Bello
+  </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="goPanel('form')">📝 Generar</button>
+    <button class="nav-tab active" onclick="goPanel('form')">🏠 Inicio</button>
     <button class="nav-tab" onclick="goPanel('lote')">📂 Masivo</button>
     <button class="nav-tab" onclick="goPanel('registro')">📋 Registro <span class="badge" id="badgeCnt">…</span></button>
     <button class="nav-tab" onclick="goPanel('dashboard')">📊 Dashboard</button>
@@ -702,7 +728,10 @@ input#sTxt:focus, input#colaTxt:focus {
       <table><thead><tr><th>#</th><th>Fecha/Hora</th><th>Tipo</th><th>N°Oficio</th><th>Contribuyente</th><th>Cédula</th><th>Radicado</th><th>Concepto</th><th>Motivo</th><th>Proyectó</th><th>Funcionario</th><th>Acciones</th></tr></thead>
       <tbody id="tbReg"></tbody></table>
     </div>
-    <div style="margin-top:6px;font-size:11px;color:var(--gr)" id="regInfo"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:11.5px;color:var(--gr)" id="regInfo"></div>
+      <div class="pag-btns" id="pagBtns"></div>
+    </div>
   </div>
 </div>
 </div>
@@ -858,6 +887,26 @@ input#sTxt:focus, input#colaTxt:focus {
     <div style="padding:0 20px 18px;display:flex;gap:8px">
       <button class="btn btn-p" onclick="confirmarGen()">⬇️ Confirmar y descargar</button>
       <button class="btn btn-g" onclick="cerrarM('mPrev')">Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL SIGUIENTE CONTRIBUYENTE ══════════════════════════════════ -->
+<div class="modal-sig" id="modalSig">
+  <div class="modal-sig-box">
+    <div style="font-size:40px;margin-bottom:10px">✅</div>
+    <h3 style="font-size:16px;font-weight:700;color:#065f46;margin-bottom:6px">¡Oficio generado!</h3>
+    <p style="font-size:13px;color:#374151;margin-bottom:20px">¿Qué desea hacer ahora?</p>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <button onclick="sigContribuyente()" style="padding:11px;background:#0f2d5e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+        👤 Mismo contribuyente, otro concepto
+      </button>
+      <button onclick="sigNuevo()" style="padding:11px;background:#065f46;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+        ➕ Nuevo contribuyente
+      </button>
+      <button onclick="cerrarModalSig()" style="padding:11px;background:#fff;color:#374151;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;cursor:pointer">
+        Cerrar
+      </button>
     </div>
   </div>
 </div>
@@ -1277,6 +1326,7 @@ async function generarDesdeForm(){
 
       showAlert('f_alert','s',`✅ Oficio generado con ${bancosSelec.length} banco(s) en una sola hoja. Revise Descargas.`);
       cargarRemoto();
+      setTimeout(mostrarModalSig, 800);
     } catch(e) {
       showAlert('f_alert','e','Error al generar: '+e.message);
       console.error(e);
@@ -3854,6 +3904,268 @@ async function generarPDFUnificado() {
 
   if(btn){ btn.disabled=false; btn.innerHTML=`⬇️ Generar Word seleccionados (<span id="cntSel">0</span>)`; }
   actualizarConteoSel();
+}
+
+
+// ════════════════════════════════════════════════════════════
+// PAGINACIÓN
+// ════════════════════════════════════════════════════════════
+const PAG_SIZE = 25;
+let pagActual  = 1;
+let filActual  = [];
+
+function calcPags(total) {
+  return Math.max(1, Math.ceil(total / PAG_SIZE));
+}
+
+function renderPagBtns(total) {
+  const totalPags = calcPags(total);
+  const btns = document.getElementById('pagBtns');
+  if (!btns) return;
+  if (totalPags <= 1) { btns.innerHTML = ''; return; }
+
+  let h = '';
+  // Anterior
+  h += `<button class="pag-btn" onclick="irPag(${pagActual-1})" ${pagActual===1?'disabled':''}>‹</button>`;
+
+  // Páginas con ellipsis
+  const rango = [];
+  for (let i = 1; i <= totalPags; i++) {
+    if (i === 1 || i === totalPags || (i >= pagActual-2 && i <= pagActual+2)) {
+      rango.push(i);
+    } else if (rango[rango.length-1] !== '…') {
+      rango.push('…');
+    }
+  }
+  rango.forEach(p => {
+    if (p === '…') {
+      h += `<span class="pag-btn" style="cursor:default;border:none">…</span>`;
+    } else {
+      h += `<button class="pag-btn${p===pagActual?' active':''}" onclick="irPag(${p})">${p}</button>`;
+    }
+  });
+
+  // Siguiente
+  h += `<button class="pag-btn" onclick="irPag(${pagActual+1})" ${pagActual===totalPags?'disabled':''}>›</button>`;
+  btns.innerHTML = h;
+}
+
+function irPag(n) {
+  const totalPags = calcPags(filActual.length);
+  if (n < 1 || n > totalPags) return;
+  pagActual = n;
+  renderTablaPagina();
+  // Scroll suave al top de la tabla
+  const tw = document.querySelector('.tw');
+  if (tw) tw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderTablaPagina() {
+  const inicio = (pagActual - 1) * PAG_SIZE;
+  const fin    = inicio + PAG_SIZE;
+  const pagina = filActual.slice(inicio, fin);
+  const total  = filActual.length;
+
+  const hoy = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="stat"><div class="sl">Total</div><div class="sv">${cache.length}</div><div class="ss">Google Sheets</div></div>
+    <div class="stat"><div class="sl">Hoy</div><div class="sv">${cache.filter(r=>r['Fecha']===hoy).length}</div></div>
+    <div class="stat"><div class="sl">Funcionarios</div><div class="sv">${new Set(cache.map(r=>r['Funcionario']).filter(Boolean)).size}</div></div>
+    <div class="stat"><div class="sl">Filtro activo</div><div class="sv">${total}</div></div>
+  `;
+  document.getElementById('badgeCnt').textContent = cache.length;
+
+  const desde = inicio + 1;
+  const hasta = Math.min(fin, total);
+  document.getElementById('regInfo').textContent =
+    total === 0 ? '0 registros' :
+    `Mostrando ${desde}–${hasta} de ${total} registro(s)`;
+
+  renderPagBtns(total);
+
+  if (!pagina.length) {
+    document.getElementById('tbReg').innerHTML =
+      `<tr><td colspan="13"><div class="empty">📂 ${cache.length ? 'No hay registros con esos filtros.' : 'Aún no hay oficios.'}</div></td></tr>`;
+    return;
+  }
+
+  document.getElementById('tbReg').innerHTML = pagina.map((r, i) => `<tr>
+    <td>${inicio + i + 1}</td>
+    <td>${r['Fecha']||''} <span style="color:var(--gr);font-size:10px">${r['Hora']||''}</span></td>
+    <td><span class="tipo-pill">${r['Tipo Oficio']||''}</span></td>
+    <td class="mono">${r['N° Oficio']||''}</td>
+    <td style="font-weight:600">${r['Contribuyente']||''}</td>
+    <td class="mono">${r['Cédula/NIT']||''}</td>
+    <td class="mono">${r['Radicado']||''}</td>
+    <td style="font-size:11px">${r['Concepto']||''}</td>
+    <td style="font-size:11px">${r['Motivo']||''}</td>
+    <td>
+      <span onclick='cambiarEstado("${r['ID']||r.id||''}","${r['Estado']||'Generado'}")'
+        style="cursor:pointer" title="Clic para cambiar estado">
+        ${estadoBadge(r['Estado']||'Generado')}
+      </span>
+    </td>
+    <td>${r['Proyectó']||'—'}</td>
+    <td style="font-size:10.5px;color:var(--gr)">${r['Funcionario']||''}</td>
+    <td style="display:flex;gap:3px">
+      <button class="bi" onclick='abrirEdit(${JSON.stringify(r).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
+      <button class="bi" onclick='regenById(${JSON.stringify(r).replace(/'/g,"&#39;")})' title="Regenerar">⬇️</button>
+      <button class="bi del" onclick='eliminar("${r['ID']||r.id||''}")' title="Eliminar">✕</button>
+    </td>
+  </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// ANTIGÜEDAD EN COLA
+// ════════════════════════════════════════════════════════════
+function calcEdad(fecha, hora) {
+  if (!fecha) return null;
+  try {
+    // Parse dd/MM/yyyy HH:mm
+    const partes = fecha.split('/');
+    if (partes.length < 3) return null;
+    const [d, m, y] = partes;
+    const h = hora ? hora.split(':') : ['00','00'];
+    const dt = new Date(parseInt(y), parseInt(m)-1, parseInt(d), parseInt(h[0]), parseInt(h[1]));
+    const diffMs = Date.now() - dt.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 60)  return { txt: `Hace ${diffMin} min`,    cls: 'edad-nueva' };
+    if (diffMin < 480) return { txt: `Hace ${Math.floor(diffMin/60)}h`,  cls: 'edad-nueva' };
+    if (diffMin < 1440)return { txt: `Hace ${Math.floor(diffMin/60)}h`,  cls: 'edad-media' };
+    const dias = Math.floor(diffMin / 1440);
+    return { txt: `Hace ${dias} día${dias>1?'s':''}`, cls: 'edad-vieja' };
+  } catch(e) { return null; }
+}
+
+// Override renderCola to add antigüedad
+const _renderColaBase = renderCola;
+function renderCola() {
+  const filtro   = document.getElementById('colaFiltro').value;
+  const colaTxtEl = document.getElementById('colaTxt');
+  const colaBusq  = colaTxtEl ? colaTxtEl.value.toLowerCase() : '';
+
+  let items = colaCache.map(limpiarItem);
+  if (filtro === 'PENDIENTE') items = items.filter(r => (r['Estado']||'') === 'PENDIENTE');
+  if (filtro === 'IMPRESO')   items = items.filter(r => (r['Estado']||'') === 'IMPRESO');
+  if (colaBusq) items = items.filter(r =>
+    (r['Contribuyente']||'').toLowerCase().includes(colaBusq) ||
+    (r['Cédula/NIT']||'').toLowerCase().includes(colaBusq) ||
+    (r['Radicado']||'').toLowerCase().includes(colaBusq) ||
+    (r['N° Oficio']||'').toLowerCase().includes(colaBusq) ||
+    (r['Funcionario']||'').toLowerCase().includes(colaBusq)
+  );
+
+  const pendTotal = colaCache.filter(r => r['Estado'] === 'PENDIENTE').length;
+  document.getElementById('colaInfo').textContent =
+    `${pendTotal} pendiente(s) de ${colaCache.length} total — mostrando ${items.length}`;
+
+  if (!items.length) {
+    document.getElementById('tbCola').innerHTML =
+      `<tr><td colspan="10"><div class="empty">${filtro==='PENDIENTE'?'✅ No hay oficios pendientes':'📂 Sin registros'}</div></td></tr>`;
+    actualizarConteoSel();
+    return;
+  }
+
+  document.getElementById('tbCola').innerHTML = items.map(r => {
+    const id = r['ID'] || r.id || '';
+    const esPendiente = (r['Estado']||'') === 'PENDIENTE';
+    const rowBg = esPendiente ? 'background:#fff9f9' : 'background:#f0fff4';
+    const estadoBadgeCol = esPendiente
+      ? '<span style="background:#fadbd8;color:#c0392b;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">⏳ PENDIENTE</span>'
+      : '<span style="background:#d5f5e3;color:#1e8449;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">✅ IMPRESO</span>';
+
+    // Antigüedad
+    const edad = calcEdad(r['Fecha'], r['Hora']);
+    const edadHtml = edad
+      ? `<span class="edad-badge ${edad.cls}">${edad.txt}</span>`
+      : '';
+
+    return `<tr style="${rowBg}">
+      <td><input type="checkbox" class="chk-cola" data-id="${id}" ${esPendiente?'':'disabled'}
+        style="width:14px;height:14px;accent-color:var(--az)" onchange="actualizarConteoSel()"></td>
+      <td style="font-size:10.5px;color:var(--gr)">${r['Fecha']||''} ${r['Hora']||''}<br>${edadHtml}</td>
+      <td>${r['Funcionario']||''}</td>
+      <td>${estadoBadgeCol}</td>
+      <td><span class="tipo-pill">${r['Tipo Oficio']||''}</span></td>
+      <td class="mono">${r['N° Oficio']||''}</td>
+      <td style="font-weight:600">${r['Contribuyente']||''}</td>
+      <td style="font-size:11px">${r['Concepto']||''}</td>
+      <td style="font-size:11px;color:#b45309;font-style:italic">${r['Observación']||'—'}</td>
+      <td style="display:flex;gap:3px">
+        ${esPendiente ? `<button class="bi" onclick='imprimirUno("${id}")' title="Generar Word">⬇️</button>` : ''}
+        <button class="bi del" onclick='eliminarCola("${id}")' title="Eliminar">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+  actualizarConteoSel();
+}
+
+// ════════════════════════════════════════════════════════════
+// MEJORA DE FLUJO — Modal siguiente contribuyente
+// ════════════════════════════════════════════════════════════
+function mostrarModalSig() {
+  document.getElementById('modalSig').classList.add('open');
+}
+function cerrarModalSig() {
+  document.getElementById('modalSig').classList.remove('open');
+}
+
+function sigContribuyente() {
+  // Limpiar solo conceptos, radicado, fecha auto, motivo — mantener nombre y cédula
+  const nombre = document.getElementById('f_nombre').value;
+  const cedula = document.getElementById('f_cedula').value;
+  cerrarModalSig();
+  limpiarForm();
+  // Restaurar nombre y cédula
+  document.getElementById('f_nombre').value = nombre;
+  document.getElementById('f_cedula').value = cedula;
+  // Scroll al top del formulario
+  document.querySelector('.cbody') && document.querySelector('.cbody').scrollIntoView({behavior:'smooth'});
+  // Foco en concepto
+  const conceptoLista = document.getElementById('conceptos_lista');
+  if (conceptoLista) conceptoLista.scrollIntoView({behavior:'smooth'});
+}
+
+function sigNuevo() {
+  cerrarModalSig();
+  limpiarForm();
+  document.getElementById('f_nombre').focus();
+  document.querySelector('.cbody') && document.querySelector('.cbody').scrollIntoView({behavior:'smooth'});
+}
+
+// ════════════════════════════════════════════════════════════
+// OVERRIDE renderRegistro para usar paginación
+// ════════════════════════════════════════════════════════════
+function renderRegistro() {
+  const txt  = document.getElementById('sTxt').value.toLowerCase();
+  const func = document.getElementById('sFunc').value;
+  const conc = document.getElementById('sConc').value;
+  const tipo = document.getElementById('sTipo').value;
+  const mes  = document.getElementById('sMes').value;
+
+  const funcs = [...new Set(cache.map(r=>r['Funcionario']).filter(Boolean))];
+  const concs = [...new Set(cache.map(r=>r['Concepto']).filter(Boolean))];
+  const tipos = [...new Set(cache.map(r=>r['Tipo Oficio']).filter(Boolean))];
+  const selF=document.getElementById('sFunc').value,
+        selC=document.getElementById('sConc').value,
+        selT=document.getElementById('sTipo').value;
+  document.getElementById('sFunc').innerHTML='<option value="">Todos los funcionarios</option>'+funcs.map(f=>`<option value="${f}"${f===selF?' selected':''}>${f}</option>`).join('');
+  document.getElementById('sConc').innerHTML='<option value="">Todos los conceptos</option>'+concs.map(c=>`<option value="${c}"${c===selC?' selected':''}>${c}</option>`).join('');
+  document.getElementById('sTipo').innerHTML='<option value="">Todos los tipos</option>'+tipos.map(t=>`<option value="${t}"${t===selT?' selected':''}>${t}</option>`).join('');
+
+  let fil = cache;
+  if(txt)  fil=fil.filter(r=>(r['Contribuyente']+r['Radicado']+r['Cédula/NIT']+r['N° Oficio']).toLowerCase().includes(txt));
+  if(func) fil=fil.filter(r=>r['Funcionario']===func);
+  if(conc) fil=fil.filter(r=>r['Concepto']===conc);
+  if(tipo) fil=fil.filter(r=>r['Tipo Oficio']===tipo);
+  if(mes)  fil=fil.filter(r=>(r['Fecha Oficio']||'').startsWith(mes));
+
+  // Si cambian filtros, volver a página 1
+  if (JSON.stringify(fil.map(r=>r['ID'])) !== JSON.stringify(filActual.map(r=>r['ID']))) {
+    pagActual = 1;
+  }
+  filActual = fil;
+  renderTablaPagina();
 }
 
 </script>
