@@ -1226,35 +1226,7 @@ function validar(d,id){
   if(hayBancos && !hayBancos.length){showAlert(id,'e','Seleccione al menos un banco.');return false;}
   return true;
 }
-function limpiarForm(){
-  ['f_nombre','f_cedula','f_fauto','f_concepto_manual','f_comparendo','f_motivo_manual'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value='';
-  });
-  const rad=document.getElementById('f_radicado');if(rad){rad.value='';rad.readOnly=false;}
-  const badge=document.getElementById('f_radicado_badge');if(badge)badge.style.display='none';
-  const hint=document.getElementById('f_radicado_hint');if(hint)hint.textContent='';
-  document.getElementById('f_concepto').selectedIndex=0;
-  document.getElementById('grp_bancos_tabla').style.display='none';
-  document.getElementById('grp_concepto_manual').style.display='none';
-  document.getElementById('grp_radicado_manual').style.display='none';
-  document.getElementById('bancos_tbody').innerHTML='';
-  document.getElementById('f_fecha').value=hoyISO();
-  document.getElementById('f_proyf').value=hoyISO();
-  const obs=document.getElementById('f_obs');if(obs)obs.value='';
-  const btn=document.getElementById('btnGen');if(btn)btn.innerHTML='⬇️ Generar y descargar Word';
-  // Restaurar campos fijos
-  document.getElementById('f_motivo').selectedIndex = 0;
-  const _mt = document.getElementById('motivo_tooltip'); if(_mt) _mt.style.display='none';
-  const _mm = document.getElementById('grp_motivo_manual'); if(_mm) _mm.style.display='none';
-  const _pn=document.getElementById('f_proyn'); if(_pn) _pn.value=cfg.nombre||'';
-  const _fn=document.getElementById('f_num');   if(_fn) _fn.value='1070.02';
-  // Limpiar campos tutela
-  ['t_juzgado','t_juez','t_correo','t_asunto','t_rad_despacho','t_accionante',
-   't_cedula_acc','t_rad_pqrs','t_fecha_pqrs','t_rad_respuesta','t_resolucion']
-    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  limpiarNotif(); limpiarPqrs();
-  hideAlert('f_alert');hideAlert('f_dup');
-}
+
 
 // ════════════════════════════════════════════════════════════
 // GENERAR DOCX
@@ -1388,61 +1360,7 @@ async function confirmarGen(){cerrarM('mPrev');await generarDesdeForm();}
 // ════════════════════════════════════════════════════════════
 // REGISTRO
 // ════════════════════════════════════════════════════════════
-function renderRegistro(){
-  const txt=document.getElementById('sTxt').value.toLowerCase();
-  const func=document.getElementById('sFunc').value;
-  const conc=document.getElementById('sConc').value;
-  const tipo=document.getElementById('sTipo').value;
-  const mes=document.getElementById('sMes').value;
 
-  const funcs=[...new Set(cache.map(r=>r['Funcionario']).filter(Boolean))];
-  const concs=[...new Set(cache.map(r=>r['Concepto']).filter(Boolean))];
-  const tipos=[...new Set(cache.map(r=>r['Tipo Oficio']).filter(Boolean))];
-  const selF=document.getElementById('sFunc').value,selC=document.getElementById('sConc').value,selT=document.getElementById('sTipo').value;
-  document.getElementById('sFunc').innerHTML='<option value="">Todos los funcionarios</option>'+funcs.map(f=>`<option value="${f}"${f===selF?' selected':''}>${f}</option>`).join('');
-  document.getElementById('sConc').innerHTML='<option value="">Todos los conceptos</option>'+concs.map(c=>`<option value="${c}"${c===selC?' selected':''}>${c}</option>`).join('');
-  document.getElementById('sTipo').innerHTML='<option value="">Todos los tipos</option>'+tipos.map(t=>`<option value="${t}"${t===selT?' selected':''}>${t}</option>`).join('');
-
-  let fil=cache;
-  if(txt) fil=fil.filter(r=>(r['Contribuyente']+r['Radicado']+r['Cédula/NIT']+r['N° Oficio']).toLowerCase().includes(txt));
-  if(func) fil=fil.filter(r=>r['Funcionario']===func);
-  if(conc) fil=fil.filter(r=>r['Concepto']===conc);
-  if(tipo) fil=fil.filter(r=>r['Tipo Oficio']===tipo);
-  if(mes) fil=fil.filter(r=>(r['Fecha Oficio']||'').startsWith(mes));
-
-  const hoy=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-  document.getElementById('statsGrid').innerHTML=`
-    <div class="stat"><div class="sl">Total</div><div class="sv">${cache.length}</div><div class="ss">En Google Sheets</div></div>
-    <div class="stat"><div class="sl">Hoy</div><div class="sv">${cache.filter(r=>r['Fecha']===hoy).length}</div></div>
-    <div class="stat"><div class="sl">Funcionarios</div><div class="sv">${funcs.length}</div></div>
-    <div class="stat"><div class="sl">Filtro activo</div><div class="sv">${fil.length}</div></div>
-  `;
-  document.getElementById('badgeCnt').textContent=cache.length;
-  document.getElementById('regInfo').textContent=fil.length!==cache.length?`Mostrando ${fil.length} de ${cache.length}`:`${cache.length} registros`;
-
-  if(!fil.length){
-    document.getElementById('tbReg').innerHTML=`<tr><td colspan="12"><div class="empty">📂 ${cache.length?'No hay registros con esos filtros.':'Aún no hay oficios. Genere el primero.'}</div></td></tr>`;
-    return;
-  }
-  document.getElementById('tbReg').innerHTML=fil.map((r,i)=>`<tr>
-    <td>${fil.length-i}</td>
-    <td>${r['Fecha']||''} <span style="color:var(--gr);font-size:10px">${r['Hora']||''}</span></td>
-    <td><span class="tipo-pill">${r['Tipo Oficio']||''}</span></td>
-    <td class="mono">${r['N° Oficio']||''}</td>
-    <td>${r['Contribuyente']||''}</td>
-    <td class="mono">${r['Cédula/NIT']||''}</td>
-    <td class="mono">${r['Radicado']||''}</td>
-    <td>${r['Concepto']||''}</td>
-    <td>${r['Motivo']||''}</td>
-    <td>${r['Proyectó']||'—'}</td>
-    <td style="font-size:10.5px;color:var(--gr)">${r['Funcionario']||''}</td>
-    <td style="display:flex;gap:3px">
-      <button class="bi" onclick='abrirEdit(${JSON.stringify(r).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-      <button class="bi" onclick='regenById(${JSON.stringify(r).replace(/'/g,"&#39;")})' title="Regenerar">⬇️</button>
-      <button class="bi del" onclick='eliminar("${r['ID']||''}")' title="Eliminar">✕</button>
-    </td>
-  </tr>`).join('');
-}
 
 function filtrar(){renderRegistro();}
 function limpFiltros(){['sTxt','sMes'].forEach(id=>document.getElementById(id).value='');['sFunc','sConc','sTipo'].forEach(id=>document.getElementById(id).selectedIndex=0);renderRegistro();}
@@ -1845,16 +1763,7 @@ function toggleTodos(estado) {
   actualizarConteo();
 }
 
-function getBancosSeleccionados() {
-  // Si es tutela, no hay bancos
-  if (document.getElementById('f_tipo').value === 'Tutela-Admite') return null;
-  const concepto = document.getElementById('f_concepto').value;
-  if (!concepto || concepto === 'OTRO' || !CONCEPTOS[concepto]) return null;
-  const bancos = CONCEPTOS[concepto];
-  const checks = document.querySelectorAll('#bancos_tbody input[type=checkbox]');
-  const sel = [...checks].filter(c=>c.checked).map(c=>({banco:c.value, radicado:bancos[c.value]}));
-  return sel.length ? sel : null;
-}
+
 
 function actualizarBotonGenerar(concepto) {
   const btn = document.getElementById('btnGen');
@@ -1866,11 +1775,7 @@ function actualizarBotonGenerar(concepto) {
   }
 }
 
-function getConceptoReal() {
-  const sel = document.getElementById('f_concepto').value;
-  if (sel === 'OTRO') return (document.getElementById('f_concepto_manual')||{value:''}).value.trim();
-  return sel;
-}
+
 
 function getRadicadoForm() {
   const el = document.getElementById('f_radicado');
@@ -2102,59 +2007,7 @@ function actualizarBadgeCola() {
 }
 
 // ── Renderizar tabla de cola ──
-function renderCola() {
-  const filtro = document.getElementById('colaFiltro').value;
-  const colaTxtEl = document.getElementById('colaTxt');
-  const colaBusq  = colaTxtEl ? colaTxtEl.value.toLowerCase() : '';
-  let items = colaCache;
-  if (filtro === 'PENDIENTE') items = items.filter(r => (r['Estado']||'') === 'PENDIENTE');
-  if (filtro === 'IMPRESO')   items = items.filter(r => (r['Estado']||'') === 'IMPRESO');
-  if (colaBusq) items = items.filter(r =>
-    (r['Contribuyente']||'').toLowerCase().includes(colaBusq) ||
-    (r['Cédula/NIT']||'').toLowerCase().includes(colaBusq) ||
-    (r['Radicado']||'').toLowerCase().includes(colaBusq) ||
-    (r['N° Oficio']||'').toLowerCase().includes(colaBusq) ||
-    (r['Funcionario']||'').toLowerCase().includes(colaBusq)
-  );
 
-  document.getElementById('colaInfo').textContent =
-    `${items.filter(r=>r['Estado']==='PENDIENTE').length} pendiente(s) de ${colaCache.length} total`;
-
-  if (!items.length) {
-    document.getElementById('tbCola').innerHTML =
-      `<tr><td colspan="10"><div class="empty">
-        ${filtro==='PENDIENTE' ? '✅ No hay oficios pendientes de impresión' : '📂 Sin registros'}
-      </div></td></tr>`;
-    actualizarConteoSel();
-    return;
-  }
-
-  document.getElementById('tbCola').innerHTML = items.map(r => {
-    const id = r['ID'] || r.id || '';
-    const esPendiente = (r['Estado']||'') === 'PENDIENTE';
-    const rowBg = esPendiente ? 'background:#fff9f9' : 'background:#f0fff4';
-    const estadoBadge = esPendiente
-      ? '<span style="background:#fadbd8;color:#c0392b;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">⏳ PENDIENTE</span>'
-      : '<span style="background:#d5f5e3;color:#1e8449;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">✅ IMPRESO</span>';
-    return `<tr style="${rowBg}">
-      <td><input type="checkbox" class="chk-cola" data-id="${id}" ${esPendiente?'':'disabled'}
-        style="width:14px;height:14px;accent-color:var(--az)" onchange="actualizarConteoSel()"></td>
-      <td style="font-size:10.5px;color:var(--gr)">${r['Fecha']||''} ${r['Hora']||''}</td>
-      <td>${r['Funcionario']||''}</td>
-      <td>${estadoBadge}</td>
-      <td><span class="tipo-pill">${r['Tipo Oficio']||''}</span></td>
-      <td class="mono">${r['N° Oficio']||''}</td>
-      <td style="font-weight:600">${r['Contribuyente']||''}</td>
-      <td style="font-size:11px">${r['Concepto']||''}</td>
-      <td style="font-size:11px;color:#b45309;font-style:italic">${r['Observación']||'—'}</td>
-      <td style="display:flex;gap:3px">
-        ${esPendiente ? `<button class="bi" onclick='imprimirUno("${id}")' title="Generar Word">⬇️</button>` : ''}
-        <button class="bi del" onclick='eliminarCola("${id}")' title="Eliminar">✕</button>
-      </td>
-    </tr>`;
-  }).join('');
-  actualizarConteoSel();
-}
 
 function actualizarConteoSel() {
   const sel = document.querySelectorAll('.chk-cola:checked').length;
@@ -3431,14 +3284,7 @@ function getConceptoReal() {
 }
 
 // Override limpiarForm para limpiar checkboxes
-const _limpiarFormOrig = limpiarForm;
-function limpiarForm() {
-  _limpiarFormOrig();
-  document.querySelectorAll('.chk-concepto').forEach(c => c.checked = false);
-  document.getElementById('conceptos_count').textContent = '';
-  const grpTabla = document.getElementById('grp_bancos_tabla');
-  if (grpTabla) grpTabla.style.display = 'none';
-}
+
 
 // ════════════════════════════════════════════════════════════
 // PUNTO 7 — ESTADOS COMPLETOS DEL OFICIO
@@ -3487,89 +3333,9 @@ async function guardarEstado(id, nuevoEstado, modalEl) {
 
 // Actualizar renderRegistro para mostrar estado y botón cambiar
 const _renderRegistroOrig = renderRegistro;
-function renderRegistro() {
-  _renderRegistroOrig();
-  // Reemplazar las filas con la columna Estado
-  const tbody = document.getElementById('tbReg');
-  if (!tbody) return;
-  const rows = tbody.querySelectorAll('tr');
-  rows.forEach((tr, i) => {
-    const tds = tr.querySelectorAll('td');
-    if (tds.length < 10) return;
-    // Insertar celda de Estado después de Motivo (posición 9)
-    // Solo si no existe ya
-    if (tr.querySelectorAll('td').length === tr.querySelectorAll('td').length) {
-      // Already handled by renderRegistro rebuild — skip
-    }
-  });
-}
 
-// Override renderRegistro completamente para incluir Estado
-function renderRegistro() {
-  const txt  = document.getElementById('sTxt').value.toLowerCase();
-  const func = document.getElementById('sFunc').value;
-  const conc = document.getElementById('sConc').value;
-  const tipo = document.getElementById('sTipo').value;
-  const mes  = document.getElementById('sMes').value;
 
-  const funcs = [...new Set(cache.map(r=>r['Funcionario']).filter(Boolean))];
-  const concs = [...new Set(cache.map(r=>r['Concepto']).filter(Boolean))];
-  const tipos = [...new Set(cache.map(r=>r['Tipo Oficio']).filter(Boolean))];
-  const selF=document.getElementById('sFunc').value,
-        selC=document.getElementById('sConc').value,
-        selT=document.getElementById('sTipo').value;
-  document.getElementById('sFunc').innerHTML='<option value="">Todos los funcionarios</option>'+funcs.map(f=>`<option value="${f}"${f===selF?' selected':''}>${f}</option>`).join('');
-  document.getElementById('sConc').innerHTML='<option value="">Todos los conceptos</option>'+concs.map(c=>`<option value="${c}"${c===selC?' selected':''}>${c}</option>`).join('');
-  document.getElementById('sTipo').innerHTML='<option value="">Todos los tipos</option>'+tipos.map(t=>`<option value="${t}"${t===selT?' selected':''}>${t}</option>`).join('');
 
-  let fil=cache;
-  if(txt)  fil=fil.filter(r=>(r['Contribuyente']+r['Radicado']+r['Cédula/NIT']+r['N° Oficio']).toLowerCase().includes(txt));
-  if(func) fil=fil.filter(r=>r['Funcionario']===func);
-  if(conc) fil=fil.filter(r=>r['Concepto']===conc);
-  if(tipo) fil=fil.filter(r=>r['Tipo Oficio']===tipo);
-  if(mes)  fil=fil.filter(r=>(r['Fecha Oficio']||'').startsWith(mes));
-
-  const hoy=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-  document.getElementById('statsGrid').innerHTML=`
-    <div class="stat"><div class="sl">Total</div><div class="sv">${cache.length}</div><div class="ss">Google Sheets</div></div>
-    <div class="stat"><div class="sl">Hoy</div><div class="sv">${cache.filter(r=>r['Fecha']===hoy).length}</div></div>
-    <div class="stat"><div class="sl">Funcionarios</div><div class="sv">${funcs.length}</div></div>
-    <div class="stat"><div class="sl">Filtro activo</div><div class="sv">${fil.length}</div></div>
-  `;
-  document.getElementById('badgeCnt').textContent=cache.length;
-  document.getElementById('regInfo').textContent=fil.length!==cache.length
-    ?`Mostrando ${fil.length} de ${cache.length}`:`${cache.length} registros`;
-
-  if(!fil.length){
-    document.getElementById('tbReg').innerHTML=`<tr><td colspan="13"><div class="empty">📂 ${cache.length?'No hay registros con esos filtros.':'Aún no hay oficios.'}</div></td></tr>`;
-    return;
-  }
-
-  document.getElementById('tbReg').innerHTML=fil.map((r,i)=>`<tr>
-    <td>${fil.length-i}</td>
-    <td>${r['Fecha']||''} <span style="color:var(--gr);font-size:10px">${r['Hora']||''}</span></td>
-    <td><span class="tipo-pill">${r['Tipo Oficio']||''}</span></td>
-    <td class="mono">${r['N° Oficio']||''}</td>
-    <td style="font-weight:600">${r['Contribuyente']||''}</td>
-    <td class="mono">${r['Cédula/NIT']||''}</td>
-    <td class="mono">${r['Radicado']||''}</td>
-    <td style="font-size:11px">${r['Concepto']||''}</td>
-    <td style="font-size:11px">${r['Motivo']||''}</td>
-    <td>
-      <span onclick='cambiarEstado("${r['ID']||r.id||''}","${r['Estado']||'Generado'}")'
-        style="cursor:pointer" title="Clic para cambiar estado">
-        ${estadoBadge(r['Estado']||'Generado')}
-      </span>
-    </td>
-    <td>${r['Proyectó']||'—'}</td>
-    <td style="font-size:10.5px;color:var(--gr)">${r['Funcionario']||''}</td>
-    <td style="display:flex;gap:3px">
-      <button class="bi" onclick='abrirEdit(${JSON.stringify(r).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-      <button class="bi" onclick='regenById(${JSON.stringify(r).replace(/'/g,"&#39;")})' title="Regenerar">⬇️</button>
-      <button class="bi del" onclick='eliminar("${r['ID']||r.id||''}")' title="Eliminar">✕</button>
-    </td>
-  </tr>`).join('');
-}
 
 
 // ════════════════════════════════════════════════════════════
@@ -4166,6 +3932,55 @@ function renderRegistro() {
   }
   filActual = fil;
   renderTablaPagina();
+}
+
+
+function limpiarForm(){
+  // Limpiar campos de texto
+  ['f_nombre','f_cedula','f_fauto','f_concepto_manual','f_comparendo','f_motivo_manual'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  // Reset selects
+  const fmotivo = document.getElementById('f_motivo');
+  if(fmotivo) fmotivo.selectedIndex=0;
+  // Reset concepto checkboxes
+  document.querySelectorAll('.chk-concepto').forEach(c=>c.checked=false);
+  const cc = document.getElementById('conceptos_count');
+  if(cc) cc.textContent='';
+  // Reset bancos tabla
+  const gt = document.getElementById('grp_bancos_tabla');
+  if(gt) gt.style.display='none';
+  const bt = document.getElementById('bancos_tbody');
+  if(bt) bt.innerHTML='';
+  const gr = document.getElementById('grp_radicado_manual');
+  if(gr) gr.style.display='none';
+  const gm = document.getElementById('grp_concepto_manual');
+  if(gm) gm.style.display='none';
+  // Reset motivo tooltip
+  const mt = document.getElementById('motivo_tooltip');
+  if(mt) mt.style.display='none';
+  const mm = document.getElementById('grp_motivo_manual');
+  if(mm) mm.style.display='none';
+  // Limpiar campos tutela
+  ['t_juzgado','t_juez','t_correo','t_asunto','t_rad_despacho','t_accionante',
+   't_cedula_acc','t_rad_pqrs','t_fecha_pqrs','t_rad_respuesta','t_resolucion']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  limpiarNotif();
+  if(typeof limpiarPqrs==='function') limpiarPqrs();
+  // Observación
+  const obs=document.getElementById('f_obs'); if(obs) obs.value='';
+  // Restaurar campos fijos
+  const pn=document.getElementById('f_proyn');
+  if(pn) pn.value = (typeof cfg !== 'undefined' && cfg.nombre) ? cfg.nombre : '';
+  const fn=document.getElementById('f_num'); if(fn) fn.value='1070.02';
+  // Fechas
+  document.getElementById('f_fecha').value=hoyISO();
+  document.getElementById('f_proyf').value=hoyISO();
+  // Botón
+  const btn=document.getElementById('btnGen');
+  if(btn) btn.innerHTML='⬇️ Generar y descargar Word';
+  hideAlert('f_alert');
+  hideAlert('f_dup');
 }
 
 </script>
