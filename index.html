@@ -161,6 +161,12 @@ tbody td{padding:7px 10px;color:#374151}
   .cbody{padding:14px}
   .nav-brand{display:none}
 }
+
+input#sTxt:focus, input#colaTxt:focus {
+  border-color: var(--az2) !important;
+  box-shadow: 0 0 0 3px rgba(29,90,171,.12) !important;
+  outline: none;
+}
 </style>
 </head>
 <body>
@@ -677,13 +683,20 @@ tbody td{padding:7px 10px;color:#374151}
   </div>
   <div class="cbody">
     <div class="stats" id="statsGrid"></div>
-    <div class="sbar">
-      <input id="sTxt" placeholder="🔍 Buscar nombre, radicado, cédula…" oninput="filtrar()">
+    <!-- Buscador principal -->
+    <div style="position:relative;margin-bottom:10px">
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--gr);pointer-events:none">🔍</span>
+      <input id="sTxt" placeholder="Buscar por nombre, cédula, radicado o N° de oficio…" oninput="filtrar()"
+        style="width:100%;padding:12px 14px 12px 44px;border:2px solid var(--br);border-radius:9px;font-size:14px;
+               background:#fff;transition:border-color .2s;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+    </div>
+    <!-- Filtros secundarios -->
+    <div class="sbar" style="margin-bottom:14px">
       <select id="sFunc" onchange="filtrar()"><option value="">Todos los funcionarios</option></select>
       <select id="sConc" onchange="filtrar()"><option value="">Todos los conceptos</option></select>
       <select id="sTipo" onchange="filtrar()"><option value="">Todos los tipos</option></select>
-      <input type="month" id="sMes" onchange="filtrar()">
-      <button class="btn btn-g btn-sm" onclick="limpFiltros()">✕</button>
+      <input type="month" id="sMes" onchange="filtrar()" title="Filtrar por mes">
+      <button class="btn btn-g btn-sm" onclick="limpFiltros()">✕ Limpiar</button>
     </div>
     <div class="tw">
       <table><thead><tr><th>#</th><th>Fecha/Hora</th><th>Tipo</th><th>N°Oficio</th><th>Contribuyente</th><th>Cédula</th><th>Radicado</th><th>Concepto</th><th>Motivo</th><th>Proyectó</th><th>Funcionario</th><th>Acciones</th></tr></thead>
@@ -737,7 +750,14 @@ tbody td{padding:7px 10px;color:#374151}
   </div>
   <div class="card-body" style="padding:16px 20px">
 
-    <!-- Filtro estado -->
+    <!-- Buscador cola -->
+    <div style="position:relative;margin-bottom:10px">
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--gr);pointer-events:none">🔍</span>
+      <input id="colaTxt" placeholder="Buscar en la cola por nombre, cédula, radicado o funcionario…" oninput="renderCola()"
+        style="width:100%;padding:12px 14px 12px 44px;border:2px solid var(--br);border-radius:9px;font-size:14px;
+               background:#fff;transition:border-color .2s;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+    </div>
+    <!-- Filtros cola -->
     <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
       <select id="colaFiltro" onchange="renderCola()" style="width:auto;min-width:150px">
         <option value="PENDIENTE">⏳ Solo pendientes</option>
@@ -2034,9 +2054,18 @@ function actualizarBadgeCola() {
 // ── Renderizar tabla de cola ──
 function renderCola() {
   const filtro = document.getElementById('colaFiltro').value;
+  const colaTxtEl = document.getElementById('colaTxt');
+  const colaBusq  = colaTxtEl ? colaTxtEl.value.toLowerCase() : '';
   let items = colaCache;
   if (filtro === 'PENDIENTE') items = items.filter(r => (r['Estado']||'') === 'PENDIENTE');
   if (filtro === 'IMPRESO')   items = items.filter(r => (r['Estado']||'') === 'IMPRESO');
+  if (colaBusq) items = items.filter(r =>
+    (r['Contribuyente']||'').toLowerCase().includes(colaBusq) ||
+    (r['Cédula/NIT']||'').toLowerCase().includes(colaBusq) ||
+    (r['Radicado']||'').toLowerCase().includes(colaBusq) ||
+    (r['N° Oficio']||'').toLowerCase().includes(colaBusq) ||
+    (r['Funcionario']||'').toLowerCase().includes(colaBusq)
+  );
 
   document.getElementById('colaInfo').textContent =
     `${items.filter(r=>r['Estado']==='PENDIENTE').length} pendiente(s) de ${colaCache.length} total`;
