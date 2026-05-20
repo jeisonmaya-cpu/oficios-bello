@@ -481,9 +481,30 @@ input#sTxt:focus, input#colaTxt:focus {
     <div class="g2" id="grp_datos_proceso">
       <div class="fg full"><label>Nombre del contribuyente <span class="req">*</span></label><input id="f_nombre" placeholder="JUAN CARLOS PÉREZ GÓMEZ" oninput="checkDup(this.value)"></div>
       <div class="fg"><label>Cédula / NIT <span class="req">*</span></label><input id="f_cedula" placeholder="1.234.567.890"></div>
-      <div class="fg"><label>Concepto <span class="req">*</span></label>
-        <select id="f_concepto" onchange="onConceptoChange()">
-          <option value="">— Seleccione un concepto —</option>
+      <div class="fg full">
+        <label>Concepto(s) <span class="req">*</span>
+          <span style="font-size:10px;color:var(--gr);font-weight:400;margin-left:6px">— puede seleccionar varios</span>
+        </label>
+        <div id="conceptos_lista" style="border:1.5px solid #d1d5db;border-radius:7px;padding:8px 10px;max-height:190px;overflow-y:auto;background:#fff;display:flex;flex-direction:column;gap:3px">
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO ACUERDOS DE PAGO 2023 TRANSITO" onchange="onConceptosChange()"> EMBARGO ACUERDOS DE PAGO 2023 TRANSITO</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO AP 2016-2019 PREDIAL" onchange="onConceptosChange()"> EMBARGO AP 2016-2019 PREDIAL</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO AP 2020-2024 PREDIAL" onchange="onConceptosChange()"> EMBARGO AP 2020-2024 PREDIAL</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO ICA 2" onchange="onConceptosChange()"> EMBARGO ICA 2</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO ICA 2024" onchange="onConceptosChange()"> EMBARGO ICA 2024</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO 2019 Y 2020 TRANSITO" onchange="onConceptosChange()"> EMBARGO 2019 Y 2020 TRANSITO</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO 2022 TRANSITO" onchange="onConceptosChange()"> EMBARGO 2022 TRANSITO</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO POLICIA 2024" onchange="onConceptosChange()"> EMBARGO POLICIA 2024</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO PREDIAL MODULO" onchange="onConceptosChange()"> EMBARGO PREDIAL MODULO</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="EMBARGO TRANSITO 2023" onchange="onConceptosChange()"> EMBARGO TRANSITO 2023</label>
+          <label class="concepto-chk-lbl"><input type="checkbox" class="chk-concepto" value="OTRO" onchange="onConceptosChange()"> ✏️ Otro</label>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:5px;align-items:center">
+          <button type="button" class="btn btn-g btn-sm" onclick="toggleTodosConceptos(true)">☑ Todos</button>
+          <button type="button" class="btn btn-g btn-sm" onclick="toggleTodosConceptos(false)">☐ Ninguno</button>
+          <span id="conceptos_count" style="font-size:11.5px;color:var(--gr)"></span>
+        </div>
+        <select id="f_concepto" style="display:none" onchange="onConceptoChange()">
+          <option value="">—</option>
           <option value="EMBARGO ACUERDOS DE PAGO 2023 TRANSITO">EMBARGO ACUERDOS DE PAGO 2023 TRANSITO</option>
           <option value="EMBARGO AP 2016-2019 PREDIAL">EMBARGO AP 2016-2019 PREDIAL</option>
           <option value="EMBARGO AP 2020-2024 PREDIAL">EMBARGO AP 2020-2024 PREDIAL</option>
@@ -494,7 +515,7 @@ input#sTxt:focus, input#colaTxt:focus {
           <option value="EMBARGO POLICIA 2024">EMBARGO POLICIA 2024</option>
           <option value="EMBARGO PREDIAL MODULO">EMBARGO PREDIAL MODULO</option>
           <option value="EMBARGO TRANSITO 2023">EMBARGO TRANSITO 2023</option>
-          <option value="OTRO">Otro (escribir manualmente)</option>
+          <option value="OTRO">OTRO</option>
         </select>
       </div>
       <div class="fg" id="grp_concepto_manual" style="display:none">
@@ -1199,17 +1220,21 @@ function checkDup(val){
 // FORM
 // ════════════════════════════════════════════════════════════
 function getDatos(){
+  // Radicado: del campo manual si existe, sino vacío (multi-banco lo trae de checkboxes)
+  const radEl = document.getElementById('f_radicado');
+  const radicado = radEl ? radEl.value.trim() : '';
   return{
     tipoOficio: document.getElementById('f_tipo').value,
-    numOficio:  document.getElementById('f_num').value.trim(),
+    numOficio:  document.getElementById('f_num').value.trim() || '1070.02',
     fecha:      document.getElementById('f_fecha').value,
     nombre:     document.getElementById('f_nombre').value.trim(),
     cedula:     document.getElementById('f_cedula').value.trim(),
-    concepto:   document.getElementById('f_concepto').value.trim(),
-    radicado:   document.getElementById('f_radicado').value.trim(),
+    concepto:   getConceptoReal(),
+    radicado:   radicado,
     fechaAuto:  document.getElementById('f_fauto').value.trim(),
     motivo:     getMotivoReal(),
-    proyNombre: document.getElementById('f_proyn').value.trim(),
+    comparendo: document.getElementById('f_comparendo') ? document.getElementById('f_comparendo').value.trim() : '',
+    proyNombre: document.getElementById('f_proyn').value.trim() || (cfg.nombre||''),
     proyFecha:  document.getElementById('f_proyf').value,
     funcionario:cfg.nombre||'',
     equipo:     cfg.equipo||'',
@@ -3253,24 +3278,35 @@ function actualizarBancosMultiConcepto(conceptos) {
 }
 
 // Override getBancosSeleccionados para multi-concepto
-const _getBancosOrig = getBancosSeleccionados;
 function getBancosSeleccionados() {
   if (document.getElementById('f_tipo').value === 'Tutela-Admite') return null;
 
   const conceptos = getConceptosSeleccionados();
+
+  // Multi-concepto: bancos con checkbox especial
   if (conceptos.length > 1) {
-    // Modo multi-concepto
     const checks = [...document.querySelectorAll('.chk-banco-multi:checked')];
     if (!checks.length) return null;
     return checks.map(c => ({ banco: c.dataset.banco, radicado: c.dataset.radicado, concepto: c.dataset.concepto }));
   }
-  return _getBancosOrig();
+
+  // Un solo concepto: usar tabla normal de bancos
+  const concepto = conceptos[0] || getConceptoReal();
+  if (!concepto || concepto === 'OTRO' || !CONCEPTOS[concepto]) return null;
+  const bancos = CONCEPTOS[concepto];
+  const checks = [...document.querySelectorAll('#bancos_tbody input[type=checkbox]:checked')];
+  if (!checks.length) {
+    // Si no hay checkboxes visibles, verificar si hay un solo banco
+    const keys = Object.keys(bancos);
+    if (keys.length === 1) return null; // radicado único, no multi-banco
+    return null;
+  }
+  return checks.map(c => ({ banco: c.value, radicado: bancos[c.value] || '' }));
 }
 
 // Override getConceptoReal para multi-concepto
-const _getConceptoRealOrig = getConceptoReal;
 function getConceptoReal() {
-  if (document.getElementById('f_tipo').value === 'Tutela-Admite') return _getConceptoRealOrig();
+  if (document.getElementById('f_tipo').value === 'Tutela-Admite') { const sel=document.getElementById('f_concepto'); return sel?sel.value:''; }
   const conceptos = getConceptosSeleccionados();
   const tieneOtro = [...document.querySelectorAll('.chk-concepto:checked')].some(c=>c.value==='OTRO');
   const manual = (document.getElementById('f_concepto_manual')||{value:''}).value.trim();
