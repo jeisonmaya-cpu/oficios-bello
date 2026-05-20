@@ -1985,7 +1985,7 @@ async function cargarCola() {
 
   // Mostrar local inmediatamente
   const local = JSON.parse(localStorage.getItem('cola_local') || '[]');
-  colaCache = local;
+  colaCache = local.map(limpiarItem);
   actualizarBadgeCola();
   renderCola();
 
@@ -2019,7 +2019,7 @@ async function cargarCola() {
         }
       });
       localStorage.setItem('cola_local', JSON.stringify(localArr));
-      colaCache = localArr;
+      colaCache = localArr.map(limpiarItem);
       actualizarBadgeCola();
       renderCola();
     }
@@ -3601,12 +3601,7 @@ function limpiarItem(r) {
   return limpio;
 }
 
-// Override renderCola para limpiar datos antes de mostrar
-const _renderColaOrig = renderCola;
-function renderCola() {
-  colaCache = colaCache.map(limpiarItem);
-  _renderColaOrig();
-}
+// limpiarItem se aplica al cargar la cola, no hace falta override
 
 // ════════════════════════════════════════════════════════════
 // PDF UNIFICADO — todos los oficios seleccionados en uno
@@ -3636,28 +3631,55 @@ async function generarPDFUnificado() {
 
   // Construir HTML del PDF con todos los oficios
   const estilos = `
-    @page { size: A4; margin: 15mm 18mm; }
+    @page { size: A4; margin: 25mm 20mm 20mm 30mm; }
     @media print {
       .salto { page-break-after: always; }
       .salto:last-child { page-break-after: avoid; }
+      body { margin: 0; }
     }
-    body { font-family: Arial, sans-serif; font-size: 10pt; color: #000; }
-    .oficio { padding: 10px 0; }
-    .header-inst { text-align: center; margin-bottom: 14px; }
-    .header-inst h2 { font-size: 13pt; font-weight: 700; color: #0f2d5e; margin: 0; }
-    .header-inst p { font-size: 9pt; color: #444; margin: 2px 0; }
-    .num-oficio { font-size: 11pt; font-weight: 700; margin-bottom: 4px; }
-    .fecha-lugar { font-size: 10pt; margin-bottom: 14px; }
-    .destinatario { margin-bottom: 12px; font-size: 10pt; }
-    .asunto { margin-bottom: 14px; font-size: 10pt; }
-    .asunto span { font-weight: 700; }
-    .cuerpo { font-size: 10pt; line-height: 1.6; margin-bottom: 14px; text-align: justify; }
-    table.datos { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 9.5pt; }
-    table.datos th { background: #0f2d5e; color: #fff; padding: 6px 8px; text-align: left; }
-    table.datos td { padding: 5px 8px; border: 1px solid #ccc; }
-    .firma-sec { margin-top: 30px; }
-    .firma-linea { border-top: 1px solid #000; width: 220px; margin-top: 35px; padding-top: 4px; font-size: 9.5pt; }
-    .divider { border: none; border-top: 2px dashed #ccc; margin: 20px 0; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 9pt; color: #000; line-height: 1.4; }
+    .oficio { padding: 0; }
+
+    /* Encabezado institucional */
+    .header-band { background: #0f2d5e; color: #fff; padding: 6px 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+    .header-band h2 { font-size: 10pt; font-weight: 700; margin: 0; }
+    .header-band span { font-size: 8pt; opacity: .85; }
+
+    /* Datos del oficio */
+    .num-oficio { font-size: 10pt; font-weight: 700; margin-bottom: 2px; }
+    .fecha-lugar { font-size: 9pt; margin-bottom: 12px; }
+    .destinatario { margin-bottom: 10px; font-size: 9pt; line-height: 1.6; }
+    .asunto-line { margin-bottom: 10px; font-size: 9pt; }
+    .asunto-line b { font-weight: 700; }
+    .radicado-rojo { color: #c0392b; font-weight: 700; }
+
+    /* Cuerpo */
+    .cuerpo { font-size: 9pt; line-height: 1.65; margin-bottom: 10px; text-align: justify; }
+
+    /* Tabla de contribuyentes — estilo Word */
+    table.datos { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 8.5pt; }
+    table.datos th {
+      background: #4472c4; color: #fff;
+      padding: 5px 7px; text-align: left;
+      border: 1px solid #2e5497; font-weight: 700;
+    }
+    table.datos td { padding: 5px 7px; border: 1px solid #bfbfbf; font-weight: 700; }
+    table.datos tr:nth-child(even) td { background: #dce6f1; }
+
+    /* Firma */
+    .firma-sec { margin-top: 22px; font-size: 9pt; }
+    .firma-nombre { font-weight: 700; text-align: center; margin-top: 28px; }
+    .firma-cargo  { text-align: center; font-size: 8.5pt; }
+
+    /* Tabla de revisión — estilo Word */
+    table.revision { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 8pt; }
+    table.revision th { background: #d9d9d9; padding: 4px 6px; text-align: center; border: 1px solid #999; font-weight: 700; }
+    table.revision td { padding: 4px 6px; border: 1px solid #bbb; text-align: center; }
+    table.revision .lbl { text-align: left; font-weight: 700; background: #f2f2f2; }
+    table.revision .nota { font-size: 7.5pt; text-align: left; font-style: italic; }
+
+    .divider { border: none; border-top: 3px dashed #aaa; margin: 18px 0; }
   `;
 
   const oficiosHTML = items.map((r, idx) => {
@@ -3675,40 +3697,49 @@ async function generarPDFUnificado() {
 
     return `
     <div class="oficio${esUltimo ? '' : ' salto'}">
-      <div class="header-inst">
+
+      <div class="header-band">
         <h2>ALCALDÍA DE BELLO — ANTIOQUIA</h2>
-        <p>Dirección Administrativa de Ejecuciones Fiscales</p>
+        <span>Dirección Administrativa de Ejecuciones Fiscales</span>
       </div>
 
-      <div class="num-oficio">Oficio No. ${numOficio}</div>
-      <div class="fecha-lugar">Bello — Antioquia, ${fechaOficio || new Date().toLocaleDateString('es-CO')}</div>
+      <div class="num-oficio">${numOficio}</div>
+      <div class="fecha-lugar">Bello, ${fechaOficio || new Date().toLocaleDateString('es-CO', {day:'numeric',month:'long',year:'numeric'})}</div>
 
       <div class="destinatario">
         <strong>Señores</strong><br>
-        ENTIDADES FINANCIERAS Y ADMINISTRATIVAS<br>
-        Ciudad
+        BANCO OCCIDENTE, BANCO SCOTIABANK, COLPATRIA, COOFINEP, BANCO POPULAR,
+        BANCO UNION S.A, COTRAFA, BANCO BOGOTA, BANCO ITAU, CONFIAR, BANCO BBVA,
+        BANCO AGRARIO, COOBELEN, BANCOLOMBIA, BANCOOMEVA, CITIBANK,
+        BANCO DAVIVIENDA, BANCO PICHINCHA, NEQUI S.A, BANCO AV VILLAS,
+        BANCO W, DAVIPLATA, BANCAMIA, BANCO MUNDO MUJER, GRUPO GANA,
+        BANCO FINANDINA, S.A. BANCOLDEX S.A., EFECTY BANCO, GNB SUDAMERIS,
+        COOPERATIVA COOPCENTRAL, BANCO CAJA SOCIAL, RAPPIPAY, BANCO UALA,
+        COLTEFINANCIERA, BANCO FALABELLA, COOPERATIVA CFA, NU COLOMBIA,
+        COOPERATIVA JFK, BANCO FINANDINA.<br>
+        <strong>Ciudad</strong>
       </div>
 
-      <div class="asunto">
-        <span>Asunto:</span> LEVANTAMIENTO DE EMBARGO Y RETENCIÓN DE SALDOS BANCARIOS<br>
-        <span>Radicado:</span> <span style="color:#dc2626;font-weight:700">${radicado}</span>
+      <div class="asunto-line">
+        <b>Asunto: LEVANTAMIENTO DE EMBARGO Y RETENCIÓN DE SALDOS BANCARIOS DEL RADICADO
+        <span class="radicado-rojo">${radicado}</span></b>
       </div>
 
       <div class="cuerpo">
-        Le informo que dentro del proceso de cobro coactivo del/la contribuyente:
+        Le informo que dentro del proceso de cobro coactivo de los siguientes contribuyentes:
       </div>
 
       <table class="datos">
         <thead>
           <tr>
             <th>NOMBRES Y APELLIDOS</th>
-            <th>CÉDULA/NIT</th>
+            <th>CEDULA/NIT</th>
             <th>CONCEPTO Y RADICADO</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>${nombre}</strong></td>
+            <td>${nombre}</td>
             <td>${cedula}</td>
             <td>${concepto} — ${radicado}</td>
           </tr>
@@ -3716,22 +3747,46 @@ async function generarPDFUnificado() {
       </table>
 
       <div class="cuerpo">
-        mediante auto del <strong>${fechaAuto}</strong> se decretó el <strong>LEVANTAMIENTO DEL EMBARGO Y RETENCIÓN DE SALDOS</strong>
-        en las Cuentas Bancarias y/o títulos de depósito a término fijo, por motivo de:
-        <strong>${motivo}</strong>.
+        mediante auto del <b>${fechaAuto}</b> se decretó el <b>LEVANTAMIENTO DEL EMBARGO Y RETENCIÓN DE
+        SALDOS</b> en las Cuentas Bancarias y/o títulos de depósito a término fijo, que se encuentren
+        o llegasen a dar.<br><br>
+        Lo anterior, a fin de que se sirva levantar el embargo con radicado en mención por
+        <b>${motivo}</b>.<br>
+        Finalmente se solicita respetuosamente que al responder citar el N° de Radicado del Proceso.
       </div>
 
       <div class="firma-sec">
         <p>Cordialmente,</p>
-        <div class="firma-linea">
-          <strong>JUAN PABLO GÓMEZ LONDOÑO</strong><br>
-          Director(a) Administrativo(a) de Ejecuciones Fiscales
-        </div>
+        <div class="firma-nombre">JUAN PABLO GÓMEZ LONDOÑO</div>
+        <div class="firma-cargo">Director(a) Administrativo(a) de Ejecuciones Fiscales</div>
       </div>
 
-      <div style="margin-top:16px;font-size:8.5pt;color:#555">
-        Proyectó: ${proyNombre || funcionario} &nbsp;|&nbsp; Oficio generado: ${r['Fecha']||''} ${r['Hora']||''}
-      </div>
+      <table class="revision">
+        <thead>
+          <tr><th>Nombre</th><th>Firma</th><th>Fecha</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="lbl">Proyectó:</td>
+            <td>${proyNombre || funcionario}</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="lbl">Revisó:</td>
+            <td>Juan Pablo Gómez</td>
+            <td>Juan Pablo Gómez</td>
+            <td>${r['Fecha']||''}</td>
+          </tr>
+          <tr>
+            <td colspan="4" class="nota">
+              Los arriba firmantes declaramos que hemos revisado el documento y lo encontramos
+              ajustado a las normas y disposiciones legales vigentes, por lo tanto, bajo nuestra
+              responsabilidad lo presentamos para firma.
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       ${!esUltimo ? '<div class="divider"></div>' : ''}
     </div>`;
