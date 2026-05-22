@@ -345,8 +345,11 @@ async function cargarDatos() {
     tutelas = t;
     fallos  = f;
     console.log("✅ Tutelas:", tutelas.length, "| Fallos:", fallos.length);
-    console.log("TIPOS tutelas:", [...new Set(tutelas.map(r=>r.TIPO))].join(", "));
-    console.log("ESTADOS tutelas:", [...new Set(tutelas.map(r=>r.ESTADO))].join(", "));
+    console.log("TIPOS:", [...new Set(tutelas.map(r=>r.TIPO))].join(", "));
+    console.log("ESTADOS:", [...new Set(tutelas.map(r=>r.ESTADO))].join(", "));
+    console.log("Fecha limite fila1:", tutelas[0]?.["FECHA LÍMITE"], "_dias:", tutelas[0]?._dias);
+    const _adm = tutelas.filter(r => !["Fallo de tutela","Sentencia","Incidente","Requerimiento","Apertura","Sanción","Impugnación","Reparto"].includes(r.TIPO) && !["Finalizado","Respondido"].includes(r.ESTADO));
+    console.log("Admites activos:", _adm.length);
     poblarSelects();
     renderAll();
     setSS("ok","Actualizado " + new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"}));
@@ -375,18 +378,33 @@ async function leerGviz(gid) {
     const r = {};
     cols.forEach((col, i) => {
       const cell = row.c ? row.c[i] : null;
-      r[col.label] = cell ? (cell.f ?? cell.v ?? "") : "";
-      // Convertir null a string vacío
-      if (r[col.label] === null || r[col.label] === undefined) r[col.label] = "";
-      r[col.label] = String(r[col.label]).trim();
+      if (!cell || cell.v === null || cell.v === undefined) {
+        r[col.label] = "";
+        return;
+      }
+      // gviz devuelve fechas como objeto Date o string "Date(2026,4,3)"
+      if (cell.v instanceof Object && cell.v.constructor === Date) {
+        // Objeto Date real
+        const d = cell.v;
+        r[col.label] = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+      } else if (typeof cell.v === "string" && cell.v.startsWith("Date(")) {
+        // String "Date(2026,4,3)"
+        const p = cell.v.replace("Date(","").replace(")","").split(",").map(Number);
+        r[col.label] = `${String(p[2]).padStart(2,"0")}/${String(p[1]+1).padStart(2,"0")}/${p[0]}`;
+      } else if (typeof cell.v === "number" && col.type === "date") {
+        // Número de días desde 1900
+        const d = new Date((cell.v - 25569) * 86400000);
+        r[col.label] = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+      } else {
+        // Texto normal — usar cell.f (formateado) si existe, si no cell.v
+        r[col.label] = String(cell.f ?? cell.v ?? "").trim();
+      }
     });
-    // Calcular días restantes desde FECHA LÍMITE si viene vacío o con error
-    let dias = r["DÍAS RESTANTES"] || r["DIAS RESTANTES"] || "";
-    if (!dias || dias === "#ERROR!" || isNaN(parseInt(dias))) {
-      const flim = r["FECHA LÍMITE"] || r["FECHA LIMITE"] || "";
-      dias = calcularDias(flim);
-    }
-    r._dias = dias === "" ? null : parseInt(dias);
+
+    // Calcular días desde FECHA LÍMITE (ya en dd/MM/yyyy)
+    const flim = r["FECHA LÍMITE"] || r["FECHA LIMITE"] || "";
+    const diasCalc = calcularDias(flim);
+    r._dias = diasCalc === "" ? null : parseInt(diasCalc);
     return r;
   }).filter(r => r["ACCIONANTE"] || r["TIPO"]);
 }
