@@ -619,9 +619,9 @@ function renderAdmites() {
   const est = document.getElementById("fa-estado").value;
 
   const datos = todos.filter(r => {
-    const tipoOk = TIPOS_ADMITE.includes(r["TIPO"]) ||
-      (!TIPOS_FALLO.includes(r["TIPO"]) && !TIPOS_OTROS.includes(r["TIPO"]) && r._src==="tutela");
-    if (!tipoOk) return false;
+    if (r._src !== "tutela") return false;
+    if (TIPOS_FALLO.includes(r["TIPO"]))  return false;
+    if (TIPOS_OTROS.includes(r["TIPO"])) return false;
     if (ESTADOS_HIST.includes(r["ESTADO"])) return false;
     if (abo && r["RESPONSABLE"] !== abo) return false;
     if (est && r["ESTADO"] !== est) return false;
