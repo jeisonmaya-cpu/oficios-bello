@@ -436,6 +436,8 @@ const APPS_SCRIPT_URL = ""; // ← pega aquí la URL del webapp cuando lo publiq
 
 const HOJA_TUTELAS = "Registro Tutelas 2026";
 const HOJA_FALLOS  = "Fallos de Tutela";
+const GID_TUTELAS  = "0";
+const GID_FALLOS   = "995241537";
 
 const ABOGADOS = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chavarria","Dario Baldrich","Deisy Lopez"];
 
@@ -491,7 +493,8 @@ async function leerHoja(nombre) {
     return d.datos || [];
   }
   // CSV público (el Sheets debe tener acceso "cualquiera con el enlace puede ver")
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(nombre)}`;
+  const gid = nombre === HOJA_TUTELAS ? GID_TUTELAS : GID_FALLOS;
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`No se pudo leer "${nombre}" (HTTP ${r.status}). Verifica que el Sheets sea público.`);
   return csvAObjetos(await r.text());
