@@ -257,6 +257,21 @@
 
 </div><!-- /main -->
 
+<!-- MODAL GRUPO PQR -->
+<div class="overlay" id="overlay-pqr" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:750px">
+    <div class="modal-top">
+      <div>
+        <div id="pqr-enc-badge" style="margin-bottom:6px"></div>
+        <div style="font-family:'DM Serif Display',serif;font-size:20px" id="pqr-enc-nombre">—</div>
+        <div style="font-size:12px;color:var(--soft);margin-top:4px" id="pqr-enc-sub">—</div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('overlay-pqr').classList.remove('open')">✕</button>
+    </div>
+    <div id="pqr-lista-body"></div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="overlay" id="overlay" onclick="cerrarOverlay(event)">
   <div class="modal">
@@ -427,6 +442,24 @@ const esc   = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 const abrev = (s,n) => !s ? "—" : s.length>n ? s.substring(0,n)+"…" : s;
 const pNom  = s => !s ? "—" : s.split(" ").slice(0,2).join(" ");
 const inic  = s => !s ? "?" : s.split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
+// Normaliza nombres para agrupar: quita tildes, espacios extras, pasa a Title Case
+const normNombre = s => {
+  if (!s) return "Sin asignar";
+  // Normalizar: sin tildes, sin espacios extras, mayúsculas
+  const base = s.trim()
+    .replace(/\s+/g, " ")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toUpperCase();
+  // Mapa de alias — unifica nombres parciales con nombre completo
+  const alias = {
+    "CARLOS ENRIQUE HURTADO":                          "CARLOS ENRIQUE HURTADO CANO",
+    "JUAN PABLO VILLA VIANA - CARLOS ENRIQUE HURTADO CANO": "JUAN PABLO VILLA",
+    "JULIAN ESTEBAN PEREA PINO":                       "JULIAN ESTEBAN PEREA",
+    "LEON DARIO PELAEZ BETANCUR":                      "LEON DARIO PELAEZ",
+    "YOBAN JIMENEZ RUIZ":                              "YOBAN JIMENEZ",
+  };
+  return alias[base] || base;
+};
 const fBusc = (r,q) => !q ? true : [r["ACCIONANTE"],r["RADICADO"],r["JUZGADO"],r["CC / NIT"],r["ENCARGADO PQR"]].join(" ").toLowerCase().includes(q.toLowerCase());
 const porUrgencia = arr => [...arr].sort((a,b) => {
   if (a._dias===null && b._dias===null) return 0;
@@ -621,7 +654,7 @@ function renderPQR() {
 
   // Agrupar sin respuesta por encargado
   const grpSin = {};
-  sinR.forEach(r => { const e=r["ENCARGADO PQR"]||"Sin asignar"; if(!grpSin[e]) grpSin[e]=[]; grpSin[e].push(r); });
+  sinR.forEach(r => { const e=normNombre(r["ENCARGADO PQR"]); if(!grpSin[e]) grpSin[e]=[]; grpSin[e].push(r); });
 
   const gSin = document.getElementById("grid-sin-pqr");
   if (!sinR.length) { gSin.innerHTML=`<div class="empty"><div class="empty-ico">✅</div>¡Todas tienen respuesta!</div>`; }
@@ -633,8 +666,9 @@ function renderPQR() {
           ${esc(abrev(r["ACCIONANTE"],30))}
           ${r._dias!==null ? `<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>` : ""}
         </div>`).join("");
-      const mas = regs.length>4 ? `<div style="font-size:11px;color:var(--soft);padding-top:4px">+${regs.length-4} más</div>` : "";
-      return `<div class="pqr-card">
+      const mas = regs.length>4 ? `<div style="font-size:11px;color:#f87171;padding-top:6px;font-weight:600">👆 Ver todas (${regs.length})</div>` : "";
+      const regsData = encodeURIComponent(JSON.stringify(regs));
+      return `<div class="pqr-card" onclick="abrirGrupoPQR('${esc(enc)}',${regs.length},'${regsData}','sin')">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px">
             <div class="abo-av" style="background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.3);color:#fca5a5">${inic(enc)}</div>
@@ -652,18 +686,18 @@ function renderPQR() {
   }
 
   const grpCon = {};
-  conR.forEach(r => { const e=r["ENCARGADO PQR"]||"Sin asignar"; if(!grpCon[e]) grpCon[e]=[]; grpCon[e].push(r); });
+  conR.forEach(r => { const e=normNombre(r["ENCARGADO PQR"]); if(!grpCon[e]) grpCon[e]=[]; grpCon[e].push(r); });
   const gCon = document.getElementById("grid-con-pqr");
   if (!conR.length) { gCon.innerHTML=`<div class="empty"><div class="empty-ico">📝</div>Ninguna PQR respondida aún</div>`; }
   else {
     gCon.innerHTML = Object.entries(grpCon).sort((a,b)=>b[1].length-a[1].length).map(([enc,regs]) => {
-      const lista = regs.slice(0,4).map(r => {
-        const da = encodeURIComponent(JSON.stringify(r));
-        return `<div style="font-size:11px;color:var(--soft);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer" onclick="abrirModal('${da}')">
-          ${esc(abrev(r["ACCIONANTE"],30))}<span style="float:right;color:#4ade80">✓</span></div>`;
-      }).join("");
-      const mas = regs.length>4 ? `<div style="font-size:11px;color:var(--soft);padding-top:4px">+${regs.length-4} más</div>` : "";
-      return `<div class="pqr-card">
+      const lista = regs.slice(0,4).map(r =>
+        `<div style="font-size:11px;color:var(--soft);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+          ${esc(abrev(r["ACCIONANTE"],30))}<span style="float:right;color:#4ade80">✓</span></div>`
+      ).join("");
+      const mas = regs.length>4 ? `<div style="font-size:11px;color:#4ade80;padding-top:6px;font-weight:600">👆 Ver todas (${regs.length})</div>` : "";
+      const regsData = encodeURIComponent(JSON.stringify(regs));
+      return `<div class="pqr-card" onclick="abrirGrupoPQR('${esc(enc)}',${regs.length},'${regsData}','con')">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px">
             <div class="abo-av">${inic(enc)}</div>
@@ -708,7 +742,7 @@ function renderEstadisticas() {
 
   // PQR sin respuesta
   const sinPQR = activ.filter(r=>!String(r["RESPUESTA PQR"]||"").trim());
-  const pqrC = {}; sinPQR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";pqrC[e]=(pqrC[e]||0)+1;});
+  const pqrC = {}; sinPQR.forEach(r=>{const e=normNombre(r["ENCARGADO PQR"]);pqrC[e]=(pqrC[e]||0)+1;});
   const maxP  = Math.max(...Object.values(pqrC),1);
   const pqrH  = Object.entries(pqrC).sort((a,b)=>b[1]-a[1]).map(([e,n])=>barra(pNom(e),n,maxP,"#f87171")).join("");
 
@@ -785,6 +819,50 @@ async function guardarEstado() {
 function irOficio() {
   if (!actual) return;
   window.location.href = "index.html?" + new URLSearchParams({tipo:"Tutela-Admite",accionante:actual["ACCIONANTE"]||"",radicado:actual["RADICADO"]||"",cc:actual["CC / NIT"]||""}).toString();
+}
+
+// ══════════════════════════════════════════
+// MODAL GRUPO PQR
+// ══════════════════════════════════════════
+function abrirGrupoPQR(enc, total, regsData, tipo) {
+  let regs; try { regs = JSON.parse(decodeURIComponent(regsData)); } catch(e){ return; }
+  const esSin = tipo === "sin";
+  const color  = esSin ? "#f87171" : "#4ade80";
+
+  document.getElementById("pqr-enc-badge").innerHTML =
+    esSin ? `<span class="pqr-no">⚠️ Sin respuesta PQR</span>` : `<span class="pqr-ok">✅ Con respuesta PQR</span>`;
+  document.getElementById("pqr-enc-nombre").textContent = enc;
+  document.getElementById("pqr-enc-sub").textContent =
+    `${total} ${esSin ? "petición(es) sin respuesta" : "petición(es) respondidas"}`;
+
+  // Ordenar urgentes primero
+  const ordenadas = [...regs].sort((a,b) => {
+    if (a._dias===null && b._dias===null) return 0;
+    if (a._dias===null) return 1; if (b._dias===null) return -1;
+    return a._dias - b._dias;
+  });
+
+  document.getElementById("pqr-lista-body").innerHTML = ordenadas.map(r => {
+    const da = encodeURIComponent(JSON.stringify(r));
+    const diasColor = r._dias===null ? "var(--soft)" : r._dias<0 ? "#f87171" : r._dias<=2 ? "#fbbf24" : "#4ade80";
+    const diasTxt   = r._dias===null ? "Sin fecha" : r._dias<0 ? `Vencido ${Math.abs(r._dias)}d` : `${r._dias}d`;
+    return `<div style="display:grid;grid-template-columns:1fr 90px 110px 90px;gap:8px;align-items:center;
+        padding:10px 12px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.04);
+        border:1px solid rgba(255,255,255,.07);cursor:pointer;transition:background .15s"
+        onmouseover="this.style.background='rgba(255,255,255,.09)'"
+        onmouseout="this.style.background='rgba(255,255,255,.04)'"
+        onclick="document.getElementById('overlay-pqr').classList.remove('open');abrirModal('${da}')">
+      <div>
+        <div style="font-size:13px;font-weight:500">${esc(r["ACCIONANTE"]||"—")}</div>
+        <div style="font-size:11px;color:var(--soft);margin-top:2px">${esc(r["RADICADO"]||"—")}</div>
+      </div>
+      <div style="font-size:11px;color:var(--soft)">${esc(pNom(r["RESPONSABLE"]))}</div>
+      <div style="font-size:11px;color:var(--soft);white-space:nowrap">${esc(r["FECHA LÍMITE"]||"—")}</div>
+      <div style="font-size:12px;font-weight:600;color:${diasColor};text-align:right">${diasTxt}</div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("overlay-pqr").classList.add("open");
 }
 
 // ══════════════════════════════════════════
