@@ -470,9 +470,10 @@ async function cargarDatos() {
       ...t.map(r => ({...r, _src:"tutela"})),
       ...f.map(r => ({...r, _src:"fallo"}))
     ];
-    console.log("Tutelas cargadas:", t.length, "| Fallos cargados:", f.length, "| Total:", todos.length);
-    console.log("Muestra TIPO tutelas:", [...new Set(t.map(r=>r["TIPO"]))].join(", "));
-    console.log("Muestra ESTADO tutelas:", [...new Set(t.map(r=>r["ESTADO"]))].join(", "));
+    console.log("✅ Tutelas:", t.length, "| Fallos:", f.length, "| Total:", todos.length);
+    console.log("TIPOS únicos tutelas:", [...new Set(t.map(r=>r["TIPO"]))].filter(Boolean).join(", "));
+    console.log("ESTADOS únicos tutelas:", [...new Set(t.map(r=>r["ESTADO"]))].filter(Boolean).join(", "));
+    console.log("Admites activos:", t.filter(r=>!["Finalizado","Respondido"].includes(r["ESTADO"])&&!["Fallo de tutela","Sentencia","Requerimiento","Apertura","Sanción","Impugnación","Reparto"].includes(r["TIPO"])).length);
     poblarSelectAbogados();
     renderAll();
     setSyncState("ok","Actualizado " + hora());
@@ -499,29 +500,66 @@ async function leerHoja(nombre) {
 function csvAObjetos(csv) {
   const lineas = csv.trim().split("\n");
   if (lineas.length < 2) return [];
-  const hdrs = parseLin(lineas[0]).map(h => h.replace(/^"|"$/g,"").trim());
+
+  // Columnas fijas según el Sheets real (posición 0-based)
+  // N°(0) TIPO(1) ACCIONANTE(2) CC/NIT(3) JUZGADO(4) RADICADO(5)
+  // FECHA INICIAL(6) FECHA LÍMITE(7) DÍAS RESTANTES(8) RESPONSABLE(9)
+  // ESTADO(10) DERECHO INVOCADO(11) HECHOS RESUMIDOS(12) PRETENSIONES(13)
+  // OBSERVACIONES(14) ENCARGADO PQR(15) PQR(16) RESPUESTA PQR(17)
+  // RESPUESTA RADICADO TUTELA(18) SHARPOINT(19)
+  const COLS = {
+    TIPO:0, ACCIONANTE:1, CC:2, JUZGADO:3, RADICADO:4,
+    FECHA_INI:5, FECHA_LIM:6, DIAS:7, RESPONSABLE:8,
+    ESTADO:9, DERECHO:10, HECHOS:11, PRETENSIONES:12,
+    OBSERVACIONES:13, ENCARGADO_PQR:14, PQR:15,
+    RESPUESTA_PQR:16, RAD_TUTELA:17
+  };
+  // Verificar si la primera columna es N° (ajustar offset)
+  const primeraLinea = parseLin(lineas[0]).map(h => h.replace(/^"|"$/g,"").trim());
+  const offset = (primeraLinea[0] === "N°" || primeraLinea[0] === "N" || primeraLinea[0] === "") ? 1 : 0;
+
+  const limpiar = v => (v||"").replace(/^"|"$/g,"").trim();
+
   return lineas.slice(1).map(l => {
-    const vals = parseLin(l);
-    const o = {};
-    hdrs.forEach((h,i) => o[h] = (vals[i]||"").replace(/^"|"$/g,"").trim());
-    // Normalizar alias con/sin tilde
-    if (!o["DÍAS RESTANTES"] && o["DIAS RESTANTES"]) o["DÍAS RESTANTES"] = o["DIAS RESTANTES"];
-    if (!o["FECHA LÍMITE"]   && o["FECHA LIMITE"])   o["FECHA LÍMITE"]   = o["FECHA LIMITE"];
-    // Calcular días desde FECHA LÍMITE si la columna tiene #ERROR! o está vacía
-    const diasRaw = o["DÍAS RESTANTES"] || "";
-    const esError = diasRaw.includes("#") || diasRaw === "" || isNaN(parseInt(diasRaw));
+    const v = parseLin(l);
+    const g = i => limpiar(v[i + offset]);
+
+    // Calcular días desde FECHA LÍMITE (dd/MM/yyyy) — ignora #ERROR!
+    let dias = g(COLS.DIAS);
+    const esError = !dias || dias.includes("#") || isNaN(parseInt(dias));
     if (esError) {
-      const flim = o["FECHA LÍMITE"] || o["FECHA LIMITE"] || "";
+      const flim = g(COLS.FECHA_LIM);
       if (flim && flim.includes("/")) {
         const p = flim.split("/");
         if (p.length === 3) {
-          const fechaLim = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
-          const hoy = new Date(); hoy.setHours(0,0,0,0);
-          const diff = Math.round((fechaLim - hoy) / 86400000);
-          o["DÍAS RESTANTES"] = isNaN(diff) ? "" : String(diff);
+          const fLim = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+          const hoy  = new Date(); hoy.setHours(0,0,0,0);
+          const diff = Math.round((fLim - hoy) / 86400000);
+          dias = isNaN(diff) ? "" : String(diff);
         }
       }
     }
+
+    const o = {
+      "TIPO":              g(COLS.TIPO),
+      "ACCIONANTE":        g(COLS.ACCIONANTE),
+      "CC / NIT":          g(COLS.CC),
+      "JUZGADO":           g(COLS.JUZGADO),
+      "RADICADO":          g(COLS.RADICADO),
+      "FECHA INICIAL":     g(COLS.FECHA_INI),
+      "FECHA LÍMITE":      g(COLS.FECHA_LIM),
+      "DÍAS RESTANTES":    dias,
+      "RESPONSABLE":       g(COLS.RESPONSABLE),
+      "ESTADO":            g(COLS.ESTADO),
+      "DERECHO INVOCADO":  g(COLS.DERECHO),
+      "HECHOS RESUMIDOS":  g(COLS.HECHOS),
+      "PRETENSIONES":      g(COLS.PRETENSIONES),
+      "OBSERVACIONES":     g(COLS.OBSERVACIONES),
+      "ENCARGADO PQR":     g(COLS.ENCARGADO_PQR),
+      "PQR":               g(COLS.PQR),
+      "RESPUESTA PQR":     g(COLS.RESPUESTA_PQR),
+      "RESPUESTA RADICADO TUTELA": g(COLS.RAD_TUTELA),
+    };
     return o;
   }).filter(r => r["ACCIONANTE"] || r["TIPO"]);
 }
