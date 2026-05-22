@@ -6,93 +6,62 @@
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
-    :root {
-      --navy:#0a1f3d;--navy2:#0f2d5e;--blue:#1a6fc4;--blue2:#2d8de8;
-      --gold:#e8a020;--gold2:#f5c050;
-      --surface:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.10);
-      --text:#fff;--soft:rgba(255,255,255,0.55);
-    }
+    :root{--navy:#0a1f3d;--navy2:#0f2d5e;--blue:#1a6fc4;--blue2:#2d8de8;--gold:#e8a020;--gold2:#f5c050;--surface:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.10);--text:#fff;--soft:rgba(255,255,255,0.55)}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;overflow-x:hidden}
-    .bg{position:fixed;inset:0;z-index:0;background:
-      radial-gradient(ellipse 80% 60% at 20% 0%,rgba(26,111,196,.25) 0%,transparent 60%),
-      radial-gradient(ellipse 60% 50% at 80% 100%,rgba(232,160,32,.12) 0%,transparent 55%),
-      linear-gradient(160deg,#0a1f3d 0%,#0d2550 40%,#0a1a35 100%)}
-    .bg::before{content:'';position:absolute;inset:0;
-      background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
-      background-size:60px 60px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
-
+    .bg{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 20% 0%,rgba(26,111,196,.25) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 100%,rgba(232,160,32,.12) 0%,transparent 55%),linear-gradient(160deg,#0a1f3d 0%,#0d2550 40%,#0a1a35 100%)}
+    .bg::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
     /* TOPBAR */
-    .topbar{position:relative;z-index:10;display:flex;align-items:center;gap:12px;
-      padding:13px 24px;border-bottom:1px solid var(--border);background:rgba(10,31,61,.75);backdrop-filter:blur(12px)}
-    .tb-icon{width:34px;height:34px;background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.3);
-      border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+    .topbar{position:relative;z-index:10;display:flex;align-items:center;gap:12px;padding:13px 24px;border-bottom:1px solid var(--border);background:rgba(10,31,61,.75);backdrop-filter:blur(12px)}
+    .tb-icon{width:34px;height:34px;background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
     .tb-title h1{font-family:'DM Serif Display',serif;font-size:17px;font-weight:400;line-height:1.2}
     .tb-title p{font-size:11px;color:var(--soft)}
-    .tb-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .btn-nav{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:9px;font-size:12px;font-weight:500;
-      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#fff;text-decoration:none;cursor:pointer;transition:all .2s}
+    .tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .btn-nav{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:9px;font-size:12px;font-weight:500;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#fff;text-decoration:none;cursor:pointer;transition:all .2s}
     .btn-nav:hover{background:rgba(255,255,255,.14)}
     .sync-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--soft)}
     .sync-dot{width:7px;height:7px;border-radius:50%;background:#22c55e}
     .sync-dot.cargando{background:var(--gold);animation:pulso 1s infinite}
     .sync-dot.error{background:#ef4444}
     @keyframes pulso{0%,100%{opacity:1}50%{opacity:.3}}
-
     /* TABS */
-    .tabs{position:relative;z-index:5;display:flex;gap:0;overflow-x:auto;
-      border-bottom:1px solid var(--border);background:rgba(10,31,61,.5);backdrop-filter:blur(8px);padding:0 20px}
+    .tabs{position:relative;z-index:5;display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--border);background:rgba(10,31,61,.5);backdrop-filter:blur(8px);padding:0 20px}
     .tabs::-webkit-scrollbar{height:0}
-    .tab{padding:13px 16px;font-size:12px;font-weight:500;color:var(--soft);cursor:pointer;
-      border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+    .tab{padding:13px 16px;font-size:12px;font-weight:500;color:var(--soft);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:6px}
     .tab.active{color:#fff;border-bottom-color:var(--gold)}
     .tab:hover:not(.active){color:rgba(255,255,255,.8)}
-    .tab-badge{background:rgba(220,38,38,.8);color:#fff;font-size:10px;font-weight:700;
-      padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+    .tab-badge{background:rgba(220,38,38,.8);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
     .tab-badge.ambar{background:rgba(217,119,6,.8)}
     .tab-badge.verde{background:rgba(22,163,74,.8)}
     .tab-badge.gris{background:rgba(255,255,255,.2);color:var(--soft)}
-
     /* MAIN */
     .main{position:relative;z-index:1;padding:20px 24px;max-width:1440px;margin:0 auto}
     .panel{display:none}.panel.active{display:block}
-
-    /* BARRA DE FILTROS */
+    /* FILTROS */
     .filtros{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-    .fi{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:9px;
-      color:#fff;padding:7px 13px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s}
+    .fi{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:9px;color:#fff;padding:7px 13px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s}
     .fi:focus{border-color:rgba(255,255,255,.3)}
     .fi option{background:#0f2d5e;color:#fff}
     .fi-buscar{min-width:240px;flex:1}
-    .btn-ref{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;
-      background:rgba(26,111,196,.25);border:1px solid rgba(26,111,196,.4);color:#fff;
-      font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;margin-left:auto}
+    .btn-ref{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;background:rgba(26,111,196,.25);border:1px solid rgba(26,111,196,.4);color:#fff;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;margin-left:auto}
     .btn-ref:hover{background:rgba(26,111,196,.45)}
     .btn-ref svg{transition:transform .3s}
     .btn-ref.spin svg{animation:girar .7s linear infinite}
     @keyframes girar{to{transform:rotate(360deg)}}
-
     /* STATS */
     .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px}
     .stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:14px 16px;text-align:center}
     .stat-n{font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:3px}
     .stat-l{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.07em}
-    .c-rojo{color:#f87171}.c-ambar{color:#fbbf24}.c-verde{color:#4ade80}.c-azul{color:#60a5fa}.c-lila{color:#a78bfa}.c-rosa{color:#f9a8d4}
-
+    .c-r{color:#f87171}.c-a{color:#fbbf24}.c-v{color:#4ade80}.c-b{color:#60a5fa}.c-l{color:#a78bfa}.c-p{color:#f9a8d4}
     /* TABLA */
     .twrap{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden}
-    .tcols-admite {display:grid;grid-template-columns:78px 110px 1fr 140px 95px 140px 105px}
-    .tcols-fallo  {display:grid;grid-template-columns:78px 110px 1fr 140px 95px 140px 105px}
-    .tcols-otro   {display:grid;grid-template-columns:78px 110px 1fr 140px 95px 140px 105px}
-    .tcols-hist   {display:grid;grid-template-columns:78px 110px 1fr 140px 95px 140px 105px}
-    .thead{padding:10px 14px;background:rgba(255,255,255,.06);
-      font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft)}
-    .fila{padding:12px 14px;border-top:1px solid rgba(255,255,255,.05);
-      transition:background .15s;cursor:pointer;align-items:center}
+    .tcols{display:grid;grid-template-columns:90px 120px 1fr 160px 100px 150px 120px}
+    .thead{padding:10px 14px;background:rgba(255,255,255,.06);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft)}
+    .fila{padding:12px 14px;border-top:1px solid rgba(255,255,255,.05);transition:background .15s;cursor:pointer;align-items:center}
     .fila:hover{background:rgba(255,255,255,.06)}
     .cel{font-size:12px;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .cel.bold{font-weight:500;font-size:13px}
-
     /* SEMÁFORO */
     .sem{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
     .sem-r{background:rgba(220,38,38,.2);color:#f87171;border:1px solid rgba(220,38,38,.3)}
@@ -104,122 +73,86 @@
     .sem-a .sem-dot{background:#fbbf24}
     .sem-v .sem-dot{background:#4ade80}
     .sem-g .sem-dot{background:var(--soft)}
-
     /* BADGES */
     .bt{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-    .bt-admite  {background:rgba(37,99,235,.2);color:#93c5fd;border:1px solid rgba(37,99,235,.3)}
-    .bt-fallo   {background:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
-    .bt-sent    {background:rgba(236,72,153,.2);color:#f9a8d4;border:1px solid rgba(236,72,153,.3)}
-    .bt-impug   {background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
-    .bt-aper    {background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
-    .bt-req     {background:rgba(139,92,246,.2);color:#c4b5fd;border:1px solid rgba(139,92,246,.3)}
-    .bt-sanc    {background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
-    .bt-otro    {background:rgba(255,255,255,.08);color:var(--soft)}
-    .be-nuevo   {background:rgba(37,99,235,.15);color:#93c5fd}
-    .be-proceso {background:rgba(245,158,11,.15);color:#fcd34d}
-    .be-resp    {background:rgba(16,185,129,.15);color:#6ee7b7}
-    .be-fin     {background:rgba(255,255,255,.08);color:var(--soft)}
-    .be-venc    {background:rgba(220,38,38,.15);color:#fca5a5}
-
-    /* PQR BADGE */
-    .pqr-ok {display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;
-      background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
-    .pqr-no {display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;
-      background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
-
+    .bt-tutela{background:rgba(37,99,235,.2);color:#93c5fd;border:1px solid rgba(37,99,235,.3)}
+    .bt-fallo{background:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+    .bt-sent{background:rgba(236,72,153,.2);color:#f9a8d4;border:1px solid rgba(236,72,153,.3)}
+    .bt-impug{background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+    .bt-aper{background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+    .bt-req{background:rgba(139,92,246,.2);color:#c4b5fd;border:1px solid rgba(139,92,246,.3)}
+    .bt-sanc{background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+    .bt-otro{background:rgba(255,255,255,.08);color:var(--soft)}
+    .be-nuevo{background:rgba(37,99,235,.15);color:#93c5fd}
+    .be-proceso{background:rgba(245,158,11,.15);color:#fcd34d}
+    .be-resp{background:rgba(16,185,129,.15);color:#6ee7b7}
+    .be-fin{background:rgba(255,255,255,.08);color:var(--soft)}
+    .be-venc{background:rgba(220,38,38,.15);color:#fca5a5}
+    .pqr-ok{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+    .pqr-no{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
     /* EMPTY / LOADER */
     .empty{text-align:center;padding:50px 20px;color:var(--soft)}
     .empty-ico{font-size:40px;margin-bottom:12px;opacity:.4}
     .loader{text-align:center;padding:50px}
-    .spinner{width:28px;height:28px;border:2.5px solid rgba(255,255,255,.1);border-top-color:var(--gold);
-      border-radius:50%;animation:girar .7s linear infinite;margin:0 auto 14px}
-
+    .spinner{width:28px;height:28px;border:2.5px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:girar .7s linear infinite;margin:0 auto 14px}
     /* MODAL */
     .overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);backdrop-filter:blur(4px)}
     .overlay.open{display:flex;align-items:center;justify-content:center;padding:20px}
-    .modal{background:linear-gradient(155deg,#0d2550 0%,#0a1f3d 100%);
-      border:1px solid rgba(255,255,255,.12);border-radius:18px;
-      width:100%;max-width:700px;max-height:92vh;overflow-y:auto;padding:26px}
+    .modal{background:linear-gradient(155deg,#0d2550 0%,#0a1f3d 100%);border:1px solid rgba(255,255,255,.12);border-radius:18px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;padding:26px}
     .modal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;gap:16px}
-    .modal-close{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;
-      color:#fff;font-size:16px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .modal-close{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:8px;color:#fff;font-size:16px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .modal-close:hover{background:rgba(255,255,255,.16)}
     .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
     .mf label{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:3px}
     .mf .v{font-size:13px;font-weight:500;line-height:1.5}
     .mf.full{grid-column:1/-1}
-    .msec{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
-      color:var(--gold2);margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.08)}
-    .mtext{font-size:13px;line-height:1.7;color:rgba(255,255,255,.82);
-      background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 14px}
+    .msec{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--gold2);margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .mtext{font-size:13px;line-height:1.7;color:rgba(255,255,255,.82);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 14px}
     .mactions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08)}
     .mbtn{padding:8px 16px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;transition:all .2s}
     .mbtn-p{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff}
     .mbtn-p:hover{opacity:.88}
     .mbtn-s{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff}
     .mbtn-s:hover{background:rgba(255,255,255,.18)}
-    .esel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
-      border-radius:8px;color:#fff;padding:7px 11px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+    .esel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:8px;color:#fff;padding:7px 11px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
     .esel option{background:#0f2d5e}
-
-    /* DASHBOARD ABOGADOS */
+    /* DASHBOARD */
     .abo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
     .abo-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:16px}
     .abo-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-    .abo-av{width:36px;height:36px;border-radius:50%;background:rgba(26,111,196,.3);
-      border:1px solid rgba(26,111,196,.4);display:flex;align-items:center;justify-content:center;
-      font-weight:700;font-size:12px;color:#93c5fd;flex-shrink:0}
+    .abo-av{width:36px;height:36px;border-radius:50%;background:rgba(26,111,196,.3);border:1px solid rgba(26,111,196,.4);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#93c5fd;flex-shrink:0}
     .abo-nombre{font-weight:600;font-size:13px;line-height:1.3}
-    .abo-row{display:flex;justify-content:space-between;align-items:center;
-      padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;color:var(--soft)}
+    .abo-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;color:var(--soft)}
     .abo-row:last-of-type{border:none}
     .abo-row .n{font-weight:600;color:#fff}
     .abo-bar{height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:10px;overflow:hidden}
     .abo-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue2));border-radius:2px}
-
-    /* PANEL PQR */
-    .pqr-seccion{margin-bottom:24px}
-    .pqr-title{font-family:'DM Serif Display',serif;font-size:16px;font-weight:400;
-      margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08);
-      display:flex;align-items:center;gap:10px}
-    .pqr-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+    /* PQR */
+    .pqr-sec{margin-bottom:24px}
+    .pqr-title{font-family:'DM Serif Display',serif;font-size:16px;font-weight:400;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+    .pqr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
     .pqr-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .2s}
-    .pqr-card:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.18)}
-    .pqr-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-    .pqr-acc{font-weight:600;font-size:13px}
-    .pqr-meta{font-size:11px;color:var(--soft);margin-top:3px;line-height:1.5}
-    .pqr-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}
-
+    .pqr-card:hover{background:rgba(255,255,255,.09)}
     /* ESTADÍSTICAS */
     .est-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
     .est-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:18px}
     .est-titulo{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--gold2);margin-bottom:14px}
     .est-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-    .est-label{font-size:12px;color:var(--soft);min-width:120px}
+    .est-label{font-size:12px;color:var(--soft);min-width:130px}
     .est-bwrap{flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
     .est-bfill{height:100%;border-radius:3px}
     .est-val{font-size:12px;font-weight:600;min-width:24px;text-align:right}
-
     /* TOAST */
-    .toast{position:fixed;bottom:20px;right:20px;z-index:200;
-      background:rgba(15,45,94,.95);border:1px solid rgba(255,255,255,.15);border-radius:11px;
-      padding:11px 18px;font-size:13px;font-weight:500;color:#fff;
-      transform:translateY(70px);opacity:0;transition:all .3s;pointer-events:none}
+    .toast{position:fixed;bottom:20px;right:20px;z-index:200;background:rgba(15,45,94,.95);border:1px solid rgba(255,255,255,.15);border-radius:11px;padding:11px 18px;font-size:13px;font-weight:500;color:#fff;transform:translateY(70px);opacity:0;transition:all .3s;pointer-events:none}
     .toast.show{transform:translateY(0);opacity:1}
     .toast.ok{border-color:rgba(22,163,74,.4);background:rgba(22,163,74,.15)}
     .toast.err{border-color:rgba(220,38,38,.4)}
-
-    @media(max-width:800px){
-      .tcols-admite,.tcols-fallo,.tcols-otro,.tcols-hist{grid-template-columns:70px 90px 1fr 80px}
-      .col-h,.col-e,.col-r{display:none}
-      .main{padding:14px 16px}
-    }
+    @media(max-width:800px){.tcols{grid-template-columns:80px 100px 1fr 80px}.col-h,.col-e,.col-r{display:none}.main{padding:14px 16px}}
   </style>
 </head>
 <body>
 <div class="bg"></div>
 
-<!-- TOPBAR -->
 <div class="topbar">
   <div class="tb-icon">⚖️</div>
   <div class="tb-title">
@@ -227,37 +160,31 @@
     <p>Dirección de Ejecuciones Fiscales · Alcaldía de Bello</p>
   </div>
   <div class="tb-right">
-    <div class="sync-wrap">
-      <div class="sync-dot" id="sdot"></div>
-      <span id="slabel">—</span>
-    </div>
+    <div class="sync-wrap"><div class="sync-dot" id="sdot"></div><span id="slabel">—</span></div>
     <a href="home.html" class="btn-nav">🏛️ Inicio</a>
     <a href="index.html" class="btn-nav">📄 Oficios</a>
   </div>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
-  <div class="tab active" id="tab-admites"    onclick="goTab('admites')">📋 Admites <span class="tab-badge" id="badge-admites">0</span></div>
-  <div class="tab"        id="tab-fallos"     onclick="goTab('fallos')">⚖️ Fallos &amp; Sentencias <span class="tab-badge ambar" id="badge-fallos">0</span></div>
-  <div class="tab"        id="tab-otros"      onclick="goTab('otros')">📌 Otros <span class="tab-badge gris" id="badge-otros">0</span></div>
-  <div class="tab"        id="tab-reparto"    onclick="goTab('reparto')">👤 Por reparto</div>
-  <div class="tab"        id="tab-pqr"        onclick="goTab('pqr')">📝 Por PQR <span class="tab-badge" id="badge-pqr-pend">0</span></div>
-  <div class="tab"        id="tab-historico"  onclick="goTab('historico')">🗂️ Histórico</div>
+  <div class="tab active" id="tab-admites"     onclick="goTab('admites')">📋 Admites <span class="tab-badge" id="badge-admites">0</span></div>
+  <div class="tab"        id="tab-fallos"      onclick="goTab('fallos')">⚖️ Fallos &amp; Sentencias <span class="tab-badge ambar" id="badge-fallos">0</span></div>
+  <div class="tab"        id="tab-otros"       onclick="goTab('otros')">📌 Otros <span class="tab-badge gris" id="badge-otros">0</span></div>
+  <div class="tab"        id="tab-reparto"     onclick="goTab('reparto')">👤 Por reparto</div>
+  <div class="tab"        id="tab-pqr"         onclick="goTab('pqr')">📝 Por PQR <span class="tab-badge" id="badge-pqr">0</span></div>
+  <div class="tab"        id="tab-historico"   onclick="goTab('historico')">🗂️ Histórico</div>
   <div class="tab"        id="tab-estadisticas" onclick="goTab('estadisticas')">📊 Estadísticas</div>
 </div>
 
 <div class="main">
 
-<!-- ── ADMITES ── -->
+<!-- ADMITES -->
 <div class="panel active" id="panel-admites">
   <div class="stats" id="stats-admites"></div>
   <div class="filtros">
-    <input class="fi fi-buscar" id="fa-buscar" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderAdmites()"/>
-    <select class="fi" id="fa-abogado" onchange="renderAdmites()">
-      <option value="">Todos los abogados</option>
-    </select>
-    <select class="fi" id="fa-estado" onchange="renderAdmites()">
+    <input class="fi fi-buscar" id="fa-q" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderAdmites()"/>
+    <select class="fi" id="fa-abo" onchange="renderAdmites()"><option value="">Todos los abogados</option></select>
+    <select class="fi" id="fa-est" onchange="renderAdmites()">
       <option value="">Todos los estados</option>
       <option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option>
     </select>
@@ -267,121 +194,72 @@
     </button>
   </div>
   <div class="twrap">
-    <div class="thead tcols-admite">
-      <div>Urgencia</div><div>Vence</div><div>Accionante</div>
-      <div class="col-h">Juzgado</div><div class="col-e">Estado</div>
-      <div class="col-r">Abogado</div><div>Radicado</div>
-    </div>
+    <div class="thead tcols"><div>Urgencia</div><div>Vence</div><div>Accionante</div><div class="col-h">Juzgado</div><div class="col-e">Estado</div><div class="col-r">Abogado</div><div>Radicado</div></div>
     <div id="body-admites"><div class="loader"><div class="spinner"></div></div></div>
   </div>
 </div>
 
-<!-- ── FALLOS & SENTENCIAS ── -->
+<!-- FALLOS -->
 <div class="panel" id="panel-fallos">
   <div class="stats" id="stats-fallos"></div>
   <div class="filtros">
-    <input class="fi fi-buscar" id="ff-buscar" placeholder="🔍 Buscar..." oninput="renderFallos()"/>
-    <select class="fi" id="ff-tipo" onchange="renderFallos()">
-      <option value="">Fallo y sentencia</option><option>Fallo de tutela</option><option>Sentencia</option>
-    </select>
-    <select class="fi" id="ff-estado" onchange="renderFallos()">
-      <option value="">Todos los estados</option>
-      <option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option>
-    </select>
+    <input class="fi fi-buscar" id="ff-q" placeholder="🔍 Buscar..." oninput="renderFallos()"/>
+    <select class="fi" id="ff-tp" onchange="renderFallos()"><option value="">Fallo y sentencia</option><option>Fallo de tutela</option><option>Sentencia</option><option>Incidente</option></select>
+    <select class="fi" id="ff-est" onchange="renderFallos()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option></select>
   </div>
   <div class="twrap">
-    <div class="thead tcols-fallo">
-      <div>Urgencia</div><div>Vence</div><div>Accionante</div>
-      <div class="col-h">Juzgado</div><div class="col-e">Estado</div>
-      <div class="col-r">Abogado</div><div>Radicado</div>
-    </div>
+    <div class="thead tcols"><div>Urgencia</div><div>Vence</div><div>Accionante</div><div class="col-h">Juzgado</div><div class="col-e">Estado</div><div class="col-r">Abogado</div><div>Radicado</div></div>
     <div id="body-fallos"><div class="loader"><div class="spinner"></div></div></div>
   </div>
 </div>
 
-<!-- ── OTROS ── -->
+<!-- OTROS -->
 <div class="panel" id="panel-otros">
   <div class="filtros">
-    <input class="fi fi-buscar" id="fo-buscar" placeholder="🔍 Buscar..." oninput="renderOtros()"/>
-    <select class="fi" id="fo-tipo" onchange="renderOtros()">
-      <option value="">Todos</option><option>Requerimiento</option><option>Apertura</option><option>Sanción</option><option>Impugnación</option><option>Reparto</option>
-    </select>
-    <select class="fi" id="fo-estado" onchange="renderOtros()">
-      <option value="">Todos los estados</option>
-      <option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option>
-    </select>
+    <input class="fi fi-buscar" id="fo-q" placeholder="🔍 Buscar..." oninput="renderOtros()"/>
+    <select class="fi" id="fo-tp" onchange="renderOtros()"><option value="">Todos</option><option>Requerimiento</option><option>Apertura</option><option>Sanción</option><option>Impugnación</option><option>Reparto</option></select>
   </div>
   <div class="twrap">
-    <div class="thead tcols-otro">
-      <div>Urgencia</div><div>Tipo</div><div>Accionante</div>
-      <div class="col-h">Juzgado</div><div class="col-e">Estado</div>
-      <div class="col-r">Abogado</div><div>Radicado</div>
-    </div>
+    <div class="thead tcols"><div>Urgencia</div><div>Tipo</div><div>Accionante</div><div class="col-h">Juzgado</div><div class="col-e">Estado</div><div class="col-r">Abogado</div><div>Radicado</div></div>
     <div id="body-otros"><div class="loader"><div class="spinner"></div></div></div>
   </div>
 </div>
 
-<!-- ── POR REPARTO ── -->
-<div class="panel" id="panel-reparto">
-  <div class="abo-grid" id="grid-reparto"></div>
-</div>
+<!-- POR REPARTO -->
+<div class="panel" id="panel-reparto"><div class="abo-grid" id="grid-reparto"></div></div>
 
-<!-- ── POR PQR ── -->
+<!-- POR PQR -->
 <div class="panel" id="panel-pqr">
-  <div class="pqr-seccion">
-    <div class="pqr-title">
-      <span style="color:#f87171;font-size:20px">⚠️</span>
-      Sin respuesta de PQR
-      <span class="tab-badge" id="cnt-sin-pqr" style="font-size:12px;padding:2px 10px">0</span>
-    </div>
-    <div class="pqr-card-grid" id="grid-sin-pqr">
-      <div class="loader"><div class="spinner"></div></div>
-    </div>
+  <div class="pqr-sec">
+    <div class="pqr-title"><span style="color:#f87171;font-size:20px">⚠️</span> Sin respuesta PQR <span class="tab-badge" id="cnt-sin" style="font-size:12px;padding:2px 10px">0</span></div>
+    <div class="pqr-grid" id="grid-sin-pqr"><div class="loader"><div class="spinner"></div></div></div>
   </div>
-  <div class="pqr-seccion">
-    <div class="pqr-title">
-      <span style="color:#4ade80;font-size:20px">✅</span>
-      Con respuesta de PQR
-      <span class="tab-badge verde" id="cnt-con-pqr" style="font-size:12px;padding:2px 10px">0</span>
-    </div>
-    <div class="pqr-card-grid" id="grid-con-pqr">
-      <div class="loader"><div class="spinner"></div></div>
-    </div>
+  <div class="pqr-sec">
+    <div class="pqr-title"><span style="color:#4ade80;font-size:20px">✅</span> Con respuesta PQR <span class="tab-badge verde" id="cnt-con" style="font-size:12px;padding:2px 10px">0</span></div>
+    <div class="pqr-grid" id="grid-con-pqr"><div class="loader"><div class="spinner"></div></div></div>
   </div>
 </div>
 
-<!-- ── HISTÓRICO ── -->
+<!-- HISTÓRICO -->
 <div class="panel" id="panel-historico">
   <div class="filtros">
-    <input class="fi fi-buscar" id="fh-buscar" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderHistorico()"/>
-    <select class="fi" id="fh-tipo" onchange="renderHistorico()">
-      <option value="">Todos los tipos</option>
-      <option>Tutela</option><option>Admite</option><option>Fallo de tutela</option><option>Sentencia</option><option>Requerimiento</option><option>Apertura</option><option>Sanción</option>
-    </select>
-    <select class="fi" id="fh-abogado" onchange="renderHistorico()">
-      <option value="">Todos los abogados</option>
-    </select>
+    <input class="fi fi-buscar" id="fh-q" placeholder="🔍 Buscar en histórico..." oninput="renderHistorico()"/>
+    <select class="fi" id="fh-abo" onchange="renderHistorico()"><option value="">Todos los abogados</option></select>
   </div>
   <div class="twrap">
-    <div class="thead tcols-hist">
-      <div>Estado</div><div>Tipo</div><div>Accionante</div>
-      <div class="col-h">Juzgado</div><div class="col-e">Abogado</div>
-      <div class="col-r">Fecha límite</div><div>Radicado</div>
-    </div>
+    <div class="thead tcols"><div>Estado</div><div>Tipo</div><div>Accionante</div><div class="col-h">Juzgado</div><div class="col-e">Abogado</div><div class="col-r">Vence</div><div>Radicado</div></div>
     <div id="body-historico"><div class="loader"><div class="spinner"></div></div></div>
   </div>
 </div>
 
-<!-- ── ESTADÍSTICAS ── -->
-<div class="panel" id="panel-estadisticas">
-  <div class="est-grid" id="grid-estadisticas"></div>
-</div>
+<!-- ESTADÍSTICAS -->
+<div class="panel" id="panel-estadisticas"><div class="est-grid" id="grid-est"></div></div>
 
 </div><!-- /main -->
 
 <!-- MODAL -->
 <div class="overlay" id="overlay" onclick="cerrarOverlay(event)">
-  <div class="modal" id="modal-box">
+  <div class="modal">
     <div class="modal-top">
       <div>
         <div id="m-badge" style="margin-bottom:8px"></div>
@@ -390,7 +268,6 @@
       </div>
       <button class="modal-close" onclick="document.getElementById('overlay').classList.remove('open')">✕</button>
     </div>
-
     <div class="mgrid">
       <div class="mf"><label>Juzgado</label><div class="v" id="m-juz">—</div></div>
       <div class="mf"><label>CC / NIT</label><div class="v" id="m-cc">—</div></div>
@@ -401,22 +278,15 @@
       <div class="mf"><label>Días restantes</label><div class="v" id="m-dias">—</div></div>
       <div class="mf"><label>Estado</label><div class="v" id="m-est-txt">—</div></div>
     </div>
-
     <div id="m-derecho-w" style="display:none"><div class="msec">Derecho invocado</div><div class="mtext" id="m-derecho"></div></div>
     <div id="m-hechos-w"  style="display:none"><div class="msec">Hechos resumidos</div><div class="mtext" id="m-hechos"></div></div>
     <div id="m-pret-w"    style="display:none"><div class="msec">Pretensiones</div><div class="mtext" id="m-pret"></div></div>
     <div id="m-pqr-w"     style="display:none"><div class="msec">PQR inicial</div><div class="mtext" id="m-pqr"></div></div>
-    <div id="m-rpqr-w"    style="display:none">
-      <div class="msec">Respuesta PQR</div>
-      <div class="mtext" id="m-rpqr" style="border-color:rgba(22,163,74,.3)"></div>
-    </div>
+    <div id="m-rpqr-w"    style="display:none"><div class="msec">Respuesta PQR</div><div class="mtext" id="m-rpqr" style="border-color:rgba(22,163,74,.3)"></div></div>
     <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
-
     <div class="msec">Actualizar estado</div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <select class="esel" id="m-esel">
-        <option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option>
-      </select>
+      <select class="esel" id="m-esel"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
       <button class="mbtn mbtn-s" onclick="guardarEstado()">💾 Guardar</button>
     </div>
     <div class="mactions">
@@ -431,322 +301,241 @@
 // ══════════════════════════════════════════
 // CONFIGURACIÓN
 // ══════════════════════════════════════════
-const SHEET_ID = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
-const APPS_SCRIPT_URL = ""; // ← pega aquí la URL del webapp cuando lo publiques
+const SHEET_ID   = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
+const GID_TUT    = "0";           // Registro Tutelas 2026
+const GID_FAL    = "995241537";   // Fallos de Tutela
+const APPS_URL   = "";            // URL del webapp cuando lo publiques
 
-const HOJA_TUTELAS = "Registro Tutelas 2026";
-const HOJA_FALLOS  = "Fallos de Tutela";
-const GID_TUTELAS  = "0";
-const GID_FALLOS   = "995241537";
+const ABOGADOS   = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chavarria","Dario Baldrich","Deisy Lopez"];
+const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente"];
+const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
+const TIPOS_ADMITE= ["Tutela","Admite"];
+const EST_HIST    = ["Finalizado","Respondido"];
 
-const ABOGADOS = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chavarria","Dario Baldrich","Deisy Lopez"];
-
-// Tipos por pestaña
-const TIPOS_ADMITE = ["Tutela","Admite","Apertura de tutela"];
-const TIPOS_FALLO  = ["Fallo de tutela","Sentencia"];
-const TIPOS_OTROS  = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
-const ESTADOS_HIST = ["Finalizado","Respondido"];
+// Columnas exactas (0-based) — confirmadas con Jeison
+// A=N°(0) B=TIPO(1) C=ACCIONANTE(2) D=CC/NIT(3) E=JUZGADO(4)
+// F=RADICADO(5) G=FECHA_INI(6) H=FECHA_LIM(7) I=DIAS(8) J=RESPONSABLE(9)
+// K=ESTADO(10) L=DERECHO(11) M=HECHOS(12) N=PRETENSIONES(13) O=OBSERVACIONES(14)
+// P=ENCARGADO_PQR(15) Q=PQR(16) R=RESPUESTA_PQR(17) S=RAD_TUTELA(18) T=SHARPOINT(19)
+const C = {
+  TIPO:1, ACCIONANTE:2, CC:3, JUZGADO:4, RADICADO:5,
+  FINI:6, FLIM:7, DIAS:8, RESP:9, ESTADO:10,
+  DERECHO:11, HECHOS:12, PRET:13, OBS:14,
+  ENC_PQR:15, PQR:16, RPQR:17
+};
 
 // ══════════════════════════════════════════
 // ESTADO GLOBAL
 // ══════════════════════════════════════════
-let todos = [];       // todos los registros (tutelas + fallos)
-let actual = null;    // fila abierta en modal
-let tabActual = "admites";
+let tutelas  = [];  // solo Registro Tutelas 2026
+let fallos   = [];  // solo Fallos de Tutela
+let actual   = null;
 
 // ══════════════════════════════════════════
-// CARGA
+// CARGA — usa gviz JSON (robusto ante celdas con saltos de línea)
 // ══════════════════════════════════════════
 async function cargarDatos() {
-  setSyncState("cargando","Actualizando...");
-  const btn = document.getElementById("btnref");
-  btn.classList.add("spin");
-
+  setSS("cargando","Actualizando...");
+  document.getElementById("btnref").classList.add("spin");
   try {
     const [t, f] = await Promise.all([
-      leerHoja(HOJA_TUTELAS),
-      leerHoja(HOJA_FALLOS)
+      leerGviz(GID_TUT),
+      leerGviz(GID_FAL)
     ]);
-    // Marcar origen para distinguir en modal
-    todos = [
-      ...t.map(r => ({...r, _src:"tutela"})),
-      ...f.map(r => ({...r, _src:"fallo"}))
-    ];
-    console.log("✅ Tutelas:", t.length, "| Fallos:", f.length, "| Total:", todos.length);
-    console.log("TIPOS únicos tutelas:", [...new Set(t.map(r=>r["TIPO"]))].filter(Boolean).join(", "));
-    console.log("ESTADOS únicos tutelas:", [...new Set(t.map(r=>r["ESTADO"]))].filter(Boolean).join(", "));
-    console.log("Admites activos:", t.filter(r=>!["Finalizado","Respondido"].includes(r["ESTADO"])&&!["Fallo de tutela","Sentencia","Requerimiento","Apertura","Sanción","Impugnación","Reparto"].includes(r["TIPO"])).length);
-    poblarSelectAbogados();
+    tutelas = t;
+    fallos  = f;
+    console.log("✅ Tutelas:", tutelas.length, "| Fallos:", fallos.length);
+    console.log("TIPOS tutelas:", [...new Set(tutelas.map(r=>r.TIPO))].join(", "));
+    console.log("ESTADOS tutelas:", [...new Set(tutelas.map(r=>r.ESTADO))].join(", "));
+    poblarSelects();
     renderAll();
-    setSyncState("ok","Actualizado " + hora());
+    setSS("ok","Actualizado " + new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"}));
   } catch(e) {
-    setSyncState("error","Error de conexión");
+    setSS("error","Error: " + e.message);
     toast("❌ " + e.message, "err");
+    console.error(e);
   }
-  btn.classList.remove("spin");
+  document.getElementById("btnref").classList.remove("spin");
 }
 
-async function leerHoja(nombre) {
-  if (APPS_SCRIPT_URL) {
-    const r = await fetch(`${APPS_SCRIPT_URL}?accion=leer&hoja=${encodeURIComponent(nombre)}`);
-    const d = await r.json();
-    return d.datos || [];
-  }
-  // CSV público (el Sheets debe tener acceso "cualquiera con el enlace puede ver")
-  const gid = nombre === HOJA_TUTELAS ? GID_TUTELAS : GID_FALLOS;
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`No se pudo leer "${nombre}" (HTTP ${r.status}). Verifica que el Sheets sea público.`);
-  return csvAObjetos(await r.text());
-}
+async function leerGviz(gid) {
+  // gviz/tq con formato JSON maneja correctamente celdas con saltos de línea y comas
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} — verifica que el Sheets sea público`);
+  const txt  = await res.text();
+  // Google devuelve: google.visualization.Query.setResponse({...})
+  // Hay que extraer el JSON del interior
+  const json = JSON.parse(txt.replace(/^[^(]+\(/, "").replace(/\);?\s*$/, ""));
+  const cols = json.table.cols;  // [{label, type}, ...]
+  const rows = json.table.rows;  // [{c: [{v, f}, ...]}, ...]
+  if (!rows) return [];
 
-function csvAObjetos(csv) {
-  const lineas = csv.trim().split("\n");
-  if (lineas.length < 2) return [];
-
-  // Columnas fijas según el Sheets real (posición 0-based)
-  // N°(0) TIPO(1) ACCIONANTE(2) CC/NIT(3) JUZGADO(4) RADICADO(5)
-  // FECHA INICIAL(6) FECHA LÍMITE(7) DÍAS RESTANTES(8) RESPONSABLE(9)
-  // ESTADO(10) DERECHO INVOCADO(11) HECHOS RESUMIDOS(12) PRETENSIONES(13)
-  // OBSERVACIONES(14) ENCARGADO PQR(15) PQR(16) RESPUESTA PQR(17)
-  // RESPUESTA RADICADO TUTELA(18) SHARPOINT(19)
-  // N°(0) TIPO(1) ACCIONANTE(2) CC/NIT(3) JUZGADO(4) RADICADO(5)
-  // FECHA INICIAL(6) FECHA LÍMITE(7) DÍAS RESTANTES(8) RESPONSABLE(9) ESTADO(10)
-  // DERECHO INVOCADO(11) HECHOS RESUMIDOS(12) PRETENSIONES(13) OBSERVACIONES(14)
-  // ENCARGADO PQR(15) PQR(16) RESPUESTA PQR(17) RESPUESTA RADICADO TUTELA(18) SHARPOINT(19)
-  const COLS = {
-    TIPO:1, ACCIONANTE:2, CC:3, JUZGADO:4, RADICADO:5,
-    FECHA_INI:6, FECHA_LIM:7, DIAS:8, RESPONSABLE:9,
-    ESTADO:10, DERECHO:11, HECHOS:12, PRETENSIONES:13,
-    OBSERVACIONES:14, ENCARGADO_PQR:15, PQR:16,
-    RESPUESTA_PQR:17, RAD_TUTELA:18
-  };
-  const offset = 0; // posiciones ya incluyen N° en índice 0
-
-  const limpiar = v => (v||"").replace(/^"|"$/g,"").trim();
-
-  return lineas.slice(1).map(l => {
-    const v = parseLin(l);
-    const g = i => limpiar(v[i]); // índices ya son absolutos incluyendo N°
-
-    // Calcular días desde FECHA LÍMITE (dd/MM/yyyy) — ignora #ERROR!
-    let dias = g(COLS.DIAS);
-    const esError = !dias || dias.includes("#") || isNaN(parseInt(dias));
-    if (esError) {
-      const flim = g(COLS.FECHA_LIM);
-      if (flim && flim.includes("/")) {
-        const p = flim.split("/");
-        if (p.length === 3) {
-          const fLim = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
-          const hoy  = new Date(); hoy.setHours(0,0,0,0);
-          const diff = Math.round((fLim - hoy) / 86400000);
-          dias = isNaN(diff) ? "" : String(diff);
-        }
-      }
+  return rows.map(row => {
+    const r = {};
+    cols.forEach((col, i) => {
+      const cell = row.c ? row.c[i] : null;
+      r[col.label] = cell ? (cell.f ?? cell.v ?? "") : "";
+      // Convertir null a string vacío
+      if (r[col.label] === null || r[col.label] === undefined) r[col.label] = "";
+      r[col.label] = String(r[col.label]).trim();
+    });
+    // Calcular días restantes desde FECHA LÍMITE si viene vacío o con error
+    let dias = r["DÍAS RESTANTES"] || r["DIAS RESTANTES"] || "";
+    if (!dias || dias === "#ERROR!" || isNaN(parseInt(dias))) {
+      const flim = r["FECHA LÍMITE"] || r["FECHA LIMITE"] || "";
+      dias = calcularDias(flim);
     }
-
-    const o = {
-      "TIPO":              g(COLS.TIPO),
-      "ACCIONANTE":        g(COLS.ACCIONANTE),
-      "CC / NIT":          g(COLS.CC),
-      "JUZGADO":           g(COLS.JUZGADO),
-      "RADICADO":          g(COLS.RADICADO),
-      "FECHA INICIAL":     g(COLS.FECHA_INI),
-      "FECHA LÍMITE":      g(COLS.FECHA_LIM),
-      "DÍAS RESTANTES":    dias,
-      "RESPONSABLE":       g(COLS.RESPONSABLE),
-      "ESTADO":            g(COLS.ESTADO),
-      "DERECHO INVOCADO":  g(COLS.DERECHO),
-      "HECHOS RESUMIDOS":  g(COLS.HECHOS),
-      "PRETENSIONES":      g(COLS.PRETENSIONES),
-      "OBSERVACIONES":     g(COLS.OBSERVACIONES),
-      "ENCARGADO PQR":     g(COLS.ENCARGADO_PQR),
-      "PQR":               g(COLS.PQR),
-      "RESPUESTA PQR":     g(COLS.RESPUESTA_PQR),
-      "RESPUESTA RADICADO TUTELA": g(COLS.RAD_TUTELA),
-    };
-    return o;
+    r._dias = dias === "" ? null : parseInt(dias);
+    return r;
   }).filter(r => r["ACCIONANTE"] || r["TIPO"]);
 }
 
-function parseLin(l) {
-  const r = [], re = /("(?:[^"]|"")*"|[^,]*)/g;
-  let m;
-  while ((m = re.exec(l)) !== null) { if (m.index === re.lastIndex) re.lastIndex++; r.push(m[1]); }
-  return r;
+function calcularDias(fecha) {
+  // fecha en formato dd/MM/yyyy
+  if (!fecha || !fecha.includes("/")) return "";
+  const p = fecha.split("/");
+  if (p.length !== 3) return "";
+  const fLim = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+  if (isNaN(fLim.getTime())) return "";
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  return String(Math.round((fLim - hoy) / 86400000));
 }
 
 // ══════════════════════════════════════════
-// HELPERS
+// HELPERS UI
 // ══════════════════════════════════════════
-function parseDias(v) { if (v===null||v===undefined||v==="") return null; const n=parseInt(v); return isNaN(n)?null:n; }
-function hora() { return new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"}); }
-function esc(s) { return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function abrev(s,n) { if(!s) return "—"; return s.length>n ? s.substring(0,n)+"…" : s; }
-function primerNombre(s) { if(!s) return "—"; return s.split(" ").slice(0,2).join(" "); }
-function iniciales(s) { if(!s) return "?"; return s.split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase(); }
+const esc   = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const abrev = (s,n) => !s ? "—" : s.length>n ? s.substring(0,n)+"…" : s;
+const pNom  = s => !s ? "—" : s.split(" ").slice(0,2).join(" ");
+const inic  = s => !s ? "?" : s.split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
+const fBusc = (r,q) => !q ? true : [r["ACCIONANTE"],r["RADICADO"],r["JUZGADO"],r["CC / NIT"],r["ENCARGADO PQR"]].join(" ").toLowerCase().includes(q.toLowerCase());
+const porUrgencia = arr => [...arr].sort((a,b) => {
+  if (a._dias===null && b._dias===null) return 0;
+  if (a._dias===null) return 1;
+  if (b._dias===null) return -1;
+  return a._dias - b._dias;
+});
 
 function semaforo(dias, estado) {
-  if (["Finalizado","Respondido"].includes(estado))
-    return `<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":"Fin"}</span>`;
-  if (dias===null||isNaN(dias))
-    return `<span class="sem sem-g"><span class="sem-dot"></span>Sin fecha</span>`;
-  if (dias<0) return `<span class="sem sem-r"><span class="sem-dot"></span>Vencido</span>`;
+  if (EST_HIST.includes(estado)) return `<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":"Fin"}</span>`;
+  if (dias===null) return `<span class="sem sem-g"><span class="sem-dot"></span>Sin fecha</span>`;
+  if (dias<0)  return `<span class="sem sem-r"><span class="sem-dot"></span>Vencido</span>`;
   if (dias<=1) return `<span class="sem sem-r"><span class="sem-dot"></span>${dias}d</span>`;
   if (dias<=3) return `<span class="sem sem-a"><span class="sem-dot"></span>${dias}d</span>`;
   return `<span class="sem sem-v"><span class="sem-dot"></span>${dias}d</span>`;
 }
 
 function badgeTipo(t) {
-  const m = {"Tutela":"bt-admite","Admite":"bt-admite","Apertura de tutela":"bt-admite",
-    "Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Impugnación":"bt-impug",
-    "Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc","Reparto":"bt-otro"};
+  const m={"Tutela":"bt-tutela","Admite":"bt-tutela","Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Incidente":"bt-sent","Impugnación":"bt-impug","Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc"};
   return `<span class="bt ${m[t]||"bt-otro"}">${esc(t)||"—"}</span>`;
 }
 
-function badgeEstado(e) {
-  const m = {"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Vencido":"be-venc"};
+function badgeEst(e) {
+  const m={"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Vencido":"be-venc"};
   return `<span class="bt ${m[e]||""}">${esc(e)||"—"}</span>`;
 }
 
-function badgePQR(r) {
-  const resp = r["RESPUESTA PQR"]||r["RESPUESTA_PQR"]||"";
-  if (resp && resp.trim()) return `<span class="pqr-ok">✓ Con respuesta</span>`;
-  return `<span class="pqr-no">✗ Sin respuesta</span>`;
-}
-
-function ordenarUrgencia(arr) {
-  return [...arr].sort((a,b) => {
-    const da = parseDias(a["DÍAS RESTANTES"]);
-    const db = parseDias(b["DÍAS RESTANTES"]);
-    if (da===null && db===null) return 0;
-    if (da===null) return 1;
-    if (db===null) return -1;
-    return da - db;
-  });
-}
-
-function filtroBuscar(r, q) {
-  if (!q) return true;
-  const h = [r["ACCIONANTE"],r["RADICADO"],r["JUZGADO"],r["CC / NIT"],r["ENCARGADO PQR"]].join(" ").toLowerCase();
-  return h.includes(q.toLowerCase());
-}
-
-function poblarSelectAbogados() {
-  ["fa-abogado","fh-abogado"].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const prev = sel.value;
-    sel.innerHTML = `<option value="">Todos los abogados</option>` +
-      ABOGADOS.map(a => `<option value="${a}">${a}</option>`).join("");
-    sel.value = prev;
-  });
-}
-
-// ══════════════════════════════════════════
-// RENDER TABLA GENÉRICA
-// ══════════════════════════════════════════
-function filaHTML(r, modoCol2) {
-  const dias = parseDias(r["DÍAS RESTANTES"]);
-  const sem  = semaforo(dias, r["ESTADO"]);
-  const col2 = modoCol2 === "fecha"
-    ? `<div class="cel" style="font-size:11px;color:var(--soft)">${r["FECHA LÍMITE"]||"—"}</div>`
+function filaHTML(r, col2tipo) {
+  const col2 = col2tipo==="fecha"
+    ? `<div class="cel" style="font-size:11px;color:var(--soft)">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div>`
     : `<div class="cel">${badgeTipo(r["TIPO"])}</div>`;
-  const dataAttr = encodeURIComponent(JSON.stringify(r));
-
-  return `<div class="fila tcols-admite" onclick="abrirModal('${dataAttr}')">
-    <div class="cel">${sem}</div>
+  const da = encodeURIComponent(JSON.stringify(r));
+  return `<div class="fila tcols" onclick="abrirModal('${da}')">
+    <div class="cel">${semaforo(r._dias, r["ESTADO"])}</div>
     ${col2}
-    <div class="cel bold" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],30))}</div>
-    <div class="cel col-h" style="font-size:11px;color:var(--soft)" title="${esc(r["JUZGADO"])}">${esc(abrev(r["JUZGADO"],22))}</div>
-    <div class="cel col-e">${badgeEstado(r["ESTADO"])}</div>
-    <div class="cel col-r" style="font-size:11px;color:var(--soft)">${primerNombre(r["RESPONSABLE"])}</div>
-    <div class="cel" style="font-size:11px;color:var(--soft)">${esc(r["RADICADO"])||"—"}</div>
+    <div class="cel bold" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div>
+    <div class="cel col-h" style="font-size:11px;color:var(--soft)">${esc(abrev(r["JUZGADO"],24))}</div>
+    <div class="cel col-e">${badgeEst(r["ESTADO"])}</div>
+    <div class="cel col-r" style="font-size:11px;color:var(--soft)">${pNom(r["RESPONSABLE"])}</div>
+    <div class="cel" style="font-size:11px;color:var(--soft)">${esc(r["RADICADO"]||"—")}</div>
   </div>`;
 }
 
-function renderLista(bodyId, datos, modoCol2) {
-  const el = document.getElementById(bodyId);
-  if (!datos.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-ico">📭</div>Sin registros con estos filtros</div>`;
-    return;
-  }
-  el.innerHTML = ordenarUrgencia(datos).map(r => filaHTML(r, modoCol2)).join("");
+function renderLista(id, datos, col2) {
+  const el = document.getElementById(id);
+  if (!datos.length) { el.innerHTML=`<div class="empty"><div class="empty-ico">📭</div>Sin registros</div>`; return; }
+  el.innerHTML = porUrgencia(datos).map(r => filaHTML(r, col2)).join("");
+}
+
+function poblarSelects() {
+  ["fa-abo","fh-abo"].forEach(id => {
+    const s = document.getElementById(id);
+    if (!s) return;
+    const v = s.value;
+    s.innerHTML = `<option value="">Todos los abogados</option>` + ABOGADOS.map(a=>`<option>${a}</option>`).join("");
+    s.value = v;
+  });
 }
 
 // ══════════════════════════════════════════
-// RENDERS POR PESTAÑA
+// RENDERS
 // ══════════════════════════════════════════
 function renderAdmites() {
-  const q   = document.getElementById("fa-buscar").value;
-  const abo = document.getElementById("fa-abogado").value;
-  const est = document.getElementById("fa-estado").value;
+  const q   = document.getElementById("fa-q").value;
+  const abo = document.getElementById("fa-abo").value;
+  const est = document.getElementById("fa-est").value;
 
-  const datos = todos.filter(r => {
-    if (r._src !== "tutela") return false;
+  // SOLO de tutelas (gid=0), SOLO tipos admite, SIN históricos
+  const datos = tutelas.filter(r => {
     if (TIPOS_FALLO.includes(r["TIPO"]))  return false;
     if (TIPOS_OTROS.includes(r["TIPO"])) return false;
-    if (ESTADOS_HIST.includes(r["ESTADO"])) return false;
+    if (EST_HIST.includes(r["ESTADO"]))  return false;
     if (abo && r["RESPONSABLE"] !== abo) return false;
-    if (est && r["ESTADO"] !== est) return false;
-    return filtroBuscar(r, q);
+    if (est && r["ESTADO"] !== est)      return false;
+    return fBusc(r, q);
   });
 
-  // Stats
-  const urgentes = datos.filter(r => { const d=parseDias(r["DÍAS RESTANTES"]); return d!==null&&d<=1; });
-  const prox     = datos.filter(r => { const d=parseDias(r["DÍAS RESTANTES"]); return d!==null&&d>1&&d<=3; });
-  const ok       = datos.filter(r => { const d=parseDias(r["DÍAS RESTANTES"]); return d!==null&&d>3; });
-  const nuevas   = datos.filter(r => r["ESTADO"]==="Nuevo");
+  const urg  = datos.filter(r => r._dias!==null && r._dias<=1);
+  const prox = datos.filter(r => r._dias!==null && r._dias>1 && r._dias<=3);
+  const ok   = datos.filter(r => r._dias!==null && r._dias>3);
+  const nue  = datos.filter(r => r["ESTADO"]==="Nuevo");
 
   document.getElementById("stats-admites").innerHTML = `
-    <div class="stat"><div class="stat-n c-azul">${datos.length}</div><div class="stat-l">Total activos</div></div>
-    <div class="stat"><div class="stat-n c-rojo">${urgentes.length}</div><div class="stat-l">Urgentes ≤1d</div></div>
-    <div class="stat"><div class="stat-n c-ambar">${prox.length}</div><div class="stat-l">Próximos 2–3d</div></div>
-    <div class="stat"><div class="stat-n c-verde">${ok.length}</div><div class="stat-l">Con tiempo</div></div>
-    <div class="stat"><div class="stat-n c-lila">${nuevas.length}</div><div class="stat-l">Nuevas hoy</div></div>`;
+    <div class="stat"><div class="stat-n c-b">${datos.length}</div><div class="stat-l">Total activos</div></div>
+    <div class="stat"><div class="stat-n c-r">${urg.length}</div><div class="stat-l">Urgentes ≤1d</div></div>
+    <div class="stat"><div class="stat-n c-a">${prox.length}</div><div class="stat-l">Próximos 2–3d</div></div>
+    <div class="stat"><div class="stat-n c-v">${ok.length}</div><div class="stat-l">Con tiempo</div></div>
+    <div class="stat"><div class="stat-n c-l">${nue.length}</div><div class="stat-l">Nuevas</div></div>`;
 
-  document.getElementById("badge-admites").textContent = urgentes.length || datos.length;
+  document.getElementById("badge-admites").textContent = urg.length || datos.length;
   renderLista("body-admites", datos, "fecha");
 }
 
 function renderFallos() {
-  const q   = document.getElementById("ff-buscar").value;
-  const tp  = document.getElementById("ff-tipo").value;
-  const est = document.getElementById("ff-estado").value;
+  const q   = document.getElementById("ff-q").value;
+  const tp  = document.getElementById("ff-tp").value;
+  const est = document.getElementById("ff-est").value;
 
-  const datos = todos.filter(r => {
-    if (!TIPOS_FALLO.includes(r["TIPO"])) return false;
-    if (ESTADOS_HIST.includes(r["ESTADO"])) return false;
+  // Fallos vienen de la hoja Fallos de Tutela (gid=995241537)
+  const datos = fallos.filter(r => {
+    if (EST_HIST.includes(r["ESTADO"])) return false;
     if (tp  && r["TIPO"]   !== tp)  return false;
     if (est && r["ESTADO"] !== est) return false;
-    return filtroBuscar(r, q);
+    return fBusc(r, q);
   });
 
-  const urg  = datos.filter(r => { const d=parseDias(r["DÍAS RESTANTES"]); return d!==null&&d<=3; });
-  const fallos   = datos.filter(r => r["TIPO"]==="Fallo de tutela");
-  const sents    = datos.filter(r => r["TIPO"]==="Sentencia");
-
+  const urg = datos.filter(r => r._dias!==null && r._dias<=3);
   document.getElementById("stats-fallos").innerHTML = `
-    <div class="stat"><div class="stat-n c-azul">${datos.length}</div><div class="stat-l">Total</div></div>
-    <div class="stat"><div class="stat-n c-rojo">${urg.length}</div><div class="stat-l">Urgentes ≤3d</div></div>
-    <div class="stat"><div class="stat-n c-ambar">${fallos.length}</div><div class="stat-l">Fallos</div></div>
-    <div class="stat"><div class="stat-n c-rosa">${sents.length}</div><div class="stat-l">Sentencias</div></div>`;
+    <div class="stat"><div class="stat-n c-b">${datos.length}</div><div class="stat-l">Total</div></div>
+    <div class="stat"><div class="stat-n c-r">${urg.length}</div><div class="stat-l">Urgentes ≤3d</div></div>
+    <div class="stat"><div class="stat-n c-a">${datos.filter(r=>r["TIPO"]==="Fallo de tutela").length}</div><div class="stat-l">Fallos</div></div>
+    <div class="stat"><div class="stat-n c-p">${datos.filter(r=>r["TIPO"]==="Sentencia").length}</div><div class="stat-l">Sentencias</div></div>`;
 
   document.getElementById("badge-fallos").textContent = datos.length;
   renderLista("body-fallos", datos, "fecha");
 }
 
 function renderOtros() {
-  const q   = document.getElementById("fo-buscar").value;
-  const tp  = document.getElementById("fo-tipo").value;
-  const est = document.getElementById("fo-estado").value;
+  const q  = document.getElementById("fo-q").value;
+  const tp = document.getElementById("fo-tp").value;
 
-  const datos = todos.filter(r => {
+  // Otros pueden venir de ambas hojas
+  const datos = [...tutelas, ...fallos].filter(r => {
     if (!TIPOS_OTROS.includes(r["TIPO"])) return false;
-    if (ESTADOS_HIST.includes(r["ESTADO"])) return false;
-    if (tp  && r["TIPO"]   !== tp)  return false;
-    if (est && r["ESTADO"] !== est) return false;
-    return filtroBuscar(r, q);
+    if (EST_HIST.includes(r["ESTADO"])) return false;
+    if (tp && r["TIPO"] !== tp) return false;
+    return fBusc(r, q);
   });
 
   document.getElementById("badge-otros").textContent = datos.length;
@@ -754,54 +543,45 @@ function renderOtros() {
 }
 
 function renderHistorico() {
-  const q   = document.getElementById("fh-buscar").value;
-  const tp  = document.getElementById("fh-tipo").value;
-  const abo = document.getElementById("fh-abogado").value;
+  const q   = document.getElementById("fh-q").value;
+  const abo = document.getElementById("fh-abo").value;
 
-  const datos = todos.filter(r => {
-    if (!ESTADOS_HIST.includes(r["ESTADO"])) return false;
-    if (tp  && r["TIPO"]        !== tp)  return false;
+  // Histórico = registros con estado Finalizado o Respondido de AMBAS hojas
+  const datos = [...tutelas, ...fallos].filter(r => {
+    if (!EST_HIST.includes(r["ESTADO"])) return false;
     if (abo && r["RESPONSABLE"] !== abo) return false;
-    return filtroBuscar(r, q);
+    return fBusc(r, q);
   });
 
   const el = document.getElementById("body-historico");
-  if (!datos.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-ico">🗂️</div>No hay registros históricos con estos filtros</div>`;
-    return;
-  }
+  if (!datos.length) { el.innerHTML=`<div class="empty"><div class="empty-ico">🗂️</div>Sin registros históricos</div>`; return; }
   el.innerHTML = datos.map(r => {
-    const dataAttr = encodeURIComponent(JSON.stringify(r));
-    return `<div class="fila tcols-hist" onclick="abrirModal('${dataAttr}')">
-      <div class="cel">${badgeEstado(r["ESTADO"])}</div>
+    const da = encodeURIComponent(JSON.stringify(r));
+    return `<div class="fila tcols" onclick="abrirModal('${da}')">
+      <div class="cel">${badgeEst(r["ESTADO"])}</div>
       <div class="cel">${badgeTipo(r["TIPO"])}</div>
-      <div class="cel bold" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],30))}</div>
-      <div class="cel col-h" style="font-size:11px;color:var(--soft)">${esc(abrev(r["JUZGADO"],22))}</div>
-      <div class="cel col-e" style="font-size:11px;color:var(--soft)">${primerNombre(r["RESPONSABLE"])}</div>
-      <div class="cel col-r" style="font-size:11px;color:var(--soft)">${r["FECHA LÍMITE"]||"—"}</div>
-      <div class="cel" style="font-size:11px;color:var(--soft)">${esc(r["RADICADO"])||"—"}</div>
+      <div class="cel bold">${esc(abrev(r["ACCIONANTE"],32))}</div>
+      <div class="cel col-h" style="font-size:11px;color:var(--soft)">${esc(abrev(r["JUZGADO"],24))}</div>
+      <div class="cel col-e" style="font-size:11px;color:var(--soft)">${pNom(r["RESPONSABLE"])}</div>
+      <div class="cel col-r" style="font-size:11px;color:var(--soft)">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div>
+      <div class="cel" style="font-size:11px;color:var(--soft)">${esc(r["RADICADO"]||"—")}</div>
     </div>`;
   }).join("");
 }
 
-// ══════════════════════════════════════════
-// PANEL POR REPARTO
-// ══════════════════════════════════════════
 function renderReparto() {
-  const activos = todos.filter(r => !ESTADOS_HIST.includes(r["ESTADO"]));
-  const maxTot  = Math.max(...ABOGADOS.map(a => activos.filter(r=>r["RESPONSABLE"]===a).length), 1);
-
+  const activos = tutelas.filter(r => !EST_HIST.includes(r["ESTADO"]));
+  const max = Math.max(...ABOGADOS.map(a => activos.filter(r=>r["RESPONSABLE"]===a).length), 1);
   document.getElementById("grid-reparto").innerHTML = ABOGADOS.map(a => {
-    const mine  = activos.filter(r => r["RESPONSABLE"] === a);
-    const urg   = mine.filter(r => { const d=parseDias(r["DÍAS RESTANTES"]); return d!==null&&d<=2; });
-    const nue   = mine.filter(r => r["ESTADO"]==="Nuevo");
-    const proc  = mine.filter(r => r["ESTADO"]==="En proceso");
-    const pct   = Math.round(mine.length/maxTot*100);
-
+    const mine = activos.filter(r => r["RESPONSABLE"]===a);
+    const urg  = mine.filter(r => r._dias!==null && r._dias<=2);
+    const nue  = mine.filter(r => r["ESTADO"]==="Nuevo");
+    const proc = mine.filter(r => r["ESTADO"]==="En proceso");
+    const pct  = Math.round(mine.length/max*100);
     return `<div class="abo-card">
       <div class="abo-head">
-        <div class="abo-av">${iniciales(a)}</div>
-        <div><div class="abo-nombre">${primerNombre(a)}</div><div style="font-size:11px;color:var(--soft)">${a.split(" ").slice(2).join(" ")}</div></div>
+        <div class="abo-av">${inic(a)}</div>
+        <div><div class="abo-nombre">${pNom(a)}</div><div style="font-size:11px;color:var(--soft)">${a.split(" ").slice(2).join(" ")}</div></div>
       </div>
       <div class="abo-row"><span>Total activas</span><span class="n">${mine.length}</span></div>
       <div class="abo-row"><span style="color:#f87171">Urgentes ≤2d</span><span class="n" style="color:#f87171">${urg.length}</span></div>
@@ -812,312 +592,210 @@ function renderReparto() {
   }).join("");
 }
 
-// ══════════════════════════════════════════
-// PANEL POR PQR
-// ══════════════════════════════════════════
 function renderPQR() {
-  // Agrupar por ENCARGADO PQR
-  const activos = todos.filter(r => !ESTADOS_HIST.includes(r["ESTADO"]));
+  const activos = tutelas.filter(r => !EST_HIST.includes(r["ESTADO"]));
+  const conR = activos.filter(r => String(r["RESPUESTA PQR"]||"").trim());
+  const sinR = activos.filter(r => !String(r["RESPUESTA PQR"]||"").trim());
 
-  const conResp = activos.filter(r => {
-    const resp = r["RESPUESTA PQR"]||r["RESPUESTA_PQR"]||"";
-    return resp.trim().length > 0;
-  });
-  const sinResp = activos.filter(r => {
-    const resp = r["RESPUESTA PQR"]||r["RESPUESTA_PQR"]||"";
-    return !resp.trim();
-  });
+  document.getElementById("cnt-sin").textContent = sinR.length;
+  document.getElementById("cnt-con").textContent  = conR.length;
+  document.getElementById("badge-pqr").textContent = sinR.length;
 
-  document.getElementById("cnt-sin-pqr").textContent = sinResp.length;
-  document.getElementById("cnt-con-pqr").textContent  = conResp.length;
-  document.getElementById("badge-pqr-pend").textContent = sinResp.length;
+  // Agrupar sin respuesta por encargado
+  const grpSin = {};
+  sinR.forEach(r => { const e=r["ENCARGADO PQR"]||"Sin asignar"; if(!grpSin[e]) grpSin[e]=[]; grpSin[e].push(r); });
 
-  // Agrupar SIN respuesta por encargado
-  const gruposSin = {};
-  sinResp.forEach(r => {
-    const enc = r["ENCARGADO PQR"] || "Sin asignar";
-    if (!gruposSin[enc]) gruposSin[enc] = [];
-    gruposSin[enc].push(r);
-  });
-
-  const gridSin = document.getElementById("grid-sin-pqr");
-  if (!sinResp.length) {
-    gridSin.innerHTML = `<div class="empty"><div class="empty-ico">✅</div>¡Todas las PQR tienen respuesta!</div>`;
-  } else {
-    gridSin.innerHTML = Object.entries(gruposSin)
-      .sort((a,b) => b[1].length - a[1].length)
-      .map(([enc, regs]) => {
-        const debe = regs.length;
-        const urg  = regs.filter(r => { const d=parseDias(r["DÍAS RESTANTES"]); return d!==null&&d<=2; });
-        const lista = regs.slice(0,3).map(r =>
-          `<div style="font-size:11px;color:var(--soft);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-            ${esc(abrev(r["ACCIONANTE"],28))}
-            ${parseDias(r["DÍAS RESTANTES"])!==null ? `<span style="float:right;color:${parseDias(r["DÍAS RESTANTES"])<=2?"#f87171":"#fbbf24"}">${parseDias(r["DÍAS RESTANTES"])}d</span>` : ""}
-          </div>`
-        ).join("");
-        const masStr = regs.length > 3 ? `<div style="font-size:11px;color:var(--soft);padding-top:4px">+${regs.length-3} más</div>` : "";
-
-        return `<div class="pqr-card">
-          <div class="pqr-card-top">
-            <div>
-              <div class="abo-head" style="margin-bottom:6px">
-                <div class="abo-av" style="background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.3);color:#fca5a5">${iniciales(enc)}</div>
-                <div><div class="pqr-acc">${esc(primerNombre(enc))}</div></div>
-              </div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-size:22px;font-family:'DM Serif Display',serif;color:#f87171">${debe}</div>
-              <div style="font-size:10px;color:var(--soft)">debe ${debe===1?"1 PQR":debe+" PQRs"}</div>
-            </div>
+  const gSin = document.getElementById("grid-sin-pqr");
+  if (!sinR.length) { gSin.innerHTML=`<div class="empty"><div class="empty-ico">✅</div>¡Todas tienen respuesta!</div>`; }
+  else {
+    gSin.innerHTML = Object.entries(grpSin).sort((a,b)=>b[1].length-a[1].length).map(([enc,regs]) => {
+      const urg = regs.filter(r => r._dias!==null && r._dias<=2);
+      const lista = regs.slice(0,4).map(r =>
+        `<div style="font-size:11px;color:var(--soft);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+          ${esc(abrev(r["ACCIONANTE"],30))}
+          ${r._dias!==null ? `<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>` : ""}
+        </div>`).join("");
+      const mas = regs.length>4 ? `<div style="font-size:11px;color:var(--soft);padding-top:4px">+${regs.length-4} más</div>` : "";
+      return `<div class="pqr-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="abo-av" style="background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.3);color:#fca5a5">${inic(enc)}</div>
+            <div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div>
           </div>
-          ${urg.length ? `<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} urgente(s) vencen en ≤2 días</div>` : ""}
-          ${lista}${masStr}
-        </div>`;
-      }).join("");
+          <div style="text-align:right">
+            <div style="font-size:22px;font-family:'DM Serif Display',serif;color:#f87171">${regs.length}</div>
+            <div style="font-size:10px;color:var(--soft)">sin respuesta</div>
+          </div>
+        </div>
+        ${urg.length ? `<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} vencen en ≤2d</div>` : ""}
+        ${lista}${mas}
+      </div>`;
+    }).join("");
   }
 
-  // CON respuesta — cards por encargado
-  const gruposCon = {};
-  conResp.forEach(r => {
-    const enc = r["ENCARGADO PQR"] || "Sin asignar";
-    if (!gruposCon[enc]) gruposCon[enc] = [];
-    gruposCon[enc].push(r);
-  });
-
-  const gridCon = document.getElementById("grid-con-pqr");
-  if (!conResp.length) {
-    gridCon.innerHTML = `<div class="empty"><div class="empty-ico">📝</div>Ninguna PQR tiene respuesta aún</div>`;
-  } else {
-    gridCon.innerHTML = Object.entries(gruposCon)
-      .sort((a,b) => b[1].length - a[1].length)
-      .map(([enc, regs]) => {
-        const lista = regs.slice(0,3).map(r => {
-          const dataAttr = encodeURIComponent(JSON.stringify(r));
-          return `<div style="font-size:11px;color:var(--soft);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer"
-            onclick="abrirModal('${dataAttr}')">
-            ${esc(abrev(r["ACCIONANTE"],28))}
-            <span style="float:right;color:#4ade80">✓</span>
-          </div>`;
-        }).join("");
-        const masStr = regs.length>3 ? `<div style="font-size:11px;color:var(--soft);padding-top:4px">+${regs.length-3} más</div>` : "";
-        return `<div class="pqr-card">
-          <div class="pqr-card-top">
-            <div class="abo-head" style="margin-bottom:6px">
-              <div class="abo-av">${iniciales(enc)}</div>
-              <div><div class="pqr-acc">${esc(primerNombre(enc))}</div></div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-size:22px;font-family:'DM Serif Display',serif;color:#4ade80">${regs.length}</div>
-              <div style="font-size:10px;color:var(--soft)">respondidas</div>
-            </div>
-          </div>
-          ${lista}${masStr}
-        </div>`;
+  const grpCon = {};
+  conR.forEach(r => { const e=r["ENCARGADO PQR"]||"Sin asignar"; if(!grpCon[e]) grpCon[e]=[]; grpCon[e].push(r); });
+  const gCon = document.getElementById("grid-con-pqr");
+  if (!conR.length) { gCon.innerHTML=`<div class="empty"><div class="empty-ico">📝</div>Ninguna PQR respondida aún</div>`; }
+  else {
+    gCon.innerHTML = Object.entries(grpCon).sort((a,b)=>b[1].length-a[1].length).map(([enc,regs]) => {
+      const lista = regs.slice(0,4).map(r => {
+        const da = encodeURIComponent(JSON.stringify(r));
+        return `<div style="font-size:11px;color:var(--soft);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer" onclick="abrirModal('${da}')">
+          ${esc(abrev(r["ACCIONANTE"],30))}<span style="float:right;color:#4ade80">✓</span></div>`;
       }).join("");
+      const mas = regs.length>4 ? `<div style="font-size:11px;color:var(--soft);padding-top:4px">+${regs.length-4} más</div>` : "";
+      return `<div class="pqr-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="abo-av">${inic(enc)}</div>
+            <div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:22px;font-family:'DM Serif Display',serif;color:#4ade80">${regs.length}</div>
+            <div style="font-size:10px;color:var(--soft)">respondidas</div>
+          </div>
+        </div>
+        ${lista}${mas}
+      </div>`;
+    }).join("");
   }
 }
 
-// ══════════════════════════════════════════
-// ESTADÍSTICAS
-// ══════════════════════════════════════════
 function renderEstadisticas() {
-  const total  = todos.length;
-  const activ  = todos.filter(r => !ESTADOS_HIST.includes(r["ESTADO"]));
-  if (!total) { document.getElementById("grid-estadisticas").innerHTML = `<div class="empty">Sin datos</div>`; return; }
+  const todos  = [...tutelas, ...fallos];
+  const activ  = todos.filter(r => !EST_HIST.includes(r["ESTADO"]));
+  if (!todos.length) { document.getElementById("grid-est").innerHTML=`<div class="empty">Sin datos</div>`; return; }
+
+  const barra = (label, n, max, color) =>
+    `<div class="est-row"><span class="est-label">${esc(label)}</span>
+     <div class="est-bwrap"><div class="est-bfill" style="width:${Math.round(n/max*100)}%;background:${color}"></div></div>
+     <span class="est-val" style="color:${color}">${n}</span></div>`;
 
   // Por tipo
-  const tiposCount = {};
-  todos.forEach(r => { tiposCount[r["TIPO"]] = (tiposCount[r["TIPO"]]||0)+1; });
-  const maxTipo = Math.max(...Object.values(tiposCount), 1);
-  const tiposHTML = Object.entries(tiposCount).sort((a,b)=>b[1]-a[1]).map(([t,n]) =>
-    `<div class="est-row">
-      <span class="est-label">${esc(t)||"—"}</span>
-      <div class="est-bwrap"><div class="est-bfill" style="width:${Math.round(n/maxTipo*100)}%;background:var(--blue)"></div></div>
-      <span class="est-val">${n}</span>
-    </div>`).join("");
+  const tiposC = {}; todos.forEach(r=>{tiposC[r["TIPO"]]=(tiposC[r["TIPO"]]||0)+1;});
+  const maxTp  = Math.max(...Object.values(tiposC),1);
+  const tiposH = Object.entries(tiposC).sort((a,b)=>b[1]-a[1]).map(([t,n])=>barra(t,n,maxTp,"#60a5fa")).join("");
 
   // Por estado
-  const estados = ["Nuevo","En proceso","Respondido","Finalizado","Vencido"];
+  const ests = ["Nuevo","En proceso","Respondido","Finalizado","Vencido"];
+  const estC = {}; ests.forEach(e=>{estC[e]=todos.filter(r=>r["ESTADO"]===e).length;});
+  const maxE  = Math.max(...Object.values(estC),1);
   const estColors = {"Nuevo":"#60a5fa","En proceso":"#fbbf24","Respondido":"#4ade80","Finalizado":"#888780","Vencido":"#f87171"};
-  const estCount = {};
-  estados.forEach(e => { estCount[e] = todos.filter(r=>r["ESTADO"]===e).length; });
-  const maxEst = Math.max(...Object.values(estCount),1);
-  const estHTML = estados.map(e =>
-    `<div class="est-row">
-      <span class="est-label">${e}</span>
-      <div class="est-bwrap"><div class="est-bfill" style="width:${Math.round(estCount[e]/maxEst*100)}%;background:${estColors[e]}"></div></div>
-      <span class="est-val" style="color:${estColors[e]}">${estCount[e]}</span>
-    </div>`).join("");
+  const estH  = ests.map(e=>barra(e,estC[e],maxE,estColors[e])).join("");
 
-  // Por abogado (activos)
-  const maxAbo = Math.max(...ABOGADOS.map(a=>activ.filter(r=>r["RESPONSABLE"]===a).length),1);
-  const aboHTML = ABOGADOS.map(a => {
-    const n = activ.filter(r=>r["RESPONSABLE"]===a).length;
-    return `<div class="est-row">
-      <span class="est-label">${primerNombre(a)}</span>
-      <div class="est-bwrap"><div class="est-bfill" style="width:${Math.round(n/maxAbo*100)}%;background:var(--blue2)"></div></div>
-      <span class="est-val">${n}</span>
-    </div>`;
-  }).join("");
+  // Por abogado
+  const maxA = Math.max(...ABOGADOS.map(a=>activ.filter(r=>r["RESPONSABLE"]===a).length),1);
+  const aboH = ABOGADOS.map(a=>barra(pNom(a),activ.filter(r=>r["RESPONSABLE"]===a).length,maxA,"#2d8de8")).join("");
 
-  // PQR pendientes por encargado
-  const sinPQR = activ.filter(r => !(r["RESPUESTA PQR"]||r["RESPUESTA_PQR"]||"").trim());
-  const pqrCount = {};
-  sinPQR.forEach(r => { const e=r["ENCARGADO PQR"]||"Sin asignar"; pqrCount[e]=(pqrCount[e]||0)+1; });
-  const maxPQR = Math.max(...Object.values(pqrCount),1);
-  const pqrHTML = Object.entries(pqrCount).sort((a,b)=>b[1]-a[1]).map(([e,n]) =>
-    `<div class="est-row">
-      <span class="est-label">${esc(primerNombre(e))}</span>
-      <div class="est-bwrap"><div class="est-bfill" style="width:${Math.round(n/maxPQR*100)}%;background:#f87171"></div></div>
-      <span class="est-val" style="color:#f87171">${n}</span>
-    </div>`).join("");
+  // PQR sin respuesta
+  const sinPQR = activ.filter(r=>!String(r["RESPUESTA PQR"]||"").trim());
+  const pqrC = {}; sinPQR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";pqrC[e]=(pqrC[e]||0)+1;});
+  const maxP  = Math.max(...Object.values(pqrC),1);
+  const pqrH  = Object.entries(pqrC).sort((a,b)=>b[1]-a[1]).map(([e,n])=>barra(pNom(e),n,maxP,"#f87171")).join("");
 
-  document.getElementById("grid-estadisticas").innerHTML = `
-    <div class="est-card"><div class="est-titulo">Por tipo de actuación</div>${tiposHTML}</div>
-    <div class="est-card"><div class="est-titulo">Por estado</div>${estHTML}</div>
-    <div class="est-card"><div class="est-titulo">Carga por abogado (activos)</div>${aboHTML}</div>
-    <div class="est-card"><div class="est-titulo">PQR pendientes por encargado</div>${pqrHTML||"<div style='color:var(--soft);font-size:13px'>✅ Sin PQR pendientes</div>"}</div>`;
+  document.getElementById("grid-est").innerHTML = `
+    <div class="est-card"><div class="est-titulo">Por tipo de actuación</div>${tiposH}</div>
+    <div class="est-card"><div class="est-titulo">Por estado</div>${estH}</div>
+    <div class="est-card"><div class="est-titulo">Carga activa por abogado</div>${aboH}</div>
+    <div class="est-card"><div class="est-titulo">PQR sin respuesta por encargado</div>${pqrH||"<div style='color:var(--soft);font-size:13px'>✅ Sin pendientes</div>"}</div>`;
+}
+
+function renderAll() {
+  renderAdmites(); renderFallos(); renderOtros();
+  renderReparto(); renderPQR(); renderHistorico(); renderEstadisticas();
 }
 
 // ══════════════════════════════════════════
 // MODAL
 // ══════════════════════════════════════════
-function abrirModal(dataStr) {
-  let r;
-  try { r = JSON.parse(decodeURIComponent(dataStr)); } catch(e) { return; }
+function abrirModal(da) {
+  let r; try { r=JSON.parse(decodeURIComponent(da)); } catch(e){return;}
   actual = r;
-
-  const dias = parseDias(r["DÍAS RESTANTES"]);
-  set("m-badge",  badgeTipo(r["TIPO"]));
-  set("m-acc",    r["ACCIONANTE"]||"—");
-  set("m-rad",    "Radicado: " + (r["RADICADO"]||"—"));
-  set("m-juz",    r["JUZGADO"]||"—");
-  set("m-cc",     r["CC / NIT"]||"—");
-  set("m-fini",   r["FECHA INICIAL"]||"—");
-  set("m-flim",   r["FECHA LÍMITE"]||"—");
-  set("m-resp",   r["RESPONSABLE"]||"—");
-  set("m-pqrenc", r["ENCARGADO PQR"]||"—");
-  set("m-est-txt", badgeEstado(r["ESTADO"]));
-
-  const diasEl = document.getElementById("m-dias");
-  if (dias===null||isNaN(dias)) { diasEl.textContent="—"; diasEl.style.color=""; }
-  else if (dias<0)  { diasEl.textContent="Vencido hace "+Math.abs(dias)+"d"; diasEl.style.color="#f87171"; }
-  else if (dias<=2) { diasEl.textContent=dias+"d — ¡urgente!"; diasEl.style.color="#f87171"; }
-  else if (dias<=5) { diasEl.textContent=dias+" días"; diasEl.style.color="#fbbf24"; }
-  else              { diasEl.textContent=dias+" días"; diasEl.style.color="#4ade80"; }
-
-  [
-    ["DERECHO INVOCADO","m-derecho","m-derecho-w"],
-    ["HECHOS RESUMIDOS","m-hechos","m-hechos-w"],
-    ["PRETENSIONES","m-pret","m-pret-w"],
-    ["PQR","m-pqr","m-pqr-w"],
-    ["RESPUESTA PQR","m-rpqr","m-rpqr-w"],
-    ["OBSERVACIONES","m-obs","m-obs-w"],
-  ].forEach(([col,elId,wrapId]) => {
-    const val = r[col]||"";
-    document.getElementById(elId).textContent = val||"—";
-    document.getElementById(wrapId).style.display = val ? "block" : "none";
+  const dias = r._dias;
+  setEl("m-badge",  badgeTipo(r["TIPO"]));
+  setEl("m-acc",    esc(r["ACCIONANTE"]||"—"));
+  setEl("m-rad",    "Radicado: " + esc(r["RADICADO"]||"—"));
+  setEl("m-juz",    esc(r["JUZGADO"]||"—"));
+  setEl("m-cc",     esc(r["CC / NIT"]||"—"));
+  setEl("m-fini",   esc(r["FECHA INICIAL"]||"—"));
+  setEl("m-flim",   esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—"));
+  setEl("m-resp",   esc(r["RESPONSABLE"]||"—"));
+  setEl("m-pqrenc", esc(r["ENCARGADO PQR"]||"—"));
+  setEl("m-est-txt",badgeEst(r["ESTADO"]));
+  const dEl = document.getElementById("m-dias");
+  if (dias===null)  { dEl.textContent="—"; dEl.style.color=""; }
+  else if (dias<0)  { dEl.textContent="Vencido hace "+Math.abs(dias)+"d"; dEl.style.color="#f87171"; }
+  else if (dias<=2) { dEl.textContent=dias+"d — ¡urgente!"; dEl.style.color="#f87171"; }
+  else if (dias<=5) { dEl.textContent=dias+" días"; dEl.style.color="#fbbf24"; }
+  else              { dEl.textContent=dias+" días"; dEl.style.color="#4ade80"; }
+  [["DERECHO INVOCADO","m-derecho","m-derecho-w"],["HECHOS RESUMIDOS","m-hechos","m-hechos-w"],
+   ["PRETENSIONES","m-pret","m-pret-w"],["PQR","m-pqr","m-pqr-w"],
+   ["RESPUESTA PQR","m-rpqr","m-rpqr-w"],["OBSERVACIONES","m-obs","m-obs-w"]
+  ].forEach(([col,id,wid])=>{
+    const val=r[col]||""; document.getElementById(id).textContent=val||"—";
+    document.getElementById(wid).style.display=val?"block":"none";
   });
-
   document.getElementById("m-esel").value = r["ESTADO"]||"Nuevo";
   document.getElementById("overlay").classList.add("open");
 }
 
-function set(id, html) {
-  const el = document.getElementById(id);
-  if (el) el.innerHTML = html;
-}
-
-function cerrarOverlay(e) {
-  if (e.target === document.getElementById("overlay"))
-    document.getElementById("overlay").classList.remove("open");
-}
+function setEl(id, html) { const e=document.getElementById(id); if(e) e.innerHTML=html; }
+function cerrarOverlay(e) { if(e.target===document.getElementById("overlay")) document.getElementById("overlay").classList.remove("open"); }
 
 async function guardarEstado() {
   if (!actual) return;
-  const nuevoEstado = document.getElementById("m-esel").value;
-
-  // Actualizar local siempre
-  const idx = todos.findIndex(r => r["RADICADO"]===actual["RADICADO"] && r._src===actual._src);
-  if (idx>=0) todos[idx]["ESTADO"] = nuevoEstado;
-  actual["ESTADO"] = nuevoEstado;
-
-  if (!APPS_SCRIPT_URL) {
-    toast("⚠️ Cambio local. Configura el Apps Script proxy para persistir en Sheets.", "err");
-  } else {
+  const nuevoEst = document.getElementById("m-esel").value;
+  // Actualizar en memoria
+  const arr = TIPOS_FALLO.includes(actual["TIPO"]) ? fallos : tutelas;
+  const idx = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
+  if (idx>=0) arr[idx]["ESTADO"] = nuevoEst;
+  actual["ESTADO"] = nuevoEst;
+  if (!APPS_URL) { toast("⚠️ Cambio local. Configura Apps Script para persistir.","err"); }
+  else {
     try {
-      const hoja = actual._src==="tutela" ? HOJA_TUTELAS : HOJA_FALLOS;
-      const r = await fetch(APPS_SCRIPT_URL, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({accion:"actualizarEstado", hoja, radicado:actual["RADICADO"], estado:nuevoEstado})
-      });
-      const d = await r.json();
-      if (d.ok) toast("✅ Estado guardado en Sheets","ok");
-      else toast("Error: "+(d.error||"desconocido"),"err");
-    } catch(e) { toast("Error de red: "+e.message,"err"); }
+      const res = await fetch(APPS_URL,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({accion:"actualizarEstado",radicado:actual["RADICADO"],estado:nuevoEst})});
+      const d = await res.json();
+      if(d.ok) toast("✅ Guardado en Sheets","ok"); else toast("Error: "+d.error,"err");
+    } catch(e){toast("Error de red: "+e.message,"err");}
   }
-
   renderAll();
   document.getElementById("overlay").classList.remove("open");
 }
 
 function irOficio() {
   if (!actual) return;
-  const p = new URLSearchParams({
-    tipo:"Tutela-Admite",
-    accionante: actual["ACCIONANTE"]||"",
-    radicado:   actual["RADICADO"]||"",
-    cc:         actual["CC / NIT"]||""
-  });
-  window.location.href = "index.html?" + p.toString();
+  window.location.href = "index.html?" + new URLSearchParams({tipo:"Tutela-Admite",accionante:actual["ACCIONANTE"]||"",radicado:actual["RADICADO"]||"",cc:actual["CC / NIT"]||""}).toString();
 }
 
 // ══════════════════════════════════════════
 // TABS
 // ══════════════════════════════════════════
 function goTab(tab) {
-  tabActual = tab;
-  ["admites","fallos","otros","reparto","pqr","historico","estadisticas"].forEach(t => {
-    document.getElementById("tab-"+t).classList.toggle("active", t===tab);
-    document.getElementById("panel-"+t).classList.toggle("active", t===tab);
+  ["admites","fallos","otros","reparto","pqr","historico","estadisticas"].forEach(t=>{
+    document.getElementById("tab-"+t).classList.toggle("active",t===tab);
+    document.getElementById("panel-"+t).classList.toggle("active",t===tab);
   });
 }
 
-// ══════════════════════════════════════════
-// RENDER ALL
-// ══════════════════════════════════════════
-function renderAll() {
-  renderAdmites();
-  renderFallos();
-  renderOtros();
-  renderReparto();
-  renderPQR();
-  renderHistorico();
-  renderEstadisticas();
-}
-
-// ══════════════════════════════════════════
-// UI HELPERS
-// ══════════════════════════════════════════
-function setSyncState(estado, label) {
-  const dot = document.getElementById("sdot");
-  dot.className = "sync-dot" + (estado==="cargando" ? " cargando" : estado==="error" ? " error" : "");
-  document.getElementById("slabel").textContent = label;
+function setSS(estado, label) {
+  const d=document.getElementById("sdot");
+  d.className="sync-dot"+(estado==="cargando"?" cargando":estado==="error"?" error":"");
+  document.getElementById("slabel").textContent=label;
 }
 
 function toast(msg, tipo) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className = "toast show " + (tipo||"");
-  setTimeout(() => t.className="toast", 3800);
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.className="toast show "+(tipo||"");
+  setTimeout(()=>t.className="toast",3800);
 }
 
 // ══════════════════════════════════════════
 // INICIO
 // ══════════════════════════════════════════
 cargarDatos();
-setInterval(cargarDatos, 5 * 60 * 1000); // auto-refresh cada 5 min
+setInterval(cargarDatos, 5*60*1000);
 </script>
 </body>
 </html>
