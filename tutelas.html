@@ -470,6 +470,9 @@ async function cargarDatos() {
       ...t.map(r => ({...r, _src:"tutela"})),
       ...f.map(r => ({...r, _src:"fallo"}))
     ];
+    console.log("Tutelas cargadas:", t.length, "| Fallos cargados:", f.length, "| Total:", todos.length);
+    console.log("Muestra TIPO tutelas:", [...new Set(t.map(r=>r["TIPO"]))].join(", "));
+    console.log("Muestra ESTADO tutelas:", [...new Set(t.map(r=>r["ESTADO"]))].join(", "));
     poblarSelectAbogados();
     renderAll();
     setSyncState("ok","Actualizado " + hora());
@@ -501,6 +504,24 @@ function csvAObjetos(csv) {
     const vals = parseLin(l);
     const o = {};
     hdrs.forEach((h,i) => o[h] = (vals[i]||"").replace(/^"|"$/g,"").trim());
+    // Normalizar alias con/sin tilde
+    if (!o["DÍAS RESTANTES"] && o["DIAS RESTANTES"]) o["DÍAS RESTANTES"] = o["DIAS RESTANTES"];
+    if (!o["FECHA LÍMITE"]   && o["FECHA LIMITE"])   o["FECHA LÍMITE"]   = o["FECHA LIMITE"];
+    // Calcular días desde FECHA LÍMITE si la columna tiene #ERROR! o está vacía
+    const diasRaw = o["DÍAS RESTANTES"] || "";
+    const esError = diasRaw.includes("#") || diasRaw === "" || isNaN(parseInt(diasRaw));
+    if (esError) {
+      const flim = o["FECHA LÍMITE"] || o["FECHA LIMITE"] || "";
+      if (flim && flim.includes("/")) {
+        const p = flim.split("/");
+        if (p.length === 3) {
+          const fechaLim = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+          const hoy = new Date(); hoy.setHours(0,0,0,0);
+          const diff = Math.round((fechaLim - hoy) / 86400000);
+          o["DÍAS RESTANTES"] = isNaN(diff) ? "" : String(diff);
+        }
+      }
+    }
     return o;
   }).filter(r => r["ACCIONANTE"] || r["TIPO"]);
 }
