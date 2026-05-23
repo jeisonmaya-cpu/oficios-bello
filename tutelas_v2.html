@@ -697,8 +697,15 @@ function toast(msg,tipo){
   setTimeout(()=>t.className="toast",4000);
 }
 
-cargarDatos();
-setInterval(cargarDatos,5*60*1000);
+// Evitar llamadas simultáneas
+let cargando = false;
+async function cargarDatosSafe() {
+  if (cargando) return;
+  cargando = true;
+  try { await cargarDatos(); } finally { cargando = false; }
+}
+cargarDatosSafe();
+setInterval(cargarDatosSafe, 5*60*1000);
 </script>
 </body>
 </html>
