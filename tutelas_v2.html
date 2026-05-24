@@ -327,11 +327,22 @@
     <div id="m-hechos-w"  style="display:none"><div class="msec">Hechos resumidos</div><div class="mtext" id="m-hechos"></div></div>
     <div id="m-pret-w"    style="display:none"><div class="msec">Pretensiones</div><div class="mtext" id="m-pret"></div></div>
     <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
-    <div class="msec">Actualizar estado</div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <select class="esel" id="m-esel"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
-      <button class="mbtn mbtn-s" onclick="guardarEstado()">💾 Guardar</button>
+    <div class="msec">Actualizar información</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px" id="m-campos-extra">
+      <div class="mf full">
+        <label>Estado</label>
+        <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
+      </div>
+      <div class="mf full" id="m-pqr-wrap">
+        <label>Respuesta PQR</label>
+        <textarea id="m-resp-pqr" rows="3" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el número de radicado de respuesta PQR..."></textarea>
+      </div>
+      <div class="mf full" id="m-rad-wrap">
+        <label>Respuesta Radicado Tutela</label>
+        <textarea id="m-resp-rad" rows="3" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
+      </div>
     </div>
+    <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px">💾 Guardar cambios</button>
     <div class="m-actions">
       <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
       <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
@@ -633,6 +644,12 @@ function abrirModal(da){
     const val=r[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
   });
   document.getElementById("m-esel").value=r["ESTADO"]||"Nuevo";
+  // Cargar campos PQR y Radicado (solo tutelas)
+  const esFallo = ["Fallo de tutela","Sentencia","Incidente"].includes(r["TIPO"]);
+  document.getElementById("m-pqr-wrap").style.display = esFallo ? "none" : "block";
+  document.getElementById("m-rad-wrap").style.display = esFallo ? "none" : "block";
+  document.getElementById("m-resp-pqr").value = r["RESPUESTA PQR"] || "";
+  document.getElementById("m-resp-rad").value = r["RESPUESTA RADICADO TUTELA"] || "";
   document.getElementById("overlay").classList.add("open");
 }
 
@@ -640,17 +657,29 @@ function setEl(id,html){const e=document.getElementById(id);if(e)e.innerHTML=htm
 
 async function guardarEstado(){
   if(!actual)return;
-  const nuevoEst=document.getElementById("m-esel").value;
-  const arr=TIPOS_FALLO.includes(actual["TIPO"])?fallos:tutelas;
-  const idx=arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
-  if(idx>=0)arr[idx]["ESTADO"]=nuevoEst;
+  const nuevoEst   = document.getElementById("m-esel").value;
+  const respPQR    = document.getElementById("m-resp-pqr").value;
+  const respRad    = document.getElementById("m-resp-rad").value;
+  const esFallo    = ["Fallo de tutela","Sentencia","Incidente"].includes(actual["TIPO"]);
+  const arr        = esFallo ? fallos : tutelas;
+  const idx        = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
+  if(idx>=0){
+    arr[idx]["ESTADO"]=nuevoEst;
+    if(!esFallo){
+      arr[idx]["RESPUESTA PQR"]=respPQR;
+      arr[idx]["RESPUESTA RADICADO TUTELA"]=respRad;
+    }
+  }
   actual["ESTADO"]=nuevoEst;
-  if(!APPS_URL){toast("⚠️ Cambio local. Configura Apps Script URL para persistir.","err");}
+  if(!APPS_URL){toast("⚠️ Cambio local. Configura APPS_URL para persistir en Sheets.","err");}
   else{
     try{
-      const res=await fetch(APPS_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({accion:"actualizarEstado",radicado:actual["RADICADO"],estado:nuevoEst,tipo:actual["TIPO"]})});
+      const campos = { estado: nuevoEst };
+      if(!esFallo){ campos.respuestaPQR=respPQR; campos.respuestaRadicado=respRad; }
+      const res=await fetch(APPS_URL,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:actual["TIPO"]})});
       const d=await res.json();
-      if(d.ok)toast("✅ Estado guardado en Sheets","ok");else toast("Error: "+d.error,"err");
+      if(d.ok)toast("✅ Guardado en Sheets","ok");else toast("Error: "+d.error,"err");
     }catch(e){toast("Error de red: "+e.message,"err");}
   }
   renderAll();
