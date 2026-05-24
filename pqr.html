@@ -484,8 +484,48 @@ textarea.fin{resize:vertical;line-height:1.6}
 /* ═══════════════════════════════════════════════
    RESPONSIVO
 ═══════════════════════════════════════════════ */
+/* ── CHECKBOX ── */
+.cb-col{width:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cb{width:15px;height:15px;accent-color:var(--violet2);cursor:pointer;flex-shrink:0}
+.tg7{grid-template-columns:36px 130px 120px 1fr 120px 110px 90px}
+
+/* ── BARRA SELECCIÓN LOTE ── */
+.bulk-bar{
+  display:none;align-items:center;gap:10px;
+  padding:10px 16px;margin-bottom:10px;
+  background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.3);
+  border-radius:var(--r);font-size:13px;
+}
+.bulk-bar.show{display:flex}
+.bulk-count{font-weight:700;color:var(--violet3)}
+.bulk-del{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:var(--r-sm);
+  background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.35);
+  color:#f87171;font-size:12px;font-weight:600;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.bulk-del:hover{background:rgba(239,68,68,.32)}
+.bulk-cancel{
+  padding:6px 12px;border-radius:var(--r-sm);
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  color:var(--muted);font-size:12px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .2s;margin-left:auto;
+}
+.bulk-cancel:hover{background:rgba(255,255,255,.12);color:var(--text)}
+
+/* ── BOTÓN ELIMINAR MODAL ── */
+.btn-danger{
+  padding:9px 18px;border-radius:var(--r-sm);
+  background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);
+  color:#f87171;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-danger:hover{background:rgba(239,68,68,.28);border-color:rgba(239,68,68,.5)}
+
 @media(max-width:860px){
-  .tg7,.tg6,.tg5{grid-template-columns:120px 1fr 100px}
+  .tg7,.tg6,.tg5{grid-template-columns:36px 110px 1fr 90px}
   .hide{display:none}
   .main{padding:14px}
   .topbar,.tabs{padding:0 14px}
@@ -741,8 +781,16 @@ textarea.fin{resize:vertical;line-height:1.6}
       </button>
     </div>
 
+    <!-- Barra de eliminación en lote -->
+    <div class="bulk-bar" id="bulk-bar">
+      <span>🗑️ <span class="bulk-count" id="bulk-count">0</span> seleccionadas</span>
+      <button class="bulk-del" onclick="eliminarSeleccionados()">🗑️ Eliminar seleccionadas</button>
+      <button class="bulk-cancel" onclick="limpiarSeleccion()">✕ Cancelar</button>
+    </div>
+
     <div class="tw">
       <div class="tg7 th">
+        <div class="cb-col"><input type="checkbox" class="cb" id="cb-all" onclick="toggleTodos(this)" title="Seleccionar todo"/></div>
         <div class="c">Radicado</div>
         <div class="c hide">CC / NIT</div>
         <div class="c">Nombre</div>
@@ -853,6 +901,7 @@ textarea.fin{resize:vertical;line-height:1.6}
     </button>
 
     <div class="modal-actions">
+      <button class="btn-danger" onclick="eliminarDesdeModal()">🗑️ Eliminar registro</button>
       <button class="btn-sec" onclick="cerrarModal()">Cerrar</button>
     </div>
   </div>
@@ -1334,16 +1383,24 @@ function renderDashboard(){
   document.getElementById('d-body').innerHTML = slice.length
     ? slice.map(r=>{
         const da=eDA(r);
-        return`<div class="tr tg7 ${urgClass(r._dias)}" onclick="abrirModal('${da}')">
-          <div class="c" style="font-size:11.5px;color:var(--muted)">${esc(r.RADICADO)}</div>
-          <div class="c hide">${esc(r.CC||'—')}</div>
-          <div class="c c-nm">${esc(r.NOMBRE||'—')}</div>
-          <div class="c hide">${tagTipo(r.TIPO)}</div>
-          <div class="c hide" style="font-size:11.5px">${pNom(r.RESPONSABLE)}</div>
-          <div class="c">${semEst(r.ESTADO)}</div>
-          <div class="c" style="font-weight:700;color:${dColor(r._dias)};font-size:12px">${dTxt(r._dias)}</div>
+        const rid=esc(r.RADICADO);
+        const chk=selSet.has(r.RADICADO)?'checked':'';
+        return`<div class="tr tg7 ${urgClass(r._dias)}">
+          <div class="cb-col" onclick="event.stopPropagation()"><input type="checkbox" class="cb row-cb" ${chk} data-rad="${rid}" onchange="onCbChange(this)"/></div>
+          <div class="c" style="font-size:11.5px;color:var(--muted);cursor:pointer" onclick="abrirModal('${da}')">${rid}</div>
+          <div class="c hide" style="cursor:pointer" onclick="abrirModal('${da}')">${esc(r.CC||'—')}</div>
+          <div class="c c-nm" style="cursor:pointer" onclick="abrirModal('${da}')">${esc(r.NOMBRE||'—')}</div>
+          <div class="c hide" style="cursor:pointer" onclick="abrirModal('${da}')">${tagTipo(r.TIPO)}</div>
+          <div class="c hide" style="font-size:11.5px;cursor:pointer" onclick="abrirModal('${da}')">${pNom(r.RESPONSABLE)}</div>
+          <div class="c" style="cursor:pointer" onclick="abrirModal('${da}')">${semEst(r.ESTADO)}</div>
+          <div class="c" style="font-weight:700;color:${dColor(r._dias)};font-size:12px;cursor:pointer" onclick="abrirModal('${da}')">${dTxt(r._dias)}</div>
         </div>`;}).join('')
     : `<div class="empty"><div class="empty-icon">🔍</div><div>Sin resultados</div></div>`;
+
+  // Sincronizar checkbox "todos"
+  const allCbs = document.querySelectorAll('.row-cb');
+  const cbAll  = document.getElementById('cb-all');
+  if(cbAll) cbAll.checked = allCbs.length>0 && [...allCbs].every(c=>c.checked);
 
   const pg=document.getElementById('d-pag');
   if(pages<=1){pg.innerHTML='';return;}
@@ -1636,6 +1693,83 @@ function tagTipo(t){
 function demo(){
   // Sin datos demo — el sistema arranca vacío y carga desde Google Sheets
   return [];
+}
+
+/* ──────────────────────────────────────────────
+   SELECCIÓN Y ELIMINACIÓN
+────────────────────────────────────────────── */
+let selSet = new Set(); // radicados seleccionados
+
+function onCbChange(cb){
+  const rad = cb.dataset.rad;
+  if(cb.checked) selSet.add(rad);
+  else           selSet.delete(rad);
+  actualizarBulkBar();
+  // sync checkbox "todos"
+  const all=[...document.querySelectorAll('.row-cb')];
+  const cbAll=document.getElementById('cb-all');
+  if(cbAll) cbAll.checked = all.length>0 && all.every(c=>c.checked);
+}
+
+function toggleTodos(cbAll){
+  document.querySelectorAll('.row-cb').forEach(cb=>{
+    cb.checked = cbAll.checked;
+    const rad = cb.dataset.rad;
+    if(cbAll.checked) selSet.add(rad);
+    else              selSet.delete(rad);
+  });
+  actualizarBulkBar();
+}
+
+function actualizarBulkBar(){
+  const bar = document.getElementById('bulk-bar');
+  const cnt = document.getElementById('bulk-count');
+  if(selSet.size>0){ bar.classList.add('show'); cnt.textContent=selSet.size; }
+  else              bar.classList.remove('show');
+}
+
+function limpiarSeleccion(){
+  selSet.clear();
+  document.querySelectorAll('.row-cb').forEach(cb=>cb.checked=false);
+  const cbAll=document.getElementById('cb-all');
+  if(cbAll) cbAll.checked=false;
+  actualizarBulkBar();
+}
+
+function eliminarSeleccionados(){
+  if(selSet.size===0) return;
+  const n = selSet.size;
+  if(!confirm(`¿Eliminar ${n} registro(s) seleccionado(s)?\n\nEsta acción solo los borra localmente. Si tienes Sheets conectado, también se eliminarán allá.`)) return;
+
+  // Eliminar en Sheets si está configurado
+  if(CFG.appsUrl){
+    selSet.forEach(rad=>{
+      fetch(CFG.appsUrl,{method:'POST',headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({accion:'eliminarPQR',radicado:rad})}).catch(()=>{});
+    });
+  }
+
+  PQRS = PQRS.filter(r=>!selSet.has(r.RADICADO));
+  selSet.clear();
+  actualizarTodo();
+  toast(`🗑️ ${n} registro(s) eliminado(s)`,'ok');
+}
+
+function eliminarDesdeModal(){
+  if(!actual) return;
+  const nombre = actual.NOMBRE || actual.RADICADO;
+  if(!confirm(`¿Eliminar la PQR de "${nombre}"?\n\nRadicado: ${actual.RADICADO}`)) return;
+
+  if(CFG.appsUrl){
+    fetch(CFG.appsUrl,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({accion:'eliminarPQR',radicado:actual.RADICADO})}).catch(()=>{});
+  }
+
+  PQRS = PQRS.filter(r=>r.RADICADO!==actual.RADICADO);
+  selSet.delete(actual.RADICADO);
+  cerrarModal();
+  actualizarTodo();
+  toast(`🗑️ PQR "${nombre}" eliminada`,'ok');
 }
 
 /* ──────────────────────────────────────────────
