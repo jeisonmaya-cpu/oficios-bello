@@ -298,7 +298,10 @@
 
     <div id="results-area" style="display:none">
       <div class="results-header">
+        <div>
         <span class="results-title">Resultados — <span id="results-count">0</span> encontrados</span>
+        <div id="results-hint" style="font-size:11px;color:var(--blue);margin-top:3px;display:none"></div>
+      </div>
         <div class="results-actions">
           <button class="btn-export" onclick="exportarExcel()">⬇️ Excel</button>
           <span class="hint-click">👆 Clic en fila para ver detalle</span>
@@ -374,7 +377,7 @@
 </div>
 
 <script>
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2C3ycs3-48DDTABp7cHvTTFVCQQlfl1p6DLHEj5xxP-FoV0eLIr2Mu9JK_LmDofll/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznFqHRouEBMbEIRTjUMFlML5h50nlr1iLKgKgSrl3CMo8Dz5Eqoyj-lyQ7cZoGtbtjKw/exec";
 const SESSION_KEY     = 'buscador_session';
 const BLOQUEO_KEY     = 'buscador_bloqueo';
 const POR_PAGINA      = 20;
@@ -560,6 +563,13 @@ function agregarHistorial(t) {
   renderHistorial();
 }
 
+function borrarHistorial() {
+  historial = [];
+  localStorage.removeItem('buscador_historial');
+  document.getElementById('historial-wrap').style.display = 'none';
+  document.getElementById('historial-chips').innerHTML = '';
+}
+
 // ── BUSCAR ──
 function setStatus(tipo,msg,spin) {
   const bar=document.getElementById('status-bar');
@@ -617,26 +627,36 @@ async function buscar() {
 
 // ── RENDER RESULTADOS ──
 function renderResultados() {
+  const termino = document.getElementById('termino').value.trim();
   const total=todosLosResultados.length;
   const totalPg=Math.ceil(total/POR_PAGINA);
   const inicio=(paginaActual-1)*POR_PAGINA;
   const fin=Math.min(inicio+POR_PAGINA,total);
   const pagina=todosLosResultados.slice(inicio,fin);
   document.getElementById('results-count').textContent=total;
+  const hint = document.getElementById('results-hint');
+  if (hint) {
+    if (total > POR_PAGINA) {
+      hint.style.display = 'block';
+      hint.textContent = `Mostrando ${inicio+1}–${fin} de ${total}. ${total > 100 ? '💡 Refine la búsqueda para mejores resultados.' : ''}`;
+    } else {
+      hint.style.display = 'none';
+    }
+  }
 
   document.getElementById('tabla-body').innerHTML=pagina.map((r,i)=>`
     <tr onclick="abrirDetalle(${inicio+i})">
       <td><span class="tag-hoja">${esc(r[0])}</span></td>
       <td>${esc(r[1])}</td><td>${esc(r[2])}</td>
-      <td class="val-encontrado">${esc(r[3])}</td>
-      <td>${esc(r[4])}</td><td>${esc(r[5])}</td><td>${esc(r[6])}</td>
+      <td class="val-encontrado">${resaltar(r[3], termino)}</td>
+      <td>${resaltar(r[4], termino)}</td><td>${resaltar(r[5], termino)}</td><td>${resaltar(r[6], termino)}</td>
       <td><button class="btn-ver" onclick="event.stopPropagation();abrirDetalle(${inicio+i})">Ver todo</button></td>
     </tr>`).join('');
 
   document.getElementById('card-list').innerHTML=pagina.map((r,i)=>`
     <div class="result-card" onclick="abrirDetalle(${inicio+i})" style="animation-delay:${i*.04}s">
       <div class="card-top"><span class="card-hoja">${esc(r[0])}</span><span class="card-fila">Fila ${esc(r[1])}</span></div>
-      <div class="card-valor">${esc(r[3])}</div>
+      <div class="card-valor">${resaltar(r[3], termino)}</div>
       <div class="card-fields">
         ${r[4]?`<div class="card-field"><span>Contribuyente</span>${esc(r[4])}</div>`:''}
         ${r[5]?`<div class="card-field"><span>Cédula / NIT</span>${esc(r[5])}</div>`:''}
@@ -787,6 +807,16 @@ function exportarExcel(){
 function esc(v){
   if(v===null||v===undefined) return '';
   return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function resaltar(texto, termino) {
+  if (!texto || !termino) return esc(texto);
+  const escaped = esc(texto);
+  const escapedTerm = termino.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+  try {
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+    return escaped.replace(regex, '<mark style="background:#fbbf24;color:#1a1a2e;border-radius:2px;padding:0 1px">$1</mark>');
+  } catch(e) { return escaped; }
 }
 
 // ── Búsqueda en tiempo real ──
