@@ -750,11 +750,20 @@ function abrirDetalle(idx){
   document.getElementById('modal-subtitulo').textContent=`Hoja: ${hoja} · Fila ${fila}`;
   document.getElementById('modal-origen').innerHTML=
     `<span>📋</span><span>Columna <strong>${colFound}</strong> — hoja <strong>${hoja}</strong>, fila <strong>${fila}</strong></span>`;
+  // Extraer COMPARENDO antes de renderizar
+  let comparendo = '';
+  let otrosFiltrados = otros;
+  if (otros) {
+    const partes = otros.split(' | ');
+    const cp = partes.find(p => p.startsWith('Comparendo:'));
+    if (cp) { comparendo = cp.substring(11).trim(); otrosFiltrados = partes.filter(p => !p.startsWith('Comparendo:')).join(' | '); }
+  }
   let html='';
+  if(comparendo) html+=`<div class="modal-field full" style="grid-column:1/-1;border-left:3px solid var(--navy);background:#e8f0fc;border-radius:8px;padding:10px 14px;margin-bottom:2px"><div class="modal-field-label">🚦 COMPARENDO</div><div class="modal-field-value" style="font-size:15px;font-weight:700;color:var(--navy)">${esc(comparendo)}</div></div>`;
   [{label:'Valor encontrado',value:valFound,hi:true},{label:'Contribuyente',value:nombre},
    {label:'Cédula / NIT',value:cedula},{label:'Radicado',value:radicado}]
     .forEach(f=>{if(f.value) html+=`<div class="modal-field${f.hi?' highlight':''}"><div class="modal-field-label">${esc(f.label)}</div><div class="modal-field-value">${esc(f.value)}</div></div>`;});
-  if(otros) otros.split(' | ').forEach(p=>{
+  if(otrosFiltrados) otrosFiltrados.split(' | ').forEach(p=>{
     const sep=p.indexOf(':'); if(sep<0) return;
     const k=p.substring(0,sep).trim(),v=p.substring(sep+1).trim();
     html+=`<div class="modal-field${v.length>40?' full':''}"><div class="modal-field-label">${esc(k)}</div><div class="modal-field-value">${esc(v)}</div></div>`;
