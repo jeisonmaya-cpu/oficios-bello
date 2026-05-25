@@ -488,76 +488,65 @@ function aplicarSesion(u) {
 }
 
 // ── PIN ──
-// Conectar input oculto: captura teclado físico y Ctrl+V
-(function() {
-  document.addEventListener('DOMContentLoaded', function() {
-    const hidden = document.getElementById('pinHidden');
-    if (!hidden) return;
-
-    // Enfocar automáticamente al cargar si el overlay está visible
-    if (document.getElementById('pinOverlay').style.display !== 'none') {
-      setTimeout(() => hidden.focus(), 400);
-    }
-
-    // Teclado físico y pegado
-    hidden.addEventListener('input', function() {
-      const val = hidden.value.replace(/\D/g, '').slice(0, 4);
-      hidden.value = val;
-      // Sincronizar con pinActual dígito a dígito
-      pinActual = '';
-      actualizarDots();
-      for (let i = 0; i < val.length; i++) {
-        presionarPin(val[i]);
-      }
-    });
-
-    // Capturar pegado explícito (Ctrl+V / menú contextual)
-    hidden.addEventListener('paste', function(e) {
-      e.preventDefault();
-      const texto = (e.clipboardData || window.clipboardData).getData('text');
-      const soloNums = texto.replace(/\D/g, '').slice(0, 4);
-      pinActual = '';
-      actualizarDots();
-      hidden.value = '';
-      for (let i = 0; i < soloNums.length; i++) {
-        presionarPin(soloNums[i]);
-      }
-    });
-
-    // También capturar pegado desde la página completa cuando el overlay está activo
-    document.addEventListener('paste', function(e) {
-      const overlay = document.getElementById('pinOverlay');
-      if (!overlay || overlay.style.display === 'none') return;
-      e.preventDefault();
-      const texto = (e.clipboardData || window.clipboardData).getData('text');
-      const soloNums = texto.replace(/\D/g, '').slice(0, 4);
-      pinActual = '';
-      actualizarDots();
-      for (let i = 0; i < soloNums.length; i++) {
-        presionarPin(soloNums[i]);
-      }
-    });
-  });
-})();
-
 function presionarPin(d) {
   if (pinActual.length >= 4) return;
   pinActual += d;
   actualizarDots();
   if (pinActual.length === 4) setTimeout(verificarPin, 150);
 }
-function borrarPin()  {
-  pinActual = pinActual.slice(0,-1);
-  const h = document.getElementById('pinHidden');
-  if (h) h.value = pinActual;
-  actualizarDots();
-}
-function limpiarPin() {
-  pinActual = '';
-  const h = document.getElementById('pinHidden');
-  if (h) h.value = '';
-  actualizarDots();
-}
+function borrarPin()  { pinActual = pinActual.slice(0,-1); actualizarDots(); }
+function limpiarPin() { pinActual = ''; actualizarDots(); }
+
+// Conectar input oculto — se ejecuta directo, el script está al final del body
+(function conectarPinHidden() {
+  const hidden = document.getElementById('pinHidden');
+  if (!hidden) return;
+
+  // Enfocar al cargar
+  setTimeout(function() { hidden.focus(); }, 300);
+
+  // Teclado físico
+  hidden.addEventListener('input', function() {
+    const val = hidden.value.replace(/\D/g, '').slice(0, 4);
+    hidden.value = val;
+    pinActual = '';
+    actualizarDots();
+    for (var i = 0; i < val.length; i++) presionarPin(val[i]);
+  });
+
+  // Pegado en el input oculto
+  hidden.addEventListener('paste', function(e) {
+    e.preventDefault();
+    var texto = (e.clipboardData || window.clipboardData).getData('text');
+    var nums = texto.replace(/\D/g, '').slice(0, 4);
+    hidden.value = '';
+    pinActual = '';
+    actualizarDots();
+    for (var i = 0; i < nums.length; i++) presionarPin(nums[i]);
+  });
+
+  // Pegado en cualquier parte de la página mientras el overlay esté visible
+  document.addEventListener('paste', function(e) {
+    var overlay = document.getElementById('pinOverlay');
+    if (!overlay || overlay.style.display === 'none') return;
+    e.preventDefault();
+    var texto = (e.clipboardData || window.clipboardData).getData('text');
+    var nums = texto.replace(/\D/g, '').slice(0, 4);
+    pinActual = '';
+    actualizarDots();
+    for (var i = 0; i < nums.length; i++) presionarPin(nums[i]);
+  });
+
+  // Re-enfocar al hacer clic en cualquier parte del overlay
+  var overlay = document.getElementById('pinOverlay');
+  if (overlay) {
+    overlay.addEventListener('click', function(e) {
+      // No interferir con los botones del PIN
+      if (e.target.classList.contains('pin-btn')) return;
+      hidden.focus();
+    });
+  }
+})();
 
 function actualizarDots() {
   for(let i=0;i<4;i++){
