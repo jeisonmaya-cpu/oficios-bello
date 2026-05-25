@@ -867,7 +867,7 @@ function esc(v){
 function resaltar(texto, termino) {
   if (!texto || !termino) return esc(texto);
   const escaped = esc(texto);
-  const escapedTerm = termino.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+  const escapedTerm = termino.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   try {
     const regex = new RegExp(`(${escapedTerm})`, 'gi');
     return escaped.replace(regex, '<mark style="background:#fbbf24;color:#1a1a2e;border-radius:2px;padding:0 1px">$1</mark>');
