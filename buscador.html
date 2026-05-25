@@ -388,42 +388,24 @@ const POR_PAGINA      = 20;
 const MAX_INTENTOS    = 5;
 const BLOQUEO_MIN     = 10; // minutos de bloqueo
 
-// Usuarios con acceso a reportes
-const ADMINS_REPORTES = ['JEISON MAYA', 'JUAN PABLO GOMEZ'];
+// ── USUARIOS ──────────────────────────────────────────────────────────────
+// Los usuarios ya NO están hardcodeados aquí.
+// Se cargan dinámicamente desde la hoja '🔐 Usuarios' del Google Sheet
+// a través del Apps Script (accion=usuarios).
+//
+// Para agregar, modificar o desactivar un usuario:
+//   1. Abrir el Google Sheet del sistema
+//   2. Ir a la hoja '🔐 Usuarios'
+//   3. Editar la fila correspondiente (o agregar una nueva)
+//   4. Listo — sin tocar código ni republicar nada
+//
+// Estructura de la hoja:
+//   A: PIN (4 dígitos)  B: NOMBRE  C: CARGO  D: ACTIVO (SI/NO)  E: ADMIN (SI/NO)
+// ──────────────────────────────────────────────────────────────────────────
 
-const USUARIOS = [
-  {pin:'2824',nombre:'ANDERSON CORREA',cargo:'CONTRATISTA'},
-  {pin:'1409',nombre:'ANDRES BEDOYA',cargo:'CONTRATISTA'},
-  {pin:'5506',nombre:'CAMILA PUERTA',cargo:'CONTRATISTA'},
-  {pin:'5012',nombre:'CARLOS HURTADO',cargo:'CONTRATISTA'},
-  {pin:'4657',nombre:'DANIELA HIGUITA',cargo:'CONTRATISTA'},
-  {pin:'3286',nombre:'DARIO PELAEZ',cargo:'CONTRATISTA'},
-  {pin:'2679',nombre:'DAYSE NATHALY RODRIGUEZ',cargo:'CONTRATISTA'},
-  {pin:'9935',nombre:'MARCELA DUQUE',cargo:'CONTRATISTA'},
-  {pin:'2424',nombre:'HENRRY TRIANA',cargo:'CONTRATISTA'},
-  {pin:'7912',nombre:'ANDREA VALENCIA',cargo:'CONTRATISTA'},
-  {pin:'1520',nombre:'JEISON MAYA',cargo:'CONTRATISTA'},
-  {pin:'1488',nombre:'JESUS OSORIO',cargo:'CONTRATISTA'},
-  {pin:'2535',nombre:'JOSE FRANCINETH',cargo:'CONTRATISTA'},
-  {pin:'4582',nombre:'JOSE ZAPATA',cargo:'CONTRATISTA'},
-  {pin:'4811',nombre:'JUAN PABLO VILLA',cargo:'CONTRATISTA'},
-  {pin:'9279',nombre:'JULIAN PEREA',cargo:'CONTRATISTA'},
-  {pin:'1434',nombre:'JULIET DUQUE',cargo:'CONTRATISTA'},
-  {pin:'4257',nombre:'JULIANA',cargo:'CONTRATISTA'},
-  {pin:'9928',nombre:'LISETH MURILLO',cargo:'CONTRATISTA'},
-  {pin:'7873',nombre:'LUISA MIRA',cargo:'CONTRATISTA'},
-  {pin:'4611',nombre:'VERONICA SUAREZ',cargo:'CONTRATISTA'},
-  {pin:'8359',nombre:'WILSON ORTIZ',cargo:'CONTRATISTA'},
-  {pin:'5557',nombre:'VANESA PEREZ',cargo:'CONTRATISTA'},
-  {pin:'1106',nombre:'YENIFFER CHAVERRA',cargo:'CONTRATISTA'},
-  {pin:'3615',nombre:'YOBAN JIMENEZ',cargo:'CONTRATISTA'},
-  {pin:'7924',nombre:'JUAN PABLO GOMEZ',cargo:'DIRECTOR EJECUCIONES FISCALES'},
-  {pin:'6574',nombre:'CATALINA TAMAYO',cargo:'PROFESIONAL UNIVERSITARIA'},
-  {pin:'5552',nombre:'LEIDY PEREA',cargo:'PROFESIONAL UNIVERSITARIA'},
-  {pin:'3547',nombre:'ANDRES HENAO',cargo:'PROFESIONAL UNIVERSITARIA'},
-  {pin:'4527',nombre:'DEISY LOPEZ',cargo:'PROFESIONAL UNIVERSITARIA'},
-  {pin:'6514',nombre:'DARIO BALDRICH',cargo:'PROFESIONAL UNIVERSITARIA'},
-];
+// Lista de usuarios cargada desde el Sheet al iniciar la página.
+// Se llena con cargarUsuarios() — no modificar manualmente.
+let USUARIOS = [];
 
 let pinActual          = '';
 let intentosFallidos   = 0;
@@ -435,8 +417,13 @@ let historial          = JSON.parse(localStorage.getItem('buscador_historial')||
 let repFiltro          = 'todo';
 
 // ── INIT ──
+// Flujo de arranque:
+//   1. Verificar si hay bloqueo activo por intentos fallidos
+//   2. Verificar si hay sesión válida guardada (evita pedir PIN si ya inició)
+//   3. Cargar lista de usuarios desde el Sheet (Apps Script accion=usuarios)
+//   4. Mostrar el teclado PIN listo para ingresar
 (function init(){
-  // Verificar bloqueo
+  // 1. Verificar bloqueo
   try {
     const bloqueo = JSON.parse(localStorage.getItem(BLOQUEO_KEY)||'null');
     if (bloqueo && bloqueo.hasta > Date.now()) {
@@ -447,12 +434,11 @@ let repFiltro          = 'todo';
     }
   } catch(e){}
 
-  // Verificar sesión activa
+  // 2. Verificar sesión activa — si existe y no expiró, entrar directo sin pedir PIN
   try {
     const sess = JSON.parse(localStorage.getItem(SESSION_KEY) || null)
                || JSON.parse(localStorage.getItem('oficios_session') || 'null');
     if (sess && sess.expira > Date.now()) {
-      // Sincronizar ambas claves
       localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
       localStorage.setItem('oficios_session', JSON.stringify(sess));
       usuarioActual = sess;
@@ -461,7 +447,68 @@ let repFiltro          = 'todo';
       return;
     }
   } catch(e){}
+
+  // 3. Cargar usuarios desde el Sheet antes de mostrar el PIN
+  //    Mientras carga, el teclado está visible pero los botones desactivados
+  cargarUsuarios();
 })();
+
+/**
+ * Carga la lista de usuarios autorizados desde el Apps Script.
+ * Fuente: hoja '🔐 Usuarios' del Google Sheet.
+ * Si falla (sin conexión), usa el caché local como respaldo.
+ */
+async function cargarUsuarios() {
+  const pinGrid  = document.getElementById('pinIngreso');
+  const pinBtns  = pinGrid ? pinGrid.querySelectorAll('.pin-btn') : [];
+
+  // Deshabilitar botones mientras carga
+  pinBtns.forEach(b => b.disabled = true);
+
+  // Mostrar indicador de carga sutil en los puntos
+  const subtext = pinGrid ? pinGrid.querySelector('div') : null;
+  if (subtext) subtext.textContent = 'Cargando acceso...';
+
+  try {
+    const res  = await fetch(`${APPS_SCRIPT_URL}?accion=usuarios`);
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+    if (!data.usuarios || !data.usuarios.length) throw new Error('Sin usuarios');
+
+    USUARIOS = data.usuarios;
+
+    // Guardar en caché local como respaldo para conexiones lentas
+    localStorage.setItem('usuarios_cache', JSON.stringify({
+      datos: USUARIOS,
+      ts: Date.now()
+    }));
+
+    if (subtext) subtext.textContent = 'Ingrese su PIN personal';
+
+  } catch(e) {
+    // Si falla la carga, intentar usar el caché local (máx 24 horas)
+    try {
+      const cache = JSON.parse(localStorage.getItem('usuarios_cache') || 'null');
+      if (cache && cache.datos && (Date.now() - cache.ts) < 24*60*60*1000) {
+        USUARIOS = cache.datos;
+        if (subtext) subtext.textContent = 'Ingrese su PIN personal';
+        console.warn('Usuarios cargados desde caché local');
+      } else {
+        if (subtext) subtext.textContent = '⚠️ Sin conexión — intente recargar';
+      }
+    } catch(e2) {
+      if (subtext) subtext.textContent = '⚠️ Error al cargar acceso';
+    }
+  } finally {
+    // Habilitar botones siempre, con o sin usuarios cargados
+    pinBtns.forEach(b => b.disabled = false);
+    setTimeout(function() {
+      const h = document.getElementById('pinHidden');
+      if (h) h.focus();
+    }, 100);
+  }
+}
 
 function mostrarBloqueo(hasta) {
   document.getElementById('pinIngreso').style.display = 'none';
@@ -477,10 +524,16 @@ function mostrarBloqueo(hasta) {
   actualizar();
 }
 
+/**
+ * Aplica la sesión del usuario en la UI.
+ * Muestra el nombre en el badge del header.
+ * Si el usuario es admin (campo admin=true del Sheet), muestra la pestaña de Reportes.
+ * Para hacer admin a alguien: cambiar columna E a SI en la hoja '🔐 Usuarios'.
+ */
 function aplicarSesion(u) {
   document.getElementById('user-badge').textContent = '👤 ' + u.nombre;
-  // Mostrar pestaña de reportes solo a admins
-  if (ADMINS_REPORTES.includes(u.nombre)) {
+  // Acceso a reportes controlado por columna ADMIN del Sheet — sin hardcodear nombres
+  if (u.admin) {
     document.getElementById('tab-reportes').style.display = 'flex';
   }
   renderHistorial();
@@ -556,14 +609,25 @@ function actualizarDots() {
   document.getElementById('pinError').style.display = 'none';
 }
 
+/**
+ * Verifica el PIN ingresado contra la lista USUARIOS cargada del Sheet.
+ * Si es válido: crea sesión de 8 horas y oculta el overlay.
+ * Si es inválido: incrementa contador de intentos; al llegar a MAX_INTENTOS bloquea.
+ */
 function verificarPin() {
   const usuario = USUARIOS.find(u => u.pin === pinActual);
   if (usuario) {
     intentosFallidos = 0;
     localStorage.removeItem(BLOQUEO_KEY);
-    const sess = {...usuario, expira: Date.now() + 8*60*60*1000};
+    // Construir objeto de sesión — admin viene del Sheet, no hardcodeado
+    const sess = {
+      pin:    usuario.pin,
+      nombre: usuario.nombre,
+      cargo:  usuario.cargo,
+      admin:  usuario.admin || false,   // true si columna E = SI en el Sheet
+      expira: Date.now() + 8*60*60*1000 // sesión de 8 horas
+    };
     localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
-    // Compartir sesión con el index
     localStorage.setItem('oficios_session', JSON.stringify(sess));
     usuarioActual = sess;
     document.getElementById('pinOverlay').style.display = 'none';
