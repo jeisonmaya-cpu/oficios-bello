@@ -361,7 +361,7 @@ const GID_TUT     = "0";
 const GID_FAL     = "995241537";
 const GID_INC     = "528315836";
 const APPS_URL    = "https://script.google.com/macros/s/AKfycbz_WeFKr3_jyx_x4CoUTPpJHobkSvPi3qYQ9B_p5vw1d6XhRWV85JwxfY2cMBo9LCSi/exec";
-const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chavarria","Dario Baldrich","Deisy Lopez"];
+const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yenifer Chaverra","Dario Baldrich","Deisy Lopez"];
 const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente"];
 const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
 const EST_HIST    = ["Finalizado","Respondido"];
@@ -443,6 +443,9 @@ const pNom=s=>!s?"—":s.split(" ").slice(0,2).join(" ");
 const inic=s=>!s?"?":s.split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
 const fBusc=(r,q)=>!q?true:[r["ACCIONANTE"],r["RADICADO"],r["JUZGADO"],r["CC / NIT"]].join(" ").toLowerCase().includes(q.toLowerCase());
 const byUrg=arr=>[...arr].sort((a,b)=>{if(a._dias===null&&b._dias===null)return 0;if(a._dias===null)return 1;if(b._dias===null)return-1;return a._dias-b._dias;});
+// Normaliza nombres para comparar sin importar tildes, mayúsculas ni doble n
+const normNom=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/nn/g,"n").replace(/\s+/g," ").trim();
+const matchAbo=(campo,abo)=>{const nc=normNom(campo),na=normNom(abo);if(nc===na)return true;const partes=na.split(" ");return partes.length>=2&&nc.includes(partes[0])&&nc.includes(partes[partes.length-1]);};
 
 function semaforo(dias,estado){
   if (EST_HIST.includes(estado)) return`<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":"Fin"}</span>`;
