@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Aplicaciones y Devoluciones — Alcaldía de Bello</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ── VARIABLES ── */
+:root{
+  --navy:#0f2d5e;--navy-mid:#16396e;--blue:#1a6fc4;--blue2:#2d8de8;
+  --gold:#e8a020;--gold2:#f5c050;
+  --green:#16a34a;--green2:#dcfce7;
+  --red:#dc2626;--red2:#fef2f2;
+  --purple:#7c3aed;--purple2:#f5f3ff;
+  --orange:#ea580c;--orange2:#fff7ed;
+  --bg:#f0f4fa;--surface:#fff;--surface2:#e8edf7;
+  --text:#0f1e35;--text-soft:#4a5a72;
+  --border:#c8d5e8;--radius:12px;
+  --shadow:0 4px 24px rgba(15,45,94,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── HEADER ── */
+header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+.hi{max-width:1100px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hico{width:44px;height:44px;background:rgba(255,255,255,.12);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
+.htx h1{font-family:'DM Serif Display',serif;color:#fff;font-size:17px;font-weight:400}
+.htx p{color:rgba(255,255,255,.6);font-size:11px;margin-top:1px}
+.hact{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.bnav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;white-space:nowrap;transition:background .2s;cursor:pointer;font-family:'DM Sans',sans-serif}
+.bnav:hover{background:rgba(255,255,255,.22)}
+
+/* ── TABS ── */
+.tabs{background:rgba(0,0,0,.18);border-bottom:1px solid rgba(255,255,255,.1)}
+.tabsi{max-width:1100px;margin:0 auto;display:flex;padding:0 24px;gap:2px;overflow-x:auto}
+.tab{padding:10px 16px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap}
+.tab:hover{color:#fff}
+.tab.activo{color:#fff;border-bottom-color:var(--gold2)}
+
+/* ── MAIN ── */
+main{max-width:1100px;margin:0 auto;padding:24px 24px 80px}
+
+/* ── PIN OVERLAY ── */
+#pinOverlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#0d2550 100%);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.pin-box{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.15);border-radius:20px;padding:36px 32px;width:100%;max-width:360px;text-align:center;backdrop-filter:blur(10px)}
+.pin-ico{font-size:42px;margin-bottom:12px}
+.pin-box h2{font-family:'DM Serif Display',serif;color:#fff;font-size:22px;font-weight:400;margin-bottom:4px}
+.pin-box p{color:rgba(255,255,255,.55);font-size:12px;margin-bottom:24px}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.3);transition:all .2s}
+.pin-dot.activo{background:var(--gold);border-color:var(--gold)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.pin-btn{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.18);color:#fff;border-radius:12px;padding:14px 10px;font-size:18px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.pin-btn:hover{background:rgba(255,255,255,.2)}
+.pin-btn:active{transform:scale(.95)}
+.pin-del{background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.3);color:var(--gold2)}
+.pin-err{color:#f87171;font-size:12px;min-height:18px;margin-top:8px}
+
+/* ── SESIÓN BADGE ── */
+.ses-badge{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 12px;font-size:11px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:6px}
+.ses-badge strong{color:#fff}
+
+/* ── CARDS ESTADÍSTICAS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);border-top:3px solid transparent}
+.stat-card.blue{border-top-color:var(--blue)}
+.stat-card.green{border-top-color:var(--green)}
+.stat-card.orange{border-top-color:var(--orange)}
+.stat-card.purple{border-top-color:var(--purple)}
+.stat-card.gold{border-top-color:var(--gold)}
+.stat-card.red{border-top-color:var(--red)}
+.sc-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);margin-bottom:6px}
+.sc-val{font-size:26px;font-weight:700;color:var(--navy);line-height:1}
+.sc-sub{font-size:11px;color:var(--text-soft);margin-top:4px}
+
+/* ── SECCIÓN ── */
+.seccion{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.seh{background:var(--navy);color:#fff;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.seh-left{display:flex;align-items:center;gap:8px}
+.seb{padding:18px}
+
+/* ── FORMULARIO ── */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.cg4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.campo label{display:block;font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.campo input,.campo select,.campo textarea{width:100%;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:8px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s}
+.campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--blue);background:#fff}
+.campo.req label::after{content:' *';color:var(--red)}
+
+/* ── TIPO BADGE ── */
+.tipo-sel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.tipo-btn{padding:7px 16px;border-radius:20px;border:2px solid var(--border);background:var(--bg);color:var(--text-soft);font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif}
+.tipo-btn.sel-apl{border-color:var(--blue);background:#eff6ff;color:var(--blue)}
+.tipo-btn.sel-dev{border-color:var(--orange);background:var(--orange2);color:var(--orange)}
+
+/* ── BOTONES ── */
+.btn{padding:10px 20px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:6px;transition:all .18s}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff}
+.btn-primary:hover:not(:disabled){background:linear-gradient(135deg,var(--blue),var(--blue2))}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#d4910f);color:#fff}
+.btn-gold:hover:not(:disabled){filter:brightness(1.08)}
+.btn-green{background:linear-gradient(135deg,var(--green),#15803d);color:#fff}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text-soft)}
+.btn-outline:hover{background:var(--surface2)}
+.btn-red{background:linear-gradient(135deg,var(--red),#b91c1c);color:#fff}
+.btn-full{width:100%;justify-content:center;padding:12px 20px}
+
+/* ── ALERTAS ── */
+.alerta{padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.alerta.ok{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+.alerta.err{background:var(--red2);color:var(--red);border:1px solid #fecaca}
+.alerta.load{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+.alerta.warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.spin{width:14px;height:14px;border:2px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TABLA REGISTROS ── */
+.table-wrap{overflow-x:auto;border-radius:0 0 var(--radius) var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:var(--surface2);position:sticky;top:0}
+thead th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);white-space:nowrap;border-bottom:2px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--surface2);transition:background .15s}
+tbody tr:hover{background:#f8fafd}
+tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
+.badge-tipo{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:10px;font-weight:700;white-space:nowrap}
+.badge-apl{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+.badge-dev{background:var(--orange2);color:var(--orange);border:1px solid #fed7aa}
+.badge-est{padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700}
+.est-pen{background:#fef9c3;color:#854d0e;border:1px solid #fde047}
+.est-pro{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+.est-ok{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+.est-dev{background:var(--orange2);color:var(--orange);border:1px solid #fed7aa}
+.est-obs{background:var(--red2);color:var(--red);border:1px solid #fecaca}
+.mono{font-family:'DM Mono',monospace,sans-serif;font-size:11px}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+
+/* ── FILTROS ── */
+.filtros-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 18px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.filtro-inp{padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:8px;outline:none;background:#fff;color:var(--text);transition:border-color .2s}
+.filtro-inp:focus{border-color:var(--blue)}
+.filtros-bar .btn{padding:7px 14px;font-size:12px}
+
+/* ── PAGINACIÓN ── */
+.pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--surface);border-top:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.pag-info{font-size:11px;color:var(--text-soft)}
+.pag-btns{display:flex;gap:4px}
+.pag-btn{width:30px;height:30px;border:1.5px solid var(--border);background:#fff;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;color:var(--text)}
+.pag-btn:hover:not(:disabled){background:var(--surface2)}
+.pag-btn:disabled{opacity:.4;cursor:not-allowed}
+.pag-btn.cur{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── MODAL DETALLE ── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9998;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-ov.open{display:flex}
+.modal-box{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:620px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-hdr{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--border)}
+.modal-hdr h3{font-size:15px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px}
+.modal-close{background:#f3f4f6;border:none;color:#374151;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
+.det-fila{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--surface2);font-size:12px}
+.det-fila:last-child{border-bottom:none}
+.det-lbl{width:160px;min-width:160px;font-weight:600;color:var(--text-soft);text-transform:uppercase;font-size:10px;letter-spacing:.05em;padding-top:1px}
+.det-val{color:var(--text);flex:1;word-break:break-word}
+.log-item{padding:8px 12px;border-radius:8px;background:var(--bg);margin-bottom:8px;font-size:12px}
+.log-item:last-child{margin-bottom:0}
+.log-fecha{font-size:10px;color:var(--text-soft);margin-bottom:3px}
+.log-texto{color:var(--text)}
+
+/* ── DASHBOARD MINI ── */
+.dash-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:20px}
+.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.dash-card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.bar-item{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px}
+.bar-item:last-child{margin-bottom:0}
+.bar-lbl{width:130px;min-width:130px;color:var(--text-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-bg{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.bar-num{width:36px;text-align:right;font-weight:700;color:var(--navy)}
+.chart-donut{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.donut-svg{flex-shrink:0}
+.donut-legend{flex:1;min-width:120px}
+.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;cursor:pointer}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-lbl{color:var(--text);flex:1}
+.legend-val{font-weight:700;color:var(--navy)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 20px;color:var(--text-soft)}
+.empty-ico{font-size:40px;margin-bottom:10px}
+.empty p{font-size:13px}
+
+/* ── VALOR BADGE ── */
+.vbig{font-size:15px;font-weight:700;color:var(--navy)}
+.vgreen{color:var(--green);font-weight:700}
+.vorange{color:var(--orange);font-weight:700}
+
+/* ── CONFIG PANEL ── */
+.cfg-banner{background:var(--navy);color:#fff;padding:10px 18px;font-size:12px;border-radius:0 0 0 0;display:flex;align-items:center;gap:8px}
+.cfg-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+.cfg-dot.red{background:var(--red)}
+
+/* ── ACCIONES RÁPIDAS ── */
+.acc-row{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid var(--border);background:#fafbfd}
+
+@media(max-width:768px){
+  .cg{grid-template-columns:1fr}
+  .cg3{grid-template-columns:1fr}
+  .cg4{grid-template-columns:1fr 1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .hi{padding:12px 16px}
+  main{padding:16px 16px 80px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════ PIN OVERLAY ══════════════════════════════════════ -->
+<div id="pinOverlay">
+  <div class="pin-box">
+    <div class="pin-ico">💰</div>
+    <h2>Aplicaciones y Devoluciones</h2>
+    <p>Dirección Administrativa de Ejecuciones Fiscales<br>Ingrese su PIN personal de 4 dígitos</p>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-grid" id="pinIngreso">
+      <button class="pin-btn" onclick="pinDigito('1')">1</button>
+      <button class="pin-btn" onclick="pinDigito('2')">2</button>
+      <button class="pin-btn" onclick="pinDigito('3')">3</button>
+      <button class="pin-btn" onclick="pinDigito('4')">4</button>
+      <button class="pin-btn" onclick="pinDigito('5')">5</button>
+      <button class="pin-btn" onclick="pinDigito('6')">6</button>
+      <button class="pin-btn" onclick="pinDigito('7')">7</button>
+      <button class="pin-btn" onclick="pinDigito('8')">8</button>
+      <button class="pin-btn" onclick="pinDigito('9')">9</button>
+      <button class="pin-btn pin-del" onclick="pinBorrar()">⌫</button>
+      <button class="pin-btn" onclick="pinDigito('0')">0</button>
+      <button class="pin-btn" onclick="pinLimpiar()" style="font-size:13px">✕</button>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ HEADER ══════════════════════════════════════ -->
+<header>
+<div class="hi">
+  <div class="hico">💰</div>
+  <div class="htx">
+    <h1>Aplicaciones y Devoluciones</h1>
+    <p>Recursos retenidos · Cobro coactivo · Alcaldía de Bello</p>
+  </div>
+  <div class="hact">
+    <div class="ses-badge" id="sesBadge" style="display:none">👤 <strong id="sesNombre">—</strong></div>
+    <a href="home.html" class="bnav">🏛️ Inicio</a>
+    <a href="index.html" class="bnav">📄 Oficios</a>
+    <button class="bnav" onclick="cerrarSesion()">🔐 Salir</button>
+  </div>
+</div>
+<div class="tabs">
+  <div class="tabsi">
+    <button class="tab activo" id="tab-nuevo" onclick="goTab('nuevo')">➕ Nuevo registro</button>
+    <button class="tab" id="tab-lista" onclick="goTab('lista')">📋 Registros <span id="badgeLista" style="background:#e8a020;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px">0</span></button>
+    <button class="tab" id="tab-dash" onclick="goTab('dash')">📊 Dashboard</button>
+    <button class="tab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
+  </div>
+</div>
+</header>
+
+<main>
+
+<!-- ══════════════ PANEL NUEVO REGISTRO ══════════════ -->
+<div id="panel-nuevo">
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+
+  <!-- COLUMNA FORMULARIO -->
+  <div>
+
+    <!-- TIPO -->
+    <div class="seccion">
+      <div class="seh"><div class="seh-left">📌 Tipo de movimiento</div></div>
+      <div class="seb">
+        <div class="tipo-sel">
+          <button class="tipo-btn sel-apl" id="btn-apl" onclick="selTipo('APLICACION')">💳 Aplicación</button>
+          <button class="tipo-btn" id="btn-dev" onclick="selTipo('DEVOLUCION')">↩️ Devolución</button>
+        </div>
+        <div id="tipo-desc" style="margin-top:10px;padding:10px 14px;background:#eff6ff;border-radius:8px;font-size:12px;color:var(--blue);border:1px solid #bfdbfe">
+          <strong>Aplicación:</strong> Registro de dineros embargados que se aplican al saldo de la obligación tributaria del contribuyente.
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTRIBUYENTE -->
+    <div class="seccion">
+      <div class="seh"><div class="seh-left">👤 Datos del contribuyente</div></div>
+      <div class="seb">
+        <div class="cg" style="margin-bottom:12px">
+          <div class="campo req"><label>Nombre completo</label>
+            <input type="text" id="f_nombre" placeholder="Nombres y apellidos completos"/>
+          </div>
+          <div class="campo req"><label>Cédula / NIT</label>
+            <input type="text" id="f_cedula" placeholder="Número de identificación" oninput="buscarExpediente()"/>
+          </div>
+        </div>
+        <div class="cg3">
+          <div class="campo req"><label>No. Expediente / Radicado</label>
+            <input type="text" id="f_expediente" placeholder="Ej: 20252196416"/>
+          </div>
+          <div class="campo"><label>Tipo de obligación</label>
+            <select id="f_obligacion">
+              <option value="">Seleccione...</option>
+              <option value="IP — Impuesto Predial">IP — Impuesto Predial</option>
+              <option value="ICO — Industria y Comercio">ICO — Industria y Comercio</option>
+              <option value="CONS — Obligaciones Urbanísticas">CONS — Obligaciones Urbanísticas</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="campo"><label>Vigencia(s)</label>
+            <input type="text" id="f_vigencia" placeholder="Ej: 2020, 2021, 2022"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETALLES FINANCIEROS -->
+    <div class="seccion">
+      <div class="seh"><div class="seh-left">💵 Información financiera</div></div>
+      <div class="seb">
+        <div class="cg" style="margin-bottom:12px">
+          <div class="campo req"><label>Valor total retenido / embargado ($)</label>
+            <input type="text" id="f_valorRetenido" placeholder="0" oninput="fmtCampo(this)" onblur="calcularSaldo()"/>
+          </div>
+          <div class="campo req" id="grp-valor-mov">
+            <label id="lbl-valor-mov">Valor a aplicar ($)</label>
+            <input type="text" id="f_valorMov" placeholder="0" oninput="fmtCampo(this)" onblur="calcularSaldo()"/>
+          </div>
+        </div>
+        <div class="cg3">
+          <div class="campo"><label>Saldo obligación tributaria ($)</label>
+            <input type="text" id="f_saldoObl" placeholder="0 (opcional)" oninput="fmtCampo(this)" onblur="calcularSaldo()"/>
+          </div>
+          <div class="campo"><label>Saldo a devolver ($)</label>
+            <input type="text" id="f_saldoDevolver" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;cursor:default"/>
+          </div>
+          <div class="campo"><label>Entidad financiera / Banco</label>
+            <input type="text" id="f_banco" placeholder="Ej: Bancolombia, Davivienda"/>
+          </div>
+        </div>
+        <div class="cg" style="margin-top:12px">
+          <div class="campo"><label>No. cuenta / referencia interna</label>
+            <input type="text" id="f_refBanco" placeholder="Número de cuenta o referencia"/>
+          </div>
+          <div class="campo req"><label>Fecha de la actuación</label>
+            <input type="date" id="f_fecha"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTADO Y RESPONSABLE -->
+    <div class="seccion">
+      <div class="seh"><div class="seh-left">📋 Estado y responsable</div></div>
+      <div class="seb">
+        <div class="cg3">
+          <div class="campo req"><label>Estado actual</label>
+            <select id="f_estado">
+              <option value="PENDIENTE">⏳ Pendiente</option>
+              <option value="EN PROCESO">🔄 En proceso</option>
+              <option value="EJECUTADO">✅ Ejecutado</option>
+              <option value="DEVUELTO">↩️ Devuelto</option>
+              <option value="OBSERVACIÓN">⚠️ Observación</option>
+            </select>
+          </div>
+          <div class="campo req"><label>Funcionario responsable</label>
+            <input type="text" id="f_funcionario" placeholder="Nombre del funcionario" readonly style="background:#f0f4fa;cursor:default"/>
+          </div>
+          <div class="campo"><label>Área / Dependencia</label>
+            <input type="text" id="f_area" placeholder="Ej: Cobro coactivo, Contabilidad"/>
+          </div>
+        </div>
+        <div class="campo" style="margin-top:12px"><label>Observaciones / Notas adicionales</label>
+          <textarea id="f_obs" rows="3" placeholder="Detalles relevantes del movimiento, soportes, actuaciones relacionadas..."></textarea>
+        </div>
+        <!-- Alertas del formulario -->
+        <div id="frm-alert" style="display:none;margin-top:12px"></div>
+      </div>
+      <!-- Acciones -->
+      <div class="acc-row">
+        <button class="btn btn-primary" onclick="guardarRegistro()">💾 Guardar registro</button>
+        <button class="btn btn-outline" onclick="limpiarFormulario()">🗑️ Limpiar</button>
+      </div>
+    </div>
+
+  </div><!-- /col formulario -->
+
+  <!-- COLUMNA LATERAL -->
+  <div>
+    <!-- Resumen calculado -->
+    <div style="background:linear-gradient(135deg,var(--navy),#1a4a8a);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:16px;box-shadow:0 8px 32px rgba(15,45,94,.25);position:sticky;top:80px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:16px">Resumen del movimiento</div>
+      <div id="res-tipo" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.1);border-radius:9px;margin-bottom:14px;font-size:13px;font-weight:600">
+        💳 Aplicación de recursos
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1px">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px">
+          <span style="color:rgba(255,255,255,.65)">Valor retenido</span>
+          <span id="res-retenido" style="font-weight:700">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px">
+          <span style="color:rgba(255,255,255,.65)" id="res-mov-lbl">Valor a aplicar</span>
+          <span id="res-mov" style="font-weight:700;color:#86efac">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px">
+          <span style="color:rgba(255,255,255,.65)">Saldo obligación</span>
+          <span id="res-saldo-obl" style="font-weight:700">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:13px">
+          <span style="color:rgba(255,255,255,.75);font-weight:600">Saldo a devolver</span>
+          <span id="res-devolver" style="font-weight:700;color:#fbbf24;font-size:16px">$0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Últimos registros -->
+    <div class="seccion">
+      <div class="seh"><div class="seh-left">🕐 Últimos 5 registros</div>
+        <button class="bnav" style="font-size:10px;padding:4px 10px" onclick="goTab('lista')">Ver todos</button>
+      </div>
+      <div id="ultimos-lista" style="padding:8px 0">
+        <div class="empty" style="padding:24px 16px"><div class="empty-ico">📂</div><p>Sin registros aún</p></div>
+      </div>
+    </div>
+  </div><!-- /col lateral -->
+
+  </div><!-- /grid -->
+</div><!-- /panel-nuevo -->
+
+
+<!-- ══════════════ PANEL LISTA ══════════════ -->
+<div id="panel-lista" style="display:none">
+
+  <!-- Estadísticas rápidas -->
+  <div class="stats-grid" id="stats-lista">
+    <div class="stat-card blue"><div class="sc-lbl">Total registros</div><div class="sc-val" id="st-total">0</div><div class="sc-sub">en Google Sheets</div></div>
+    <div class="stat-card blue"><div class="sc-lbl">Aplicaciones</div><div class="sc-val" id="st-apl">0</div><div class="sc-sub">registradas</div></div>
+    <div class="stat-card orange"><div class="sc-lbl">Devoluciones</div><div class="sc-val" id="st-dev">0</div><div class="sc-sub">registradas</div></div>
+    <div class="stat-card gold"><div class="sc-lbl">Pendientes</div><div class="sc-val" id="st-pen">0</div><div class="sc-sub">por gestionar</div></div>
+    <div class="stat-card green"><div class="sc-lbl">Ejecutados</div><div class="sc-val" id="st-eje">0</div><div class="sc-sub">completados</div></div>
+    <div class="stat-card purple"><div class="sc-lbl">En proceso</div><div class="sc-val" id="st-pro">0</div><div class="sc-sub">activos</div></div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="seccion">
+    <div class="seh">
+      <div class="seh-left">📋 Registros de aplicaciones y devoluciones</div>
+      <div style="display:flex;gap:8px">
+        <button class="bnav" onclick="cargarRemoto(true)" style="font-size:11px;padding:5px 12px">🔄 Actualizar</button>
+        <button class="bnav" onclick="exportarExcel()" style="font-size:11px;padding:5px 12px">⬇️ Excel</button>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-bar">
+      <input class="filtro-inp" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, expediente..." oninput="filtrarTabla()" style="min-width:220px;flex:1"/>
+      <select class="filtro-inp" id="f-tipo" onchange="filtrarTabla()">
+        <option value="">Todos los tipos</option>
+        <option value="APLICACION">Aplicaciones</option>
+        <option value="DEVOLUCION">Devoluciones</option>
+      </select>
+      <select class="filtro-inp" id="f-estado" onchange="filtrarTabla()">
+        <option value="">Todos los estados</option>
+        <option value="PENDIENTE">Pendientes</option>
+        <option value="EN PROCESO">En proceso</option>
+        <option value="EJECUTADO">Ejecutados</option>
+        <option value="DEVUELTO">Devueltos</option>
+        <option value="OBSERVACIÓN">Observación</option>
+      </select>
+      <select class="filtro-inp" id="f-periodo" onchange="filtrarTabla()">
+        <option value="">Todo el tiempo</option>
+        <option value="hoy">Hoy</option>
+        <option value="semana">Esta semana</option>
+        <option value="mes">Este mes</option>
+      </select>
+      <button class="btn btn-outline" onclick="limpiarFiltros()" style="font-size:12px;padding:7px 12px">✕ Limpiar</button>
+    </div>
+
+    <div class="table-wrap">
+      <table id="tabla-registros">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Contribuyente</th>
+            <th>Cédula / NIT</th>
+            <th>Expediente</th>
+            <th>Obligación</th>
+            <th class="text-right">Valor retenido</th>
+            <th class="text-right">Valor mov.</th>
+            <th class="text-right">Saldo devolver</th>
+            <th>Estado</th>
+            <th>Funcionario</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-registros">
+          <tr><td colspan="13"><div class="empty"><div class="empty-ico">📂</div><p>Cargando registros...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pag-wrap">
+      <div class="pag-info" id="pag-info">—</div>
+      <div class="pag-btns" id="pag-btns"></div>
+    </div>
+  </div>
+
+</div><!-- /panel-lista -->
+
+
+<!-- ══════════════ PANEL DASHBOARD ══════════════ -->
+<div id="panel-dash" style="display:none">
+
+  <div class="stats-grid" style="margin-bottom:20px" id="dash-kpis">
+    <div class="stat-card blue"><div class="sc-lbl">Total movimientos</div><div class="sc-val" id="dk-total">—</div><div class="sc-sub">acumulado</div></div>
+    <div class="stat-card green"><div class="sc-lbl">Valor aplicado</div><div class="sc-val" id="dk-vapl" style="font-size:18px">—</div><div class="sc-sub">en aplicaciones</div></div>
+    <div class="stat-card orange"><div class="sc-lbl">Valor devuelto</div><div class="sc-val" id="dk-vdev" style="font-size:18px">—</div><div class="sc-sub">en devoluciones</div></div>
+    <div class="stat-card gold"><div class="sc-lbl">Pendientes gestión</div><div class="sc-val" id="dk-pend">—</div><div class="sc-sub">sin ejecutar</div></div>
+  </div>
+
+  <div class="dash-row">
+    <!-- Por funcionario -->
+    <div class="dash-card">
+      <div class="dash-card-title">👤 Registros por funcionario</div>
+      <div id="dash-funcionarios">
+        <div class="empty" style="padding:16px"><p>Sin datos</p></div>
+      </div>
+    </div>
+    <!-- Por tipo -->
+    <div class="dash-card">
+      <div class="dash-card-title">🔵 Distribución por estado</div>
+      <div class="chart-donut">
+        <svg class="donut-svg" id="donut-svg" viewBox="0 0 120 120" width="110" height="110"></svg>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-row">
+    <!-- Por tipo de obligación -->
+    <div class="dash-card">
+      <div class="dash-card-title">📂 Por tipo de obligación</div>
+      <div id="dash-obligaciones">
+        <div class="empty" style="padding:16px"><p>Sin datos</p></div>
+      </div>
+    </div>
+    <!-- Últimos 30 días -->
+    <div class="dash-card">
+      <div class="dash-card-title">📅 Actividad mensual (últimos registros)</div>
+      <div id="dash-actividad">
+        <div class="empty" style="padding:16px"><p>Sin datos</p></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /panel-dash -->
+
+
+<!-- ══════════════ PANEL CONFIG ══════════════ -->
+<div id="panel-config" style="display:none">
+  <div class="seccion">
+    <div class="seh"><div class="seh-left">⚙️ Configuración del módulo</div></div>
+    <div id="cfg-banner-wrap"></div>
+    <div class="seb">
+      <div class="cg" style="margin-bottom:16px">
+        <div class="campo"><label>URL del Apps Script (Google Sheets)</label>
+          <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/..."/>
+        </div>
+        <div class="campo"><label>Nombre del módulo en el Sheet</label>
+          <input type="text" id="cfg-hoja" placeholder="Aplicaciones_Devoluciones" value="Aplicaciones_Devoluciones"/>
+        </div>
+      </div>
+      <div id="cfg-alert" style="display:none;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="guardarConfig()">💾 Guardar configuración</button>
+        <button class="btn btn-outline" onclick="probarConexion()">🔗 Probar conexión</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info estructura del Sheet -->
+  <div class="seccion">
+    <div class="seh"><div class="seh-left">📊 Estructura esperada del Google Sheet</div></div>
+    <div class="seb">
+      <p style="font-size:12px;color:var(--text-soft);margin-bottom:14px">El Apps Script debe aceptar los parámetros <code style="background:#f0f4fa;padding:1px 5px;border-radius:4px">accion=guardar_apdev</code> y <code style="background:#f0f4fa;padding:1px 5px;border-radius:4px">accion=listar_apdev</code>. La hoja debe tener las siguientes columnas en orden:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Col</th><th>Campo</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td class="text-center">A</td><td><strong>ID</strong></td><td style="color:var(--text-soft)">Identificador único (timestamp)</td></tr>
+            <tr><td class="text-center">B</td><td><strong>Fecha</strong></td><td style="color:var(--text-soft)">Fecha de la actuación (DD/MM/AAAA)</td></tr>
+            <tr><td class="text-center">C</td><td><strong>Hora</strong></td><td style="color:var(--text-soft)">Hora del registro (HH:MM)</td></tr>
+            <tr><td class="text-center">D</td><td><strong>Tipo</strong></td><td style="color:var(--text-soft)">APLICACION | DEVOLUCION</td></tr>
+            <tr><td class="text-center">E</td><td><strong>Nombre</strong></td><td style="color:var(--text-soft)">Nombre completo del contribuyente</td></tr>
+            <tr><td class="text-center">F</td><td><strong>Cédula</strong></td><td style="color:var(--text-soft)">Cédula o NIT</td></tr>
+            <tr><td class="text-center">G</td><td><strong>Expediente</strong></td><td style="color:var(--text-soft)">No. expediente / radicado</td></tr>
+            <tr><td class="text-center">H</td><td><strong>Obligación</strong></td><td style="color:var(--text-soft)">Tipo de obligación tributaria</td></tr>
+            <tr><td class="text-center">I</td><td><strong>Vigencia</strong></td><td style="color:var(--text-soft)">Vigencias involucradas</td></tr>
+            <tr><td class="text-center">J</td><td><strong>ValorRetenido</strong></td><td style="color:var(--text-soft)">Valor total embargado</td></tr>
+            <tr><td class="text-center">K</td><td><strong>ValorMovimiento</strong></td><td style="color:var(--text-soft)">Valor a aplicar o devolver</td></tr>
+            <tr><td class="text-center">L</td><td><strong>SaldoObligacion</strong></td><td style="color:var(--text-soft)">Saldo de la obligación tributaria</td></tr>
+            <tr><td class="text-center">M</td><td><strong>SaldoDevolver</strong></td><td style="color:var(--text-soft)">Saldo calculado a devolver</td></tr>
+            <tr><td class="text-center">N</td><td><strong>Banco</strong></td><td style="color:var(--text-soft)">Entidad financiera</td></tr>
+            <tr><td class="text-center">O</td><td><strong>RefBanco</strong></td><td style="color:var(--text-soft)">No. cuenta o referencia</td></tr>
+            <tr><td class="text-center">P</td><td><strong>Estado</strong></td><td style="color:var(--text-soft)">PENDIENTE | EN PROCESO | EJECUTADO | DEVUELTO | OBSERVACIÓN</td></tr>
+            <tr><td class="text-center">Q</td><td><strong>Funcionario</strong></td><td style="color:var(--text-soft)">Funcionario que registra</td></tr>
+            <tr><td class="text-center">R</td><td><strong>Area</strong></td><td style="color:var(--text-soft)">Área o dependencia</td></tr>
+            <tr><td class="text-center">S</td><td><strong>Observaciones</strong></td><td style="color:var(--text-soft)">Notas adicionales</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Apps Script sugerido -->
+      <div style="margin-top:16px;padding:14px;background:#f8fafd;border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">📋 Código sugerido para el Apps Script</div>
+        <pre style="font-size:10px;color:#374151;line-height:1.6;white-space:pre-wrap;word-break:break-all">// Agregar en el doPost() del Apps Script existente:
+case 'guardar_apdev':
+  var sh = ss.getSheetByName(e.parameter.hoja || 'Aplicaciones_Devoluciones');
+  if (!sh) sh = ss.insertSheet(e.parameter.hoja || 'Aplicaciones_Devoluciones');
+  sh.appendRow([
+    e.parameter.id, e.parameter.fecha, e.parameter.hora,
+    e.parameter.tipo, e.parameter.nombre, e.parameter.cedula,
+    e.parameter.expediente, e.parameter.obligacion, e.parameter.vigencia,
+    e.parameter.valorRetenido, e.parameter.valorMovimiento,
+    e.parameter.saldoObligacion, e.parameter.saldoDevolver,
+    e.parameter.banco, e.parameter.refBanco, e.parameter.estado,
+    e.parameter.funcionario, e.parameter.area, e.parameter.observaciones
+  ]);
+  return ok('Registro guardado');
+
+case 'listar_apdev':
+  var sh2 = ss.getSheetByName(e.parameter.hoja || 'Aplicaciones_Devoluciones');
+  if (!sh2 || sh2.getLastRow() < 2) return ContentService
+    .createTextOutput(JSON.stringify({status:'ok',data:[]}))
+    .setMimeType(ContentService.MimeType.JSON);
+  var vals = sh2.getRange(2, 1, sh2.getLastRow()-1, 19).getValues();
+  return ContentService
+    .createTextOutput(JSON.stringify({status:'ok',data:vals}))
+    .setMimeType(ContentService.MimeType.JSON);
+
+case 'actualizar_estado_apdev':
+  // Busca por ID y actualiza columna Estado (P = col 16)
+  var sh3 = ss.getSheetByName(e.parameter.hoja || 'Aplicaciones_Devoluciones');
+  var data3 = sh3.getDataRange().getValues();
+  for(var i=1;i&lt;data3.length;i++){
+    if(String(data3[i][0])===String(e.parameter.id)){
+      sh3.getRange(i+1,16).setValue(e.parameter.estado);
+      sh3.getRange(i+1,19).setValue(e.parameter.obs || data3[i][18]);
+      break;
+    }
+  }
+  return ok('Estado actualizado');</pre>
+      </div>
+    </div>
+  </div>
+</div><!-- /panel-config -->
+
+</main>
+
+<!-- ══════════════ MODAL DETALLE ══════════════ -->
+<div class="modal-ov" id="modal-detalle">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="modal-titulo">📄 Detalle del registro</h3>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button>
+      <button class="btn btn-primary" id="btn-cambiar-estado" onclick="abrirCambioEstado()">✏️ Cambiar estado</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL CAMBIO ESTADO ══════════════ -->
+<div class="modal-ov" id="modal-estado">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-hdr" style="background:linear-gradient(135deg,var(--navy),var(--navy-mid))">
+      <h3 style="color:#fff">✏️ Actualizar estado</h3>
+      <button class="modal-close" onclick="cerrarModalEstado()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="est-info" style="background:#f0f4fa;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--text-soft)"></div>
+      <div class="campo" style="margin-bottom:12px">
+        <label>Nuevo estado</label>
+        <select id="est-nuevo">
+          <option value="PENDIENTE">⏳ Pendiente</option>
+          <option value="EN PROCESO">🔄 En proceso</option>
+          <option value="EJECUTADO">✅ Ejecutado</option>
+          <option value="DEVUELTO">↩️ Devuelto</option>
+          <option value="OBSERVACIÓN">⚠️ Observación</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Observación del cambio</label>
+        <textarea id="est-obs" rows="2" placeholder="¿Por qué cambia el estado?"></textarea>
+      </div>
+      <div id="est-alert" style="display:none;margin-top:10px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="cerrarModalEstado()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarCambioEstado()">💾 Actualizar</button>
+    </div>
+  </div>
+</div>
+
+<footer style="text-align:center;padding:16px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border);margin-top:20px">
+  Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello · Antioquia
+</footer>
+
+<script>
+// ════════════════════════════════════════════
+// CONFIGURACIÓN
+// ════════════════════════════════════════════
+const SESSION_KEY = 'oficios_session';
+const CFG_KEY = 'apdev_config_v1';
+const CACHE_KEY = 'apdev_cache_v1';
+
+var usuarioActual = null;
+var cacheRegistros = [];
+var cacheFiltrado = [];
+var pagActual = 1;
+const PAG_SIZE = 20;
+var registroActivo = null;
+var tipoActual = 'APLICACION';
+
+// Config por defecto — apunta al mismo Apps Script del sistema
+var cfg = {
+  apiUrl: '',
+  hoja: 'Aplicaciones_Devoluciones'
+};
+try { var stored = JSON.parse(localStorage.getItem(CFG_KEY)||'{}'); cfg = Object.assign(cfg, stored); } catch(e){}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+(function init(){
+  // Revisar sesión activa
+  try {
+    var sess = JSON.parse(localStorage.getItem(SESSION_KEY)||'null')
+             || JSON.parse(localStorage.getItem('oficios_session')||'null');
+    if (sess && sess.expira > Date.now()) {
+      usuarioActual = sess;
+      document.getElementById('pinOverlay').style.display = 'none';
+      aplicarSesion(sess);
+      return;
+    }
+  } catch(e){}
+  // Cargar usuarios si hay URL configurada
+  cargarUsuariosPin();
+})();
+
+function aplicarSesion(sess){
+  var nb = document.getElementById('sesBadge');
+  var nn = document.getElementById('sesNombre');
+  var ff = document.getElementById('f_funcionario');
+  if(nb) nb.style.display='flex';
+  if(nn) nn.textContent = sess.nombre || sess.pin;
+  if(ff){ ff.value = sess.nombre || ''; }
+  // Cargar config
+  actualizarConfigPanel();
+  cargarRemoto();
+}
+
+// ════════════════════════════════════════════
+// PIN
+// ════════════════════════════════════════════
+var pinActual = '';
+var USUARIOS = [];
+
+async function cargarUsuariosPin(){
+  if(!cfg.apiUrl) return;
+  try {
+    var r = await fetch(cfg.apiUrl+'?accion=usuarios');
+    var d = await r.json();
+    if(d.usuarios) USUARIOS = d.usuarios;
+  } catch(e){}
+}
+
+function pinDigito(d){
+  if(pinActual.length >= 4) return;
+  pinActual += d;
+  actualizarDots();
+  if(pinActual.length === 4) setTimeout(verificarPin, 120);
+}
+function pinBorrar(){ pinActual = pinActual.slice(0,-1); actualizarDots(); document.getElementById('pinErr').textContent=''; }
+function pinLimpiar(){ pinActual = ''; actualizarDots(); document.getElementById('pinErr').textContent=''; }
+
+function actualizarDots(){
+  for(var i=0;i<4;i++){
+    var el=document.getElementById('d'+i);
+    if(el) el.classList.toggle('activo', i < pinActual.length);
+  }
+}
+
+function verificarPin(){
+  // Buscar en usuarios cargados
+  var usuario = null;
+  for(var i=0;i<USUARIOS.length;i++){
+    if(String(USUARIOS[i].pin)===pinActual && USUARIOS[i].activo!=='NO') {
+      usuario = USUARIOS[i]; break;
+    }
+  }
+  // Si no hay usuarios cargados, permitir con PIN de emergencia (admin)
+  if(!USUARIOS.length && pinActual==='0000'){
+    usuario = {pin:'0000',nombre:'Administrador',cargo:'Admin',activo:'SI'};
+  }
+  if(usuario){
+    var sess = {
+      pin: usuario.pin,
+      nombre: usuario.nombre,
+      cargo: usuario.cargo || '',
+      expira: Date.now() + 8*60*60*1000
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
+    localStorage.setItem('oficios_session', JSON.stringify(sess));
+    usuarioActual = sess;
+    document.getElementById('pinOverlay').style.display='none';
+    aplicarSesion(sess);
+  } else {
+    document.getElementById('pinErr').textContent='PIN incorrecto. Intente de nuevo.';
+    pinActual='';
+    actualizarDots();
+    // Vibración visual
+    var pb=document.querySelector('.pin-box');
+    pb.style.animation='none';
+    setTimeout(function(){ pb.style.animation='shake .4s ease'; },10);
+  }
+}
+
+function cerrarSesion(){
+  if(!confirm('¿Cerrar sesión?')) return;
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem('oficios_session');
+  usuarioActual=null;
+  pinActual='';
+  actualizarDots();
+  document.getElementById('pinErr').textContent='';
+  document.getElementById('pinOverlay').style.display='flex';
+}
+
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function goTab(t){
+  var panels=['nuevo','lista','dash','config'];
+  panels.forEach(function(p){
+    var el=document.getElementById('panel-'+p);
+    var tb=document.getElementById('tab-'+p);
+    if(el) el.style.display= p===t ? (p==='nuevo'?'block':'block') : 'none';
+    if(tb) tb.classList.toggle('activo', p===t);
+  });
+  if(t==='lista'){ renderTabla(); }
+  if(t==='dash'){ renderDash(); }
+}
+
+// ════════════════════════════════════════════
+// TIPO DE MOVIMIENTO
+// ════════════════════════════════════════════
+function selTipo(tipo){
+  tipoActual = tipo;
+  var btnA=document.getElementById('btn-apl');
+  var btnD=document.getElementById('btn-dev');
+  btnA.className='tipo-btn'+(tipo==='APLICACION'?' sel-apl':'');
+  btnD.className='tipo-btn'+(tipo==='DEVOLUCION'?' sel-dev':'');
+
+  var desc=document.getElementById('tipo-desc');
+  var lblMov=document.getElementById('lbl-valor-mov');
+  var resMov=document.getElementById('res-mov-lbl');
+  var resTipo=document.getElementById('res-tipo');
+
+  if(tipo==='APLICACION'){
+    desc.style.background='#eff6ff'; desc.style.color='var(--blue)'; desc.style.borderColor='#bfdbfe';
+    desc.innerHTML='<strong>Aplicación:</strong> Registro de dineros embargados que se aplican al saldo de la obligación tributaria del contribuyente.';
+    if(lblMov) lblMov.textContent='Valor a aplicar ($)';
+    if(resMov) resMov.textContent='Valor a aplicar';
+    if(resTipo) resTipo.innerHTML='💳 Aplicación de recursos';
+  } else {
+    desc.style.background='var(--orange2)'; desc.style.color='var(--orange)'; desc.style.borderColor='#fed7aa';
+    desc.innerHTML='<strong>Devolución:</strong> Registro de dineros retenidos que deben ser devueltos al contribuyente por exceder el monto de la obligación.';
+    if(lblMov) lblMov.textContent='Valor a devolver ($)';
+    if(resMov) resMov.textContent='Valor a devolver';
+    if(resTipo) resTipo.innerHTML='↩️ Devolución de recursos';
+  }
+  calcularSaldo();
+}
+
+// ════════════════════════════════════════════
+// CÁLCULOS
+// ════════════════════════════════════════════
+function numVal(id){
+  var v=document.getElementById(id);
+  if(!v) return 0;
+  return parseFloat((v.value||'0').replace(/\./g,'').replace(',','.'))||0;
+}
+
+function fmtCampo(inp){
+  var raw=inp.value.replace(/[^\d]/g,'');
+  if(!raw){inp.value='';return;}
+  inp.value=parseInt(raw,10).toLocaleString('es-CO');
+}
+
+function fmt$(n){ return '$'+Math.round(n).toLocaleString('es-CO'); }
+
+function calcularSaldo(){
+  var ret=numVal('f_valorRetenido');
+  var mov=numVal('f_valorMov');
+  var sObl=numVal('f_saldoObl');
+
+  var saldo=0;
+  if(tipoActual==='APLICACION'){
+    saldo = ret - mov;
+    if(saldo<0) saldo=0;
+  } else {
+    saldo = ret; // En devolución el valor a devolver es el ingresado
+    mov = ret;
+  }
+
+  var fsd=document.getElementById('f_saldoDevolver');
+  if(fsd) fsd.value = saldo>0 ? Math.round(saldo).toLocaleString('es-CO') : '0';
+
+  // Actualizar resumen
+  document.getElementById('res-retenido').textContent=fmt$(ret);
+  document.getElementById('res-mov').textContent=fmt$(mov);
+  document.getElementById('res-saldo-obl').textContent=fmt$(sObl);
+  document.getElementById('res-devolver').textContent=fmt$(saldo);
+}
+
+// ════════════════════════════════════════════
+// GUARDAR REGISTRO
+// ════════════════════════════════════════════
+async function guardarRegistro(){
+  var nombre=document.getElementById('f_nombre').value.trim();
+  var cedula=document.getElementById('f_cedula').value.trim();
+  var expediente=document.getElementById('f_expediente').value.trim();
+  var obligacion=document.getElementById('f_obligacion').value;
+  var vigencia=document.getElementById('f_vigencia').value.trim();
+  var valorRetenido=numVal('f_valorRetenido');
+  var valorMov=numVal('f_valorMov');
+  var saldoObl=numVal('f_saldoObl');
+  var saldoDev=numVal('f_saldoDevolver');
+  var banco=document.getElementById('f_banco').value.trim();
+  var refBanco=document.getElementById('f_refBanco').value.trim();
+  var fecha=document.getElementById('f_fecha').value;
+  var estado=document.getElementById('f_estado').value;
+  var funcionario=document.getElementById('f_funcionario').value.trim();
+  var area=document.getElementById('f_area').value.trim();
+  var obs=document.getElementById('f_obs').value.trim();
+
+  // Validación
+  if(!nombre||!cedula||!expediente||!valorMov||!fecha||!funcionario){
+    showAlert('frm-alert','err','⚠️ Complete los campos obligatorios: nombre, cédula, expediente, valor, fecha y funcionario.');
+    return;
+  }
+  if(valorMov<=0){
+    showAlert('frm-alert','err','El valor del movimiento debe ser mayor a cero.');
+    return;
+  }
+
+  var ahora=new Date();
+  var fecStr=fecha.split('-').reverse().join('/');
+  var horaStr=ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  var id='APD'+ahora.getTime();
+
+  var registro={
+    id,
+    fecha:fecStr,
+    hora:horaStr,
+    tipo:tipoActual,
+    nombre,cedula,expediente,obligacion,vigencia,
+    valorRetenido,valorMovimiento:valorMov,
+    saldoObligacion:saldoObl,saldoDevolver:saldoDev,
+    banco,refBanco,estado,funcionario,area,
+    observaciones:obs
+  };
+
+  showAlert('frm-alert','load','<div class="spin"></div> Guardando en Google Sheets...');
+
+  if(cfg.apiUrl){
+    try{
+      var params=Object.assign({accion:'guardar_apdev',hoja:cfg.hoja},registro);
+      var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+      var r=await fetch(cfg.apiUrl+'?'+qs);
+      var d=await r.json();
+      if(d.status==='ok'||d.result==='ok'){
+        showAlert('frm-alert','ok','✅ Registro guardado exitosamente en Google Sheets.');
+        agregarAlCache(registro);
+        limpiarFormulario();
+        renderUltimos();
+        actualizarBadge();
+      } else {
+        throw new Error(d.message||'Error desconocido');
+      }
+    } catch(e){
+      // Guardar localmente como respaldo
+      agregarAlCache(registro);
+      showAlert('frm-alert','warn','⚠️ Sin conexión con Google Sheets. Registro guardado localmente como respaldo. Sincronizar cuando haya conexión.');
+      limpiarFormulario();
+      renderUltimos();
+      actualizarBadge();
+    }
+  } else {
+    // Sin URL configurada: guardar solo localmente
+    agregarAlCache(registro);
+    showAlert('frm-alert','warn','ℹ️ URL del Apps Script no configurada. Registro guardado localmente. Configúrela en ⚙️ Configuración.');
+    limpiarFormulario();
+    renderUltimos();
+    actualizarBadge();
+  }
+}
+
+function agregarAlCache(reg){
+  cacheRegistros.unshift(reg);
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify(cacheRegistros.slice(0,200))); } catch(e){}
+}
+
+// ════════════════════════════════════════════
+// CARGAR REMOTO
+// ════════════════════════════════════════════
+async function cargarRemoto(forzar){
+  // Cargar desde cache local primero
+  try{
+    var local=JSON.parse(localStorage.getItem(CACHE_KEY)||'[]');
+    if(local.length) cacheRegistros=local;
+  } catch(e){}
+
+  if(!cfg.apiUrl){ renderUltimos(); actualizarBadge(); return; }
+
+  try {
+    var r=await fetch(cfg.apiUrl+'?accion=listar_apdev&hoja='+encodeURIComponent(cfg.hoja));
+    var d=await r.json();
+    if(d.status==='ok'&&Array.isArray(d.data)){
+      cacheRegistros=d.data.map(function(row){
+        return {
+          id:row[0],fecha:row[1],hora:row[2],tipo:row[3],
+          nombre:row[4],cedula:row[5],expediente:row[6],
+          obligacion:row[7],vigencia:row[8],
+          valorRetenido:parseFloat(String(row[9]).replace(/[^\d.]/g,''))||0,
+          valorMovimiento:parseFloat(String(row[10]).replace(/[^\d.]/g,''))||0,
+          saldoObligacion:parseFloat(String(row[11]).replace(/[^\d.]/g,''))||0,
+          saldoDevolver:parseFloat(String(row[12]).replace(/[^\d.]/g,''))||0,
+          banco:row[13],refBanco:row[14],estado:row[15],
+          funcionario:row[16],area:row[17],observaciones:row[18]
+        };
+      }).reverse();
+      try{ localStorage.setItem(CACHE_KEY,JSON.stringify(cacheRegistros.slice(0,500))); } catch(e){}
+    }
+  } catch(e){ /* usa cache local */ }
+
+  renderUltimos();
+  actualizarBadge();
+}
+
+// ════════════════════════════════════════════
+// RENDER TABLA
+// ════════════════════════════════════════════
+function filtrarTabla(){
+  var buscar=(document.getElementById('f-buscar').value||'').toLowerCase();
+  var tipo=document.getElementById('f-tipo').value;
+  var estado=document.getElementById('f-estado').value;
+  var periodo=document.getElementById('f-periodo').value;
+  var hoy=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  cacheFiltrado=cacheRegistros.filter(function(r){
+    if(buscar){
+      var haystack=((r.nombre||'')+(r.cedula||'')+(r.expediente||'')).toLowerCase();
+      if(haystack.indexOf(buscar)<0) return false;
+    }
+    if(tipo && r.tipo!==tipo) return false;
+    if(estado && r.estado!==estado) return false;
+    if(periodo==='hoy' && r.fecha!==hoy) return false;
+    if(periodo==='semana'){
+      var p=(r.fecha||'').split('/');
+      if(p.length<3) return false;
+      var d=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
+      if(Date.now()-d.getTime()>7*24*60*60*1000) return false;
+    }
+    if(periodo==='mes'){
+      var p2=(r.fecha||'').split('/');
+      if(p2.length<3) return false;
+      var d2=new Date(parseInt(p2[2]),parseInt(p2[1])-1,parseInt(p2[0]));
+      if(Date.now()-d2.getTime()>30*24*60*60*1000) return false;
+    }
+    return true;
+  });
+  pagActual=1;
+  renderTabla();
+}
+
+function limpiarFiltros(){
+  document.getElementById('f-buscar').value='';
+  document.getElementById('f-tipo').value='';
+  document.getElementById('f-estado').value='';
+  document.getElementById('f-periodo').value='';
+  filtrarTabla();
+}
+
+function renderTabla(){
+  if(!cacheFiltrado.length) cacheFiltrado=[...cacheRegistros];
+  var total=cacheFiltrado.length;
+  var totalPags=Math.ceil(total/PAG_SIZE)||1;
+  var inicio=(pagActual-1)*PAG_SIZE;
+  var fin=Math.min(inicio+PAG_SIZE,total);
+  var pagina=cacheFiltrado.slice(inicio,fin);
+
+  // Stats
+  var apl=cacheRegistros.filter(function(r){return r.tipo==='APLICACION'}).length;
+  var dev=cacheRegistros.filter(function(r){return r.tipo==='DEVOLUCION'}).length;
+  var pen=cacheRegistros.filter(function(r){return r.estado==='PENDIENTE'}).length;
+  var eje=cacheRegistros.filter(function(r){return r.estado==='EJECUTADO'}).length;
+  var pro=cacheRegistros.filter(function(r){return r.estado==='EN PROCESO'}).length;
+  document.getElementById('st-total').textContent=cacheRegistros.length;
+  document.getElementById('st-apl').textContent=apl;
+  document.getElementById('st-dev').textContent=dev;
+  document.getElementById('st-pen').textContent=pen;
+  document.getElementById('st-eje').textContent=eje;
+  document.getElementById('st-pro').textContent=pro;
+
+  if(!pagina.length){
+    document.getElementById('tbody-registros').innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
+    document.getElementById('pag-info').textContent='0 registros';
+    document.getElementById('pag-btns').innerHTML='';
+    return;
+  }
+
+  var rows=pagina.map(function(r,i){
+    var n=inicio+i+1;
+    var badgeTipo=r.tipo==='APLICACION'
+      ?'<span class="badge-tipo badge-apl">💳 Aplicación</span>'
+      :'<span class="badge-tipo badge-dev">↩️ Devolución</span>';
+    var badges={
+      'PENDIENTE':'<span class="badge-est est-pen">⏳ Pendiente</span>',
+      'EN PROCESO':'<span class="badge-est est-pro">🔄 En proceso</span>',
+      'EJECUTADO':'<span class="badge-est est-ok">✅ Ejecutado</span>',
+      'DEVUELTO':'<span class="badge-est est-dev">↩️ Devuelto</span>',
+      'OBSERVACIÓN':'<span class="badge-est est-obs">⚠️ Observación</span>'
+    };
+    var badgeEst=badges[r.estado]||('<span class="badge-est est-pen">'+eh(r.estado)+'</span>');
+    return '<tr>'
+      +'<td class="text-center" style="color:var(--text-soft);font-size:11px">'+n+'</td>'
+      +'<td class="mono" style="white-space:nowrap">'+eh(r.fecha)+'</td>'
+      +'<td>'+badgeTipo+'</td>'
+      +'<td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(r.nombre)+'</td>'
+      +'<td class="mono">'+eh(r.cedula)+'</td>'
+      +'<td class="mono" style="white-space:nowrap">'+eh(r.expediente)+'</td>'
+      +'<td style="font-size:11px;color:var(--text-soft)">'+eh(r.obligacion||'—')+'</td>'
+      +'<td class="text-right">'+fmt$(r.valorRetenido||0)+'</td>'
+      +'<td class="text-right '+(r.tipo==='APLICACION'?'vgreen':'vorange')+'">'+fmt$(r.valorMovimiento||0)+'</td>'
+      +'<td class="text-right" style="color:var(--gold);font-weight:700">'+fmt$(r.saldoDevolver||0)+'</td>'
+      +'<td>'+badgeEst+'</td>'
+      +'<td style="font-size:11px">'+eh(r.funcionario||'—')+'</td>'
+      +'<td><button onclick="abrirDetalle(\''+eh(r.id)+'\')" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Ver</button></td>'
+      +'</tr>';
+  }).join('');
+
+  document.getElementById('tbody-registros').innerHTML=rows;
+  document.getElementById('pag-info').textContent='Mostrando '+(inicio+1)+'–'+fin+' de '+total+' registro(s)';
+
+  // Paginación
+  var pb='';
+  pb+='<button class="pag-btn" onclick="irPag('+(pagActual-1)+')" '+(pagActual===1?'disabled':'')+'>‹</button>';
+  for(var p=1;p<=totalPags;p++){
+    if(p===1||p===totalPags||Math.abs(p-pagActual)<=1){
+      pb+='<button class="pag-btn'+(p===pagActual?' cur':'')+'" onclick="irPag('+p+')">'+p+'</button>';
+    } else if(Math.abs(p-pagActual)===2){
+      pb+='<button class="pag-btn" disabled style="border:none;background:none">…</button>';
+    }
+  }
+  pb+='<button class="pag-btn" onclick="irPag('+(pagActual+1)+')" '+(pagActual===totalPags?'disabled':'')+'>›</button>';
+  document.getElementById('pag-btns').innerHTML=pb;
+}
+
+function irPag(n){
+  var total=cacheFiltrado.length||cacheRegistros.length;
+  var totalPags=Math.ceil(total/PAG_SIZE)||1;
+  if(n<1||n>totalPags) return;
+  pagActual=n;
+  renderTabla();
+  document.querySelector('.seccion').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ════════════════════════════════════════════
+// ÚLTIMOS REGISTROS (sidebar)
+// ════════════════════════════════════════════
+function renderUltimos(){
+  var el=document.getElementById('ultimos-lista');
+  if(!el) return;
+  var cinco=cacheRegistros.slice(0,5);
+  if(!cinco.length){
+    el.innerHTML='<div class="empty" style="padding:24px 16px"><div class="empty-ico">📂</div><p>Sin registros aún</p></div>';
+    return;
+  }
+  var badges={
+    'APLICACION':'<span style="background:#eff6ff;color:var(--blue);padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700">💳 APL</span>',
+    'DEVOLUCION':'<span style="background:var(--orange2);color:var(--orange);padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700">↩️ DEV</span>'
+  };
+  el.innerHTML=cinco.map(function(r){
+    return '<div style="padding:10px 14px;border-bottom:1px solid var(--surface2);cursor:pointer" onclick="abrirDetalle(\''+eh(r.id)+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        +(badges[r.tipo]||'')
+        +'<span style="font-size:10px;color:var(--text-soft)">'+eh(r.fecha)+'</span>'
+      +'</div>'
+      +'<div style="font-size:12px;font-weight:600;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(r.nombre||'—')+'</div>'
+      +'<div style="font-size:11px;color:var(--text-soft)">'+eh(r.expediente||'—')+' · '+fmt$(r.valorMovimiento||0)+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function actualizarBadge(){
+  var el=document.getElementById('badgeLista');
+  if(el) el.textContent=cacheRegistros.length;
+}
+
+// ════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════
+function renderDash(){
+  var data=cacheRegistros;
+  if(!data.length){
+    ['dk-total','dk-vapl','dk-vdev','dk-pend'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.textContent='0';
+    });
+    return;
+  }
+
+  var apl=data.filter(function(r){return r.tipo==='APLICACION'});
+  var dev=data.filter(function(r){return r.tipo==='DEVOLUCION'});
+  var pen=data.filter(function(r){return r.estado==='PENDIENTE'});
+  var vApl=apl.reduce(function(s,r){return s+(r.valorMovimiento||0);},0);
+  var vDev=dev.reduce(function(s,r){return s+(r.valorMovimiento||0);},0);
+
+  document.getElementById('dk-total').textContent=data.length;
+  document.getElementById('dk-vapl').textContent=fmtM(vApl);
+  document.getElementById('dk-vdev').textContent=fmtM(vDev);
+  document.getElementById('dk-pend').textContent=pen.length;
+
+  // Por funcionario
+  var byFunc={};
+  data.forEach(function(r){
+    var f=r.funcionario||'Sin asignar';
+    byFunc[f]=(byFunc[f]||0)+1;
+  });
+  var funcArr=Object.keys(byFunc).map(function(k){return{lbl:k,n:byFunc[k]};})
+    .sort(function(a,b){return b.n-a.n;}).slice(0,6);
+  var maxF=funcArr.length?funcArr[0].n:1;
+  var colors=['#1a6fc4','#e8a020','#16a34a','#7c3aed','#ea580c','#dc2626'];
+  document.getElementById('dash-funcionarios').innerHTML=funcArr.map(function(f,i){
+    return '<div class="bar-item"><div class="bar-lbl" title="'+eh(f.lbl)+'">'+eh(f.lbl)+'</div>'
+      +'<div class="bar-bg"><div class="bar-fill" style="width:'+(f.n/maxF*100).toFixed(1)+'%;background:'+colors[i%colors.length]+'"></div></div>'
+      +'<div class="bar-num">'+f.n+'</div></div>';
+  }).join('');
+
+  // Donut estados
+  var estados={
+    'PENDIENTE':{col:'#ca8a04',n:0},
+    'EN PROCESO':{col:'#1a6fc4',n:0},
+    'EJECUTADO':{col:'#16a34a',n:0},
+    'DEVUELTO':{col:'#ea580c',n:0},
+    'OBSERVACIÓN':{col:'#dc2626',n:0}
+  };
+  data.forEach(function(r){ if(estados[r.estado]) estados[r.estado].n++; });
+  var estArr=Object.keys(estados).map(function(k){return{lbl:k,col:estados[k].col,n:estados[k].n};}).filter(function(e){return e.n>0;});
+  renderDonut(estArr,data.length);
+
+  // Por obligación
+  var byObl={};
+  data.forEach(function(r){
+    var o=r.obligacion||'Sin clasificar';
+    byObl[o]=(byObl[o]||0)+1;
+  });
+  var oblArr=Object.keys(byObl).map(function(k){return{lbl:k,n:byObl[k]};})
+    .sort(function(a,b){return b.n-a.n;});
+  var maxO=oblArr.length?oblArr[0].n:1;
+  document.getElementById('dash-obligaciones').innerHTML=oblArr.map(function(o,i){
+    return '<div class="bar-item"><div class="bar-lbl" title="'+eh(o.lbl)+'">'+eh(o.lbl)+'</div>'
+      +'<div class="bar-bg"><div class="bar-fill" style="width:'+(o.n/maxO*100).toFixed(1)+'%;background:'+colors[i%colors.length]+'"></div></div>'
+      +'<div class="bar-num">'+o.n+'</div></div>';
+  }).join('');
+
+  // Actividad últimos 30 registros por fecha
+  var byFec={};
+  data.slice(0,60).forEach(function(r){
+    var f=(r.fecha||'').slice(0,5);
+    if(f) byFec[f]=(byFec[f]||0)+1;
+  });
+  var actArr=Object.keys(byFec).map(function(k){return{lbl:k,n:byFec[k]};}).slice(-10);
+  var maxA=actArr.length?Math.max.apply(null,actArr.map(function(a){return a.n;})):1;
+  document.getElementById('dash-actividad').innerHTML='<div style="display:flex;align-items:flex-end;gap:8px;height:80px;padding:0 4px">'
+    +actArr.map(function(a){
+      var h=Math.max(8,(a.n/maxA*72));
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'
+        +'<div style="font-size:9px;color:var(--text-soft);font-weight:600">'+a.n+'</div>'
+        +'<div style="width:100%;background:#1a6fc4;border-radius:4px 4px 0 0;height:'+h+'px;transition:height .3s"></div>'
+        +'<div style="font-size:9px;color:var(--text-soft);writing-mode:vertical-rl;transform:rotate(180deg)">'+a.lbl+'</div>'
+        +'</div>';
+    }).join('')+'</div>';
+}
+
+function fmtM(n){
+  if(!n) return '$0';
+  if(n>=1000000) return '$'+(n/1000000).toFixed(1)+'M';
+  if(n>=1000) return '$'+(n/1000).toFixed(0)+'k';
+  return '$'+Math.round(n);
+}
+
+function renderDonut(arr,total){
+  var svg=document.getElementById('donut-svg');
+  var leg=document.getElementById('donut-legend');
+  if(!svg||!arr.length) return;
+  var cx=60,cy=60,r=45,ri=28;
+  var angle=-Math.PI/2;
+  var paths='';
+  arr.forEach(function(e){
+    var a=2*Math.PI*(e.n/total);
+    var x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    var x2=cx+r*Math.cos(angle+a),y2=cy+r*Math.sin(angle+a);
+    var ix1=cx+ri*Math.cos(angle),iy1=cy+ri*Math.sin(angle);
+    var ix2=cx+ri*Math.cos(angle+a),iy2=cy+ri*Math.sin(angle+a);
+    var lg=a>Math.PI?1:0;
+    paths+='<path d="M'+x1+','+y1+' A'+r+','+r+' 0 '+lg+',1 '+x2+','+y2+' L'+ix2+','+iy2+' A'+ri+','+ri+' 0 '+lg+',0 '+ix1+','+iy1+' Z" fill="'+e.col+'" opacity=".9"/>';
+    angle+=a;
+  });
+  paths+='<circle cx="'+cx+'" cy="'+cy+'" r="18" fill="white"/>';
+  paths+='<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#0f2d5e">'+total+'</text>';
+  svg.innerHTML=paths;
+  leg.innerHTML=arr.map(function(e){
+    return '<div class="legend-item"><div class="legend-dot" style="background:'+e.col+'"></div>'
+      +'<span class="legend-lbl">'+e.lbl+'</span>'
+      +'<span class="legend-val">'+e.n+'</span></div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════
+// DETALLE
+// ════════════════════════════════════════════
+function abrirDetalle(id){
+  var r=cacheRegistros.filter(function(x){return String(x.id)===String(id);})[0];
+  if(!r) return;
+  registroActivo=r;
+
+  var badges={
+    'APLICACION':'<span class="badge-tipo badge-apl" style="font-size:12px;padding:4px 12px">💳 Aplicación</span>',
+    'DEVOLUCION':'<span class="badge-tipo badge-dev" style="font-size:12px;padding:4px 12px">↩️ Devolución</span>'
+  };
+  var badgesEst={
+    'PENDIENTE':'<span class="badge-est est-pen">⏳ Pendiente</span>',
+    'EN PROCESO':'<span class="badge-est est-pro">🔄 En proceso</span>',
+    'EJECUTADO':'<span class="badge-est est-ok">✅ Ejecutado</span>',
+    'DEVUELTO':'<span class="badge-est est-dev">↩️ Devuelto</span>',
+    'OBSERVACIÓN':'<span class="badge-est est-obs">⚠️ Observación</span>'
+  };
+
+  document.getElementById('modal-titulo').innerHTML=(badges[r.tipo]||'📄 Registro')+' <span style="font-size:12px;color:var(--text-soft);font-weight:400">ID: '+eh(r.id)+'</span>';
+
+  var html='';
+  function fila(lbl,val){ html+='<div class="det-fila"><div class="det-lbl">'+lbl+'</div><div class="det-val">'+val+'</div></div>'; }
+
+  fila('Tipo',(badges[r.tipo]||eh(r.tipo)));
+  fila('Estado',(badgesEst[r.estado]||eh(r.estado)));
+  fila('Fecha / Hora',eh(r.fecha)+' — '+eh(r.hora));
+  html+='<div style="margin:12px 0;border-top:2px solid var(--surface2)"></div>';
+  fila('Contribuyente','<strong>'+eh(r.nombre||'—')+'</strong>');
+  fila('Cédula / NIT','<span class="mono">'+eh(r.cedula||'—')+'</span>');
+  fila('Expediente','<span class="mono">'+eh(r.expediente||'—')+'</span>');
+  fila('Obligación',eh(r.obligacion||'—'));
+  fila('Vigencia(s)',eh(r.vigencia||'—'));
+  html+='<div style="margin:12px 0;border-top:2px solid var(--surface2)"></div>';
+  fila('Valor retenido','<span class="vbig">'+fmt$(r.valorRetenido||0)+'</span>');
+  fila('Valor movimiento','<span class="vbig '+(r.tipo==='APLICACION'?'vgreen':'vorange')+'">'+fmt$(r.valorMovimiento||0)+'</span>');
+  fila('Saldo obligación',fmt$(r.saldoObligacion||0));
+  fila('Saldo a devolver','<span class="vbig" style="color:var(--gold)">'+fmt$(r.saldoDevolver||0)+'</span>');
+  fila('Banco / Entidad',eh(r.banco||'—'));
+  fila('No. cuenta / Ref.',eh(r.refBanco||'—'));
+  html+='<div style="margin:12px 0;border-top:2px solid var(--surface2)"></div>';
+  fila('Funcionario',eh(r.funcionario||'—'));
+  fila('Área',eh(r.area||'—'));
+  if(r.observaciones) fila('Observaciones','<span style="color:var(--text-soft)">'+eh(r.observaciones)+'</span>');
+
+  document.getElementById('modal-body').innerHTML=html;
+  document.getElementById('modal-detalle').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function cerrarModal(){
+  document.getElementById('modal-detalle').classList.remove('open');
+  document.body.style.overflow='';
+  registroActivo=null;
+}
+
+// ════════════════════════════════════════════
+// CAMBIO ESTADO
+// ════════════════════════════════════════════
+function abrirCambioEstado(){
+  if(!registroActivo) return;
+  var r=registroActivo;
+  document.getElementById('est-info').innerHTML='<strong>'+eh(r.nombre)+'</strong> — '+eh(r.expediente||'—')+'<br><span style="font-size:10px">Estado actual: '+eh(r.estado)+'</span>';
+  document.getElementById('est-nuevo').value=r.estado;
+  document.getElementById('est-obs').value='';
+  document.getElementById('est-alert').style.display='none';
+  document.getElementById('modal-estado').classList.add('open');
+}
+
+function cerrarModalEstado(){
+  document.getElementById('modal-estado').classList.remove('open');
+}
+
+async function confirmarCambioEstado(){
+  if(!registroActivo) return;
+  var nuevoEst=document.getElementById('est-nuevo').value;
+  var obs=document.getElementById('est-obs').value.trim();
+  var alEl=document.getElementById('est-alert');
+
+  showAlertEl(alEl,'load','<div class="spin"></div> Actualizando...');
+
+  if(cfg.apiUrl){
+    try{
+      var qs='accion=actualizar_estado_apdev&hoja='+encodeURIComponent(cfg.hoja)+'&id='+encodeURIComponent(registroActivo.id)+'&estado='+encodeURIComponent(nuevoEst)+'&obs='+encodeURIComponent(obs);
+      var r=await fetch(cfg.apiUrl+'?'+qs);
+      var d=await r.json();
+      if(d.status!=='ok'&&d.result!=='ok') throw new Error();
+    } catch(e){ /* falla silenciosa, actualiza local */ }
+  }
+
+  // Actualizar cache local
+  cacheRegistros.forEach(function(r){
+    if(String(r.id)===String(registroActivo.id)){
+      r.estado=nuevoEst;
+      if(obs) r.observaciones=(r.observaciones?r.observaciones+' | ':'')+obs;
+    }
+  });
+  try{ localStorage.setItem(CACHE_KEY,JSON.stringify(cacheRegistros.slice(0,500))); } catch(e){}
+
+  showAlertEl(alEl,'ok','✅ Estado actualizado.');
+  setTimeout(function(){
+    cerrarModalEstado();
+    cerrarModal();
+    renderTabla();
+  },800);
+}
+
+// ════════════════════════════════════════════
+// EXPORTAR EXCEL
+// ════════════════════════════════════════════
+function exportarExcel(){
+  if(!cacheRegistros.length){ alert('No hay registros para exportar.'); return; }
+  var datos=cacheFiltrado.length?cacheFiltrado:cacheRegistros;
+  var filas=datos.map(function(r){
+    return {
+      'ID':r.id,'Fecha':r.fecha,'Hora':r.hora,'Tipo':r.tipo,
+      'Nombre':r.nombre,'Cédula':r.cedula,'Expediente':r.expediente,
+      'Obligación':r.obligacion,'Vigencia':r.vigencia,
+      'Valor retenido':r.valorRetenido,'Valor movimiento':r.valorMovimiento,
+      'Saldo obligación':r.saldoObligacion,'Saldo a devolver':r.saldoDevolver,
+      'Banco':r.banco,'Ref. banco':r.refBanco,'Estado':r.estado,
+      'Funcionario':r.funcionario,'Área':r.area,'Observaciones':r.observaciones
+    };
+  });
+  var ws=XLSX.utils.json_to_sheet(filas);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Aplicaciones_Devoluciones');
+  XLSX.writeFile(wb,'ApDev_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ════════════════════════════════════════════
+// CONFIGURACIÓN
+// ════════════════════════════════════════════
+function guardarConfig(){
+  cfg.apiUrl=document.getElementById('cfg-url').value.trim();
+  cfg.hoja=document.getElementById('cfg-hoja').value.trim()||'Aplicaciones_Devoluciones';
+  localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
+  actualizarConfigPanel();
+  showAlert('cfg-alert','ok','✅ Configuración guardada.');
+  cargarRemoto();
+}
+
+async function probarConexion(){
+  if(!cfg.apiUrl){ showAlert('cfg-alert','err','No hay URL configurada.'); return; }
+  showAlert('cfg-alert','load','<div class="spin"></div> Probando conexión...');
+  try{
+    var r=await fetch(cfg.apiUrl+'?accion=ping');
+    showAlert('cfg-alert','ok','✅ Conexión exitosa con Google Sheets.');
+  } catch(e){
+    showAlert('cfg-alert','err','❌ No se pudo conectar. Verifique la URL e intente nuevamente.');
+  }
+}
+
+function actualizarConfigPanel(){
+  var cu=document.getElementById('cfg-url');
+  var ch=document.getElementById('cfg-hoja');
+  if(cu) cu.value=cfg.apiUrl||'';
+  if(ch) ch.value=cfg.hoja||'Aplicaciones_Devoluciones';
+  var bw=document.getElementById('cfg-banner-wrap');
+  if(bw){
+    bw.innerHTML=cfg.apiUrl
+      ?'<div class="cfg-banner"><div class="cfg-dot"></div>Conectado: <strong>'+cfg.apiUrl.slice(-40)+'</strong></div>'
+      :'<div class="cfg-banner"><div class="cfg-dot red"></div>Sin URL configurada — los registros se guardan localmente.</div>';
+  }
+}
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function limpiarFormulario(){
+  ['f_nombre','f_cedula','f_expediente','f_vigencia','f_valorRetenido','f_valorMov',
+   'f_saldoObl','f_saldoDevolver','f_banco','f_refBanco','f_obs','f_area'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  var fo=document.getElementById('f_obligacion'); if(fo) fo.value='';
+  var fe=document.getElementById('f_estado'); if(fe) fe.value='PENDIENTE';
+  var fd=document.getElementById('f_fecha'); if(fd) fd.value=new Date().toISOString().slice(0,10);
+  document.getElementById('frm-alert').style.display='none';
+  calcularSaldo();
+}
+
+function eh(v){
+  if(v===null||v===undefined) return '';
+  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showAlert(id,tipo,msg){
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.style.display='flex';
+  el.className='alerta '+tipo;
+  el.innerHTML=msg;
+}
+
+function showAlertEl(el,tipo,msg){
+  if(!el) return;
+  el.style.display='flex';
+  el.className='alerta '+tipo;
+  el.innerHTML=msg;
+}
+
+function buscarExpediente(){ /* Placeholder para autocompletar desde Google Sheets */ }
+
+// ════════════════════════════════════════════
+// INIT CAMPOS
+// ════════════════════════════════════════════
+(function initCampos(){
+  var fd=document.getElementById('f_fecha');
+  if(fd) fd.value=new Date().toISOString().slice(0,10);
+})();
+
+// Animación shake para PIN
+var style=document.createElement('style');
+style.textContent='@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}';
+document.head.appendChild(style);
+</script>
+</body>
+</html>
