@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Recaudo Histórico — Alcaldía de Bello</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0f2d5e;--navy-mid:#16396e;--blue:#1a6fc4;--blue2:#2d8de8;
+  --gold:#e8a020;--gold2:#f5c050;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--purple:#7c3aed;
+  --bg:#f0f4fa;--surface:#fff;--surface2:#e8edf7;
+  --text:#0f1e35;--text-soft:#4a5a72;--border:#c8d5e8;
+  --radius:12px;--shadow:0 4px 24px rgba(15,45,94,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── PIN ── */
+#pinOverlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#0d2550 100%);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.pin-box{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.15);border-radius:20px;padding:36px 32px;width:100%;max-width:360px;text-align:center;backdrop-filter:blur(10px)}
+.pin-ico{font-size:42px;margin-bottom:12px}
+.pin-box h2{font-family:'DM Serif Display',serif;color:#fff;font-size:22px;font-weight:400;margin-bottom:4px}
+.pin-box p{color:rgba(255,255,255,.55);font-size:12px;margin-bottom:24px}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.3);transition:all .2s}
+.pin-dot.on{background:var(--gold);border-color:var(--gold)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.pin-btn{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.18);color:#fff;border-radius:12px;padding:14px;font-size:18px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.pin-btn:hover{background:rgba(255,255,255,.2)}
+.pin-btn:active{transform:scale(.95)}
+.pin-del{background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.3);color:var(--gold2)}
+.pin-err{color:#f87171;font-size:12px;min-height:18px;margin-top:6px}
+
+/* ── HEADER ── */
+header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.25)}
+.hi{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hico{width:42px;height:42px;background:rgba(255,255,255,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
+.htx h1{font-family:'DM Serif Display',serif;color:#fff;font-size:17px;font-weight:400}
+.htx p{color:rgba(255,255,255,.55);font-size:11px;margin-top:1px}
+.hact{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bnav{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;white-space:nowrap;transition:background .2s;cursor:pointer;font-family:inherit}
+.bnav:hover{background:rgba(255,255,255,.22)}
+.ses-badge{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:5px}
+
+/* ── TABS ── */
+.tabs{background:rgba(0,0,0,.18);border-bottom:1px solid rgba(255,255,255,.1)}
+.tabsi{max-width:1200px;margin:0 auto;display:flex;padding:0 24px;gap:2px;overflow-x:auto}
+.tab{padding:9px 15px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:inherit;transition:all .2s;white-space:nowrap}
+.tab:hover{color:#fff}
+.tab.on{color:#fff;border-bottom-color:var(--gold2)}
+
+/* ── MAIN ── */
+main{max-width:1200px;margin:0 auto;padding:20px 24px 80px}
+
+/* ── KPIs ── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid transparent}
+.kpi.blue{border-top-color:var(--blue)}.kpi.green{border-top-color:var(--green)}
+.kpi.gold{border-top-color:var(--gold)}.kpi.red{border-top-color:var(--red)}
+.kpi.purple{border-top-color:var(--purple)}.kpi.orange{border-top-color:var(--orange)}
+.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);margin-bottom:5px}
+.kpi-val{font-size:24px;font-weight:700;color:var(--navy);line-height:1}
+.kpi-sub{font-size:11px;color:var(--text-soft);margin-top:3px}
+
+/* ── SECCIÓN ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.card-hdr{background:var(--navy);color:#fff;padding:11px 16px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-hdr-left{display:flex;align-items:center;gap:8px}
+
+/* ── FILTROS ── */
+.filtros{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.finp{padding:7px 10px;font-size:12px;font-family:inherit;border:1.5px solid var(--border);border-radius:8px;outline:none;background:#fff;color:var(--text);transition:border-color .2s;min-width:0}
+.finp:focus{border-color:var(--blue)}
+.finp.search{flex:1;min-width:180px}
+.fbtn{padding:7px 13px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .18s}
+.fbtn-primary{background:var(--navy);color:#fff}.fbtn-primary:hover{background:var(--blue)}
+.fbtn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text-soft)}.fbtn-outline:hover{background:var(--surface2)}
+.fbtn-gold{background:var(--gold);color:#fff}.fbtn-gold:hover{filter:brightness(1.08)}
+.fbtn-green{background:var(--green);color:#fff}
+
+/* ── TABLA ── */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:var(--surface2);position:sticky;top:0;z-index:2}
+thead th{padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);white-space:nowrap;border-bottom:2px solid var(--border);cursor:pointer;user-select:none}
+thead th:hover{background:#dde4f0}
+thead th.sorted-asc::after{content:' ↑'}
+thead th.sorted-desc::after{content:' ↓'}
+tbody tr{border-bottom:1px solid var(--surface2);transition:background .12s;cursor:pointer}
+tbody tr:hover{background:#f0f6ff}
+tbody tr.gestionado{background:#f0fdf4}
+tbody tr.gestionado:hover{background:#dcfce7}
+tbody td{padding:8px 10px;vertical-align:middle}
+.mono{font-family:monospace;font-size:11px}
+.tr{text-align:right!important}
+.tc{text-align:center!important}
+.nowrap{white-space:nowrap}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
+.b-fin{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+.b-ok{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+.b-tram{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+.b-pen{background:#fefce8;color:#854d0e;border:1px solid #fde68a}
+.b-rev{background:#fdf4ff;color:var(--purple);border:1px solid #e9d5ff}
+.b-vacio{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb}
+.b-imp{background:#fff7ed;color:var(--orange);border:1px solid #fed7aa}
+
+/* ── PAGINACIÓN ── */
+.pag{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border);flex-wrap:wrap;gap:8px}
+.pag-info{font-size:11px;color:var(--text-soft)}
+.pag-btns{display:flex;gap:3px}
+.pb{width:28px;height:28px;border:1.5px solid var(--border);background:#fff;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;color:var(--text)}
+.pb:hover:not(:disabled){background:var(--surface2)}
+.pb:disabled{opacity:.4;cursor:not-allowed}
+.pb.cur{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── MODAL EDICIÓN ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9998;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.ov.open{display:flex}
+.mbox{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:680px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.mhdr{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
+.mhdr-info h3{font-size:14px;font-weight:600;margin-bottom:3px}
+.mhdr-info p{font-size:11px;color:rgba(255,255,255,.65)}
+.mclose{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px;flex-shrink:0}
+.mbody{padding:18px;overflow-y:auto;flex:1}
+.mfoot{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+
+/* Info del banco (readonly) */
+.banco-info{background:linear-gradient(135deg,#f8fafd,var(--surface2));border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px}
+.banco-info-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.banco-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.banco-item{font-size:11px}
+.banco-lbl{color:var(--text-soft);font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.banco-val{color:var(--navy);font-weight:600;word-break:break-word}
+.banco-val.money{color:var(--green);font-size:14px}
+
+/* Campos de gestión */
+.gest-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:6px}
+.cg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.campo label{display:block;font-size:10px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.campo input,.campo select,.campo textarea{width:100%;padding:8px 10px;font-size:12px;font-family:inherit;border:1.5px solid var(--border);border-radius:7px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s}
+.campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--blue);background:#fff}
+.campo textarea{resize:vertical;min-height:64px}
+
+/* Log de cambios */
+.log-wrap{background:#f8fafd;border-radius:8px;padding:10px 12px;margin-top:12px}
+.log-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);margin-bottom:8px}
+.log-item{font-size:11px;padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:8px}
+.log-item:last-child{border-bottom:none;padding-bottom:0}
+.log-ts{color:var(--text-soft);white-space:nowrap;flex-shrink:0}
+.log-txt{color:var(--text)}
+
+/* Alerta */
+.alerta{padding:9px 12px;border-radius:7px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:7px}
+.al-ok{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
+.al-err{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
+.al-load{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
+.al-warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.spin{width:13px;height:13px;border:2px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── IMPORT BANNER ── */
+.import-banner{background:linear-gradient(135deg,rgba(234,88,12,.08),rgba(234,88,12,.03));border:1.5px dashed rgba(234,88,12,.35);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.import-banner-txt h4{font-size:13px;font-weight:700;color:var(--orange);margin-bottom:3px}
+.import-banner-txt p{font-size:12px;color:var(--text-soft)}
+.import-drop{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;background:#fff}
+.import-drop:hover,.import-drop.drag{border-color:var(--blue);background:#eff6ff}
+.import-drop p{font-size:12px;color:var(--text-soft);margin-top:6px}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:48px 20px;color:var(--text-soft)}
+.empty-ico{font-size:38px;margin-bottom:8px}
+
+/* ── TOOLTIP ESTADO ── */
+.chip-nuevo{background:rgba(6,182,212,.15);color:#0891b2;border:1px solid rgba(6,182,212,.3);font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
+
+@media(max-width:768px){.cg2,.cg3{grid-template-columns:1fr}.banco-grid{grid-template-columns:1fr}.hi{padding:10px 14px}main{padding:12px 12px 80px}}
+</style>
+</head>
+<body>
+
+<!-- ════════════ PIN ════════════ -->
+<div id="pinOverlay">
+  <div class="pin-box">
+    <div class="pin-ico">🏦</div>
+    <h2>Recaudo Histórico</h2>
+    <p>Aplicaciones · Devoluciones · Depósitos judiciales<br>Ingrese su PIN personal</p>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="pd('1')">1</button><button class="pin-btn" onclick="pd('2')">2</button><button class="pin-btn" onclick="pd('3')">3</button>
+      <button class="pin-btn" onclick="pd('4')">4</button><button class="pin-btn" onclick="pd('5')">5</button><button class="pin-btn" onclick="pd('6')">6</button>
+      <button class="pin-btn" onclick="pd('7')">7</button><button class="pin-btn" onclick="pd('8')">8</button><button class="pin-btn" onclick="pd('9')">9</button>
+      <button class="pin-btn pin-del" onclick="pbd()">⌫</button><button class="pin-btn" onclick="pd('0')">0</button><button class="pin-btn" onclick="pbc()" style="font-size:12px">✕</button>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+  </div>
+</div>
+
+<!-- ════════════ HEADER ════════════ -->
+<header>
+  <div class="hi">
+    <div class="hico">🏦</div>
+    <div class="htx"><h1>Recaudo Histórico</h1><p>Depósitos judiciales · Aplicaciones y Devoluciones · Alcaldía de Bello</p></div>
+    <div class="hact">
+      <div class="ses-badge" id="sesBadge" style="display:none">👤 <strong id="sesNom">—</strong></div>
+      <a href="home.html" class="bnav">🏛️ Inicio</a>
+      <button class="bnav" onclick="cerrarSesion()">🔐 Salir</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tabsi">
+      <button class="tab on" id="tab-registros" onclick="goTab('registros')">📋 Registros <span id="badge-total" style="background:rgba(255,255,255,.2);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
+      <button class="tab" id="tab-pendientes" onclick="goTab('pendientes')">⏳ Pendientes <span id="badge-pen" style="background:#e8a020;padding:1px 7px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
+      <button class="tab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
+      <button class="tab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════ PANEL REGISTROS ══════ -->
+<div id="panel-registros">
+
+  <div class="kpis" id="kpis">
+    <div class="kpi blue"><div class="kpi-lbl">Total registros</div><div class="kpi-val" id="k-total">—</div><div class="kpi-sub">cargados</div></div>
+    <div class="kpi gold"><div class="kpi-lbl">Pendientes</div><div class="kpi-val" id="k-pen">—</div><div class="kpi-sub">sin gestionar</div></div>
+    <div class="kpi green"><div class="kpi-lbl">Finalizados</div><div class="kpi-val" id="k-fin">—</div><div class="kpi-sub">completados</div></div>
+    <div class="kpi orange"><div class="kpi-lbl">En trámite</div><div class="kpi-val" id="k-tram">—</div><div class="kpi-sub">en proceso</div></div>
+    <div class="kpi purple"><div class="kpi-lbl">Valor total</div><div class="kpi-val" id="k-valor" style="font-size:16px">—</div><div class="kpi-sub">depósitos</div></div>
+    <div class="kpi red"><div class="kpi-lbl">Nuevos lote</div><div class="kpi-val" id="k-nuevos">—</div><div class="kpi-sub">último import</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-hdr-left">📋 Registros del banco</div>
+      <div style="display:flex;gap:6px">
+        <button class="bnav" onclick="exportarExcel()" style="font-size:11px;padding:4px 10px">⬇️ Excel</button>
+        <button class="bnav" onclick="goTab('importar')" style="font-size:11px;padding:4px 10px;background:rgba(234,88,12,.3);border-color:rgba(234,88,12,.5)">📥 Importar</button>
+      </div>
+    </div>
+
+    <div class="filtros">
+      <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrar()"/>
+      <select class="finp" id="f-estado-dev" onchange="filtrar()">
+        <option value="">Estado devolución (todos)</option>
+        <option value="PENDIENTE">⏳ Pendiente</option>
+        <option value="EN TRAMITE">🔄 En trámite</option>
+        <option value="FINALIZADO">✅ Finalizado</option>
+        <option value="EN REVISION">👁 En revisión</option>
+        <option value="SIN GESTIONAR">— Sin gestionar</option>
+      </select>
+      <select class="finp" id="f-estado-apl" onchange="filtrar()">
+        <option value="">Estado aplicación (todos)</option>
+        <option value="PENDIENTE">⏳ Pendiente</option>
+        <option value="EN TRAMITE">🔄 En trámite</option>
+        <option value="FINALIZADO">✅ Finalizado</option>
+        <option value="EN REVISION">👁 En revisión</option>
+        <option value="SIN GESTIONAR">— Sin gestionar</option>
+      </select>
+      <select class="finp" id="f-impuesto" onchange="filtrar()">
+        <option value="">Impuesto (todos)</option>
+        <option value="PREDIAL">Predial</option>
+        <option value="ICO">ICO / ICA</option>
+        <option value="TRANSITO">Tránsito</option>
+        <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+      </select>
+      <select class="finp" id="f-responsable" onchange="filtrar()">
+        <option value="">Responsable (todos)</option>
+      </select>
+      <button class="fbtn fbtn-outline" onclick="limpiarFiltros()" style="font-size:11px">✕ Limpiar</button>
+    </div>
+
+    <div class="tw">
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th onclick="sortBy('deposito judicial')">#Depósito</th>
+            <th onclick="sortBy('Fecha Emisión')">Fecha</th>
+            <th onclick="sortBy('Nombre Demandante.1')">Demandado</th>
+            <th onclick="sortBy('Identificación Demandado')">Cédula</th>
+            <th onclick="sortBy('Valor del Depóstio')" class="tr">Valor</th>
+            <th onclick="sortBy('Proceso')">Proceso</th>
+            <th onclick="sortBy('Impuesto')">Impuesto</th>
+            <th onclick="sortBy('ESTADO DEVOLUCION')">Est. Devolución</th>
+            <th onclick="sortBy('ESTADO APLICACIÓN')">Est. Aplicación</th>
+            <th onclick="sortBy('RESPONSABLE')">Responsable</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pag">
+      <div class="pag-info" id="pag-info">Cargando...</div>
+      <div class="pag-btns" id="pag-btns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PANEL PENDIENTES ══════ -->
+<div id="panel-pendientes" style="display:none">
+  <div class="card">
+    <div class="card-hdr"><div class="card-hdr-left">⏳ Registros sin gestionar o en trámite</div></div>
+    <div class="filtros">
+      <input class="finp search" id="fp-buscar" placeholder="🔍 Buscar..." oninput="filtrarPend()"/>
+      <select class="finp" id="fp-responsable" onchange="filtrarPend()">
+        <option value="">Responsable (todos)</option>
+      </select>
+      <select class="finp" id="fp-impuesto" onchange="filtrarPend()">
+        <option value="">Impuesto (todos)</option>
+        <option value="PREDIAL">Predial</option>
+        <option value="ICO">ICO / ICA</option>
+        <option value="TRANSITO">Tránsito</option>
+        <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+      </select>
+    </div>
+    <div class="tw">
+      <table>
+        <thead>
+          <tr>
+            <th>#Depósito</th><th>Fecha</th><th>Demandado</th><th>Cédula</th>
+            <th class="tr">Valor</th><th>Impuesto</th><th>Est. Dev.</th><th>Est. Apl.</th>
+            <th>Responsable</th><th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-pend"></tbody>
+      </table>
+    </div>
+    <div class="pag">
+      <div class="pag-info" id="pag-info-pend">—</div>
+      <div class="pag-btns" id="pag-btns-pend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PANEL IMPORTAR ══════ -->
+<div id="panel-importar" style="display:none">
+  <div class="import-banner">
+    <div class="import-banner-txt">
+      <h4>📥 Importar nuevo lote del banco</h4>
+      <p>Suba el Excel que envía el banco. El sistema detecta automáticamente los registros nuevos y evita duplicados.</p>
+    </div>
+    <button class="fbtn fbtn-gold" onclick="document.getElementById('fileImport').click()">📂 Seleccionar archivo</button>
+    <input type="file" id="fileImport" accept=".xlsx,.xls" style="display:none" onchange="procesarImport(this)"/>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-hdr-left">📂 Zona de importación</div></div>
+    <div class="import-drop" id="importDrop"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="onDrop(event)"
+      onclick="document.getElementById('fileImport').click()">
+      <div style="font-size:40px;margin-bottom:8px">📊</div>
+      <div style="font-size:14px;font-weight:600;color:var(--navy)">Arrastre el Excel aquí o haga clic para seleccionar</div>
+      <p>Formatos aceptados: .xlsx · .xls — mismo formato que envía Bancolombia</p>
+    </div>
+    <div id="import-resultado" style="padding:16px;display:none"></div>
+  </div>
+</div>
+
+<!-- ══════ PANEL CONFIG ══════ -->
+<div id="panel-config" style="display:none">
+  <div class="card">
+    <div class="card-hdr"><div class="card-hdr-left">⚙️ Configuración</div></div>
+    <div id="cfg-banner" style="padding:10px 16px;font-size:12px;background:var(--navy);color:#fff;display:flex;align-items:center;gap:8px">
+      <div id="cfg-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0"></div>
+      <span id="cfg-txt">Sin URL configurada</span>
+    </div>
+    <div style="padding:18px">
+      <div class="cg2" style="margin-bottom:14px">
+        <div class="campo"><label>URL Apps Script (Google Sheets)</label>
+          <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/..."/>
+        </div>
+        <div class="campo"><label>Nombre de la hoja en el Sheet</label>
+          <input type="text" id="cfg-hoja" placeholder="Recaudo_Historico" value="Recaudo_Historico"/>
+        </div>
+      </div>
+      <div id="cfg-alert" style="display:none;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="fbtn fbtn-primary" onclick="guardarCfg()">💾 Guardar</button>
+        <button class="fbtn fbtn-outline" onclick="probarCfg()">🔗 Probar conexión</button>
+        <button class="fbtn fbtn-green" onclick="cargarDesdeSheet()">☁️ Cargar desde Sheet</button>
+      </div>
+
+      <div style="margin-top:24px;padding:14px;background:#f8fafd;border:1px solid var(--border);border-radius:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">📋 Acciones Apps Script requeridas</div>
+        <pre style="font-size:10px;color:#374151;line-height:1.7;white-space:pre-wrap;word-break:break-all">// En el doPost() del Apps Script agregar:
+
+case 'listar_recaudo':
+  var sh = ss.getSheetByName(e.parameter.hoja || 'Recaudo_Historico');
+  if (!sh || sh.getLastRow() < 2)
+    return json({status:'ok', data:[], cols:[]});
+  var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0];
+  var vals = sh.getRange(2,1,sh.getLastRow()-1,sh.getLastColumn()).getValues();
+  return json({status:'ok', headers:headers, data:vals});
+
+case 'guardar_gestion_recaudo':
+  // Busca por depósito judicial (col A) y actualiza columnas de gestión
+  var sh2 = ss.getSheetByName(e.parameter.hoja || 'Recaudo_Historico');
+  var datos = sh2.getDataRange().getValues();
+  var deposito = String(e.parameter.deposito);
+  for (var i = 1; i < datos.length; i++) {
+    if (String(datos[i][0]) === deposito) {
+      // Columnas de gestión (ajustar índices según su hoja):
+      sh2.getRange(i+1, 17).setValue(e.parameter.proceso);      // Proceso
+      sh2.getRange(i+1, 18).setValue(e.parameter.impuesto);     // Impuesto
+      sh2.getRange(i+1, 20).setValue(e.parameter.convenio);     // Pendiente convenio
+      sh2.getRange(i+1, 21).setValue(e.parameter.observacion);  // Observacion
+      sh2.getRange(i+1, 22).setValue(e.parameter.telefono);     // Telefono
+      sh2.getRange(i+1, 23).setValue(e.parameter.correo);       // Correo
+      sh2.getRange(i+1, 24).setValue(e.parameter.direccion);    // Direccion
+      sh2.getRange(i+1, 25).setValue(e.parameter.ciudad);       // Ciudad
+      sh2.getRange(i+1, 27).setValue(e.parameter.responsable);  // Responsable
+      sh2.getRange(i+1, 28).setValue(e.parameter.gestionTes);   // Gestion Tesoreria
+      sh2.getRange(i+1, 29).setValue(e.parameter.ciInicial);    // CI Inicial
+      sh2.getRange(i+1, 30).setValue(e.parameter.compEgreso);   // Comprobante Egreso
+      sh2.getRange(i+1, 31).setValue(e.parameter.radicadoResp); // Radicado Respuesta
+      sh2.getRange(i+1, 32).setValue(e.parameter.estDev);       // Estado Devolucion
+      sh2.getRange(i+1, 33).setValue(e.parameter.estApl);       // Estado Aplicacion
+      break;
+    }
+  }
+  return json({status:'ok'});</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- ════════════ MODAL EDICIÓN ════════════ -->
+<div class="ov" id="modal">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mhdr-info">
+        <h3 id="m-titulo">Gestionar registro</h3>
+        <p id="m-sub">Depósito judicial · Solo se guardan los campos que usted edite</p>
+      </div>
+      <button class="mclose" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="mbody">
+
+      <!-- Info del banco (readonly) -->
+      <div class="banco-info">
+        <div class="banco-info-title">🏦 Datos del banco — solo lectura</div>
+        <div class="banco-grid" id="m-banco-datos"></div>
+      </div>
+
+      <!-- Campos de gestión -->
+      <div class="gest-title">✏️ Gestión del equipo — editable</div>
+
+      <div class="cg3" style="margin-bottom:10px">
+        <div class="campo"><label>Estado devolución</label>
+          <select id="m-est-dev">
+            <option value="">— Sin gestionar</option>
+            <option value="PENDIENTE">⏳ Pendiente</option>
+            <option value="EN TRAMITE">🔄 En trámite</option>
+            <option value="EN REVISION">👁 En revisión</option>
+            <option value="FINALIZADO">✅ Finalizado</option>
+          </select>
+        </div>
+        <div class="campo"><label>Estado aplicación</label>
+          <select id="m-est-apl">
+            <option value="">— Sin gestionar</option>
+            <option value="PENDIENTE">⏳ Pendiente</option>
+            <option value="EN TRAMITE">🔄 En trámite</option>
+            <option value="EN REVISION">👁 En revisión</option>
+            <option value="FINALIZADO">✅ Finalizado</option>
+          </select>
+        </div>
+        <div class="campo"><label>Responsable</label>
+          <input type="text" id="m-responsable" placeholder="Nombre del responsable"/>
+        </div>
+      </div>
+
+      <div class="cg3" style="margin-bottom:10px">
+        <div class="campo"><label>Proceso / Expediente</label>
+          <input type="text" id="m-proceso" placeholder="Ej: FP-11465"/>
+        </div>
+        <div class="campo"><label>Impuesto</label>
+          <select id="m-impuesto">
+            <option value="">— Seleccione</option>
+            <option value="PREDIAL">Predial</option>
+            <option value="ICO">ICO</option>
+            <option value="ICA">ICA</option>
+            <option value="TRANSITO">Tránsito</option>
+            <option value="MULTA DE TRANSITO">Multa de tránsito</option>
+            <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+            <option value="SANCIÓN DE POLICIA">Sanción de policía</option>
+          </select>
+        </div>
+        <div class="campo"><label>¿Acuerdo de pago?</label>
+          <select id="m-convenio">
+            <option value="">— Sin definir</option>
+            <option value="SI">✅ Sí tiene convenio</option>
+            <option value="NO">❌ No</option>
+            <option value="Tiene convenio">🤝 Tiene convenio</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cg3" style="margin-bottom:10px">
+        <div class="campo"><label>CI Inicial</label>
+          <input type="text" id="m-ci-inicial" placeholder="Número CI inicial"/>
+        </div>
+        <div class="campo"><label>Comprobante de egreso</label>
+          <input type="text" id="m-comp-egreso" placeholder="Número comprobante"/>
+        </div>
+        <div class="campo"><label>Radicado de respuesta</label>
+          <input type="text" id="m-radicado-resp" placeholder="Radicado"/>
+        </div>
+      </div>
+
+      <div class="cg2" style="margin-bottom:10px">
+        <div class="campo"><label>Gestión Tesorería</label>
+          <input type="text" id="m-gest-tes" placeholder="Nombre funcionario tesorería"/>
+        </div>
+        <div class="campo"><label>Teléfono de contacto</label>
+          <input type="text" id="m-telefono" placeholder="Teléfono del contribuyente"/>
+        </div>
+      </div>
+
+      <div class="cg2" style="margin-bottom:10px">
+        <div class="campo"><label>Correo electrónico</label>
+          <input type="email" id="m-correo" placeholder="correo@ejemplo.com"/>
+        </div>
+        <div class="campo"><label>Ciudad</label>
+          <input type="text" id="m-ciudad" placeholder="Ciudad"/>
+        </div>
+      </div>
+
+      <div class="campo" style="margin-bottom:12px">
+        <label>Dirección</label>
+        <input type="text" id="m-direccion" placeholder="Dirección del contribuyente"/>
+      </div>
+
+      <div class="campo">
+        <label>Observación</label>
+        <textarea id="m-observacion" placeholder="Detalles de la gestión, soportes, actuaciones..."></textarea>
+      </div>
+
+      <!-- Log de cambios -->
+      <div class="log-wrap" id="m-log-wrap" style="display:none">
+        <div class="log-title">📝 Historial de cambios en este registro</div>
+        <div id="m-log"></div>
+      </div>
+
+      <div id="m-alert" style="display:none;margin-top:12px"></div>
+    </div>
+    <div class="mfoot">
+      <div style="font-size:11px;color:var(--text-soft)" id="m-editado-por">—</div>
+      <div style="display:flex;gap:8px">
+        <button class="fbtn fbtn-outline" onclick="cerrarModal()">Cancelar</button>
+        <button class="fbtn fbtn-primary" onclick="guardarGestion()">💾 Guardar gestión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer style="text-align:center;padding:14px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border)">
+  Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello · Antioquia
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONFIG & ESTADO
+// ═══════════════════════════════════════════════════
+const SESSION_KEY = 'oficios_session';
+const CFG_KEY     = 'recaudo_cfg_v1';
+const DATA_KEY    = 'recaudo_data_v2';
+const GEST_KEY    = 'recaudo_gest_v2';   // gestiones locales por depósito
+const LOG_KEY     = 'recaudo_log_v1';    // log de cambios
+
+var cfg = { apiUrl:'', hoja:'Recaudo_Historico' };
+try { cfg = Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY)||'{}')); } catch(e){}
+
+var dataBanco   = [];   // filas del banco (solo lectura)
+var gestiones   = {};   // { deposito: { campos... } }  — editable por el equipo
+var logCambios  = {};   // { deposito: [ {ts, user, campo, val} ] }
+var filtrados   = [];
+var pendFiltrados = [];
+var pagActual   = 1;
+var pagPend     = 1;
+const PS        = 50;
+var sortCol     = 'Fecha Emisión';
+var sortDir     = -1;
+var registroActivo = null;
+var usuarioActual  = null;
+var nuevosUltimoImport = 0;
+
+// Cargar datos persistidos
+try { dataBanco  = JSON.parse(localStorage.getItem(DATA_KEY)||'[]'); } catch(e){}
+try { gestiones  = JSON.parse(localStorage.getItem(GEST_KEY)||'{}'); } catch(e){}
+try { logCambios = JSON.parse(localStorage.getItem(LOG_KEY)||'{}');  } catch(e){}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+(function init(){
+  try {
+    var s = JSON.parse(localStorage.getItem(SESSION_KEY)||'null')
+          ||JSON.parse(localStorage.getItem('oficios_session')||'null');
+    if(s && s.expira > Date.now()){
+      usuarioActual = s;
+      document.getElementById('pinOverlay').style.display='none';
+      aplicarSesion(s);
+      return;
+    }
+  } catch(e){}
+  cargarUsuariosPin();
+})();
+
+function aplicarSesion(s){
+  var nb=document.getElementById('sesBadge');
+  var nn=document.getElementById('sesNom');
+  if(nb) nb.style.display='flex';
+  if(nn) nn.textContent=s.nombre||s.pin;
+  actualizarCfgPanel();
+  if(dataBanco.length) { renderKpis(); filtrar(); llenarSelectResponsables(); }
+  if(cfg.apiUrl) cargarDesdeSheet();
+}
+
+// ═══════════════════════════════════════════════════
+// PIN
+// ═══════════════════════════════════════════════════
+var pinActual=''; var USUARIOS=[];
+
+async function cargarUsuariosPin(){
+  if(!cfg.apiUrl) return;
+  try{var r=await fetch(cfg.apiUrl+'?accion=usuarios');var d=await r.json();if(d.usuarios)USUARIOS=d.usuarios;}catch(e){}
+}
+function pd(d){ if(pinActual.length>=4)return; pinActual+=d; pDots(); if(pinActual.length===4)setTimeout(verificarPin,120); }
+function pbd(){ pinActual=pinActual.slice(0,-1); pDots(); document.getElementById('pinErr').textContent=''; }
+function pbc(){ pinActual=''; pDots(); }
+function pDots(){ for(var i=0;i<4;i++){var el=document.getElementById('pd'+i);if(el)el.classList.toggle('on',i<pinActual.length);} }
+function verificarPin(){
+  var u=null;
+  for(var i=0;i<USUARIOS.length;i++){ if(String(USUARIOS[i].pin)===pinActual&&USUARIOS[i].activo!=='NO'){u=USUARIOS[i];break;} }
+  if(!USUARIOS.length&&pinActual==='0000') u={pin:'0000',nombre:'Administrador',cargo:'Admin'};
+  if(u){
+    var s={pin:u.pin,nombre:u.nombre,cargo:u.cargo||'',expira:Date.now()+8*60*60*1000};
+    localStorage.setItem(SESSION_KEY,JSON.stringify(s));
+    localStorage.setItem('oficios_session',JSON.stringify(s));
+    usuarioActual=s;
+    document.getElementById('pinOverlay').style.display='none';
+    aplicarSesion(s);
+  } else {
+    document.getElementById('pinErr').textContent='PIN incorrecto. Intente de nuevo.';
+    pinActual=''; pDots();
+    var pb=document.querySelector('.pin-box');
+    pb.style.animation='none'; setTimeout(()=>pb.style.animation='shake .4s ease',10);
+  }
+}
+function cerrarSesion(){
+  if(!confirm('¿Cerrar sesión?'))return;
+  localStorage.removeItem(SESSION_KEY); localStorage.removeItem('oficios_session');
+  usuarioActual=null; pinActual=''; pDots();
+  document.getElementById('pinErr').textContent='';
+  document.getElementById('pinOverlay').style.display='flex';
+}
+
+// ═══════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════
+function goTab(t){
+  ['registros','pendientes','importar','config'].forEach(p=>{
+    var el=document.getElementById('panel-'+p);
+    var tb=document.getElementById('tab-'+p);
+    if(el) el.style.display= p===t?'block':'none';
+    if(tb) tb.classList.toggle('on', p===t);
+  });
+  if(t==='pendientes') filtrarPend();
+  if(t==='config') actualizarCfgPanel();
+}
+
+// ═══════════════════════════════════════════════════
+// NORMALIZAR ESTADO
+// ═══════════════════════════════════════════════════
+function normEst(v){
+  if(!v||!String(v).trim()) return '';
+  var s=String(v).trim().toUpperCase()
+    .replace('FINALIZADO','FINALIZADO').replace('OK','FINALIZADO')
+    .replace('FINALIZADOO','FINALIZADO')
+    .replace('TRAMITE','EN TRAMITE').replace('EN TRAMITE','EN TRAMITE')
+    .replace('EN REVISION','EN REVISION').replace('REVISION','EN REVISION')
+    .replace('EN TRAMITE','EN TRAMITE')
+    .replace('APROBADO','FINALIZADO')
+    .replace('NO INICIADO','PENDIENTE');
+  if(s.startsWith('FINALIZ')) return 'FINALIZADO';
+  if(s.includes('TRAM')) return 'EN TRAMITE';
+  if(s.includes('REVIS')) return 'EN REVISION';
+  if(s.includes('PEND')) return 'PENDIENTE';
+  if(s==='OK'||s.startsWith('OK')) return 'FINALIZADO';
+  return s||'';
+}
+
+function badgeEst(v){
+  var n=normEst(v);
+  if(!n) return '<span class="badge b-vacio">—</span>';
+  if(n==='FINALIZADO') return '<span class="badge b-fin">✅ '+n+'</span>';
+  if(n==='EN TRAMITE') return '<span class="badge b-tram">🔄 '+n+'</span>';
+  if(n==='EN REVISION') return '<span class="badge b-rev">👁 '+n+'</span>';
+  if(n==='PENDIENTE') return '<span class="badge b-pen">⏳ '+n+'</span>';
+  return '<span class="badge b-vacio">'+eh(n)+'</span>';
+}
+
+// ═══════════════════════════════════════════════════
+// MERGE: banco + gestiones locales
+// ═══════════════════════════════════════════════════
+function getRow(r){
+  var dep=String(r['deposito judicial']||'');
+  var g=gestiones[dep]||{};
+  return Object.assign({}, r, g, { _dep: dep });
+}
+
+// ═══════════════════════════════════════════════════
+// KPIs
+// ═══════════════════════════════════════════════════
+function renderKpis(){
+  var total=dataBanco.length;
+  var fin=0,tram=0,pen=0,valor=0;
+  dataBanco.forEach(r=>{
+    var row=getRow(r);
+    var ed=normEst(row['ESTADO DEVOLUCION']);
+    var ea=normEst(row['ESTADO APLICACIÓN']);
+    if(ed==='FINALIZADO'||ea==='FINALIZADO') fin++;
+    else if(ed==='EN TRAMITE'||ea==='EN TRAMITE') tram++;
+    else if(!ed&&!ea) pen++;
+    else pen++;
+    valor+=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+  });
+  document.getElementById('k-total').textContent=total.toLocaleString('es-CO');
+  document.getElementById('k-pen').textContent=pen.toLocaleString('es-CO');
+  document.getElementById('k-fin').textContent=fin.toLocaleString('es-CO');
+  document.getElementById('k-tram').textContent=tram.toLocaleString('es-CO');
+  document.getElementById('k-valor').textContent=fmtM(valor);
+  document.getElementById('k-nuevos').textContent=nuevosUltimoImport||'—';
+  document.getElementById('badge-total').textContent=total.toLocaleString('es-CO');
+  var pendTotal=pen+tram;
+  document.getElementById('badge-pen').textContent=pendTotal.toLocaleString('es-CO');
+}
+
+function fmtM(n){
+  if(n>=1e9) return '$'+(n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return '$'+(n/1e3).toFixed(0)+'k';
+  return '$'+Math.round(n).toLocaleString('es-CO');
+}
+function fmt$(n){ return '$'+Math.round(parseFloat(String(n||0).replace(/[^\d.]/g,''))||0).toLocaleString('es-CO'); }
+
+// ═══════════════════════════════════════════════════
+// FILTRAR Y RENDERIZAR TABLA
+// ═══════════════════════════════════════════════════
+function filtrar(){
+  var buscar=(document.getElementById('f-buscar').value||'').toLowerCase().trim();
+  var fEDev=document.getElementById('f-estado-dev').value;
+  var fEApl=document.getElementById('f-estado-apl').value;
+  var fImp=(document.getElementById('f-impuesto').value||'').toUpperCase();
+  var fResp=(document.getElementById('f-responsable').value||'').toLowerCase();
+
+  filtrados=dataBanco.filter(r=>{
+    var row=getRow(r);
+    if(buscar){
+      var hay=((row['deposito judicial']||'')+(row['Nombre Demandante.1']||'')+(row['Identificación Demandado']||'')+(row['Proceso']||'')+(row['Número del Proceso']||'')).toLowerCase();
+      if(hay.indexOf(buscar)<0) return false;
+    }
+    if(fEDev){
+      var ed=normEst(row['ESTADO DEVOLUCION']);
+      if(fEDev==='SIN GESTIONAR'&&ed) return false;
+      if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false;
+    }
+    if(fEApl){
+      var ea=normEst(row['ESTADO APLICACIÓN']);
+      if(fEApl==='SIN GESTIONAR'&&ea) return false;
+      if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false;
+    }
+    if(fImp){
+      var imp=(row['Impuesto']||'').toUpperCase().trim();
+      if(!imp.includes(fImp)&&fImp!==imp) return false;
+    }
+    if(fResp){
+      var resp=(row['RESPONSABLE']||'').toLowerCase();
+      if(resp.indexOf(fResp)<0) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  filtrados.sort((a,b)=>{
+    var va=String(getRow(a)[sortCol]||'');
+    var vb=String(getRow(b)[sortCol]||'');
+    return va.localeCompare(vb,'es')*sortDir;
+  });
+
+  pagActual=1;
+  renderTabla();
+}
+
+function sortBy(col){
+  if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.classList.remove('sorted-asc','sorted-desc');
+  });
+  filtrar();
+}
+
+function limpiarFiltros(){
+  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable'].forEach(id=>{
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  filtrar();
+}
+
+function renderTabla(){
+  var data=filtrados.length||document.getElementById('f-buscar').value?filtrados:dataBanco.slice();
+  if(!filtrados.length&&!document.getElementById('f-buscar').value) data=dataBanco.slice();
+
+  var totalPags=Math.ceil(data.length/PS)||1;
+  var ini=(pagActual-1)*PS;
+  var fin=Math.min(ini+PS,data.length);
+  var pag=data.slice(ini,fin);
+
+  if(!pag.length){
+    document.getElementById('tbody').innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros. Cargue el Excel desde ⚙️ Configuración o importe un lote.</p></div></td></tr>';
+    document.getElementById('pag-info').textContent='0 registros';
+    document.getElementById('pag-btns').innerHTML='';
+    return;
+  }
+
+  var rows=pag.map(r=>{
+    var row=getRow(r);
+    var dep=row._dep;
+    var esNuevo=row._nuevo?'<span class="chip-nuevo">NUEVO</span>':'';
+    var gestionado=row['ESTADO DEVOLUCION']||row['ESTADO APLICACIÓN']||gestiones[dep];
+    var fecha=String(row['Fecha Emisión']||'');
+    if(fecha.length>10) fecha=fecha.substring(0,10);
+    var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    return `<tr class="${gestionado?'gestionado':''}" onclick="abrirModal('${dep.replace(/'/g,"\\'")}')">
+      <td class="mono nowrap">${eh(dep)}${esNuevo}</td>
+      <td class="nowrap">${eh(fecha)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${eh(row['Nombre Demandante.1']||'—')}</td>
+      <td class="mono">${eh(row['Identificación Demandado']||'—')}</td>
+      <td class="tr" style="font-weight:700;color:${valor>1e6?'var(--green)':'var(--navy)'}">${fmt$(valor)}</td>
+      <td style="font-size:11px">${eh(row['Proceso']||'—')}</td>
+      <td>${row['Impuesto']?'<span class="badge b-imp">'+eh(String(row['Impuesto']).trim())+'</span>':'<span class="badge b-vacio">—</span>'}</td>
+      <td>${badgeEst(row['ESTADO DEVOLUCION'])}</td>
+      <td>${badgeEst(row['ESTADO APLICACIÓN'])}</td>
+      <td style="font-size:11px;color:var(--text-soft)">${eh(row['RESPONSABLE']||'—')}</td>
+      <td onclick="event.stopPropagation()"><button onclick="abrirModal('${dep.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Gestionar</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tbody').innerHTML=rows;
+  document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros`;
+  renderPag(data.length,'pag-btns',pagActual,(n)=>{pagActual=n;renderTabla();});
+}
+
+// ═══════════════════════════════════════════════════
+// PENDIENTES
+// ═══════════════════════════════════════════════════
+function filtrarPend(){
+  var buscar=(document.getElementById('fp-buscar').value||'').toLowerCase();
+  var fResp=(document.getElementById('fp-responsable').value||'').toLowerCase();
+  var fImp=(document.getElementById('fp-impuesto').value||'').toUpperCase();
+
+  pendFiltrados=dataBanco.filter(r=>{
+    var row=getRow(r);
+    var ed=normEst(row['ESTADO DEVOLUCION']);
+    var ea=normEst(row['ESTADO APLICACIÓN']);
+    // Solo los que no están finalizados
+    if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
+    if(buscar){
+      var hay=((row['deposito judicial']||'')+(row['Nombre Demandante.1']||'')+(row['Identificación Demandado']||'')).toLowerCase();
+      if(hay.indexOf(buscar)<0) return false;
+    }
+    if(fResp){ if((row['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
+    if(fImp){ if(!(row['Impuesto']||'').toUpperCase().includes(fImp)) return false; }
+    return true;
+  });
+
+  pagPend=1;
+  renderPendientes();
+}
+
+function renderPendientes(){
+  var ini=(pagPend-1)*PS;
+  var fin=Math.min(ini+PS,pendFiltrados.length);
+  var pag=pendFiltrados.slice(ini,fin);
+
+  if(!pag.length){
+    document.getElementById('tbody-pend').innerHTML='<tr><td colspan="10"><div class="empty"><div class="empty-ico">🎉</div><p>No hay registros pendientes con esos filtros.</p></div></td></tr>';
+    document.getElementById('pag-info-pend').textContent='0 registros';
+    document.getElementById('pag-btns-pend').innerHTML='';
+    return;
+  }
+
+  var rows=pag.map(r=>{
+    var row=getRow(r);
+    var dep=row._dep;
+    var fecha=String(row['Fecha Emisión']||'').substring(0,10);
+    var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    return `<tr onclick="abrirModal('${dep.replace(/'/g,"\\'")}')">
+      <td class="mono nowrap">${eh(dep)}</td>
+      <td class="nowrap">${eh(fecha)}</td>
+      <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eh(row['Nombre Demandante.1']||'—')}</td>
+      <td class="mono">${eh(row['Identificación Demandado']||'—')}</td>
+      <td class="tr" style="font-weight:700">${fmt$(valor)}</td>
+      <td>${row['Impuesto']?'<span class="badge b-imp">'+eh(String(row['Impuesto']).trim())+'</span>':'<span class="badge b-vacio">—</span>'}</td>
+      <td>${badgeEst(row['ESTADO DEVOLUCION'])}</td>
+      <td>${badgeEst(row['ESTADO APLICACIÓN'])}</td>
+      <td style="font-size:11px;color:var(--text-soft)">${eh(row['RESPONSABLE']||'—')}</td>
+      <td><button onclick="abrirModal('${dep.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:var(--orange);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Gestionar</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tbody-pend').innerHTML=rows;
+  document.getElementById('pag-info-pend').textContent=`Mostrando ${ini+1}–${fin} de ${pendFiltrados.length.toLocaleString('es-CO')} pendientes`;
+  renderPag(pendFiltrados.length,'pag-btns-pend',pagPend,(n)=>{pagPend=n;renderPendientes();});
+}
+
+// ═══════════════════════════════════════════════════
+// PAGINACIÓN
+// ═══════════════════════════════════════════════════
+function renderPag(total,btnId,pag,cb){
+  var tP=Math.ceil(total/PS)||1;
+  var h='';
+  h+=`<button class="pb" onclick="(${cb.toString()})(${pag-1})" ${pag===1?'disabled':''}>‹</button>`;
+  for(var p=1;p<=tP;p++){
+    if(p===1||p===tP||Math.abs(p-pag)<=1){
+      h+=`<button class="pb${p===pag?' cur':''}" onclick="(${cb.toString()})(${p})">${p}</button>`;
+    } else if(Math.abs(p-pag)===2){
+      h+=`<button class="pb" disabled style="border:none;background:none">…</button>`;
+    }
+  }
+  h+=`<button class="pb" onclick="(${cb.toString()})(${pag+1})" ${pag===tP?'disabled':''}>›</button>`;
+  document.getElementById(btnId).innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════
+// MODAL GESTIÓN
+// ═══════════════════════════════════════════════════
+function abrirModal(dep){
+  var r=dataBanco.find(x=>String(x['deposito judicial'])===dep);
+  if(!r) return;
+  registroActivo=dep;
+  var row=getRow(r);
+
+  document.getElementById('m-titulo').textContent='Depósito '+dep;
+  document.getElementById('m-sub').textContent=(row['Nombre Demandante.1']||'—')+' · C.C. '+(row['Identificación Demandado']||'—');
+
+  // Datos banco
+  var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+  document.getElementById('m-banco-datos').innerHTML=`
+    <div class="banco-item"><div class="banco-lbl">Valor depósito</div><div class="banco-val money">${fmt$(valor)}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Fecha emisión</div><div class="banco-val">${eh(String(row['Fecha Emisión']||'').substring(0,10))}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Estado depósito</div><div class="banco-val">${eh(row['Estado del Depósito']||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Tipo TX</div><div class="banco-val">${eh(row['Tipo de TX origen']||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">N° Proceso banco</div><div class="banco-val mono">${eh(String(row['Número del Proceso']||'—').replace(/^0+/,''))}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Nombre Consignante</div><div class="banco-val">${eh(row['Nombre Consignante']||'—')}</div></div>
+  `;
+
+  // Cargar campos de gestión
+  var g=gestiones[dep]||{};
+  var campos={
+    'm-est-dev':'ESTADO DEVOLUCION','m-est-apl':'ESTADO APLICACIÓN',
+    'm-responsable':'RESPONSABLE','m-proceso':'Proceso',
+    'm-impuesto':'Impuesto','m-convenio':'Pendiente convenio',
+    'm-ci-inicial':'CI INICIAL','m-comp-egreso':'COMPROBANTE DE EGRESO',
+    'm-radicado-resp':'RADICADO DE RESPUESTA','m-gest-tes':'GESTION TESORERIA',
+    'm-telefono':'TELEFONO DE CONTACTO','m-correo':'CORREO ELECTRONICO',
+    'm-direccion':'DIRECCION','m-ciudad':'CIUDAD','m-observacion':'Observacion'
+  };
+  Object.keys(campos).forEach(id=>{
+    var el=document.getElementById(id); if(!el) return;
+    var key=campos[id];
+    var val=g[key]!==undefined?g[key]:(row[key]||'');
+    if(id.includes('est-')) val=normEst(val);
+    el.value=String(val||'').trim();
+  });
+
+  // Log
+  var log=logCambios[dep]||[];
+  var lw=document.getElementById('m-log-wrap');
+  var lc=document.getElementById('m-log');
+  if(log.length){
+    lw.style.display='block';
+    lc.innerHTML=log.slice(-8).reverse().map(l=>
+      `<div class="log-item"><span class="log-ts">${eh(l.ts)} · ${eh(l.user)}</span><span class="log-txt">${eh(l.txt)}</span></div>`
+    ).join('');
+  } else lw.style.display='none';
+
+  var ep=document.getElementById('m-editado-por');
+  if(g._editadoPor) ep.textContent='Último cambio: '+g._editadoPor+' · '+g._editadoFecha;
+  else ep.textContent='Sin cambios registrados';
+
+  document.getElementById('m-alert').style.display='none';
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function cerrarModal(){
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow='';
+  registroActivo=null;
+}
+
+async function guardarGestion(){
+  if(!registroActivo) return;
+  var dep=registroActivo;
+  var ahora=new Date();
+  var ts=ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  var user=usuarioActual?usuarioActual.nombre:'desconocido';
+
+  var g={
+    'ESTADO DEVOLUCION':   document.getElementById('m-est-dev').value,
+    'ESTADO APLICACIÓN':   document.getElementById('m-est-apl').value,
+    'RESPONSABLE':         document.getElementById('m-responsable').value.trim(),
+    'Proceso':             document.getElementById('m-proceso').value.trim(),
+    'Impuesto':            document.getElementById('m-impuesto').value,
+    'Pendiente convenio':  document.getElementById('m-convenio').value,
+    'CI INICIAL':          document.getElementById('m-ci-inicial').value.trim(),
+    'COMPROBANTE DE EGRESO':document.getElementById('m-comp-egreso').value.trim(),
+    'RADICADO DE RESPUESTA':document.getElementById('m-radicado-resp').value.trim(),
+    'GESTION TESORERIA':   document.getElementById('m-gest-tes').value.trim(),
+    'TELEFONO DE CONTACTO':document.getElementById('m-telefono').value.trim(),
+    'CORREO ELECTRONICO':  document.getElementById('m-correo').value.trim(),
+    'DIRECCION':           document.getElementById('m-direccion').value.trim(),
+    'CIUDAD':              document.getElementById('m-ciudad').value.trim(),
+    'Observacion':         document.getElementById('m-observacion').value.trim(),
+    _editadoPor: user, _editadoFecha: ts
+  };
+
+  gestiones[dep]=g;
+  try{ localStorage.setItem(GEST_KEY,JSON.stringify(gestiones)); }catch(e){}
+
+  // Log
+  if(!logCambios[dep]) logCambios[dep]=[];
+  var resumen=[];
+  if(g['ESTADO DEVOLUCION']) resumen.push('Dev:'+g['ESTADO DEVOLUCION']);
+  if(g['ESTADO APLICACIÓN']) resumen.push('Apl:'+g['ESTADO APLICACIÓN']);
+  if(g['RESPONSABLE']) resumen.push('Resp:'+g['RESPONSABLE']);
+  logCambios[dep].push({ts,user,txt:resumen.join(' · ')||'Actualizado'});
+  try{ localStorage.setItem(LOG_KEY,JSON.stringify(logCambios)); }catch(e){}
+
+  var alEl=document.getElementById('m-alert');
+  showAl(alEl,'al-load','<div class="spin"></div> Guardando...');
+
+  var ok=false;
+  if(cfg.apiUrl){
+    try{
+      var params=new URLSearchParams({
+        accion:'guardar_gestion_recaudo',hoja:cfg.hoja,deposito:dep,
+        proceso:g['Proceso'],impuesto:g['Impuesto'],convenio:g['Pendiente convenio'],
+        observacion:g['Observacion'],telefono:g['TELEFONO DE CONTACTO'],
+        correo:g['CORREO ELECTRONICO'],direccion:g['DIRECCION'],ciudad:g['CIUDAD'],
+        responsable:g['RESPONSABLE'],gestionTes:g['GESTION TESORERIA'],
+        ciInicial:g['CI INICIAL'],compEgreso:g['COMPROBANTE DE EGRESO'],
+        radicadoResp:g['RADICADO DE RESPUESTA'],
+        estDev:g['ESTADO DEVOLUCION'],estApl:g['ESTADO APLICACIÓN']
+      });
+      var res=await fetch(cfg.apiUrl+'?'+params.toString());
+      var d=await res.json();
+      if(d.status==='ok') ok=true;
+    }catch(e){}
+  }
+
+  if(ok||!cfg.apiUrl){
+    showAl(alEl,'al-ok','✅ Gestión guardada'+(cfg.apiUrl?' en Google Sheets':' localmente')+'.');
+    renderKpis(); filtrar();
+    setTimeout(cerrarModal,900);
+  } else {
+    showAl(alEl,'al-warn','⚠️ Guardado localmente (sin conexión con el Sheet). Se sincronizará cuando haya conexión.');
+    renderKpis(); filtrar();
+    setTimeout(cerrarModal,1200);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// IMPORTAR LOTE DEL BANCO
+// ═══════════════════════════════════════════════════
+function onDrop(e){
+  e.preventDefault();
+  document.getElementById('importDrop').classList.remove('drag');
+  var f=e.dataTransfer.files[0];
+  if(f) procesarImport({files:[f]});
+}
+
+function procesarImport(inp){
+  var f=inp.files[0]; if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var json=XLSX.utils.sheet_to_json(ws,{raw:false,defval:''});
+
+      // Detectar columna de depósito
+      var depCol=Object.keys(json[0]||{}).find(k=>k.toLowerCase().includes('deposito')||k.toLowerCase().includes('depósito'))||Object.keys(json[0]||{})[0];
+
+      var existentes=new Set(dataBanco.map(r=>String(r['deposito judicial']||'')));
+      var nuevos=[];
+      json.forEach(row=>{
+        var dep=String(row[depCol]||row['deposito judicial']||'').trim();
+        if(dep&&!existentes.has(dep)){
+          // Normalizar nombres de columnas al esquema conocido
+          var nr={'deposito judicial':dep,'_nuevo':true};
+          Object.keys(row).forEach(k=>{ nr[k]=row[k]; });
+          nuevos.push(nr);
+          existentes.add(dep);
+        }
+      });
+
+      if(nuevos.length){
+        dataBanco.unshift(...nuevos);
+        try{ localStorage.setItem(DATA_KEY,JSON.stringify(dataBanco.slice(0,60000))); }catch(e){}
+        nuevosUltimoImport=nuevos.length;
+        renderKpis(); filtrar(); llenarSelectResponsables();
+        showImportResult('ok',`✅ Se importaron <strong>${nuevos.length} registros nuevos</strong> de ${json.length} en el archivo. Los duplicados fueron omitidos.`);
+      } else {
+        showImportResult('warn','ℹ️ No se encontraron registros nuevos. Todos los depósitos del archivo ya existen en el sistema.');
+      }
+    }catch(err){
+      showImportResult('err','❌ Error al leer el archivo: '+err.message);
+    }
+  };
+  rd.readAsArrayBuffer(f);
+  inp.value='';
+}
+
+function showImportResult(tipo,msg){
+  var el=document.getElementById('import-resultado');
+  el.style.display='block';
+  var cls={'ok':'al-ok','err':'al-err','warn':'al-warn'}[tipo]||'al-warn';
+  el.innerHTML=`<div class="alerta ${cls}">${msg}</div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// CARGAR DESDE SHEET
+// ═══════════════════════════════════════════════════
+async function cargarDesdeSheet(){
+  if(!cfg.apiUrl) return;
+  var alEl=document.getElementById('cfg-alert');
+  showAl(alEl,'al-load','<div class="spin"></div> Cargando desde Google Sheets...');
+  try{
+    var r=await fetch(cfg.apiUrl+'?accion=listar_recaudo&hoja='+encodeURIComponent(cfg.hoja));
+    var d=await r.json();
+    if(d.status==='ok'&&Array.isArray(d.data)&&d.data.length){
+      var headers=d.headers||[];
+      dataBanco=d.data.map(row=>{
+        var obj={};
+        headers.forEach((h,i)=>{ obj[h]=row[i]; });
+        return obj;
+      });
+      try{ localStorage.setItem(DATA_KEY,JSON.stringify(dataBanco.slice(0,60000))); }catch(e){}
+      renderKpis(); filtrar(); llenarSelectResponsables();
+      showAl(alEl,'al-ok','✅ '+dataBanco.length.toLocaleString('es-CO')+' registros cargados desde Google Sheets.');
+    } else {
+      showAl(alEl,'al-warn','Sin datos en el Sheet o formato inesperado. Intente importar un Excel.');
+    }
+  }catch(e){
+    showAl(alEl,'al-err','❌ No se pudo conectar con el Sheet. Verifique la URL.');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// EXPORTAR EXCEL
+// ═══════════════════════════════════════════════════
+function exportarExcel(){
+  var data=filtrados.length?filtrados:dataBanco;
+  if(!data.length){ alert('No hay datos para exportar.'); return; }
+  var filas=data.slice(0,5000).map(r=>{
+    var row=getRow(r);
+    return {
+      'Depósito judicial':row['deposito judicial'],
+      'Fecha Emisión':row['Fecha Emisión'],
+      'Demandado':row['Nombre Demandante.1'],
+      'Cédula':row['Identificación Demandado'],
+      'Valor':row['Valor del Depóstio'],
+      'Proceso':row['Proceso'],
+      'Impuesto':row['Impuesto'],
+      'Estado Devolución':row['ESTADO DEVOLUCION'],
+      'Estado Aplicación':row['ESTADO APLICACIÓN'],
+      'Responsable':row['RESPONSABLE'],
+      'Gestión Tesorería':row['GESTION TESORERIA'],
+      'CI Inicial':row['CI INICIAL'],
+      'Comprobante Egreso':row['COMPROBANTE DE EGRESO'],
+      'Radicado Respuesta':row['RADICADO DE RESPUESTA'],
+      'Teléfono':row['TELEFONO DE CONTACTO'],
+      'Correo':row['CORREO ELECTRONICO'],
+      'Observación':row['Observacion']
+    };
+  });
+  var ws=XLSX.utils.json_to_sheet(filas);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Recaudo');
+  XLSX.writeFile(wb,'Recaudo_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
+function guardarCfg(){
+  cfg.apiUrl=document.getElementById('cfg-url').value.trim();
+  cfg.hoja=document.getElementById('cfg-hoja').value.trim()||'Recaudo_Historico';
+  localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
+  actualizarCfgPanel();
+  showAl(document.getElementById('cfg-alert'),'al-ok','✅ Configuración guardada.');
+}
+async function probarCfg(){
+  if(!cfg.apiUrl){ showAl(document.getElementById('cfg-alert'),'al-err','Sin URL.'); return; }
+  showAl(document.getElementById('cfg-alert'),'al-load','<div class="spin"></div> Probando...');
+  try{ await fetch(cfg.apiUrl+'?accion=ping'); showAl(document.getElementById('cfg-alert'),'al-ok','✅ Conexión exitosa.'); }
+  catch(e){ showAl(document.getElementById('cfg-alert'),'al-err','❌ Sin respuesta. Verifique la URL.'); }
+}
+function actualizarCfgPanel(){
+  var cu=document.getElementById('cfg-url'); if(cu) cu.value=cfg.apiUrl||'';
+  var ch=document.getElementById('cfg-hoja'); if(ch) ch.value=cfg.hoja||'Recaudo_Historico';
+  var dot=document.getElementById('cfg-dot');
+  var txt=document.getElementById('cfg-txt');
+  if(dot&&txt){
+    dot.style.background=cfg.apiUrl?'#22c55e':'#ef4444';
+    txt.textContent=cfg.apiUrl?'Conectado: '+cfg.apiUrl.slice(-45):'Sin URL configurada — datos solo locales';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function llenarSelectResponsables(){
+  var resps=new Set();
+  dataBanco.forEach(r=>{ var g=gestiones[String(r['deposito judicial']||'')]||{}; var resp=g['RESPONSABLE']||r['RESPONSABLE']||''; if(resp&&resp.trim()) resps.add(resp.trim()); });
+  var html='<option value="">Responsable (todos)</option>';
+  [...resps].sort().forEach(r=>{ html+=`<option value="${eh(r)}">${eh(r)}</option>`; });
+  ['f-responsable','fp-responsable'].forEach(id=>{ var el=document.getElementById(id); if(el) el.innerHTML=html; });
+}
+
+function showAl(el,cls,msg){
+  if(!el) return;
+  el.style.display='flex'; el.className='alerta '+cls; el.innerHTML=msg;
+}
+
+function eh(v){
+  if(v===null||v===undefined) return '';
+  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Inicializar datos si hay en cache
+if(dataBanco.length){ renderKpis(); filtrar(); llenarSelectResponsables(); }
+
+// Shake animation
+var st=document.createElement('style');
+st.textContent='@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}';
+document.head.appendChild(st);
+</script>
+</body>
+</html>
