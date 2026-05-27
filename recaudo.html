@@ -182,6 +182,23 @@ tbody td{padding:8px 10px;vertical-align:middle}
 .chip-nuevo{background:rgba(6,182,212,.15);color:#0891b2;border:1px solid rgba(6,182,212,.3);font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
 
 @media(max-width:768px){.cg2,.cg3{grid-template-columns:1fr}.banco-grid{grid-template-columns:1fr}.hi{padding:10px 14px}main{padding:12px 12px 80px}}
+
+/* ── ESTADÍSTICAS ── */
+.est-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:16px}
+.est-card{background:linear-gradient(135deg,#0f2d5e 0%,#16396e 100%);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
+.est-card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(232,160,32,.2)}
+.est-barra-wrap{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.est-barra-label{font-size:12px;color:rgba(255,255,255,.75);min-width:110px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.est-barra-bg{flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+.est-barra-fill{height:100%;border-radius:4px;transition:width .5s ease}
+.est-barra-val{font-size:12px;font-weight:700;min-width:28px;text-align:right}
+.est-card-wide{grid-column:span 2}
+.est-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.est-kpi{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;text-align:center}
+.est-kpi-val{font-size:20px;font-weight:700;color:#fff;line-height:1}
+.est-kpi-lbl{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
+.est-doble{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:600px){.est-card-wide{grid-column:span 1}.est-kpis{grid-template-columns:1fr 1fr}.est-doble{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -225,6 +242,7 @@ tbody td{padding:8px 10px;vertical-align:middle}
       <button class="tab on" id="tab-registros" onclick="goTab('registros')">📋 Registros <span id="badge-total" style="background:rgba(255,255,255,.2);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
       <button class="tab" id="tab-pendientes" onclick="goTab('pendientes')">⏳ Pendientes <span id="badge-pen" style="background:#e8a020;padding:1px 7px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
       <button class="tab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
+      <button class="tab" id="tab-estadisticas" onclick="goTab('estadisticas')">📊 Estadísticas</button>
       <button class="tab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
     </div>
   </div>
@@ -455,6 +473,10 @@ case 'guardar_gestion_recaudo':
       </div>
     </div>
   </div>
+</div>
+<!-- ══════ PANEL ESTADÍSTICAS ══════ -->
+<div id="panel-estadisticas" style="display:none">
+  <div class="est-grid" id="grid-est"></div>
 </div>
 
 </main>
@@ -695,7 +717,7 @@ function cerrarSesion(){
 // TABS
 // ═══════════════════════════════════════════════════
 function goTab(t){
-  ['registros','pendientes','importar','config'].forEach(p=>{
+  ['registros','pendientes','importar','config','estadisticas'].forEach(p=>{
     var el=document.getElementById('panel-'+p);
     var tb=document.getElementById('tab-'+p);
     if(el) el.style.display= p===t?'block':'none';
@@ -703,6 +725,7 @@ function goTab(t){
   });
   if(t==='pendientes') filtrarPend();
   if(t==='config') { actualizarCfgPanel(); renderStorageDetail(); }
+  if(t==='estadisticas') renderEstadisticas();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1253,6 +1276,194 @@ function actualizarCfgPanel(){
     dot.style.background=cfg.apiUrl?'#22c55e':'#ef4444';
     txt.textContent=cfg.apiUrl?'Conectado: '+cfg.apiUrl.slice(-45):'Sin URL configurada — datos solo locales';
   }
+}
+
+// ═══════════════════════════════════════════════════
+// ESTADÍSTICAS
+// ═══════════════════════════════════════════════════
+function renderEstadisticas(){
+  var el=document.getElementById('grid-est');
+  if(!el) return;
+  if(!dataBanco.length){
+    el.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,.4);font-size:14px">📂 Sin datos. Cargue el Excel o sincronice desde el Sheet.</div>';
+    return;
+  }
+
+  var ESTADOS=['FINALIZADO','EN TRAMITE','EN REVISION','PENDIENTE',''];
+  var COLS_EST={'FINALIZADO':'#16a34a','EN TRAMITE':'#1a6fc4','EN REVISION':'#7c3aed','PENDIENTE':'#e8a020','':'#4a5a72'};
+  var LABELS_EST={'FINALIZADO':'Finalizado','EN TRAMITE':'En trámite','EN REVISION':'En revisión','PENDIENTE':'Pendiente','':'Sin gestionar'};
+
+  // Agregar datos mergeados
+  var rows=dataBanco.map(function(r){ return getRow(r); });
+
+  // ── 1. Conteos globales ──
+  var totDev={},totApl={},totVal=0,totGest=0,totFin=0,totTram=0;
+  ESTADOS.forEach(function(e){ totDev[e]=0; totApl[e]=0; });
+  rows.forEach(function(r){
+    var ed=normEst(r['ESTADO DEVOLUCION']);
+    var ea=normEst(r['ESTADO APLICACIÓN']);
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    totDev[ed]=(totDev[ed]||0)+1;
+    totApl[ea]=(totApl[ea]||0)+1;
+    totVal+=v;
+    if(ed||ea) totGest++;
+    if(ed==='FINALIZADO'||ea==='FINALIZADO') totFin++;
+    if(ed==='EN TRAMITE'||ea==='EN TRAMITE') totTram++;
+  });
+
+  // ── 2. Por responsable ──
+  var resps={};
+  rows.forEach(function(r){
+    var resp=(r['RESPONSABLE']||'Sin asignar').trim()||'Sin asignar';
+    if(!resps[resp]) resps[resp]={dev:0,apl:0,val:0,pen:0};
+    var ed=normEst(r['ESTADO DEVOLUCION']);
+    var ea=normEst(r['ESTADO APLICACIÓN']);
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    if(ed&&ed!=='FINALIZADO') resps[resp].dev++;
+    if(ea&&ea!=='FINALIZADO') resps[resp].apl++;
+    if(!ed&&!ea) resps[resp].pen++;
+    resps[resp].val+=v;
+  });
+  var respArr=Object.entries(resps).sort(function(a,b){ return (b[1].dev+b[1].apl)-(a[1].dev+a[1].apl); });
+
+  // ── 3. Por impuesto ──
+  var imps={};
+  rows.forEach(function(r){
+    var imp=(r['Impuesto']||'Sin clasificar').trim().toUpperCase()||'SIN CLASIFICAR';
+    if(!imps[imp]) imps[imp]={n:0,val:0};
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    imps[imp].n++;
+    imps[imp].val+=v;
+  });
+  var impArr=Object.entries(imps).sort(function(a,b){ return b[1].n-a[1].n; });
+
+  // ── 4. Por mes (últimos 12 meses) ──
+  var meses={};
+  rows.forEach(function(r){
+    var f=String(r['Fecha Emisión']||'').substring(0,7);
+    if(!f||f.length<7) return;
+    if(!meses[f]) meses[f]={n:0,fin:0};
+    meses[f].n++;
+    var ed=normEst(r['ESTADO DEVOLUCION']); var ea=normEst(r['ESTADO APLICACIÓN']);
+    if(ed==='FINALIZADO'||ea==='FINALIZADO') meses[f].fin++;
+  });
+  var mesArr=Object.entries(meses).sort(function(a,b){ return a[0].localeCompare(b[0]); }).slice(-12);
+
+  // ── Helpers ──
+  function barra(label,val,max,color,sub){
+    var pct=max>0?Math.round(val/max*100):0;
+    return '<div class="est-barra-wrap">'+
+      '<div class="est-barra-label" title="'+eh(label)+'">'+eh(label)+(sub?'<br><span style="font-size:10px;opacity:.6">'+eh(sub)+'</span>':'')+'</div>'+
+      '<div class="est-barra-bg"><div class="est-barra-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
+      '<div class="est-barra-val" style="color:'+color+'">'+val.toLocaleString('es-CO')+'</div>'+
+      '</div>';
+  }
+  function barraM(label,val,max,color){
+    var pct=max>0?Math.round(val/max*100):0;
+    return '<div class="est-barra-wrap">'+
+      '<div class="est-barra-label">'+eh(label)+'</div>'+
+      '<div class="est-barra-bg"><div class="est-barra-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
+      '<div class="est-barra-val" style="color:'+color+'">'+fmtM(val)+'</div>'+
+      '</div>';
+  }
+  function titulo(txt){ return '<div class="est-card-title">'+txt+'</div>'; }
+  var COLS_IMP={'PREDIAL':'#1a6fc4','ICO':'#e8a020','ICA':'#ea580c','TRANSITO':'#7c3aed','OBLIGACION URBANISTICA':'#16a34a','SIN CLASIFICAR':'#4a5a72'};
+  function colImp(k){ return COLS_IMP[k]||'#4a5a72'; }
+
+  // ── Renderizar ──
+  var html='';
+
+  // KPIs resumen
+  var pctGest=dataBanco.length>0?Math.round(totGest/dataBanco.length*100):0;
+  var pctFin=dataBanco.length>0?Math.round(totFin/dataBanco.length*100):0;
+  html+='<div class="est-card est-card-wide">'+
+    titulo('📊 Resumen general — depósitos judiciales')+
+    '<div class="est-kpis">'+
+    '<div class="est-kpi"><div class="est-kpi-val">'+dataBanco.length.toLocaleString('es-CO')+'</div><div class="est-kpi-lbl">Total depósitos</div></div>'+
+    '<div class="est-kpi"><div class="est-kpi-val" style="color:#e8a020">'+pctGest+'%</div><div class="est-kpi-lbl">Gestionados</div></div>'+
+    '<div class="est-kpi"><div class="est-kpi-val" style="color:#16a34a">'+pctFin+'%</div><div class="est-kpi-lbl">Finalizados</div></div>'+
+    '<div class="est-kpi"><div class="est-kpi-val" style="color:#f5c050">'+fmtM(totVal)+'</div><div class="est-kpi-lbl">Valor total</div></div>'+
+    '<div class="est-kpi"><div class="est-kpi-val" style="color:#1a6fc4">'+totTram.toLocaleString('es-CO')+'</div><div class="est-kpi-lbl">En trámite</div></div>'+
+    '<div class="est-kpi"><div class="est-kpi-val" style="color:#4a5a72">'+(dataBanco.length-totGest).toLocaleString('es-CO')+'</div><div class="est-kpi-lbl">Sin gestionar</div></div>'+
+    '</div></div>';
+
+  // Devoluciones por estado
+  var maxDev=Math.max.apply(null,ESTADOS.map(function(e){ return totDev[e]||0; }).concat([1]));
+  html+='<div class="est-card">'+titulo('↩️ Devoluciones — por estado');
+  ESTADOS.forEach(function(e){
+    html+=barra(LABELS_EST[e],totDev[e]||0,maxDev,COLS_EST[e]);
+  });
+  html+='</div>';
+
+  // Aplicaciones por estado
+  var maxApl=Math.max.apply(null,ESTADOS.map(function(e){ return totApl[e]||0; }).concat([1]));
+  html+='<div class="est-card">'+titulo('✅ Aplicaciones — por estado');
+  ESTADOS.forEach(function(e){
+    html+=barra(LABELS_EST[e],totApl[e]||0,maxApl,COLS_EST[e]);
+  });
+  html+='</div>';
+
+  // Por tipo de impuesto
+  var maxImp=Math.max.apply(null,impArr.map(function(x){ return x[1].n; }).concat([1]));
+  html+='<div class="est-card">'+titulo('🏛️ Por tipo de impuesto');
+  impArr.slice(0,7).forEach(function(x){
+    html+=barra(x[0],x[1].n,maxImp,colImp(x[0]),fmtM(x[1].val));
+  });
+  html+='</div>';
+
+  // Devoluciones activas por responsable
+  var maxRDev=Math.max.apply(null,respArr.map(function(x){ return x[1].dev; }).concat([1]));
+  html+='<div class="est-card">'+titulo('👤 Devoluciones activas por responsable');
+  if(!respArr.length){ html+='<div style="color:rgba(255,255,255,.35);font-size:12px">Sin responsables registrados</div>'; }
+  respArr.slice(0,8).forEach(function(x){
+    html+=barra(x[0],x[1].dev,maxRDev,'#1a6fc4');
+  });
+  html+='</div>';
+
+  // Aplicaciones activas por responsable
+  var maxRApl=Math.max.apply(null,respArr.map(function(x){ return x[1].apl; }).concat([1]));
+  html+='<div class="est-card">'+titulo('👤 Aplicaciones activas por responsable');
+  if(!respArr.length){ html+='<div style="color:rgba(255,255,255,.35);font-size:12px">Sin responsables registrados</div>'; }
+  respArr.slice(0,8).forEach(function(x){
+    html+=barra(x[0],x[1].apl,maxRApl,'#7c3aed');
+  });
+  html+='</div>';
+
+  // Valor gestionado por responsable
+  var maxRVal=Math.max.apply(null,respArr.map(function(x){ return x[1].val; }).concat([1]));
+  html+='<div class="est-card">'+titulo('💰 Valor total gestionado por responsable');
+  var respValArr=respArr.slice().sort(function(a,b){ return b[1].val-a[1].val; });
+  respValArr.slice(0,8).forEach(function(x){
+    html+=barraM(x[0],x[1].val,maxRVal,'#e8a020');
+  });
+  html+='</div>';
+
+  // Pendientes sin gestionar por responsable
+  var maxRPen=Math.max.apply(null,respArr.map(function(x){ return x[1].pen; }).concat([1]));
+  if(maxRPen>0){
+    html+='<div class="est-card">'+titulo('⏳ Sin gestionar por responsable');
+    respArr.filter(function(x){ return x[1].pen>0; }).slice(0,8).forEach(function(x){
+      html+=barra(x[0],x[1].pen,maxRPen,'#ea580c');
+    });
+    html+='</div>';
+  }
+
+  // Depósitos por mes
+  if(mesArr.length>1){
+    var maxMes=Math.max.apply(null,mesArr.map(function(x){ return x[1].n; }).concat([1]));
+    function fmtMes(ym){
+      var p=ym.split('-'); if(p.length<2) return ym;
+      var mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      return (mNames[parseInt(p[1],10)-1]||p[1])+' '+p[0].slice(2);
+    }
+    html+='<div class="est-card est-card-wide">'+titulo('📅 Depósitos por mes (últimos 12)');
+    mesArr.forEach(function(x){
+      html+=barra(fmtMes(x[0]),x[1].n,maxMes,'#2d8de8',x[1].fin+' finalizados');
+    });
+    html+='</div>';
+  }
+
+  el.innerHTML=html;
 }
 
 // ═══════════════════════════════════════════════════
