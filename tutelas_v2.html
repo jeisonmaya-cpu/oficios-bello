@@ -742,10 +742,19 @@ async function guardarEstado(){
   else{
     try{
       const campos = { estado: nuevoEst, respuestaPQR: respPQR, respuestaRadicado: respRad, encargadoPQR: encPQR };
-      const res=await fetch(APPS_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+    try{
+      const res=await fetch(APPS_URL,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain"},
         body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
       const d=await res.json();
       if(d.ok)toast("✅ Guardado en Sheets","ok");else toast("Error: "+d.error,"err");
+    }catch(e){
+      // Fallback no-cors — el POST llega al servidor aunque no podemos leer la respuesta
+      try{
+        await fetch(APPS_URL,{method:"POST",mode:"no-cors",redirect:"follow",headers:{"Content-Type":"text/plain"},
+          body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
+        toast("✅ Enviado al Sheets (sin confirmación)","ok");
+      }catch(e2){toast("Error de red: "+e2.message,"err");}
+    }
     }catch(e){toast("Error de red: "+e.message,"err");}
   }
   renderAll();
