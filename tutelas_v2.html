@@ -714,6 +714,7 @@ async function guardarEstado(){
   const esInc      = incidentes.some(r=>r["RADICADO"]===actual["RADICADO"]);
   const arr        = esInc ? incidentes : esFallo ? fallos : tutelas;
   const tipoEnvio  = esInc ? "Incidente/Desacato" : actual["TIPO"];
+  console.log("DEBUG guardar → esInc:", esInc, "| tipoEnvio:", tipoEnvio, "| RADICADO:", actual["RADICADO"], "| incidentes.length:", incidentes.length);
   const idx        = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
   if(idx>=0){
     arr[idx]["ESTADO"]=nuevoEst;
