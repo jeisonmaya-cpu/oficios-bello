@@ -105,7 +105,6 @@
     .bt-req{background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.25)}
     .bt-sanc{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
     .bt-otro{background:rgba(255,255,255,.08);color:var(--muted)}
-    .bt-inc{background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.25)}
     .be-nuevo{background:rgba(59,130,246,.12);color:#93c5fd}
     .be-proceso{background:rgba(245,158,11,.12);color:#fcd34d}
     .be-resp{background:rgba(34,197,94,.12);color:#4ade80}
@@ -215,7 +214,7 @@
 <div class="nav-tabs">
   <div class="ntab active" id="tab-admites"      onclick="goTab('admites')">📋 Admites <span class="nbadge" id="badge-admites">0</span></div>
   <div class="ntab"        id="tab-fallos"       onclick="goTab('fallos')">⚖️ Fallos &amp; Sent. <span class="nbadge amber" id="badge-fallos">0</span></div>
-  <div class="ntab"        id="tab-otros"        onclick="goTab('otros')">⚡ Incidentes/Desacatos <span class="nbadge amber" id="badge-otros">0</span></div>
+  <div class="ntab"        id="tab-otros"        onclick="goTab('otros')">📌 Otros <span class="nbadge muted" id="badge-otros">0</span></div>
   <div class="ntab"        id="tab-reparto"      onclick="goTab('reparto')">👤 Por reparto</div>
   <div class="ntab"        id="tab-pqr"          onclick="goTab('pqr')">📝 PQR <span class="nbadge" id="badge-pqr">0</span></div>
   <div class="ntab"        id="tab-historico"    onclick="goTab('historico')">🗂️ Histórico</div>
@@ -255,17 +254,15 @@
 </div>
 
 <div class="panel" id="panel-otros">
-  <div class="stats-row" id="stats-inc"></div>
   <div class="filtros">
-    <input class="fi fi-buscar" id="fo-q" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderOtros()"/>
+    <input class="fi fi-buscar" id="fo-q" placeholder="🔍 Buscar..." oninput="renderOtros()"/>
+    <select class="fi" id="fo-tp" onchange="renderOtros()"><option value="">Todos</option><option>Requerimiento</option><option>Apertura</option><option>Sanción</option><option>Impugnación</option><option>Reparto</option></select>
     <select class="fi" id="fo-abo" onchange="renderOtros()"><option value="">Todos los abogados</option></select>
-    <select class="fi" id="fo-est" onchange="renderOtros()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
   </div>
   <div class="twrap">
     <div class="thead tcols-otr"><div class="cel">Urgencia</div><div class="cel">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div></div>
     <div id="body-otros"><div class="loader"><div class="spinner"></div></div></div>
   </div>
-  <div class="pag" id="pag-otros" style="display:none"><span id="pag-inc-info"></span><div class="pag-btns" id="pag-inc-btns"></div></div>
 </div>
 
 <div class="panel" id="panel-reparto"><div class="reparto-grid" id="grid-reparto"></div></div>
@@ -285,7 +282,7 @@
   <div class="filtros">
     <input class="fi fi-buscar" id="fh-q" placeholder="🔍 Buscar en histórico..." oninput="renderHistorico()"/>
     <select class="fi" id="fh-abo" onchange="renderHistorico()"><option value="">Todos los abogados</option></select>
-    <select class="fi" id="fh-tipo" onchange="renderHistorico()"><option value="">Todos los tipos</option><option>Tutela</option><option>Fallo de tutela</option><option>Sentencia</option><option>Desacato</option></select>
+    <select class="fi" id="fh-tipo" onchange="renderHistorico()"><option value="">Todos los tipos</option><option>Tutela</option><option>Fallo de tutela</option><option>Sentencia</option></select>
   </div>
   <div class="twrap">
     <div class="thead tcols-his"><div class="cel">Estado</div><div class="cel">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div><div class="cel">Vence</div></div>
@@ -336,25 +333,14 @@
         <label>Estado</label>
         <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
       </div>
-      <div class="mf full">
-        <label>Encargado PQR</label>
-        <select class="esel" id="m-pqrenc-sel" style="width:100%">
-          <option value="">— Sin asignar —</option>
-          <option>Maria Camila Uribe</option><option>Jaime Cordoba</option><option>Yennifer Chaverra</option><option>Dario Baldrich</option><option>Deisy Lopez</option><option>Juan Gomez Londoño</option>
-        </select>
-      </div>
       <div class="mf full" id="m-pqr-wrap">
-        <label id="m-lbl-pqr">Respuesta PQR</label>
+        <label>Respuesta PQR</label>
         <textarea id="m-resp-pqr" rows="3" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el número de radicado de respuesta PQR..."></textarea>
       </div>
       <div class="mf full" id="m-rad-wrap">
-        <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
+        <label>Respuesta Radicado Tutela</label>
         <textarea id="m-resp-rad" rows="3" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
       </div>
-    </div>
-    <div class="mf full" id="m-sp-wrap" style="display:none;margin-bottom:8px">
-      <label style="font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-transform:uppercase">📎 Documento SharePoint</label>
-      <button id="m-sp-btn" style="width:100%;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:10px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
     </div>
     <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px">💾 Guardar cambios</button>
     <div class="m-actions">
@@ -370,23 +356,22 @@
 const SHEET_ID    = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
 const GID_TUT     = "0";
 const GID_FAL     = "995241537";
-const GID_INC     = "528315836";
 const APPS_URL    = "https://script.google.com/macros/s/AKfycbxQK9MojlvC3aZoQR4fCPL_ScKQ58OYJinHlp9K19y9RcQNensF8olOiaaMHidSgiqF/exec";
-const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño"];
-const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente"];
+const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chavarria","Dario Baldrich","Deisy Lopez"];
+const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente","Desacato"];
 const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
 const EST_HIST    = ["Finalizado","Respondido"];
 const PER_PAGE    = 50;
 
-let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
-let pagAdm=1, pagFal=1, pagHis=1, pagInc=1;
+let tutelas=[], fallos=[], actual=null;
+let pagAdm=1, pagFal=1, pagHis=1;
 
 async function cargarDatos() {
   setSS("loading","Actualizando...");
   document.getElementById("btnref").classList.add("spin");
   try {
-    const [t,f,inc] = await Promise.all([leerGviz(GID_TUT),leerGviz(GID_FAL),leerGviz(GID_INC)]);
-    tutelas=t; fallos=f; incidentes=inc;
+    const [t,f] = await Promise.all([leerGviz(GID_TUT),leerGviz(GID_FAL)]);
+    tutelas=t; fallos=f;
     poblarSelects();
     renderAll();
     verificarVencidos();
@@ -431,7 +416,7 @@ function calcDias(fecha){
 }
 
 function verificarVencidos(){
-  const v=[...tutelas,...fallos,...incidentes].filter(r=>r._dias!==null&&r._dias<0&&!EST_HIST.includes(r["ESTADO"]));
+  const v=[...tutelas,...fallos].filter(r=>r._dias!==null&&r._dias<0&&!EST_HIST.includes(r["ESTADO"]));
   const b=document.getElementById("alerta-banner");
   if (v.length>0){document.getElementById("alerta-n").textContent=v.length;b.classList.remove("oculta");}
   else b.classList.add("oculta");
@@ -441,7 +426,7 @@ function buscarGlobal(){
   const q=document.getElementById("g-search").value.trim().toLowerCase();
   const el=document.getElementById("global-results");
   if (q.length<2){el.classList.remove("open");return;}
-  const res=[...tutelas,...fallos,...incidentes].filter(r=>[r["ACCIONANTE"],r["RADICADO"],r["CC / NIT"],r["JUZGADO"]].join(" ").toLowerCase().includes(q)).slice(0,12);
+  const res=[...tutelas,...fallos].filter(r=>[r["ACCIONANTE"],r["RADICADO"],r["CC / NIT"],r["JUZGADO"]].join(" ").toLowerCase().includes(q)).slice(0,12);
   if (!res.length){el.innerHTML=`<div class="gr-item"><span style="color:var(--muted)">Sin resultados</span></div>`;el.classList.add("open");return;}
   el.innerHTML=res.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="gr-item" onclick="el.classList.remove('open');abrirModal('${da}')">${badgeTipo(r["TIPO"])}<div><div class="gr-acc">${esc(r["ACCIONANTE"]||"—")}</div><div class="gr-sub">${esc(r["RADICADO"]||"—")} · ${esc((r["JUZGADO"]||"").substring(0,40))}</div></div>${semaforo(r._dias,r["ESTADO"])}</div>`;}).join("");
   el.classList.add("open");
@@ -454,9 +439,6 @@ const pNom=s=>!s?"—":s.split(" ").slice(0,2).join(" ");
 const inic=s=>!s?"?":s.split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
 const fBusc=(r,q)=>!q?true:[r["ACCIONANTE"],r["RADICADO"],r["JUZGADO"],r["CC / NIT"]].join(" ").toLowerCase().includes(q.toLowerCase());
 const byUrg=arr=>[...arr].sort((a,b)=>{if(a._dias===null&&b._dias===null)return 0;if(a._dias===null)return 1;if(b._dias===null)return-1;return a._dias-b._dias;});
-// Normaliza nombres para comparar sin importar tildes, mayúsculas ni doble n
-const normNom=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/nn/g,"n").replace(/\s+/g," ").trim();
-const matchAbo=(campo,abo)=>{const nc=normNom(campo),na=normNom(abo);if(nc===na)return true;const partes=na.split(" ");return partes.length>=2&&nc.includes(partes[0])&&nc.includes(partes[partes.length-1]);};
 
 function semaforo(dias,estado){
   if (EST_HIST.includes(estado)) return`<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":"Fin"}</span>`;
@@ -468,7 +450,7 @@ function semaforo(dias,estado){
   if (dias<=7) return`<span class="sem sem-y"><span class="sem-dot"></span>${dias}d</span>`;
   return`<span class="sem sem-v"><span class="sem-dot"></span>${dias}d</span>`;
 }
-function badgeTipo(t){const m={"Tutela":"bt-tutela","Admite":"bt-tutela","Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Incidente":"bt-sent","Impugnación":"bt-impug","Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc","Desacato":"bt-inc","Incidente de desacato":"bt-inc"};return`<span class="bt ${m[t]||"bt-otro"}">${esc(t)||"—"}</span>`;}
+function badgeTipo(t){const m={"Tutela":"bt-tutela","Admite":"bt-tutela","Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Incidente":"bt-sent","Impugnación":"bt-impug","Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc"};return`<span class="bt ${m[t]||"bt-otro"}">${esc(t)||"—"}</span>`;}
 function badgeEst(e){const m={"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Vencido":"be-venc"};return`<span class="bt ${m[e]||""}">${esc(e)||"—"}</span>`;}
 function scard(n,label,cls){return`<div class="scard"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}</div></div>`;}
 function clsFila(dias,est){if(EST_HIST.includes(est))return"";if(dias!==null&&dias<=2)return" urgente";if(dias!==null&&dias<=5)return" proximo";return"";}
@@ -494,7 +476,6 @@ function changePag(pagId,p){
   if(pagId==="pag-admites"){pagAdm=p;renderAdmites();}
   else if(pagId==="pag-fallos"){pagFal=p;renderFallos();}
   else if(pagId==="pag-his"){pagHis=p;renderHistorico();}
-  else if(pagId==="pag-otros"){pagInc=p;renderOtros();}
 }
 
 function renderAdmites(){
@@ -517,7 +498,7 @@ function renderAdmites(){
   const pag=renderPag(filtAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
   const el=document.getElementById("body-admites");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros</div>`;return;}
-  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModal('${da}','tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModal('${da}')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
 }
 
 function renderFallos(){
@@ -539,36 +520,30 @@ function renderFallos(){
   const pag=renderPag(filtFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros</div>`;return;}
-  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModal('${da}','fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModal('${da}')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
 }
 
 function renderOtros(){
   const q=document.getElementById("fo-q").value;
+  const tp=document.getElementById("fo-tp").value;
   const abo=document.getElementById("fo-abo").value;
-  const est=document.getElementById("fo-est").value;
-  const datos=byUrg(incidentes.filter(r=>{
+  const datos=byUrg([...tutelas,...fallos].filter(r=>{
+    if(!TIPOS_OTROS.includes(r["TIPO"]))return false;
+    if(tp&&r["TIPO"]!==tp)return false;
     if(abo&&r["RESPONSABLE"]!==abo)return false;
-    if(est&&r["ESTADO"]!==est)return false;
     return fBusc(r,q);
   }));
-  // Stats cards
-  const urg=datos.filter(r=>r._dias!==null&&r._dias<=3&&!EST_HIST.includes(r["ESTADO"]));
-  const activos=datos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
-  const nuevos=datos.filter(r=>r["ESTADO"]==="Nuevo");
-  const finalizados=datos.filter(r=>EST_HIST.includes(r["ESTADO"]));
-  document.getElementById("stats-inc").innerHTML=scard(datos.length,"Total","c-amber")+scard(activos.length,"Activos","c-blue")+scard(urg.length,"Urgentes ≤3d","c-red")+scard(nuevos.length,"Nuevos","c-purple")+scard(finalizados.length,"Finalizados","c-green");
-  document.getElementById("badge-otros").textContent=activos.length;
-  const pag=renderPag(datos,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
+  document.getElementById("badge-otros").textContent=datos.length;
   const el=document.getElementById("body-otros");
-  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros</div>`;return;}
-  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModal('${da}','incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  if(!datos.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros</div>`;return;}
+  el.innerHTML=datos.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModal('${da}')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
 }
 
 function renderHistorico(){
   const q=document.getElementById("fh-q").value;
   const abo=document.getElementById("fh-abo").value;
   const tipo=document.getElementById("fh-tipo").value;
-  const filtHis=[...tutelas,...fallos,...incidentes.map(r=>({...r,TIPO:r["TIPO"]||"Desacato"}))].filter(r=>{
+  const filtHis=[...tutelas,...fallos].filter(r=>{
     if(!EST_HIST.includes(r["ESTADO"]))return false;
     if(abo&&r["RESPONSABLE"]!==abo)return false;
     if(tipo&&r["TIPO"]!==tipo)return false;
@@ -577,26 +552,25 @@ function renderHistorico(){
   const pag=renderPag(filtHis,pagHis,"pag-his-info","pag-his-btns","pag-his");
   const el=document.getElementById("body-historico");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🗂️</div>Sin registros históricos</div>`;return;}
-  el.innerHTML=pag.map(r=>{const esI=incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila tcols-his" onclick="abrirModal('${da}','${esI?"incidente":TIPOS_FALLO.includes(r["TIPO"])?"fallo":"tutela"}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;}).join("");
+  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila tcols-his" onclick="abrirModal('${da}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;}).join("");
 }
 
 function renderReparto(){
-  const todos=[...tutelas,...fallos,...incidentes].filter(r=>!EST_HIST.includes(r["ESTADO"]));
+  const todos=[...tutelas,...fallos].filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const max=Math.max(...ABOGADOS.map(a=>todos.filter(r=>r["RESPONSABLE"]===a).length),1);
   document.getElementById("grid-reparto").innerHTML=ABOGADOS.map(a=>{
     const mine=todos.filter(r=>r["RESPONSABLE"]===a);
     const tuts=mine.filter(r=>!TIPOS_FALLO.includes(r["TIPO"]));
     const fals=mine.filter(r=>TIPOS_FALLO.includes(r["TIPO"]));
-    const incs=incidentes.filter(r=>r["RESPONSABLE"]===a&&!EST_HIST.includes(r["ESTADO"]));
     const urg=mine.filter(r=>r._dias!==null&&r._dias<=2);
     const nue=mine.filter(r=>r["ESTADO"]==="Nuevo");
     const pct=Math.round(mine.length/max*100);
-    return`<div class="abo-card"><div class="abo-head"><div class="abo-av">${inic(a)}</div><div><div class="abo-nombre">${pNom(a)}</div><div class="abo-cargo">${a.split(" ").slice(2).join(" ")||"Abogado"}</div></div></div><div class="abo-stat"><span>Total activos</span><span class="val">${mine.length}</span></div><div class="abo-stat"><span>Tutelas/Admites</span><span class="val">${tuts.length}</span></div><div class="abo-stat"><span>Fallos/Sent.</span><span class="val" style="color:#fca5a5">${fals.length}</span></div><div class="abo-stat"><span style="color:#fb923c">Incidentes/Desacatos</span><span class="val" style="color:#fb923c">${incs.length}</span></div><div class="abo-stat"><span style="color:#f87171">Urgentes ≤2d</span><span class="val" style="color:#f87171">${urg.length}</span></div><div class="abo-stat"><span>Nuevos</span><span class="val">${nue.length}</span></div><div class="abo-bar-wrap"><div class="abo-bar-fill" style="width:${pct}%"></div></div></div>`;
+    return`<div class="abo-card"><div class="abo-head"><div class="abo-av">${inic(a)}</div><div><div class="abo-nombre">${pNom(a)}</div><div class="abo-cargo">${a.split(" ").slice(2).join(" ")||"Abogado"}</div></div></div><div class="abo-stat"><span>Total activos</span><span class="val">${mine.length}</span></div><div class="abo-stat"><span>Tutelas/Admites</span><span class="val">${tuts.length}</span></div><div class="abo-stat"><span>Fallos/Sent.</span><span class="val" style="color:#fca5a5">${fals.length}</span></div><div class="abo-stat"><span style="color:#f87171">Urgentes ≤2d</span><span class="val" style="color:#f87171">${urg.length}</span></div><div class="abo-stat"><span>Nuevos</span><span class="val">${nue.length}</span></div><div class="abo-bar-wrap"><div class="abo-bar-fill" style="width:${pct}%"></div></div></div>`;
   }).join("");
 }
 
 function renderPQR(){
-  const activos=[...tutelas,...fallos,...incidentes].filter(r=>!EST_HIST.includes(r["ESTADO"]));
+  const activos=tutelas.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const sinR=activos.filter(r=>!String(r["RESPUESTA PQR"]||"").trim());
   const conR=activos.filter(r=>String(r["RESPUESTA PQR"]||"").trim());
   document.getElementById("cnt-sin").textContent=sinR.length;
@@ -616,8 +590,7 @@ function renderPQR(){
 function renderEstadisticas(){
   const todos=[...tutelas,...fallos];
   const activ=todos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
-  const incActiv=incidentes.filter(r=>!EST_HIST.includes(r["ESTADO"]));
-  if(!todos.length&&!incidentes.length){document.getElementById("grid-est").innerHTML=`<div class="empty">Sin datos</div>`;return;}
+  if(!todos.length){document.getElementById("grid-est").innerHTML=`<div class="empty">Sin datos</div>`;return;}
   const barra=(label,n,max,color)=>`<div class="est-row"><span class="est-label" title="${esc(label)}">${esc(abrev(label,22))}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${max?Math.round(n/max*100):0}%;background:${color}"></div></div><span class="est-val" style="color:${color}">${n}</span></div>`;
   const tiposC={};todos.forEach(r=>{tiposC[r["TIPO"]]=(tiposC[r["TIPO"]]||0)+1;});
   const maxTp=Math.max(...Object.values(tiposC),1);
@@ -632,19 +605,7 @@ function renderEstadisticas(){
   const falActiv=fallos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const maxF=Math.max(...ABOGADOS.map(a=>falActiv.filter(r=>r["RESPONSABLE"]===a).length),1);
   const falH=ABOGADOS.map(a=>barra(pNom(a),falActiv.filter(r=>r["RESPONSABLE"]===a).length,maxF,"#f87171")).join("");
-  // Incidentes/Desacatos stats
-  const estIncC={};ests.forEach(e=>{estIncC[e]=incidentes.filter(r=>r["ESTADO"]===e).length;});
-  const maxEI=Math.max(...Object.values(estIncC),1);
-  const estIncH=ests.map(e=>barra(e,estIncC[e],maxEI,estCols[e])).join("");
-  const maxI=Math.max(...ABOGADOS.map(a=>incActiv.filter(r=>r["RESPONSABLE"]===a).length),1);
-  const incH=ABOGADOS.map(a=>barra(pNom(a),incActiv.filter(r=>r["RESPONSABLE"]===a).length,maxI,"#fb923c")).join("");
-  document.getElementById("grid-est").innerHTML=
-    `<div class="est-card"><div class="est-title">Por tipo de actuación</div>${tiposH}</div>`+
-    `<div class="est-card"><div class="est-title">Por estado (tutelas & fallos)</div>${estH}</div>`+
-    `<div class="est-card"><div class="est-title">Carga activa por abogado</div>${aboH}</div>`+
-    `<div class="est-card"><div class="est-title">Fallos activos por abogado</div>${falH}</div>`+
-    `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por estado</div>${estIncH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`+
-    `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por abogado</div>${incH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`;
+  document.getElementById("grid-est").innerHTML=`<div class="est-card"><div class="est-title">Por tipo de actuación</div>${tiposH}</div><div class="est-card"><div class="est-title">Por estado</div>${estH}</div><div class="est-card"><div class="est-title">Carga activa por abogado</div>${aboH}</div><div class="est-card"><div class="est-title">Fallos activos por abogado</div>${falH}</div>`;
 }
 
 function renderAll(){renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();}
@@ -658,13 +619,11 @@ function poblarSelects(){
   });
 }
 
-function abrirModal(da, origen){
+function abrirModal(da){
   let r;try{r=JSON.parse(decodeURIComponent(da));}catch(e){return;}
   actual=r;
-  origenModal=origen||"tutela";
   const dias=r._dias;
-  const origenLabel={"tutela":"📋 Tutela / Admite","fallo":"⚖️ Fallo / Sentencia","incidente":"⚡ Incidente / Desacato","historico":"🗂️ Histórico"}[origenModal]||"";
-  setEl("m-badge",badgeTipo(r["TIPO"]||(origenModal==="incidente"?"Desacato":""))+(origenLabel?`<span style="margin-left:8px;font-size:10px;color:var(--muted);font-weight:400">${origenLabel}</span>`:""));
+  setEl("m-badge",badgeTipo(r["TIPO"]));
   setEl("m-acc",esc(r["ACCIONANTE"]||"—"));
   setEl("m-rad","Radicado: "+esc(r["RADICADO"]||"—"));
   setEl("m-juz",esc(r["JUZGADO"]||"—"));
@@ -685,34 +644,12 @@ function abrirModal(da, origen){
     const val=r[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
   });
   document.getElementById("m-esel").value=r["ESTADO"]||"Nuevo";
-  document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
-  // Adaptar etiquetas y visibilidad según tipo
+  // Cargar campos PQR y Radicado (solo tutelas)
   const esFallo = ["Fallo de tutela","Sentencia","Incidente"].includes(r["TIPO"]);
-  const esInc   = incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
-  // Siempre mostrar ambos campos, solo cambian las etiquetas
-  document.getElementById("m-pqr-wrap").style.display = "block";
-  document.getElementById("m-rad-wrap").style.display = "block";
-  document.getElementById("m-lbl-pqr").textContent = esInc ? "Respuesta PQR" : esFallo ? "Observaciones del fallo" : "Respuesta PQR";
-  document.getElementById("m-resp-pqr").placeholder = esInc ? "Ingresa la respuesta PQR..." : esFallo ? "Ingresa observaciones sobre el fallo..." : "Ingresa el número de radicado de respuesta PQR...";
-  document.getElementById("m-lbl-rad").textContent = esInc ? "Radicado de cumplimiento" : esFallo ? "Radicado de cumplimiento" : "Respuesta Radicado Tutela";
-  document.getElementById("m-resp-rad").placeholder = esInc ? "Ingresa el radicado de cumplimiento..." : esFallo ? "Ingresa el radicado de cumplimiento..." : "Ingresa el radicado de respuesta a la tutela...";
+  document.getElementById("m-pqr-wrap").style.display = esFallo ? "none" : "block";
+  document.getElementById("m-rad-wrap").style.display = esFallo ? "none" : "block";
   document.getElementById("m-resp-pqr").value = r["RESPUESTA PQR"] || "";
-  document.getElementById("m-resp-rad").value = r["RADICADO DE CUMPLIMIENTO"] || r["RESPUESTA RADICADO TUTELA"] || "";
-  // SharePoint
-  const spVal = r["SHAREPOINT"]||"";
-  const spWrap = document.getElementById("m-sp-wrap");
-  if(spWrap){
-    if(spVal){
-      spWrap.style.display="block";
-      const spBtn=document.getElementById("m-sp-btn");
-      if(spBtn){
-        spBtn.textContent="📎 Abrir documento en SharePoint";
-        spBtn.onclick=()=>window.open(spVal,"_blank");
-      }
-    } else {
-      spWrap.style.display="none";
-    }
-  }
+  document.getElementById("m-resp-rad").value = r["RESPUESTA RADICADO TUTELA"] || "";
   document.getElementById("overlay").classList.add("open");
 }
 
@@ -723,27 +660,24 @@ async function guardarEstado(){
   const nuevoEst   = document.getElementById("m-esel").value;
   const respPQR    = document.getElementById("m-resp-pqr").value;
   const respRad    = document.getElementById("m-resp-rad").value;
-  const encPQR     = document.getElementById("m-pqrenc-sel").value;
-  if(!confirm(`¿Confirmar guardar cambios para ${actual["ACCIONANTE"]||"este registro"}?`))return;
-  const esInc      = origenModal === "incidente";
-  const esFallo    = origenModal === "fallo";
-  const arr        = esInc ? incidentes : esFallo ? fallos : tutelas;
-  const tipoEnvio  = esInc ? "Incidente/Desacato" : actual["TIPO"];
+  const esFallo    = ["Fallo de tutela","Sentencia","Incidente"].includes(actual["TIPO"]);
+  const arr        = esFallo ? fallos : tutelas;
   const idx        = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
   if(idx>=0){
     arr[idx]["ESTADO"]=nuevoEst;
-    arr[idx]["RESPUESTA PQR"]=respPQR;
-    arr[idx]["RADICADO DE CUMPLIMIENTO"]=respRad;
+    if(!esFallo){
+      arr[idx]["RESPUESTA PQR"]=respPQR;
+      arr[idx]["RESPUESTA RADICADO TUTELA"]=respRad;
+    }
   }
   actual["ESTADO"]=nuevoEst;
-  actual["RESPUESTA PQR"]=respPQR;
-  actual["RADICADO DE CUMPLIMIENTO"]=respRad;
   if(!APPS_URL){toast("⚠️ Cambio local. Configura APPS_URL para persistir en Sheets.","err");}
   else{
     try{
-      const campos = { estado: nuevoEst, respuestaPQR: respPQR, respuestaRadicado: respRad, encargadoPQR: encPQR };
+      const campos = { estado: nuevoEst };
+      if(!esFallo){ campos.respuestaPQR=respPQR; campos.respuestaRadicado=respRad; }
       const res=await fetch(APPS_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
-        body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
+        body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:actual["TIPO"]})});
       const d=await res.json();
       if(d.ok)toast("✅ Guardado en Sheets","ok");else toast("Error: "+d.error,"err");
     }catch(e){toast("Error de red: "+e.message,"err");}
