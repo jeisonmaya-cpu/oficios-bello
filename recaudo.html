@@ -1481,6 +1481,9 @@ function procesarImport(inp){
           // Normalizar nombres de columnas al esquema conocido
           var nr={'deposito judicial':dep,'_nuevo':true};
           Object.keys(row).forEach(k=>{ nr[k]=row[k]; });
+          // Normalizar variante del nombre del demandado
+          if(!nr['Nombre Demandante.1'] && nr['Nombre Demandante'])
+            nr['Nombre Demandante.1'] = nr['Nombre Demandante'];
           nuevos.push(nr);
           existentes.add(dep);
         }
@@ -1553,7 +1556,7 @@ function finalizarCarga(ok, msg){
 async function cargarDesdeSheet(){
   if(!cfg.apiUrl) return;
   var alEl=document.getElementById('cfg-alert');
-  iniciarCarga('Cargando '+dataBanco.length.toLocaleString('es-CO')||'datos'+' del Sheet...');
+  iniciarCarga('Conectando con Google Sheets...');
   document.getElementById('tbody').innerHTML=
     '<tr><td colspan="11"><div class="empty">'+
     '<div class="spin" style="width:28px;height:28px;border-width:3px;margin:0 auto 10px"></div>'+
@@ -1567,6 +1570,13 @@ async function cargarDesdeSheet(){
       dataBanco=d.data.map(row=>{
         var obj={};
         headers.forEach((h,i)=>{ obj[h]=row[i]; });
+        // Normalizar variantes del nombre del demandado según el Sheet real
+        // El banco exporta "Nombre Demandante.1", el Sheet puede tener "Nombre Demandante"
+        if(!obj['Nombre Demandante.1'] && obj['Nombre Demandante'])
+          obj['Nombre Demandante.1'] = obj['Nombre Demandante'];
+        // También normalizar variante sin punto por si viene diferente
+        if(!obj['Nombre Demandante.1'] && obj['NOMBRE DEMANDANTE'])
+          obj['Nombre Demandante.1'] = obj['NOMBRE DEMANDANTE'];
         return obj;
       });
       actualizarIndicadorStorage();
