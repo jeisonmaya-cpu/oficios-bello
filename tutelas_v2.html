@@ -285,7 +285,7 @@
   <div class="filtros">
     <input class="fi fi-buscar" id="fh-q" placeholder="🔍 Buscar en histórico..." oninput="renderHistorico()"/>
     <select class="fi" id="fh-abo" onchange="renderHistorico()"><option value="">Todos los abogados</option></select>
-    <select class="fi" id="fh-tipo" onchange="renderHistorico()"><option value="">Todos los tipos</option><option>Tutela</option><option>Fallo de tutela</option><option>Sentencia</option></select>
+    <select class="fi" id="fh-tipo" onchange="renderHistorico()"><option value="">Todos los tipos</option><option>Tutela</option><option>Fallo de tutela</option><option>Sentencia</option><option>Desacato</option></select>
   </div>
   <div class="twrap">
     <div class="thead tcols-his"><div class="cel">Estado</div><div class="cel">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div><div class="cel">Vence</div></div>
@@ -335,6 +335,13 @@
       <div class="mf full">
         <label>Estado</label>
         <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
+      </div>
+      <div class="mf full">
+        <label>Encargado PQR</label>
+        <select class="esel" id="m-pqrenc-sel" style="width:100%">
+          <option value="">— Sin asignar —</option>
+          <option>Maria Camila Uribe</option><option>Jaime Cordoba</option><option>Yennifer Chaverra</option><option>Dario Baldrich</option><option>Deisy Lopez</option><option>Juan Gomez Londoño</option>
+        </select>
       </div>
       <div class="mf full" id="m-pqr-wrap">
         <label id="m-lbl-pqr">Respuesta PQR</label>
@@ -561,7 +568,7 @@ function renderHistorico(){
   const q=document.getElementById("fh-q").value;
   const abo=document.getElementById("fh-abo").value;
   const tipo=document.getElementById("fh-tipo").value;
-  const filtHis=[...tutelas,...fallos].filter(r=>{
+  const filtHis=[...tutelas,...fallos,...incidentes.map(r=>({...r,TIPO:r["TIPO"]||"Desacato"}))].filter(r=>{
     if(!EST_HIST.includes(r["ESTADO"]))return false;
     if(abo&&r["RESPONSABLE"]!==abo)return false;
     if(tipo&&r["TIPO"]!==tipo)return false;
@@ -570,7 +577,7 @@ function renderHistorico(){
   const pag=renderPag(filtHis,pagHis,"pag-his-info","pag-his-btns","pag-his");
   const el=document.getElementById("body-historico");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🗂️</div>Sin registros históricos</div>`;return;}
-  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila tcols-his" onclick="abrirModal('${da}','historico')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;}).join("");
+  el.innerHTML=pag.map(r=>{const esI=incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila tcols-his" onclick="abrirModal('${da}','${esI?"incidente":TIPOS_FALLO.includes(r["TIPO"])?"fallo":"tutela"}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;}).join("");
 }
 
 function renderReparto(){
@@ -589,7 +596,7 @@ function renderReparto(){
 }
 
 function renderPQR(){
-  const activos=tutelas.filter(r=>!EST_HIST.includes(r["ESTADO"]));
+  const activos=[...tutelas,...fallos,...incidentes].filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const sinR=activos.filter(r=>!String(r["RESPUESTA PQR"]||"").trim());
   const conR=activos.filter(r=>String(r["RESPUESTA PQR"]||"").trim());
   document.getElementById("cnt-sin").textContent=sinR.length;
@@ -656,7 +663,8 @@ function abrirModal(da, origen){
   actual=r;
   origenModal=origen||"tutela";
   const dias=r._dias;
-  setEl("m-badge",badgeTipo(r["TIPO"]));
+  const origenLabel={"tutela":"📋 Tutela / Admite","fallo":"⚖️ Fallo / Sentencia","incidente":"⚡ Incidente / Desacato","historico":"🗂️ Histórico"}[origenModal]||"";
+  setEl("m-badge",badgeTipo(r["TIPO"]||(origenModal==="incidente"?"Desacato":""))+(origenLabel?`<span style="margin-left:8px;font-size:10px;color:var(--muted);font-weight:400">${origenLabel}</span>`:""));
   setEl("m-acc",esc(r["ACCIONANTE"]||"—"));
   setEl("m-rad","Radicado: "+esc(r["RADICADO"]||"—"));
   setEl("m-juz",esc(r["JUZGADO"]||"—"));
@@ -677,6 +685,7 @@ function abrirModal(da, origen){
     const val=r[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
   });
   document.getElementById("m-esel").value=r["ESTADO"]||"Nuevo";
+  document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
   // Adaptar etiquetas y visibilidad según tipo
   const esFallo = ["Fallo de tutela","Sentencia","Incidente"].includes(r["TIPO"]);
   const esInc   = incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
@@ -714,6 +723,8 @@ async function guardarEstado(){
   const nuevoEst   = document.getElementById("m-esel").value;
   const respPQR    = document.getElementById("m-resp-pqr").value;
   const respRad    = document.getElementById("m-resp-rad").value;
+  const encPQR     = document.getElementById("m-pqrenc-sel").value;
+  if(!confirm(`¿Confirmar guardar cambios para ${actual["ACCIONANTE"]||"este registro"}?`))return;
   const esInc      = origenModal === "incidente";
   const esFallo    = origenModal === "fallo";
   const arr        = esInc ? incidentes : esFallo ? fallos : tutelas;
@@ -730,7 +741,7 @@ async function guardarEstado(){
   if(!APPS_URL){toast("⚠️ Cambio local. Configura APPS_URL para persistir en Sheets.","err");}
   else{
     try{
-      const campos = { estado: nuevoEst, respuestaPQR: respPQR, respuestaRadicado: respRad };
+      const campos = { estado: nuevoEst, respuestaPQR: respPQR, respuestaRadicado: respRad, encargadoPQR: encPQR };
       const res=await fetch(APPS_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
         body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
       const d=await res.json();
