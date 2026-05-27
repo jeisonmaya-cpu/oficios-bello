@@ -166,7 +166,16 @@ tbody td{padding:8px 10px;vertical-align:middle}
 .spin{width:13px;height:13px;border:2px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── IMPORT BANNER ── */
+/* ── BARRA DE CARGA GLOBAL ── */
+#carga-bar{position:fixed;top:0;left:0;width:100%;height:3px;z-index:9998;pointer-events:none;overflow:hidden;display:none}
+#carga-bar.activo{display:block}
+#carga-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2),var(--blue2));width:0%;transition:width .4s ease;border-radius:0 2px 2px 0}
+#carga-bar.indeterminate #carga-bar-fill{width:100%;animation:indeterminate 1.4s ease infinite}
+@keyframes indeterminate{0%{transform:translateX(-100%)}100%{transform:translateX(100%);width:100%}}
+#carga-estado{position:fixed;top:0;left:0;right:0;z-index:9997;pointer-events:none;display:none}
+#carga-estado.activo{display:block}
+#carga-toast{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:rgba(255,255,255,.9);font-size:12px;font-weight:500;padding:0;height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;transition:height .25s ease,padding .25s ease}
+#carga-toast.visible{height:32px;padding:0 20px}
 .import-banner{background:linear-gradient(135deg,rgba(234,88,12,.08),rgba(234,88,12,.03));border:1.5px dashed rgba(234,88,12,.35);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
 .import-banner-txt h4{font-size:13px;font-weight:700;color:var(--orange);margin-bottom:3px}
 .import-banner-txt p{font-size:12px;color:var(--text-soft)}
@@ -223,6 +232,10 @@ tbody td{padding:8px 10px;vertical-align:middle}
   </div>
 </div>
 
+<!-- ════════════ BARRA DE CARGA ════════════ -->
+<div id="carga-bar"><div id="carga-bar-fill"></div></div>
+<div id="carga-estado"><div id="carga-toast"></div></div>
+
 <!-- ════════════ HEADER ════════════ -->
 <header>
   <div class="hi">
@@ -277,6 +290,9 @@ tbody td{padding:8px 10px;vertical-align:middle}
 
     <div class="filtros">
       <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrar()"/>
+      <select class="finp" id="f-mes" onchange="filtrar()" title="Filtrar por mes de emisión">
+        <option value="">📅 Todos los meses</option>
+      </select>
       <select class="finp" id="f-estado-dev" onchange="filtrar()">
         <option value="">Estado devolución (todos)</option>
         <option value="PENDIENTE">⏳ Pendiente</option>
@@ -879,6 +895,7 @@ function fmt$(n){ return '$'+Math.round(parseFloat(String(n||0).replace(/[^\d.]/
 // ═══════════════════════════════════════════════════
 function filtrar(){
   var buscar=(document.getElementById('f-buscar').value||'').toLowerCase().trim();
+  var fMes=document.getElementById('f-mes').value; // 'YYYY-MM' o ''
   var fEDev=document.getElementById('f-estado-dev').value;
   var fEApl=document.getElementById('f-estado-apl').value;
   var fImp=(document.getElementById('f-impuesto').value||'').toUpperCase();
@@ -889,6 +906,10 @@ function filtrar(){
     if(buscar){
       var hay=((row['deposito judicial']||'')+(row['Nombre Demandante.1']||'')+(row['Identificación Demandado']||'')+(row['Proceso']||'')+(row['Número del Proceso']||'')).toLowerCase();
       if(hay.indexOf(buscar)<0) return false;
+    }
+    if(fMes){
+      var fechaFila=String(row['Fecha Emisión']||'').substring(0,7);
+      if(fechaFila !== fMes) return false;
     }
     if(fEDev){
       var ed=normEst(row['ESTADO DEVOLUCION']);
@@ -931,7 +952,7 @@ function sortBy(col){
 }
 
 function limpiarFiltros(){
-  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable'].forEach(id=>{
+  ['f-buscar','f-mes','f-estado-dev','f-estado-apl','f-impuesto','f-responsable'].forEach(id=>{
     var el=document.getElementById(id); if(el) el.value='';
   });
   filtrar();
@@ -977,7 +998,15 @@ function renderTabla(){
   }).join('');
 
   document.getElementById('tbody').innerHTML=rows;
-  document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros`;
+  // Info contextual: si hay filtro de mes activo, mostrarlo
+  var fMesActivo = document.getElementById('f-mes').value;
+  var infoExtra = '';
+  if(fMesActivo){
+    var selMes = document.getElementById('f-mes');
+    var labelMes = selMes.options[selMes.selectedIndex]?.text || fMesActivo;
+    infoExtra = ' — ' + labelMes;
+  }
+  document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros${infoExtra}`;
   renderPag(data.length,'pag-btns',pagActual,(n)=>{pagActual=n;renderTabla();});
 }
 
@@ -1482,15 +1511,53 @@ function showImportResult(tipo,msg){
 }
 
 // ═══════════════════════════════════════════════════
+// BARRA DE CARGA GLOBAL
+// ═══════════════════════════════════════════════════
+var _cargaTimer = null;
+
+function iniciarCarga(msg){
+  var bar   = document.getElementById('carga-bar');
+  var fill  = document.getElementById('carga-bar-fill');
+  var toast = document.getElementById('carga-toast');
+  var est   = document.getElementById('carga-estado');
+  if(!bar) return;
+  bar.classList.add('activo','indeterminate');
+  est.classList.add('activo');
+  toast.innerHTML = '<div class="spin" style="width:11px;height:11px;border-width:2px;flex-shrink:0"></div>' + (msg||'Cargando datos del Sheet...');
+  setTimeout(function(){ toast.classList.add('visible'); }, 10);
+  if(_cargaTimer) clearTimeout(_cargaTimer);
+}
+
+function finalizarCarga(ok, msg){
+  var bar   = document.getElementById('carga-bar');
+  var fill  = document.getElementById('carga-bar-fill');
+  var toast = document.getElementById('carga-toast');
+  var est   = document.getElementById('carga-estado');
+  if(!bar) return;
+  bar.classList.remove('indeterminate');
+  fill.style.width = '100%';
+  fill.style.background = ok ? '#16a34a' : '#dc2626';
+  toast.innerHTML = (ok ? '✅ ' : '❌ ') + (msg||'');
+  _cargaTimer = setTimeout(function(){
+    bar.classList.remove('activo');
+    fill.style.width = '0%';
+    fill.style.background = '';
+    toast.classList.remove('visible');
+    setTimeout(function(){ est.classList.remove('activo'); }, 300);
+  }, ok ? 1800 : 3500);
+}
+
+// ═══════════════════════════════════════════════════
 // CARGAR DESDE SHEET
 // ═══════════════════════════════════════════════════
 async function cargarDesdeSheet(){
   if(!cfg.apiUrl) return;
   var alEl=document.getElementById('cfg-alert');
-  // Mostrar spinner en tabla principal también
+  iniciarCarga('Cargando '+dataBanco.length.toLocaleString('es-CO')||'datos'+' del Sheet...');
   document.getElementById('tbody').innerHTML=
-    '<tr><td colspan="11"><div class="empty"><div class="spin" style="width:24px;height:24px;border-width:3px;margin:0 auto 8px"></div>'+
-    '<p style="color:var(--text-soft)">Cargando desde Google Sheets...</p></div></td></tr>';
+    '<tr><td colspan="11"><div class="empty">'+
+    '<div class="spin" style="width:28px;height:28px;border-width:3px;margin:0 auto 10px"></div>'+
+    '<p style="color:var(--text-soft);font-size:13px">Conectando con Google Sheets...</p></div></td></tr>';
   if(alEl) showAl(alEl,'al-load','<div class="spin"></div> Cargando desde Google Sheets...');
   try{
     var r=await fetch(cfg.apiUrl+'?accion=listar_recaudo&hoja='+encodeURIComponent(cfg.hoja));
@@ -1502,22 +1569,20 @@ async function cargarDesdeSheet(){
         headers.forEach((h,i)=>{ obj[h]=row[i]; });
         return obj;
       });
-      // Estrategia A: NO guardar dataBanco en localStorage
-      // Solo actualizar indicador por gestiones/log
       actualizarIndicadorStorage();
-      renderKpis(); filtrar(); llenarSelectResponsables();
-      // Si el tab de estadísticas está activo, renderizarlo ahora que hay datos
-      if(document.getElementById('panel-estadisticas').style.display!=='none'){
-        renderEstadisticas();
-      }
+      renderKpis(); filtrar(); llenarSelectResponsables(); llenarSelectMes();
+      if(document.getElementById('panel-estadisticas').style.display!=='none') renderEstadisticas();
+      finalizarCarga(true, dataBanco.length.toLocaleString('es-CO')+' registros cargados');
       if(alEl) showAl(alEl,'al-ok','✅ '+dataBanco.length.toLocaleString('es-CO')+' registros cargados desde Google Sheets.');
     } else {
+      finalizarCarga(false,'Sin datos en el Sheet o formato inesperado');
       if(alEl) showAl(alEl,'al-warn','Sin datos en el Sheet o formato inesperado. Intente importar un Excel.');
       document.getElementById('tbody').innerHTML=
         '<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div>'+
         '<p>Sin datos en el Sheet. Verifique la configuración.</p></div></td></tr>';
     }
   }catch(e){
+    finalizarCarga(false,'Sin conexión con el Sheet');
     if(alEl) showAl(alEl,'al-err','❌ No se pudo conectar con el Sheet. Verifique la URL.');
     document.getElementById('tbody').innerHTML=
       '<tr><td colspan="11"><div class="empty"><div class="empty-ico">❌</div>'+
@@ -1962,6 +2027,31 @@ function llenarSelectResponsables(){
   var html='<option value="">Responsable (todos)</option>';
   [...resps].sort().forEach(r=>{ html+=`<option value="${eh(r)}">${eh(r)}</option>`; });
   ['f-responsable','fp-responsable'].forEach(id=>{ var el=document.getElementById(id); if(el) el.innerHTML=html; });
+}
+
+function llenarSelectMes(){
+  var meses = new Map(); // 'YYYY-MM' -> etiqueta
+  var mNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  dataBanco.forEach(function(r){
+    var f = String(r['Fecha Emisión']||'').substring(0,7);
+    if(!f || f.length < 7) return;
+    if(!meses.has(f)){
+      var parts = f.split('-');
+      var label = (mNames[parseInt(parts[1],10)-1]||parts[1]) + ' ' + parts[0];
+      meses.set(f, label);
+    }
+  });
+  // Ordenar descendente (más reciente primero)
+  var ordenados = [...meses.entries()].sort(function(a,b){ return b[0].localeCompare(a[0]); });
+  var sel = document.getElementById('f-mes');
+  if(!sel) return;
+  var actual = sel.value;
+  var html = '<option value="">📅 Todos los meses</option>';
+  ordenados.forEach(function(entry){
+    html += '<option value="'+entry[0]+'">'+entry[1]+'</option>';
+  });
+  sel.innerHTML = html;
+  if(actual) sel.value = actual;
 }
 
 function showAl(el,cls,msg){
