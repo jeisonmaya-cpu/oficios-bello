@@ -690,13 +690,19 @@ function abrirModal(da, origen){
   document.getElementById("m-resp-pqr").value = r["RESPUESTA PQR"] || "";
   document.getElementById("m-resp-rad").value = r["RADICADO DE CUMPLIMIENTO"] || r["RESPUESTA RADICADO TUTELA"] || "";
   // SharePoint
-  const spUrl = r["SHAREPOINT"]||r["SHAREPOINT LINK"]||r["SHAREPOINT_LINK"]||"";
+  const spUrl = r["SHAREPOINT"]||r["SHAREPOINT LINK"]||r["SHAREPOINT_LINK"]||r["SharePoint"]||r["Sharepoint"]||"";
+  toast("SP debug: ["+spUrl+"] keys:"+Object.keys(r).join(","),"ok");
   const spWrap = document.getElementById("m-sp-wrap");
   if(spWrap){
     if(spUrl){
       spWrap.style.display="block";
       const spBtn=document.getElementById("m-sp-btn");
-      if(spBtn) spBtn.onclick=()=>window.open(spUrl,"_blank");
+      if(spBtn){
+        spBtn.textContent="📎 Este caso tiene documento en SharePoint — ver en Sheets";
+        spBtn.onclick=()=>{
+          toast("📎 Abre la hoja Incidentes/Desacato en Sheets para ver el link de SharePoint","ok");
+        };
+      }
     } else {
       spWrap.style.display="none";
     }
