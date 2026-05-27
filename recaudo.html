@@ -213,6 +213,9 @@ tbody td{padding:8px 10px;vertical-align:middle}
     <div class="htx"><h1>Recaudo Histórico</h1><p>Depósitos judiciales · Aplicaciones y Devoluciones · Alcaldía de Bello</p></div>
     <div class="hact">
       <div class="ses-badge" id="sesBadge" style="display:none">👤 <strong id="sesNom">—</strong></div>
+      <div class="ses-badge" id="storage-badge" title="Uso de localStorage — haga clic para ver detalles" onclick="goTab('config')" style="cursor:pointer;gap:6px">
+        💾 <span id="storage-indicator" style="background:#16a34a;color:#fff;padding:1px 8px;border-radius:8px;font-size:10px;font-weight:700;transition:background .3s">—</span>
+      </div>
       <a href="home.html" class="bnav">🏛️ Inicio</a>
       <button class="bnav" onclick="cerrarSesion()">🔐 Salir</button>
     </div>
@@ -434,6 +437,22 @@ case 'guardar_gestion_recaudo':
   }
   return json({status:'ok'});</pre>
       </div>
+
+      <!-- ── PANEL STORAGE ── -->
+      <div style="margin-top:20px;padding:16px;background:#f8fafd;border:1px solid var(--border);border-radius:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">💾 Estado del almacenamiento local</div>
+        <div id="storage-detail" style="margin-bottom:12px"></div>
+        <div id="storage-alert-cfg" style="display:none;margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="fbtn fbtn-outline" onclick="renderStorageDetail()">📊 Actualizar</button>
+          <button class="fbtn" style="background:var(--red);color:#fff;border:none" onclick="purgarDatosBanco()">🗑️ Liberar caché del banco</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-soft);line-height:1.7;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+          <strong>Gestiones y log</strong> → datos irremplazables, nunca se purgan.<br>
+          <strong>Datos del banco</strong> → siempre recargables con ☁️ Cargar desde Sheet.<br>
+          Límite del navegador: <strong>5 MB</strong>. Se recomienda purgar si supera el 70%.
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -630,6 +649,7 @@ function aplicarSesion(s){
   actualizarCfgPanel();
   if(dataBanco.length) { renderKpis(); filtrar(); llenarSelectResponsables(); }
   if(cfg.apiUrl) cargarDesdeSheet();
+  actualizarIndicadorStorage();
 }
 
 // ═══════════════════════════════════════════════════
@@ -682,7 +702,7 @@ function goTab(t){
     if(tb) tb.classList.toggle('on', p===t);
   });
   if(t==='pendientes') filtrarPend();
-  if(t==='config') actualizarCfgPanel();
+  if(t==='config') { actualizarCfgPanel(); renderStorageDetail(); }
 }
 
 // ═══════════════════════════════════════════════════
@@ -1124,7 +1144,7 @@ function procesarImport(inp){
 
       if(nuevos.length){
         dataBanco.unshift(...nuevos);
-        try{ localStorage.setItem(DATA_KEY,JSON.stringify(dataBanco.slice(0,60000))); }catch(e){}
+        guardarDataBanco(dataBanco);
         nuevosUltimoImport=nuevos.length;
         renderKpis(); filtrar(); llenarSelectResponsables();
         showImportResult('ok',`✅ Se importaron <strong>${nuevos.length} registros nuevos</strong> de ${json.length} en el archivo. Los duplicados fueron omitidos.`);
@@ -1163,7 +1183,7 @@ async function cargarDesdeSheet(){
         headers.forEach((h,i)=>{ obj[h]=row[i]; });
         return obj;
       });
-      try{ localStorage.setItem(DATA_KEY,JSON.stringify(dataBanco.slice(0,60000))); }catch(e){}
+      guardarDataBanco(dataBanco);
       renderKpis(); filtrar(); llenarSelectResponsables();
       showAl(alEl,'al-ok','✅ '+dataBanco.length.toLocaleString('es-CO')+' registros cargados desde Google Sheets.');
     } else {
@@ -1256,8 +1276,143 @@ function eh(v){
   return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ═══════════════════════════════════════════════════
+// STORAGE — guardado seguro con compresión y monitoreo
+// ═══════════════════════════════════════════════════
+var STORAGE_MAX = 4.5 * 1024 * 1024; // 4.5 MB — margen de seguridad (límite real 5 MB)
+
+function byteSize(str){ try{ return new Blob([str||'']).size; } catch(e){ return (str||'').length*2; } }
+
+function guardarDataBanco(data){
+  // Comprimir: omitir campos vacíos de cada fila para reducir tamaño
+  var compact = data.map(function(r){
+    var out={};
+    Object.keys(r).forEach(function(k){
+      var v=r[k];
+      if(v===''||v===null||v===undefined) return;
+      out[k]=v;
+    });
+    return out;
+  });
+  var json=JSON.stringify(compact);
+  var bytes=byteSize(json);
+  if(bytes > STORAGE_MAX){
+    // Truncar filas proporcional al espacio disponible, priorizando las más recientes
+    var factor=Math.floor(compact.length*(STORAGE_MAX/bytes)*0.9);
+    compact=compact.slice(0,Math.max(factor,1));
+    json=JSON.stringify(compact);
+    mostrarAlertaStorageGlobal('warn',
+      '⚠️ Almacenamiento casi lleno. Se conservaron <strong>'+compact.length.toLocaleString('es-CO')+
+      ' de '+data.length.toLocaleString('es-CO')+'</strong> registros en caché. '+
+      'Cargue siempre desde ☁️ Sheet para ver todos. '+
+      '<button onclick="goTab(\'config\')" style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:12px;padding:0;font-family:inherit">Ver storage</button>');
+  }
+  try{ localStorage.setItem(DATA_KEY,json); } catch(e){
+    mostrarAlertaStorageGlobal('err',
+      '❌ Error al guardar en caché local (storage lleno). Sus gestiones están a salvo. '+
+      '<button onclick="purgarDatosBanco()" style="background:none;border:none;color:inherit;text-decoration:underline;cursor:pointer;font-size:12px;padding:0;font-family:inherit">Liberar espacio</button>');
+  }
+  actualizarIndicadorStorage();
+}
+
+function actualizarIndicadorStorage(){
+  var KEYS_MEDIDOS=['recaudo_cfg_v1','recaudo_data_v2','recaudo_gest_v2','recaudo_log_v1'];
+  var total=0;
+  KEYS_MEDIDOS.forEach(function(k){ total+=byteSize(localStorage.getItem(k)||''); });
+  var pct=Math.round(total/(5*1024*1024)*100);
+  var el=document.getElementById('storage-indicator');
+  if(!el) return;
+  el.textContent=pct+'%';
+  if(pct>=80){ el.style.background='#dc2626'; }
+  else if(pct>=50){ el.style.background='#ea580c'; }
+  else { el.style.background='#16a34a'; }
+}
+
+function mostrarAlertaStorageGlobal(tipo, msg){
+  // Muestra alerta en header visible en cualquier tab
+  var id='storage-global-alert';
+  var ex=document.getElementById(id);
+  if(!ex){
+    ex=document.createElement('div');
+    ex.id=id;
+    ex.style.cssText='position:fixed;bottom:16px;right:16px;z-index:9000;max-width:400px;'+
+      'padding:12px 16px;border-radius:10px;font-size:12px;font-weight:500;'+
+      'box-shadow:0 4px 20px rgba(0,0,0,.2);display:flex;align-items:flex-start;gap:10px;cursor:pointer';
+    ex.onclick=function(){ ex.style.display='none'; };
+    document.body.appendChild(ex);
+  }
+  var bg=tipo==='err'?'#fef2f2;color:#991b1b;border:1px solid #fecaca'
+        :tipo==='warn'?'#fffbeb;color:#92400e;border:1px solid #fde68a'
+        :'#f0fdf4;color:#166534;border:1px solid #bbf7d0';
+  ex.style.background=bg.split(';')[0].replace('background:','').trim();
+  ex.style.cssText+=';background:'+bg.split(';')[0].replace('background:','').trim();
+  ex.className='alerta al-'+tipo;
+  ex.innerHTML=msg+'<span style="margin-left:auto;opacity:.5;font-size:14px;cursor:pointer;flex-shrink:0" onclick="this.parentNode.style.display=\'none\'">✕</span>';
+  ex.style.display='flex';
+  if(tipo!=='err') setTimeout(function(){ if(ex) ex.style.display='none'; }, 8000);
+}
+
+function renderStorageDetail(){
+  var el=document.getElementById('storage-detail');
+  if(!el) return;
+  var CLAVES=[
+    {key:'recaudo_data_v2',  label:'Datos del banco',       purgeable:true},
+    {key:'recaudo_gest_v2',  label:'Gestiones del equipo',  purgeable:false},
+    {key:'recaudo_log_v1',   label:'Log de cambios',        purgeable:false},
+    {key:'recaudo_cfg_v1',   label:'Configuración',         purgeable:false},
+    {key:'oficios_session',  label:'Sesión activa',         purgeable:false},
+  ];
+  var MAX=5*1024*1024;
+  var totalBytes=0;
+  var rows=CLAVES.map(function(c){
+    var raw=localStorage.getItem(c.key)||'';
+    var sz=byteSize(raw);
+    totalBytes+=sz;
+    var extra='';
+    if(raw&&c.key==='recaudo_data_v2'){ try{ extra=' · '+JSON.parse(raw).length+' filas'; }catch(e){} }
+    if(raw&&c.key==='recaudo_gest_v2'){ try{ extra=' · '+Object.keys(JSON.parse(raw)).length+' depósitos'; }catch(e){} }
+    return {label:c.label,sz:sz,purgeable:c.purgeable,key:c.key,extra:extra};
+  });
+  var totalPct=Math.round(totalBytes/MAX*100);
+  function fmtB(b){ if(b>=1048576)return(b/1048576).toFixed(2)+' MB'; if(b>=1024)return(b/1024).toFixed(1)+' KB'; return b+' B'; }
+  var barColor=totalPct>=80?'#dc2626':totalPct>=50?'#ea580c':'#16a34a';
+  var html='<div style="margin-bottom:10px">';
+  html+='<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-soft);margin-bottom:4px">';
+  html+='<span>Total usado: <strong style="color:var(--navy)">'+fmtB(totalBytes)+'</strong></span>';
+  html+='<span style="font-weight:700;color:'+barColor+'">'+totalPct+'% de 5 MB</span></div>';
+  html+='<div style="background:#e8edf7;border-radius:6px;height:12px;overflow:hidden">';
+  html+='<div style="width:'+Math.min(totalPct,100)+'%;height:100%;background:'+barColor+';border-radius:6px;transition:width .4s"></div></div></div>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  rows.forEach(function(r){
+    var pct=Math.round(r.sz/MAX*100);
+    var badgeBg=pct===0?'#e8edf7':pct>=15?'#fee2e2':pct>=8?'#fef3c7':'#dcfce7';
+    var badgeCol=pct===0?'#4a5a72':pct>=15?'#991b1b':pct>=8?'#92400e':'#15803d';
+    html+='<tr style="border-bottom:1px solid var(--border)">';
+    html+='<td style="padding:7px 0;color:var(--text)">'+r.label+'<span style="color:var(--text-soft);font-size:10px">'+r.extra+'</span></td>';
+    html+='<td style="padding:7px 4px;text-align:right;font-weight:600;color:var(--navy)">'+fmtB(r.sz)+'</td>';
+    html+='<td style="padding:7px 0;text-align:right;padding-left:8px"><span style="background:'+badgeBg+';color:'+badgeCol+';border-radius:8px;padding:1px 8px;font-size:10px;font-weight:700">'+pct+'%</span></td>';
+    html+='</tr>';
+  });
+  html+='</table>';
+  el.innerHTML=html;
+  actualizarIndicadorStorage();
+}
+
+function purgarDatosBanco(){
+  if(!confirm('¿Borrar los datos del banco en caché local?\n\nSus GESTIONES y LOGS no se perderán.\nLos datos del banco se recargan desde ☁️ Sheet.')) return;
+  localStorage.removeItem(DATA_KEY);
+  dataBanco=[];
+  renderKpis(); filtrar();
+  actualizarIndicadorStorage();
+  renderStorageDetail();
+  var el=document.getElementById('storage-alert-cfg');
+  if(el){ el.style.display='flex'; el.className='alerta al-ok'; el.innerHTML='✅ Caché del banco liberado. Use ☁️ Cargar desde Sheet para recuperar los datos.'; }
+  mostrarAlertaStorageGlobal('ok','✅ Caché del banco liberado correctamente.');
+}
+
 // Inicializar datos si hay en cache
 if(dataBanco.length){ renderKpis(); filtrar(); llenarSelectResponsables(); }
+actualizarIndicadorStorage();
 
 // Shake animation
 var st=document.createElement('style');
