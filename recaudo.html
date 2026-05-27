@@ -233,6 +233,9 @@ tbody td{padding:8px 10px;vertical-align:middle}
       <div class="ses-badge" id="storage-badge" title="Uso de localStorage — haga clic para ver detalles" onclick="goTab('config')" style="cursor:pointer;gap:6px">
         💾 <span id="storage-indicator" style="background:#16a34a;color:#fff;padding:1px 8px;border-radius:8px;font-size:10px;font-weight:700;transition:background .3s">—</span>
       </div>
+      <div class="ses-badge" id="sync-badge-wrap" title="Gestiones pendientes de sincronizar con el Sheet" onclick="sincronizarCola()" style="cursor:pointer;gap:6px;display:none">
+        ☁️ <span id="sync-badge" style="background:#ea580c;color:#fff;padding:1px 8px;border-radius:8px;font-size:10px;font-weight:700;display:none">0</span>
+      </div>
       <a href="home.html" class="bnav">🏛️ Inicio</a>
       <button class="bnav" onclick="cerrarSesion()">🔐 Salir</button>
     </div>
@@ -242,6 +245,7 @@ tbody td{padding:8px 10px;vertical-align:middle}
       <button class="tab on" id="tab-registros" onclick="goTab('registros')">📋 Registros <span id="badge-total" style="background:rgba(255,255,255,.2);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
       <button class="tab" id="tab-pendientes" onclick="goTab('pendientes')">⏳ Pendientes <span id="badge-pen" style="background:#e8a020;padding:1px 7px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
       <button class="tab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
+      <button class="tab" id="tab-bitacora" onclick="goTab('bitacora')">📝 Bitácora</button>
       <button class="tab" id="tab-estadisticas" onclick="goTab('estadisticas')">📊 Estadísticas</button>
       <button class="tab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
     </div>
@@ -471,9 +475,64 @@ case 'guardar_gestion_recaudo':
           Límite del navegador: <strong>5 MB</strong>. Se recomienda purgar si supera el 70%.
         </div>
       </div>
+
+      <!-- ── PANEL COLA DE SINCRONIZACIÓN ── -->
+      <div style="margin-top:16px;padding:16px;background:#f8fafd;border:1px solid var(--border);border-radius:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em">
+            ☁️ Cola de sincronización con Sheet
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="fbtn fbtn-outline" onclick="renderColaSyncPanel()">🔄 Actualizar</button>
+            <button class="fbtn fbtn-green" onclick="sincronizarCola().then(renderColaSyncPanel)">⚡ Sincronizar ahora</button>
+          </div>
+        </div>
+        <div id="cola-sync-panel"></div>
+      </div>
     </div>
   </div>
 </div>
+<!-- ══════ PANEL BITÁCORA ══════ -->
+<div id="panel-bitacora" style="display:none">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-hdr-left">📝 Bitácora de gestiones</div>
+      <div style="display:flex;gap:6px">
+        <button class="bnav" onclick="exportarBitacora()" style="font-size:11px;padding:4px 10px">⬇️ Excel</button>
+        <button class="bnav" onclick="limpiarBitacora()" style="font-size:11px;padding:4px 10px;background:rgba(220,38,38,.3);border-color:rgba(220,38,38,.5)">🗑️ Limpiar</button>
+      </div>
+    </div>
+    <div class="filtros">
+      <input class="finp search" id="bit-buscar" placeholder="🔍 Buscar depósito, nombre, usuario..." oninput="renderBitacora()"/>
+      <input type="date" class="finp" id="bit-fecha-desde" onchange="renderBitacora()" title="Desde"/>
+      <input type="date" class="finp" id="bit-fecha-hasta" onchange="renderBitacora()" title="Hasta"/>
+      <select class="finp" id="bit-usuario" onchange="renderBitacora()">
+        <option value="">Todos los usuarios</option>
+      </select>
+      <button class="fbtn fbtn-outline" onclick="limpiarFiltrosBit()" style="font-size:11px">✕ Limpiar</button>
+    </div>
+    <div class="tw">
+      <table id="tabla-bit">
+        <thead>
+          <tr>
+            <th style="width:130px">Fecha / Hora</th>
+            <th style="width:120px">Usuario</th>
+            <th style="width:140px">N° Depósito</th>
+            <th>Contribuyente</th>
+            <th style="width:90px;text-align:right">Valor</th>
+            <th>Cambios realizados</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-bit"></tbody>
+      </table>
+    </div>
+    <div class="pag">
+      <div class="pag-info" id="pag-bit-info">—</div>
+      <div class="pag-btns" id="pag-bit-btns"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════ PANEL ESTADÍSTICAS ══════ -->
 <div id="panel-estadisticas" style="display:none">
   <div class="est-grid" id="grid-est" style="padding-bottom:20px"></div>
@@ -673,10 +732,12 @@ function aplicarSesion(s){
   if(nn) nn.textContent=s.nombre||s.pin;
   actualizarCfgPanel();
   actualizarIndicadorStorage();
+  actualizarBadgeSync();
   if(cfg.apiUrl){
     cargarDesdeSheet();
+    // Intentar sincronizar cola pendiente al iniciar sesión
+    setTimeout(sincronizarCola, 3000);
   } else {
-    // Sin Sheet configurado: mostrar aviso en tabla
     document.getElementById('tbody').innerHTML=
       '<tr><td colspan="11"><div class="empty"><div class="empty-ico">☁️</div>'+
       '<p>Configure la URL del Sheet en ⚙️ Configuración para cargar los datos.</p></div></td></tr>';
@@ -726,15 +787,16 @@ function cerrarSesion(){
 // TABS
 // ═══════════════════════════════════════════════════
 function goTab(t){
-  ['registros','pendientes','importar','config','estadisticas'].forEach(p=>{
+  ['registros','pendientes','importar','config','bitacora','estadisticas'].forEach(p=>{
     var el=document.getElementById('panel-'+p);
     var tb=document.getElementById('tab-'+p);
     if(el) el.style.display= p===t?'block':'none';
     if(tb) tb.classList.toggle('on', p===t);
   });
   if(t==='pendientes') filtrarPend();
-  if(t==='config') { actualizarCfgPanel(); renderStorageDetail(); }
+  if(t==='config') { actualizarCfgPanel(); renderStorageDetail(); renderColaSyncPanel(); }
   if(t==='estadisticas') renderEstadisticas();
+  if(t==='bitacora') renderBitacora();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1068,75 +1130,296 @@ function cerrarModal(){
   registroActivo=null;
 }
 
-async function guardarGestion(){
-  if(!registroActivo) return;
-  var dep=registroActivo;
-  var ahora=new Date();
-  var ts=ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-  var user=usuarioActual?usuarioActual.nombre:'desconocido';
+// ═══════════════════════════════════════════════════
+// COLA DE SINCRONIZACIÓN — Fire & Forget
+// ═══════════════════════════════════════════════════
+var SYNC_KEY = 'recaudo_sync_v1';
+var syncEnProceso = false;
 
-  var g={
-    'ESTADO DEVOLUCION':   document.getElementById('m-est-dev').value,
-    'ESTADO APLICACIÓN':   document.getElementById('m-est-apl').value,
-    'RESPONSABLE':         document.getElementById('m-responsable').value.trim(),
-    'Proceso':             document.getElementById('m-proceso').value.trim(),
-    'Impuesto':            document.getElementById('m-impuesto').value,
-    'Pendiente convenio':  document.getElementById('m-convenio').value,
-    'CI INICIAL':          document.getElementById('m-ci-inicial').value.trim(),
+function cargarCola(){ try{ return JSON.parse(localStorage.getItem(SYNC_KEY)||'[]'); }catch(e){ return []; } }
+function guardarCola(q){ try{ localStorage.setItem(SYNC_KEY,JSON.stringify(q)); }catch(e){} }
+
+function encolarSync(dep, g){
+  var q = cargarCola();
+  // Reemplazar si ya existe pendiente para este depósito
+  q = q.filter(function(x){ return x.dep !== dep; });
+  q.push({ dep: dep, g: g, ts: Date.now() });
+  guardarCola(q);
+  actualizarBadgeSync();
+}
+
+function actualizarBadgeSync(){
+  var q = cargarCola();
+  var badge = document.getElementById('sync-badge');
+  var wrap  = document.getElementById('sync-badge-wrap');
+  if(!badge) return;
+  if(q.length > 0){
+    badge.textContent = q.length + ' pendiente'+(q.length>1?'s':'');
+    badge.style.display = 'inline-block';
+    if(wrap) wrap.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+    if(wrap) wrap.style.display = 'none';
+  }
+}
+
+async function sincronizarCola(){
+  if(syncEnProceso || !cfg.apiUrl) return;
+  var q = cargarCola();
+  if(!q.length) return;
+  syncEnProceso = true;
+  actualizarBadgeSyncAnimado(true);
+  var pendientes = q.slice();
+  var fallidos = [];
+  for(var i=0; i<pendientes.length; i++){
+    var item = pendientes[i];
+    try{
+      var params = new URLSearchParams({
+        accion:'guardar_gestion_recaudo', hoja:cfg.hoja, deposito:item.dep,
+        proceso:item.g['Proceso']||'', impuesto:item.g['Impuesto']||'',
+        convenio:item.g['Pendiente convenio']||'',
+        observacion:item.g['Observacion']||'',
+        telefono:item.g['TELEFONO DE CONTACTO']||'',
+        correo:item.g['CORREO ELECTRONICO']||'',
+        direccion:item.g['DIRECCION']||'', ciudad:item.g['CIUDAD']||'',
+        responsable:item.g['RESPONSABLE']||'',
+        gestionTes:item.g['GESTION TESORERIA']||'',
+        ciInicial:item.g['CI INICIAL']||'',
+        compEgreso:item.g['COMPROBANTE DE EGRESO']||'',
+        radicadoResp:item.g['RADICADO DE RESPUESTA']||'',
+        estDev:item.g['ESTADO DEVOLUCION']||'',
+        estApl:item.g['ESTADO APLICACIÓN']||''
+      });
+      var res = await fetch(cfg.apiUrl+'?'+params.toString(), {signal: AbortSignal.timeout(12000)});
+      var d = await res.json();
+      if(d.status !== 'ok') fallidos.push(item);
+    }catch(e){
+      fallidos.push(item);
+    }
+  }
+  guardarCola(fallidos);
+  syncEnProceso = false;
+  actualizarBadgeSyncAnimado(false);
+  actualizarBadgeSync();
+  if(fallidos.length === 0 && pendientes.length > 0){
+    mostrarAlertaStorageGlobal('ok','✅ '+pendientes.length+' gestión(es) sincronizada(s) con el Sheet.');
+  }
+}
+
+function actualizarBadgeSyncAnimado(on){
+  var badge = document.getElementById('sync-badge');
+  if(!badge) return;
+  badge.style.animation = on ? 'spin .8s linear infinite' : 'none';
+}
+
+function renderColaSyncPanel(){
+  var el = document.getElementById('cola-sync-panel');
+  if(!el) return;
+  var q = cargarCola();
+
+  if(!q.length){
+    el.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;color:#166534">'+
+      '<span style="font-size:18px">✅</span>'+
+      '<div><strong>Todo sincronizado.</strong> No hay gestiones pendientes.</div></div>';
+    return;
+  }
+
+  // Hay pendientes — mostrar tabla
+  var html =
+    '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;margin-bottom:12px">'+
+    '<span style="font-size:16px">⚠️</span>'+
+    '<div><strong>'+q.length+' gestión'+(q.length>1?'es':'')+' pendiente'+(q.length>1?'s':'')+' de sincronizar.</strong> '+
+    'Se reintentará automáticamente cada 30 segundos o al hacer clic en ⚡ Sincronizar ahora.</div></div>';
+
+  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html += '<thead><tr style="background:var(--surface2)">';
+  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">N° Depósito</th>';
+  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Responsable</th>';
+  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Est. Devolución</th>';
+  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Est. Aplicación</th>';
+  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Guardado</th>';
+  html += '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Acción</th>';
+  html += '</tr></thead><tbody>';
+
+  q.forEach(function(item, idx){
+    var fechaGuardado = item.g._editadoFecha || '—';
+    var resp = item.g['RESPONSABLE'] || '—';
+    var estDev = normEst(item.g['ESTADO DEVOLUCION']||'') || '—';
+    var estApl = normEst(item.g['ESTADO APLICACIÓN']||'') || '—';
+    html += '<tr style="border-bottom:1px solid var(--surface2)">';
+    html += '<td style="padding:8px 10px;font-family:monospace;font-size:11px;font-weight:600;color:var(--navy)">'+eh(item.dep)+'</td>';
+    html += '<td style="padding:8px 10px;font-size:12px">'+eh(resp)+'</td>';
+    html += '<td style="padding:8px 10px">'+badgeEst(estDev)+'</td>';
+    html += '<td style="padding:8px 10px">'+badgeEst(estApl)+'</td>';
+    html += '<td style="padding:8px 10px;font-size:11px;color:var(--text-soft)">'+eh(fechaGuardado)+'</td>';
+    html += '<td style="padding:8px 10px;text-align:center">';
+    html += '<div style="display:flex;gap:6px;justify-content:center">';
+    html += '<button onclick="reintentarItem('+idx+')" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">↑ Reintentar</button>';
+    html += '<button onclick="descartarItem('+idx+')" style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✕ Descartar</button>';
+    html += '</div></td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  html += '<div style="font-size:11px;color:var(--text-soft);margin-top:8px;padding:0 2px">'+
+    '💡 <strong>Reintentar</strong> envía esa gestión al Sheet ahora mismo. '+
+    '<strong>Descartar</strong> la elimina de la cola (los datos locales se mantienen pero no llegarán al Sheet).</div>';
+
+  el.innerHTML = html;
+}
+
+async function reintentarItem(idx){
+  var q = cargarCola();
+  var item = q[idx];
+  if(!item) return;
+  var btn = event.target;
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try{
+    var params = new URLSearchParams({
+      accion:'guardar_gestion_recaudo', hoja:cfg.hoja, deposito:item.dep,
+      proceso:item.g['Proceso']||'', impuesto:item.g['Impuesto']||'',
+      convenio:item.g['Pendiente convenio']||'',
+      observacion:item.g['Observacion']||'',
+      telefono:item.g['TELEFONO DE CONTACTO']||'',
+      correo:item.g['CORREO ELECTRONICO']||'',
+      direccion:item.g['DIRECCION']||'', ciudad:item.g['CIUDAD']||'',
+      responsable:item.g['RESPONSABLE']||'',
+      gestionTes:item.g['GESTION TESORERIA']||'',
+      ciInicial:item.g['CI INICIAL']||'',
+      compEgreso:item.g['COMPROBANTE DE EGRESO']||'',
+      radicadoResp:item.g['RADICADO DE RESPUESTA']||'',
+      estDev:item.g['ESTADO DEVOLUCION']||'',
+      estApl:item.g['ESTADO APLICACIÓN']||''
+    });
+    var res = await fetch(cfg.apiUrl+'?'+params.toString(), {signal: AbortSignal.timeout(12000)});
+    var d = await res.json();
+    if(d.status === 'ok'){
+      // Éxito: quitar de la cola
+      q.splice(idx, 1);
+      guardarCola(q);
+      actualizarBadgeSync();
+      renderColaSyncPanel();
+      mostrarAlertaStorageGlobal('ok', '✅ Depósito '+item.dep+' sincronizado correctamente.');
+    } else {
+      btn.textContent = '↑ Reintentar';
+      btn.disabled = false;
+      mostrarAlertaStorageGlobal('err', '❌ El Sheet respondió con error. Intente de nuevo.');
+    }
+  }catch(e){
+    btn.textContent = '↑ Reintentar';
+    btn.disabled = false;
+    mostrarAlertaStorageGlobal('err', '❌ Sin conexión. Verifique la URL del Sheet.');
+  }
+}
+
+function descartarItem(idx){
+  var q = cargarCola();
+  var item = q[idx];
+  if(!item) return;
+  if(!confirm('¿Descartar la gestión del depósito '+item.dep+'?\n\nLos datos quedan guardados localmente pero NO se enviarán al Sheet.')) return;
+  q.splice(idx, 1);
+  guardarCola(q);
+  actualizarBadgeSync();
+  renderColaSyncPanel();
+}
+
+// Sincronizar automáticamente cada 30 segundos y al cargar
+setInterval(sincronizarCola, 30000);
+
+// ═══════════════════════════════════════════════════
+// GUARDAR GESTIÓN — inmediato (Fire & Forget)
+// ═══════════════════════════════════════════════════
+function guardarGestion(){
+  if(!registroActivo) return;
+  var dep = registroActivo;
+  var ahora = new Date();
+  var ts = ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+
+           ' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  var user = usuarioActual ? usuarioActual.nombre : 'desconocido';
+
+  var g = {
+    'ESTADO DEVOLUCION':    document.getElementById('m-est-dev').value,
+    'ESTADO APLICACIÓN':    document.getElementById('m-est-apl').value,
+    'RESPONSABLE':          document.getElementById('m-responsable').value.trim(),
+    'Proceso':              document.getElementById('m-proceso').value.trim(),
+    'Impuesto':             document.getElementById('m-impuesto').value,
+    'Pendiente convenio':   document.getElementById('m-convenio').value,
+    'CI INICIAL':           document.getElementById('m-ci-inicial').value.trim(),
     'COMPROBANTE DE EGRESO':document.getElementById('m-comp-egreso').value.trim(),
     'RADICADO DE RESPUESTA':document.getElementById('m-radicado-resp').value.trim(),
-    'GESTION TESORERIA':   document.getElementById('m-gest-tes').value.trim(),
-    'TELEFONO DE CONTACTO':document.getElementById('m-telefono').value.trim(),
-    'CORREO ELECTRONICO':  document.getElementById('m-correo').value.trim(),
-    'DIRECCION':           document.getElementById('m-direccion').value.trim(),
-    'CIUDAD':              document.getElementById('m-ciudad').value.trim(),
-    'Observacion':         document.getElementById('m-observacion').value.trim(),
+    'GESTION TESORERIA':    document.getElementById('m-gest-tes').value.trim(),
+    'TELEFONO DE CONTACTO': document.getElementById('m-telefono').value.trim(),
+    'CORREO ELECTRONICO':   document.getElementById('m-correo').value.trim(),
+    'DIRECCION':            document.getElementById('m-direccion').value.trim(),
+    'CIUDAD':               document.getElementById('m-ciudad').value.trim(),
+    'Observacion':          document.getElementById('m-observacion').value.trim(),
     _editadoPor: user, _editadoFecha: ts
   };
 
-  gestiones[dep]=g;
-  try{ localStorage.setItem(GEST_KEY,JSON.stringify(gestiones)); }catch(e){}
+  // 1. Guardar en memoria y localStorage — INMEDIATO
+  gestiones[dep] = g;
+  try{ localStorage.setItem(GEST_KEY, JSON.stringify(gestiones)); }catch(e){}
 
-  // Log
-  if(!logCambios[dep]) logCambios[dep]=[];
-  var resumen=[];
-  if(g['ESTADO DEVOLUCION']) resumen.push('Dev:'+g['ESTADO DEVOLUCION']);
-  if(g['ESTADO APLICACIÓN']) resumen.push('Apl:'+g['ESTADO APLICACIÓN']);
-  if(g['RESPONSABLE']) resumen.push('Resp:'+g['RESPONSABLE']);
-  logCambios[dep].push({ts,user,txt:resumen.join(' · ')||'Actualizado'});
-  try{ localStorage.setItem(LOG_KEY,JSON.stringify(logCambios)); }catch(e){}
+  // 2. Log enriquecido para bitácora global — INMEDIATO
+  if(!logCambios[dep]) logCambios[dep] = [];
+  var anterior = gestiones[dep] ? Object.assign({}, gestiones[dep]) : {};
+  var cambios = [];
+  var camposLabel = {
+    'ESTADO DEVOLUCION':'Est. Devolución','ESTADO APLICACIÓN':'Est. Aplicación',
+    'RESPONSABLE':'Responsable','Proceso':'Expediente','Impuesto':'Impuesto',
+    'Pendiente convenio':'Convenio','CI INICIAL':'CI Inicial',
+    'COMPROBANTE DE EGRESO':'Comp. Egreso','RADICADO DE RESPUESTA':'Radicado Resp.',
+    'GESTION TESORERIA':'Gest. Tesorería','TELEFONO DE CONTACTO':'Teléfono',
+    'CORREO ELECTRONICO':'Correo','DIRECCION':'Dirección','CIUDAD':'Ciudad',
+    'Observacion':'Observación'
+  };
+  Object.keys(camposLabel).forEach(function(campo){
+    var vAntes = String(anterior[campo]||'').trim();
+    var vDespues = String(g[campo]||'').trim();
+    if(vAntes !== vDespues){
+      cambios.push({ campo: camposLabel[campo], antes: vAntes||'—', despues: vDespues||'—' });
+    }
+  });
+  // Obtener nombre del demandado para contexto
+  var filaBanco = dataBanco.find(function(r){ return String(r['deposito judicial']||'')=== dep; });
+  var nombreDeudor = filaBanco ? (filaBanco['Nombre Demandante.1']||'') : '';
+  var valorDep = filaBanco ? (filaBanco['Valor del Depóstio']||'') : '';
+  var entrada = {
+    ts: ts,
+    tsNum: Date.now(),
+    user: user,
+    dep: dep,
+    nombre: nombreDeudor,
+    valor: valorDep,
+    cambios: cambios,
+    // Resumen rápido para cuando no hay cambios detectados
+    resumen: cambios.length ? cambios.map(function(c){ return c.campo+': '+c.despues; }).join(' · ') : 'Sin cambios'
+  };
+  logCambios[dep].push(entrada);
+  // Bitácora global (índice cronológico aparte, liviano)
+  var bitacora = [];
+  try{ bitacora = JSON.parse(localStorage.getItem('recaudo_bitacora_v1')||'[]'); }catch(e){}
+  bitacora.unshift({ ts:ts, tsNum:Date.now(), user:user, dep:dep, nombre:nombreDeudor,
+    valor:valorDep, resumen:entrada.resumen, nCambios:cambios.length });
+  // Conservar máximo 500 entradas en bitácora global
+  if(bitacora.length > 500) bitacora = bitacora.slice(0,500);
+  try{ localStorage.setItem('recaudo_bitacora_v1', JSON.stringify(bitacora)); }catch(e){}
+  try{ localStorage.setItem(LOG_KEY, JSON.stringify(logCambios)); }catch(e){}
 
-  var alEl=document.getElementById('m-alert');
-  showAl(alEl,'al-load','<div class="spin"></div> Guardando...');
+  // 3. Actualizar UI — INMEDIATO
+  renderKpis(); filtrar();
 
-  var ok=false;
-  if(cfg.apiUrl){
-    try{
-      var params=new URLSearchParams({
-        accion:'guardar_gestion_recaudo',hoja:cfg.hoja,deposito:dep,
-        proceso:g['Proceso'],impuesto:g['Impuesto'],convenio:g['Pendiente convenio'],
-        observacion:g['Observacion'],telefono:g['TELEFONO DE CONTACTO'],
-        correo:g['CORREO ELECTRONICO'],direccion:g['DIRECCION'],ciudad:g['CIUDAD'],
-        responsable:g['RESPONSABLE'],gestionTes:g['GESTION TESORERIA'],
-        ciInicial:g['CI INICIAL'],compEgreso:g['COMPROBANTE DE EGRESO'],
-        radicadoResp:g['RADICADO DE RESPUESTA'],
-        estDev:g['ESTADO DEVOLUCION'],estApl:g['ESTADO APLICACIÓN']
-      });
-      var res=await fetch(cfg.apiUrl+'?'+params.toString());
-      var d=await res.json();
-      if(d.status==='ok') ok=true;
-    }catch(e){}
-  }
+  // 4. Encolar para sync con Sheet — EN BACKGROUND
+  if(cfg.apiUrl) encolarSync(dep, g);
 
-  if(ok||!cfg.apiUrl){
-    showAl(alEl,'al-ok','✅ Gestión guardada'+(cfg.apiUrl?' en Google Sheets':' localmente')+'.');
-    renderKpis(); filtrar();
-    setTimeout(cerrarModal,900);
-  } else {
-    showAl(alEl,'al-warn','⚠️ Guardado localmente (sin conexión con el Sheet). Se sincronizará cuando haya conexión.');
-    renderKpis(); filtrar();
-    setTimeout(cerrarModal,1200);
-  }
+  // 5. Cerrar modal inmediatamente — sin esperar el Sheet
+  cerrarModal();
+
+  // 6. Lanzar sync en background (no bloqueante)
+  if(cfg.apiUrl) sincronizarCola();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1500,6 +1783,177 @@ function renderEstadisticas(){
 }
 
 // ═══════════════════════════════════════════════════
+// BITÁCORA DE GESTIONES
+// ═══════════════════════════════════════════════════
+var BIT_KEY = 'recaudo_bitacora_v1';
+var pagBit = 1;
+var PS_BIT = 40;
+
+function cargarBitacora(){
+  try{ return JSON.parse(localStorage.getItem(BIT_KEY)||'[]'); }catch(e){ return []; }
+}
+
+function renderBitacora(){
+  var el = document.getElementById('tbody-bit');
+  if(!el) return;
+
+  var bit = cargarBitacora();
+
+  // Llenar select de usuarios
+  var selUser = document.getElementById('bit-usuario');
+  if(selUser){
+    var usuarios = [...new Set(bit.map(function(e){ return e.user; }).filter(Boolean))].sort();
+    var valActual = selUser.value;
+    selUser.innerHTML = '<option value="">Todos los usuarios</option>';
+    usuarios.forEach(function(u){
+      selUser.innerHTML += '<option value="'+eh(u)+'">'+eh(u)+'</option>';
+    });
+    selUser.value = valActual;
+  }
+
+  // Filtros
+  var buscar = (document.getElementById('bit-buscar').value||'').toLowerCase().trim();
+  var fDesde = document.getElementById('bit-fecha-desde').value; // YYYY-MM-DD
+  var fHasta = document.getElementById('bit-fecha-hasta').value;
+  var fUser  = document.getElementById('bit-usuario').value.toLowerCase();
+
+  var filtradas = bit.filter(function(e){
+    if(buscar){
+      var haystack = ((e.dep||'')+(e.nombre||'')+(e.user||'')+(e.resumen||'')).toLowerCase();
+      if(haystack.indexOf(buscar) < 0) return false;
+    }
+    if(fUser && (e.user||'').toLowerCase() !== fUser) return false;
+    if(fDesde || fHasta){
+      // tsNum es timestamp en ms; convertir a YYYY-MM-DD para comparar
+      var fechaEntrada = e.tsNum
+        ? new Date(e.tsNum).toISOString().slice(0,10)
+        : ''; // entradas viejas sin tsNum
+      if(fDesde && fechaEntrada && fechaEntrada < fDesde) return false;
+      if(fHasta && fechaEntrada && fechaEntrada > fHasta) return false;
+    }
+    return true;
+  });
+
+  if(!filtradas.length){
+    el.innerHTML = '<tr><td colspan="6"><div class="empty">'+
+      '<div class="empty-ico">📝</div>'+
+      '<p>'+(bit.length ? 'No hay registros con esos filtros.' : 'Aún no hay gestiones registradas. Las acciones aparecerán aquí a medida que el equipo gestione depósitos.')+'</p>'+
+      '</div></td></tr>';
+    document.getElementById('pag-bit-info').textContent = '0 registros';
+    document.getElementById('pag-bit-btns').innerHTML = '';
+    return;
+  }
+
+  // Paginación
+  var total = filtradas.length;
+  var totalPags = Math.ceil(total/PS_BIT)||1;
+  if(pagBit > totalPags) pagBit = 1;
+  var ini = (pagBit-1)*PS_BIT;
+  var fin = Math.min(ini+PS_BIT, total);
+  var pagina = filtradas.slice(ini, fin);
+
+  // Colores por usuario (consistentes)
+  var coloresUser = ['#1a6fc4','#7c3aed','#16a34a','#ea580c','#dc2626','#0891b2','#854d0e'];
+  var mapaColores = {};
+  var idxColor = 0;
+  bit.forEach(function(e){
+    if(e.user && !mapaColores[e.user]){
+      mapaColores[e.user] = coloresUser[idxColor % coloresUser.length];
+      idxColor++;
+    }
+  });
+
+  var html = pagina.map(function(e){
+    var color = mapaColores[e.user] || '#4a5a72';
+    var iniciales = (e.user||'?').split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
+    var valor = e.valor ? fmt$(parseFloat(String(e.valor).replace(/[^\d.]/g,''))||0) : '—';
+
+    // Chips de cambios
+    var chipsHtml = '';
+    if(e.resumen && e.resumen !== 'Sin cambios'){
+      // Parsear el resumen en chips individuales
+      var partes = e.resumen.split(' · ');
+      chipsHtml = partes.slice(0,4).map(function(p){
+        var isEstado = p.toLowerCase().indexOf('est.')===0 || p.toLowerCase().indexOf('dev')===0 || p.toLowerCase().indexOf('apl')===0;
+        var isFin = p.toLowerCase().indexOf('finalizado')>-1;
+        var isTram = p.toLowerCase().indexOf('tramite')>-1 || p.toLowerCase().indexOf('trámite')>-1;
+        var chipColor = isFin ? '#f0fdf4;color:#16a34a;border:1px solid #bbf7d0'
+                      : isTram ? '#eff6ff;color:#1a6fc4;border:1px solid #bfdbfe'
+                      : '#f3f4f6;color:#374151;border:1px solid #e5e7eb';
+        return '<span style="display:inline-flex;align-items:center;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;background:'+chipColor+';margin:1px 2px 1px 0;white-space:nowrap">'+eh(p)+'</span>';
+      }).join('');
+      if(partes.length > 4) chipsHtml += '<span style="font-size:10px;color:var(--text-soft);margin-left:3px">+'+( partes.length-4)+' más</span>';
+    } else {
+      chipsHtml = '<span style="font-size:11px;color:var(--text-soft);font-style:italic">Sin cambios registrados</span>';
+    }
+
+    return '<tr onclick="abrirModal(\''+e.dep.replace(/'/g,"\\'")+'\')" style="cursor:pointer">'+
+      '<td class="nowrap" style="font-size:11px;color:var(--text-soft)">'+eh(e.ts)+'</td>'+
+      '<td>'+
+        '<div style="display:flex;align-items:center;gap:7px">'+
+          '<div style="width:26px;height:26px;border-radius:50%;background:'+color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+eh(iniciales)+'</div>'+
+          '<span style="font-size:12px;font-weight:600;color:var(--navy)">'+eh((e.user||'—').split(' ')[0])+'</span>'+
+        '</div>'+
+      '</td>'+
+      '<td class="mono" style="font-size:11px;font-weight:600">'+eh(e.dep)+'</td>'+
+      '<td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(e.nombre||'—')+'</td>'+
+      '<td class="tr" style="font-size:12px;font-weight:700;color:var(--green)">'+valor+'</td>'+
+      '<td>'+chipsHtml+'</td>'+
+    '</tr>';
+  }).join('');
+
+  el.innerHTML = html;
+  document.getElementById('pag-bit-info').textContent =
+    'Mostrando '+(ini+1)+'–'+fin+' de '+total.toLocaleString('es-CO')+' registros';
+  // Paginación propia (usa PS_BIT en lugar del PS global de 50)
+  var tP=Math.ceil(total/PS_BIT)||1;
+  var h='';
+  h+='<button class="pb" '+(pagBit===1?'disabled':'')+' onclick="pagBit='+(pagBit-1)+';renderBitacora()">‹</button>';
+  for(var p=1;p<=tP;p++){
+    if(p===1||p===tP||Math.abs(p-pagBit)<=1){
+      h+='<button class="pb'+(p===pagBit?' cur':'')+'" onclick="pagBit='+p+';renderBitacora()">'+p+'</button>';
+    } else if(Math.abs(p-pagBit)===2){
+      h+='<button class="pb" disabled style="border:none;background:none">…</button>';
+    }
+  }
+  h+='<button class="pb" '+(pagBit===tP?'disabled':'')+' onclick="pagBit='+(pagBit+1)+';renderBitacora()">›</button>';
+  document.getElementById('pag-bit-btns').innerHTML=h;
+}
+
+function limpiarFiltrosBit(){
+  ['bit-buscar','bit-fecha-desde','bit-fecha-hasta','bit-usuario'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  pagBit=1;
+  renderBitacora();
+}
+
+function limpiarBitacora(){
+  if(!confirm('¿Borrar toda la bitácora?\n\nEsta acción no se puede deshacer. Las gestiones en el Sheet no se ven afectadas.')) return;
+  localStorage.removeItem(BIT_KEY);
+  renderBitacora();
+}
+
+function exportarBitacora(){
+  var bit = cargarBitacora();
+  if(!bit.length){ alert('No hay registros en la bitácora.'); return; }
+  var filas = bit.map(function(e){
+    return {
+      'Fecha/Hora': e.ts,
+      'Usuario': e.user||'',
+      'N° Depósito': e.dep||'',
+      'Contribuyente': e.nombre||'',
+      'Valor': e.valor||'',
+      'Cambios': e.resumen||''
+    };
+  });
+  var ws = XLSX.utils.json_to_sheet(filas);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Bitácora');
+  XLSX.writeFile(wb, 'Bitacora_Recaudo_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ═══════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════
 function llenarSelectResponsables(){
@@ -1633,6 +2087,7 @@ function purgarDatosBanco(){
 // Estrategia A: dataBanco siempre viene del Sheet, no del localStorage
 // El indicador de storage refleja solo gestiones + log
 actualizarIndicadorStorage();
+actualizarBadgeSync();
 
 // Shake animation
 var st=document.createElement('style');
