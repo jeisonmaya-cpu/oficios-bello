@@ -305,6 +305,15 @@
       <div><div id="pqr-enc-badge" style="margin-bottom:6px"></div><div class="m-acc" id="pqr-enc-nombre">—</div><div class="m-rad" id="pqr-enc-sub">—</div></div>
       <button class="modal-close" onclick="document.getElementById('overlay-pqr').classList.remove('open')">✕</button>
     </div>
+    <!-- Filtro por abogado y exportar -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <select id="pqr-filtro-abo" onchange="filtrarPQRModal()" style="background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;flex:1">
+        <option value="">Todos los abogados de reparto</option>
+      </select>
+      <button onclick="exportarPQR()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">
+        📥 Exportar Excel
+      </button>
+    </div>
     <div id="pqr-lista-body"></div>
   </div>
 </div>
@@ -766,20 +775,78 @@ function irOficio(){
   window.location.href="index.html?"+new URLSearchParams({tipo:"Tutela-Admite",accionante:actual["ACCIONANTE"]||"",radicado:actual["RADICADO"]||"",cc:actual["CC / NIT"]||""}).toString();
 }
 
+// Estado global del modal PQR
+let pqrRegsActual = [], pqrEncActual = "", pqrTipoActual = "";
+
 function abrirGrupoPQR(enc,total,regsData,tipo){
   let regs;try{regs=JSON.parse(decodeURIComponent(regsData));}catch(e){return;}
+  pqrRegsActual  = regs;
+  pqrEncActual   = enc;
+  pqrTipoActual  = tipo;
   const esSin=tipo==="sin";
   document.getElementById("pqr-enc-badge").innerHTML=esSin?`<span class="bt be-venc">⚠️ Sin respuesta PQR</span>`:`<span class="bt be-resp">✅ Con respuesta PQR</span>`;
   document.getElementById("pqr-enc-nombre").textContent=enc;
-  document.getElementById("pqr-enc-sub").textContent=`${total} petición(es)`;
+
+  // Poblar filtro de abogados
+  const abos = [...new Set(regs.map(r=>r["RESPONSABLE"]||"Sin asignar").filter(Boolean))].sort();
+  const sel = document.getElementById("pqr-filtro-abo");
+  sel.innerHTML = `<option value="">Todos los abogados (${regs.length})</option>` +
+    abos.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("");
+
+  renderPQRModal(regs);
+  document.getElementById("overlay-pqr").classList.add("open");
+}
+
+function filtrarPQRModal(){
+  const abo = document.getElementById("pqr-filtro-abo").value;
+  const filtrados = abo ? pqrRegsActual.filter(r=>(r["RESPONSABLE"]||"Sin asignar")===abo) : pqrRegsActual;
+  renderPQRModal(filtrados);
+}
+
+function renderPQRModal(regs){
+  document.getElementById("pqr-enc-sub").textContent=`${regs.length} petición(es)`;
   const ordenadas=byUrg(regs);
   document.getElementById("pqr-lista-body").innerHTML=ordenadas.map(r=>{
     const da=encodeURIComponent(JSON.stringify(r));
     const dc=r._dias===null?"var(--muted)":r._dias<0?"#f87171":r._dias<=2?"#fb923c":"#4ade80";
     const dt=r._dias===null?"Sin fecha":r._dias<0?"Vencido "+Math.abs(r._dias)+"d":r._dias+"d";
-    return`<div style="display:grid;grid-template-columns:1fr 90px 90px 70px;gap:8px;align-items:center;padding:11px 13px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.04)'" onclick="document.getElementById('overlay-pqr').classList.remove('open');abrirModal('${da}')"><div><div style="font-size:13px;font-weight:500">${esc(r["ACCIONANTE"]||"—")}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(r["RADICADO"]||"—")}</div></div><div style="font-size:11px;color:var(--muted)">${pNom(r["RESPONSABLE"])}</div><div style="font-size:11px;color:var(--muted);white-space:nowrap">${esc(r["FECHA LÍMITE"]||"—")}</div><div style="font-size:12px;font-weight:700;color:${dc};text-align:right">${dt}</div></div>`;
+    return`<div style="display:grid;grid-template-columns:1fr 110px 90px 70px;gap:8px;align-items:center;padding:11px 13px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.04)'" onclick="document.getElementById('overlay-pqr').classList.remove('open');abrirModal('${da}')">
+      <div><div style="font-size:13px;font-weight:500">${esc(r["ACCIONANTE"]||"—")}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(r["RADICADO"]||"—")}</div></div>
+      <div style="font-size:11px;color:var(--muted)">${esc(r["RESPONSABLE"]||"—")}</div>
+      <div style="font-size:11px;color:var(--muted);white-space:nowrap">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div>
+      <div style="font-size:12px;font-weight:700;color:${dc};text-align:right">${dt}</div>
+    </div>`;
   }).join("");
-  document.getElementById("overlay-pqr").classList.add("open");
+}
+
+function exportarPQR(){
+  const abo = document.getElementById("pqr-filtro-abo").value;
+  const regs = abo ? pqrRegsActual.filter(r=>(r["RESPONSABLE"]||"Sin asignar")===abo) : pqrRegsActual;
+  const ordenadas = byUrg(regs);
+
+  // Crear CSV
+  const headers = ["Accionante","Radicado","CC/NIT","Juzgado","Abogado reparto","Fecha límite","Días restantes","Estado","Encargado PQR"];
+  const rows = ordenadas.map(r=>[
+    r["ACCIONANTE"]||"",
+    r["RADICADO"]||"",
+    r["CC / NIT"]||"",
+    r["JUZGADO"]||"",
+    r["RESPONSABLE"]||"",
+    r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"",
+    r._dias===null?"Sin fecha":r._dias<0?"Vencido "+Math.abs(r._dias)+"d":r._dias+"d",
+    r["ESTADO"]||"",
+    pqrEncActual
+  ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(","));
+
+  const csv = "﻿" + [headers.join(","),...rows].join("\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `PQR_${pqrEncActual.replace(/\s+/g,"_")}_${new Date().toLocaleDateString("es-CO").replace(/\//g,"-")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast("📥 Exportado correctamente","ok");
 }
 
 function goTab(tab){
