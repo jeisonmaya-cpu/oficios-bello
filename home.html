@@ -6,21 +6,25 @@
 <title>Ejecuciones Fiscales — Alcaldía de Bello</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="favicon.ico" />
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 <style>
 :root {
-  --navy: #0a1f3d;
-  --navy2: #0f2d5e;
-  --blue: #1a6fc4;
-  --blue2: #2d8de8;
-  --gold: #e8a020;
-  --gold2: #f5c050;
-  --surface: rgba(255,255,255,0.06);
-  --border: rgba(255,255,255,0.10);
-  --text: #ffffff;
-  --text-soft: rgba(255,255,255,0.55);
+  --navy:        #0a1f3d;
+  --navy2:       #0f2d5e;
+  --blue:        #1a6fc4;
+  --blue2:       #2d8de8;
+  --gold:        #e8a020;
+  --gold2:       #f5c050;
+  --surface:     rgba(255,255,255,0.055);
+  --border:      rgba(255,255,255,0.09);
+  --text:        #ffffff;
+  --text-soft:   rgba(255,255,255,0.50);
+  --radius:      20px;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
 body {
   font-family: 'DM Sans', sans-serif;
   background: var(--navy);
@@ -29,201 +33,448 @@ body {
   overflow-x: hidden;
 }
 
-/* ── FONDO ── */
+/* ── FONDO ANIMADO ── */
 .bg {
   position: fixed; inset: 0; z-index: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 20% 0%, rgba(26,111,196,0.25) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(232,160,32,0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 90% 20%, rgba(26,111,196,0.10) 0%, transparent 50%),
-    linear-gradient(160deg, #0a1f3d 0%, #0d2550 40%, #0a1a35 100%);
+    radial-gradient(ellipse 90% 70% at 15% -10%, rgba(26,111,196,0.28) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 85% 110%, rgba(232,160,32,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 95% 15%, rgba(26,111,196,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 35% at 5% 85%, rgba(109,40,217,0.08) 0%, transparent 50%),
+    linear-gradient(160deg, #0a1f3d 0%, #0d2550 45%, #09182f 100%);
 }
 .bg::before {
   content: '';
   position: absolute; inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 80% at center, black 20%, transparent 75%);
+}
+.bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle 2px at 18% 22%, rgba(232,160,32,0.5) 0%, transparent 100%),
+    radial-gradient(circle 1.5px at 78% 15%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(circle 1px at 55% 68%, rgba(45,141,232,0.4) 0%, transparent 100%),
+    radial-gradient(circle 2px at 88% 55%, rgba(232,160,32,0.3) 0%, transparent 100%),
+    radial-gradient(circle 1.5px at 8% 72%, rgba(255,255,255,0.25) 0%, transparent 100%);
 }
 
-/* ── LAYOUT ── */
+/* ── LAYOUT PRINCIPAL ── */
 .wrap {
   position: relative; z-index: 1;
   min-height: 100vh;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 40px 24px;
+  align-items: center;
+  padding: 48px 20px 32px;
 }
 
-/* ── LOGO ── */
-.logo-wrap { margin-bottom: 20px; animation: fadeDown 0.7s ease both; }
-.logo-circle {
-  width: 80px; height: 80px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-  border: 1.5px solid rgba(255,255,255,0.2);
-  border-radius: 22px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 38px;
-  margin: 0 auto;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
-  backdrop-filter: blur(10px);
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  margin-bottom: 10px;
+  animation: fadeDown 0.75s ease both;
 }
 
-/* ── ENCABEZADO ── */
-.header { text-align: center; margin-bottom: 16px; animation: fadeDown 0.7s 0.1s ease both; }
+.logo-shield {
+  width: 72px; height: 72px;
+  margin: 0 auto 18px;
+  position: relative;
+}
+.logo-shield svg { width: 100%; height: 100%; filter: drop-shadow(0 8px 24px rgba(232,160,32,0.3)); }
+
 .header-eyebrow {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.2em;
   text-transform: uppercase; color: var(--gold2); margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
 }
+.header-eyebrow::before,
+.header-eyebrow::after {
+  content: '';
+  display: block; width: 28px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245,192,80,0.6));
+}
+.header-eyebrow::after { transform: scaleX(-1); }
+
 .header h1 {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(28px, 5vw, 42px);
-  font-weight: 400; line-height: 1.15; color: #fff; margin-bottom: 10px;
+  font-size: clamp(30px, 5.5vw, 46px);
+  font-weight: 400; line-height: 1.1;
+  color: #fff; margin-bottom: 10px;
+  letter-spacing: -0.01em;
 }
 .header h1 em { font-style: italic; color: var(--gold2); }
-.header-sub { font-size: 14px; color: var(--text-soft); max-width: 420px; margin: 0 auto; line-height: 1.6; }
+.header-sub { font-size: 13.5px; color: var(--text-soft); max-width: 400px; margin: 0 auto; line-height: 1.65; }
 
-/* ── SALUDO ── */
-.saludo {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(232,160,32,0.12); border: 1px solid rgba(232,160,32,0.25);
-  color: var(--gold2); font-size: 12px; font-weight: 600;
-  padding: 6px 14px; border-radius: 20px; margin-bottom: 36px;
-  animation: fadeDown 0.7s 0.2s ease both;
+/* ── SALUDO PILL + ROBOT ── */
+.saludo-wrap {
+  margin: 20px 0 40px;
+  animation: fadeDown 0.75s 0.12s ease both;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 
-/* ── DIVISOR ── */
-.divider {
-  width: 40px; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  margin: 0 auto 36px;
-  animation: fadeDown 0.7s 0.15s ease both;
+/* Robot Teodoro */
+.teodoro-robot {
+  position: relative;
+  animation: robotFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 20px rgba(45,141,232,0.35));
+  cursor: pointer;
+  transition: filter 0.3s;
+}
+.teodoro-robot:hover {
+  filter: drop-shadow(0 10px 28px rgba(245,192,80,0.45));
+}
+.robot-svg { width: 64px; height: 80px; overflow: visible; }
+
+/* Flotación suave */
+@keyframes robotFloat {
+  0%, 100% { transform: translateY(0px) rotate(-1deg); }
+  50%       { transform: translateY(-7px) rotate(1deg); }
+}
+
+/* Ojos parpadeantes */
+.eye-left, .eye-right,
+.pupil-left, .pupil-right,
+.gleam-left, .gleam-right {
+  animation: eyeBlink 4s ease-in-out infinite;
+}
+@keyframes eyeBlink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95%            { transform: scaleY(0.08); }
+}
+
+/* LEDs del pecho pulsando */
+.chest-led1 {
+  animation: ledPulse1 1.8s ease-in-out infinite;
+}
+.chest-led2 {
+  animation: ledPulse2 1.8s ease-in-out infinite 0.6s;
+}
+@keyframes ledPulse1 {
+  0%, 100% { opacity: 0.9; r: 3.5; }
+  50%       { opacity: 0.35; r: 2.8; }
+}
+@keyframes ledPulse2 {
+  0%, 100% { opacity: 0.9; r: 3.5; }
+  50%       { opacity: 0.35; r: 2.8; }
+}
+
+/* Barra de pecho animada */
+.chest-bar {
+  animation: barScroll 2s linear infinite;
+}
+@keyframes barScroll {
+  0%   { opacity: 0.7; width: 8px; x: 20px; }
+  50%  { opacity: 1;   width: 14px; x: 20px; }
+  100% { opacity: 0.7; width: 8px; x: 20px; }
+}
+
+/* Brazos oscilando */
+.arm-left {
+  transform-origin: 5.5px 47px;
+  animation: armSwingL 3s ease-in-out infinite;
+}
+.arm-right {
+  transform-origin: 58.5px 47px;
+  animation: armSwingR 3s ease-in-out infinite;
+}
+@keyframes armSwingL {
+  0%, 100% { transform: rotate(-6deg); }
+  50%       { transform: rotate(6deg); }
+}
+@keyframes armSwingR {
+  0%, 100% { transform: rotate(6deg); }
+  50%       { transform: rotate(-6deg); }
+}
+
+/* Antena parpadeante */
+.antenna-ball {
+  animation: antennaBlink 2.5s ease-in-out infinite;
+}
+@keyframes antennaBlink {
+  0%, 100% { fill: #f5c050; opacity: 1; }
+  50%       { fill: #fff;    opacity: 0.4; }
+}
+
+/* LEDs boca */
+.mouth-led1, .mouth-led3 {
+  animation: mouthLed 1.4s ease-in-out infinite alternate;
+}
+.mouth-led2 {
+  animation: mouthLed 1.4s ease-in-out infinite alternate-reverse;
+}
+@keyframes mouthLed {
+  from { opacity: 1; }
+  to   { opacity: 0.2; }
+}
+
+/* Sacudir al click */
+.teodoro-robot.shake {
+  animation: robotShake 0.5s ease, robotFloat 3s ease-in-out infinite 0.5s;
+}
+@keyframes robotShake {
+  0%,100% { transform: rotate(0deg); }
+  15%     { transform: rotate(-12deg) scale(1.08); }
+  30%     { transform: rotate(12deg)  scale(1.1); }
+  45%     { transform: rotate(-8deg)  scale(1.06); }
+  60%     { transform: rotate(8deg)   scale(1.04); }
+  80%     { transform: rotate(-3deg)  scale(1.01); }
+}
+
+/* Pill */
+.saludo {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(232,160,32,0.1);
+  border: 1px solid rgba(232,160,32,0.22);
+  color: var(--gold2); font-size: 12px; font-weight: 600;
+  padding: 7px 16px; border-radius: 24px;
+  backdrop-filter: blur(8px);
+  min-width: 160px; justify-content: center;
+}
+.saludo-emoji { flex-shrink: 0; }
+.saludo-text { position: relative; }
+.saludo-text.typing::after {
+  content: '|';
+  display: inline-block;
+  color: var(--gold2);
+  animation: blink 0.75s step-end infinite;
+  margin-left: 1px; font-weight: 300;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
 }
 
 /* ── SECCIÓN LABEL ── */
 .section-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.16em;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em;
   text-transform: uppercase; color: var(--text-soft);
-  margin-bottom: 12px; width: 100%; max-width: 620px;
-  padding-left: 2px;
-  animation: fadeUp 0.7s 0.25s ease both;
+  width: 100%; max-width: 680px;
+  margin-bottom: 14px;
 }
+.section-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
+}
+.section-label-icon { font-size: 13px; opacity: 0.7; }
 
-/* ── APPS GRID ── */
-.apps-grid {
+/* ── GRILLAS ── */
+.grid-2x2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  width: 100%; max-width: 620px;
-  margin-bottom: 14px;
-  animation: fadeUp 0.7s 0.3s ease both;
+  gap: 13px;
+  width: 100%; max-width: 680px;
+  margin-bottom: 13px;
+  animation: fadeUp 0.75s 0.22s ease both;
 }
-.apps-grid-wide {
+.grid-3x1 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 14px;
-  width: 100%; max-width: 620px;
-  margin-bottom: 32px;
-  animation: fadeUp 0.7s 0.35s ease both;
+  gap: 13px;
+  width: 100%; max-width: 680px;
+  margin-bottom: 13px;
+  animation: fadeUp 0.75s 0.32s ease both;
+}
+/* Segunda fila de la sección principal: 2 cards apiladas + 1 card high */
+.grid-main-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto;
+  gap: 13px;
+  width: 100%; max-width: 680px;
+  margin-bottom: 13px;
+  animation: fadeUp 0.75s 0.28s ease both;
 }
 
+/* ── CARD BASE ── */
 .app-card {
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 26px 22px;
-  text-decoration: none;
-  color: #fff;
-  transition: all 0.25s ease;
+  border-radius: var(--radius);
+  padding: 26px 22px 22px;
+  text-decoration: none; color: #fff;
+  transition: transform 0.28s cubic-bezier(.22,.68,0,1.2),
+              border-color 0.25s ease,
+              box-shadow 0.28s ease;
   overflow: hidden;
-  backdrop-filter: blur(12px);
-  cursor: pointer;
-  display: block;
+  backdrop-filter: blur(14px);
+  cursor: pointer; display: block;
+  min-height: 140px;
 }
-.app-card::before {
+.app-card::after {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent);
+  background: linear-gradient(135deg, rgba(255,255,255,0.07), transparent 60%);
   opacity: 0; transition: opacity 0.25s;
+  pointer-events: none;
 }
-.app-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.22); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
-.app-card:hover::before { opacity: 1; }
-.app-card:active { transform: translateY(-2px); }
+.app-card:hover { transform: translateY(-5px) scale(1.005); }
+.app-card:hover::after { opacity: 1; }
+.app-card:active { transform: translateY(-2px) scale(1.002); }
 
-/* variantes de color */
-.app-card.primary   { background: linear-gradient(135deg, rgba(26,111,196,0.35), rgba(26,111,196,0.15)); border-color: rgba(26,111,196,0.4); }
-.app-card.primary:hover   { border-color: rgba(45,141,232,0.6); box-shadow: 0 20px 50px rgba(26,111,196,0.25); }
-.app-card.secondary { background: linear-gradient(135deg, rgba(232,160,32,0.2), rgba(232,160,32,0.08)); border-color: rgba(232,160,32,0.3); }
-.app-card.secondary:hover { border-color: rgba(245,192,80,0.5); box-shadow: 0 20px 50px rgba(232,160,32,0.15); }
-.app-card.tertiary  { background: linear-gradient(135deg, rgba(22,163,74,0.25), rgba(22,163,74,0.08)); border-color: rgba(22,163,74,0.3); }
-.app-card.tertiary:hover  { border-color: rgba(34,197,94,0.5); box-shadow: 0 20px 50px rgba(22,163,74,0.15); }
-.app-card.quaternary{ background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(139,92,246,0.08)); border-color: rgba(139,92,246,0.3); }
-.app-card.quaternary:hover{ border-color: rgba(167,139,250,0.5); box-shadow: 0 20px 50px rgba(139,92,246,0.15); }
-/* NUEVO: PQR — violeta-cyan */
-.app-card.pqr { background: linear-gradient(135deg, rgba(109,40,217,0.28), rgba(6,182,212,0.12)); border-color: rgba(109,40,217,0.38); }
-.app-card.pqr:hover { border-color: rgba(139,92,246,0.6); box-shadow: 0 20px 50px rgba(109,40,217,0.22); }
-/* NUEVO: Tutelas — azul oscuro */
-.app-card.tutelas { background: linear-gradient(135deg, rgba(37,99,235,0.28), rgba(6,182,212,0.1)); border-color: rgba(37,99,235,0.38); }
-.app-card.tutelas:hover { border-color: rgba(59,130,246,0.6); box-shadow: 0 20px 50px rgba(37,99,235,0.22); }
-/* NUEVO: Recaudo — naranja */
-.app-card.recaudo { background: linear-gradient(135deg, rgba(234,88,12,0.28), rgba(251,146,60,0.1)); border-color: rgba(234,88,12,0.38); }
-.app-card.recaudo:hover { border-color: rgba(251,146,60,0.6); box-shadow: 0 20px 50px rgba(234,88,12,0.22); }
-
-/* card ancha (full width en su grid) */
-.app-card.full {
-  grid-column: 1 / -1;
-  display: flex; align-items: center; gap: 20px;
-  padding: 20px 26px;
+/* Línea decorativa superior */
+.app-card::before {
+  content: '';
+  position: absolute; top: 0; left: 16px; right: 16px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
 }
-.app-card.full .app-icon { margin-bottom: 0; font-size: 28px; }
-.app-card.full .app-content { flex: 1; }
 
-.app-icon { font-size: 30px; margin-bottom: 13px; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
-.app-name { font-family: 'DM Serif Display', serif; font-size: 16px; font-weight: 400; margin-bottom: 5px; line-height: 1.2; }
-.app-desc { font-size: 12px; color: var(--text-soft); line-height: 1.5; }
+/* ── VARIANTES DE COLOR ── */
+.card-blue {
+  background: linear-gradient(145deg, rgba(26,111,196,0.32) 0%, rgba(26,111,196,0.10) 100%);
+  border-color: rgba(45,141,232,0.35);
+}
+.card-blue:hover { border-color: rgba(45,141,232,0.65); box-shadow: 0 22px 55px rgba(26,111,196,0.28), 0 0 0 1px rgba(45,141,232,0.15); }
+
+.card-gold {
+  background: linear-gradient(145deg, rgba(232,160,32,0.22) 0%, rgba(232,160,32,0.07) 100%);
+  border-color: rgba(232,160,32,0.30);
+}
+.card-gold:hover { border-color: rgba(245,192,80,0.55); box-shadow: 0 22px 55px rgba(232,160,32,0.18), 0 0 0 1px rgba(245,192,80,0.12); }
+
+.card-green {
+  background: linear-gradient(145deg, rgba(22,163,74,0.26) 0%, rgba(22,163,74,0.08) 100%);
+  border-color: rgba(34,197,94,0.28);
+}
+.card-green:hover { border-color: rgba(34,197,94,0.55); box-shadow: 0 22px 55px rgba(22,163,74,0.20), 0 0 0 1px rgba(34,197,94,0.12); }
+
+.card-purple {
+  background: linear-gradient(145deg, rgba(139,92,246,0.26) 0%, rgba(139,92,246,0.07) 100%);
+  border-color: rgba(139,92,246,0.28);
+}
+.card-purple:hover { border-color: rgba(167,139,250,0.55); box-shadow: 0 22px 55px rgba(139,92,246,0.22), 0 0 0 1px rgba(167,139,250,0.12); }
+
+.card-cyan {
+  background: linear-gradient(145deg, rgba(6,182,212,0.24) 0%, rgba(37,99,235,0.12) 100%);
+  border-color: rgba(6,182,212,0.28);
+}
+.card-cyan:hover { border-color: rgba(6,182,212,0.55); box-shadow: 0 22px 55px rgba(6,182,212,0.20), 0 0 0 1px rgba(6,182,212,0.12); }
+
+.card-orange {
+  background: linear-gradient(145deg, rgba(234,88,12,0.28) 0%, rgba(251,146,60,0.08) 100%);
+  border-color: rgba(234,88,12,0.32);
+}
+.card-orange:hover { border-color: rgba(251,146,60,0.55); box-shadow: 0 22px 55px rgba(234,88,12,0.22), 0 0 0 1px rgba(251,146,60,0.12); }
+
+/* ── CARD INTERNA ── */
+.card-glow {
+  position: absolute; top: -30px; right: -30px;
+  width: 90px; height: 90px;
+  border-radius: 50%; opacity: 0.12;
+  filter: blur(28px);
+  transition: opacity 0.3s;
+}
+.card-blue .card-glow    { background: #2d8de8; }
+.card-gold .card-glow    { background: #f5c050; }
+.card-green .card-glow   { background: #22c55e; }
+.card-purple .card-glow  { background: #a78bfa; }
+.card-cyan .card-glow    { background: #06b6d4; }
+.card-orange .card-glow  { background: #fb923c; }
+.app-card:hover .card-glow { opacity: 0.22; }
+
+.app-icon {
+  font-size: 28px; margin-bottom: 14px; display: block;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35));
+  line-height: 1;
+}
+.app-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 16.5px; font-weight: 400;
+  margin-bottom: 5px; line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.app-desc {
+  font-size: 11.5px; color: var(--text-soft);
+  line-height: 1.55;
+}
 .app-badge {
-  display: inline-block; margin-top: 8px;
-  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; padding: 2px 8px; border-radius: 10px;
-  background: rgba(109,40,217,0.25); color: #c4b5fd; border: 1px solid rgba(109,40,217,0.3);
+  display: inline-block; margin-top: 9px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 3px 9px; border-radius: 10px;
 }
-.app-badge.new { background: rgba(6,182,212,0.2); color: #67e8f9; border-color: rgba(6,182,212,0.3); }
-.app-arrow { position: absolute; bottom: 16px; right: 18px; font-size: 15px; opacity: 0.4; transition: all 0.2s; }
-.app-card:hover .app-arrow { opacity: 1; transform: translate(2px, -2px); }
+.badge-new {
+  background: rgba(6,182,212,0.18); color: #67e8f9;
+  border: 1px solid rgba(6,182,212,0.30);
+}
+.badge-demand {
+  background: rgba(245,192,80,0.18); color: #fcd34d;
+  border: 1px solid rgba(245,192,80,0.30);
+}
+.app-arrow {
+  position: absolute; bottom: 15px; right: 17px;
+  font-size: 14px; opacity: 0.3;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.app-card:hover .app-arrow { opacity: 0.9; transform: translate(2px,-2px); }
+
+/* Card horizontal (full row) */
+.card-h {
+  display: flex; align-items: center; gap: 18px;
+  padding: 18px 24px; min-height: auto;
+}
+.card-h .app-icon { margin-bottom: 0; font-size: 26px; flex-shrink: 0; }
+.card-h .app-content { flex: 1; }
 
 /* ── STATS ── */
 .stats-row {
-  display: flex; gap: 24px; margin-bottom: 36px;
-  animation: fadeUp 0.7s 0.45s ease both;
+  display: flex; align-items: center; gap: 0;
+  margin-top: 8px; margin-bottom: 36px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  width: 100%; max-width: 680px;
+  animation: fadeUp 0.75s 0.42s ease both;
+  backdrop-filter: blur(12px);
 }
-.stat { text-align: center; }
-.stat-num { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--gold2); }
-.stat-label { font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
-.stat-sep { width: 1px; background: var(--border); }
+.stat {
+  flex: 1; text-align: center;
+  padding: 14px 10px; border-right: 1px solid var(--border);
+}
+.stat:last-child { border-right: none; }
+.stat-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px; color: var(--gold2); line-height: 1;
+}
+.stat-label {
+  font-size: 9.5px; color: var(--text-soft);
+  text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px;
+}
 
 /* ── FOOTER ── */
 footer {
   position: relative; z-index: 1;
-  text-align: center; padding: 20px;
-  font-size: 11px; color: var(--text-soft);
-  animation: fadeUp 0.7s 0.5s ease both;
+  text-align: center; padding: 16px 20px 28px;
+  font-size: 11px; color: rgba(255,255,255,0.3);
+  animation: fadeUp 0.75s 0.5s ease both;
 }
-footer strong { color: rgba(255,255,255,0.7); }
+footer strong { color: rgba(255,255,255,0.55); }
 
 /* ── ANIMACIONES ── */
-@keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeUp   { from { opacity: 0; transform: translateY(16px);  } to { opacity: 1; transform: translateY(0); } }
-
-@media (max-width: 520px) {
-  .apps-grid, .apps-grid-wide { grid-template-columns: 1fr; max-width: 360px; }
-  .stats-row { gap: 16px; }
-  .app-card.full { flex-direction: column; align-items: flex-start; gap: 8px; }
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-@media (min-width: 521px) and (max-width: 680px) {
-  .apps-grid-wide { grid-template-columns: 1fr 1fr; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 540px) {
+  .grid-2x2, .grid-main-bottom, .grid-3x1 {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+  .card-h { flex-direction: row; }
+  .stats-row { flex-wrap: wrap; }
+  .stat { min-width: 33.33%; border-bottom: 1px solid var(--border); }
+}
+@media (min-width: 541px) and (max-width: 680px) {
+  .grid-3x1 { grid-template-columns: 1fr 1fr; }
 }
 </style>
 </head>
@@ -231,98 +482,212 @@ footer strong { color: rgba(255,255,255,0.7); }
 <div class="bg"></div>
 
 <div class="wrap">
-  <div class="logo-wrap">
-    <div class="logo-circle">🏛️</div>
-  </div>
 
+  <!-- ── HEADER ── -->
   <div class="header">
+    <div class="logo-shield">
+      <svg viewBox="0 0 72 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M36 2L68 14V40C68 57 53 70 36 78C19 70 4 57 4 40V14L36 2Z"
+              fill="url(#shieldGrad)" stroke="rgba(232,160,32,0.5)" stroke-width="1.5"/>
+        <path d="M36 10L60 20V40C60 53 49 63 36 70C23 63 12 53 12 40V20L36 10Z"
+              fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <text x="36" y="50" text-anchor="middle" font-size="26" fill="white" opacity="0.9">🏛️</text>
+        <defs>
+          <linearGradient id="shieldGrad" x1="36" y1="2" x2="36" y2="78" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1a6fc4" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#0a1f3d" stop-opacity="0.9"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
     <div class="header-eyebrow">Alcaldía de Bello · Antioquia</div>
     <h1>Ejecuciones <em>Fiscales</em></h1>
     <p class="header-sub">Sistema integrado de gestión documental, oficios y atención al ciudadano</p>
   </div>
 
-  <div class="divider"></div>
-  <div class="saludo" id="saludo">👋 Bienvenido</div>
+  <div class="saludo-wrap">
+    <!-- Robot Teodoro -->
+    <div class="teodoro-robot" id="teodoro-robot">
+      <svg class="robot-svg" viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Antena -->
+        <line class="antenna" x1="32" y1="6" x2="32" y2="14" stroke="#f5c050" stroke-width="2" stroke-linecap="round"/>
+        <circle class="antenna-ball" cx="32" cy="4" r="3" fill="#f5c050"/>
+        <!-- Cabeza -->
+        <rect class="robot-head" x="14" y="14" width="36" height="26" rx="7" fill="url(#headGrad)" stroke="rgba(245,192,80,0.5)" stroke-width="1.2"/>
+        <!-- Ojos -->
+        <rect class="eye-left"  x="20" y="21" width="8" height="7" rx="2" fill="#0a1f3d"/>
+        <rect class="eye-right" x="36" y="21" width="8" height="7" rx="2" fill="#0a1f3d"/>
+        <circle class="pupil-left"  cx="24" cy="24.5" r="2.2" fill="#2d8de8"/>
+        <circle class="pupil-right" cx="40" cy="24.5" r="2.2" fill="#2d8de8"/>
+        <circle class="gleam-left"  cx="25" cy="23.5" r="0.8" fill="white" opacity="0.9"/>
+        <circle class="gleam-right" cx="41" cy="23.5" r="0.8" fill="white" opacity="0.9"/>
+        <!-- Boca -->
+        <rect class="robot-mouth" x="22" y="32" width="20" height="4" rx="2" fill="#0a1f3d"/>
+        <rect class="mouth-led1" x="24" y="33" width="3" height="2" rx="1" fill="#f5c050"/>
+        <rect class="mouth-led2" x="28.5" y="33" width="3" height="2" rx="1" fill="#2d8de8"/>
+        <rect class="mouth-led3" x="33" y="33" width="3" height="2" rx="1" fill="#f5c050"/>
+        <!-- Cuello -->
+        <rect x="28" y="40" width="8" height="5" rx="2" fill="rgba(245,192,80,0.3)" stroke="rgba(245,192,80,0.3)" stroke-width="1"/>
+        <!-- Cuerpo -->
+        <rect class="robot-body" x="10" y="45" width="44" height="28" rx="8" fill="url(#bodyGrad)" stroke="rgba(45,141,232,0.4)" stroke-width="1.2"/>
+        <!-- Panel pecho -->
+        <rect x="18" y="51" width="28" height="16" rx="4" fill="rgba(0,0,0,0.3)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+        <circle class="chest-led1" cx="26" cy="59" r="3.5" fill="#f5c050" opacity="0.9"/>
+        <circle class="chest-led2" cx="36" cy="59" r="3.5" fill="#2d8de8" opacity="0.9"/>
+        <rect class="chest-bar" x="20" y="53" width="8" height="2.5" rx="1.2" fill="#2d8de8" opacity="0.7"/>
+        <rect x="30" y="53" width="14" height="2.5" rx="1.2" fill="rgba(255,255,255,0.12)"/>
+        <!-- Brazos -->
+        <rect class="arm-left"  x="1"  y="47" width="9" height="20" rx="4.5" fill="url(#armGrad)" stroke="rgba(45,141,232,0.3)" stroke-width="1"/>
+        <rect class="arm-right" x="54" y="47" width="9" height="20" rx="4.5" fill="url(#armGrad)" stroke="rgba(45,141,232,0.3)" stroke-width="1"/>
+        <!-- Manos -->
+        <circle cx="5.5"  cy="69" r="4" fill="url(#armGrad)" stroke="rgba(45,141,232,0.3)" stroke-width="1"/>
+        <circle cx="58.5" cy="69" r="4" fill="url(#armGrad)" stroke="rgba(45,141,232,0.3)" stroke-width="1"/>
+        <!-- Gradientes -->
+        <defs>
+          <linearGradient id="headGrad" x1="14" y1="14" x2="50" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1a3a6e"/>
+            <stop offset="100%" stop-color="#0f2550"/>
+          </linearGradient>
+          <linearGradient id="bodyGrad" x1="10" y1="45" x2="54" y2="73" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1a3a6e"/>
+            <stop offset="100%" stop-color="#0a1f3d"/>
+          </linearGradient>
+          <linearGradient id="armGrad" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="#1a4a8a"/>
+            <stop offset="100%" stop-color="#0f2d5e"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <!-- Pill de saludo -->
+    <div class="saludo">
+      <span class="saludo-emoji" id="saludo-emoji">👋</span>
+      <span class="saludo-text typing" id="saludo-text"></span>
+    </div>
+  </div>
 
-  <!-- ── MÓDULOS PRINCIPALES ── -->
-  <div class="section-label">⚙️ Módulos principales</div>
-  <div class="apps-grid">
-    <a href="index.html" class="app-card primary">
-      <span class="app-icon">📄</span>
-      <div class="app-name">Generar Oficios</div>
-      <div class="app-desc">Desembargos, tutelas y carga masiva de documentos</div>
+  <!-- ══════════════════════════════
+       MÓDULOS PRINCIPALES
+  ══════════════════════════════ -->
+  <div class="section-label">
+    <span class="section-label-icon">⚙️</span>
+    Módulos Principales
+  </div>
+
+  <!-- Fila 1: Desembargos + Buscador -->
+  <div class="grid-2x2">
+    <a href="desembargos.html" class="app-card card-blue">
+      <div class="card-glow"></div>
+      <span class="app-icon">🏦</span>
+      <div class="app-name">Desembargos y Embargos</div>
+      <div class="app-desc">Oficios bancarios, mandamientos y órdenes de embargo</div>
+      <span class="app-badge badge-demand">⚡ Alta demanda</span>
       <span class="app-arrow">↗</span>
     </a>
 
-    <a href="buscador.html" class="app-card secondary">
+    <a href="buscador.html" class="app-card card-gold">
+      <div class="card-glow"></div>
       <span class="app-icon">🔍</span>
       <div class="app-name">Buscador de Guías</div>
       <div class="app-desc">Consulta contribuyentes, radicados y expedientes</div>
       <span class="app-arrow">↗</span>
     </a>
-
-    <a href="seguimiento.html" class="app-card tertiary full">
-      <span class="app-icon">📋</span>
-      <div class="app-content">
-        <div class="app-name">Seguimiento de Procesos</div>
-        <div class="app-desc">Estado de expedientes, vencimientos y gestión de cobro coactivo</div>
-      </div>
-      <span class="app-arrow">↗</span>
-    </a>
-
-    <a href="acuerdos.html" class="app-card quaternary full">
-      <span class="app-icon">🤝</span>
-      <div class="app-content">
-        <div class="app-name">Acuerdos de Pago</div>
-        <div class="app-desc">Proyección de cuotas, formulario F-GAF-68 y registro de convenios</div>
-      </div>
-      <span class="app-arrow">↗</span>
-    </a>
   </div>
 
-  <!-- ── MÓDULOS NUEVOS ── -->
-  <div class="section-label">🆕 Gestión documental y jurídica</div>
-  <div class="apps-grid-wide">
-    <a href="pqr.html" class="app-card pqr">
-      <span class="app-icon">📬</span>
-      <div class="app-name">Gestión PQR</div>
-      <div class="app-desc">Radicación y seguimiento de Peticiones, Quejas y Reclamos</div>
-      <span class="app-badge new">✨ Nuevo</span>
-      <span class="app-arrow">↗</span>
-    </a>
-
-    <a href="tutelas_v2.html" class="app-card tutelas">
+  <!-- Fila 2: Sistema de Tutelas + Generar Oficios -->
+  <div class="grid-2x2" style="animation-delay: 0.26s;">
+    <a href="tutelas_v2.html" class="app-card card-cyan">
+      <div class="card-glow"></div>
       <span class="app-icon">⚖️</span>
       <div class="app-name">Sistema de Tutelas</div>
       <div class="app-desc">Términos procesales y semáforo de vencimientos</div>
       <span class="app-arrow">↗</span>
     </a>
 
-    <a href="recaudo.html" class="app-card recaudo">
-      <span class="app-icon">🏦</span>
+    <a href="index.html" class="app-card card-purple">
+      <div class="card-glow"></div>
+      <span class="app-icon">📄</span>
+      <div class="app-name">Generar Oficios</div>
+      <div class="app-desc">Tutelas, notificaciones y carga masiva de documentos</div>
+      <span class="app-arrow">↗</span>
+    </a>
+  </div>
+
+  <!-- Fila 3: Acuerdos + Recaudo -->
+  <div class="grid-2x2" style="animation-delay: 0.32s; margin-bottom: 26px;">
+    <a href="acuerdos.html" class="app-card card-green">
+      <div class="card-glow"></div>
+      <span class="app-icon">🤝</span>
+      <div class="app-name">Acuerdos de Pago</div>
+      <div class="app-desc">Proyección de cuotas, formulario F-GAF-68 y convenios</div>
+      <span class="app-arrow">↗</span>
+    </a>
+
+    <a href="recaudo.html" class="app-card card-orange">
+      <div class="card-glow"></div>
+      <span class="app-icon">💰</span>
       <div class="app-name">Recaudo Histórico</div>
       <div class="app-desc">Depósitos judiciales, aplicaciones y devoluciones</div>
       <span class="app-arrow">↗</span>
     </a>
   </div>
 
+  <!-- ══════════════════════════════
+       GESTIÓN DOCUMENTAL Y JURÍDICA
+  ══════════════════════════════ -->
+  <div class="section-label" style="animation: fadeUp 0.75s 0.36s ease both;">
+    <span class="section-label-icon">🗂️</span>
+    Gestión Documental y Jurídica
+  </div>
+
+  <div class="grid-3x1" style="margin-bottom: 26px;">
+    <a href="seguimiento.html" class="app-card card-green">
+      <div class="card-glow"></div>
+      <span class="app-icon">📋</span>
+      <div class="app-name">Seguimiento de Procesos</div>
+      <div class="app-desc">Estadísticas de expedientes y cobro coactivo</div>
+      <span class="app-arrow">↗</span>
+    </a>
+
+    <a href="pqr.html" class="app-card card-purple">
+      <div class="card-glow"></div>
+      <span class="app-icon">📬</span>
+      <div class="app-name">Gestión PQR</div>
+      <div class="app-desc">Peticiones, Quejas y Reclamos ciudadanos</div>
+      <span class="app-badge badge-new">✨ Nuevo</span>
+      <span class="app-arrow">↗</span>
+    </a>
+
+    <!-- Placeholder futuro -->
+    <a href="#" class="app-card" style="opacity:0.45; cursor:default; pointer-events:none;">
+      <div class="card-glow"></div>
+      <span class="app-icon">🔒</span>
+      <div class="app-name">Próximamente</div>
+      <div class="app-desc">Nuevo módulo en desarrollo</div>
+    </a>
+  </div>
+
+  <!-- ── STATS ── -->
   <div class="stats-row">
     <div class="stat">
-      <div class="stat-num">v2.2</div>
+      <div class="stat-num">v2.3</div>
       <div class="stat-label">Versión</div>
     </div>
-    <div class="stat-sep"></div>
     <div class="stat">
-      <div class="stat-num">7</div>
+      <div class="stat-num">8</div>
       <div class="stat-label">Módulos</div>
     </div>
-    <div class="stat-sep"></div>
     <div class="stat">
       <div class="stat-num" id="stat-fecha">—</div>
       <div class="stat-label">Hoy</div>
     </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-hora">—</div>
+      <div class="stat-label">Hora</div>
+    </div>
   </div>
-</div>
+
+</div><!-- /wrap -->
 
 <footer>
   <strong>Dirección Administrativa de Ejecuciones Fiscales</strong><br>
@@ -330,23 +695,97 @@ footer strong { color: rgba(255,255,255,0.7); }
 </footer>
 
 <script>
-function getSaludo() {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 12) return '☀️ Buenos días';
-  if (h >= 12 && h < 18) return '🌤️ Buenas tardes';
-  return '🌙 Buenas noches';
-}
-function getNombre() {
+// ── SALUDO TEODORO — typewriter ──
+(function() {
+  var h = new Date().getHours();
+  var emoji   = h >= 5 && h < 12 ? '☀️' : h >= 12 && h < 18 ? '🌤️' : '🌙';
+  var saludo  = h >= 5 && h < 12 ? 'Buenos días' : h >= 12 && h < 18 ? 'Buenas tardes' : 'Buenas noches';
+
+  var frases = [
+    '· Teodoro te saluda',
+    '· Teodoro a tu servicio',
+    '· Teodoro listo para trabajar'
+  ];
+  var frase = frases[Math.floor(Math.random() * frases.length)];
+
+  // nombre desde sesión si existe
+  var nombre = null;
   try {
-    const sess = JSON.parse(localStorage.getItem('oficios_session') || 'null')
-              || JSON.parse(localStorage.getItem('buscador_session') || 'null');
-    if (sess && sess.expira > Date.now() && sess.nombre) return sess.nombre.split(' ')[0];
+    var sess = JSON.parse(localStorage.getItem('oficios_session') || 'null')
+            || JSON.parse(localStorage.getItem('buscador_session') || 'null');
+    if (sess && sess.expira > Date.now() && sess.nombre) nombre = sess.nombre.split(' ')[0];
   } catch(e) {}
-  return null;
+
+  var textoBase = saludo + (nombre ? ', ' + nombre : '');
+  var textoCompleto = textoBase + ' ' + frase;
+
+  var emojiEl = document.getElementById('saludo-emoji');
+  var textEl  = document.getElementById('saludo-text');
+
+  if (!emojiEl || !textEl) return; // seguridad
+  emojiEl.textContent = emoji;
+
+  var i = 0;
+  function typeWriter() {
+    if (i <= textoCompleto.length) {
+      textEl.textContent = textoCompleto.slice(0, i);
+      i++;
+      var delay = i > textoBase.length + 1 ? 55 : 32;
+      setTimeout(typeWriter, delay);
+    } else {
+      setTimeout(function() { textEl.classList.remove('typing'); }, 2000);
+    }
+  }
+  setTimeout(typeWriter, 900);
+})();
+
+// ── FECHA Y HORA ──
+function actualizarFechaHora() {
+  var now = new Date();
+  var fEl = document.getElementById('stat-fecha');
+  var hEl = document.getElementById('stat-hora');
+  if (fEl) fEl.textContent = now.toLocaleDateString('es-CO', { day:'2-digit', month:'short' });
+  if (hEl) hEl.textContent = now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
 }
-const nombre = getNombre();
-document.getElementById('saludo').textContent = nombre ? `${getSaludo()}, ${nombre}` : getSaludo();
-document.getElementById('stat-fecha').textContent = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+actualizarFechaHora();
+setInterval(actualizarFechaHora, 30000);
+
+// ── ROBOT CLICK — sacudir ──
+(function() {
+  var robot = document.getElementById('teodoro-robot');
+  if (!robot) return;
+  var frases = [
+    '🤖 ¡Beep boop! A trabajar.',
+    '⚡ Procesando solicitud...',
+    '🔧 Teodoro operativo al 100%',
+    '📂 Cargando expedientes...',
+    '💡 Sistema listo, jefe.',
+    '🏛️ ¡Que viva Bello!'
+  ];
+  robot.addEventListener('click', function() {
+    robot.classList.remove('shake');
+    void robot.offsetWidth; // reflow para reiniciar
+    robot.classList.add('shake');
+    var pill = document.getElementById('saludo-text');
+    if (pill) {
+      var orig = pill.textContent;
+      var f = frases[Math.floor(Math.random() * frases.length)];
+      pill.textContent = f;
+      setTimeout(function() { pill.textContent = orig; }, 2200);
+    }
+  });
+})();
+
+// ── ANIMACIÓN ESCALONADA DE CARDS ──
+var grids = document.querySelectorAll('.grid-2x2, .grid-3x1');
+grids.forEach(function(grid, gi) {
+  grid.querySelectorAll('.app-card').forEach(function(card, ci) {
+    card.style.animationDelay    = (0.20 + gi * 0.08 + ci * 0.04) + 's';
+    card.style.animationName     = 'fadeUp';
+    card.style.animationDuration = '0.6s';
+    card.style.animationFillMode = 'both';
+  });
+});
 </script>
 </body>
 </html>
