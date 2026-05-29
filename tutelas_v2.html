@@ -694,7 +694,18 @@ function abrirModal(da, origen){
     const val=r[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
   });
   document.getElementById("m-esel").value=r["ESTADO"]||"Nuevo";
-  document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
+  // FIX ENCARGADO: guardar valor original en data-attr por si el select no lo encuentra
+  const selEnc = document.getElementById("m-pqrenc-sel");
+  selEnc.value = r["ENCARGADO PQR"]||"";
+  // Si el valor no matcheó ninguna opción (queda vacío pero había valor), añadir opción dinámica
+  if(r["ENCARGADO PQR"] && selEnc.value === ""){
+    const opt = document.createElement("option");
+    opt.value = r["ENCARGADO PQR"];
+    opt.textContent = r["ENCARGADO PQR"];
+    selEnc.appendChild(opt);
+    selEnc.value = r["ENCARGADO PQR"];
+  }
+  selEnc.dataset.original = r["ENCARGADO PQR"]||"";
   // Adaptar etiquetas y visibilidad según tipo
   const esFallo = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"].includes(r["TIPO"]);
   const esInc   = incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
@@ -732,7 +743,9 @@ async function guardarEstado(){
   const nuevoEst   = document.getElementById("m-esel").value;
   const respPQR    = document.getElementById("m-resp-pqr").value;
   const respRad    = document.getElementById("m-resp-rad").value;
-  const encPQR     = document.getElementById("m-pqrenc-sel").value;
+  const selEncEl   = document.getElementById("m-pqrenc-sel");
+  // FIX ENCARGADO: si select quedó en "" pero había valor original, preservarlo
+  const encPQR     = selEncEl.value || selEncEl.dataset.original || actual["ENCARGADO PQR"] || "";
   if(!confirm(`¿Confirmar guardar cambios para ${actual["ACCIONANTE"]||"este registro"}?`))return;
   const esInc      = origenModal === "incidente";
   const esFallo    = origenModal === "fallo";
@@ -760,10 +773,13 @@ async function guardarEstado(){
   }
 
   // FIX 2: try/catch único y limpio — sin Content-Type forzado (Apps Script lo maneja bien)
+  // FIX ENCARGADO: solo enviar encargadoPQR si el usuario eligió uno,
+  // o si ya había uno guardado (para no borrar con string vacío)
+  const encPQRFinal = encPQR || actual["ENCARGADO PQR"] || "";
   const payload = JSON.stringify({
     accion:"actualizarCampos",
     radicado:actual["RADICADO"],
-    campos:{ estado:nuevoEst, respuestaPQR:respPQR, respuestaRadicado:respRad, encargadoPQR:encPQR },
+    campos:{ estado:nuevoEst, respuestaPQR:respPQR, respuestaRadicado:respRad, encargadoPQR:encPQRFinal },
     tipo:tipoEnvio
   });
 
