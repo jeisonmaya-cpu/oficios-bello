@@ -759,7 +759,15 @@ function pp(d){
   if(pinActual.length >= 4) return;
   pinActual += d;
   actualizarDots();
-  if(pinActual.length === 4) setTimeout(verificarPin, 180);
+  if(pinActual.length === 4){
+    setBtnsPin(true);
+    var pinCapturado = pinActual;
+    setTimeout(function(){
+      _sha256(pinCapturado).then(function(hash){
+        _verificarConHash(hash, pinCapturado);
+      });
+    }, 180);
+  }
 }
 function borrarPin(){ pinActual = pinActual.slice(0,-1); actualizarDots(); }
 function limpiarPin(){ pinActual = ''; actualizarDots(); }
@@ -818,14 +826,8 @@ function conectarPinHidden(){
   });
 }
 
-function verificarPin(){
-  // Hash el PIN con SHA-256 antes de comparar — nunca comparamos texto plano
-  _sha256(pinActual).then(function(hash){
-    _verificarConHash(hash);
-  });
-}
-
-function _verificarConHash(hash){
+function _verificarConHash(hash, pinCapturado){
+  if(!pinCapturado) pinCapturado = pinActual;
   var usuario = USUARIOS.find(function(u){ return u.h === hash; });
 
   if(usuario){
@@ -850,6 +852,7 @@ function _verificarConHash(hash){
       bubble.style.background = 'rgba(34,197,94,.1)';
     }
 
+    setBtnsPin(false);
     setTimeout(function(){
       document.getElementById('pinOverlay').style.display = 'none';
       aplicarSesion(sess);
@@ -881,7 +884,7 @@ function _verificarConHash(hash){
         bubble.style.color = '#fca5a5';
         bubble.style.background = 'rgba(239,68,68,.1)';
       }
-      setTimeout(function(){ pinActual=''; actualizarDots(); }, 1000);
+      setTimeout(function(){ pinActual=''; actualizarDots(); setBtnsPin(false); }, 900);
     }
   }
 } // _verificarConHash
