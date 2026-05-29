@@ -2219,49 +2219,46 @@ function limpiarHistorial(){
 }
 
 // ════════════════════════════════════════
-// EXPORTAR PLANILLA (CSV descargable)
+// EXPORTAR PLANILLA
 // ════════════════════════════════════════
 function exportarPlanilla(){
-  // Combinar cola + registro para exportar todo
   const todos = [...colaCache, ...cache];
   if(!todos.length){ alert('No hay datos para exportar.'); return; }
 
   const cols = [
-    'ID','Fecha','Hora','Estado','Tipo Oficio','N° Oficio',
-    'Fecha Oficio','Contribuyente','Cédula/NIT','Concepto',
-    'Radicado','Fecha Auto','Motivo','Proyectó','Funcionario',
-    'Equipo','Observación'
+    'ID','Fecha','Hora','Estado','Tipo Oficio','N\u00b0 Oficio',
+    'Fecha Oficio','Contribuyente','C\u00e9dula/NIT','Concepto',
+    'Radicado','Fecha Auto','Motivo','Proyecto\u0301','Funcionario',
+    'Equipo','Observaci\u00f3n'
   ];
 
-  // Cabecera BOM para que Excel abra bien el UTF-8
-  let csv = '﻿' + cols.join(';') + '
-';
+  var BOM = '\uFEFF';
+  var CRLF = '\r\n';
+  var SEP = ';';
 
-  // Deduplicar por ID
-  const vistos = new Set();
-  todos.forEach(r => {
-    const id = r['ID']||r.id||'';
+  var lines = [BOM + cols.join(SEP)];
+
+  var vistos = new Set();
+  todos.forEach(function(r){
+    var id = r['ID']||r.id||'';
     if(id && vistos.has(id)) return;
     if(id) vistos.add(id);
-    const fila = cols.map(col => {
-      let val = r[col] || r[col.toLowerCase()] || '';
-      // Escapar comillas y comas
-      val = String(val).replace(/"/g,'""');
-      if(val.includes(';')||val.includes('"')||val.includes('
-'))
-        val = '"'+val+'"';
+    var fila = cols.map(function(col){
+      var val = String(r[col] || '').replace(/"/g, '""');
+      if(val.indexOf(SEP)!==-1 || val.indexOf('"')!==-1 || val.indexOf('\n')!==-1)
+        val = '"' + val + '"';
       return val;
     });
-    csv += fila.join(';') + '
-';
+    lines.push(fila.join(SEP));
   });
 
-  const fecha = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
+  var csv = lines.join(CRLF);
+  var fecha = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
   a.href = url;
-  a.download = `Planilla_Desembargos_${fecha}.csv`;
+  a.download = 'Planilla_Desembargos_' + fecha + '.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
