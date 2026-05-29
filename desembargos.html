@@ -511,6 +511,36 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
 .modal p  { font-size:13px; color:var(--soft); line-height:1.6; margin-bottom:20px; }
 .modal-row { display:flex; gap:10px; }
 
+/* ── COLA ESTADOS ── */
+.estado-pend {
+  display:inline-block; font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:5px;
+  background:rgba(239,68,68,.18); color:#fca5a5; border:1px solid rgba(239,68,68,.28);
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.estado-imp {
+  display:inline-block; font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:5px;
+  background:rgba(34,197,94,.15); color:#86efac; border:1px solid rgba(34,197,94,.25);
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.edad-badge {
+  display:inline-block; font-size:9px; font-weight:700; padding:1px 6px; border-radius:4px;
+  margin-top:3px;
+}
+.edad-ok   { background:rgba(34,197,94,.15);  color:#86efac; }
+.edad-warn { background:rgba(245,192,80,.18); color:var(--gold2); }
+.edad-old  { background:rgba(239,68,68,.18);  color:#fca5a5; }
+
+/* Historial grupos */
+.hist-grupo { margin-bottom:14px; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.hist-grupo-head {
+  background:rgba(26,111,196,.25); padding:10px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.hist-grupo-name { font-weight:700; font-size:13px; }
+.hist-grupo-count { font-size:11px; color:var(--soft); }
+.hist-row { display:flex; gap:0; border-top:1px solid rgba(255,255,255,.05); }
+.hist-cell { padding:8px 12px; font-size:12px; }
+
 /* ── ANIMATIONS ── */
 @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
@@ -624,6 +654,8 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
   </a>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="goPanel('form')">📝 Generar</button>
+    <button class="nav-tab" onclick="goPanel('cola')">🖨️ Cola <span class="nav-badge" id="badgeCola">0</span></button>
+    <button class="nav-tab" onclick="goPanel('historial')">🔍 Historial</button>
     <button class="nav-tab" onclick="goPanel('registro')">📋 Registro <span class="nav-badge" id="badgeCnt">…</span></button>
     <button class="nav-tab" onclick="goPanel('dashboard')">📊 Dashboard</button>
     <button class="nav-tab" onclick="goPanel('config')">⚙️ Config</button>
@@ -666,8 +698,8 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
         <button class="tipo-btn" data-tipo="Desembargo Tránsito" onclick="selTipo(this)">
           <span>🚗</span>Desembargo Tránsito
         </button>
-        <button class="tipo-btn" data-tipo="Desembargo Salario" onclick="selTipo(this)">
-          <span>💼</span>Desembargo Salario
+        <button class="tipo-btn" data-tipo="Desembargo VUR" onclick="selTipo(this)">
+          <span>🏠</span>Desembargo VUR
         </button>
         <button class="tipo-btn" data-tipo="Embargo Banco" onclick="selTipo(this)">
           <span>🔒</span>Embargo Bancario
@@ -813,6 +845,7 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
   <!-- Botones -->
   <div class="btn-row">
     <button class="btn btn-gold" id="btnGen" onclick="generarDesdeForm()">⬇️ Generar y descargar Word</button>
+    <button class="btn btn-primary" id="btnEncolar" onclick="encolarDesdeForm()">🖨️ Enviar a cola</button>
     <button class="btn btn-ghost" onclick="limpiarForm()">🗑️ Limpiar</button>
   </div>
 </div><!-- /panel-form -->
@@ -922,6 +955,105 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
     </div>
   </div>
 </div><!-- /panel-config -->
+
+<!-- ══════════ PANEL COLA ══════════ -->
+<div class="panel" id="panel-cola">
+  <div class="page-hdr">
+    <div class="page-hdr-eyebrow">🖨️ Impresión</div>
+    <h2>Cola de <em style="font-style:italic;color:var(--gold2)">Impresión</em></h2>
+    <p>Oficios pendientes y procesados — visible para todo el equipo en tiempo real</p>
+  </div>
+
+  <!-- Stats cola -->
+  <div class="stats-strip" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-tile">
+      <div class="stat-tile-label">⏳ Pendientes</div>
+      <div class="stat-tile-val" id="colaPendCount" style="color:#fca5a5">0</div>
+      <div class="stat-tile-sub">Por generar</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-label">✅ Impresos</div>
+      <div class="stat-tile-val" id="colaImpCount" style="color:#86efac">0</div>
+      <div class="stat-tile-sub">Ya generados</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-label">📋 Total</div>
+      <div class="stat-tile-val" id="colaTotalCount">0</div>
+      <div class="stat-tile-sub">En cola</div>
+    </div>
+  </div>
+
+  <div class="gcard">
+    <div class="gcard-head">
+      <span class="gcard-title">🎛️ Controles</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="cargarCola()">🔄 Actualizar</button>
+        <button class="btn btn-primary btn-sm" id="btnImprimirSel" onclick="imprimirSeleccionados()" disabled>
+          ⬇️ Generar seleccionados (<span id="cntSel">0</span>)
+        </button>
+      </div>
+    </div>
+    <div class="gcard-body" style="padding-bottom:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <input id="colaTxt" placeholder="Buscar por nombre, cédula, radicado…" oninput="renderCola()" style="flex:1;max-width:280px">
+        <select id="colaFiltro" onchange="renderCola()" style="width:auto;min-width:150px">
+          <option value="PENDIENTE">⏳ Solo pendientes</option>
+          <option value="TODOS">📋 Todos</option>
+          <option value="IMPRESO">✅ Ya impresos</option>
+        </select>
+        <button class="btn-xs" onclick="seleccionarTodosCola(true)">☑ Todos</button>
+        <button class="btn-xs" onclick="seleccionarTodosCola(false)">☐ Ninguno</button>
+      </div>
+      <div style="font-size:11px;color:var(--soft);margin-bottom:10px" id="colaInfo"></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:38px">
+            <input type="checkbox" id="chkTodos" onchange="seleccionarTodosCola(this.checked)"
+              style="width:14px;height:14px;accent-color:var(--blue2)">
+          </th>
+          <th>Fecha / Hora</th>
+          <th>Funcionario</th>
+          <th>Estado</th>
+          <th>Tipo</th>
+          <th>N° Oficio</th>
+          <th>Contribuyente</th>
+          <th>Concepto</th>
+          <th>Observación</th>
+          <th>Acc.</th>
+        </tr></thead>
+        <tbody id="tbCola"></tbody>
+      </table>
+    </div>
+  </div>
+</div><!-- /panel-cola -->
+
+<!-- ══════════ PANEL HISTORIAL ══════════ -->
+<div class="panel" id="panel-historial">
+  <div class="page-hdr">
+    <div class="page-hdr-eyebrow">🔍 Búsqueda</div>
+    <h2>Historial por <em style="font-style:italic;color:var(--gold2)">Contribuyente</em></h2>
+    <p>Busque todos los oficios generados para una persona o cédula</p>
+  </div>
+
+  <div class="gcard">
+    <div class="gcard-head">
+      <span class="gcard-title">👤 Buscar contribuyente</span>
+    </div>
+    <div class="gcard-body">
+      <div style="display:flex;gap:9px;margin-bottom:14px">
+        <input id="h_buscar" placeholder="Nombre completo o cédula / NIT…"
+          oninput="buscarHistorial(this.value)" style="flex:1">
+        <button class="btn btn-ghost btn-sm" onclick="limpiarHistorial()">✕ Limpiar</button>
+      </div>
+      <div id="h_resultado" style="font-size:13px;color:var(--soft);text-align:center;padding:28px">
+        Escriba al menos 3 caracteres para buscar.
+      </div>
+    </div>
+  </div>
+</div><!-- /panel-historial -->
 
 </div><!-- /wrap -->
 
@@ -1059,10 +1191,11 @@ function goPanel(n){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('panel-'+n).classList.add('active');
-  const idx={form:0,registro:1,dashboard:2,config:3}[n];
+  const idx={form:0,cola:1,historial:2,registro:3,dashboard:4,config:5}[n];
   if(idx!==undefined) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
-  if(n==='registro')  { cargarRemoto(); }
+  if(n==='registro')  cargarRemoto();
   if(n==='dashboard') renderDash();
+  if(n==='cola')      cargarCola();
 }
 
 // ════════════════════════════════════════
@@ -1603,6 +1736,354 @@ async function probarConexion(){
   const ok=await ping(cfg.apiUrl);
   if(ok)showAlert('c_alert','s','✅ Conexión exitosa con Google Sheets');
   else showAlert('c_alert','e','❌ No se pudo conectar. Verifique la URL.');
+}
+
+// ════════════════════════════════════════
+// COLA DE IMPRESIÓN
+// ════════════════════════════════════════
+let colaCache = [];
+
+function limpiarItem(r){
+  return {
+    'ID':          r['ID']||r.id||'',
+    'Fecha':       r['Fecha']||'',
+    'Hora':        r['Hora']||'',
+    'Funcionario': r['Funcionario']||'',
+    'Estado':      r['Estado']||'PENDIENTE',
+    'Tipo Oficio': r['Tipo Oficio']||r.tipoOficio||'',
+    'N° Oficio':   r['N° Oficio']||r.numOficio||'',
+    'Fecha Oficio':r['Fecha Oficio']||r.fechaOficio||'',
+    'Contribuyente':r['Contribuyente']||r.nombre||'',
+    'Cédula/NIT':  r['Cédula/NIT']||r.cedula||'',
+    'Concepto':    r['Concepto']||r.concepto||'',
+    'Radicado':    r['Radicado']||r.radicado||'',
+    'Fecha Auto':  r['Fecha Auto']||r.fechaAuto||'',
+    'Motivo':      r['Motivo']||r.motivo||'',
+    'Proyectó':    r['Proyectó']||r.proyNombre||'',
+    'Observación': r['Observación']||r.obs||'',
+    _datos:        r._datos||null,
+  };
+}
+
+function calcEdad(fecha, hora) {
+  if(!fecha) return null;
+  try {
+    const [d,m,y] = (fecha||'').split('/');
+    const base = new Date(`${y}-${m}-${d}T${hora||'00:00'}:00`);
+    const diff = (Date.now() - base.getTime()) / 60000; // minutos
+    if(diff < 60)   return {txt: Math.round(diff)+'m',  cls:'edad-ok'};
+    if(diff < 1440) return {txt: Math.round(diff/60)+'h', cls:'edad-warn'};
+    return {txt: Math.round(diff/1440)+'d', cls:'edad-old'};
+  } catch(e){ return null; }
+}
+
+async function encolarDesdeForm(){
+  const ok = await cargarPlantilla();
+  if(!ok) return;
+  const d = getDatos();
+  const bancosEncolar = getBancosSeleccionados();
+  const req=[['numOficio','N° Oficio'],['nombre','Nombre'],['cedula','Cédula'],
+             ['concepto','Concepto'],['fechaAuto','Fecha del auto']];
+  for(const[k,l] of req){
+    if(!d[k]){showAlert('f_alert','e',`"${l}" es obligatorio.`);return;}
+  }
+  if(!getMotivoReal()){showAlert('f_alert','e','Seleccione o escriba el motivo.');return;}
+  if(!bancosEncolar&&!d.radicado){showAlert('f_alert','e','"Radicado" es obligatorio.');return;}
+  if(bancosEncolar&&!bancosEncolar.length){showAlert('f_alert','e','Seleccione al menos un banco.');return;}
+
+  const btn=document.getElementById('btnEncolar');
+  btn.disabled=true; btn.textContent='⏳ Enviando…';
+
+  const radicadoEncolar=bancosEncolar
+    ?bancosEncolar.map(b=>b.banco+':'+b.radicado).join(' | ')
+    :d.radicado;
+
+  const payload={
+    accion:'encolar', tipoOficio:d.tipoOficio, numOficio:d.numOficio,
+    fechaOficio:d.fecha, nombre:d.nombre, cedula:d.cedula,
+    concepto:d.concepto, radicado:radicadoEncolar, fechaAuto:d.fechaAuto,
+    motivo:d.motivo, proyNombre:d.proyNombre, funcionario:d.funcionario,
+    equipo:d.equipo, observacion:d.obs||'',
+  };
+
+  await apiPost(payload);
+
+  // Guardar en cola local
+  const localCola=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+  localCola.unshift({
+    id:'CL-'+Date.now(), 'ID':'CL-'+Date.now(),
+    'Fecha':new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    'Hora':new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}),
+    'Funcionario':d.funcionario||'', 'Estado':'PENDIENTE',
+    'Tipo Oficio':d.tipoOficio||'', 'N° Oficio':d.numOficio||'',
+    'Fecha Oficio':d.fecha||'', 'Contribuyente':d.nombre||'',
+    'Cédula/NIT':d.cedula||'', 'Concepto':d.concepto||'',
+    'Radicado':radicadoEncolar||'', 'Fecha Auto':d.fechaAuto||'',
+    'Motivo':d.motivo||'', 'Proyectó':d.proyNombre||'',
+    'Observación':d.obs||'', _datos:d,
+    _bancos:bancosEncolar||null,
+  });
+  localStorage.setItem('cola_local_desem',JSON.stringify(localCola.slice(0,300)));
+  actualizarBadgeCola();
+
+  showAlert('f_alert','s','✅ Enviado a la cola de impresión 🖨️');
+  btn.disabled=false; btn.innerHTML='🖨️ Enviar a cola';
+  limpiarForm();
+}
+
+async function cargarCola(){
+  const local=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+  colaCache=local.map(limpiarItem);
+  actualizarBadgeCola();
+  renderCola();
+
+  if(!cfg.apiUrl) return;
+  const url=cfg.apiUrl+'?accion=cola&t='+Date.now();
+  fetch(url).then(r=>r.json()).then(res=>{
+    if(res&&res.ok&&res.items){
+      const localArr=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+      const localIds=new Set(localArr.map(x=>x.id||x['ID']).filter(Boolean));
+      res.items.forEach(si=>{
+        const sid=si.ID||si.id||'';
+        if(!sid) return;
+        if(!localIds.has(sid)){
+          localArr.unshift({id:sid,'ID':sid,...si});
+          localIds.add(sid);
+        } else {
+          const li=localArr.findIndex(x=>(x.id||x['ID'])===sid);
+          if(li>-1) localArr[li]['Estado']=si['Estado']||localArr[li]['Estado'];
+        }
+      });
+      localStorage.setItem('cola_local_desem',JSON.stringify(localArr));
+      colaCache=localArr.map(limpiarItem);
+      actualizarBadgeCola();
+      renderCola();
+    }
+  }).catch(()=>{});
+}
+
+function actualizarBadgeCola(){
+  const pend=colaCache.filter(r=>(r['Estado']||'').toUpperCase()==='PENDIENTE').length;
+  const el=document.getElementById('badgeCola');
+  if(el) el.textContent=pend||'0';
+  const pc=document.getElementById('colaPendCount');
+  const ic=document.getElementById('colaImpCount');
+  const tc=document.getElementById('colaTotalCount');
+  if(pc) pc.textContent=pend;
+  if(ic) ic.textContent=colaCache.filter(r=>(r['Estado']||'').toUpperCase()==='IMPRESO').length;
+  if(tc) tc.textContent=colaCache.length;
+}
+
+function renderCola(){
+  const filtro=document.getElementById('colaFiltro')?document.getElementById('colaFiltro').value:'PENDIENTE';
+  const busq=(document.getElementById('colaTxt')?document.getElementById('colaTxt').value:'').toLowerCase();
+  let items=[...colaCache];
+  if(filtro==='PENDIENTE') items=items.filter(r=>(r['Estado']||'').toUpperCase()==='PENDIENTE');
+  if(filtro==='IMPRESO')   items=items.filter(r=>(r['Estado']||'').toUpperCase()==='IMPRESO');
+  if(busq) items=items.filter(r=>
+    (r['Contribuyente']||'').toLowerCase().includes(busq)||
+    (r['Cédula/NIT']||'').toLowerCase().includes(busq)||
+    (r['Radicado']||'').toLowerCase().includes(busq)||
+    (r['N° Oficio']||'').toLowerCase().includes(busq)||
+    (r['Funcionario']||'').toLowerCase().includes(busq)
+  );
+  const pendTotal=colaCache.filter(r=>(r['Estado']||'').toUpperCase()==='PENDIENTE').length;
+  const infoEl=document.getElementById('colaInfo');
+  if(infoEl) infoEl.textContent=`${pendTotal} pendiente(s) de ${colaCache.length} total — mostrando ${items.length}`;
+
+  const tbody=document.getElementById('tbCola');
+  if(!items.length){
+    tbody.innerHTML=`<tr><td colspan="10" class="tbl-empty">${filtro==='PENDIENTE'?'✅ No hay oficios pendientes en cola':'📂 Sin registros'}</td></tr>`;
+    actualizarConteoSel();
+    return;
+  }
+  tbody.innerHTML=items.map(r=>{
+    const id=r['ID']||r.id||'';
+    const esPend=(r['Estado']||'').toUpperCase()==='PENDIENTE';
+    const estadoTag=esPend
+      ?'<span class="estado-pend">⏳ Pendiente</span>'
+      :'<span class="estado-imp">✅ Impreso</span>';
+    const edad=calcEdad(r['Fecha'],r['Hora']);
+    const edadHtml=edad?`<br><span class="edad-badge ${edad.cls}">${edad.txt}</span>`:'';
+    const tipo=r['Tipo Oficio']||'';
+    const tagClass=tipo.startsWith('Desembargo')?'tag-desembargo':tipo.startsWith('Embargo')?'tag-embargo':'tag-otro';
+    return `<tr>
+      <td><input type="checkbox" class="chk-cola" data-id="${id}" ${esPend?'':'disabled'}
+        style="width:14px;height:14px;accent-color:var(--blue2)" onchange="actualizarConteoSel()"></td>
+      <td style="font-size:10.5px;color:var(--soft)">${r['Fecha']||''} ${r['Hora']||''}${edadHtml}</td>
+      <td style="font-size:11.5px">${r['Funcionario']||'—'}</td>
+      <td>${estadoTag}</td>
+      <td><span class="tipo-tag ${tagClass}">${tipo}</span></td>
+      <td class="mono">${r['N° Oficio']||'—'}</td>
+      <td style="font-weight:600;font-size:12px">${r['Contribuyente']||'—'}</td>
+      <td style="font-size:11px;color:var(--soft)">${r['Concepto']||'—'}</td>
+      <td style="font-size:11px;color:var(--gold2);font-style:italic">${r['Observación']||'—'}</td>
+      <td style="display:flex;gap:3px;align-items:center">
+        ${esPend?`<button class="bi" onclick="imprimirUno('${id}')" title="Generar Word">⬇️</button>`:''}
+        <button class="bi del" onclick="eliminarCola('${id}')" title="Eliminar">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+  actualizarConteoSel();
+}
+
+function actualizarConteoSel(){
+  const sel=document.querySelectorAll('.chk-cola:checked').length;
+  const el=document.getElementById('cntSel');
+  if(el) el.textContent=sel;
+  const btn=document.getElementById('btnImprimirSel');
+  if(btn) btn.disabled=sel===0;
+}
+function seleccionarTodosCola(estado){
+  document.querySelectorAll('.chk-cola:not(:disabled)').forEach(c=>c.checked=estado);
+  const chk=document.getElementById('chkTodos');
+  if(chk) chk.checked=estado;
+  actualizarConteoSel();
+}
+
+async function imprimirSeleccionados(){
+  const checks=[...document.querySelectorAll('.chk-cola:checked')];
+  if(!checks.length) return;
+  const ok=await cargarPlantilla();
+  if(!ok) return;
+  const btn=document.getElementById('btnImprimirSel');
+  btn.disabled=true;
+  const ids=checks.map(c=>c.dataset.id);
+  let done=0;
+  for(let i=0;i<ids.length;i++){
+    btn.innerHTML=`⏳ Generando ${i+1}/${ids.length}…`;
+    const item=colaCache.find(r=>(r['ID']||r.id)===ids[i]);
+    if(!item) continue;
+    try{ await generarEImprimir(item); done++; }catch(e){console.error(e);}
+    await new Promise(r=>setTimeout(r,280));
+  }
+  await apiPost({accion:'marcar_impreso',ids});
+  const local=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+  ids.forEach(id=>{
+    const idx=local.findIndex(x=>x.id===id||x['ID']===id);
+    if(idx>-1) local[idx]['Estado']='IMPRESO';
+  });
+  localStorage.setItem('cola_local_desem',JSON.stringify(local));
+  await cargarCola();
+  btn.disabled=false;
+  btn.innerHTML=`⬇️ Generar seleccionados (<span id="cntSel">0</span>)`;
+  showAlert('f_alert','s',`✅ ${done} oficio(s) generado(s) y marcados como impresos.`);
+}
+
+async function imprimirUno(id){
+  const ok=await cargarPlantilla();
+  if(!ok) return;
+  const item=colaCache.find(r=>(r['ID']||r.id)===id);
+  if(!item) return;
+  try{
+    await generarEImprimir(item);
+    await apiPost({accion:'marcar_impreso',ids:[id]});
+    const local=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+    const idx=local.findIndex(x=>x.id===id||x['ID']===id);
+    if(idx>-1) local[idx]['Estado']='IMPRESO';
+    localStorage.setItem('cola_local_desem',JSON.stringify(local));
+    await cargarCola();
+  }catch(e){alert('Error: '+e.message);}
+}
+
+async function generarEImprimir(item){
+  const d={
+    tipoOficio: item['Tipo Oficio']||'',
+    numOficio:  item['N° Oficio']||'',
+    fecha:      item['Fecha Oficio']||'',
+    nombre:     item['Contribuyente']||'',
+    cedula:     item['Cédula/NIT']||'',
+    concepto:   item['Concepto']||'',
+    radicado:   item['Radicado']||'',
+    fechaAuto:  item['Fecha Auto']||'',
+    motivo:     item['Motivo']||'',
+    proyNombre: item['Proyectó']||'',
+    proyFecha:  '',
+  };
+  // Detectar multi-banco
+  const bancos=item._bancos||(d.concepto&&CONCEPTOS[d.concepto]
+    ?Object.entries(CONCEPTOS[d.concepto]).map(([banco,radicado])=>({banco,radicado}))
+    :null);
+  let blob;
+  if(bancos&&bancos.length>1) blob=await generarDocxMulti(d,bancos);
+  else blob=await generarDocx(d);
+  const nombre=`Oficio_${(d.nombre||'').split(' ')[0]}_${d.numOficio||'SN'}.docx`.replace(/[^a-zA-Z0-9_.]/g,'_');
+  dlBlob(blob,nombre);
+}
+
+async function eliminarCola(id){
+  if(!confirm('¿Eliminar este item de la cola?')) return;
+  await apiPost({accion:'eliminar_cola',id});
+  const local=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+  localStorage.setItem('cola_local_desem',JSON.stringify(local.filter(x=>x.id!==id&&x['ID']!==id)));
+  await cargarCola();
+}
+
+// ════════════════════════════════════════
+// HISTORIAL POR CONTRIBUYENTE
+// ════════════════════════════════════════
+function buscarHistorial(q){
+  const el=document.getElementById('h_resultado');
+  if(!q||q.length<3){
+    el.innerHTML='<span style="color:var(--soft)">Escriba al menos 3 caracteres para buscar.</span>';
+    return;
+  }
+  const v=q.toLowerCase();
+  const todos=[...cache,...colaCache];
+  const encontrados=todos.filter(r=>{
+    const nom=(r['Contribuyente']||r.nombre||'').toLowerCase();
+    const ced=(r['Cédula/NIT']||r.cedula||'').toLowerCase();
+    return nom.includes(v)||ced.includes(v);
+  });
+  if(!encontrados.length){
+    el.innerHTML=`<div style="text-align:center;padding:28px;color:var(--soft)">📂 Sin registros para "<strong>${q}</strong>"</div>`;
+    return;
+  }
+  // Agrupar por nombre
+  const grupos={};
+  encontrados.forEach(r=>{
+    const key=(r['Contribuyente']||r.nombre||'Sin nombre').toUpperCase();
+    if(!grupos[key]) grupos[key]=[];
+    grupos[key].push(r);
+  });
+  el.innerHTML=Object.entries(grupos).map(([nombre,regs])=>`
+    <div class="hist-grupo">
+      <div class="hist-grupo-head">
+        <span class="hist-grupo-name">👤 ${nombre}</span>
+        <span class="hist-grupo-count">${regs.length} oficio(s)</span>
+      </div>
+      <div class="tbl-wrap" style="border-radius:0;border:none">
+        <table style="min-width:500px">
+          <thead><tr>
+            <th>Fecha</th><th>Tipo</th><th>N°Oficio</th>
+            <th>Concepto</th><th>Radicado</th><th>Motivo</th><th>Funcionario</th>
+          </tr></thead>
+          <tbody>
+            ${regs.map(r=>{
+              const tipo=r['Tipo Oficio']||'';
+              const tagCls=tipo.startsWith('Desembargo')?'tag-desembargo':tipo.startsWith('Embargo')?'tag-embargo':'tag-otro';
+              return`<tr>
+                <td class="mono" style="font-size:11px">${r['Fecha']||r['Fecha Oficio']||'—'}</td>
+                <td><span class="tipo-tag ${tagCls}">${tipo}</span></td>
+                <td class="mono">${r['N° Oficio']||'—'}</td>
+                <td style="font-size:11px;color:var(--soft)">${r['Concepto']||'—'}</td>
+                <td class="mono" style="font-size:11px;color:var(--soft)">${r['Radicado']||'—'}</td>
+                <td style="font-size:11px">${r['Motivo']||'—'}</td>
+                <td style="font-size:11px;color:var(--soft)">${r['Funcionario']||'—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `).join('');
+}
+
+function limpiarHistorial(){
+  const el=document.getElementById('h_buscar');
+  if(el) el.value='';
+  document.getElementById('h_resultado').innerHTML=
+    'Escriba al menos 3 caracteres para buscar.';
 }
 </script>
 </body>
