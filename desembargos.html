@@ -541,6 +541,19 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
 .hist-row { display:flex; gap:0; border-top:1px solid rgba(255,255,255,.05); }
 .hist-cell { padding:8px 12px; font-size:12px; }
 
+/* ── Robot confirmación ── */
+.teo-del-svg { filter:drop-shadow(0 6px 18px rgba(239,68,68,.4)); animation:teoDelFloat 2.5s ease-in-out infinite; }
+@keyframes teoDelFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}
+.td-antenna { animation:tdAnt 1.8s ease-in-out infinite; }
+@keyframes tdAnt{0%,100%{fill:#ef4444;opacity:1}50%{fill:#fff;opacity:.4}}
+.td-led1,.td-led2 { animation:tdLed 0.9s ease-in-out infinite alternate; }
+.td-led2 { animation-delay:.45s; }
+@keyframes tdLed{from{opacity:.9}to{opacity:.2}}
+.td-arm-l { transform-origin:5.5px 47px; animation:tdArmL 2.5s ease-in-out infinite; }
+.td-arm-r { transform-origin:58.5px 47px; animation:tdArmR 2.5s ease-in-out infinite; }
+@keyframes tdArmL{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
+@keyframes tdArmR{0%,100%{transform:rotate(10deg)}50%{transform:rotate(-10deg)}}
+
 /* ── ANIMATIONS ── */
 @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
@@ -988,6 +1001,9 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
       <span class="gcard-title">🎛️ Controles</span>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="cargarCola()">🔄 Actualizar</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportarPlanilla()" title="Descargar todos los registros como Excel/CSV">
+          📥 Exportar planilla
+        </button>
         <button class="btn btn-primary btn-sm" id="btnImprimirSel" onclick="imprimirSeleccionados()" disabled>
           ⬇️ Generar seleccionados (<span id="cntSel">0</span>)
         </button>
@@ -1056,6 +1072,74 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
 </div><!-- /panel-historial -->
 
 </div><!-- /wrap -->
+
+<!-- ═══════════════════════════ MODAL ELIMINAR TEODORO ═══════════════════════════ -->
+<div class="modal-overlay" id="modalEliminar">
+  <div class="modal" style="max-width:400px;text-align:center;padding:32px 28px">
+
+    <!-- Teodoro preguntando -->
+    <div id="teoElimWrap" style="display:flex;justify-content:center;margin-bottom:4px">
+      <div style="position:relative;display:inline-block">
+        <svg class="teo-del-svg" width="64" height="80" viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+          <line x1="32" y1="6" x2="32" y2="14" stroke="#f5c050" stroke-width="2" stroke-linecap="round"/>
+          <circle class="td-antenna" cx="32" cy="4" r="3" fill="#f5c050"/>
+          <rect x="14" y="14" width="36" height="26" rx="7" fill="url(#tdHG)" stroke="rgba(245,192,80,.5)" stroke-width="1.2"/>
+          <!-- Ojos preocupados (inclinados) -->
+          <rect x="20" y="21" width="8" height="7" rx="2" fill="#0a1f3d"/>
+          <rect x="36" y="21" width="8" height="7" rx="2" fill="#0a1f3d"/>
+          <circle cx="24" cy="24.5" r="2.2" fill="#ef4444"/>
+          <circle cx="40" cy="24.5" r="2.2" fill="#ef4444"/>
+          <circle cx="25" cy="23.5" r=".8" fill="white" opacity=".9"/>
+          <circle cx="41" cy="23.5" r=".8" fill="white" opacity=".9"/>
+          <!-- Boca recta (seria) -->
+          <rect x="22" y="33" width="20" height="3" rx="1.5" fill="#0a1f3d"/>
+          <rect x="28" y="40" width="8" height="5" rx="2" fill="rgba(239,68,68,.3)" stroke="rgba(239,68,68,.3)" stroke-width="1"/>
+          <rect x="10" y="45" width="44" height="28" rx="8" fill="url(#tdBG)" stroke="rgba(239,68,68,.4)" stroke-width="1.2"/>
+          <rect x="18" y="51" width="28" height="16" rx="4" fill="rgba(0,0,0,.3)"/>
+          <circle cx="26" cy="59" r="3.5" fill="#ef4444" opacity=".9" class="td-led1"/>
+          <circle cx="36" cy="59" r="3.5" fill="#f5c050" opacity=".9" class="td-led2"/>
+          <rect x="10" y="45" width="44" height="28" rx="8" fill="none" stroke="rgba(239,68,68,.3)" stroke-width="1.2"/>
+          <rect class="td-arm-l" x="1"  y="47" width="9" height="20" rx="4.5" fill="url(#tdAG)" stroke="rgba(239,68,68,.3)" stroke-width="1"/>
+          <rect class="td-arm-r" x="54" y="47" width="9" height="20" rx="4.5" fill="url(#tdAG)" stroke="rgba(239,68,68,.3)" stroke-width="1"/>
+          <circle cx="5.5"  cy="69" r="4" fill="url(#tdAG)"/>
+          <circle cx="58.5" cy="69" r="4" fill="url(#tdAG)"/>
+          <defs>
+            <linearGradient id="tdHG" x1="14" y1="14" x2="50" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#3a1a1a"/><stop offset="100%" stop-color="#2d1010"/>
+            </linearGradient>
+            <linearGradient id="tdBG" x1="10" y1="45" x2="54" y2="73" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#3a1a1a"/><stop offset="100%" stop-color="#1a0a0a"/>
+            </linearGradient>
+            <linearGradient id="tdAG" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stop-color="#5a1a1a"/><stop offset="100%" stop-color="#2d1010"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <!-- Burbuja -->
+        <div style="position:absolute;top:-10px;right:-90px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);border-radius:10px 10px 10px 2px;padding:6px 10px;font-size:11px;font-weight:700;color:#fca5a5;white-space:nowrap">
+          ¿Estás seguro? 🤔
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-family:'DM Serif Display',serif;font-size:19px;font-weight:400;margin:16px 0 6px">
+      Eliminar registro
+    </h3>
+    <p style="font-size:12.5px;color:var(--soft);line-height:1.6;margin-bottom:6px">
+      Teodoro quiere confirmar: ¿seguro que desea eliminar
+      <strong id="delNombre" style="color:var(--text)">este registro</strong>
+      de la cola? Esta acción no se puede deshacer.
+    </p>
+    <div style="margin:20px 0 0;display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-danger" id="btnConfirmarDel" onclick="confirmarEliminar()">
+        🗑️ Sí, eliminar
+      </button>
+      <button class="btn btn-ghost" onclick="cancelarEliminar()">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════ MODAL SIGUIENTE ═══════════════════════════ -->
 <div class="modal-overlay" id="modalSig">
@@ -2011,12 +2095,37 @@ async function generarEImprimir(item){
   dlBlob(blob,nombre);
 }
 
-async function eliminarCola(id){
-  if(!confirm('¿Eliminar este item de la cola?')) return;
-  await apiPost({accion:'eliminar_cola',id});
-  const local=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
-  localStorage.setItem('cola_local_desem',JSON.stringify(local.filter(x=>x.id!==id&&x['ID']!==id)));
+// ── Modal de confirmación Teodoro para eliminar ──
+let _pendingDeleteId = null;
+
+function eliminarCola(id){
+  const item = colaCache.find(r=>(r['ID']||r.id)===id);
+  const nombre = item ? (item['Contribuyente']||'este registro') : 'este registro';
+  document.getElementById('delNombre').textContent = nombre;
+  _pendingDeleteId = id;
+  document.getElementById('modalEliminar').classList.add('open');
+}
+
+async function confirmarEliminar(){
+  const id = _pendingDeleteId;
+  if(!id){ cancelarEliminar(); return; }
+  document.getElementById('btnConfirmarDel').disabled = true;
+  document.getElementById('btnConfirmarDel').textContent = '⏳ Eliminando…';
+  await apiPost({accion:'eliminar_cola', id});
+  const local = JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+  localStorage.setItem('cola_local_desem', JSON.stringify(
+    local.filter(x => x.id !== id && x['ID'] !== id)
+  ));
+  _pendingDeleteId = null;
+  cancelarEliminar();
   await cargarCola();
+}
+
+function cancelarEliminar(){
+  document.getElementById('modalEliminar').classList.remove('open');
+  document.getElementById('btnConfirmarDel').disabled = false;
+  document.getElementById('btnConfirmarDel').innerHTML = '🗑️ Sí, eliminar';
+  _pendingDeleteId = null;
 }
 
 // ════════════════════════════════════════
@@ -2084,6 +2193,56 @@ function limpiarHistorial(){
   if(el) el.value='';
   document.getElementById('h_resultado').innerHTML=
     'Escriba al menos 3 caracteres para buscar.';
+}
+
+// ════════════════════════════════════════
+// EXPORTAR PLANILLA (CSV descargable)
+// ════════════════════════════════════════
+function exportarPlanilla(){
+  // Combinar cola + registro para exportar todo
+  const todos = [...colaCache, ...cache];
+  if(!todos.length){ alert('No hay datos para exportar.'); return; }
+
+  const cols = [
+    'ID','Fecha','Hora','Estado','Tipo Oficio','N° Oficio',
+    'Fecha Oficio','Contribuyente','Cédula/NIT','Concepto',
+    'Radicado','Fecha Auto','Motivo','Proyectó','Funcionario',
+    'Equipo','Observación'
+  ];
+
+  // Cabecera BOM para que Excel abra bien el UTF-8
+  let csv = '﻿' + cols.join(';') + '
+';
+
+  // Deduplicar por ID
+  const vistos = new Set();
+  todos.forEach(r => {
+    const id = r['ID']||r.id||'';
+    if(id && vistos.has(id)) return;
+    if(id) vistos.add(id);
+    const fila = cols.map(col => {
+      let val = r[col] || r[col.toLowerCase()] || '';
+      // Escapar comillas y comas
+      val = String(val).replace(/"/g,'""');
+      if(val.includes(';')||val.includes('"')||val.includes('
+'))
+        val = '"'+val+'"';
+      return val;
+    });
+    csv += fila.join(';') + '
+';
+  });
+
+  const fecha = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `Planilla_Desembargos_${fecha}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 </script>
 </body>
