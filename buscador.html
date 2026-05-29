@@ -596,12 +596,42 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
 // CONSTANTES
 // ════════════════════════════════════════
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznFqHRouEBMbEIRTjUMFlML5h50nlr1iLKgKgSrl3CMo8Dz5Eqoyj-lyQ7cZoGtbtjKw/exec';
-var SESSION_KEY  = 'buscador_session';
-var BLOQUEO_KEY  = 'buscador_bloqueo';
-var POR_PAGINA   = 20;
-var MAX_INTENTOS = 5;
-var BLOQUEO_MIN  = 10;
 
+// Lista de usuarios con PINes hasheados (SHA-256)
+// Nadie puede recuperar el PIN desde estos hashes — son irreversibles
+var USUARIOS_BASE = [
+  {h:'c66f1f34f49381e467d3abd43c77947f5d1dd362fd0eec6c2c1f27233ae9adf9',n:'ANDERSON CORREA',c:'CONTRATISTA',a:false},
+  {h:'efe8564971192c24d29c7aedb7c5230aeaf13dbac7815bb7bd2206bdcc483350',n:'ANDRES BEDOYA',c:'CONTRATISTA',a:false},
+  {h:'5fe46e04994d11413f7a0b17bb2e12cb4ce78b5bd2770a9242dc465a50baa18f',n:'CAMILA PUERTA',c:'CONTRATISTA',a:false},
+  {h:'ddd180a4466685b23ed9fee26d0d9cb5f081608808cceaa9cf74a9ece83a5bf4',n:'CARLOS HURTADO',c:'CONTRATISTA',a:false},
+  {h:'9f2b69296b69933a12d3cfe71182c77b9cc50edb46e4ded9b944ce04f779307b',n:'DANIELA HIGUITA',c:'CONTRATISTA',a:false},
+  {h:'617c14bb6cfaff0ae12cdcfa89bffa353217611d62c53120b8c5473b5acf4581',n:'DARIO PELAEZ',c:'CONTRATISTA',a:false},
+  {h:'d0ea28283d465708b25553535043283e801e26da23030320d6b649f2b3e4e8c6',n:'DAYSE NATHALY RODRIGUEZ',c:'CONTRATISTA',a:false},
+  {h:'285cd61ccbba9294f4a2041555271a8671c1ebf0abd33efb9073b240a7b6b5d0',n:'MARCELA DUQUE',c:'CONTRATISTA',a:false},
+  {h:'aa82088246685c17ebf16d48877686b831ed384ffdc42e76494283c271704d7a',n:'HENRRY TRIANA',c:'CONTRATISTA',a:false},
+  {h:'1a145b425f30663a2d6668b6e836bc1fc0afb675e5b82c19ab86a9df6a980476',n:'ANDREA VALENCIA',c:'CONTRATISTA',a:false},
+  {h:'8f08fb89c225a58e92455fae25d3df22bda90a094bfc8e0240b8a9bd94318159',n:'JEISON MAYA',c:'CONTRATISTA',a:true},
+  {h:'cf23dc33d6aba13592a72190564ed18b2c0dae295f681ee0fddc4862f01225cf',n:'JESUS OSORIO',c:'CONTRATISTA',a:false},
+  {h:'29e2c686a1fab3fa529bacb349d8af3fd7c96ec2b5fafb13f7a4ba82894269c7',n:'JOSE FRANCINETH',c:'CONTRATISTA',a:false},
+  {h:'486ea85278bd246cca4a4de0dd8e08ed0802eed350c73eebd662a4578c281496',n:'JOSE ZAPATA',c:'CONTRATISTA',a:false},
+  {h:'459ef54b95078ec14162ab65a269e9179f14488554e29475504b3b25b2f17cb1',n:'JUAN PABLO VILLA',c:'CONTRATISTA',a:false},
+  {h:'f3cd266d4f44abec08b07d354dbb38879be65f29e631a2ee98f6d8ea24f1e3d0',n:'JULIAN PEREA',c:'CONTRATISTA',a:false},
+  {h:'95fc6cd8aeb992c4169c1f26d4514523b37130b38ce5ca12500e621145be3e15',n:'JULIET DUQUE',c:'CONTRATISTA',a:false},
+  {h:'df3c5a3eab925a314bfab4065c357c33cefff08fe1e4bd9fd470ed94500a37aa',n:'JULIANA',c:'CONTRATISTA',a:false},
+  {h:'2f562908d00ead79657c7b033353ef7422e80f047a94cc3749ebf84b58646a00',n:'LISETH MURILLO',c:'CONTRATISTA',a:false},
+  {h:'509a9edbeff0c385a956b77657466cb7a2d89a6b3e9ed43b5d80996ca2aa6aaf',n:'LUISA MIRA',c:'CONTRATISTA',a:false},
+  {h:'752131c1f2299ffbbffcc84ec0d576915c5eb1a6fc7137feb232a6ab65b25177',n:'VERONICA SUAREZ',c:'CONTRATISTA',a:false},
+  {h:'425ab9e9e0aa2213b4c3e192fa110a9be0a55c21956a474204ea526d294d8bac',n:'WILSON ORTIZ',c:'CONTRATISTA',a:false},
+  {h:'1df7964a1cf8172c953a97b801edca4f80d6c6a74f64fd0164c18c350d6af897',n:'VANESA PEREZ',c:'CONTRATISTA',a:false},
+  {h:'fb7bab9edf08f024aabf3501518399e82ab590666207a8b0ab7963b181ecf4b8',n:'YENIFFER CHAVERRA',c:'CONTRATISTA',a:false},
+  {h:'120e52d7b556d767ec36cded815be09600165124a3913d4586e374056f1d2f9b',n:'YOBAN JIMENEZ',c:'CONTRATISTA',a:false},
+  {h:'2d6ee4442604779303ee01076435c386b24da01010be6fe49d01e4ab196de6ba',n:'JUAN PABLO GOMEZ',c:'DIRECTOR EJECUCIONES FISCALES',a:true},
+  {h:'56280f252f312e642177e33fd389826f6b1ec99220fa41ab669330eb78d78363',n:'CATALINA TAMAYO',c:'PROFESIONAL UNIVERSITARIA',a:false},
+  {h:'b6be463f6999751d74c53b68865247ce565e003583579498f2537892bc13c69a',n:'LEIDY PEREA',c:'PROFESIONAL UNIVERSITARIA',a:false},
+  {h:'2a6a41cdfcbe78c1f94c27f244b17071896f60dc16d5cb3a75708d9cac85c3ff',n:'ANDRES HENAO',c:'AUXILIAR ADMINISTRATIVO',a:false},
+  {h:'4556b34f73d3244386c449798296b3f21c28df98fd7b0da69a691f1dcbd4a261',n:'DEISY LOPEZ',c:'PROFESIONAL UNIVERSITARIA',a:false},
+  {h:'7ffc04e52e2e7c6b67b3713613899289bc2de48f7f7a7b067db6a5d37f9fda3c',n:'DARIO BALDRICH',c:'PROFESIONAL UNIVERSITARIO',a:false}
+];
 // ════════════════════════════════════════
 // ESTADO
 // ════════════════════════════════════════
@@ -677,90 +707,33 @@ function setPinLabel(txt){
 }
 
 function cargarUsuarios(){
-  setBtnsPin(true);
-  setPinLabel('Cargando acceso...');
+  // Carga instantánea desde lista local — sin esperar conexión
+  USUARIOS = USUARIOS_BASE.slice();
+  setBtnsPin(false);
+  setPinLabel('Ingresa tu PIN de 4 dígitos');
+  setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 150);
 
-  var url = APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now();
+  // En paralelo, actualizar desde Sheet (actualiza caché para próximas sesiones)
+  _refrescarUsuariosSheet();
+}
 
-  // Intento 1: fetch normal (funciona cuando el script tiene CORS headers)
-  fetch(url)
+function _refrescarUsuariosSheet(){
+  fetch(APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now())
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if(data.error) throw new Error(data.error);
-      if(!data.usuarios || !data.usuarios.length) throw new Error('Sin usuarios');
-      USUARIOS = data.usuarios;
-      localStorage.setItem('usuarios_cache', JSON.stringify({datos:USUARIOS, ts:Date.now()}));
-      setPinLabel('Ingresa tu PIN de 4 dígitos');
-      setBtnsPin(false);
-      setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
-    })
-    .catch(function(){
-      // Intento 2: fetch no-cors no devuelve body, así que usamos un script tag (JSONP-style)
-      cargarUsuariosJSONP();
-    });
-}
-
-function cargarUsuariosJSONP(){
-  // Crea un script tag que carga la URL — Apps Script responde JSON puro
-  // El iframe lee la respuesta si CORS lo permite; si no, cae al caché
-  var url = APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now();
-
-  // Intentar con un iframe invisible que puede leer la respuesta
-  var iframe = document.createElement('iframe');
-  iframe.style.display = 'none';
-  document.body.appendChild(iframe);
-
-  var timeout = setTimeout(function(){
-    document.body.removeChild(iframe);
-    usarCacheUsuarios();
-  }, 5000);
-
-  iframe.onload = function(){
-    try {
-      var txt = iframe.contentDocument.body.innerText || iframe.contentWindow.document.body.innerText;
-      var data = JSON.parse(txt);
-      clearTimeout(timeout);
-      document.body.removeChild(iframe);
       if(data.usuarios && data.usuarios.length){
-        USUARIOS = data.usuarios;
-        localStorage.setItem('usuarios_cache', JSON.stringify({datos:USUARIOS, ts:Date.now()}));
-        setPinLabel('Ingresa tu PIN de 4 dígitos');
-        setBtnsPin(false);
-        setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
-        return;
+        return _normalizarUsuariosSheet(data.usuarios);
       }
-    } catch(e){}
-    clearTimeout(timeout);
-    document.body.removeChild(iframe);
-    usarCacheUsuarios();
-  };
-
-  iframe.onerror = function(){
-    clearTimeout(timeout);
-    document.body.removeChild(iframe);
-    usarCacheUsuarios();
-  };
-
-  iframe.src = url;
+    })
+    .then(function(hasheados){
+      if(hasheados && hasheados.length){
+        USUARIOS = hasheados;
+        // No guardamos en caché — los hashes ya están en USUARIOS_BASE
+      }
+    })
+    .catch(function(){}); // silencioso
 }
 
-function usarCacheUsuarios(){
-  try {
-    var cache = JSON.parse(localStorage.getItem('usuarios_cache')||'null');
-    if(cache && cache.datos && cache.datos.length && (Date.now()-cache.ts) < 7*24*60*60*1000){
-      USUARIOS = cache.datos;
-      setPinLabel('Ingresa tu PIN (modo sin conexión)');
-      setBtnsPin(false);
-      setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
-      return;
-    }
-  } catch(e){}
-  // Sin caché — permitir entrada con mensaje
-  setPinLabel('Ingresa tu PIN de 4 dígitos');
-  pinAlert('warn','Sin conexión al servidor. Si tienes PIN registrado, inténtalo igual.');
-  setBtnsPin(false);
-  setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
-}
 
 // ════════════════════════════════════════
 // BLOQUEO
@@ -846,43 +819,22 @@ function conectarPinHidden(){
 }
 
 function verificarPin(){
-  // Si USUARIOS no cargó del Sheet, intentar recargarlos y esperar
-  if(!USUARIOS.length){
-    pinAlert('info','⏳ Cargando lista de acceso, espera...');
-    setBtnsPin(true);
-    setPinLabel('Verificando acceso...');
-    var pinGuardado = pinActual;
-    pinActual = ''; actualizarDots();
-    // Reintentar carga y luego re-verificar
-    fetch(APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now())
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        if(data.usuarios && data.usuarios.length){
-          USUARIOS = data.usuarios;
-          localStorage.setItem('usuarios_cache', JSON.stringify({datos:USUARIOS, ts:Date.now()}));
-        }
-      })
-      .catch(function(){ usarCacheUsuarios(); })
-      .finally(function(){
-        setBtnsPin(false);
-        setPinLabel('Ingresa tu PIN de 4 dígitos');
-        pinAlert('','');
-        // Re-insertar el PIN que había digitado
-        for(var i=0;i<pinGuardado.length;i++) pp(pinGuardado[i]);
-      });
-    return;
-  }
+  // Hash el PIN con SHA-256 antes de comparar — nunca comparamos texto plano
+  _sha256(pinActual).then(function(hash){
+    _verificarConHash(hash);
+  });
+}
 
-  var usuario = USUARIOS.find(function(u){ return u.pin === pinActual; });
+function _verificarConHash(hash){
+  var usuario = USUARIOS.find(function(u){ return u.h === hash; });
 
   if(usuario){
     intentosFallidos = 0;
     localStorage.removeItem(BLOQUEO_KEY);
     var sess = {
-      pin:    usuario.pin,
-      nombre: usuario.nombre,
-      cargo:  usuario.cargo,
-      admin:  usuario.admin || false,
+      nombre: usuario.n || usuario.nombre,
+      cargo:  usuario.c || usuario.cargo,
+      admin:  usuario.a || usuario.admin || false,
       expira: Date.now() + 8*60*60*1000
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
@@ -892,7 +844,7 @@ function verificarPin(){
     // Feedback positivo en la burbuja
     var bubble = document.getElementById('pinBubble');
     if(bubble){
-      bubble.innerHTML = '¡Bienvenido, <strong>' + sess.nombre.split(' ')[0] + '</strong>! 🎉';
+      bubble.innerHTML = '¡Bienvenido, <strong>' + (sess.nombre||'').split(' ')[0] + '</strong>! 🎉';
       bubble.style.borderColor = 'rgba(34,197,94,.4)';
       bubble.style.color = '#86efac';
       bubble.style.background = 'rgba(34,197,94,.1)';
@@ -932,6 +884,27 @@ function verificarPin(){
       setTimeout(function(){ pinActual=''; actualizarDots(); }, 1000);
     }
   }
+} // _verificarConHash
+
+// SHA-256 usando la API nativa del navegador (Web Crypto) — sin librerías
+function _sha256(str){
+  var buf = new TextEncoder().encode(str);
+  return crypto.subtle.digest('SHA-256', buf).then(function(hashBuf){
+    return Array.from(new Uint8Array(hashBuf))
+      .map(function(b){ return b.toString(16).padStart(2,'0'); })
+      .join('');
+  });
+}
+
+// El Sheet devuelve PINes en texto — hashearlos antes de guardar en USUARIOS
+function _normalizarUsuariosSheet(lista){
+  return Promise.all(lista.map(function(u){
+    // Si ya tiene hash (h), usarlo directo; si tiene pin en texto, hashearlo
+    if(u.h) return Promise.resolve({h:u.h, n:u.nombre||u.n, c:u.cargo||u.c, a:u.admin||u.a||false});
+    return _sha256(String(u.pin)).then(function(hash){
+      return {h:hash, n:u.nombre||u.n||'', c:u.cargo||u.c||'', a:u.admin||u.a||false};
+    });
+  }));
 }
 
 function sacudirPinRobot(){
