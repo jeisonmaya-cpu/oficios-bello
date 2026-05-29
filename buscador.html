@@ -1,370 +1,581 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Buscador de Guías — Cobro Coactivo</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --navy:#0f2d5e; --navy-mid:#16396e; --blue:#1a6fc4;
-      --gold-light:#f5c050; --bg:#f0f4fa; --surface:#fff;
-      --surface2:#e8edf7; --text:#0f1e35; --text-soft:#4a5a72;
-      --border:#c8d5e8; --yellow-hl:#fef08a;
-      --red:#dc2626; --green:#16a34a;
-      --radius:12px;
-      --shadow:0 4px 24px rgba(15,45,94,.10);
-      --shadow-lg:0 8px 40px rgba(15,45,94,.18);
-    }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Buscador de Guías — Teodoro</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --navy:   #0a1f3d;
+  --navy2:  #0f2d5e;
+  --blue:   #1a6fc4;
+  --blue2:  #2d8de8;
+  --gold:   #e8a020;
+  --gold2:  #f5c050;
+  --green:  #16a34a;
+  --green2: #22c55e;
+  --red:    #dc2626;
+  --surface: rgba(255,255,255,0.06);
+  --border:  rgba(255,255,255,0.10);
+  --text:    #ffffff;
+  --soft:    rgba(255,255,255,0.55);
+  --input-bg: rgba(255,255,255,0.07);
+  --input-border: rgba(255,255,255,0.18);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-    /* ── PIN OVERLAY ── */
-    #pinOverlay{position:fixed;inset:0;background:linear-gradient(135deg,#0f2d5e 0%,#1d5aab 100%);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
-    .pin-card{background:#fff;border-radius:20px;padding:32px 28px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
-    .pin-logo{font-size:36px;margin-bottom:8px}
-    .pin-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);margin-bottom:4px}
-    .pin-sub{font-size:12px;color:var(--text-soft);margin-bottom:20px}
-    .pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:16px}
-    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #d1d5db;background:#fff;transition:all .15s}
-    .pin-dot.filled{background:var(--navy);border-color:var(--navy)}
-    .pin-dot.error{background:var(--red);border-color:var(--red)}
-    .pin-error{display:none;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px}
-    .pin-blocked{display:none;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:10px;padding:16px;font-size:13px;margin-bottom:12px;font-weight:600}
-    .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
-    .pin-btn{padding:14px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:18px;font-weight:600;color:#1a1a2e;cursor:pointer;transition:all .15s}
-    .pin-btn:hover{background:#f0f7ff;border-color:var(--blue)}
-    .pin-btn:active{transform:scale(.94);background:#dbeafe}
-    .pin-btn:disabled{opacity:.4;cursor:not-allowed}
-    .pin-intentos{font-size:11px;color:#92400e;margin-bottom:8px;min-height:16px}
+/* ── FONDO ── */
+.bg{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 0%,rgba(26,111,196,.22) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 100%,rgba(232,160,32,.10) 0%,transparent 55%),
+    linear-gradient(160deg,#0a1f3d 0%,#0d2550 45%,#09182f 100%)}
+.bg::before{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 80% 70% at center,black 20%,transparent 75%)}
 
-    /* ── HEADER ── */
-    header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:relative;overflow:hidden}
-    .header-inner{max-width:960px;margin:0 auto;padding:18px 24px;position:relative;z-index:1;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-    .header-icon{width:44px;height:44px;background:rgba(255,255,255,.12);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
-    .header-text h1{font-family:'DM Serif Display',serif;color:#fff;font-size:17px;font-weight:400;line-height:1.2}
-    .header-text p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
-    .header-user{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .user-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;white-space:nowrap}
-    .btn-nav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:6px 13px;border-radius:8px;white-space:nowrap;transition:background .2s}
-    .btn-nav:hover{background:rgba(255,255,255,.22)}
-    .btn-logout{background:rgba(220,38,38,.25);border-color:rgba(220,38,38,.4);color:#fca5a5;cursor:pointer;font-family:'DM Sans',sans-serif}
-    .btn-logout:hover{background:rgba(220,38,38,.4)}
+/* ══════════════════════════════
+   PIN OVERLAY — Teodoro
+══════════════════════════════ */
+#pinOverlay{
+  position:fixed;inset:0;z-index:500;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(ellipse 120% 100% at 50% 0%,rgba(15,45,94,.97) 0%,rgba(5,12,28,.99) 70%);
+  backdrop-filter:blur(14px);
+}
+.pin-box{
+  background:linear-gradient(160deg,rgba(13,37,80,.98),rgba(9,24,48,.99));
+  border:1px solid rgba(232,160,32,.28);
+  border-radius:24px;width:100%;max-width:360px;
+  box-shadow:0 32px 100px rgba(0,0,0,.7);
+  overflow:hidden;
+  animation:pinSlide .5s cubic-bezier(.22,.68,0,1.2) both;
+}
+@keyframes pinSlide{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:none}}
 
-    /* ── NAV TABS ── */
-    .nav-tabs{background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)}
-    .nav-tabs-inner{max-width:960px;margin:0 auto;display:flex;padding:0 24px;gap:2px}
-    .nav-tab{padding:10px 16px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;text-decoration:none;display:flex;align-items:center;gap:5px;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
-    .nav-tab:hover{color:#fff;background:rgba(255,255,255,.07)}
-    .nav-tab.active{color:#fff;border-bottom-color:var(--gold-light)}
+/* Robot área */
+.pin-hero{
+  padding:28px 24px 20px;
+  display:flex;flex-direction:column;align-items:center;
+  background:linear-gradient(180deg,rgba(26,111,196,.12) 0%,transparent 100%);
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.pin-robot{
+  filter:drop-shadow(0 8px 24px rgba(45,141,232,.4));
+  animation:pinFloat 3s ease-in-out infinite;
+  cursor:pointer;margin-bottom:12px;
+}
+.pin-robot:hover{filter:drop-shadow(0 10px 30px rgba(245,192,80,.5))}
+@keyframes pinFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-7px) rotate(1deg)}}
+.pin-bubble{
+  background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);
+  border-radius:14px 14px 14px 4px;
+  padding:9px 14px;font-size:12.5px;font-weight:600;color:var(--gold2);
+  text-align:center;line-height:1.5;margin-bottom:4px;
+  animation:bubblePop .5s .5s cubic-bezier(.22,.68,0,1.2) both;
+  min-width:200px;
+}
+@keyframes bubblePop{from{opacity:0;transform:scale(.8) translateY(6px)}to{opacity:1;transform:none}}
+.pin-title{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;text-align:center;margin-top:10px}
+.pin-title em{font-style:italic;color:var(--gold2)}
+.pin-sub{font-size:11.5px;color:var(--soft);text-align:center;margin-top:4px}
 
-    /* ── MAIN ── */
-    main{max-width:960px;margin:0 auto;padding:22px 24px 60px}
+/* Cuerpo PIN */
+.pin-body{padding:20px 24px 24px}
+.pin-label{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);text-align:center;margin-bottom:12px}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:14px}
+.pin-dot{
+  width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.25);background:transparent;
+  transition:all .15s;
+}
+.pin-dot.filled{background:var(--gold2);border-color:var(--gold2);box-shadow:0 0 8px rgba(245,192,80,.5)}
+.pin-dot.error{background:var(--red);border-color:var(--red);box-shadow:0 0 8px rgba(220,38,38,.5)}
 
-    /* ── PANELS ── */
-    .panel{display:none}
-    .panel.active{display:block}
+.pin-alert{
+  padding:9px 12px;border-radius:9px;font-size:12px;
+  margin-bottom:12px;text-align:center;display:none;
+}
+.pin-alert.show{display:block}
+.pin-alert.err{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.pin-alert.warn{background:rgba(245,192,80,.12);color:var(--gold2);border:1px solid rgba(245,192,80,.3)}
+.pin-alert.info{background:rgba(45,141,232,.12);color:#93c5fd;border:1px solid rgba(45,141,232,.3)}
 
-    /* ── SEARCH ── */
-    .search-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:16px;border:1px solid var(--border)}
-    .search-label{font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:9px}
-    .search-row{display:flex;gap:10px}
-    .search-input-wrap{flex:1;position:relative}
-    .search-input-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-soft);pointer-events:none}
-    input[type="text"]{width:100%;height:44px;padding:0 38px 0 42px;font-size:14px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:9px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s,box-shadow .2s}
-    input[type="text"]:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,196,.12);background:#fff}
-    .btn-search{height:44px;padding:0 22px;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background .2s,transform .1s;white-space:nowrap}
-    .btn-search:hover{background:var(--blue)}
-    .btn-search:active{transform:scale(.98)}
-    .btn-search:disabled{opacity:.6;cursor:not-allowed}
-    .search-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:11px;flex-wrap:wrap;gap:8px}
-    .search-options{display:flex;gap:18px}
-    .search-options label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-soft);cursor:pointer;user-select:none}
-    .search-options input[type="checkbox"]{width:14px;height:14px;accent-color:var(--blue);cursor:pointer}
-    .historial-wrap{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-    .historial-label{font-size:11px;color:var(--text-soft);font-weight:600}
-    .hist-chip{background:var(--surface2);border:1px solid var(--border);color:var(--navy);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;cursor:pointer;transition:background .15s}
-    .hist-chip:hover{background:#dce8f8}
+.pin-blocked{
+  padding:16px;border-radius:10px;
+  background:rgba(220,38,38,.15);color:#fca5a5;
+  border:1px solid rgba(220,38,38,.3);
+  font-size:13px;font-weight:600;text-align:center;
+  margin-bottom:12px;display:none;
+}
 
-    /* ── STATUS ── */
-    .status-bar{display:none;align-items:center;gap:10px;padding:11px 15px;border-radius:9px;font-size:13px;margin-bottom:16px;font-weight:500}
-    .status-bar.loading{display:flex;background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
-    .status-bar.success{display:flex;background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
-    .status-bar.error{display:flex;background:#fef2f2;color:var(--red);border:1px solid #fecaca}
-    .status-bar.empty{display:flex;background:#fffbeb;color:#92400e;border:1px solid #fde68a}
-    .spinner{width:15px;height:15px;border:2.5px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
-    @keyframes spin{to{transform:rotate(360deg)}}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pin-btn{
+  padding:15px;border-radius:11px;
+  background:var(--input-bg);border:1.5px solid var(--input-border);
+  color:var(--text);font-size:20px;font-weight:600;
+  cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;
+}
+.pin-btn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3)}
+.pin-btn:active{transform:scale(.93);background:rgba(45,141,232,.25);border-color:var(--blue2)}
+.pin-btn:disabled{opacity:.3;cursor:not-allowed}
+.pin-intentos{font-size:11px;color:var(--gold2);text-align:center;min-height:16px;margin-bottom:8px}
 
-    /* ── RESULTS ── */
-    .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;flex-wrap:wrap;gap:8px}
-    .results-title{font-size:12px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.07em}
-    .results-actions{display:flex;align-items:center;gap:8px}
-    .results-count{font-size:11px;background:var(--navy);color:#fff;padding:3px 10px;border-radius:20px;font-weight:600}
-    .btn-export{background:#16a34a;color:#fff;border:none;border-radius:7px;padding:5px 13px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
-    .btn-export:hover{background:#15803d}
-    .hint-click{font-size:11px;color:var(--text-soft);font-style:italic}
+/* Animaciones robot PIN */
+.pe-eye-l,.pe-eye-r,.pe-pupil-l,.pe-pupil-r{animation:pEyeBlink 4s ease-in-out infinite}
+@keyframes pEyeBlink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(0.08)}}
+.pe-led1{animation:pLed1 1.8s ease-in-out infinite}
+.pe-led2{animation:pLed2 1.8s ease-in-out infinite .6s}
+@keyframes pLed1{0%,100%{opacity:.9}50%{opacity:.3}}
+@keyframes pLed2{0%,100%{opacity:.9}50%{opacity:.3}}
+.pe-arm-l{transform-origin:5.5px 47px;animation:pArmL 3s ease-in-out infinite}
+.pe-arm-r{transform-origin:58.5px 47px;animation:pArmR 3s ease-in-out infinite}
+@keyframes pArmL{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes pArmR{0%,100%{transform:rotate(6deg)}50%{transform:rotate(-6deg)}}
+.pe-antenna{animation:pAnt 2.5s ease-in-out infinite}
+@keyframes pAnt{0%,100%{fill:#f5c050;opacity:1}50%{fill:#fff;opacity:.4}}
+.pe-mouth-l1,.pe-mouth-l3{animation:pMled 1.4s ease-in-out infinite alternate}
+.pe-mouth-l2{animation:pMled 1.4s ease-in-out infinite alternate-reverse}
+@keyframes pMled{from{opacity:1}to{opacity:.2}}
+.pin-robot.shake{animation:pinShake .5s ease,pinFloat 3s ease-in-out infinite .5s}
+@keyframes pinShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-12deg) scale(1.08)}30%{transform:rotate(12deg) scale(1.1)}50%{transform:rotate(-7deg) scale(1.05)}70%{transform:rotate(5deg) scale(1.02)}}
 
-    /* ── TABLA ── */
-    .table-wrap{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden}
-    .table-scroll{overflow-x:auto}
-    table{width:100%;border-collapse:collapse;font-size:12px}
-    thead tr{background:var(--navy);color:#fff}
-    thead th{padding:10px 12px;text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.04em;white-space:nowrap}
-    tbody tr{border-bottom:1px solid var(--surface2);transition:background .15s;cursor:pointer}
-    tbody tr:last-child{border-bottom:none}
-    tbody tr:hover{background:#e8f0fc}
-    tbody tr:nth-child(even){background:#f8fafd}
-    tbody tr:nth-child(even):hover{background:#e0ecfc}
-    td{padding:9px 12px;vertical-align:middle;color:var(--text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    td.val-encontrado{background:var(--yellow-hl);font-weight:700;color:#7c4a00}
-    tbody tr:hover td.val-encontrado{background:#fde047}
-    .tag-hoja{display:inline-block;background:var(--surface2);color:var(--navy);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
-    .btn-ver{background:var(--blue);color:#fff;border:none;border-radius:5px;padding:3px 9px;font-size:10.5px;font-weight:600;cursor:pointer}
-    .btn-ver:hover{background:var(--navy)}
+/* ══════════════════════════════
+   NAV
+══════════════════════════════ */
+.nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(10,31,61,.92);
+  border-bottom:1px solid rgba(232,160,32,.2);
+  backdrop-filter:blur(16px);
+  display:flex;align-items:stretch;
+}
+.nav-brand{display:flex;align-items:center;gap:10px;padding:0 18px;border-right:1px solid var(--border);text-decoration:none;color:var(--text);min-height:52px}
+.nav-brand-text{font-family:'DM Serif Display',serif;font-size:15px;color:var(--gold2)}
+.nav-brand-sub{font-size:10px;color:var(--soft)}
+.nav-tabs{display:flex;flex:1;overflow-x:auto}
+.nav-tab{color:var(--soft);font-size:12px;font-weight:600;padding:0 16px;border:none;background:none;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:6px;min-height:52px;font-family:'DM Sans',sans-serif;text-decoration:none}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.nav-tab.active{color:var(--gold2);border-bottom-color:var(--gold);background:rgba(232,160,32,.06)}
+.nav-badge{background:rgba(232,160,32,.25);color:var(--gold2);font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:999px}
+.nav-right{display:flex;align-items:center;gap:8px;padding:0 14px;border-left:1px solid var(--border);flex-shrink:0}
+.user-chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.07);border:1px solid var(--border);padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:600;color:var(--soft)}
+.user-chip strong{color:var(--text)}
+.btn-logout{background:rgba(220,38,38,.18);border:1px solid rgba(220,38,38,.3);color:#fca5a5;padding:5px 12px;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.btn-logout:hover{background:rgba(220,38,38,.3)}
 
-    /* ── PAGINACIÓN ── */
-    .pagination{display:flex;align-items:center;justify-content:center;gap:6px;padding:14px 0 4px;flex-wrap:wrap}
-    .pg-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--navy);width:32px;height:32px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
-    .pg-btn:hover{background:var(--surface2)}
-    .pg-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-    .pg-btn:disabled{opacity:.4;cursor:not-allowed}
-    .pg-info{font-size:11px;color:var(--text-soft);padding:0 4px}
+/* ══════════════════════════════
+   LAYOUT
+══════════════════════════════ */
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:24px 16px 60px}
+.panel{display:none}.panel.active{display:block}
 
-    /* ── CARDS MOBILE ── */
-    .card-list{display:none}
-    .result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px;margin-bottom:9px;box-shadow:var(--shadow);animation:fadeUp .25s ease forwards;cursor:pointer}
-    .result-card:hover{border-color:var(--blue)}
-    .card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
-    .card-hoja{font-size:10px;font-weight:700;color:var(--navy)}
-    .card-fila{font-size:10px;color:var(--text-soft)}
-    .card-valor{font-size:14px;font-weight:700;color:#7c4a00;background:var(--yellow-hl);padding:3px 9px;border-radius:5px;margin-bottom:7px;display:inline-block}
-    .card-fields{display:grid;gap:4px}
-    .card-field{font-size:12px;color:var(--text)}
-    .card-field span{color:var(--text-soft);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;display:block}
-    .card-ver{margin-top:9px;text-align:right}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* ══════════════════════════════
+   PAGE HEADER
+══════════════════════════════ */
+.page-hdr{margin-bottom:20px;animation:fadeUp .6s ease both}
+.page-hdr-eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold2);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.page-hdr-eyebrow::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(245,192,80,.3),transparent)}
+.page-hdr h2{font-family:'DM Serif Display',serif;font-size:clamp(22px,4vw,32px);font-weight:400}
+.page-hdr p{font-size:13px;color:var(--soft);margin-top:4px;line-height:1.6}
 
-    /* ── MODAL ── */
-    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,50,.65);z-index:400;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
-    .modal-overlay.open{display:flex}
-    .modal{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;animation:modalIn .2s ease}
-    @keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}
-    .modal-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:15px 20px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .modal-header-info h2{font-size:14px;font-weight:600}
-    .modal-header-info p{font-size:10.5px;opacity:.7;margin-top:2px}
-    .modal-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .2s}
-    .modal-close:hover{background:rgba(255,255,255,.25)}
-    .modal-body{padding:18px 20px;overflow-y:auto}
-    .modal-origen{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:7px;padding:9px 13px;margin-bottom:14px;font-size:12px;color:var(--text-soft)}
-    .modal-origen strong{color:var(--navy)}
-    .modal-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-    .modal-field{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px}
-    .modal-field.highlight{background:#fefce8;border-color:#fde047}
-    .modal-field.full{grid-column:1/-1}
-    .modal-field-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-soft);margin-bottom:3px}
-    .modal-field-value{font-size:13px;color:var(--text);font-weight:500;word-break:break-word}
-    .modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
-    .btn-cerrar{background:var(--navy);color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer}
-    .btn-cerrar:hover{background:var(--blue)}
+/* ══════════════════════════════
+   SEARCH CARD
+══════════════════════════════ */
+.search-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:22px;margin-bottom:14px;
+  backdrop-filter:blur(12px);
+  animation:fadeUp .6s .05s ease both;
+}
+.search-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.search-row{display:flex;gap:10px}
+.search-input-wrap{flex:1;position:relative}
+.search-input-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);pointer-events:none}
+.search-input-wrap input{
+  width:100%;height:48px;padding:0 44px 0 44px;
+  font-size:14px;font-family:'DM Sans',sans-serif;
+  color:var(--text);background:var(--input-bg);
+  border:1.5px solid var(--input-border);border-radius:11px;
+  outline:none;transition:all .2s;
+}
+.search-input-wrap input:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(45,141,232,.15);background:rgba(255,255,255,.09)}
+.search-input-wrap input::placeholder{color:rgba(255,255,255,.28)}
+.btn-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--soft);cursor:pointer;font-size:16px;display:none;padding:4px;transition:color .2s}
+.btn-clear:hover{color:var(--text)}
+.btn-search{
+  height:48px;padding:0 24px;
+  background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#fff;border:none;border-radius:11px;
+  font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;
+  cursor:pointer;display:flex;align-items:center;gap:7px;
+  transition:all .2s;white-space:nowrap;
+  box-shadow:0 4px 16px rgba(26,111,196,.35);
+}
+.btn-search:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(26,111,196,.45)}
+.btn-search:active{transform:scale(.98)}
+.btn-search:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.search-footer{display:flex;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap;gap:8px}
+.search-opts{display:flex;gap:16px;flex-wrap:wrap}
+.search-opts label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--soft);cursor:pointer}
+.search-opts input[type=checkbox]{width:14px;height:14px;accent-color:var(--blue2);cursor:pointer}
+.hist-wrap{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.hist-label{font-size:10.5px;color:var(--soft);font-weight:600}
+.hist-chip{
+  background:rgba(255,255,255,.07);border:1px solid var(--border);
+  color:rgba(255,255,255,.7);font-size:11px;font-weight:600;
+  padding:3px 11px;border-radius:20px;cursor:pointer;transition:all .15s;
+}
+.hist-chip:hover{background:rgba(255,255,255,.12);color:var(--text)}
 
-    /* ── REPORTES ── */
-    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
-    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);text-align:center}
-    .stat-number{font-size:32px;font-weight:700;color:var(--navy);line-height:1}
-    .stat-label{font-size:11px;color:var(--text-soft);margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
-    .rep-filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-    .rep-filter-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--text-soft);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
-    .rep-filter-btn:hover{border-color:var(--blue);color:var(--blue)}
-    .rep-filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-    .rep-loading{text-align:center;padding:40px;color:var(--text-soft);font-size:14px}
+/* ══════════════════════════════
+   STATUS BAR
+══════════════════════════════ */
+.status-bar{display:none;align-items:center;gap:10px;padding:11px 16px;border-radius:10px;font-size:13px;margin-bottom:14px;font-weight:500}
+.status-bar.loading{display:flex;background:rgba(45,141,232,.12);color:#93c5fd;border:1px solid rgba(45,141,232,.25)}
+.status-bar.success{display:flex;background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.25)}
+.status-bar.error{display:flex;background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.25)}
+.status-bar.empty{display:flex;background:rgba(245,192,80,.10);color:var(--gold2);border:1px solid rgba(245,192,80,.25)}
+.spinner{width:16px;height:16px;border:2.5px solid rgba(45,141,232,.25);border-top-color:var(--blue2);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-    /* ── EMPTY ── */
-    #empty-state{display:none;text-align:center;padding:55px 24px;color:var(--text-soft)}
-    #empty-state .empty-icon{font-size:42px;margin-bottom:10px}
-    #empty-state p{font-size:14px}
+/* ══════════════════════════════
+   RESULTADOS
+══════════════════════════════ */
+.results-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.results-title{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
+.results-count-badge{background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:7px}
+.results-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn-export{
+  background:rgba(22,163,74,.2);color:#86efac;border:1px solid rgba(34,197,94,.3);
+  border-radius:8px;padding:6px 14px;font-size:11.5px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;
+  font-family:'DM Sans',sans-serif;
+}
+.btn-export:hover{background:rgba(22,163,74,.3)}
+.hint-click{font-size:11px;color:var(--soft);font-style:italic}
+.results-hint{font-size:11px;color:var(--blue2);margin-top:3px;display:none}
 
-    footer{text-align:center;padding:16px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border)}
+/* Tabla */
+.tbl-wrap{overflow:hidden;border-radius:12px;border:1px solid var(--border)}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
+thead tr{background:rgba(26,111,196,.3)}
+thead th{padding:10px 13px;text-align:left;font-weight:700;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.7);white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s;cursor:pointer}
+tbody tr:hover{background:rgba(45,141,232,.12)}
+td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.val-found{background:rgba(245,192,80,.18);color:var(--gold2);font-weight:700;border-radius:4px;padding:2px 6px}
+.tag-sheet{display:inline-block;background:rgba(45,141,232,.2);color:#93c5fd;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
+.btn-ver{background:rgba(45,141,232,.2);color:#93c5fd;border:1px solid rgba(45,141,232,.3);border-radius:6px;padding:4px 10px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.btn-ver:hover{background:rgba(45,141,232,.35)}
 
-    @media(max-width:640px){
-      .header-inner{padding:14px 16px}
-      .search-row{flex-direction:column}
-      .btn-search{width:100%;justify-content:center}
-      main{padding:14px 14px 48px}
-      .table-wrap{display:none}
-      .card-list{display:block}
-      .results-header{flex-direction:column;align-items:flex-start}
-      .modal-fields{grid-template-columns:1fr}
-      .modal-field.full{grid-column:1}
-      .stats-grid{grid-template-columns:1fr 1fr}
-      .user-badge{display:none}
-    }
-  </style>
+/* Paginación */
+.pagination{display:flex;align-items:center;justify-content:center;gap:5px;padding:14px 0 4px;flex-wrap:wrap}
+.pg-btn{background:var(--input-bg);border:1.5px solid var(--border);color:var(--soft);width:32px;height:32px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:'DM Sans',sans-serif}
+.pg-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.pg-btn.active{background:rgba(45,141,232,.3);color:#93c5fd;border-color:var(--blue2)}
+.pg-btn:disabled{opacity:.3;cursor:not-allowed}
+.pg-info{font-size:11px;color:var(--soft);padding:0 4px}
+
+/* Cards mobile */
+.card-list{display:none}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:9px;cursor:pointer;animation:fadeUp .25s ease forwards;transition:border-color .2s}
+.result-card:hover{border-color:var(--blue2)}
+.card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.card-valor{font-size:14px;font-weight:700;color:var(--gold2);background:rgba(245,192,80,.12);border:1px solid rgba(245,192,80,.2);padding:4px 10px;border-radius:6px;margin-bottom:8px;display:inline-block}
+.card-field{font-size:12px;color:rgba(255,255,255,.8);margin-bottom:4px}
+.card-field span{color:var(--soft);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;display:block}
+
+/* Empty state */
+#empty-state{display:none;text-align:center;padding:60px 24px;color:var(--soft)}
+#empty-state .empty-icon{font-size:44px;margin-bottom:12px;display:block}
+#empty-state p{font-size:14px;line-height:1.6}
+
+/* ══════════════════════════════
+   MODAL DETALLE
+══════════════════════════════ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,12,28,.85);z-index:400;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+.modal-overlay.open{display:flex}
+.modal{background:linear-gradient(145deg,#0d2550,#091830);border:1px solid var(--border);border-radius:18px;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}
+.modal-head{background:rgba(26,111,196,.2);border-bottom:1px solid var(--border);padding:16px 20px;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.modal-head h2{font-size:15px;font-weight:700}
+.modal-head p{font-size:10.5px;color:var(--soft);margin-top:2px}
+.modal-close{background:rgba(255,255,255,.1);border:none;color:var(--text);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.modal-close:hover{background:rgba(255,255,255,.2)}
+.modal-body{padding:18px 20px;overflow-y:auto}
+.modal-origen{display:flex;align-items:center;gap:8px;background:rgba(45,141,232,.1);border:1px solid rgba(45,141,232,.2);border-radius:8px;padding:9px 13px;margin-bottom:14px;font-size:12px;color:#93c5fd}
+.modal-origen strong{color:var(--text)}
+.modal-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.modal-field{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:10px 13px}
+.modal-field.hi{background:rgba(245,192,80,.1);border-color:rgba(245,192,80,.25)}
+.modal-field.full{grid-column:1/-1}
+.mf-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin-bottom:4px}
+.mf-value{font-size:13px;color:var(--text);font-weight:500;word-break:break-word}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
+.btn-cerrar{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.btn-cerrar:hover{background:rgba(255,255,255,.14)}
+
+/* ══════════════════════════════
+   REPORTES
+══════════════════════════════ */
+.stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat-tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;backdrop-filter:blur(8px);text-align:center}
+.stat-tile-val{font-family:'DM Serif Display',serif;font-size:28px;color:var(--gold2);line-height:1}
+.stat-tile-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-top:4px}
+.gcard{background:var(--surface);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(12px);overflow:hidden;margin-bottom:14px}
+.gcard-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(255,255,255,.03)}
+.gcard-title{font-size:13px;font-weight:700;color:var(--gold2);display:flex;align-items:center;gap:7px}
+.gcard-body{padding:16px 20px}
+.rep-filter-btn{background:var(--input-bg);border:1.5px solid var(--border);color:var(--soft);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.rep-filter-btn:hover{border-color:var(--blue2);color:#93c5fd}
+.rep-filter-btn.active{background:rgba(45,141,232,.2);color:#93c5fd;border-color:var(--blue2)}
+.rep-loading{text-align:center;padding:40px;color:var(--soft);font-size:14px}
+.rep-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ══════════════════════════════
+   MISC
+══════════════════════════════ */
+.btn{padding:9px 18px;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .2s;white-space:nowrap}
+.btn-ghost{background:var(--input-bg);color:var(--soft);border:1.5px solid var(--border)}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn-sm{padding:6px 13px;font-size:12px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:640px){
+  .search-row{flex-direction:column}
+  .btn-search{width:100%;justify-content:center}
+  .tbl-wrap{display:none}
+  .card-list{display:block}
+  .modal-fields{grid-template-columns:1fr}
+  .modal-field.full{grid-column:1}
+  .stats-strip{grid-template-columns:1fr 1fr}
+  .nav-right .user-chip .label{display:none}
+}
+</style>
 </head>
 <body>
+<div class="bg"></div>
 
-<!-- ── PIN OVERLAY ── -->
+<!-- ══════════════════════ PIN OVERLAY ══════════════════════ -->
 <div id="pinOverlay">
-  <div class="pin-card">
-    <div class="pin-logo">🔍</div>
-    <div class="pin-title">Buscador de Guías</div>
-    <div class="pin-sub">Cobro Coactivo — Alcaldía de Bello</div>
-    <div class="pin-blocked" id="pinBlocked"></div>
-    <div id="pinIngreso">
-      <div style="font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:10px">Ingrese su PIN personal</div>
-      <!-- Input oculto: captura pegado (Ctrl+V) y teclado físico -->
-      <input id="pinHidden" type="password" inputmode="numeric" maxlength="4"
-        style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;left:-9999px"
-        autocomplete="off" aria-hidden="true"/>
-      <div class="pin-dots" onclick="document.getElementById('pinHidden').focus()" style="cursor:pointer">
-        <div class="pin-dot" id="d0"></div>
-        <div class="pin-dot" id="d1"></div>
-        <div class="pin-dot" id="d2"></div>
-        <div class="pin-dot" id="d3"></div>
+  <div class="pin-box">
+    <div class="pin-hero">
+      <!-- Robot Teodoro -->
+      <div class="pin-robot" id="pinRobot" onclick="sacudirPinRobot()" title="¡Haz clic!">
+        <svg width="68" height="85" viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+          <line x1="32" y1="6" x2="32" y2="14" stroke="#f5c050" stroke-width="2" stroke-linecap="round"/>
+          <circle class="pe-antenna" cx="32" cy="4" r="3" fill="#f5c050"/>
+          <rect x="14" y="14" width="36" height="26" rx="7" fill="url(#phHG)" stroke="rgba(245,192,80,.5)" stroke-width="1.2"/>
+          <rect class="pe-eye-l"   x="20" y="21" width="8"  height="7" rx="2" fill="#0a1f3d"/>
+          <rect class="pe-eye-r"   x="36" y="21" width="8"  height="7" rx="2" fill="#0a1f3d"/>
+          <circle class="pe-pupil-l" cx="24" cy="24.5" r="2.2" fill="#2d8de8"/>
+          <circle class="pe-pupil-r" cx="40" cy="24.5" r="2.2" fill="#2d8de8"/>
+          <circle cx="25" cy="23.5" r=".8" fill="white" opacity=".9"/>
+          <circle cx="41" cy="23.5" r=".8" fill="white" opacity=".9"/>
+          <rect x="22" y="32" width="20" height="4" rx="2" fill="#0a1f3d"/>
+          <rect class="pe-mouth-l1" x="24"   y="33" width="3" height="2" rx="1" fill="#f5c050"/>
+          <rect class="pe-mouth-l2" x="28.5" y="33" width="3" height="2" rx="1" fill="#2d8de8"/>
+          <rect class="pe-mouth-l3" x="33"   y="33" width="3" height="2" rx="1" fill="#f5c050"/>
+          <rect x="28" y="40" width="8" height="5" rx="2" fill="rgba(245,192,80,.3)"/>
+          <rect x="10" y="45" width="44" height="28" rx="8" fill="url(#phBG)" stroke="rgba(45,141,232,.4)" stroke-width="1.2"/>
+          <rect x="18" y="51" width="28" height="16" rx="4" fill="rgba(0,0,0,.3)"/>
+          <circle class="pe-led1" cx="26" cy="59" r="3.5" fill="#f5c050" opacity=".9"/>
+          <circle class="pe-led2" cx="36" cy="59" r="3.5" fill="#2d8de8" opacity=".9"/>
+          <rect x="20" y="53" width="8"  height="2.5" rx="1.2" fill="#2d8de8" opacity=".7"/>
+          <rect x="30" y="53" width="14" height="2.5" rx="1.2" fill="rgba(255,255,255,.12)"/>
+          <rect class="pe-arm-l" x="1"  y="47" width="9" height="20" rx="4.5" fill="url(#phAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <rect class="pe-arm-r" x="54" y="47" width="9" height="20" rx="4.5" fill="url(#phAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <circle cx="5.5"  cy="69" r="4" fill="url(#phAG)"/>
+          <circle cx="58.5" cy="69" r="4" fill="url(#phAG)"/>
+          <defs>
+            <linearGradient id="phHG" x1="14" y1="14" x2="50" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1a3a6e"/><stop offset="100%" stop-color="#0f2550"/></linearGradient>
+            <linearGradient id="phBG" x1="10" y1="45" x2="54" y2="73" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#1a3a6e"/><stop offset="100%" stop-color="#0a1f3d"/></linearGradient>
+            <linearGradient id="phAG" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox"><stop offset="0%" stop-color="#1a4a8a"/><stop offset="100%" stop-color="#0f2d5e"/></linearGradient>
+          </defs>
+        </svg>
       </div>
-      <div class="pin-intentos" id="pinIntentos"></div>
-      <div class="pin-error" id="pinError"></div>
-      <div class="pin-grid">
-        <button class="pin-btn" onclick="presionarPin('1')">1</button>
-        <button class="pin-btn" onclick="presionarPin('2')">2</button>
-        <button class="pin-btn" onclick="presionarPin('3')">3</button>
-        <button class="pin-btn" onclick="presionarPin('4')">4</button>
-        <button class="pin-btn" onclick="presionarPin('5')">5</button>
-        <button class="pin-btn" onclick="presionarPin('6')">6</button>
-        <button class="pin-btn" onclick="presionarPin('7')">7</button>
-        <button class="pin-btn" onclick="presionarPin('8')">8</button>
-        <button class="pin-btn" onclick="presionarPin('9')">9</button>
-        <button class="pin-btn" onclick="borrarPin()" style="font-size:16px">⌫</button>
-        <button class="pin-btn" onclick="presionarPin('0')">0</button>
-        <button class="pin-btn" onclick="limpiarPin()" style="font-size:10px;color:#6b7280">Limpiar</button>
+      <div class="pin-bubble" id="pinBubble">
+        🔐 Ingresa tu PIN<br>para acceder con <strong>Teodoro</strong>
+      </div>
+      <h2 class="pin-title">Buscador de <em>Guías</em></h2>
+      <p class="pin-sub">Cobro Coactivo · Alcaldía de Bello</p>
+    </div>
+
+    <div class="pin-body">
+      <div class="pin-blocked" id="pinBlocked"></div>
+      <div id="pinIngreso">
+        <input id="pinHidden" type="password" inputmode="numeric" maxlength="4"
+          style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none;left:-9999px"
+          autocomplete="off" aria-hidden="true"/>
+        <div class="pin-label" id="pinLabel">Ingresa tu PIN de 4 dígitos</div>
+        <div class="pin-dots" onclick="document.getElementById('pinHidden').focus()" style="cursor:pointer">
+          <div class="pin-dot" id="d0"></div>
+          <div class="pin-dot" id="d1"></div>
+          <div class="pin-dot" id="d2"></div>
+          <div class="pin-dot" id="d3"></div>
+        </div>
+        <div class="pin-intentos" id="pinIntentos"></div>
+        <div class="pin-alert" id="pinError"></div>
+        <div class="pin-grid">
+          <button class="pin-btn" onclick="pp('1')">1</button>
+          <button class="pin-btn" onclick="pp('2')">2</button>
+          <button class="pin-btn" onclick="pp('3')">3</button>
+          <button class="pin-btn" onclick="pp('4')">4</button>
+          <button class="pin-btn" onclick="pp('5')">5</button>
+          <button class="pin-btn" onclick="pp('6')">6</button>
+          <button class="pin-btn" onclick="pp('7')">7</button>
+          <button class="pin-btn" onclick="pp('8')">8</button>
+          <button class="pin-btn" onclick="pp('9')">9</button>
+          <button class="pin-btn" onclick="borrarPin()" style="font-size:18px">⌫</button>
+          <button class="pin-btn" onclick="pp('0')">0</button>
+          <button class="pin-btn" onclick="limpiarPin()" style="font-size:10px;color:var(--soft)">Limpiar</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── HEADER ── -->
-<header>
-  <div class="header-inner">
-    <div class="header-icon">🔍</div>
-    <div class="header-text">
-      <h1>Buscador de Guías</h1>
-      <p>Cobro Coactivo — Alcaldía de Bello</p>
+<!-- ══════════════════════ NAV ══════════════════════ -->
+<nav class="nav">
+  <a href="home.html" class="nav-brand">
+    <span style="font-size:20px">🏛️</span>
+    <div>
+      <div class="nav-brand-text">Teodoro</div>
+      <div class="nav-brand-sub">Ejecuciones Fiscales</div>
     </div>
-    <div class="header-user">
-      <span class="user-badge" id="user-badge">👤 —</span>
-      <a href="home.html" class="btn-nav">🏛️ Inicio</a><a href="index.html" class="btn-nav">📄 Oficios</a>
-      <button class="btn-nav btn-logout" onclick="cerrarSesion()">🔒 Salir</button>
-    </div>
-  </div>
+  </a>
   <div class="nav-tabs">
-    <div class="nav-tabs-inner">
-      <button class="nav-tab active" id="tab-buscar" onclick="goPanel('buscar')">🔍 Buscador</button>
-      <button class="nav-tab" id="tab-reportes" onclick="goPanel('reportes')" style="display:none">📊 Reportes</button>
-      <a class="nav-tab" href="home.html">🏛️ Inicio</a><a class="nav-tab" href="index.html">📄 Generar Oficios</a>
-    </div>
+    <button class="nav-tab active" id="tab-buscar" onclick="goPanel('buscar')">🔍 Buscador</button>
+    <button class="nav-tab" id="tab-reportes" onclick="goPanel('reportes')" style="display:none">📊 Reportes</button>
+    <a class="nav-tab" href="desembargos.html">🏦 Desembargos</a>
+    <a class="nav-tab" href="home.html">🏠 Inicio</a>
   </div>
-</header>
+  <div class="nav-right">
+    <div class="user-chip"><span>👤</span><strong id="userNombre">—</strong></div>
+    <button class="btn-logout" onclick="cerrarSesion()">🔒 Salir</button>
+  </div>
+</nav>
 
-<main>
+<!-- ══════════════════════ WRAP ══════════════════════ -->
+<div class="wrap">
 
-  <!-- PANEL BUSCADOR -->
-  <div class="panel active" id="panel-buscar">
-    <div class="search-card">
-      <div class="search-label">Buscar guía, contribuyente o radicado <span id="realtime-hint" style="font-weight:400;font-style:italic;text-transform:none;letter-spacing:0;color:var(--blue);display:none;font-size:10px">· buscando automáticamente...</span></div>
-      <div class="search-row">
-        <div class="search-input-wrap">
-          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="termino" placeholder="Ej: 10189528 · Carlos Mario López · 20242023843..." autocomplete="off" inputmode="search" enterkeyhint="search" />
-        </div>
-        <button class="btn-search" id="btn-buscar" onclick="buscar()">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          Buscar
-        </button>
-      </div>
-      <div class="search-bottom">
-        <div class="search-options">
-          <label><input type="checkbox" id="exacto"> Coincidencia exacta</label>
-          <label><input type="checkbox" id="mayus"> Distinguir mayúsculas</label>
-        </div>
-        <div class="historial-wrap" id="historial-wrap" style="display:none">
-          <span class="historial-label">🕐 Recientes:</span>
-          <div id="historial-chips"></div>
-        </div>
-      </div>
+<!-- PANEL BUSCADOR -->
+<div class="panel active" id="panel-buscar">
+  <div class="page-hdr">
+    <div class="page-hdr-eyebrow">🔍 Módulo</div>
+    <h2>Buscador de <em style="font-style:italic;color:var(--gold2)">Guías</em></h2>
+    <p>Busca contribuyentes, radicados y expedientes en todas las hojas del sistema</p>
+  </div>
+
+  <div class="search-card">
+    <div class="search-label">
+      Término de búsqueda
+      <span id="realtime-hint" style="font-weight:400;font-style:italic;text-transform:none;letter-spacing:0;color:var(--blue2);display:none;font-size:10px">· buscando...</span>
     </div>
-
-    <div class="status-bar" id="status-bar">
-      <div class="spinner" id="spinner" style="display:none"></div>
-      <span id="status-msg"></span>
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="termino" placeholder="Cédula, nombre, radicado, comparendo..." autocomplete="off" inputmode="search" enterkeyhint="search"/>
+        <button class="btn-clear" id="btn-clear" onclick="limpiarBusqueda()">✕</button>
+      </div>
+      <button class="btn-search" id="btn-buscar" onclick="buscar()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Buscar
+      </button>
     </div>
-
-    <div id="results-area" style="display:none">
-      <div class="results-header">
-        <div>
-        <span class="results-title">Resultados — <span id="results-count">0</span> encontrados</span>
-        <div id="results-hint" style="font-size:11px;color:var(--blue);margin-top:3px;display:none"></div>
+    <div class="search-footer">
+      <div class="search-opts">
+        <label><input type="checkbox" id="exacto"> Coincidencia exacta</label>
+        <label><input type="checkbox" id="mayus"> Distinguir mayúsculas</label>
       </div>
-        <div class="results-actions">
-          <button class="btn-export" onclick="exportarExcel()">⬇️ Excel</button>
-          <span class="hint-click">👆 Clic en fila para ver detalle</span>
-        </div>
+      <div class="hist-wrap" id="hist-wrap" style="display:none">
+        <span class="hist-label">🕐</span>
+        <div id="hist-chips"></div>
+        <button class="btn-ghost btn-sm" onclick="borrarHistorial()" style="font-size:10px;padding:3px 8px">✕</button>
       </div>
-      <div class="table-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Hoja origen</th><th>Fila #</th><th>Columna</th>
-                <th>Valor encontrado</th><th>Contribuyente</th>
-                <th>Cédula / NIT</th><th>Radicado</th><th></th>
-              </tr>
-            </thead>
-            <tbody id="tabla-body"></tbody>
-          </table>
-        </div>
-        <div class="pagination" id="pagination"></div>
-      </div>
-      <div class="card-list" id="card-list"></div>
-    </div>
-
-    <div id="empty-state">
-      <div class="empty-icon">📂</div>
-      <p>Ingrese un término para buscar en las guías</p>
     </div>
   </div>
 
-  <!-- PANEL REPORTES -->
-  <div class="panel" id="panel-reportes">
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-number" id="stat-hoy">—</div><div class="stat-label">Búsquedas hoy</div></div>
-      <div class="stat-card"><div class="stat-number" id="stat-total">—</div><div class="stat-label">Total búsquedas</div></div>
-      <div class="stat-card"><div class="stat-number" id="stat-usuarios">—</div><div class="stat-label">Usuarios activos</div></div>
-    </div>
-    <div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <span style="font-size:13px;font-weight:600;color:var(--navy)">📋 Historial de búsquedas</span>
-        <div class="rep-filters">
-          <button class="rep-filter-btn active" onclick="filtrarRep('todo',this)">Todo</button>
-          <button class="rep-filter-btn" onclick="filtrarRep('hoy',this)">Hoy</button>
-          <button class="rep-filter-btn" onclick="filtrarRep('semana',this)">Esta semana</button>
-          <button class="btn-export" onclick="exportarReportes()">⬇️ Excel</button>
-        </div>
-      </div>
-      <div id="rep-content" class="rep-loading">⏳ Cargando registros...</div>
-    </div>
+  <div class="status-bar" id="status-bar">
+    <div class="spinner" id="spinner" style="display:none"></div>
+    <span id="status-msg"></span>
   </div>
 
-</main>
+  <div id="results-area" style="display:none">
+    <div class="results-hdr">
+      <div>
+        <span class="results-title">Resultados</span>
+        <span class="results-count-badge" id="results-count">0</span>
+        <div class="results-hint" id="results-hint"></div>
+      </div>
+      <div class="results-actions">
+        <button class="btn-export" onclick="exportarExcel()">⬇️ Excel</button>
+        <span class="hint-click">👆 Clic en fila para ver detalle</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr>
+            <th>Hoja</th><th>Fila</th><th>Columna</th>
+            <th>Valor encontrado</th><th>Contribuyente</th>
+            <th>Cédula / NIT</th><th>Radicado</th><th></th>
+          </tr></thead>
+          <tbody id="tabla-body"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+    <div class="card-list" id="card-list"></div>
+  </div>
 
-<footer>Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello</footer>
+  <div id="empty-state">
+    <span class="empty-icon">📂</span>
+    <p>Ingresa un término para buscar en todas las guías</p>
+  </div>
+</div>
+
+<!-- PANEL REPORTES -->
+<div class="panel" id="panel-reportes">
+  <div class="page-hdr">
+    <div class="page-hdr-eyebrow">📊 Estadísticas</div>
+    <h2>Reportes de <em style="font-style:italic;color:var(--gold2)">Búsquedas</em></h2>
+  </div>
+  <div class="stats-strip">
+    <div class="stat-tile"><div class="stat-tile-val" id="stat-hoy">—</div><div class="stat-tile-label">Hoy</div></div>
+    <div class="stat-tile"><div class="stat-tile-val" id="stat-total">—</div><div class="stat-tile-label">Total</div></div>
+    <div class="stat-tile"><div class="stat-tile-val" id="stat-usuarios">—</div><div class="stat-tile-label">Usuarios</div></div>
+  </div>
+  <div class="gcard">
+    <div class="gcard-head">
+      <span class="gcard-title">📋 Historial de búsquedas</span>
+      <div class="rep-filters">
+        <button class="rep-filter-btn active" onclick="filtrarRep('todo',this)">Todo</button>
+        <button class="rep-filter-btn" onclick="filtrarRep('hoy',this)">Hoy</button>
+        <button class="rep-filter-btn" onclick="filtrarRep('semana',this)">Esta semana</button>
+        <button class="btn-export" onclick="exportarReportes()">⬇️ Excel</button>
+      </div>
+    </div>
+    <div id="rep-content" class="rep-loading gcard-body">⏳ Cargando registros...</div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
 
 <!-- MODAL DETALLE -->
 <div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-header-info">
+    <div class="modal-head">
+      <div>
         <h2 id="modal-titulo">Detalle</h2>
         <p id="modal-subtitulo"></p>
       </div>
@@ -374,71 +585,72 @@
       <div class="modal-origen" id="modal-origen"></div>
       <div class="modal-fields" id="modal-fields"></div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-foot">
       <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
     </div>
   </div>
 </div>
 
 <script>
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznFqHRouEBMbEIRTjUMFlML5h50nlr1iLKgKgSrl3CMo8Dz5Eqoyj-lyQ7cZoGtbtjKw/exec";
-const SESSION_KEY     = 'buscador_session';
-const BLOQUEO_KEY     = 'buscador_bloqueo';
-const POR_PAGINA      = 20;
-const MAX_INTENTOS    = 5;
-const BLOQUEO_MIN     = 10; // minutos de bloqueo
+// ════════════════════════════════════════
+// CONSTANTES
+// ════════════════════════════════════════
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznFqHRouEBMbEIRTjUMFlML5h50nlr1iLKgKgSrl3CMo8Dz5Eqoyj-lyQ7cZoGtbtjKw/exec';
+var SESSION_KEY  = 'buscador_session';
+var BLOQUEO_KEY  = 'buscador_bloqueo';
+var POR_PAGINA   = 20;
+var MAX_INTENTOS = 5;
+var BLOQUEO_MIN  = 10;
 
-// ── USUARIOS ──────────────────────────────────────────────────────────────
-// Los usuarios ya NO están hardcodeados aquí.
-// Se cargan dinámicamente desde la hoja '🔐 Usuarios' del Google Sheet
-// a través del Apps Script (accion=usuarios).
-//
-// Para agregar, modificar o desactivar un usuario:
-//   1. Abrir el Google Sheet del sistema
-//   2. Ir a la hoja '🔐 Usuarios'
-//   3. Editar la fila correspondiente (o agregar una nueva)
-//   4. Listo — sin tocar código ni republicar nada
-//
-// Estructura de la hoja:
-//   A: PIN (4 dígitos)  B: NOMBRE  C: CARGO  D: ACTIVO (SI/NO)  E: ADMIN (SI/NO)
-// ──────────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════
+// ESTADO
+// ════════════════════════════════════════
+var USUARIOS           = [];
+var pinActual          = '';
+var intentosFallidos   = 0;
+var usuarioActual      = null;
+var todosLosResultados = [];
+var todosLosRegistros  = [];
+var paginaActual       = 1;
+var repFiltro          = 'todo';
+var historial          = [];
+try { historial = JSON.parse(localStorage.getItem('buscador_historial') || '[]'); } catch(e){}
 
-// Lista de usuarios cargada desde el Sheet al iniciar la página.
-// Se llena con cargarUsuarios() — no modificar manualmente.
-let USUARIOS = [];
-
-let pinActual          = '';
-let intentosFallidos   = 0;
-let usuarioActual      = null;
-let todosLosResultados = [];
-let todosLosRegistros  = [];
-let paginaActual       = 1;
-let historial          = JSON.parse(localStorage.getItem('buscador_historial')||'[]');
-let repFiltro          = 'todo';
-
-// ── INIT ──
-// Flujo de arranque:
-//   1. Verificar si hay bloqueo activo por intentos fallidos
-//   2. Verificar si hay sesión válida guardada (evita pedir PIN si ya inició)
-//   3. Cargar lista de usuarios desde el Sheet (Apps Script accion=usuarios)
-//   4. Mostrar el teclado PIN listo para ingresar
-(function init(){
-  // 1. Verificar bloqueo
+// ════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════
+function esc(v){
+  if(v===null||v===undefined) return '';
+  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function resaltar(texto, termino){
+  if(!texto||!termino) return esc(texto);
+  var escaped = esc(texto);
+  var t = termino.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   try {
-    const bloqueo = JSON.parse(localStorage.getItem(BLOQUEO_KEY)||'null');
-    if (bloqueo && bloqueo.hasta > Date.now()) {
-      mostrarBloqueo(bloqueo.hasta);
-      return;
-    } else if (bloqueo) {
+    return escaped.replace(new RegExp('('+t+')','gi'),'<mark style="background:rgba(245,192,80,.35);color:var(--gold2);border-radius:2px;padding:0 2px">$1</mark>');
+  } catch(e){ return escaped; }
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+(function init(){
+  // Bloqueo activo?
+  try {
+    var bloqueo = JSON.parse(localStorage.getItem(BLOQUEO_KEY)||'null');
+    if(bloqueo && bloqueo.hasta > Date.now()){
+      mostrarBloqueo(bloqueo.hasta); return;
+    } else if(bloqueo){
       localStorage.removeItem(BLOQUEO_KEY);
     }
   } catch(e){}
 
-  // 2. Verificar sesión activa — si existe y no expiró, entrar directo sin pedir PIN
+  // Sesión activa?
   try {
-    const sess = JSON.parse(localStorage.getItem(SESSION_KEY) || null)
-               || JSON.parse(localStorage.getItem('oficios_session') || 'null');
-    if (sess && sess.expira > Date.now()) {
+    var sess = JSON.parse(localStorage.getItem(SESSION_KEY)||'null')
+            || JSON.parse(localStorage.getItem('oficios_session')||'null');
+    if(sess && sess.expira > Date.now()){
       localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
       localStorage.setItem('oficios_session', JSON.stringify(sess));
       usuarioActual = sess;
@@ -448,535 +660,522 @@ let repFiltro          = 'todo';
     }
   } catch(e){}
 
-  // 3. Cargar usuarios desde el Sheet antes de mostrar el PIN
-  //    Mientras carga, el teclado está visible pero los botones desactivados
+  // Cargar usuarios y mostrar PIN
   cargarUsuarios();
+  conectarPinHidden();
 })();
 
-/**
- * Carga la lista de usuarios autorizados desde el Apps Script.
- * Fuente: hoja '🔐 Usuarios' del Google Sheet.
- * Si falla (sin conexión), usa el caché local como respaldo.
- */
-async function cargarUsuarios() {
-  const pinGrid  = document.getElementById('pinIngreso');
-  const pinBtns  = pinGrid ? pinGrid.querySelectorAll('.pin-btn') : [];
+// ════════════════════════════════════════
+// CARGAR USUARIOS DESDE SHEET
+// ════════════════════════════════════════
+function setBtnsPin(disabled){
+  document.querySelectorAll('.pin-btn').forEach(function(b){ b.disabled = disabled; });
+}
+function setPinLabel(txt){
+  var el = document.getElementById('pinLabel');
+  if(el) el.textContent = txt;
+}
 
-  // Deshabilitar botones mientras carga
-  pinBtns.forEach(b => b.disabled = true);
-
-  // Mostrar indicador de carga sutil en los puntos
-  const subtext = pinGrid ? pinGrid.querySelector('div') : null;
-  if (subtext) subtext.textContent = 'Cargando acceso...';
+async function cargarUsuarios(){
+  setBtnsPin(true);
+  setPinLabel('Cargando acceso...');
 
   try {
-    const res  = await fetch(`${APPS_SCRIPT_URL}?accion=usuarios`);
-    const data = await res.json();
-
-    if (data.error) throw new Error(data.error);
-    if (!data.usuarios || !data.usuarios.length) throw new Error('Sin usuarios');
-
+    var res  = await fetch(APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now());
+    var data = await res.json();
+    if(data.error) throw new Error(data.error);
+    if(!data.usuarios || !data.usuarios.length) throw new Error('Sin usuarios');
     USUARIOS = data.usuarios;
-
-    // Guardar en caché local como respaldo para conexiones lentas
-    localStorage.setItem('usuarios_cache', JSON.stringify({
-      datos: USUARIOS,
-      ts: Date.now()
-    }));
-
-    if (subtext) subtext.textContent = 'Ingrese su PIN personal';
-
-  } catch(e) {
-    // Si falla la carga, intentar usar el caché local (máx 24 horas)
+    localStorage.setItem('usuarios_cache', JSON.stringify({datos:USUARIOS, ts:Date.now()}));
+    setPinLabel('Ingresa tu PIN de 4 dígitos');
+  } catch(e){
+    // Fallback caché local (máx 24h)
     try {
-      const cache = JSON.parse(localStorage.getItem('usuarios_cache') || 'null');
-      if (cache && cache.datos && (Date.now() - cache.ts) < 24*60*60*1000) {
+      var cache = JSON.parse(localStorage.getItem('usuarios_cache')||'null');
+      if(cache && cache.datos && (Date.now()-cache.ts) < 86400000){
         USUARIOS = cache.datos;
-        if (subtext) subtext.textContent = 'Ingrese su PIN personal';
-        console.warn('Usuarios cargados desde caché local');
+        setPinLabel('Ingresa tu PIN de 4 dígitos');
       } else {
-        if (subtext) subtext.textContent = '⚠️ Sin conexión — intente recargar';
+        setPinLabel('Sin conexión — recarga la página');
+        pinAlert('info','Sin conexión al servidor. Si tu PIN estaba guardado localmente, intenta igual.');
       }
-    } catch(e2) {
-      if (subtext) subtext.textContent = '⚠️ Error al cargar acceso';
-    }
+    } catch(e2){ setPinLabel('Error al cargar acceso'); }
   } finally {
-    // Habilitar botones siempre, con o sin usuarios cargados
-    pinBtns.forEach(b => b.disabled = false);
-    setTimeout(function() {
-      const h = document.getElementById('pinHidden');
-      if (h) h.focus();
-    }, 100);
+    setBtnsPin(false);
+    setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
   }
 }
 
-function mostrarBloqueo(hasta) {
+// ════════════════════════════════════════
+// BLOQUEO
+// ════════════════════════════════════════
+function mostrarBloqueo(hasta){
   document.getElementById('pinIngreso').style.display = 'none';
-  const blk = document.getElementById('pinBlocked');
+  var blk = document.getElementById('pinBlocked');
   blk.style.display = 'block';
-  const actualizar = () => {
-    const resta = Math.ceil((hasta - Date.now()) / 1000);
-    if (resta <= 0) { localStorage.removeItem(BLOQUEO_KEY); location.reload(); return; }
-    const m = Math.floor(resta/60), s = resta%60;
-    blk.innerHTML = `🔒 Demasiados intentos fallidos.<br>Espere <strong>${m}:${s.toString().padStart(2,'0')}</strong> para intentar de nuevo.`;
-    setTimeout(actualizar, 1000);
-  };
-  actualizar();
-}
-
-/**
- * Aplica la sesión del usuario en la UI.
- * Muestra el nombre en el badge del header.
- * Si el usuario es admin (campo admin=true del Sheet), muestra la pestaña de Reportes.
- * Para hacer admin a alguien: cambiar columna E a SI en la hoja '🔐 Usuarios'.
- */
-function aplicarSesion(u) {
-  document.getElementById('user-badge').textContent = '👤 ' + u.nombre;
-  // Acceso a reportes controlado por columna ADMIN del Sheet — sin hardcodear nombres
-  if (u.admin) {
-    document.getElementById('tab-reportes').style.display = 'flex';
+  function tick(){
+    var resta = Math.ceil((hasta - Date.now()) / 1000);
+    if(resta <= 0){ localStorage.removeItem(BLOQUEO_KEY); location.reload(); return; }
+    var m = Math.floor(resta/60), s = resta%60;
+    blk.innerHTML = '🔒 Demasiados intentos.<br>Espere <strong>' + m + ':' + (s<10?'0':'')+s + '</strong> para intentar.';
+    setTimeout(tick, 1000);
   }
-  renderHistorial();
-  document.getElementById('empty-state').style.display = 'block';
+  tick();
 }
 
-// ── PIN ──
-function presionarPin(d) {
-  if (pinActual.length >= 4) return;
+// ════════════════════════════════════════
+// PIN LOGIC
+// ════════════════════════════════════════
+function pp(d){
+  if(pinActual.length >= 4) return;
   pinActual += d;
   actualizarDots();
-  if (pinActual.length === 4) setTimeout(verificarPin, 150);
+  if(pinActual.length === 4) setTimeout(verificarPin, 180);
 }
-function borrarPin()  { pinActual = pinActual.slice(0,-1); actualizarDots(); }
-function limpiarPin() { pinActual = ''; actualizarDots(); }
+function borrarPin(){ pinActual = pinActual.slice(0,-1); actualizarDots(); }
+function limpiarPin(){ pinActual = ''; actualizarDots(); }
 
-// Conectar input oculto — se ejecuta directo, el script está al final del body
-(function conectarPinHidden() {
-  const hidden = document.getElementById('pinHidden');
-  if (!hidden) return;
+function actualizarDots(){
+  for(var i=0;i<4;i++){
+    var d = document.getElementById('d'+i);
+    if(d) d.className = 'pin-dot' + (i < pinActual.length ? ' filled' : '');
+  }
+  pinAlert(''); // ocultar error al escribir
+}
 
-  // Enfocar al cargar
-  setTimeout(function() { hidden.focus(); }, 300);
+function pinAlert(tipo, msg){
+  var el = document.getElementById('pinError');
+  if(!el) return;
+  if(!tipo){ el.className='pin-alert'; el.textContent=''; return; }
+  el.className = 'pin-alert show ' + tipo;
+  el.textContent = msg || '';
+}
 
-  // Teclado físico
-  hidden.addEventListener('input', function() {
-    const val = hidden.value.replace(/\D/g, '').slice(0, 4);
+function conectarPinHidden(){
+  var hidden = document.getElementById('pinHidden');
+  if(!hidden) return;
+  setTimeout(function(){ hidden.focus(); }, 300);
+
+  hidden.addEventListener('input', function(){
+    var val = hidden.value.replace(/\D/g,'').slice(0,4);
     hidden.value = val;
-    pinActual = '';
-    actualizarDots();
-    for (var i = 0; i < val.length; i++) presionarPin(val[i]);
+    pinActual = ''; actualizarDots();
+    for(var i=0;i<val.length;i++) pp(val[i]);
   });
 
-  // Pegado en el input oculto
-  hidden.addEventListener('paste', function(e) {
+  hidden.addEventListener('paste', function(e){
     e.preventDefault();
-    var texto = (e.clipboardData || window.clipboardData).getData('text');
-    var nums = texto.replace(/\D/g, '').slice(0, 4);
-    hidden.value = '';
-    pinActual = '';
-    actualizarDots();
-    for (var i = 0; i < nums.length; i++) presionarPin(nums[i]);
+    var txt = (e.clipboardData||window.clipboardData).getData('text');
+    var nums = txt.replace(/\D/g,'').slice(0,4);
+    hidden.value = ''; pinActual = ''; actualizarDots();
+    for(var i=0;i<nums.length;i++) pp(nums[i]);
   });
 
-  // Pegado en cualquier parte de la página mientras el overlay esté visible
-  document.addEventListener('paste', function(e) {
-    var overlay = document.getElementById('pinOverlay');
-    if (!overlay || overlay.style.display === 'none') return;
+  document.addEventListener('paste', function(e){
+    var ov = document.getElementById('pinOverlay');
+    if(!ov || ov.style.display==='none') return;
     e.preventDefault();
-    var texto = (e.clipboardData || window.clipboardData).getData('text');
-    var nums = texto.replace(/\D/g, '').slice(0, 4);
-    pinActual = '';
-    actualizarDots();
-    for (var i = 0; i < nums.length; i++) presionarPin(nums[i]);
+    var txt = (e.clipboardData||window.clipboardData).getData('text');
+    var nums = txt.replace(/\D/g,'').slice(0,4);
+    pinActual=''; actualizarDots();
+    for(var i=0;i<nums.length;i++) pp(nums[i]);
   });
 
-  // Re-enfocar al hacer clic en cualquier parte del overlay
-  var overlay = document.getElementById('pinOverlay');
-  if (overlay) {
-    overlay.addEventListener('click', function(e) {
-      // No interferir con los botones del PIN
-      if (e.target.classList.contains('pin-btn')) return;
-      hidden.focus();
-    });
-  }
-})();
-
-function actualizarDots() {
-  for(let i=0;i<4;i++){
-    const d = document.getElementById('d'+i);
-    d.className = 'pin-dot'+(i<pinActual.length?' filled':'');
-  }
-  document.getElementById('pinError').style.display = 'none';
+  // Re-enfocar al clicar overlay
+  var ov = document.getElementById('pinOverlay');
+  if(ov) ov.addEventListener('click', function(e){
+    if(e.target.classList.contains('pin-btn')) return;
+    hidden.focus();
+  });
 }
 
-/**
- * Verifica el PIN ingresado contra la lista USUARIOS cargada del Sheet.
- * Si es válido: crea sesión de 8 horas y oculta el overlay.
- * Si es inválido: incrementa contador de intentos; al llegar a MAX_INTENTOS bloquea.
- */
-function verificarPin() {
-  const usuario = USUARIOS.find(u => u.pin === pinActual);
-  if (usuario) {
+function verificarPin(){
+  if(!USUARIOS.length){
+    pinAlert('warn','⏳ Aún cargando usuarios, espera un momento...');
+    setTimeout(function(){ pinActual=''; actualizarDots(); }, 1200);
+    return;
+  }
+
+  var usuario = USUARIOS.find(function(u){ return u.pin === pinActual; });
+
+  if(usuario){
     intentosFallidos = 0;
     localStorage.removeItem(BLOQUEO_KEY);
-    // Construir objeto de sesión — admin viene del Sheet, no hardcodeado
-    const sess = {
+    var sess = {
       pin:    usuario.pin,
       nombre: usuario.nombre,
       cargo:  usuario.cargo,
-      admin:  usuario.admin || false,   // true si columna E = SI en el Sheet
-      expira: Date.now() + 8*60*60*1000 // sesión de 8 horas
+      admin:  usuario.admin || false,
+      expira: Date.now() + 8*60*60*1000
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
     localStorage.setItem('oficios_session', JSON.stringify(sess));
     usuarioActual = sess;
-    document.getElementById('pinOverlay').style.display = 'none';
-    aplicarSesion(sess);
+
+    // Feedback positivo en la burbuja
+    var bubble = document.getElementById('pinBubble');
+    if(bubble){
+      bubble.innerHTML = '¡Bienvenido, <strong>' + sess.nombre.split(' ')[0] + '</strong>! 🎉';
+      bubble.style.borderColor = 'rgba(34,197,94,.4)';
+      bubble.style.color = '#86efac';
+      bubble.style.background = 'rgba(34,197,94,.1)';
+    }
+
+    setTimeout(function(){
+      document.getElementById('pinOverlay').style.display = 'none';
+      aplicarSesion(sess);
+    }, 600);
+
   } else {
     intentosFallidos++;
-    for(let i=0;i<4;i++) document.getElementById('d'+i).className='pin-dot error';
-    const restantes = MAX_INTENTOS - intentosFallidos;
+    for(var i=0;i<4;i++){
+      var d = document.getElementById('d'+i);
+      if(d) d.className = 'pin-dot error';
+    }
+    sacudirPinRobot();
 
-    if (intentosFallidos >= MAX_INTENTOS) {
-      // Bloquear por BLOQUEO_MIN minutos
-      const hasta = Date.now() + BLOQUEO_MIN * 60 * 1000;
-      localStorage.setItem(BLOQUEO_KEY, JSON.stringify({hasta}));
+    var restantes = MAX_INTENTOS - intentosFallidos;
+    if(intentosFallidos >= MAX_INTENTOS){
+      var hasta = Date.now() + BLOQUEO_MIN*60*1000;
+      localStorage.setItem(BLOQUEO_KEY, JSON.stringify({hasta:hasta}));
       mostrarBloqueo(hasta);
     } else {
-      const err = document.getElementById('pinError');
-      err.textContent = `❌ PIN incorrecto. ${restantes} intento(s) restante(s).`;
-      err.style.display = 'block';
-      const intentosEl = document.getElementById('pinIntentos');
-      intentosEl.textContent = restantes <= 2 ? `⚠️ ${restantes} intento(s) antes del bloqueo` : '';
-      setTimeout(()=>{ pinActual=''; actualizarDots(); }, 900);
+      pinAlert('err', '❌ PIN incorrecto. ' + restantes + ' intento(s) restante(s).');
+      if(restantes <= 2){
+        document.getElementById('pinIntentos').textContent = '⚠️ ' + restantes + ' intento(s) antes del bloqueo';
+      }
+      // Burbuja de error
+      var bubble = document.getElementById('pinBubble');
+      if(bubble){
+        bubble.innerHTML = 'Ese PIN no es correcto 🤔<br>Inténtalo de nuevo';
+        bubble.style.borderColor = 'rgba(239,68,68,.4)';
+        bubble.style.color = '#fca5a5';
+        bubble.style.background = 'rgba(239,68,68,.1)';
+      }
+      setTimeout(function(){ pinActual=''; actualizarDots(); }, 1000);
     }
   }
 }
 
-function cerrarSesion() {
+function sacudirPinRobot(){
+  var r = document.getElementById('pinRobot');
+  if(!r) return;
+  r.classList.remove('shake');
+  void r.offsetWidth;
+  r.classList.add('shake');
+}
+
+// ════════════════════════════════════════
+// SESIÓN
+// ════════════════════════════════════════
+function aplicarSesion(u){
+  document.getElementById('userNombre').textContent = u.nombre;
+  if(u.admin) document.getElementById('tab-reportes').style.display = 'flex';
+  renderHistorial();
+  document.getElementById('empty-state').style.display = 'block';
+  setTimeout(function(){ document.getElementById('termino').focus(); }, 200);
+}
+
+function cerrarSesion(){
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem('oficios_session');
   location.reload();
 }
 
-// ── NAVEGACIÓN ──
-function goPanel(p) {
-  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+// ════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════
+function goPanel(p){
+  document.querySelectorAll('.panel').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(el){ el.classList.remove('active'); });
   document.getElementById('panel-'+p).classList.add('active');
   document.getElementById('tab-'+p).classList.add('active');
-  if (p==='reportes') cargarReportes();
+  if(p==='reportes') cargarReportes();
+  if(p==='buscar') setTimeout(function(){ document.getElementById('termino').focus(); },100);
 }
 
-// ── HISTORIAL ──
-function renderHistorial() {
-  if (!historial.length) return;
-  document.getElementById('historial-wrap').style.display='flex';
-  document.getElementById('historial-chips').innerHTML =
-    historial.slice(0,5).map(t=>`<span class="hist-chip" onclick="usarHistorial('${esc(t)}')">${esc(t)}</span>`).join('');
+// ════════════════════════════════════════
+// HISTORIAL DE BÚSQUEDAS
+// ════════════════════════════════════════
+function renderHistorial(){
+  if(!historial.length){ document.getElementById('hist-wrap').style.display='none'; return; }
+  document.getElementById('hist-wrap').style.display = 'flex';
+  document.getElementById('hist-chips').innerHTML =
+    historial.slice(0,6).map(function(t){
+      return '<span class="hist-chip" onclick="usarHistorial(\''+esc(t)+'\')">'+esc(t)+'</span>';
+    }).join('');
 }
-function usarHistorial(t) { document.getElementById('termino').value=t; buscar(); }
-function agregarHistorial(t) {
-  historial=[t,...historial.filter(h=>h!==t)].slice(0,8);
-  localStorage.setItem('buscador_historial',JSON.stringify(historial));
+function usarHistorial(t){ document.getElementById('termino').value=t; buscar(); }
+function agregarHistorial(t){
+  historial = [t].concat(historial.filter(function(h){ return h!==t; })).slice(0,8);
+  localStorage.setItem('buscador_historial', JSON.stringify(historial));
   renderHistorial();
 }
-
-function borrarHistorial() {
+function borrarHistorial(){
   historial = [];
   localStorage.removeItem('buscador_historial');
-  document.getElementById('historial-wrap').style.display = 'none';
-  document.getElementById('historial-chips').innerHTML = '';
+  document.getElementById('hist-wrap').style.display = 'none';
 }
 
-// ── BUSCAR ──
-function setStatus(tipo,msg,spin) {
-  const bar=document.getElementById('status-bar');
-  bar.className='status-bar '+tipo;
-  document.getElementById('spinner').style.display=spin?'block':'none';
-  document.getElementById('status-msg').textContent=msg;
+// ════════════════════════════════════════
+// BÚSQUEDA
+// ════════════════════════════════════════
+function setStatus(tipo, msg, spin){
+  var bar = document.getElementById('status-bar');
+  bar.className = 'status-bar ' + tipo;
+  document.getElementById('spinner').style.display = spin ? 'block' : 'none';
+  document.getElementById('status-msg').textContent = msg;
 }
 
-async function buscar() {
-  const termino=document.getElementById('termino').value.trim();
-  if(!termino){setStatus('error','⚠️ Ingrese un término de búsqueda.');return;}
-  if(!usuarioActual){setStatus('error','⚠️ Debe iniciar sesión primero.');return;}
+async function buscar(){
+  var termino = document.getElementById('termino').value.trim();
+  if(!termino){ setStatus('error','⚠️ Ingresa un término de búsqueda.'); return; }
+  if(!usuarioActual){ setStatus('error','⚠️ Debes iniciar sesión primero.'); return; }
 
-  const exacto=document.getElementById('exacto').checked;
-  const mayus=document.getElementById('mayus').checked;
-  const btn=document.getElementById('btn-buscar');
-  btn.disabled=true;
-  document.getElementById('results-area').style.display='none';
-  document.getElementById('empty-state').style.display='none';
-  setStatus('loading','Buscando en todas las hojas...',true);
-  const rtHint = document.getElementById('realtime-hint');
-  if (rtHint) rtHint.style.display = 'inline';
+  var exacto = document.getElementById('exacto').checked;
+  var mayus  = document.getElementById('mayus').checked;
+  var btn    = document.getElementById('btn-buscar');
+  btn.disabled = true;
+  document.getElementById('results-area').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'none';
+  setStatus('loading','Buscando en todas las hojas...', true);
+  document.getElementById('realtime-hint').style.display = 'inline';
 
   try {
-    const params=new URLSearchParams({termino,exacto,mayus,usuario:usuarioActual.nombre,cargo:usuarioActual.cargo});
-    const res=await fetch(`${APPS_SCRIPT_URL}?${params}`);
-    const data=await res.json();
-    if(data.error){setStatus('error','❌ '+data.error);document.getElementById('empty-state').style.display='block';return;}
-    todosLosResultados=data.resultados||[];
+    var params = new URLSearchParams({termino:termino, exacto:exacto, mayus:mayus, usuario:usuarioActual.nombre, cargo:usuarioActual.cargo});
+    var res  = await fetch(APPS_SCRIPT_URL + '?' + params);
+    var data = await res.json();
+
+    if(data.error){ setStatus('error','❌ '+data.error); document.getElementById('empty-state').style.display='block'; return; }
+
+    todosLosResultados = data.resultados || [];
     if(!todosLosResultados.length){
-      setStatus('empty',`⚠️ No se encontró "${termino}" en ninguna hoja.`);
-      document.getElementById('empty-state').style.display='block';
-      document.getElementById('empty-state').querySelector('p').textContent=`Sin resultados para "${termino}"`;
+      setStatus('empty','⚠️ Sin resultados para "'+termino+'"');
+      document.getElementById('empty-state').style.display = 'block';
+      document.getElementById('empty-state').querySelector('p').textContent = 'Sin resultados para "'+termino+'"';
       return;
     }
     agregarHistorial(termino);
-    setStatus('success',`✅ ${todosLosResultados.length} resultado(s) para "${termino}"`);
-    paginaActual=1;
+    setStatus('success','✅ '+todosLosResultados.length+' resultado(s) para "'+termino+'"');
+    paginaActual = 1;
     renderResultados();
-  } catch(err) {
-    const esTimeout = err.message && err.message.includes('timeout');
-    setStatus('error', esTimeout
-      ? '⏱️ El sistema tardó demasiado en responder. Intente de nuevo.'
-      : '🔌 El sistema no está disponible en este momento. Intente en unos minutos.');
+  } catch(err){
+    setStatus('error','🔌 No disponible en este momento. Intente de nuevo.');
     document.getElementById('empty-state').style.display = 'block';
-    document.getElementById('empty-state').querySelector('.empty-icon').textContent = '🔌';
     document.getElementById('empty-state').querySelector('p').innerHTML =
-      'Sistema no disponible. <button onclick="buscar()" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-left:4px">Reintentar</button>';
+      'Error de conexión. <button onclick="buscar()" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-left:6px">Reintentar</button>';
   } finally {
-    btn.disabled=false;
-    const rtHint = document.getElementById('realtime-hint');
-    if (rtHint) rtHint.style.display = 'none';
+    btn.disabled = false;
+    document.getElementById('realtime-hint').style.display = 'none';
   }
 }
 
-// ── RENDER RESULTADOS ──
-function renderResultados() {
-  const termino = document.getElementById('termino').value.trim();
-  const total=todosLosResultados.length;
-  const totalPg=Math.ceil(total/POR_PAGINA);
-  const inicio=(paginaActual-1)*POR_PAGINA;
-  const fin=Math.min(inicio+POR_PAGINA,total);
-  const pagina=todosLosResultados.slice(inicio,fin);
-  document.getElementById('results-count').textContent=total;
-  const hint = document.getElementById('results-hint');
-  if (hint) {
-    if (total > POR_PAGINA) {
-      hint.style.display = 'block';
-      hint.textContent = `Mostrando ${inicio+1}–${fin} de ${total}. ${total > 100 ? '💡 Refine la búsqueda para mejores resultados.' : ''}`;
-    } else {
-      hint.style.display = 'none';
-    }
+function renderResultados(){
+  var termino  = document.getElementById('termino').value.trim();
+  var total    = todosLosResultados.length;
+  var totalPg  = Math.ceil(total / POR_PAGINA);
+  var inicio   = (paginaActual-1) * POR_PAGINA;
+  var fin      = Math.min(inicio+POR_PAGINA, total);
+  var pagina   = todosLosResultados.slice(inicio, fin);
+
+  document.getElementById('results-count').textContent = total;
+  var hint = document.getElementById('results-hint');
+  if(total > POR_PAGINA){
+    hint.style.display = 'block';
+    hint.textContent = 'Mostrando '+(inicio+1)+'–'+fin+' de '+total+(total>100?' · 💡 Refina la búsqueda':'');
+  } else {
+    hint.style.display = 'none';
   }
 
-  document.getElementById('tabla-body').innerHTML=pagina.map((r,i)=>`
-    <tr onclick="abrirDetalle(${inicio+i})">
-      <td><span class="tag-hoja">${esc(r[0])}</span></td>
-      <td>${esc(r[1])}</td><td>${esc(r[2])}</td>
-      <td class="val-encontrado">${resaltar(r[3], termino)}</td>
-      <td>${resaltar(r[4], termino)}</td><td>${resaltar(r[5], termino)}</td><td>${resaltar(r[6], termino)}</td>
-      <td><button class="btn-ver" onclick="event.stopPropagation();abrirDetalle(${inicio+i})">Ver todo</button></td>
-    </tr>`).join('');
+  document.getElementById('tabla-body').innerHTML = pagina.map(function(r,i){
+    return '<tr onclick="abrirDetalle('+(inicio+i)+')">' +
+      '<td><span class="tag-sheet">'+esc(r[0])+'</span></td>' +
+      '<td style="color:var(--soft)">'+esc(r[1])+'</td>' +
+      '<td style="color:var(--soft)">'+esc(r[2])+'</td>' +
+      '<td><span class="val-found">'+resaltar(r[3],termino)+'</span></td>' +
+      '<td>'+resaltar(r[4],termino)+'</td>' +
+      '<td class="mono" style="font-size:11px">'+resaltar(r[5],termino)+'</td>' +
+      '<td class="mono" style="font-size:11px">'+resaltar(r[6],termino)+'</td>' +
+      '<td><button class="btn-ver" onclick="event.stopPropagation();abrirDetalle('+(inicio+i)+')">Ver</button></td>' +
+    '</tr>';
+  }).join('');
 
-  document.getElementById('card-list').innerHTML=pagina.map((r,i)=>`
-    <div class="result-card" onclick="abrirDetalle(${inicio+i})" style="animation-delay:${i*.04}s">
-      <div class="card-top"><span class="card-hoja">${esc(r[0])}</span><span class="card-fila">Fila ${esc(r[1])}</span></div>
-      <div class="card-valor">${resaltar(r[3], termino)}</div>
-      <div class="card-fields">
-        ${r[4]?`<div class="card-field"><span>Contribuyente</span>${esc(r[4])}</div>`:''}
-        ${r[5]?`<div class="card-field"><span>Cédula / NIT</span>${esc(r[5])}</div>`:''}
-        ${r[6]?`<div class="card-field"><span>Radicado</span>${esc(r[6])}</div>`:''}
-      </div>
-      <div class="card-ver"><button class="btn-ver">Ver detalle →</button></div>
-    </div>`).join('');
+  document.getElementById('card-list').innerHTML = pagina.map(function(r,i){
+    return '<div class="result-card" onclick="abrirDetalle('+(inicio+i)+')" style="animation-delay:'+(i*.04)+'s">' +
+      '<div class="card-top"><span class="tag-sheet">'+esc(r[0])+'</span><span style="font-size:10px;color:var(--soft)">Fila '+esc(r[1])+'</span></div>' +
+      '<div class="card-valor">'+resaltar(r[3],termino)+'</div>' +
+      (r[4]?'<div class="card-field"><span>Contribuyente</span>'+esc(r[4])+'</div>':'') +
+      (r[5]?'<div class="card-field"><span>Cédula / NIT</span>'+esc(r[5])+'</div>':'') +
+      (r[6]?'<div class="card-field"><span>Radicado</span>'+esc(r[6])+'</div>':'') +
+      '<div style="margin-top:10px;text-align:right"><button class="btn-ver">Ver detalle →</button></div>' +
+    '</div>';
+  }).join('');
 
-  let pgHtml='';
-  if(totalPg>1){
-    pgHtml+=`<button class="pg-btn" onclick="irPagina(${paginaActual-1})" ${paginaActual===1?'disabled':''}>‹</button>`;
-    for(let p=1;p<=totalPg;p++){
+  // Paginación
+  var pgHtml = '';
+  if(totalPg > 1){
+    pgHtml += '<button class="pg-btn" onclick="irPag('+(paginaActual-1)+')" '+(paginaActual===1?'disabled':'')+'>‹</button>';
+    for(var p=1;p<=totalPg;p++){
       if(p===1||p===totalPg||Math.abs(p-paginaActual)<=1)
-        pgHtml+=`<button class="pg-btn ${p===paginaActual?'active':''}" onclick="irPagina(${p})">${p}</button>`;
-      else if(Math.abs(p-paginaActual)===2) pgHtml+=`<span class="pg-info">…</span>`;
+        pgHtml += '<button class="pg-btn'+(p===paginaActual?' active':'')+'" onclick="irPag('+p+')">'+p+'</button>';
+      else if(Math.abs(p-paginaActual)===2) pgHtml += '<span class="pg-info">…</span>';
     }
-    pgHtml+=`<button class="pg-btn" onclick="irPagina(${paginaActual+1})" ${paginaActual===totalPg?'disabled':''}>›</button>`;
-    pgHtml+=`<span class="pg-info">${inicio+1}–${fin} de ${total}</span>`;
+    pgHtml += '<button class="pg-btn" onclick="irPag('+(paginaActual+1)+')" '+(paginaActual===totalPg?'disabled':'')+'>›</button>';
+    pgHtml += '<span class="pg-info">'+(inicio+1)+'–'+fin+' de '+total+'</span>';
   }
-  document.getElementById('pagination').innerHTML=pgHtml;
-  document.getElementById('results-area').style.display='block';
+  document.getElementById('pagination').innerHTML = pgHtml;
+  document.getElementById('results-area').style.display = 'block';
 }
 
-function irPagina(p){
-  const totalPg=Math.ceil(todosLosResultados.length/POR_PAGINA);
+function irPag(p){
+  var totalPg = Math.ceil(todosLosResultados.length / POR_PAGINA);
   if(p<1||p>totalPg) return;
-  paginaActual=p; renderResultados();
-  window.scrollTo({top:200,behavior:'smooth'});
+  paginaActual = p;
+  renderResultados();
+  window.scrollTo({top:200, behavior:'smooth'});
 }
 
-// ── MODAL ──
-function abrirDetalle(idx){
-  const r=todosLosResultados[idx]; if(!r) return;
-  const [hoja,fila,colFound,valFound,nombre,cedula,radicado,otros]=r;
-  document.getElementById('modal-titulo').textContent=valFound||'Detalle';
-  document.getElementById('modal-subtitulo').textContent=`Hoja: ${hoja} · Fila ${fila}`;
-  document.getElementById('modal-origen').innerHTML=
-    `<span>📋</span><span>Columna <strong>${colFound}</strong> — hoja <strong>${hoja}</strong>, fila <strong>${fila}</strong></span>`;
-  // Extraer COMPARENDO antes de renderizar
-  let comparendo = '';
-  let otrosFiltrados = otros;
-  if (otros) {
-    const partes = otros.split(' | ');
-    const cp = partes.find(p => p.startsWith('Comparendo:'));
-    if (cp) { comparendo = cp.substring(11).trim(); otrosFiltrados = partes.filter(p => !p.startsWith('Comparendo:')).join(' | '); }
-  }
-  let html='';
-  if(comparendo) html+=`<div class="modal-field full" style="grid-column:1/-1;border-left:3px solid var(--navy);background:#e8f0fc;border-radius:8px;padding:10px 14px;margin-bottom:2px"><div class="modal-field-label">🚦 COMPARENDO</div><div class="modal-field-value" style="font-size:15px;font-weight:700;color:var(--navy)">${esc(comparendo)}</div></div>`;
-  [{label:'Valor encontrado',value:valFound,hi:true},{label:'Contribuyente',value:nombre},
-   {label:'Cédula / NIT',value:cedula},{label:'Radicado',value:radicado}]
-    .forEach(f=>{if(f.value) html+=`<div class="modal-field${f.hi?' highlight':''}"><div class="modal-field-label">${esc(f.label)}</div><div class="modal-field-value">${esc(f.value)}</div></div>`;});
-  if(otrosFiltrados) otrosFiltrados.split(' | ').forEach(p=>{
-    const sep=p.indexOf(':'); if(sep<0) return;
-    const k=p.substring(0,sep).trim(),v=p.substring(sep+1).trim();
-    html+=`<div class="modal-field${v.length>40?' full':''}"><div class="modal-field-label">${esc(k)}</div><div class="modal-field-value">${esc(v)}</div></div>`;
-  });
-  document.getElementById('modal-fields').innerHTML=html||'<p style="color:var(--text-soft);font-size:13px">Sin campos adicionales.</p>';
-  document.getElementById('modal-overlay').classList.add('open');
-  document.body.style.overflow='hidden';
-}
-function cerrarModal(e){
-  if(e&&e.target!==document.getElementById('modal-overlay')) return;
-  document.getElementById('modal-overlay').classList.remove('open');
-  document.body.style.overflow='';
-}
-
-// ── REPORTES ──
-async function cargarReportes(){
-  document.getElementById('rep-content').innerHTML='<div class="rep-loading">⏳ Cargando registros...</div>';
-  try {
-    const res=await fetch(`${APPS_SCRIPT_URL}?accion=registros`);
-    const data=await res.json();
-    todosLosRegistros=data.registros||[];
-    renderReportes();
-  } catch(e){
-    document.getElementById('rep-content').innerHTML='<div class="rep-loading">❌ Error cargando registros.</div>';
-  }
-}
-
-function filtrarRep(f, btn){
-  repFiltro=f;
-  document.querySelectorAll('.rep-filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderReportes();
-}
-
-function renderReportes(){
-  const hoy=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'/');
-  const ahora=new Date();
-
-  let filtrados=todosLosRegistros;
-  if(repFiltro==='hoy'){
-    filtrados=filtrados.filter(r=>r.fecha===hoy);
-  } else if(repFiltro==='semana'){
-    const hace7=new Date(ahora-7*24*60*60*1000);
-    filtrados=filtrados.filter(r=>{
-      const p=r.fecha.split('/');
-      if(p.length<3) return false;
-      const d=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
-      return d>=hace7;
-    });
-  }
-
-  // Stats
-  const busquedasHoy=todosLosRegistros.filter(r=>r.fecha===hoy).length;
-  const usuarios=new Set(todosLosRegistros.map(r=>r.usuario)).size;
-  document.getElementById('stat-hoy').textContent=busquedasHoy;
-  document.getElementById('stat-total').textContent=todosLosRegistros.length;
-  document.getElementById('stat-usuarios').textContent=usuarios;
-
-  if(!filtrados.length){
-    document.getElementById('rep-content').innerHTML='<div class="rep-loading">📭 No hay registros para este período.</div>';
-    return;
-  }
-
-  // Tabla invertida (más reciente primero)
-  const rows=[...filtrados].reverse().map(r=>`
-    <tr>
-      <td style="white-space:nowrap">${esc(r.fecha)}</td>
-      <td style="white-space:nowrap">${esc(r.hora)}</td>
-      <td style="font-weight:600">${esc(r.usuario)}</td>
-      <td style="color:var(--text-soft);font-size:11px">${esc(r.cargo)}</td>
-      <td style="background:var(--yellow-hl);font-weight:600;color:#7c4a00">${esc(r.termino)}</td>
-      <td style="text-align:center"><span style="background:var(--navy);color:#fff;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:600">${esc(r.total)}</span></td>
-    </tr>`).join('');
-
-  document.getElementById('rep-content').innerHTML=`
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr>
-          <th>Fecha</th><th>Hora</th><th>Usuario</th><th>Cargo</th><th>Término buscado</th><th>Resultados</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
-}
-
-function exportarReportes(){
-  if(!todosLosRegistros.length) return;
-  const ws=XLSX.utils.json_to_sheet(todosLosRegistros);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Registros');
-  XLSX.writeFile(wb,`registros_busquedas_${new Date().toISOString().slice(0,10)}.xlsx`);
-}
-
-// ── EXPORTAR EXCEL RESULTADOS ──
-function exportarExcel(){
-  if(!todosLosResultados.length) return;
-  const filas=todosLosResultados.map(r=>({'Hoja':r[0],'Fila':r[1],'Columna':r[2],'Valor':r[3],'Contribuyente':r[4],'Cédula/NIT':r[5],'Radicado':r[6],'Otros':r[7]}));
-  const ws=XLSX.utils.json_to_sheet(filas);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Resultados');
-  const t=document.getElementById('termino').value.trim().replace(/[^a-zA-Z0-9]/g,'_');
-  XLSX.writeFile(wb,`busqueda_${t}_${new Date().toISOString().slice(0,10)}.xlsx`);
-}
-
-function esc(v){
-  if(v===null||v===undefined) return '';
-  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function resaltar(texto, termino) {
-  if (!texto || !termino) return esc(texto);
-  const escaped = esc(texto);
-  const escapedTerm = termino.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  try {
-    const regex = new RegExp(`(${escapedTerm})`, 'gi');
-    return escaped.replace(regex, '<mark style="background:#fbbf24;color:#1a1a2e;border-radius:2px;padding:0 1px">$1</mark>');
-  } catch(e) { return escaped; }
-}
-
-// ── Búsqueda en tiempo real ──
-let _searchTimer = null;
-document.getElementById('termino').addEventListener('input', e => {
-  const val = e.target.value.trim();
-  const btnClear = document.getElementById('btn-clear');
-  if (btnClear) btnClear.style.display = val ? 'block' : 'none';
-  clearTimeout(_searchTimer);
-  if (val.length >= 3) {
-    _searchTimer = setTimeout(() => buscar(), 600);
-  } else if (!val) {
-    // Limpiar resultados si borra todo
-    document.getElementById('results-area').style.display = 'none';
-    document.getElementById('empty-state').style.display = 'block';
-    document.getElementById('empty-state').querySelector('p').textContent = 'Ingrese un término para buscar en las guías';
-    document.getElementById('status-bar').className = 'status-bar';
-  }
-});
-document.getElementById('termino').addEventListener('keydown', e => { if(e.key==='Enter') { clearTimeout(_searchTimer); buscar(); } });
-document.addEventListener('keydown', e => { if(e.key==='Escape') cerrarModal(); });
-
-function limpiarBusqueda() {
+function limpiarBusqueda(){
   document.getElementById('termino').value = '';
   document.getElementById('btn-clear').style.display = 'none';
   document.getElementById('results-area').style.display = 'none';
   document.getElementById('empty-state').style.display = 'block';
-  document.getElementById('empty-state').querySelector('p').textContent = 'Ingrese un término para buscar en las guías';
+  document.getElementById('empty-state').querySelector('p').textContent = 'Ingresa un término para buscar en todas las guías';
   document.getElementById('status-bar').className = 'status-bar';
   todosLosResultados = [];
   document.getElementById('termino').focus();
 }
+
+// ════════════════════════════════════════
+// MODAL DETALLE
+// ════════════════════════════════════════
+function abrirDetalle(idx){
+  var r = todosLosResultados[idx];
+  if(!r) return;
+  var hoja=r[0],fila=r[1],col=r[2],val=r[3],nombre=r[4],cedula=r[5],radicado=r[6],otros=r[7];
+  document.getElementById('modal-titulo').textContent = val || 'Detalle';
+  document.getElementById('modal-subtitulo').textContent = 'Hoja: '+hoja+' · Fila '+fila;
+  document.getElementById('modal-origen').innerHTML =
+    '<span>📋</span><span>Columna <strong>'+esc(col)+'</strong> — hoja <strong>'+esc(hoja)+'</strong>, fila <strong>'+esc(fila)+'</strong></span>';
+
+  var comparendo='', otrosFil=otros;
+  if(otros){
+    var partes=otros.split(' | ');
+    var cp=partes.find(function(p){ return p.startsWith('Comparendo:'); });
+    if(cp){ comparendo=cp.substring(11).trim(); otrosFil=partes.filter(function(p){ return !p.startsWith('Comparendo:'); }).join(' | '); }
+  }
+
+  var html='';
+  if(comparendo) html+='<div class="modal-field full" style="border-left:3px solid var(--blue2)"><div class="mf-label">🚦 COMPARENDO</div><div class="mf-value" style="font-size:15px;font-weight:700;color:#93c5fd">'+esc(comparendo)+'</div></div>';
+  [{l:'Valor encontrado',v:val,hi:true},{l:'Contribuyente',v:nombre},{l:'Cédula / NIT',v:cedula},{l:'Radicado',v:radicado}]
+    .forEach(function(f){
+      if(f.v) html+='<div class="modal-field'+(f.hi?' hi':'')+'"><div class="mf-label">'+esc(f.l)+'</div><div class="mf-value">'+esc(f.v)+'</div></div>';
+    });
+  if(otrosFil) otrosFil.split(' | ').forEach(function(p){
+    var sep=p.indexOf(':'); if(sep<0) return;
+    var k=p.substring(0,sep).trim(), v=p.substring(sep+1).trim();
+    html+='<div class="modal-field'+(v.length>40?' full':'')+'"><div class="mf-label">'+esc(k)+'</div><div class="mf-value">'+esc(v)+'</div></div>';
+  });
+  document.getElementById('modal-fields').innerHTML = html || '<p style="color:var(--soft);font-size:13px">Sin campos adicionales.</p>';
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function cerrarModal(e){
+  if(e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ════════════════════════════════════════
+// REPORTES
+// ════════════════════════════════════════
+async function cargarReportes(){
+  document.getElementById('rep-content').innerHTML = '<div class="rep-loading">⏳ Cargando registros...</div>';
+  try {
+    var res  = await fetch(APPS_SCRIPT_URL + '?accion=registros&t=' + Date.now());
+    var data = await res.json();
+    todosLosRegistros = data.registros || [];
+    renderReportes();
+  } catch(e){
+    document.getElementById('rep-content').innerHTML = '<div class="rep-loading">❌ Error cargando registros.</div>';
+  }
+}
+function filtrarRep(f, btn){
+  repFiltro = f;
+  document.querySelectorAll('.rep-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderReportes();
+}
+function renderReportes(){
+  var hoy   = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var ahora = new Date();
+  var filtrados = todosLosRegistros;
+  if(repFiltro==='hoy') filtrados=filtrados.filter(function(r){ return r.fecha===hoy; });
+  if(repFiltro==='semana'){
+    var hace7=new Date(ahora-7*24*60*60*1000);
+    filtrados=filtrados.filter(function(r){
+      var p=r.fecha.split('/');
+      if(p.length<3) return false;
+      return new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]))>=hace7;
+    });
+  }
+  document.getElementById('stat-hoy').textContent     = todosLosRegistros.filter(function(r){ return r.fecha===hoy; }).length;
+  document.getElementById('stat-total').textContent   = todosLosRegistros.length;
+  document.getElementById('stat-usuarios').textContent= new Set(todosLosRegistros.map(function(r){ return r.usuario; })).size;
+
+  if(!filtrados.length){
+    document.getElementById('rep-content').innerHTML='<div class="rep-loading">📭 Sin registros para este período.</div>';
+    return;
+  }
+  var rows = filtrados.slice().reverse().map(function(r){
+    return '<tr><td style="white-space:nowrap">'+esc(r.fecha)+'</td><td>'+esc(r.hora)+'</td><td style="font-weight:600">'+esc(r.usuario)+'</td><td style="color:var(--soft);font-size:11px">'+esc(r.cargo)+'</td><td style="color:var(--gold2);font-weight:600">'+esc(r.termino)+'</td><td style="text-align:center"><span style="background:rgba(45,141,232,.2);color:#93c5fd;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:600">'+esc(r.total)+'</span></td></tr>';
+  }).join('');
+  document.getElementById('rep-content').innerHTML=
+    '<div style="overflow-x:auto"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Usuario</th><th>Cargo</th><th>Término</th><th>Resultados</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+function exportarReportes(){
+  if(!todosLosRegistros.length) return;
+  var ws=XLSX.utils.json_to_sheet(todosLosRegistros);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Registros');
+  XLSX.writeFile(wb,'registros_busquedas_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ════════════════════════════════════════
+// EXPORTAR EXCEL
+// ════════════════════════════════════════
+function exportarExcel(){
+  if(!todosLosResultados.length) return;
+  var filas=todosLosResultados.map(function(r){
+    return {'Hoja':r[0],'Fila':r[1],'Columna':r[2],'Valor':r[3],'Contribuyente':r[4],'Cedula_NIT':r[5],'Radicado':r[6],'Otros':r[7]};
+  });
+  var ws=XLSX.utils.json_to_sheet(filas);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Resultados');
+  var t=document.getElementById('termino').value.trim().replace(/[^a-zA-Z0-9]/g,'_');
+  XLSX.writeFile(wb,'busqueda_'+t+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ════════════════════════════════════════
+// EVENTOS
+// ════════════════════════════════════════
+var _timer = null;
+document.getElementById('termino').addEventListener('input', function(e){
+  var val = e.target.value.trim();
+  document.getElementById('btn-clear').style.display = val ? 'block' : 'none';
+  clearTimeout(_timer);
+  if(val.length >= 3){
+    _timer = setTimeout(buscar, 700);
+  } else if(!val){
+    limpiarBusqueda();
+  }
+});
+document.getElementById('termino').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){ clearTimeout(_timer); buscar(); }
+});
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape') cerrarModal();
+});
 </script>
 </body>
 </html>
