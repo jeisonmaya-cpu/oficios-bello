@@ -554,6 +554,62 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
 @keyframes tdArmL{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
 @keyframes tdArmR{0%,100%{transform:rotate(10deg)}50%{transform:rotate(-10deg)}}
 
+/* ── TOAST ── */
+.toast-d{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(22,163,74,.95);color:#fff;
+  font-size:13px;font-weight:600;padding:10px 22px;border-radius:20px;
+  backdrop-filter:blur(8px);z-index:1000;
+  opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;
+}
+.toast-d.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── ÚLTIMO OFICIO ── */
+.ultimo-oficio{
+  display:none;
+  background:rgba(45,141,232,.1);border:1px solid rgba(45,141,232,.2);
+  border-radius:10px;padding:10px 16px;margin-bottom:14px;
+  font-size:12px;animation:fadeUp .4s ease both;
+}
+.ultimo-oficio-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--soft);margin-bottom:4px;}
+.ultimo-oficio-data{color:#93c5fd;font-weight:600;}
+.btn-reusar{
+  background:rgba(45,141,232,.2);color:#93c5fd;
+  border:1px solid rgba(45,141,232,.3);border-radius:6px;
+  padding:4px 12px;font-size:11px;font-weight:700;
+  cursor:pointer;transition:all .15s;margin-left:10px;
+  font-family:'DM Sans',sans-serif;
+}
+.btn-reusar:hover{background:rgba(45,141,232,.35);}
+
+/* ── AUTOCOMPLETE CÉDULA ── */
+.autocomplete-box{
+  position:absolute;top:100%;left:0;right:0;z-index:50;
+  background:linear-gradient(145deg,#0d2550,#091830);
+  border:1px solid rgba(45,141,232,.3);border-radius:0 0 10px 10px;
+  overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+.ac-item{
+  padding:10px 14px;font-size:12.5px;cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  transition:background .15s;display:flex;align-items:center;gap:10px;
+}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:rgba(45,141,232,.2);}
+.ac-item-name{font-weight:700;color:var(--text);}
+.ac-item-ced{font-size:11px;color:var(--soft);font-family:monospace;}
+.ac-item-tipo{font-size:10px;background:rgba(245,192,80,.15);color:var(--gold2);padding:2px 7px;border-radius:4px;margin-left:auto;}
+.fg-rel{position:relative;}
+
+/* ── CONTADOR OFICIOS ── */
+.banner-contador{
+  margin-left:auto;display:flex;align-items:center;gap:6px;
+  background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.25);
+  color:var(--gold2);font-size:11px;font-weight:700;
+  padding:4px 12px;border-radius:16px;
+}
+.banner-contador-num{font-family:'DM Serif Display',serif;font-size:18px;line-height:1;}
+
 /* ── ANIMATIONS ── */
 @keyframes fadeUp   { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 @keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
@@ -569,6 +625,9 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
 </head>
 <body>
 <div class="bg"></div>
+
+<!-- Toast -->
+<div class="toast-d" id="toastD"></div>
 
 <!-- ═══════════════════════════ WIZARD TEODORO ═══════════════════════════ -->
 <div class="wiz-overlay" id="wizOverlay">
@@ -696,7 +755,19 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
     <span>👤</span>
     <span class="user-banner-name" id="bannerNombre">—</span>
     <span id="bannerEquipo" style="font-size:11.5px;color:var(--soft)"></span>
+    <div class="banner-contador" id="bannerContador" style="display:none" title="Oficios generados hoy">
+      <span>📄</span>
+      <span class="banner-contador-num" id="bannerContNum">0</span>
+      <span style="font-size:9.5px;opacity:.7">hoy</span>
+    </div>
     <span class="user-banner-change" onclick="goPanel('config')">Cambiar</span>
+  </div>
+
+  <!-- Último oficio generado -->
+  <div class="ultimo-oficio" id="ultimoOficio">
+    <div class="ultimo-oficio-label">📄 Último oficio generado</div>
+    <span class="ultimo-oficio-data" id="ultimoOficioData">—</span>
+    <button class="btn-reusar" onclick="reusarUltimo()" title="Rellenar el formulario con los datos del último oficio">↩️ Reusar datos</button>
   </div>
 
   <div class="gcard">
@@ -733,16 +804,21 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
       <div class="g2">
         <div class="fg full">
           <label>Nombre completo <span class="req">*</span></label>
-          <input id="f_nombre" type="text" placeholder="Apellidos y nombres" oninput="checkDup(this.value)">
+          <input id="f_nombre" type="text" placeholder="Apellidos y nombres"
+            oninput="checkDup(this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('f_cedula').focus();}">
           <div class="alert alert-w" id="f_dup"><span>⚠️</span><span id="f_dupmsg"></span></div>
         </div>
-        <div class="fg">
+        <div class="fg fg-rel">
           <label>Cédula / NIT <span class="req">*</span></label>
-          <input id="f_cedula" type="text" placeholder="Sin puntos ni guiones">
+          <input id="f_cedula" type="text" placeholder="Sin puntos ni guiones"
+            oninput="onCedulaInput(this.value)" autocomplete="off">
+          <div class="autocomplete-box" id="ac_cedula" style="display:none"></div>
         </div>
         <div class="fg">
           <label>Fecha del auto <span class="req">*</span></label>
-          <input id="f_fauto" type="text" placeholder="Ej. 15/03/2025">
+          <input id="f_fauto" type="text" placeholder="Ej. 15/03/2025"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('f_concepto').focus();}">
         </div>
       </div>
     </div>
@@ -1176,6 +1252,120 @@ function fmtL(iso){if(!iso)return'';const[y,m,d]=iso.split('-');const M=['enero'
 function fmtC(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;}
 function hoyISO(){return new Date().toISOString().split('T')[0];}
 function hoyLocal(){return new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});}
+
+// ── Toast ──
+function toastD(msg, color){
+  var t=document.getElementById('toastD');
+  if(!t)return;
+  t.textContent=msg||'✓ Listo';
+  t.style.background=color||'rgba(22,163,74,.95)';
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); },2500);
+}
+
+// ── Contador de oficios del día ──
+var CONT_KEY_D = 'desembargos_cont_dia';
+function cargarContadorD(){
+  try{
+    var hoy=hoyISO();
+    var d=JSON.parse(localStorage.getItem(CONT_KEY_D)||'null');
+    return (d&&d.fecha===hoy)?d.count:0;
+  }catch(e){return 0;}
+}
+function incrementarContadorD(){
+  try{
+    var hoy=hoyISO();
+    var d=JSON.parse(localStorage.getItem(CONT_KEY_D)||'null');
+    if(!d||d.fecha!==hoy) d={fecha:hoy,count:0};
+    d.count++;
+    localStorage.setItem(CONT_KEY_D,JSON.stringify(d));
+    actualizarContadorDUI(d.count);
+  }catch(e){}
+}
+function actualizarContadorDUI(n){
+  var chip=document.getElementById('bannerContador');
+  var num =document.getElementById('bannerContNum');
+  if(!chip||!num)return;
+  num.textContent=n;
+  chip.style.display=n>0?'flex':'none';
+  num.style.transform='scale(1.3)';
+  num.style.color='#fcd34d';
+  setTimeout(function(){ num.style.transform='scale(1)'; num.style.color=''; num.style.transition='all .3s'; },300);
+}
+
+// ── Último oficio ──
+var _ultimoOficio = null;
+function guardarUltimo(d){
+  _ultimoOficio = d;
+  var el=document.getElementById('ultimoOficio');
+  var dt=document.getElementById('ultimoOficioData');
+  if(!el||!dt)return;
+  dt.textContent = d.nombre + ' · ' + d.cedula + (d.concepto?' · '+d.concepto.slice(0,30):'');
+  el.style.display='flex';
+  el.style.alignItems='center';
+}
+function reusarUltimo(){
+  if(!_ultimoOficio)return;
+  var d=_ultimoOficio;
+  var fn=document.getElementById('f_nombre');
+  var fc=document.getElementById('f_cedula');
+  var fo=document.getElementById('f_obs');
+  if(fn) fn.value=d.nombre||'';
+  if(fc) fc.value=d.cedula||'';
+  if(fo) fo.value=d.obs||'';
+  // No rellena concepto/radicado — cada oficio puede tener uno diferente
+  checkDup(d.nombre||'');
+  toastD('↩️ Datos del último oficio cargados');
+  document.getElementById('f_concepto').focus();
+}
+
+// ── Autocomplete por cédula ──
+function onCedulaInput(val){
+  var limpio = val.replace(/[.\-\s]/g,'');
+  if(limpio !== val){
+    var el=document.getElementById('f_cedula');
+    if(el){ el.value=limpio; val=limpio; }
+  }
+  var ac=document.getElementById('ac_cedula');
+  if(!ac) return;
+  if(val.length < 3){ ac.style.display='none'; return; }
+  var encontrados = cache.filter(function(r){
+    return (r['Cédula/NIT']||'').replace(/[.\-\s]/g,'').startsWith(val);
+  }).slice(0,5);
+  if(!encontrados.length){ ac.style.display='none'; return; }
+  ac.innerHTML = encontrados.map(function(r){
+    var nom = r['Contribuyente']||'';
+    var ced = r['Cédula/NIT']||'';
+    var tip = (r['Tipo Oficio']||'').split(' ')[0];
+    return '<div class="ac-item" data-nombre="'+nom.replace(/"/g,'&quot;')+'" data-cedula="'+ced+'">'
+      +'<div><div class="ac-item-name">'+nom+'</div>'
+      +'<div class="ac-item-ced">'+ced+'</div></div>'
+      +'<span class="ac-item-tipo">'+tip+'</span>'
+      +'</div>';
+  }).join('');
+  ac.querySelectorAll('.ac-item').forEach(function(item){
+    item.addEventListener('click', function(){
+      seleccionarAC(item.dataset.nombre, item.dataset.cedula);
+    });
+  });
+  ac.style.display='block';
+}
+function seleccionarAC(nombre, cedula){
+  var fn=document.getElementById('f_nombre');
+  var fc=document.getElementById('f_cedula');
+  var ac=document.getElementById('ac_cedula');
+  if(fn) fn.value=nombre;
+  if(fc) fc.value=cedula;
+  if(ac) ac.style.display='none';
+  checkDup(nombre);
+  toastD('✓ Datos cargados desde historial');
+  setTimeout(function(){ document.getElementById('f_fauto').focus(); },100);
+}
+document.addEventListener('click',function(e){
+  var ac=document.getElementById('ac_cedula');
+  if(ac&&!ac.contains(e.target)&&e.target.id!=='f_cedula') ac.style.display='none';
+});
+;
 function dlBlob(blob,nom){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=nom;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);}
 
 function loadCfg(){ try{ cfg=JSON.parse(localStorage.getItem(CK)||'{}'); }catch{ cfg={}; } }
@@ -1331,6 +1521,7 @@ function actualizarBanner(){
   if(eq) eq.textContent=cfg.equipo?'— '+cfg.equipo:'';
   const proyn=document.getElementById('f_proyn');
   if(proyn&&!proyn.value) proyn.value=cfg.nombre||'';
+  actualizarContadorDUI(cargarContadorD());
 }
 
 // ════════════════════════════════════════
@@ -1395,6 +1586,8 @@ function selTipo(btn){
   if(t.startsWith('Desembargo')) btn.classList.add('green');
   else if(t.startsWith('Embargo')) btn.classList.add('red');
   else btn.classList.add('blue');
+  // Al seleccionar tipo, enfocar nombre automáticamente
+  setTimeout(function(){ var n=document.getElementById('f_nombre'); if(n) n.focus(); },80);
 }
 function getTipo(){
   const a=document.querySelector('.tipo-btn.active');
@@ -1643,6 +1836,7 @@ async function generarDesdeForm(){
       const pd={accion:'guardar',tipoOficio:d.tipoOficio,numOficio:d.numOficio,fechaOficio:d.fecha,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,radicado:todosRad,fechaAuto:d.fechaAuto,motivo:d.motivo,proyNombre:d.proyNombre,funcionario:d.funcionario,equipo:d.equipo};
       await apiPost(pd); guardarLocalCache(pd);
       showAlert('f_alert','s',`✅ Oficio generado con ${bancosSelec.length} banco(s). Revise Descargas.`);
+      incrementarContadorD(); guardarUltimo(d);
       cargarRemoto(); setTimeout(()=>document.getElementById('modalSig').classList.add('open'),800);
     }catch(e){showAlert('f_alert','e','Error: '+e.message);}
     btn.disabled=false; btn.innerHTML='⬇️ Generar oficio con todos los bancos';
@@ -1657,6 +1851,7 @@ async function generarDesdeForm(){
       if(res&&res.ok){
         guardarLocalCache({tipoOficio:d.tipoOficio,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,radicado:d.radicado,fechaAuto:d.fechaAuto,motivo:d.motivo,proyNombre:d.proyNombre});
         showAlert('f_alert','s','✅ Oficio generado y registrado en Google Sheets.');
+        incrementarContadorD(); guardarUltimo(d);
         cargarRemoto(); setTimeout(()=>document.getElementById('modalSig').classList.add('open'),800);
       } else if(res&&res.local){
         showAlert('f_alert','w','Descargado. Sin conexión al Sheet.');
