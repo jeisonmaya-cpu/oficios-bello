@@ -368,9 +368,12 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
 .wiz-overlay {
   position:fixed; inset:0;
   background:radial-gradient(ellipse 120% 100% at 50% 0%, rgba(15,45,94,.97) 0%, rgba(5,12,28,.99) 70%);
-  z-index:500; display:flex; align-items:center; justify-content:center; padding:16px;
+  z-index:500; display:none; align-items:center; justify-content:center; padding:16px;
   backdrop-filter:blur(14px);
   animation:fadeIn .4s ease both;
+}
+.wiz-overlay.visible {
+  display:flex;
 }
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
@@ -1478,7 +1481,7 @@ async function conectar(){
 function saltarConfig(){
   cfg={apiUrl:DEFAULT_URL,nombre:'Funcionario',equipo:''};
   saveCfg();
-  document.getElementById('wizOverlay').style.display='none';
+  var _wo=document.getElementById('wizOverlay'); if(_wo){ _wo.classList.remove('visible'); _wo.style.display='none'; }
   setSS('off','Sin conexión');
   actualizarBanner();
 }
@@ -1501,26 +1504,32 @@ async function ping(url){
 // ════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════
-loadCfg();
+try { loadCfg(); } catch(e){ cfg = {}; }
 if(!cfg.apiUrl) cfg.apiUrl = DEFAULT_URL;
 
-// Entrada con Enter en el campo nombre del wizard
-(function(){
-  const wn = document.getElementById('wNombre');
-  if(wn) wn.addEventListener('keydown', function(e){ if(e.key==='Enter') conectar(); });
-})();
-
 // Fechas por defecto
-const fFecha = document.getElementById('f_fecha');
-const fProyf = document.getElementById('f_proyf');
-if(fFecha) fFecha.value = hoyISO();
-if(fProyf) fProyf.value = hoyISO();
+try {
+  var _ff = document.getElementById('f_fecha');
+  var _fp = document.getElementById('f_proyf');
+  if(_ff) _ff.value = hoyISO();
+  if(_fp) _fp.value = hoyISO();
+} catch(e){}
 
-// Si ya tiene nombre guardado, saltar el wizard
+// Entrada con Enter en el campo nombre del wizard
+try {
+  var _wn = document.getElementById('wNombre');
+  if(_wn) _wn.addEventListener('keydown', function(e){ if(e.key==='Enter') conectar(); });
+} catch(e){}
+
+// Decidir si mostrar wizard o entrar directo
 if(cfg.nombre){
-  const ov = document.getElementById('wizOverlay');
-  if(ov) ov.style.display = 'none';
-  iniciarApp();
+  // Sesión existente — el wizard ya está oculto (display:none por defecto en CSS)
+  // Solo iniciar la app
+  try { iniciarApp(); } catch(e){ console.error('Error en iniciarApp:', e); }
+} else {
+  // Sin sesión — mostrar el wizard
+  var _ov = document.getElementById('wizOverlay');
+  if(_ov) _ov.classList.add('visible');
 }
 
 function iniciarApp(){
