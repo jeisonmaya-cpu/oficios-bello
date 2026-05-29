@@ -810,7 +810,7 @@ function verificarPin(){
   if(usuario){
     intentosFallidos=0;
     localStorage.removeItem(BLOQUEO_KEY);
-    var sess={nombre:usuario.n,cargo:usuario.c,admin:usuario.a,expira:Date.now()+8*3600*1000};
+    var sess={nombre:usuario.n,cargo:usuario.c,admin:usuario.a,token:usuario.h,expira:Date.now()+8*3600*1000};
     localStorage.setItem(SESSION_KEY,JSON.stringify(sess));
     localStorage.setItem('oficios_session',JSON.stringify(sess));
     usuarioActual=sess;
@@ -934,7 +934,7 @@ async function buscar(){
   setStatus('loading','Buscando en todas las hojas...',true);
   document.getElementById('realtime-hint').style.display='inline';
   try{
-    var params=new URLSearchParams({termino:termino,exacto:exacto,mayus:mayus,usuario:usuarioActual.nombre,cargo:usuarioActual.cargo||''});
+    var params=new URLSearchParams({termino:termino,exacto:exacto,mayus:mayus,usuario:usuarioActual.nombre,cargo:usuarioActual.cargo||'',token:usuarioActual.token||''});
     var res=await fetch(APPS_SCRIPT_URL+'?'+params);
     var data=await res.json();
     if(data.error){ setStatus('error','❌ '+data.error); document.getElementById('empty-state').style.display='block'; return; }
