@@ -180,6 +180,50 @@
     .toast.show{transform:translateY(0);opacity:1}
     .toast.ok{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.12)}
     .toast.err{border-color:rgba(239,68,68,.4)}
+
+    /* ══ TEO CHAT FLOTANTE ══ */
+    .teo-btn{position:fixed;bottom:28px;right:28px;z-index:400;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#06b6d4);border:none;cursor:pointer;box-shadow:0 8px 24px rgba(37,99,235,.45);transition:all .25s;display:flex;align-items:center;justify-content:center;animation:teoFloat 3s ease-in-out infinite}
+    .teo-btn:hover{transform:scale(1.1);box-shadow:0 12px 32px rgba(37,99,235,.6)}
+    .teo-btn.open{animation:none;transform:rotate(20deg) scale(1.05)}
+    @keyframes teoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+    .teo-badge{position:absolute;top:-3px;right:-3px;width:16px;height:16px;background:#ef4444;border-radius:50%;border:2px solid var(--ink);display:none}
+    .teo-badge.show{display:block;animation:blink .8s infinite}
+    .teo-panel{position:fixed;bottom:96px;right:28px;z-index:399;width:360px;max-height:520px;background:linear-gradient(155deg,#111827 0%,#0d1525 100%);border:1px solid rgba(255,255,255,.12);border-radius:20px;box-shadow:0 32px 64px rgba(0,0,0,.7);display:flex;flex-direction:column;overflow:hidden;transition:all .3s cubic-bezier(.34,1.56,.64,1);transform:scale(0.85) translateY(20px);opacity:0;pointer-events:none}
+    .teo-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+    .teo-header{display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(37,99,235,.15);border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+    .teo-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;animation:teoFloat 3s ease-in-out infinite}
+    .teo-hname{font-weight:700;font-size:13px;font-family:'Syne',sans-serif}
+    .teo-hsub{font-size:10px;color:var(--muted);margin-top:1px}
+    .teo-hclose{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:4px;transition:color .15s}
+    .teo-hclose:hover{color:var(--text)}
+    .teo-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+    .teo-msgs::-webkit-scrollbar{width:4px}
+    .teo-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+    .teo-bubble{max-width:88%;padding:10px 13px;border-radius:14px;font-size:12.5px;line-height:1.55}
+    .teo-bubble.bot{align-self:flex-start;background:rgba(37,99,235,.18);border:1px solid rgba(37,99,235,.25);border-bottom-left-radius:4px}
+    .teo-bubble.usr{align-self:flex-end;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.1);border-bottom-right-radius:4px}
+    .teo-bubble.typing-bubble{opacity:.7}
+    .teo-dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--blue2);margin:0 2px;animation:teoDot .9s ease-in-out infinite}
+    .teo-dots span:nth-child(2){animation-delay:.18s}
+    .teo-dots span:nth-child(3){animation-delay:.36s}
+    @keyframes teoDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+    .teo-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}
+    .teo-chip{font-size:11px;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--text);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+    .teo-chip:hover{background:rgba(37,99,235,.25);border-color:rgba(37,99,235,.4)}
+    .teo-input-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
+    .teo-input{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 12px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;transition:border .2s}
+    .teo-input:focus{border-color:rgba(37,99,235,.5)}
+    .teo-input::placeholder{color:var(--soft)}
+    .teo-send{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#1d4ed8,#06b6d4);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:opacity .2s;flex-shrink:0}
+    .teo-send:hover{opacity:.85}
+    /* ══ ESTADÍSTICAS MEJORADAS ══ */
+    .est-footer{margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between}
+    .est-total{font-size:11px;color:var(--muted)}
+    .est-total strong{color:var(--text);font-size:13px}
+    .est-pct-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+    .est-pct-pill.good{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+    .est-pct-pill.warn{background:rgba(249,115,22,.15);color:#fb923c;border:1px solid rgba(249,115,22,.25)}
+    .est-pct-pill.bad{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
     @media(max-width:900px){.tcols-adm,.tcols-fal,.tcols-otr,.tcols-his{grid-template-columns:90px 1fr 90px}.col-hide{display:none}.main{padding:16px}.topbar{padding:0 16px}.topbar-mid{display:none}.nav-tabs{padding:0 16px}.m-grid{grid-template-columns:1fr}}
   </style>
 </head>
@@ -375,6 +419,62 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ══ TEO FLOTANTE ══ -->
+<button class="teo-btn" id="teo-btn" onclick="teoToggle()" title="Preguntarle a Teo">
+  <div class="teo-badge" id="teo-badge"></div>
+  <svg width="26" height="32" viewBox="0 0 64 80" fill="none">
+    <!-- antena -->
+    <line x1="32" y1="0" x2="32" y2="12" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="32" cy="5" r="4" fill="#fbbf24"/>
+    <!-- cabeza -->
+    <rect x="14" y="12" width="36" height="26" rx="8" fill="#1a3a6e" stroke="#2563eb" stroke-width="1.5"/>
+    <!-- ojos -->
+    <rect x="20" y="20" width="10" height="10" rx="3" fill="#06b6d4"/>
+    <rect x="34" y="20" width="10" height="10" rx="3" fill="#06b6d4"/>
+    <circle cx="25" cy="25" r="3" fill="#e0f2fe"/>
+    <circle cx="39" cy="25" r="3" fill="#e0f2fe"/>
+    <!-- boca -->
+    <rect x="22" y="33" width="4" height="3" rx="1.5" fill="#fbbf24"/>
+    <rect x="30" y="33" width="4" height="3" rx="1.5" fill="#fbbf24"/>
+    <rect x="38" y="33" width="4" height="3" rx="1.5" fill="#fbbf24"/>
+    <!-- cuerpo -->
+    <rect x="10" y="42" width="44" height="28" rx="8" fill="#0f2d5e" stroke="#1d4ed8" stroke-width="1.5"/>
+    <!-- leds pecho -->
+    <circle cx="23" cy="54" r="4" fill="#ef4444" opacity="0.9"/>
+    <circle cx="32" cy="54" r="4" fill="#22c55e" opacity="0.9"/>
+    <circle cx="41" cy="54" r="4" fill="#f59e0b" opacity="0.9"/>
+    <!-- brazos -->
+    <rect x="0" y="44" width="9" height="18" rx="4" fill="#1a3a6e" stroke="#2563eb" stroke-width="1"/>
+    <rect x="55" y="44" width="9" height="18" rx="4" fill="#1a3a6e" stroke="#2563eb" stroke-width="1"/>
+    <!-- piernas -->
+    <rect x="18" y="72" width="10" height="8" rx="3" fill="#1a3a6e"/>
+    <rect x="36" y="72" width="10" height="8" rx="3" fill="#1a3a6e"/>
+  </svg>
+</button>
+
+<div class="teo-panel" id="teo-panel">
+  <div class="teo-header">
+    <div class="teo-avatar">🤖</div>
+    <div>
+      <div class="teo-hname">Teo — Asistente de Tutelas</div>
+      <div class="teo-hsub" id="teo-status">● En línea · datos cargados</div>
+    </div>
+    <button class="teo-hclose" onclick="teoToggle()">✕</button>
+  </div>
+  <div class="teo-msgs" id="teo-msgs"></div>
+  <div class="teo-chips" id="teo-chips">
+    <span class="teo-chip" onclick="teoChip(this)">¿Cuántas vencen esta semana?</span>
+    <span class="teo-chip" onclick="teoChip(this)">Resumen general</span>
+    <span class="teo-chip" onclick="teoChip(this)">¿Quién tiene más carga?</span>
+    <span class="teo-chip" onclick="teoChip(this)">Casos urgentes hoy</span>
+  </div>
+  <div class="teo-input-row">
+    <input class="teo-input" id="teo-input" placeholder="Pregúntale a Teo..." onkeydown="if(event.key==='Enter')teoEnviar()"/>
+    <button class="teo-send" onclick="teoEnviar()">➤</button>
+  </div>
+</div>
+
+
 <script>
 const SHEET_ID    = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
 const GID_TUT     = "0";
@@ -399,6 +499,7 @@ async function cargarDatos() {
     poblarSelects();
     renderAll();
     verificarVencidos();
+    teoCheckAlert();
     setSS("ok","Actualizado "+new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"}));
   } catch(e) {
     setSS("error","Error: "+e.message);
@@ -627,33 +728,91 @@ function renderEstadisticas(){
   const activ=todos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const incActiv=incidentes.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   if(!todos.length&&!incidentes.length){document.getElementById("grid-est").innerHTML=`<div class="empty">Sin datos</div>`;return;}
-  const barra=(label,n,max,color)=>`<div class="est-row"><span class="est-label" title="${esc(label)}">${esc(abrev(label,22))}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${max?Math.round(n/max*100):0}%;background:${color}"></div></div><span class="est-val" style="color:${color}">${n}</span></div>`;
+
+  // Barra con animación de ancho
+  const barra=(label,n,max,color)=>`<div class="est-row"><span class="est-label" title="${esc(label)}">${esc(abrev(label,22))}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${max?Math.round(n/max*100):0}%;background:${color};transition:width .6s ease"></div></div><span class="est-val" style="color:${color}">${n}</span></div>`;
+
+  // Footer con total + pill de resolución
+  const footer=(total, resueltos, colorTitulo)=>{
+    const pct = total>0 ? Math.round(resueltos/total*100) : 0;
+    const cls  = pct>=70?"good":pct>=40?"warn":"bad";
+    const flecha = pct>=70?"↑":pct>=40?"→":"↓";
+    return `<div class="est-footer">
+      <div class="est-total">Total: <strong style="color:${colorTitulo}">${total}</strong> · Resueltos: <strong>${resueltos}</strong></div>
+      <span class="est-pct-pill ${cls}">${flecha} ${pct}% resuelto</span>
+    </div>`;
+  };
+
+  // ── TIPOS ──
   const tiposC={};todos.forEach(r=>{tiposC[r["TIPO"]]=(tiposC[r["TIPO"]]||0)+1;});
   const maxTp=Math.max(...Object.values(tiposC),1);
   const tiposH=Object.entries(tiposC).sort((a,b)=>b[1]-a[1]).map(([t,n])=>barra(t,n,maxTp,"#3b82f6")).join("");
+
+  // ── ESTADOS TUTELAS+FALLOS ──
   const ests=["Nuevo","En proceso","Respondido","Finalizado","Vencido"];
   const estC={};ests.forEach(e=>{estC[e]=todos.filter(r=>r["ESTADO"]===e).length;});
   const maxE=Math.max(...Object.values(estC),1);
   const estCols={"Nuevo":"#60a5fa","En proceso":"#fbbf24","Respondido":"#4ade80","Finalizado":"#6b7280","Vencido":"#f87171"};
   const estH=ests.map(e=>barra(e,estC[e],maxE,estCols[e])).join("");
-  const maxA=Math.max(...ABOGADOS.map(a=>activ.filter(r=>r["RESPONSABLE"]===a).length),1);
-  const aboH=ABOGADOS.map(a=>barra(pNom(a),activ.filter(r=>r["RESPONSABLE"]===a).length,maxA,"#2d8de8")).join("");
+  const totalEst=todos.length;
+  const resEst=(estC["Respondido"]||0)+(estC["Finalizado"]||0);
+
+  // ── CARGA ACTIVA POR ABOGADO ──
+  const aboData=ABOGADOS.map(a=>({a,n:activ.filter(r=>r["RESPONSABLE"]===a).length})).sort((x,y)=>y.n-x.n);
+  const maxA=Math.max(...aboData.map(x=>x.n),1);
+  const aboH=aboData.map(({a,n})=>barra(pNom(a),n,maxA,"#2d8de8")).join("");
+
+  // ── FALLOS ACTIVOS POR ABOGADO ──
   const falActiv=fallos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
-  const maxF=Math.max(...ABOGADOS.map(a=>falActiv.filter(r=>r["RESPONSABLE"]===a).length),1);
-  const falH=ABOGADOS.map(a=>barra(pNom(a),falActiv.filter(r=>r["RESPONSABLE"]===a).length,maxF,"#f87171")).join("");
-  // Incidentes/Desacatos stats
+  const falData=ABOGADOS.map(a=>({a,n:falActiv.filter(r=>r["RESPONSABLE"]===a).length})).sort((x,y)=>y.n-x.n);
+  const maxF=Math.max(...falData.map(x=>x.n),1);
+  const falH=falData.map(({a,n})=>barra(pNom(a),n,maxF,"#f87171")).join("");
+  const totalFal=fallos.length;
+  const resFal=fallos.filter(r=>EST_HIST.includes(r["ESTADO"])).length;
+
+  // ── INCIDENTES ESTADO ──
   const estIncC={};ests.forEach(e=>{estIncC[e]=incidentes.filter(r=>r["ESTADO"]===e).length;});
   const maxEI=Math.max(...Object.values(estIncC),1);
   const estIncH=ests.map(e=>barra(e,estIncC[e],maxEI,estCols[e])).join("");
-  const maxI=Math.max(...ABOGADOS.map(a=>incActiv.filter(r=>r["RESPONSABLE"]===a).length),1);
-  const incH=ABOGADOS.map(a=>barra(pNom(a),incActiv.filter(r=>r["RESPONSABLE"]===a).length,maxI,"#fb923c")).join("");
+  const totalInc=incidentes.length;
+  const resInc=(estIncC["Respondido"]||0)+(estIncC["Finalizado"]||0);
+
+  // ── INCIDENTES POR ABOGADO ──
+  const incData=ABOGADOS.map(a=>({a,n:incActiv.filter(r=>r["RESPONSABLE"]===a).length})).sort((x,y)=>y.n-x.n);
+  const maxI=Math.max(...incData.map(x=>x.n),1);
+  const incH=incData.map(({a,n})=>barra(pNom(a),n,maxI,"#fb923c")).join("");
+
   document.getElementById("grid-est").innerHTML=
-    `<div class="est-card"><div class="est-title">Por tipo de actuación</div>${tiposH}</div>`+
-    `<div class="est-card"><div class="est-title">Por estado (tutelas & fallos)</div>${estH}</div>`+
-    `<div class="est-card"><div class="est-title">Carga activa por abogado</div>${aboH}</div>`+
-    `<div class="est-card"><div class="est-title">Fallos activos por abogado</div>${falH}</div>`+
-    `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por estado</div>${estIncH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`+
-    `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por abogado</div>${incH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`;
+    `<div class="est-card">
+      <div class="est-title">Por tipo de actuación</div>
+      ${tiposH}
+      ${footer(todos.length, resEst, "#3b82f6")}
+    </div>`+
+    `<div class="est-card">
+      <div class="est-title">Por estado (tutelas &amp; fallos)</div>
+      ${estH}
+      ${footer(totalEst, resEst, "#60a5fa")}
+    </div>`+
+    `<div class="est-card">
+      <div class="est-title">Carga activa por abogado</div>
+      ${aboH}
+      <div class="est-footer"><div class="est-total">Total activos: <strong style="color:#2d8de8">${activ.length}</strong></div><span class="est-pct-pill ${activ.length<50?"good":activ.length<100?"warn":"bad"}">${activ.length} expedientes</span></div>
+    </div>`+
+    `<div class="est-card">
+      <div class="est-title">Fallos activos por abogado</div>
+      ${falH}
+      ${footer(totalFal, resFal, "#f87171")}
+    </div>`+
+    `<div class="est-card" style="border-color:rgba(251,146,60,.25)">
+      <div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por estado</div>
+      ${estIncH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}
+      ${totalInc?footer(totalInc,resInc,"#fb923c"):""}
+    </div>`+
+    `<div class="est-card" style="border-color:rgba(251,146,60,.25)">
+      <div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por abogado</div>
+      ${incH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}
+      <div class="est-footer"><div class="est-total">Activos: <strong style="color:#fb923c">${incActiv.length}</strong> · Total: <strong>${totalInc}</strong></div></div>
+    </div>`;
 }
 
 function renderAll(){renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();}
@@ -930,6 +1089,137 @@ function toast(msg,tipo){
   const t=document.getElementById("toast");
   t.textContent=msg;t.className="toast show "+(tipo||"");
   setTimeout(()=>t.className="toast",4000);
+}
+
+
+// ══════════════════════════════════════════
+// TEO — ASISTENTE IA FLOTANTE
+// ══════════════════════════════════════════
+let teoAbierto = false;
+let teoHistorial = []; // conversación completa para contexto
+
+function teoToggle(){
+  teoAbierto = !teoAbierto;
+  document.getElementById("teo-panel").classList.toggle("open", teoAbierto);
+  document.getElementById("teo-btn").classList.toggle("open", teoAbierto);
+  document.getElementById("teo-badge").classList.remove("show");
+  if(teoAbierto && teoHistorial.length === 0) teoSaludo();
+}
+
+function teoSaludo(){
+  const total   = tutelas.length + fallos.length + incidentes.length;
+  const venc    = [...tutelas,...fallos,...incidentes].filter(r=>r._dias!==null&&r._dias<0&&!EST_HIST.includes(r["ESTADO"])).length;
+  const urgHoy  = [...tutelas,...fallos,...incidentes].filter(r=>r._dias!==null&&r._dias<=1&&r._dias>=0&&!EST_HIST.includes(r["ESTADO"])).length;
+  const h       = new Date().getHours();
+  const saludo  = h<12?"Buenos días":h<18?"Buenas tardes":"Buenas noches";
+  let msg = `¡Hola! Soy Teo 🤖 Tengo cargados <strong>${total}</strong> registros en el sistema.`;
+  if(venc>0)  msg += ` <span style="color:#f87171">⚠️ ${venc} vencido(s).</span>`;
+  if(urgHoy>0)msg += ` <span style="color:#fb923c">🔥 ${urgHoy} vence(n) hoy.</span>`;
+  msg += "<br><br>¿En qué te puedo ayudar?";
+  teoAddMsg(msg, "bot");
+}
+
+function teoChip(el){
+  const txt = el.textContent;
+  document.getElementById("teo-chips").style.display="none";
+  teoAddMsg(txt,"usr");
+  teoResponder(txt);
+}
+
+function teoEnviar(){
+  const inp = document.getElementById("teo-input");
+  const txt = inp.value.trim();
+  if(!txt)return;
+  inp.value="";
+  document.getElementById("teo-chips").style.display="none";
+  teoAddMsg(txt,"usr");
+  teoResponder(txt);
+}
+
+function teoAddMsg(html, tipo){
+  const div = document.createElement("div");
+  div.className = "teo-bubble " + tipo;
+  div.innerHTML = html;
+  const msgs = document.getElementById("teo-msgs");
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function teoTyping(){
+  const div = teoAddMsg('<div class="teo-dots"><span></span><span></span><span></span></div>',"bot typing-bubble");
+  return div;
+}
+
+async function teoResponder(pregunta){
+  const typing = teoTyping();
+
+  // ── Contexto de datos en tiempo real ──
+  const todos = [...tutelas,...fallos,...incidentes];
+  const activos = todos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
+  const vencidos = activos.filter(r=>r._dias!==null&&r._dias<0);
+  const urgHoy  = activos.filter(r=>r._dias!==null&&r._dias<=1&&r._dias>=0);
+  const estaSem = activos.filter(r=>r._dias!==null&&r._dias>=0&&r._dias<=7);
+  const aboStats = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño"].map(a=>({
+    nombre:a,
+    activos: activos.filter(r=>r["RESPONSABLE"]===a).length,
+    vencidos: vencidos.filter(r=>r["RESPONSABLE"]===a).length,
+    tutelas: tutelas.filter(r=>r["RESPONSABLE"]===a&&!EST_HIST.includes(r["ESTADO"])).length,
+    fallos: fallos.filter(r=>r["RESPONSABLE"]===a&&!EST_HIST.includes(r["ESTADO"])).length,
+  }));
+
+  const contexto = `Eres Teo, asistente IA del Sistema de Tutelas de la Dirección de Ejecuciones Fiscales de la Alcaldía de Bello, Antioquia, Colombia. Respondes en español, de forma concisa, útil y amigable. Usas HTML básico (strong, br, span con color) para dar formato.
+
+DATOS EN TIEMPO REAL (fecha: ${new Date().toLocaleDateString("es-CO")}):
+- Total registros: ${todos.length} (Tutelas: ${tutelas.length}, Fallos: ${fallos.length}, Incidentes: ${incidentes.length})
+- Activos (sin finalizar): ${activos.length}
+- Vencidos urgentes: ${vencidos.length}
+- Vencen hoy o mañana: ${urgHoy.length}
+- Vencen esta semana: ${estaSem.length}
+- Finalizados/Respondidos: ${todos.length - activos.length}
+- % resolución general: ${todos.length>0?Math.round((todos.length-activos.length)/todos.length*100):0}%
+
+CARGA POR ABOGADO:
+${aboStats.map(a=>`  ${a.nombre}: ${a.activos} activos (${a.tutelas} tutelas, ${a.fallos} fallos, ${a.vencidos} vencidos)`).join("
+")}
+
+CASOS MÁS URGENTES (hasta 5):
+${vencidos.concat(urgHoy).slice(0,5).map(r=>`  - ${r["ACCIONANTE"]||"Sin nombre"} | Rad: ${r["RADICADO"]||"—"} | ${r._dias<0?"Vencido "+Math.abs(r._dias)+"d":"Vence hoy"} | ${r["RESPONSABLE"]||"Sin asignar"}`).join("
+")||"  Ninguno"}
+
+Contexto legal: tutelas constitucionales, cobro coactivo municipal colombiano, normativa tributaria local.
+Responde de forma directa. Si preguntan por un nombre o radicado específico, busca en los datos. Máximo 4 líneas de respuesta salvo que sea necesario más.`;
+
+  // Historial para contexto multi-turno
+  teoHistorial.push({role:"user", content: pregunta});
+
+  try{
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:600,
+        system: contexto,
+        messages: teoHistorial.slice(-8) // últimos 4 turnos para no exceder tokens
+      })
+    });
+    const data = await res.json();
+    const respuesta = data.content?.[0]?.text || "No pude procesar eso. Intenta de nuevo.";
+    teoHistorial.push({role:"assistant", content: respuesta});
+    typing.remove();
+    teoAddMsg(respuesta,"bot");
+  } catch(e){
+    typing.remove();
+    teoAddMsg("❌ Error al conectar con el asistente. Revisa tu conexión.","bot");
+    console.error("[Teo]",e);
+  }
+}
+
+// Notificación badge cuando hay vencidos (después de cargar datos)
+function teoCheckAlert(){
+  const venc = [...tutelas,...fallos,...incidentes].filter(r=>r._dias!==null&&r._dias<=1&&r._dias>=0&&!EST_HIST.includes(r["ESTADO"])).length;
+  if(venc>0 && !teoAbierto) document.getElementById("teo-badge").classList.add("show");
 }
 
 // Evitar llamadas simultáneas
