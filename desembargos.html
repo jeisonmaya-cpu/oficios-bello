@@ -1044,6 +1044,39 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
       </div>
     </div>
   </div>
+
+  <!-- Plantilla DOCX -->
+  <div class="gcard" style="margin-top:14px">
+    <div class="gcard-head">
+      <span class="gcard-title">📄 Plantilla Word oficial</span>
+    </div>
+    <div class="gcard-body">
+      <div id="plantilla-estado" style="margin-bottom:14px">
+        <div id="plantilla-ok" style="display:none;align-items:center;gap:10px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);border-radius:10px;padding:10px 14px">
+          <span>✅</span>
+          <div>
+            <div style="font-weight:700;color:#86efac;font-size:13px">Plantilla cargada</div>
+            <div id="plantilla-nombre" style="font-size:11px;color:var(--soft)"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="eliminarPlantilla()" style="margin-left:auto">🗑️ Quitar</button>
+        </div>
+        <div id="plantilla-vacia" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 14px;font-size:13px;color:#fca5a5">
+          ⚠️ Sin plantilla — la generación de Word no funcionará hasta cargarla
+        </div>
+      </div>
+      <label style="font-size:12px;font-weight:600;color:var(--soft);margin-bottom:8px;display:block">
+        Cargar archivo <strong style="color:var(--text)">Desembargo_bancario.docx</strong> (aprobado por la Alcaldía)
+      </label>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label class="btn btn-primary btn-sm" style="cursor:pointer">
+          📂 Seleccionar plantilla .docx
+          <input type="file" id="inputPlantilla" accept=".docx" style="display:none" onchange="cargarPlantillaArchivo(this)">
+        </label>
+        <span style="font-size:11.5px;color:var(--soft)">Solo archivos .docx — se guarda en este navegador</span>
+      </div>
+    </div>
+  </div>
+  </div>
 </div><!-- /panel-config -->
 
 <!-- ══════════ PANEL COLA ══════════ -->
@@ -1762,54 +1795,154 @@ const DATA_ROW_TPL='<w:tr w:rsidR="005F262D" w:rsidTr="005F262D"><w:trPr><w:jc w
 // ════════════════════════════════════════
 // CARGAR PLANTILLA DOCX (lazy, desde index)
 // ════════════════════════════════════════
+const TMPL_KEY = 'desembargo_tmpl_b64_v1';
+
 async function cargarPlantilla(){
   if(B64) return true;
-  // Comparte la misma plantilla que index.html — cargada desde localStorage
-  const stored=localStorage.getItem('desembargo_template_b64')||localStorage.getItem('tmpl_desembargo_b64');
-  if(stored){ B64=stored; return true; }
-  showAlert('f_alert','e','Plantilla DOCX no encontrada. Ábrala desde Generar Oficios primero para cargarla en caché, o configúrela aquí.');
+  // Buscar en localStorage con la clave oficial
+  const claves = [TMPL_KEY, 'desembargo_template_b64', 'tmpl_desembargo_b64'];
+  for(const k of claves){
+    const stored = localStorage.getItem(k);
+    if(stored && stored.length > 100){ B64 = stored; return true; }
+  }
+  showAlert('f_alert','e','⚠️ Plantilla no encontrada. Ve a ⚙️ Config → "Plantilla Word oficial" y carga el archivo Desembargo_bancario.docx');
+  goPanel('config');
   return false;
+}
+
+function cargarPlantillaArchivo(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(!file.name.endsWith('.docx')){
+    alert('Solo se aceptan archivos .docx'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(e.target.result)));
+    localStorage.setItem(TMPL_KEY, b64);
+    B64 = b64;
+    actualizarEstadoPlantilla(file.name, b64.length);
+    toastD('✅ Plantilla "'+file.name+'" cargada y guardada');
+    showAlert('c_alert','s','✅ Plantilla lista — ya puedes generar oficios Word');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function actualizarEstadoPlantilla(nombre, len){
+  const ok = document.getElementById('plantilla-ok');
+  const vacia = document.getElementById('plantilla-vacia');
+  const nomEl = document.getElementById('plantilla-nombre');
+  if(B64 || len > 0){
+    if(ok) ok.style.display = 'flex';
+    if(vacia) vacia.style.display = 'none';
+    if(nomEl) nomEl.textContent = nombre || 'Plantilla cargada';
+  } else {
+    if(ok) ok.style.display = 'none';
+    if(vacia) vacia.style.display = 'flex';
+  }
+}
+
+function eliminarPlantilla(){
+  if(!confirm('¿Eliminar la plantilla? Tendrás que cargarla de nuevo para generar Word.')) return;
+  localStorage.removeItem(TMPL_KEY);
+  B64 = null;
+  actualizarEstadoPlantilla('', 0);
+  toastD('Plantilla eliminada', 'rgba(234,88,12,.95)');
 }
 
 async function generarDocx(d){
   if(!B64) throw new Error('Plantilla no cargada.');
-  const zip=await JSZip.loadAsync(b64ToU8(B64));
-  let xml=await zip.file('word/document.xml').async('string');
-  const fl=fmtL(d.fecha),fp=d.proyFecha?fmtC(d.proyFecha):'';
-  xml=xml.replace(/ 1070\.02\s+/,` ${d.numOficio}  `);
-  xml=xml.replace(/<w:t>05 de febrero de 2026<\/w:t>/,`<w:t>${fl}</w:t>`);
-  xml=xml.replace(/w:fullDate="2026-02-05T00:00:00Z"/,`w:fullDate="${d.fecha}T00:00:00Z"`);
-  xml=xml.split('20252196416').join(d.radicado);
-  xml=xml.replace(/<w:t>TRANSITO 2026<\/w:t>/,`<w:t>${esc(d.concepto)}</w:t>`);
-  const filaUnica=DATA_ROW_TPL.replace('__NOMBRE__',xmlEsc(d.nombre)).replace('__CEDULA__',xmlEsc(d.cedula)).replace('__CONCEPTO_RADICADOS__',xmlEsc(d.concepto+' '+d.radicado));
-  xml=xml.replace('###ROWS_PLACEHOLDER###',filaUnica);
-  xml=xml.replace(/<w:t>12<\/w:t>[\s\S]*?<w:t>\/01\/2026<\/w:t>/,`<w:t>${d.fechaAuto}</w:t>`);
-  xml=xml.replace(/<w:t xml:space="preserve">ESTAR AL DIA <\/w:t>/,`<w:t xml:space="preserve">${esc(d.motivo)} </w:t>`);
-  xml=xml.replace('###PROYN_PLACEHOLDER###',xmlEsc(d.proyNombre||''));
-  if(fp) xml=xml.replace('<w:t>12/01/2026</w:t>',`<w:t>${fp}</w:t>`);
-  zip.file('word/document.xml',xml);
-  return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',compression:'DEFLATE'});
+  const zip = await JSZip.loadAsync(b64ToU8(B64));
+  let xml   = await zip.file('word/document.xml').async('string');
+
+  // ── Reemplazos quirúrgicos — preservan formato XML oficial al 100% ──
+
+  // 1. N° de oficio (ej. " 1070.02  ")
+  xml = xml.replace(
+    /(<w:t[^>]*>) 1070\.02\s+(<\/w:t>)/,
+    `$1 ${xmlEsc(d.numOficio||'1070.02')}  $2`
+  );
+
+  // 2. Fecha del oficio — va junto a "Bello," como párrafo siguiente
+  //    Insertar fecha en el párrafo vacío después de "Bello,"
+  xml = xml.replace(
+    /(Bello,<\/w:t><\/w:r><\/w:p>)(<w:p [^>]+><w:pPr>[\s\S]*?<\/w:pPr><\/w:p>)/,
+    `$1<w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>${xmlEsc(fmtL(d.fecha))}</w:t></w:r></w:p>`
+  );
+
+  // 3. Radicado en el asunto (color FF0000)
+  xml = xml.replace(
+    /(<w:color w:val="FF0000"[^>]*\/>(?:<w:sz[^>]*\/>)*(?:<w:szCs[^>]*\/>)*<\/w:rPr><w:t>)20252196416(<\/w:t>)/,
+    `$1${xmlEsc(d.radicado)}$2`
+  );
+
+  // 4. Todos los demás "20252196416" → radicado
+  xml = xml.split('20252196416').join(xmlEsc(d.radicado));
+
+  // 5. Nombre contribuyente en tabla (color EE0000)
+  xml = xml.replace(
+    /(<w:color w:val="EE0000"[^\/]*\/><w:sz[^\/]*\/><w:szCs[^\/]*\/><\/w:rPr><w:t>)daniela higuita(<\/w:t>)/,
+    `$1${xmlEsc(d.nombre)}$2`
+  );
+
+  // 6. Cédula en tabla (color EE0000, después del nombre)
+  xml = xml.replace(
+    /(<w:color w:val="EE0000"[^\/]*\/><w:sz[^\/]*\/><w:szCs[^\/]*\/><\/w:rPr><w:t>)1214735685(<\/w:t>)/,
+    `$1${xmlEsc(d.cedula)}$2`
+  );
+
+  // 7. Concepto + radicado en tabla (color EE0000)
+  xml = xml.replace(
+    /(<w:color w:val="EE0000"[^\/]*\/><w:sz[^\/]*\/><w:szCs[^\/]*\/><\/w:rPr><w:t>)EMBARGO TRANSITO 2023 20252196416(<\/w:t>)/,
+    `$1${xmlEsc(d.concepto+' '+d.radicado)}$2`
+  );
+
+  // 8. Fecha del auto (formato dd/mm/yyyy, subrayada en el XML)
+  xml = xml.replace(
+    /(<w:u w:val="single"[^\/]*\/><\/w:rPr><w:t>)19\/05\/2026(<\/w:t>)/,
+    `$1${xmlEsc(d.fechaAuto)}$2`
+  );
+
+  // 9. Motivo del levantamiento
+  xml = xml.replace(
+    /(<w:t xml:space="preserve">)Facilidad o acuerdo de pago vigente (<\/w:t>)/,
+    `$1${xmlEsc(d.motivo)} </w:t>`
+  );
+
+  // 10. Proyectó (color EE0000 en tabla de firmas)
+  xml = xml.replace(
+    /(<w:color w:val="EE0000"[^\/]*\/><w:sz[^\/]*\/><w:szCs[^\/]*\/><\/w:rPr><w:t>)Jeison Maya(<\/w:t>)/,
+    `$1${xmlEsc(d.proyNombre||cfg.nombre||'')}$2`
+  );
+
+  // 11. Fecha de proyección en tabla de firmas
+  if(d.proyFecha){
+    xml = xml.replace(
+      /(<w:t>)27\/05\/2026(<\/w:t>)/,
+      `$1${xmlEsc(fmtC(d.proyFecha))}$2`
+    );
+  }
+
+  zip.file('word/document.xml', xml);
+  return zip.generateAsync({
+    type:'blob',
+    mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    compression:'DEFLATE'
+  });
 }
 
-async function generarDocxMulti(d,bancos){
+async function generarDocxMulti(d, bancos){
   if(!B64) throw new Error('Plantilla no cargada.');
-  const zip=await JSZip.loadAsync(b64ToU8(B64));
-  let xml=await zip.file('word/document.xml').async('string');
-  const fl=fmtL(d.fecha),fp=d.proyFecha?fmtC(d.proyFecha):'';
-  xml=xml.replace(/ 1070\.02\s+/,` ${d.numOficio}  `);
-  xml=xml.replace(/<w:t>05 de febrero de 2026<\/w:t>/,`<w:t>${fl}</w:t>`);
-  xml=xml.replace(/w:fullDate="2026-02-05T00:00:00Z"/,`w:fullDate="${d.fecha}T00:00:00Z"`);
-  xml=xml.replace(/<w:t>TRANSITO 2026<\/w:t>/,`<w:t>${esc(d.concepto)}</w:t>`);
-  const allRad=bancos.map(b=>b.radicado).join(', ');
-  xml=xml.split('20252196416').join(allRad);
-  xml=xml.replace(/<w:t>12<\/w:t>[\s\S]*?<w:t>\/01\/2026<\/w:t>/,`<w:t>${d.fechaAuto}</w:t>`);
-  xml=xml.replace(/<w:t xml:space="preserve">ESTAR AL DIA <\/w:t>/,`<w:t xml:space="preserve">${esc(d.motivo)} </w:t>`);
-  xml=xml.replace('###PROYN_PLACEHOLDER###',xmlEsc(d.proyNombre||''));
-  if(fp) xml=xml.replace('<w:t>12/01/2026</w:t>',`<w:t>${fp}</w:t>`);
-  const filas=bancos.map(b=>DATA_ROW_TPL.replace('__NOMBRE__',xmlEsc(d.nombre)).replace('__CEDULA__',xmlEsc(d.cedula)).replace('__CONCEPTO_RADICADOS__',xmlEsc(d.concepto+' '+b.banco+': '+b.radicado))).join('');
-  xml=xml.replace('###ROWS_PLACEHOLDER###',filas);
-  zip.file('word/document.xml',xml);
-  return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',compression:'DEFLATE'});
+  // Para multi-banco, usamos el mismo documento pero con todos los radicados
+  // El radicado en el asunto muestra todos separados por coma
+  const allRad = bancos.map(b => b.radicado).join(', ');
+  const dMulti  = Object.assign({}, d, { radicado: allRad });
+  // La tabla del contribuyente muestra la primera fila con el primer banco
+  // y el concepto del contribuyente con todos los radicados
+  const dConcepto = Object.assign({}, dMulti, {
+    concepto: d.concepto + ' ' + bancos.map(b => b.banco+': '+b.radicado).join(' | ')
+  });
+  return generarDocx(dConcepto);
 }
 
 // ════════════════════════════════════════
@@ -2021,6 +2154,14 @@ function cargarConfigPanel(){
   if(u)u.value=cfg.apiUrl||'';
   if(n)n.value=cfg.nombre||'';
   if(e)e.value=cfg.equipo||'';
+  // Estado de la plantilla
+  const b64stored = localStorage.getItem(TMPL_KEY)||localStorage.getItem('desembargo_template_b64')||'';
+  if(b64stored && b64stored.length > 100){
+    B64 = b64stored;
+    actualizarEstadoPlantilla('Desembargo_bancario.docx', b64stored.length);
+  } else {
+    actualizarEstadoPlantilla('', 0);
+  }
 }
 function guardarConfig(){
   const urlInput=document.getElementById('c_url').value.trim();
