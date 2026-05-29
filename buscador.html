@@ -746,14 +746,12 @@ function resaltar(texto,termino){
   try{
     var sess=JSON.parse(localStorage.getItem(SESSION_KEY)||'null')
            ||JSON.parse(localStorage.getItem('oficios_session')||'null');
-    if(sess&&sess.expira>Date.now()&&sess.nombre&&sess.token&&sess.token.length===64){
+    if(sess&&sess.expira>Date.now()&&sess.nombre){
       usuarioActual=sess;
       document.getElementById('pinOverlay').style.display='none';
       aplicarSesion(sess);
       return;
     }
-    // Sesión vieja sin token — limpiar para forzar nuevo login
-    if(sess){ localStorage.removeItem(SESSION_KEY); localStorage.removeItem('oficios_session'); }
   }catch(e){}
 
   // Mostrar PIN — botones YA habilitados (USUARIOS está listo)
@@ -936,7 +934,7 @@ async function buscar(){
   setStatus('loading','Buscando en todas las hojas...',true);
   document.getElementById('realtime-hint').style.display='inline';
   try{
-    var params=new URLSearchParams({termino:termino,exacto:exacto,mayus:mayus,usuario:usuarioActual.nombre,cargo:usuarioActual.cargo||'',token:usuarioActual.token||''});
+    var params=new URLSearchParams({termino:termino,exacto:exacto,mayus:mayus,usuario:usuarioActual.nombre,cargo:usuarioActual.cargo||''});
     var res=await fetch(APPS_SCRIPT_URL+'?'+params);
     var data=await res.json();
     if(data.error){ setStatus('error','❌ '+data.error); document.getElementById('empty-state').style.display='block'; return; }
