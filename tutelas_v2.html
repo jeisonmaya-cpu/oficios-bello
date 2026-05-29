@@ -1180,12 +1180,10 @@ DATOS EN TIEMPO REAL (fecha: ${new Date().toLocaleDateString("es-CO")}):
 - % resolución general: ${todos.length>0?Math.round((todos.length-activos.length)/todos.length*100):0}%
 
 CARGA POR ABOGADO:
-${aboStats.map(a=>`  ${a.nombre}: ${a.activos} activos (${a.tutelas} tutelas, ${a.fallos} fallos, ${a.vencidos} vencidos)`).join("
-")}
+${aboStats.map(a=>`  ${a.nombre}: ${a.activos} activos (${a.tutelas} tutelas, ${a.fallos} fallos, ${a.vencidos} vencidos)`).join("\n")}
 
 CASOS MÁS URGENTES (hasta 5):
-${vencidos.concat(urgHoy).slice(0,5).map(r=>`  - ${r["ACCIONANTE"]||"Sin nombre"} | Rad: ${r["RADICADO"]||"—"} | ${r._dias<0?"Vencido "+Math.abs(r._dias)+"d":"Vence hoy"} | ${r["RESPONSABLE"]||"Sin asignar"}`).join("
-")||"  Ninguno"}
+${vencidos.concat(urgHoy).slice(0,5).map(r=>`  - ${r["ACCIONANTE"]||"Sin nombre"} | Rad: ${r["RADICADO"]||"—"} | ${r._dias<0?"Vencido "+Math.abs(r._dias)+"d":"Vence hoy"} | ${r["RESPONSABLE"]||"Sin asignar"}`).join("\n")||"  Ninguno"}
 
 Contexto legal: tutelas constitucionales, cobro coactivo municipal colombiano, normativa tributaria local.
 Responde de forma directa. Si preguntan por un nombre o radicado específico, busca en los datos. Máximo 4 líneas de respuesta salvo que sea necesario más.`;
@@ -1193,25 +1191,30 @@ Responde de forma directa. Si preguntan por un nombre o radicado específico, bu
   // Historial para contexto multi-turno
   teoHistorial.push({role:"user", content: pregunta});
 
+  // Llamada via Apps Script (proxy server-side — evita CORS de Anthropic)
   try{
-    const res = await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
+    const res = await fetch(APPS_URL, {
+      method: "POST",
+      redirect: "follow",
       body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:600,
-        system: contexto,
-        messages: teoHistorial.slice(-8) // últimos 4 turnos para no exceder tokens
+        accion:   "teo",
+        contexto: contexto,
+        mensajes: teoHistorial.slice(-8)
       })
     });
-    const data = await res.json();
-    const respuesta = data.content?.[0]?.text || "No pude procesar eso. Intenta de nuevo.";
+    const texto = await res.text();
+    let data;
+    try{ data = JSON.parse(texto); } catch(e){
+      throw new Error("Respuesta no válida del servidor");
+    }
+    if(!data.ok) throw new Error(data.error||"Error del servidor");
+    const respuesta = data.respuesta || "No pude procesar eso.";
     teoHistorial.push({role:"assistant", content: respuesta});
     typing.remove();
     teoAddMsg(respuesta,"bot");
   } catch(e){
     typing.remove();
-    teoAddMsg("❌ Error al conectar con el asistente. Revisa tu conexión.","bot");
+    teoAddMsg(`❌ ${e.message}. Intenta de nuevo.`,"bot");
     console.error("[Teo]",e);
   }
 }
