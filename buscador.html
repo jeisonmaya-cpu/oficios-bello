@@ -676,34 +676,90 @@ function setPinLabel(txt){
   if(el) el.textContent = txt;
 }
 
-async function cargarUsuarios(){
+function cargarUsuarios(){
   setBtnsPin(true);
   setPinLabel('Cargando acceso...');
 
-  try {
-    var res  = await fetch(APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now());
-    var data = await res.json();
-    if(data.error) throw new Error(data.error);
-    if(!data.usuarios || !data.usuarios.length) throw new Error('Sin usuarios');
-    USUARIOS = data.usuarios;
-    localStorage.setItem('usuarios_cache', JSON.stringify({datos:USUARIOS, ts:Date.now()}));
-    setPinLabel('Ingresa tu PIN de 4 dígitos');
-  } catch(e){
-    // Fallback caché local (máx 24h)
+  var url = APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now();
+
+  // Intento 1: fetch normal (funciona cuando el script tiene CORS headers)
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.error) throw new Error(data.error);
+      if(!data.usuarios || !data.usuarios.length) throw new Error('Sin usuarios');
+      USUARIOS = data.usuarios;
+      localStorage.setItem('usuarios_cache', JSON.stringify({datos:USUARIOS, ts:Date.now()}));
+      setPinLabel('Ingresa tu PIN de 4 dígitos');
+      setBtnsPin(false);
+      setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
+    })
+    .catch(function(){
+      // Intento 2: fetch no-cors no devuelve body, así que usamos un script tag (JSONP-style)
+      cargarUsuariosJSONP();
+    });
+}
+
+function cargarUsuariosJSONP(){
+  // Crea un script tag que carga la URL — Apps Script responde JSON puro
+  // El iframe lee la respuesta si CORS lo permite; si no, cae al caché
+  var url = APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now();
+
+  // Intentar con un iframe invisible que puede leer la respuesta
+  var iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  var timeout = setTimeout(function(){
+    document.body.removeChild(iframe);
+    usarCacheUsuarios();
+  }, 5000);
+
+  iframe.onload = function(){
     try {
-      var cache = JSON.parse(localStorage.getItem('usuarios_cache')||'null');
-      if(cache && cache.datos && (Date.now()-cache.ts) < 86400000){
-        USUARIOS = cache.datos;
+      var txt = iframe.contentDocument.body.innerText || iframe.contentWindow.document.body.innerText;
+      var data = JSON.parse(txt);
+      clearTimeout(timeout);
+      document.body.removeChild(iframe);
+      if(data.usuarios && data.usuarios.length){
+        USUARIOS = data.usuarios;
+        localStorage.setItem('usuarios_cache', JSON.stringify({datos:USUARIOS, ts:Date.now()}));
         setPinLabel('Ingresa tu PIN de 4 dígitos');
-      } else {
-        setPinLabel('Sin conexión — recarga la página');
-        pinAlert('info','Sin conexión al servidor. Si tu PIN estaba guardado localmente, intenta igual.');
+        setBtnsPin(false);
+        setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
+        return;
       }
-    } catch(e2){ setPinLabel('Error al cargar acceso'); }
-  } finally {
-    setBtnsPin(false);
-    setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
-  }
+    } catch(e){}
+    clearTimeout(timeout);
+    document.body.removeChild(iframe);
+    usarCacheUsuarios();
+  };
+
+  iframe.onerror = function(){
+    clearTimeout(timeout);
+    document.body.removeChild(iframe);
+    usarCacheUsuarios();
+  };
+
+  iframe.src = url;
+}
+
+function usarCacheUsuarios(){
+  try {
+    var cache = JSON.parse(localStorage.getItem('usuarios_cache')||'null');
+    if(cache && cache.datos && cache.datos.length && (Date.now()-cache.ts) < 7*24*60*60*1000){
+      USUARIOS = cache.datos;
+      setPinLabel('Ingresa tu PIN (modo sin conexión)');
+      setBtnsPin(false);
+      setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
+      return;
+    }
+  } catch(e){}
+  // Sin caché — permitir entrada con mensaje
+  setPinLabel('Ingresa tu PIN de 4 dígitos');
+  pinAlert('warn','Sin conexión al servidor. Si tienes PIN registrado, inténtalo igual.');
+  setBtnsPin(false);
+  setTimeout(function(){ var h=document.getElementById('pinHidden'); if(h) h.focus(); }, 200);
 }
 
 // ════════════════════════════════════════
@@ -790,9 +846,30 @@ function conectarPinHidden(){
 }
 
 function verificarPin(){
+  // Si USUARIOS no cargó del Sheet, intentar recargarlos y esperar
   if(!USUARIOS.length){
-    pinAlert('warn','⏳ Aún cargando usuarios, espera un momento...');
-    setTimeout(function(){ pinActual=''; actualizarDots(); }, 1200);
+    pinAlert('info','⏳ Cargando lista de acceso, espera...');
+    setBtnsPin(true);
+    setPinLabel('Verificando acceso...');
+    var pinGuardado = pinActual;
+    pinActual = ''; actualizarDots();
+    // Reintentar carga y luego re-verificar
+    fetch(APPS_SCRIPT_URL + '?accion=usuarios&t=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.usuarios && data.usuarios.length){
+          USUARIOS = data.usuarios;
+          localStorage.setItem('usuarios_cache', JSON.stringify({datos:USUARIOS, ts:Date.now()}));
+        }
+      })
+      .catch(function(){ usarCacheUsuarios(); })
+      .finally(function(){
+        setBtnsPin(false);
+        setPinLabel('Ingresa tu PIN de 4 dígitos');
+        pinAlert('','');
+        // Re-insertar el PIN que había digitado
+        for(var i=0;i<pinGuardado.length;i++) pp(pinGuardado[i]);
+      });
     return;
   }
 
