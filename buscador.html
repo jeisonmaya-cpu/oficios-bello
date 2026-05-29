@@ -597,40 +597,40 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
 // ════════════════════════════════════════
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznFqHRouEBMbEIRTjUMFlML5h50nlr1iLKgKgSrl3CMo8Dz5Eqoyj-lyQ7cZoGtbtjKw/exec';
 
-// Lista de usuarios con PINes hasheados (SHA-256)
-// Nadie puede recuperar el PIN desde estos hashes — son irreversibles
+// Lista de usuarios — PINes protegidos con SHA-256+salt
+// Nadie puede recuperar el PIN original desde estos valores
 var USUARIOS_BASE = [
-  {h:'c66f1f34f49381e467d3abd43c77947f5d1dd362fd0eec6c2c1f27233ae9adf9',n:'ANDERSON CORREA',c:'CONTRATISTA',a:false},
-  {h:'efe8564971192c24d29c7aedb7c5230aeaf13dbac7815bb7bd2206bdcc483350',n:'ANDRES BEDOYA',c:'CONTRATISTA',a:false},
-  {h:'5fe46e04994d11413f7a0b17bb2e12cb4ce78b5bd2770a9242dc465a50baa18f',n:'CAMILA PUERTA',c:'CONTRATISTA',a:false},
-  {h:'ddd180a4466685b23ed9fee26d0d9cb5f081608808cceaa9cf74a9ece83a5bf4',n:'CARLOS HURTADO',c:'CONTRATISTA',a:false},
-  {h:'9f2b69296b69933a12d3cfe71182c77b9cc50edb46e4ded9b944ce04f779307b',n:'DANIELA HIGUITA',c:'CONTRATISTA',a:false},
-  {h:'617c14bb6cfaff0ae12cdcfa89bffa353217611d62c53120b8c5473b5acf4581',n:'DARIO PELAEZ',c:'CONTRATISTA',a:false},
-  {h:'d0ea28283d465708b25553535043283e801e26da23030320d6b649f2b3e4e8c6',n:'DAYSE NATHALY RODRIGUEZ',c:'CONTRATISTA',a:false},
-  {h:'285cd61ccbba9294f4a2041555271a8671c1ebf0abd33efb9073b240a7b6b5d0',n:'MARCELA DUQUE',c:'CONTRATISTA',a:false},
-  {h:'aa82088246685c17ebf16d48877686b831ed384ffdc42e76494283c271704d7a',n:'HENRRY TRIANA',c:'CONTRATISTA',a:false},
-  {h:'1a145b425f30663a2d6668b6e836bc1fc0afb675e5b82c19ab86a9df6a980476',n:'ANDREA VALENCIA',c:'CONTRATISTA',a:false},
-  {h:'8f08fb89c225a58e92455fae25d3df22bda90a094bfc8e0240b8a9bd94318159',n:'JEISON MAYA',c:'CONTRATISTA',a:true},
-  {h:'cf23dc33d6aba13592a72190564ed18b2c0dae295f681ee0fddc4862f01225cf',n:'JESUS OSORIO',c:'CONTRATISTA',a:false},
-  {h:'29e2c686a1fab3fa529bacb349d8af3fd7c96ec2b5fafb13f7a4ba82894269c7',n:'JOSE FRANCINETH',c:'CONTRATISTA',a:false},
-  {h:'486ea85278bd246cca4a4de0dd8e08ed0802eed350c73eebd662a4578c281496',n:'JOSE ZAPATA',c:'CONTRATISTA',a:false},
-  {h:'459ef54b95078ec14162ab65a269e9179f14488554e29475504b3b25b2f17cb1',n:'JUAN PABLO VILLA',c:'CONTRATISTA',a:false},
-  {h:'f3cd266d4f44abec08b07d354dbb38879be65f29e631a2ee98f6d8ea24f1e3d0',n:'JULIAN PEREA',c:'CONTRATISTA',a:false},
-  {h:'95fc6cd8aeb992c4169c1f26d4514523b37130b38ce5ca12500e621145be3e15',n:'JULIET DUQUE',c:'CONTRATISTA',a:false},
-  {h:'df3c5a3eab925a314bfab4065c357c33cefff08fe1e4bd9fd470ed94500a37aa',n:'JULIANA',c:'CONTRATISTA',a:false},
-  {h:'2f562908d00ead79657c7b033353ef7422e80f047a94cc3749ebf84b58646a00',n:'LISETH MURILLO',c:'CONTRATISTA',a:false},
-  {h:'509a9edbeff0c385a956b77657466cb7a2d89a6b3e9ed43b5d80996ca2aa6aaf',n:'LUISA MIRA',c:'CONTRATISTA',a:false},
-  {h:'752131c1f2299ffbbffcc84ec0d576915c5eb1a6fc7137feb232a6ab65b25177',n:'VERONICA SUAREZ',c:'CONTRATISTA',a:false},
-  {h:'425ab9e9e0aa2213b4c3e192fa110a9be0a55c21956a474204ea526d294d8bac',n:'WILSON ORTIZ',c:'CONTRATISTA',a:false},
-  {h:'1df7964a1cf8172c953a97b801edca4f80d6c6a74f64fd0164c18c350d6af897',n:'VANESA PEREZ',c:'CONTRATISTA',a:false},
-  {h:'fb7bab9edf08f024aabf3501518399e82ab590666207a8b0ab7963b181ecf4b8',n:'YENIFFER CHAVERRA',c:'CONTRATISTA',a:false},
-  {h:'120e52d7b556d767ec36cded815be09600165124a3913d4586e374056f1d2f9b',n:'YOBAN JIMENEZ',c:'CONTRATISTA',a:false},
-  {h:'2d6ee4442604779303ee01076435c386b24da01010be6fe49d01e4ab196de6ba',n:'JUAN PABLO GOMEZ',c:'DIRECTOR EJECUCIONES FISCALES',a:true},
-  {h:'56280f252f312e642177e33fd389826f6b1ec99220fa41ab669330eb78d78363',n:'CATALINA TAMAYO',c:'PROFESIONAL UNIVERSITARIA',a:false},
-  {h:'b6be463f6999751d74c53b68865247ce565e003583579498f2537892bc13c69a',n:'LEIDY PEREA',c:'PROFESIONAL UNIVERSITARIA',a:false},
-  {h:'2a6a41cdfcbe78c1f94c27f244b17071896f60dc16d5cb3a75708d9cac85c3ff',n:'ANDRES HENAO',c:'AUXILIAR ADMINISTRATIVO',a:false},
-  {h:'4556b34f73d3244386c449798296b3f21c28df98fd7b0da69a691f1dcbd4a261',n:'DEISY LOPEZ',c:'PROFESIONAL UNIVERSITARIA',a:false},
-  {h:'7ffc04e52e2e7c6b67b3713613899289bc2de48f7f7a7b067db6a5d37f9fda3c',n:'DARIO BALDRICH',c:'PROFESIONAL UNIVERSITARIO',a:false}
+  {h:'b79d823e6cd325bd7de06004a96a4e6f7908379aa9f70ebd78e0fc0527f0f831',n:'ANDERSON CORREA',c:'CONTRATISTA',a:false},
+  {h:'21e505b6a38ffdfb5ead6f0e0bca60a0c18bf20fef9b22dcbe22ab2613699fb3',n:'ANDRES BEDOYA',c:'CONTRATISTA',a:false},
+  {h:'8f3fe16b1804b0483eab9687725362a7ae8788bdb402c13acf0117d12dc47ba3',n:'CAMILA PUERTA',c:'CONTRATISTA',a:false},
+  {h:'cf0445db1da582acfb1d688fc3c6af2e3f8ab821da1718920a7a5bd8c28d208d',n:'CARLOS HURTADO',c:'CONTRATISTA',a:false},
+  {h:'b9db2b7a179cbb13a2a9e418aafd646c1225557e733ddd932a44bc1b12ca71b0',n:'DANIELA HIGUITA',c:'CONTRATISTA',a:false},
+  {h:'dd12ce7a63a7f1638e27566a60a5eafdc26863fe2ef72c7c05350cf094c45c8b',n:'DARIO PELAEZ',c:'CONTRATISTA',a:false},
+  {h:'478ae8d897cb1940dc8721374e30d7246d15dc69ae7f32ebc0fe7d12c0417304',n:'DAYSE NATHALY RODRIGUEZ',c:'CONTRATISTA',a:false},
+  {h:'21c5b0fbd17b806ccf8df311db4e84998fe65de4f19a1917d58d23e717d88242',n:'MARCELA DUQUE',c:'CONTRATISTA',a:false},
+  {h:'84396d20fdc60c35ea4f911d2c441b75d57b2df37b43d5f90c1e8c01e2b31b4e',n:'HENRRY TRIANA',c:'CONTRATISTA',a:false},
+  {h:'228f58e4d75413a21d7dfe0a6bb907b84227e2cdfd40882688c1e32c0aa2de48',n:'ANDREA VALENCIA',c:'CONTRATISTA',a:false},
+  {h:'09bc8cfb94e1b5c21907660a604c1dcb52ead8fea02d5b7fe4a9ad94f2e75195',n:'JEISON MAYA',c:'CONTRATISTA',a:true},
+  {h:'759b02ec8ff70d9bc5fc245b54f3f72b622d8d823307daa7e68b4e371bbabe02',n:'JESUS OSORIO',c:'CONTRATISTA',a:false},
+  {h:'0bc92c714d3219730cf3dfcc38d9b947e1c8406af259ba2efbc1f39c25129260',n:'JOSE FRANCINETH',c:'CONTRATISTA',a:false},
+  {h:'b550e97c2d4c6fa362e33daa9f93339d1c8d8c3637dd08c647486ba2109f2ccc',n:'JOSE ZAPATA',c:'CONTRATISTA',a:false},
+  {h:'ad4c64088f33c05c9f32591f923a31500ee0ba339c48521ce56bb972315124de',n:'JUAN PABLO VILLA',c:'CONTRATISTA',a:false},
+  {h:'616a4b646a7f0f95b594cdf5faa878b7cdfc6cd7ab634be733d03909e23046db',n:'JULIAN PEREA',c:'CONTRATISTA',a:false},
+  {h:'cf16ea5d93452b638042218f1f853c5b24476dbf6b5c5ab56619c085267d1b32',n:'JULIET DUQUE',c:'CONTRATISTA',a:false},
+  {h:'0ed5280b19ad133fae9f6c196a5d2ccbe44810f64cad17c763b591cb0800dbd0',n:'JULIANA',c:'CONTRATISTA',a:false},
+  {h:'760e4e8d2263c626d35a3f963289938dd94794c3fe881121d201ba3ae9073e07',n:'LISETH MURILLO',c:'CONTRATISTA',a:false},
+  {h:'3c13ed0c258c8aa30ae3b3552045fd2a64981461b0469a5718ccb0f798a1e154',n:'LUISA MIRA',c:'CONTRATISTA',a:false},
+  {h:'dad90d4b3d37a19da63f85fa4bba3aca31ddae8d3d8ed6e13987dd3c37bd62c5',n:'VERONICA SUAREZ',c:'CONTRATISTA',a:false},
+  {h:'21faff89fc7b06897dfb8ab875b0efa376c540cac4f877966b6ed90cd132b9e3',n:'WILSON ORTIZ',c:'CONTRATISTA',a:false},
+  {h:'43a75a30f569a6a844397390a0202466d6fd656b0cdea18ce040383ba75ae9f0',n:'VANESA PEREZ',c:'CONTRATISTA',a:false},
+  {h:'2f3b87032d5579ae42b31844f1c6585c6b9296fe2f5adb4e7c2be392dcf9b0a9',n:'YENIFFER CHAVERRA',c:'CONTRATISTA',a:false},
+  {h:'b0c6e10b3a74127adc5b2e7d386683199783cc310a7fb9884a5e0854f41b5b77',n:'YOBAN JIMENEZ',c:'CONTRATISTA',a:false},
+  {h:'3ab2bc7e292c7ccd58de6a4e9003e7b3fa4727e77bf0eae1c14cc288f2b94a0e',n:'JUAN PABLO GOMEZ',c:'DIRECTOR EJECUCIONES FISCALES',a:true},
+  {h:'e81fda880d68cb5d75ab4edcf95ed40d253a2099f3ec8bad9e7fb865ea918a75',n:'CATALINA TAMAYO',c:'PROFESIONAL UNIVERSITARIA',a:false},
+  {h:'d649d340d5a6c829232d2d822d0991f7c6a380d4806a44205fa3953e25796a74',n:'LEIDY PEREA',c:'PROFESIONAL UNIVERSITARIA',a:false},
+  {h:'052d38e9bec86f1e71c7a50364b256bed49b4a89a24ee78b45502e315f3275e5',n:'ANDRES HENAO',c:'AUXILIAR ADMINISTRATIVO',a:false},
+  {h:'dc1afe9384748d6c02ad3f56e0f646e72cfb9199aa490a480143ac436f455b63',n:'DEISY LOPEZ',c:'PROFESIONAL UNIVERSITARIA',a:false},
+  {h:'73efd55844fa16320675454f83f91b68f6194d21d9c8bd3574e71d4cb56d77ca',n:'DARIO BALDRICH',c:'PROFESIONAL UNIVERSITARIO',a:false}
 ];
 // ════════════════════════════════════════
 // ESTADO
@@ -889,23 +889,72 @@ function _verificarConHash(hash, pinCapturado){
   }
 } // _verificarConHash
 
-// SHA-256 usando la API nativa del navegador (Web Crypto) — sin librerías
+// SHA-256 puro en JS — funciona sin crypto.subtle, sin librerías, sin HTTPS
+// Implementación estándar RFC 6234
 function _sha256(str){
-  var buf = new TextEncoder().encode(str);
-  return crypto.subtle.digest('SHA-256', buf).then(function(hashBuf){
-    return Array.from(new Uint8Array(hashBuf))
-      .map(function(b){ return b.toString(16).padStart(2,'0'); })
-      .join('');
-  });
+  var SALT = 'TeodoroBello2025';
+  var msg  = SALT + str + SALT;
+  // Constantes SHA-256
+  var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+         0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+         0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+         0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+         0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+         0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+         0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+         0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  function safe32(n){ return n>>>0; }
+  function rotr(n,b){ return safe32((n>>>b)|(n<<(32-b))); }
+  // Encode UTF-8
+  var bytes=[];
+  for(var i=0;i<msg.length;i++){
+    var cp=msg.charCodeAt(i);
+    if(cp<128){bytes.push(cp);}
+    else if(cp<2048){bytes.push(192|(cp>>6));bytes.push(128|(cp&63));}
+    else{bytes.push(224|(cp>>12));bytes.push(128|((cp>>6)&63));bytes.push(128|(cp&63));}
+  }
+  var bLen=bytes.length;
+  bytes.push(0x80);
+  while(bytes.length%64!==56) bytes.push(0);
+  var bits=bLen*8;
+  for(var s=56;s>=0;s-=8) bytes.push((bits/Math.pow(2,s))&0xff);
+  // Process blocks
+  for(var b2=0;b2<bytes.length;b2+=64){
+    var w=[];
+    for(var j=0;j<16;j++) w[j]=(bytes[b2+j*4]<<24)|(bytes[b2+j*4+1]<<16)|(bytes[b2+j*4+2]<<8)|bytes[b2+j*4+3];
+    for(var j2=16;j2<64;j2++){
+      var s0=safe32(rotr(w[j2-15],7)^rotr(w[j2-15],18)^(w[j2-15]>>>3));
+      var s1=safe32(rotr(w[j2-2],17)^rotr(w[j2-2],19)^(w[j2-2]>>>10));
+      w[j2]=safe32(w[j2-16]+s0+w[j2-7]+s1);
+    }
+    var a=H[0],bv=H[1],cv=H[2],dv=H[3],ev=H[4],fv=H[5],gv=H[6],hv=H[7];
+    for(var r=0;r<64;r++){
+      var S1=safe32(rotr(ev,6)^rotr(ev,11)^rotr(ev,25));
+      var ch=safe32((ev&fv)^(~ev&gv));
+      var t1=safe32(hv+S1+ch+K[r]+w[r]);
+      var S0=safe32(rotr(a,2)^rotr(a,13)^rotr(a,22));
+      var maj=safe32((a&bv)^(a&cv)^(bv&cv));
+      var t2=safe32(S0+maj);
+      hv=gv;gv=fv;fv=ev;ev=safe32(dv+t1);
+      dv=cv;cv=bv;bv=a;a=safe32(t1+t2);
+    }
+    H[0]=safe32(H[0]+a);H[1]=safe32(H[1]+bv);H[2]=safe32(H[2]+cv);H[3]=safe32(H[3]+dv);
+    H[4]=safe32(H[4]+ev);H[5]=safe32(H[5]+fv);H[6]=safe32(H[6]+gv);H[7]=safe32(H[7]+hv);
+  }
+  var hex='';
+  for(var k=0;k<8;k++) hex+=('00000000'+H[k].toString(16)).slice(-8);
+  // Devolver Promise para mantener la misma interfaz que crypto.subtle
+  return Promise.resolve(hex);
 }
 
 // El Sheet devuelve PINes en texto — hashearlos antes de guardar en USUARIOS
 function _normalizarUsuariosSheet(lista){
   return Promise.all(lista.map(function(u){
-    // Si ya tiene hash (h), usarlo directo; si tiene pin en texto, hashearlo
     if(u.h) return Promise.resolve({h:u.h, n:u.nombre||u.n, c:u.cargo||u.c, a:u.admin||u.a||false});
+    // Hashear PIN del Sheet con el mismo salt
     return _sha256(String(u.pin)).then(function(hash){
-      return {h:hash, n:u.nombre||u.n||'', c:u.cargo||u.c||'', a:u.admin||u.a||false};
+      return {h:hash, n:String(u.nombre||u.n||''), c:String(u.cargo||u.c||''), a:!!(u.admin||u.a)};
     });
   }));
 }
