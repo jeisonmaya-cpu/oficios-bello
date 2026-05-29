@@ -1683,7 +1683,12 @@ function onConceptoChange(){
   const keys=Object.keys(bancos);
   if(keys.length===1){
     grpRad.style.display='flex';
-    if(radInput){radInput.value=bancos[keys[0]];radInput.readOnly=true;}
+    if(radInput){
+      radInput.value=bancos[keys[0]];
+      radInput.readOnly=true;
+      // Asegurar que el valor quede visible aunque esté readonly
+      radInput.setAttribute('data-radicado', bancos[keys[0]]);
+    }
     document.getElementById('f_radicado_badge').style.display='inline';
     document.getElementById('f_radicado_hint').textContent='Radicado para '+keys[0];
   } else {
@@ -1738,7 +1743,9 @@ function getConceptoReal(){
 }
 function getRadicadoForm(){
   const el=document.getElementById('f_radicado');
-  return el?el.value.trim():'';
+  if(!el) return '';
+  // Si está readonly, asegurar que devuelva el valor (puede tener data-radicado)
+  return el.value.trim() || el.getAttribute('data-radicado') || '';
 }
 
 // ════════════════════════════════════════
@@ -2036,6 +2043,8 @@ function limpiarForm(){
   document.getElementById('f_concepto').selectedIndex=0;
   document.getElementById('grp_bancos_tabla').style.display='none';
   document.getElementById('grp_radicado_manual').style.display='none';
+  var radEl=document.getElementById('f_radicado');
+  if(radEl){ radEl.readOnly=false; radEl.removeAttribute('data-radicado'); radEl.value=''; }
   document.getElementById('grp_concepto_manual').style.display='none';
   document.getElementById('bancos_tbody').innerHTML='';
   document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('active','blue','green','red'));
