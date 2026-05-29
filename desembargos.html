@@ -632,7 +632,8 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
       <div class="wiz-field">
         <label>Su nombre completo</label>
         <input id="wNombre" type="text" placeholder="Ej. Jeison Maya" autocomplete="name"
-               oninput="onWizNombre(this.value)">
+               oninput="onWizNombre(this.value)"
+               onkeydown="if(event.key==='Enter') conectar()">
       </div>
       <div class="wiz-field">
         <label>Equipo / Cargo <span style="font-size:10px;opacity:.5">(opcional)</span></label>
@@ -1212,18 +1213,26 @@ function sacudirWizRobot(){
 }
 
 async function conectar(){
-  const nom=document.getElementById('wNombre').value.trim();
-  const eq =document.getElementById('wEquipo').value.trim();
-  // URL: siempre la predeterminada (no expuesta al usuario)
-  const url=DEFAULT_URL;
-  if(!nom){ wizAlert('w','Cuéntame tu nombre para continuar 😊'); sacudirWizRobot(); return; }
-  wizAlert('w','⏳ Conectando con el Sheet…');
-  document.getElementById('btnConectar').disabled=true;
-  // No esperamos ping (no-cors siempre true) — entramos directo
-  cfg={apiUrl:url,nombre:nom,equipo:eq};
+  const nom = document.getElementById('wNombre').value.trim();
+  const eq  = document.getElementById('wEquipo').value.trim();
+  if(!nom){
+    sacudirWizRobot();
+    const b = document.getElementById('wizBubble');
+    if(b){
+      b.innerHTML = 'Espera, necesito tu nombre 😅';
+      b.style.borderColor = 'rgba(239,68,68,.4)';
+      b.style.color = '#fca5a5';
+      b.style.background = 'rgba(239,68,68,.1)';
+    }
+    return;
+  }
+  const btn = document.getElementById('btnConectar');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Entrando…'; }
+  cfg = { apiUrl: DEFAULT_URL, nombre: nom, equipo: eq };
   saveCfg();
-  await new Promise(r=>setTimeout(r,600)); // pequeña pausa dramática
-  document.getElementById('wizOverlay').style.display='none';
+  await new Promise(r => setTimeout(r, 500));
+  document.getElementById('wizOverlay').style.display = 'none';
+  if(btn){ btn.disabled = false; btn.innerHTML = '🚀 ¡Entrar con Teodoro!'; }
   iniciarApp();
 }
 function saltarConfig(){
@@ -1253,12 +1262,24 @@ async function ping(url){
 // INIT
 // ════════════════════════════════════════
 loadCfg();
-// Si no tiene URL guardada, poner la predeterminada
 if(!cfg.apiUrl) cfg.apiUrl = DEFAULT_URL;
-document.getElementById('f_fecha').value=hoyISO();
-document.getElementById('f_proyf').value=hoyISO();
+
+// Entrada con Enter en el campo nombre del wizard
+(function(){
+  const wn = document.getElementById('wNombre');
+  if(wn) wn.addEventListener('keydown', function(e){ if(e.key==='Enter') conectar(); });
+})();
+
+// Fechas por defecto
+const fFecha = document.getElementById('f_fecha');
+const fProyf = document.getElementById('f_proyf');
+if(fFecha) fFecha.value = hoyISO();
+if(fProyf) fProyf.value = hoyISO();
+
+// Si ya tiene nombre guardado, saltar el wizard
 if(cfg.nombre){
-  document.getElementById('wizOverlay').style.display='none';
+  const ov = document.getElementById('wizOverlay');
+  if(ov) ov.style.display = 'none';
   iniciarApp();
 }
 
