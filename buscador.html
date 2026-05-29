@@ -350,6 +350,42 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 
+.contador-chip{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.25);
+  color:var(--gold2);font-size:11px;font-weight:700;
+  padding:5px 11px;border-radius:20px;white-space:nowrap;flex-shrink:0;
+}
+.contador-num{font-family:'DM Serif Display',serif;font-size:16px;line-height:1;}
+.btn-print{
+  background:rgba(139,92,246,.2);color:#c4b5fd;
+  border:1px solid rgba(139,92,246,.3);border-radius:8px;
+  padding:8px 16px;font-size:12px;font-weight:700;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;gap:6px;transition:all .2s;
+}
+.btn-print:hover{background:rgba(139,92,246,.35);}
+
+@media print{
+  body > *:not(#print-area){ display:none !important; }
+  #print-area{
+    display:block !important;
+    position:fixed;inset:0;background:#fff;
+    padding:32px;font-family:'DM Sans',sans-serif;color:#000;z-index:9999;
+  }
+  #print-area .pr-head{ border-bottom:2px solid #0a1f3d;padding-bottom:12px;margin-bottom:20px; }
+  #print-area .pr-title{ font-size:22px;font-weight:700;color:#0a1f3d; }
+  #print-area .pr-sub{ font-size:12px;color:#555;margin-top:4px; }
+  #print-area .pr-origen{ font-size:11px;color:#666;margin-bottom:16px;padding:8px;background:#f5f7fa;border-radius:6px; }
+  #print-area .pr-grid{ display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+  #print-area .pr-field{ padding:10px;border:1px solid #e0e0e0;border-radius:6px; }
+  #print-area .pr-field.full{ grid-column:1/-1; }
+  #print-area .pr-field.hi{ border-color:#0a1f3d;background:#f0f4ff; }
+  #print-area .pr-label{ font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#666;margin-bottom:3px; }
+  #print-area .pr-value{ font-size:13px;color:#000;font-weight:500; }
+  #print-area .pr-footer{ margin-top:24px;padding-top:10px;border-top:1px solid #ccc;font-size:10px;color:#888;display:flex;justify-content:space-between; }
+}
+
 @media(max-width:640px){
   .search-row{flex-direction:column}
   .btn-search{width:100%;justify-content:center}
@@ -457,9 +493,13 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
     <button class="nav-tab active" id="tab-buscar" onclick="goPanel('buscar')">🔍 Buscador</button>
     <button class="nav-tab" id="tab-reportes" onclick="goPanel('reportes')" style="display:none">📊 Reportes</button>
     <a class="nav-tab" href="desembargos.html">🏦 Desembargos</a>
-    <a class="nav-tab" href="home.html">🏠 Inicio</a>
   </div>
   <div class="nav-right">
+    <div class="contador-chip" id="contadorChip" style="display:none" title="Búsquedas realizadas hoy">
+      <span>🔍</span>
+      <span class="contador-num" id="contadorNum">0</span>
+      <span style="font-size:9px;opacity:.7">hoy</span>
+    </div>
     <div class="user-chip"><span>👤</span><strong id="userNombre">—</strong></div>
     <button class="btn-logout" onclick="cerrarSesion()">🔒 Salir</button>
   </div>
@@ -571,6 +611,9 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
 
 </div><!-- /wrap -->
 
+<!-- ÁREA DE IMPRESIÓN (solo visible al imprimir) -->
+<div id="print-area" style="display:none"></div>
+
 <!-- MODAL DETALLE -->
 <div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
   <div class="modal">
@@ -585,7 +628,8 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
       <div class="modal-origen" id="modal-origen"></div>
       <div class="modal-fields" id="modal-fields"></div>
     </div>
-    <div class="modal-foot">
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn-print" onclick="imprimirDetalle()">🖨️ Imprimir / PDF</button>
       <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
     </div>
   </div>
@@ -837,6 +881,7 @@ function aplicarSesion(u){
   document.getElementById('userNombre').textContent=u.nombre||'—';
   if(u.admin) document.getElementById('tab-reportes').style.display='flex';
   renderHistorial();
+  actualizarContadorUI(cargarContador());
   document.getElementById('empty-state').style.display='block';
   setTimeout(function(){ var t=document.getElementById('termino'); if(t) t.focus(); },200);
 }
@@ -896,6 +941,7 @@ async function buscar(){
     todosLosResultados=data.resultados||[];
     if(!todosLosResultados.length){ setStatus('empty','⚠️ Sin resultados para "'+termino+'"'); document.getElementById('empty-state').style.display='block'; document.getElementById('empty-state').querySelector('p').textContent='Sin resultados para "'+termino+'"'; return; }
     agregarHistorial(termino);
+    incrementarContador();
     setStatus('success','✅ '+todosLosResultados.length+' resultado(s) para "'+termino+'"');
     paginaActual=1; renderResultados();
   }catch(err){
@@ -971,6 +1017,7 @@ function limpiarBusqueda(){
 // ════════════════════════════════════════
 function abrirDetalle(idx){
   var r=todosLosResultados[idx]; if(!r)return;
+  _detalleActual = r;
   var hoja=r[0],fila=r[1],col=r[2],val=r[3],nombre=r[4],cedula=r[5],radicado=r[6],otros=r[7];
   document.getElementById('modal-titulo').textContent=val||'Detalle';
   document.getElementById('modal-subtitulo').textContent='Hoja: '+hoja+' · Fila '+fila;
@@ -1020,6 +1067,89 @@ function exportarExcel(){
   var ws=XLSX.utils.json_to_sheet(filas); var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Resultados');
   var t=document.getElementById('termino').value.trim().replace(/[^a-zA-Z0-9]/g,'_');
   XLSX.writeFile(wb,'busqueda_'+t+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ════════════════════════════════════════
+// CONTADOR DE BÚSQUEDAS DEL DÍA
+// ════════════════════════════════════════
+var CONTADOR_KEY = 'buscador_contador';
+
+function cargarContador(){
+  try{
+    var hoy = new Date().toISOString().slice(0,10);
+    var data = JSON.parse(localStorage.getItem(CONTADOR_KEY)||'null');
+    if(!data||data.fecha!==hoy) return 0;
+    return data.count||0;
+  }catch(e){ return 0; }
+}
+
+function incrementarContador(){
+  try{
+    var hoy  = new Date().toISOString().slice(0,10);
+    var data = JSON.parse(localStorage.getItem(CONTADOR_KEY)||'null');
+    if(!data||data.fecha!==hoy) data = {fecha:hoy, count:0};
+    data.count++;
+    localStorage.setItem(CONTADOR_KEY, JSON.stringify(data));
+    actualizarContadorUI(data.count);
+    return data.count;
+  }catch(e){ return 0; }
+}
+
+function actualizarContadorUI(n){
+  var chip = document.getElementById('contadorChip');
+  var num  = document.getElementById('contadorNum');
+  if(!chip||!num) return;
+  num.textContent = n;
+  chip.style.display = n>0 ? 'flex' : 'none';
+  // Animación de pulso al incrementar
+  num.style.transform = 'scale(1.3)';
+  num.style.color = '#fcd34d';
+  setTimeout(function(){ num.style.transform='scale(1)'; num.style.color=''; num.style.transition='all .3s'; }, 300);
+}
+
+// ════════════════════════════════════════
+// IMPRIMIR DETALLE
+// ════════════════════════════════════════
+var _detalleActual = null; // guarda el resultado actual del modal
+
+function imprimirDetalle(){
+  if(!_detalleActual) return;
+  var r = _detalleActual;
+  var hoja=r[0],fila=r[1],col=r[2],val=r[3],nombre=r[4],cedula=r[5],radicado=r[6],otros=r[7];
+
+  var comparendo='', otrosFil=otros;
+  if(otros){
+    var partes=otros.split(' | ');
+    var cp=partes.find(function(p){ return p.startsWith('Comparendo:'); });
+    if(cp){ comparendo=cp.substring(11).trim(); otrosFil=partes.filter(function(p){ return !p.startsWith('Comparendo:'); }).join(' | '); }
+  }
+
+  var campos = '';
+  if(comparendo) campos += '<div class="pr-field full hi"><div class="pr-label">🚦 Comparendo</div><div class="pr-value" style="font-size:16px;font-weight:700;color:#0a1f3d">'+esc(comparendo)+'</div></div>';
+  [{l:'Valor encontrado',v:val,hi:true},{l:'Contribuyente',v:nombre},{l:'Cédula / NIT',v:cedula},{l:'Radicado',v:radicado}]
+    .forEach(function(f){ if(f.v) campos+='<div class="pr-field'+(f.hi?' hi full':'')+'"><div class="pr-label">'+esc(f.l)+'</div><div class="pr-value">'+esc(f.v)+'</div></div>'; });
+  if(otrosFil) otrosFil.split(' | ').forEach(function(p){
+    var sep=p.indexOf(':'); if(sep<0)return;
+    var k=p.substring(0,sep).trim(), v=p.substring(sep+1).trim();
+    campos+='<div class="pr-field'+(v.length>40?' full':'')+'"><div class="pr-label">'+esc(k)+'</div><div class="pr-value">'+esc(v)+'</div></div>';
+  });
+
+  var fecha = new Date().toLocaleString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var user  = usuarioActual ? usuarioActual.nombre : '';
+
+  document.getElementById('print-area').innerHTML =
+    '<div class="pr-head">' +
+      '<div class="pr-title">Buscador de Guías — Alcaldía de Bello</div>' +
+      '<div class="pr-sub">Dirección Administrativa de Ejecuciones Fiscales · Cobro Coactivo</div>' +
+    '</div>' +
+    '<div class="pr-origen">📋 Hoja: <strong>'+esc(hoja)+'</strong> · Columna: <strong>'+esc(col)+'</strong> · Fila: <strong>'+esc(fila)+'</strong></div>' +
+    '<div class="pr-grid">'+campos+'</div>' +
+    '<div class="pr-footer"><span>Consultado por: <strong>'+esc(user)+'</strong></span><span>'+esc(fecha)+'</span></div>';
+
+  // Cerrar modal y lanzar impresión
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  setTimeout(function(){ window.print(); }, 150);
 }
 
 // ════════════════════════════════════════
