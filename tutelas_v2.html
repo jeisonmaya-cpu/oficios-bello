@@ -740,19 +740,35 @@ function setEl(id,html){const e=document.getElementById(id);if(e)e.innerHTML=htm
 
 async function guardarEstado(){
   if(!actual)return;
-  const nuevoEst   = document.getElementById("m-esel").value;
-  const respPQR    = document.getElementById("m-resp-pqr").value;
-  const respRad    = document.getElementById("m-resp-rad").value;
-  const selEncEl   = document.getElementById("m-pqrenc-sel");
-  // FIX ENCARGADO: si select quedó en "" pero había valor original, preservarlo
-  const encPQR     = selEncEl.value || selEncEl.dataset.original || actual["ENCARGADO PQR"] || "";
-  if(!confirm(`¿Confirmar guardar cambios para ${actual["ACCIONANTE"]||"este registro"}?`))return;
-  const esInc      = origenModal === "incidente";
-  const esFallo    = origenModal === "fallo";
-  const arr        = esInc ? incidentes : esFallo ? fallos : tutelas;
-  const tipoEnvio  = esInc ? "Incidente/Desacato" : actual["TIPO"];
 
-  // FIX 3: Actualizar TODOS los campos locales, incluyendo ENCARGADO PQR que faltaba
+  // ── Leer campos del modal ──
+  const nuevoEst = document.getElementById("m-esel").value;
+  const respPQR  = document.getElementById("m-resp-pqr").value;
+  const respRad  = document.getElementById("m-resp-rad").value;
+  const selEncEl = document.getElementById("m-pqrenc-sel");
+  // Preservar encargado: el select puede no matchear si hay diferencia de tilde/espacio
+  const encPQR   = selEncEl.value || selEncEl.dataset.original || actual["ENCARGADO PQR"] || "";
+
+  if(!confirm(`¿Confirmar guardar cambios para ${actual["ACCIONANTE"]||"este registro"}?`))return;
+
+  // ── Determinar hoja de destino según origenModal (NO según actual["TIPO"] que puede ser ambiguo) ──
+  const esInc   = origenModal === "incidente";
+  const esFallo = origenModal === "fallo";
+  const arr     = esInc ? incidentes : esFallo ? fallos : tutelas;
+
+  // tipoEnvio: mapeado directo desde origenModal para que Apps Script use la hoja correcta
+  const tipoEnvio = esInc ? "Incidente/Desacato"
+                  : esFallo ? (actual["TIPO"] || "Fallo de tutela")
+                  : (actual["TIPO"] || "Tutela");
+
+  // Validación: no permitir guardar si el radicado está vacío o es inválido
+  const radicado = (actual["RADICADO"] || "").trim();
+  if(!radicado || radicado === "—" || radicado.replace(/[\s\-]/g,"").length < 4){
+    toast("⚠️ Este registro no tiene radicado válido — no se puede guardar en Sheets.","err");
+    return;
+  }
+
+  // ── Actualizar copia local inmediatamente ──
   const idx = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
   if(idx>=0){
     arr[idx]["ESTADO"]                   = nuevoEst;
@@ -766,41 +782,56 @@ async function guardarEstado(){
   actual["ENCARGADO PQR"]            = encPQR;
 
   if(!APPS_URL){
-    toast("⚠️ Cambio local. Configura APPS_URL para persistir en Sheets.","err");
+    toast("⚠️ Sin APPS_URL — cambio solo local.","err");
     renderAll();
     document.getElementById("overlay").classList.remove("open");
     return;
   }
 
-  // FIX 2: try/catch único y limpio — sin Content-Type forzado (Apps Script lo maneja bien)
-  // FIX ENCARGADO: solo enviar encargadoPQR si el usuario eligió uno,
-  // o si ya había uno guardado (para no borrar con string vacío)
-  const encPQRFinal = encPQR || actual["ENCARGADO PQR"] || "";
+  // ── Enviar a Sheets ──
   const payload = JSON.stringify({
-    accion:"actualizarCampos",
-    radicado:actual["RADICADO"],
-    campos:{ estado:nuevoEst, respuestaPQR:respPQR, respuestaRadicado:respRad, encargadoPQR:encPQRFinal },
-    tipo:tipoEnvio
+    accion:  "actualizarCampos",
+    radicado: radicado,
+    campos:{
+      estado:           nuevoEst,
+      respuestaPQR:     respPQR,
+      respuestaRadicado:respRad,
+      encargadoPQR:     encPQR   // nunca llega vacío si había valor previo
+    },
+    tipo: tipoEnvio
   });
+
+  // Log diagnóstico visible en consola del navegador
+  console.log("[guardarEstado] →", { radicado, tipoEnvio, origenModal, encPQR, nuevoEst });
 
   try{
     const res = await fetch(APPS_URL, { method:"POST", redirect:"follow", body:payload });
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const d = await res.json();
+    const texto = await res.text();
+    let d;
+    try{ d = JSON.parse(texto); }
+    catch(parseErr){
+      // Apps Script a veces redirige a una página HTML en caso de error de permisos
+      console.error("[guardarEstado] Respuesta no-JSON:", texto.substring(0,300));
+      toast("❌ El servidor no respondió JSON. Verifica que el Apps Script esté desplegado como webapp pública.","err");
+      return;
+    }
+
     if(d.ok){
-      toast("✅ Guardado en Sheets correctamente","ok");
-      // FIX 4: Recargar con cache-bust para reflejar los datos reales de Sheets
-      setTimeout(()=>cargarDatosSafe(), 1200);
+      toast(`✅ Guardado correctamente (fila ${d.fila||"?"})`, "ok");
+      renderAll();
+      document.getElementById("overlay").classList.remove("open");
+      setTimeout(()=>cargarDatosSafe(), 1500);
     } else {
-      toast("⚠️ Error en Sheets: "+(d.error||"desconocido"),"err");
+      // Mostrar el error SIN cerrar el modal para que el usuario pueda actuar
+      const msg = d.error || "Error desconocido";
+      console.error("[guardarEstado] Error Sheets:", msg);
+      toast(`❌ Sheets: ${msg}`, "err");
+      // No cerramos el modal ni recargamos — el usuario ve el error y puede reintentar
     }
   } catch(e){
-    toast("❌ Error al conectar con Sheets: "+e.message,"err");
-    console.error("[guardarEstado]", e);
+    console.error("[guardarEstado] Error de red:", e);
+    toast("❌ Error de red: "+e.message,"err");
   }
-
-  renderAll();
-  document.getElementById("overlay").classList.remove("open");
 }
 
 function irOficio(){
