@@ -742,16 +742,18 @@ function resaltar(texto,termino){
     if(blq) localStorage.removeItem(BLOQUEO_KEY);
   }catch(e){}
 
-  // ¿Sesión activa?
+  // ¿Sesión activa? Requiere token de 64 chars (sesiones viejas sin token se descartan)
   try{
     var sess=JSON.parse(localStorage.getItem(SESSION_KEY)||'null')
            ||JSON.parse(localStorage.getItem('oficios_session')||'null');
-    if(sess&&sess.expira>Date.now()&&sess.nombre){
+    if(sess&&sess.expira>Date.now()&&sess.nombre&&sess.token&&sess.token.length===64){
       usuarioActual=sess;
       document.getElementById('pinOverlay').style.display='none';
       aplicarSesion(sess);
       return;
     }
+    // Sesión vieja sin token — limpiar para forzar nuevo login
+    if(sess){ localStorage.removeItem(SESSION_KEY); localStorage.removeItem('oficios_session'); }
   }catch(e){}
 
   // Mostrar PIN — botones YA habilitados (USUARIOS está listo)
