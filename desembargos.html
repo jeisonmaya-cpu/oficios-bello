@@ -1526,6 +1526,15 @@ if(cfg.nombre){
 function iniciarApp(){
   actualizarBanner();
   cargarConfigPanel();
+  // Mostrar estado inmediato desde cache local si existe
+  const lc = JSON.parse(localStorage.getItem('desembargos_local_cache')||'[]');
+  if(lc.length){
+    cache = lc;
+    setSS('ok', 'Cache local · '+lc.length+' registros');
+    document.getElementById('badgeCnt').textContent = lc.length;
+  } else {
+    setSS('spin','Conectando…');
+  }
   cargarRemoto();
 }
 
@@ -1587,14 +1596,29 @@ async function cargarRemoto(){
   if(localCache.length){ cache=localCache; renderRegistro(); actualizarStatsReg(); }
   if(!cfg.apiUrl){ setSS('off','Sin conexión'); cache=[]; renderRegistro(); return; }
   const url=cfg.apiUrl+'?accion=registros&t='+Date.now();
-  fetch(url).then(r=>r.json()).then(data=>{
-    if(data&&data.ok&&data.registros){
-      cache=data.registros;
-      setSS('ok','Sincronizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}));
-      document.getElementById('badgeCnt').textContent=cache.length;
-      renderRegistro(); actualizarStatsReg();
-    } else setSS('off','Sin acceso al Sheet');
-  }).catch(()=>setSS('off','Error de red'));
+  // Timeout de 8s para no quedar "Iniciando..." eternamente
+  const controller = new AbortController();
+  const timer = setTimeout(()=>{ controller.abort(); }, 8000);
+  fetch(url, {signal: controller.signal})
+    .then(r=>r.json())
+    .then(data=>{
+      clearTimeout(timer);
+      if(data&&data.ok&&data.registros){
+        cache=data.registros;
+        setSS('ok','Sincronizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}));
+        document.getElementById('badgeCnt').textContent=cache.length;
+        renderRegistro(); actualizarStatsReg();
+      } else setSS('off','Sin acceso al Sheet');
+    })
+    .catch(err=>{
+      clearTimeout(timer);
+      if(err.name==='AbortError') setSS('off','Tiempo agotado');
+      else setSS('off','Sin conexión');
+      if(localCache.length){
+        document.getElementById('badgeCnt').textContent=cache.length;
+        renderRegistro(); actualizarStatsReg();
+      }
+    });
 }
 function guardarLocalCache(d){
   const lc=JSON.parse(localStorage.getItem('desembargos_local_cache')||'[]');
@@ -2044,6 +2068,7 @@ async function generarDesdeForm(){
 
   if(bancosSelec){
     if(!bancosSelec.length){showAlert('f_alert','e','Seleccione al menos un banco.');return;}
+    if(!getMotivoReal()){showAlert('f_alert','e','Seleccione o escriba el motivo.');return;}
     const req=[['numOficio','N° Oficio'],['fecha','Fecha'],['nombre','Nombre'],['cedula','Cédula'],['fechaAuto','Fecha del auto']];
     for(const[k,l] of req){if(!d[k]){showAlert('f_alert','e',`"${l}" es obligatorio.`);return;}}
     if(!d.concepto){showAlert('f_alert','e','Seleccione un concepto.');return;}
