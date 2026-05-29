@@ -270,6 +270,7 @@ thead tr{background:rgba(26,111,196,.3)}
 thead th{padding:10px 13px;text-align:left;font-weight:700;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.7);white-space:nowrap}
 tbody tr{border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s;cursor:pointer}
 tbody tr:hover{background:rgba(45,141,232,.12)}
+tbody tr.focused{background:rgba(45,141,232,.22);outline:1px solid rgba(45,141,232,.5);}
 td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .val-found{background:rgba(245,192,80,.18);color:var(--gold2);font-weight:700;border-radius:4px;padding:2px 6px}
 .tag-sheet{display:inline-block;background:rgba(45,141,232,.2);color:#93c5fd;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
@@ -357,6 +358,68 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
   padding:5px 11px;border-radius:20px;white-space:nowrap;flex-shrink:0;
 }
 .contador-num{font-family:'DM Serif Display',serif;font-size:16px;line-height:1;}
+.btn-copy-dato{
+  background:rgba(34,197,94,.15);color:#86efac;
+  border:1px solid rgba(34,197,94,.25);border-radius:6px;
+  padding:3px 9px;font-size:10.5px;font-weight:700;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  transition:all .15s;display:inline-flex;align-items:center;gap:4px;
+  margin-left:6px;vertical-align:middle;
+}
+.btn-copy-dato:hover{background:rgba(34,197,94,.28);border-color:rgba(34,197,94,.5);}
+.btn-copy-dato.copiado{background:rgba(34,197,94,.3);color:#fff;}
+
+.copy-all-bar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 14px;background:rgba(45,141,232,.08);
+  border:1px solid rgba(45,141,232,.2);border-radius:10px;margin-bottom:14px;
+  font-size:12px;
+}
+.copy-all-bar span{color:var(--soft);}
+.btn-copy-all{
+  background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#fff;border:none;border-radius:7px;
+  padding:6px 14px;font-size:12px;font-weight:700;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  display:flex;align-items:center;gap:5px;transition:all .2s;
+}
+.btn-copy-all:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,111,196,.4);}
+
+/* Toast notificación */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(22,163,74,.95);color:#fff;
+  font-size:13px;font-weight:600;padding:10px 20px;border-radius:20px;
+  backdrop-filter:blur(8px);z-index:1000;
+  opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Sugerencias de búsqueda */
+.sugerencias{
+  display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;
+}
+.sug-chip{
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  color:var(--soft);font-size:12px;font-weight:600;
+  padding:5px 13px;border-radius:20px;cursor:pointer;
+  transition:all .15s;
+}
+.sug-chip:hover{background:rgba(255,255,255,.12);color:var(--text);border-color:rgba(255,255,255,.3);}
+.sug-chip .sug-ico{margin-right:4px;}
+
+/* Atajos en footer */
+.atajos-bar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:8px 14px;font-size:10.5px;color:rgba(255,255,255,.3);
+  border-top:1px solid rgba(255,255,255,.04);margin-top:12px;
+}
+.atajo-key{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+  border-radius:4px;padding:1px 6px;font-size:10px;font-family:monospace;
+  color:rgba(255,255,255,.5);
+}
+
 .btn-print{
   background:rgba(139,92,246,.2);color:#c4b5fd;
   border:1px solid rgba(139,92,246,.3);border-radius:8px;
@@ -579,8 +642,22 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
   </div>
 
   <div id="empty-state">
-    <span class="empty-icon">📂</span>
+    <span class="empty-icon">🔍</span>
     <p>Ingresa un término para buscar en todas las guías</p>
+    <div class="sugerencias" id="sugerencias-rapidas">
+      <span style="font-size:11px;color:var(--soft);width:100%;margin-bottom:4px">💡 Búsquedas frecuentes:</span>
+      <span class="sug-chip" onclick="buscarSugerencia('ENTREGADO')"><span class="sug-ico">📦</span>ENTREGADO</span>
+      <span class="sug-chip" onclick="buscarSugerencia('DEVUELTO')"><span class="sug-ico">↩️</span>DEVUELTO</span>
+      <span class="sug-chip" onclick="buscarSugerencia('PENDIENTE')"><span class="sug-ico">⏳</span>PENDIENTE</span>
+      <span class="sug-chip" onclick="buscarSugerencia('AVISO')"><span class="sug-ico">📬</span>AVISO</span>
+      <span class="sug-chip" onclick="buscarSugerencia('CORREO')"><span class="sug-ico">📧</span>CORREO</span>
+    </div>
+    <div class="atajos-bar">
+      <span><span class="atajo-key">Enter</span> buscar</span>
+      <span><span class="atajo-key">Esc</span> limpiar</span>
+      <span><span class="atajo-key">↑↓</span> navegar</span>
+      <span><span class="atajo-key">F2</span> nueva búsqueda</span>
+    </div>
   </div>
 </div>
 
@@ -613,6 +690,8 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
 
 <!-- ÁREA DE IMPRESIÓN (solo visible al imprimir) -->
 <div id="print-area" style="display:none"></div>
+<!-- Toast de copiado -->
+<div class="toast" id="toast">✓ Copiado al portapapeles</div>
 
 <!-- MODAL DETALLE -->
 <div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
@@ -625,6 +704,11 @@ td{padding:9px 13px;color:rgba(255,255,255,.8);max-width:180px;overflow:hidden;t
       <button class="modal-close" onclick="cerrarModal()">✕</button>
     </div>
     <div class="modal-body">
+      <div class="copy-all-bar" id="copy-all-bar" style="display:none">
+        <span>📋 Copiar datos clave:</span>
+        <button class="btn-copy-all" onclick="copiarTodo()">📋 Copiar nombre · cédula · radicado</button>
+        <button class="btn-copy-all" style="background:linear-gradient(135deg,#7c3aed,#a855f7)" onclick="copiarComparendo()">🚦 Copiar comparendo</button>
+      </div>
       <div class="modal-origen" id="modal-origen"></div>
       <div class="modal-fields" id="modal-fields"></div>
     </div>
@@ -911,6 +995,13 @@ function usarHistorial(t){ document.getElementById('termino').value=t; buscar();
 function agregarHistorial(t){ historial=[t].concat(historial.filter(function(h){ return h!==t; })).slice(0,8); localStorage.setItem('buscador_historial',JSON.stringify(historial)); renderHistorial(); }
 function borrarHistorial(){ historial=[]; localStorage.removeItem('buscador_historial'); document.getElementById('hist-wrap').style.display='none'; }
 
+function buscarSugerencia(termino){
+  document.getElementById('termino').value = termino;
+  document.getElementById('btn-clear').style.display = 'block';
+  document.getElementById('sugerencias-rapidas').style.display = 'none';
+  buscar();
+}
+
 // ════════════════════════════════════════
 // BÚSQUEDA
 // ════════════════════════════════════════
@@ -922,8 +1013,14 @@ function setStatus(tipo,msg,spin){
 }
 
 async function buscar(){
-  var termino=document.getElementById('termino').value.trim();
+  // Limpieza inteligente: cédulas con puntos/guiones, espacios extra
+  var raw = document.getElementById('termino').value.trim();
+  // Si parece cédula (solo números, puntos, guiones) → limpiar a solo dígitos
+  var soloNums = raw.replace(/[.\-\s]/g,'');
+  var termino  = /^\d{5,12}$/.test(soloNums) ? soloNums : raw;
   if(!termino){ setStatus('error','⚠️ Ingresa un término de búsqueda.'); return; }
+  // Actualizar input con término limpio visualmente
+  if(termino !== raw) document.getElementById('termino').value = termino;
   if(!usuarioActual){ setStatus('error','⚠️ Debes iniciar sesión primero.'); return; }
   var exacto=document.getElementById('exacto').checked;
   var mayus=document.getElementById('mayus').checked;
@@ -942,6 +1039,7 @@ async function buscar(){
     if(!todosLosResultados.length){ setStatus('empty','⚠️ Sin resultados para "'+termino+'"'); document.getElementById('empty-state').style.display='block'; document.getElementById('empty-state').querySelector('p').textContent='Sin resultados para "'+termino+'"'; return; }
     agregarHistorial(termino);
     incrementarContador();
+    document.getElementById('sugerencias-rapidas').style.display='none';
     setStatus('success','✅ '+todosLosResultados.length+' resultado(s) para "'+termino+'"');
     paginaActual=1; renderResultados();
   }catch(err){
@@ -1010,6 +1108,8 @@ function limpiarBusqueda(){
   document.getElementById('status-bar').className='status-bar';
   todosLosResultados=[];
   document.getElementById('termino').focus();
+  var sug=document.getElementById('sugerencias-rapidas');
+  if(sug) sug.style.display='flex';
 }
 
 // ════════════════════════════════════════
@@ -1018,6 +1118,9 @@ function limpiarBusqueda(){
 function abrirDetalle(idx){
   var r=todosLosResultados[idx]; if(!r)return;
   _detalleActual = r;
+  // Mostrar barra de copiar si hay datos clave
+  var barCopy = document.getElementById('copy-all-bar');
+  if(barCopy) barCopy.style.display = (r[4]||r[5]||r[6]) ? 'flex' : 'none';
   var hoja=r[0],fila=r[1],col=r[2],val=r[3],nombre=r[4],cedula=r[5],radicado=r[6],otros=r[7];
   document.getElementById('modal-titulo').textContent=val||'Detalle';
   document.getElementById('modal-subtitulo').textContent='Hoja: '+hoja+' · Fila '+fila;
@@ -1026,13 +1129,64 @@ function abrirDetalle(idx){
   if(otros){ var partes=otros.split(' | '); var cp=partes.find(function(p){ return p.startsWith('Comparendo:'); }); if(cp){ comparendo=cp.substring(11).trim(); otrosFil=partes.filter(function(p){ return !p.startsWith('Comparendo:'); }).join(' | '); } }
   var html='';
   if(comparendo) html+='<div class="modal-field full" style="border-left:3px solid var(--blue2)"><div class="mf-label">🚦 COMPARENDO</div><div class="mf-value" style="font-size:15px;font-weight:700;color:#93c5fd">'+esc(comparendo)+'</div></div>';
-  [{l:'Valor encontrado',v:val,hi:true},{l:'Contribuyente',v:nombre},{l:'Cédula / NIT',v:cedula},{l:'Radicado',v:radicado}].forEach(function(f){ if(f.v) html+='<div class="modal-field'+(f.hi?' hi':'')+'"><div class="mf-label">'+esc(f.l)+'</div><div class="mf-value">'+esc(f.v)+'</div></div>'; });
+  [{l:'Valor encontrado',v:val,hi:true},{l:'Contribuyente',v:nombre},{l:'Cédula / NIT',v:cedula},{l:'Radicado',v:radicado}].forEach(function(f){
+    if(!f.v) return;
+    var copyBtn = !f.hi ? '<button class="btn-copy-dato" data-copy="'+esc(f.v)+'" title="Copiar">📋</button>' : '';
+    html+='<div class="modal-field'+(f.hi?' hi':'')+'"><div class="mf-label">'+esc(f.l)+copyBtn+'</div><div class="mf-value">'+esc(f.v)+'</div></div>';
+  });
   if(otrosFil) otrosFil.split(' | ').forEach(function(p){ var sep=p.indexOf(':'); if(sep<0)return; var k=p.substring(0,sep).trim(),v=p.substring(sep+1).trim(); html+='<div class="modal-field'+(v.length>40?' full':'')+'"><div class="mf-label">'+esc(k)+'</div><div class="mf-value">'+esc(v)+'</div></div>'; });
   document.getElementById('modal-fields').innerHTML=html||'<p style="color:var(--soft);font-size:13px">Sin campos adicionales.</p>';
   document.getElementById('modal-overlay').classList.add('open');
   document.body.style.overflow='hidden';
+  // Activar botones de copia con data-copy
+  setTimeout(function(){
+    document.querySelectorAll('.btn-copy-dato[data-copy]').forEach(function(btn){
+      btn.onclick = function(){ copiarTexto(btn.getAttribute('data-copy')); };
+    });
+  }, 50);
 }
 function cerrarModal(e){ if(e&&e.target!==document.getElementById('modal-overlay'))return; document.getElementById('modal-overlay').classList.remove('open'); document.body.style.overflow=''; }
+
+function mostrarToast(msg, color){
+  var t = document.getElementById('toast');
+  if(!t) return;
+  t.textContent = msg || '✓ Copiado';
+  t.style.background = color || 'rgba(22,163,74,.95)';
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+
+function copiarTexto(txt, label){
+  navigator.clipboard.writeText(txt).then(function(){
+    mostrarToast('✓ ' + (label||txt) + ' copiado');
+  }).catch(function(){
+    // Fallback para navegadores sin clipboard API
+    var el = document.createElement('textarea');
+    el.value = txt; el.style.position='fixed'; el.style.opacity='0';
+    document.body.appendChild(el); el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    mostrarToast('✓ ' + (label||txt) + ' copiado');
+  });
+}
+
+function copiarTodo(){
+  if(!_detalleActual) return;
+  var r = _detalleActual;
+  var nombre   = r[4]||'';
+  var cedula   = r[5]||'';
+  var radicado = r[6]||'';
+  var texto = [nombre, cedula, radicado].filter(Boolean).join(' | ');
+  copiarTexto(texto, 'Datos clave');
+}
+
+function copiarComparendo(){
+  if(!_detalleActual) return;
+  var otros = _detalleActual[7]||'';
+  var cp = otros.split(' | ').find(function(p){ return p.startsWith('Comparendo:'); });
+  if(cp) copiarTexto(cp.substring(11).trim(), 'Comparendo');
+  else mostrarToast('Sin comparendo en este registro', 'rgba(234,88,12,.95)');
+}
 
 // ════════════════════════════════════════
 // REPORTES
@@ -1173,7 +1327,50 @@ document.addEventListener('keydown',function(e){
     return;
   }
   // Modal abierto
-  if(e.key==='Escape') cerrarModal();
+  if(e.key==='Escape'){ cerrarModal(); return; }
+
+  // Atajos globales
+  var activo = document.activeElement;
+  var enInput = activo && (activo.tagName==='INPUT'||activo.tagName==='TEXTAREA');
+
+  // F2 — enfocar buscador
+  if(e.key==='F2'){
+    e.preventDefault();
+    var t=document.getElementById('termino'); if(t){ t.focus(); t.select(); }
+    return;
+  }
+  // Escape en buscador — limpiar
+  if(e.key==='Escape' && enInput){
+    e.preventDefault();
+    limpiarBusqueda();
+    return;
+  }
+  // Ctrl+K — enfocar buscador (alternativo)
+  if((e.ctrlKey||e.metaKey) && e.key==='k'){
+    e.preventDefault();
+    var t2=document.getElementById('termino'); if(t2){ t2.focus(); t2.select(); }
+    return;
+  }
+  // Flechas ↑↓ — navegar resultados en la tabla
+  if(!enInput && (e.key==='ArrowDown'||e.key==='ArrowUp')){
+    e.preventDefault();
+    var filas=document.querySelectorAll('#tabla-body tr');
+    if(!filas.length) return;
+    var actual=document.querySelector('#tabla-body tr.focused');
+    var idx=actual ? Array.from(filas).indexOf(actual) : -1;
+    if(actual) actual.classList.remove('focused');
+    if(e.key==='ArrowDown') idx=Math.min(idx+1, filas.length-1);
+    else idx=Math.max(idx-1, 0);
+    filas[idx].classList.add('focused');
+    filas[idx].scrollIntoView({block:'nearest'});
+    return;
+  }
+  // Enter — abrir resultado enfocado
+  if(!enInput && e.key==='Enter'){
+    var focused=document.querySelector('#tabla-body tr.focused');
+    if(focused) focused.click();
+    return;
+  }
 });
 </script>
 </body>
