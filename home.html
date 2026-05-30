@@ -453,7 +453,63 @@ footer {
 }
 footer strong { color: rgba(255,255,255,0.55); }
 
+
+/* ── CARD STAT (dato contextual dentro de card) ── */
+.card-stat{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:rgba(255,255,255,.55);
+  margin-top:8px;margin-bottom:2px;
+  padding:5px 8px;border-radius:8px;
+  background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.07);
+}
+.cs-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cs-blue  {background:#60a5fa;box-shadow:0 0 5px #60a5fa}
+.cs-gold  {background:#fbbf24;box-shadow:0 0 5px #fbbf24}
+.cs-cyan  {background:#22d3ee;box-shadow:0 0 5px #22d3ee}
+.cs-purple{background:#a78bfa;box-shadow:0 0 5px #a78bfa}
+.cs-green {background:#4ade80;box-shadow:0 0 5px #4ade80}
+.cs-orange{background:#fb923c;box-shadow:0 0 5px #fb923c}
+
+/* ── CARD NOVEDADES ── */
+.card-news{
+  background:linear-gradient(135deg,rgba(15,45,94,.7) 0%,rgba(10,31,61,.8) 100%);
+  border:1px solid rgba(245,192,80,.2);
+  cursor:default;
+}
+.card-news:hover{
+  border-color:rgba(245,192,80,.4);
+  transform:translateY(-2px);
+  box-shadow:0 12px 40px rgba(232,160,32,.15);
+}
+
+/* ── STATUS INDICATOR en topbar ── */
+.sys-status{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:rgba(255,255,255,.45);
+  padding:4px 10px;border-radius:20px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  white-space:nowrap;
+}
+.sys-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  animation:sysPulse 2s ease-in-out infinite}
+.sys-dot.ok  {background:#22c55e;box-shadow:0 0 6px #22c55e}
+.sys-dot.warn{background:#f59e0b;box-shadow:0 0 6px #f59e0b;animation:none}
+.sys-dot.err {background:#ef4444;box-shadow:0 0 6px #ef4444;animation:none}
+@keyframes sysPulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── FOOTER ENRIQUECIDO ── */
+.footer-info{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  flex-wrap:wrap;margin-bottom:8px;
+}
+.footer-pill{
+  font-size:10px;padding:3px 10px;border-radius:12px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.45);
+}
 /* ── ANIMACIONES ── */
+
+
 @keyframes fadeDown {
   from { opacity: 0; transform: translateY(-18px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -503,6 +559,12 @@ footer strong { color: rgba(255,255,255,0.55); }
     <div class="header-eyebrow">Alcaldía de Bello · Antioquia</div>
     <h1>Ejecuciones <em>Fiscales</em></h1>
     <p class="header-sub">Sistema integrado de gestión documental, oficios y atención al ciudadano</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px">
+      <div class="sys-status" id="sys-status">
+        <span class="sys-dot ok" id="sys-dot"></span>
+        <span id="sys-txt">Verificando sistema...</span>
+      </div>
+    </div>
   </div>
 
   <div class="saludo-wrap">
@@ -581,6 +643,9 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-icon">🏦</span>
       <div class="app-name">Desembargos y Embargos</div>
       <div class="app-desc">Oficios bancarios, mandamientos y órdenes de embargo</div>
+      <div class="card-stat" id="cs-cola">
+        <span class="cs-dot cs-blue"></span><span id="cs-cola-txt">Cargando cola...</span>
+      </div>
       <span class="app-badge badge-demand">⚡ Alta demanda</span>
       <span class="app-arrow">↗</span>
     </a>
@@ -590,6 +655,9 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-icon">🔍</span>
       <div class="app-name">Buscador de Guías</div>
       <div class="app-desc">Consulta contribuyentes, radicados y expedientes</div>
+      <div class="card-stat">
+        <span class="cs-dot cs-gold"></span><span>Búsqueda en tiempo real</span>
+      </div>
       <span class="app-arrow">↗</span>
     </a>
   </div>
@@ -601,6 +669,9 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-icon">⚖️</span>
       <div class="app-name">Sistema de Tutelas</div>
       <div class="app-desc">Términos procesales y semáforo de vencimientos</div>
+      <div class="card-stat" id="cs-tutelas">
+        <span class="cs-dot cs-cyan"></span><span id="cs-tutelas-txt">Cargando...</span>
+      </div>
       <span class="app-arrow">↗</span>
     </a>
 
@@ -609,6 +680,9 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-icon">📄</span>
       <div class="app-name">Generar Oficios</div>
       <div class="app-desc">Tutelas, notificaciones y carga masiva de documentos</div>
+      <div class="card-stat">
+        <span class="cs-dot cs-purple"></span><span>Word + Sheets integrado</span>
+      </div>
       <span class="app-arrow">↗</span>
     </a>
   </div>
@@ -620,6 +694,9 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-icon">🤝</span>
       <div class="app-name">Acuerdos de Pago</div>
       <div class="app-desc">Proyección de cuotas, formulario F-GAF-68 y convenios</div>
+      <div class="card-stat" id="cs-acuerdos">
+        <span class="cs-dot cs-green"></span><span id="cs-acuerdos-txt">Cargando acuerdos...</span>
+      </div>
       <span class="app-arrow">↗</span>
     </a>
 
@@ -628,6 +705,9 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-icon">💰</span>
       <div class="app-name">Recaudo Histórico</div>
       <div class="app-desc">Depósitos judiciales, aplicaciones y devoluciones</div>
+      <div class="card-stat">
+        <span class="cs-dot cs-orange"></span><span>Histórico consolidado</span>
+      </div>
       <span class="app-arrow">↗</span>
     </a>
   </div>
@@ -658,24 +738,48 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-arrow">↗</span>
     </a>
 
-    <!-- Placeholder futuro -->
-    <a href="#" class="app-card" style="opacity:0.45; cursor:default; pointer-events:none;">
+    <!-- Card novedades del sistema -->
+    <div class="app-card card-news">
       <div class="card-glow"></div>
-      <span class="app-icon">🔒</span>
-      <div class="app-name">Próximamente</div>
-      <div class="app-desc">Nuevo módulo en desarrollo</div>
+      <span class="app-icon">🚀</span>
+      <div class="app-name">Novedades del sistema</div>
+      <div class="app-desc" id="news-desc">Cargando última actividad...</div>
+      <div class="card-stat" id="cs-sistema">
+        <span class="cs-dot" id="cs-sistema-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e"></span>
+        <span id="cs-sistema-txt">Verificando estado...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ALERTAS VENCIMIENTOS ── -->
+  <div id="alerta-venc" style="display:none;width:100%;max-width:680px;margin-bottom:12px;
+    background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:14px;
+    padding:12px 18px;display:flex;align-items:center;gap:12px;animation:fadeUp .5s ease both">
+    <span style="font-size:20px">🚨</span>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#f87171" id="alerta-titulo">Procesos urgentes</div>
+      <div style="font-size:12px;color:rgba(248,113,113,.8);margin-top:2px" id="alerta-sub"></div>
+    </div>
+    <a href="tutelas_v2.html" style="margin-left:auto;font-size:11px;font-weight:600;
+      padding:5px 12px;border-radius:8px;background:rgba(239,68,68,.2);
+      color:#f87171;border:1px solid rgba(239,68,68,.3);text-decoration:none;white-space:nowrap">
+      Ver ahora →
     </a>
   </div>
 
-  <!-- ── STATS ── -->
+  <!-- ── STATS DINÁMICAS ── -->
   <div class="stats-row">
-    <div class="stat">
-      <div class="stat-num">v2.3</div>
-      <div class="stat-label">Versión</div>
+    <div class="stat" title="Tutelas activas sin finalizar">
+      <div class="stat-num" id="stat-tutelas">—</div>
+      <div class="stat-label">Tutelas activas</div>
     </div>
-    <div class="stat">
-      <div class="stat-num">8</div>
-      <div class="stat-label">Módulos</div>
+    <div class="stat" title="Vencen hoy o mañana">
+      <div class="stat-num" id="stat-urgentes" style="color:#f87171">—</div>
+      <div class="stat-label">Urgentes hoy</div>
+    </div>
+    <div class="stat" title="Fallos de tutela pendientes">
+      <div class="stat-num" id="stat-fallos" style="color:#fbbf24">—</div>
+      <div class="stat-label">Fallos activos</div>
     </div>
     <div class="stat">
       <div class="stat-num" id="stat-fecha">—</div>
@@ -689,103 +793,385 @@ footer strong { color: rgba(255,255,255,0.55); }
 
 </div><!-- /wrap -->
 
+<!-- ══ CONFIG — mismas URLs que tutelas_v2 ══ -->
+<script>
+// Leer APPS_URL de la sesión de tutelas si existe
+var TEO_APPS_URL = "";
+var TUTELAS_SHEET_ID = "";
+try {
+  var _sess = JSON.parse(localStorage.getItem("tutelas_sesion_v2")||"null");
+} catch(e){}
+// IDs de Sheets de tutelas — mismos que tutelas_v2.html
+var GID_TUTELAS    = "0";
+var GID_FALLOS     = "1973025481";
+var GID_INCIDENTES = "1082755625";
+</script>
+
+
 <footer>
+  <div class="footer-info">
+    <span class="footer-pill" id="fp-version">v2.4</span>
+    <span class="footer-pill" id="fp-actualizado">Actualizando...</span>
+    <span class="footer-pill" id="fp-usuario">—</span>
+    <span class="footer-pill" id="fp-modulos">7 módulos activos</span>
+  </div>
   <strong>Dirección Administrativa de Ejecuciones Fiscales</strong><br>
   Alcaldía de Bello · Antioquia · Colombia
 </footer>
 
 <script>
+// ════════════════════════════════════════
+// CONFIG — IDs de Google Sheets de Tutelas
+// ════════════════════════════════════════
+var SHEET_ID       = "1lvI3QKXXXxxxxxx"; // ← mismo que tutelas_v2.html (APPS_URL no necesario para leer)
+var GID_TUTELAS    = "0";
+var GID_FALLOS     = "1973025481";
+var APPS_URL       = ""; // se llena si hay sesión activa de tutelas
+var EST_HIST       = ["Finalizado","Respondido"];
+
+// Leer APPS_URL de la sesión de tutelas si existe
+try {
+  var _tsess = JSON.parse(localStorage.getItem("tutelas_sesion_v2")||"null");
+} catch(e){}
+
 // ── SALUDO TEODORO — typewriter ──
 (function() {
   var h = new Date().getHours();
-  var emoji   = h >= 5 && h < 12 ? '☀️' : h >= 12 && h < 18 ? '🌤️' : '🌙';
-  var saludo  = h >= 5 && h < 12 ? 'Buenos días' : h >= 12 && h < 18 ? 'Buenas tardes' : 'Buenas noches';
-
-  var frases = [
-    '· Teodoro te saluda',
-    '· Teodoro a tu servicio',
-    '· Teodoro listo para trabajar'
-  ];
-  var frase = frases[Math.floor(Math.random() * frases.length)];
-
-  // nombre desde sesión si existe
+  var emoji  = h<12?'☀️':h<18?'🌤️':'🌙';
+  var saludo = h<12?'Buenos días':h<18?'Buenas tardes':'Buenas noches';
+  var frases = ['· Teodoro te saluda','· Teodoro a tu servicio','· Teodoro listo para trabajar'];
+  var frase  = frases[Math.floor(Math.random()*frases.length)];
   var nombre = null;
   try {
-    var sess = JSON.parse(localStorage.getItem('oficios_session') || 'null')
-            || JSON.parse(localStorage.getItem('buscador_session') || 'null');
-    if (sess && sess.expira > Date.now() && sess.nombre) nombre = sess.nombre.split(' ')[0];
-  } catch(e) {}
-
+    var sess = JSON.parse(localStorage.getItem('tutelas_sesion_v2')||'null')
+            || JSON.parse(localStorage.getItem('oficios_session')||'null')
+            || JSON.parse(localStorage.getItem('buscador_session')||'null');
+    if (sess && sess.expira > Date.now() && sess.usuario) nombre = sess.usuario.split(' ')[0];
+    else if (sess && sess.expira > Date.now() && sess.nombre) nombre = sess.nombre.split(' ')[0];
+  } catch(e){}
   var textoBase = saludo + (nombre ? ', ' + nombre : '');
-  var textoCompleto = textoBase + ' ' + frase;
-
+  var textoFull = textoBase + ' ' + frase;
   var emojiEl = document.getElementById('saludo-emoji');
   var textEl  = document.getElementById('saludo-text');
-
-  if (!emojiEl || !textEl) return; // seguridad
+  if (!emojiEl||!textEl) return;
   emojiEl.textContent = emoji;
-
-  var i = 0;
-  function typeWriter() {
-    if (i <= textoCompleto.length) {
-      textEl.textContent = textoCompleto.slice(0, i);
-      i++;
-      var delay = i > textoBase.length + 1 ? 55 : 32;
-      setTimeout(typeWriter, delay);
-    } else {
-      setTimeout(function() { textEl.classList.remove('typing'); }, 2000);
-    }
+  var i=0;
+  function typeWriter(){
+    if(i<=textoFull.length){
+      textEl.textContent=textoFull.slice(0,i); i++;
+      setTimeout(typeWriter, i>textoBase.length+1?55:32);
+    } else { setTimeout(function(){textEl.classList.remove('typing');},2000); }
   }
-  setTimeout(typeWriter, 900);
+  setTimeout(typeWriter,900);
 })();
 
 // ── FECHA Y HORA ──
-function actualizarFechaHora() {
-  var now = new Date();
-  var fEl = document.getElementById('stat-fecha');
-  var hEl = document.getElementById('stat-hora');
-  if (fEl) fEl.textContent = now.toLocaleDateString('es-CO', { day:'2-digit', month:'short' });
-  if (hEl) hEl.textContent = now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+function actualizarFechaHora(){
+  var now=new Date();
+  var fEl=document.getElementById('stat-fecha'), hEl=document.getElementById('stat-hora');
+  if(fEl) fEl.textContent=now.toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+  if(hEl) hEl.textContent=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 }
 actualizarFechaHora();
-setInterval(actualizarFechaHora, 30000);
+setInterval(actualizarFechaHora,30000);
 
-// ── ROBOT CLICK — sacudir ──
-(function() {
-  var robot = document.getElementById('teodoro-robot');
-  if (!robot) return;
-  var frases = [
-    '🤖 ¡Beep boop! A trabajar.',
-    '⚡ Procesando solicitud...',
-    '🔧 Teodoro operativo al 100%',
-    '📂 Cargando expedientes...',
-    '💡 Sistema listo, jefe.',
-    '🏛️ ¡Que viva Bello!'
-  ];
-  robot.addEventListener('click', function() {
-    robot.classList.remove('shake');
-    void robot.offsetWidth; // reflow para reiniciar
-    robot.classList.add('shake');
-    var pill = document.getElementById('saludo-text');
-    if (pill) {
-      var orig = pill.textContent;
-      var f = frases[Math.floor(Math.random() * frases.length)];
-      pill.textContent = f;
-      setTimeout(function() { pill.textContent = orig; }, 2200);
-    }
+// ── ROBOT CLICK — sacudir + activar Teo ──
+(function(){
+  var robot=document.getElementById('teodoro-robot');
+  if(!robot)return;
+  var frases=['🤖 ¡Beep boop! A trabajar.','⚡ Procesando solicitud...','🔧 Teodoro operativo al 100%','📂 Cargando expedientes...','💡 Sistema listo, jefe.','🏛️ ¡Que viva Bello!'];
+  robot.addEventListener('click',function(){
+    robot.classList.remove('shake'); void robot.offsetWidth; robot.classList.add('shake');
+    var pill=document.getElementById('saludo-text');
+    if(pill){ var orig=pill.textContent; pill.textContent=frases[Math.floor(Math.random()*frases.length)]; setTimeout(function(){pill.textContent=orig;},2200); }
+    // También abre Teo
+    if(!teoAbierto) teoToggle();
   });
 })();
 
-// ── ANIMACIÓN ESCALONADA DE CARDS ──
-var grids = document.querySelectorAll('.grid-2x2, .grid-3x1');
-grids.forEach(function(grid, gi) {
-  grid.querySelectorAll('.app-card').forEach(function(card, ci) {
-    card.style.animationDelay    = (0.20 + gi * 0.08 + ci * 0.04) + 's';
-    card.style.animationName     = 'fadeUp';
-    card.style.animationDuration = '0.6s';
-    card.style.animationFillMode = 'both';
+// ── ANIMACIÓN CARDS ──
+document.querySelectorAll('.grid-2x2, .grid-3x1').forEach(function(grid,gi){
+  grid.querySelectorAll('.app-card').forEach(function(card,ci){
+    card.style.animationDelay=(0.20+gi*0.08+ci*0.04)+'s';
+    card.style.animationName='fadeUp'; card.style.animationDuration='0.6s'; card.style.animationFillMode='both';
   });
 });
+
+// ════════════════════════════════════════
+// ESTADO DEL SISTEMA — verificar si Apps Script responde
+// ════════════════════════════════════════
+async function verificarSistema(){
+  var dot=document.getElementById('sys-dot');
+  var txt=document.getElementById('sys-txt');
+  // Leer APPS_URL guardada de tutelas
+  var url="";
+  try{ url=localStorage.getItem("tutelas_apps_url")||""; }catch(e){}
+  if(!url){
+    if(dot) dot.className="sys-dot warn";
+    if(txt) txt.textContent="Sin configurar · datos locales";
+    return;
+  }
+  try{
+    var ctrl=new AbortController();
+    var timer=setTimeout(()=>ctrl.abort(),5000);
+    var res=await fetch(url,{method:"GET",signal:ctrl.signal});
+    clearTimeout(timer);
+    var d=await res.json();
+    if(d.ok){
+      if(dot) dot.className="sys-dot ok";
+      if(txt) txt.textContent="Sistema operativo · "+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    } else { throw new Error("err"); }
+  }catch(e){
+    if(e.name==="AbortError"){
+      if(dot) dot.className="sys-dot warn";
+      if(txt) txt.textContent="Respuesta lenta · reintentando";
+    } else {
+      if(dot) dot.className="sys-dot err";
+      if(txt) txt.textContent="Sin conexión con el servidor";
+    }
+  }
+}
+
+// ════════════════════════════════════════
+// CARD STATS — datos contextuales por módulo
+// ════════════════════════════════════════
+function actualizarCardStats(stats){
+  // Card tutelas
+  var ct=document.getElementById('cs-tutelas-txt');
+  if(ct){
+    if(stats.tutelas!==undefined){
+      var urgStr=stats.urgentes>0?' · ⚠️ '+stats.urgentes+' urgentes':'';
+      ct.textContent=stats.tutelas+' activas'+urgStr;
+      if(stats.urgentes>0) ct.style.color='#f87171';
+    } else { ct.textContent="Entra para ver el estado"; }
+  }
+  // Card cola desembargos — desde localStorage
+  var cola=[];
+  try{ cola=JSON.parse(localStorage.getItem('cola_local')||'[]'); }catch(e){}
+  var colaHoy=cola.filter(function(x){
+    var hoy=new Date().toLocaleDateString('es-CO');
+    return x['Fecha']===hoy||x.fecha===hoy;
+  });
+  var colaEl=document.getElementById('cs-cola-txt');
+  if(colaEl){
+    if(colaHoy.length>0) colaEl.textContent=colaHoy.length+' oficios generados hoy';
+    else colaEl.textContent='Sin oficios generados hoy';
+  }
+  // Card acuerdos — desde localStorage
+  var acuerdos=[];
+  try{ acuerdos=JSON.parse(localStorage.getItem('pendientes_acuerdos')||'[]'); }catch(e){}
+  var acEl=document.getElementById('cs-acuerdos-txt');
+  if(acEl){
+    if(acuerdos.length>0) acEl.textContent=acuerdos.length+' acuerdo(s) pendiente(s)';
+    else acEl.textContent='Sin acuerdos pendientes';
+  }
+}
+
+// ════════════════════════════════════════
+// CARD NOVEDADES — historial de actividad
+// ════════════════════════════════════════
+function cargarNovedades(){
+  var novedades=[
+    {icono:'🔐',txt:'Login con PIN activado en Tutelas V2'},
+    {icono:'🤖',txt:'Teo IA disponible en Tutelas V2'},
+    {icono:'📊',txt:'Estadísticas con % de resolución'},
+    {icono:'🔄',txt:'Sincronización Sheets corregida'},
+    {icono:'⚠️',txt:'Alertas de vencimiento activas'},
+  ];
+  var idx=new Date().getDate()%novedades.length;
+  var nov=novedades[idx];
+  var desc=document.getElementById('news-desc');
+  var sist=document.getElementById('cs-sistema-txt');
+  if(desc) desc.textContent=nov.icono+' '+nov.txt;
+  if(sist) sist.textContent='v2.4 · última actualización hoy';
+}
+
+// ════════════════════════════════════════
+// FOOTER — usuario activo y timestamp
+// ════════════════════════════════════════
+function actualizarFooter(){
+  var upd=document.getElementById('fp-actualizado');
+  var usr=document.getElementById('fp-usuario');
+  if(upd) upd.textContent='Actualizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  var nombre="";
+  try{
+    var s=JSON.parse(localStorage.getItem('tutelas_sesion_v2')||'null')
+       ||JSON.parse(localStorage.getItem('buscador_session')||'null')
+       ||JSON.parse(localStorage.getItem('oficios_session')||'null');
+    if(s&&s.expira>Date.now()) nombre=s.usuario||s.nombre||"";
+  }catch(e){}
+  if(usr) usr.textContent=nombre?'👤 '+nombre.split(' ')[0]:'Sin sesión activa';
+}
+
+// ════════════════════════════════════════
+// INIT — ejecutar todo al cargar
+// ════════════════════════════════════════
+verificarSistema();
+cargarNovedades();
+actualizarFooter();
+
+// ════════════════════════════════════════
+// STATS EN TIEMPO REAL — desde gviz
+// ════════════════════════════════════════
+async function cargarStatsHome(){
+  if(!SHEET_ID||SHEET_ID.includes("xxx")) return; // sin config
+  try{
+    // Cargar tutelas
+    var url1 = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID_TUTELAS}&nocache=${Date.now()}`;
+    var url2 = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${GID_FALLOS}&nocache=${Date.now()}`;
+    var [r1,r2] = await Promise.all([fetch(url1,{cache:"no-store"}),fetch(url2,{cache:"no-store"})]);
+    var [t1,t2] = await Promise.all([r1.text(),r2.text()]);
+    var parse = function(txt){ return JSON.parse(txt.replace(/^[^{]+/,'')); };
+    var d1=parse(t1), d2=parse(t2);
+    var toRows=function(d){ return (d.table&&d.table.rows)||[]; };
+    var tutelas=toRows(d1), fallos=toRows(d2);
+    var getCol=function(row,i){ return row.c&&row.c[i]&&row.c[i].v!=null?String(row.c[i].v):""; };
+    var activos=tutelas.filter(function(r){var e=getCol(r,10);return !EST_HIST.includes(e);}).length;
+    var fallActivos=fallos.filter(function(r){var e=getCol(r,10);return !EST_HIST.includes(e);}).length;
+    // Urgentes: vencen en 0-1 días (col 8 = DÍAS REST, valor negativo o 0-1)
+    var urgentes=tutelas.filter(function(r){
+      var d=parseFloat(getCol(r,8));
+      return !isNaN(d)&&d<=1&&!EST_HIST.includes(getCol(r,10));
+    }).length + fallos.filter(function(r){
+      var d=parseFloat(getCol(r,8));
+      return !isNaN(d)&&d<=1&&!EST_HIST.includes(getCol(r,10));
+    }).length;
+    // Actualizar UI
+    var el=function(id){return document.getElementById(id);};
+    if(el('stat-tutelas')) el('stat-tutelas').textContent=activos;
+    if(el('stat-urgentes')){
+      el('stat-urgentes').textContent=urgentes;
+      if(urgentes>0) el('stat-urgentes').style.color='#f87171';
+      else el('stat-urgentes').style.color='#4ade80';
+    }
+    if(el('stat-fallos')) el('stat-fallos').textContent=fallActivos;
+    // Alerta si hay urgentes
+    if(urgentes>0){
+      var alertDiv=el('alerta-venc');
+      if(alertDiv){
+        alertDiv.style.display='flex';
+        if(el('alerta-titulo')) el('alerta-titulo').textContent=`⚠️ ${urgentes} proceso(s) vencen hoy o mañana`;
+        if(el('alerta-sub')) el('alerta-sub').textContent='Entra a Tutelas V2 para ver los casos urgentes';
+        // Badge en Teo
+        var badge=el('teo-badge');
+        if(badge&&!teoAbierto) badge.classList.add('show');
+      }
+    }
+    // Guardar datos para Teo
+    window._homeStats={tutelas:activos,fallos:fallActivos,urgentes};
+    actualizarCardStats({tutelas:activos,fallos:fallActivos,urgentes});
+  }catch(e){ console.warn("[home stats]",e); }
+}
+
+// Cargar stats si tenemos SHEET_ID configurado
+// Para configurar: abre este archivo y reemplaza SHEET_ID con el ID real del Sheets de tutelas
+// Ejemplo: var SHEET_ID = "1AbCdEf...";
+cargarStatsHome();
+
+// ════════════════════════════════════════
+// TEO — CHAT IA
+// ════════════════════════════════════════
+var teoAbierto=false, teoHistorial=[];
+
+function teoToggle(){
+  teoAbierto=!teoAbierto;
+  document.getElementById('teo-panel').classList.toggle('open',teoAbierto);
+  document.getElementById('teo-fab').classList.toggle('open',teoAbierto);
+  document.getElementById('teo-badge').classList.remove('show');
+  if(teoAbierto&&teoHistorial.length===0) teoSaludo();
+}
+
+function teoSaludo(){
+  var stats=window._homeStats||{};
+  var msg='¡Hola! Soy Teo 🤖, el asistente del sistema.<br><br>Puedo ayudarte a navegar entre los módulos, responder preguntas sobre tutelas y cobro coactivo, o contarte el estado del día.';
+  if(stats.urgentes>0) msg+=`<br><br><span style="color:#f87171">⚠️ Hay <strong>${stats.urgentes}</strong> proceso(s) urgentes hoy.</span>`;
+  teoAddMsg(msg,'bot');
+}
+
+function teoChip(el){
+  var txt=el.textContent;
+  document.getElementById('teo-chips').style.display='none';
+  teoAddMsg(txt,'usr'); teoResponder(txt);
+}
+
+function teoEnviar(){
+  var inp=document.getElementById('teo-inp');
+  var txt=inp.value.trim(); if(!txt)return;
+  inp.value='';
+  document.getElementById('teo-chips').style.display='none';
+  teoAddMsg(txt,'usr'); teoResponder(txt);
+}
+
+function teoAddMsg(html,tipo){
+  var div=document.createElement('div');
+  div.className='teo-bbl '+tipo; div.innerHTML=html;
+  var msgs=document.getElementById('teo-msgs');
+  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function teoTyping(){
+  return teoAddMsg('<div class="teo-dots"><span></span><span></span><span></span></div>','bot');
+}
+
+async function teoResponder(pregunta){
+  var typing=teoTyping();
+  var stats=window._homeStats||{};
+  var contexto=`Eres Teo, asistente IA del Sistema de Ejecuciones Fiscales de la Alcaldía de Bello, Antioquia, Colombia. Respondes en español, de forma concisa y amigable. Usas HTML básico (strong, br) para dar formato. Máximo 4 líneas salvo que sea necesario más.
+
+El sistema tiene 6 módulos principales:
+- Desembargos y embargos (index.html): genera oficios bancarios Word
+- Buscador de guías (buscador.html): busca contribuyentes y expedientes
+- Tutelas V2 (tutelas_v2.html): gestión completa de tutelas con IA
+- Acuerdos de pago (acuerdos.html): proyecta cuotas y genera F-GAF-68
+- Seguimiento de cartera (seguimiento.html): estadísticas de cobro coactivo
+- Home (home.html): esta pantalla de inicio
+
+${stats.tutelas!==undefined?`Estado actual: ${stats.tutelas} tutelas activas, ${stats.fallos} fallos activos, ${stats.urgentes} urgentes hoy.`:''}
+
+Contexto legal: cobro coactivo municipal colombiano, normativa tributaria local, tutelas constitucionales.`;
+
+  teoHistorial.push({role:"user",content:pregunta});
+
+  // Intentar usar APPS_URL de tutelas si está disponible
+  var appsUrl="";
+  try{ appsUrl=localStorage.getItem("tutelas_apps_url")||""; }catch(e){}
+
+  if(appsUrl){
+    try{
+      var res=await fetch(appsUrl,{method:"POST",redirect:"follow",
+        body:JSON.stringify({accion:"teo",contexto,mensajes:teoHistorial.slice(-8)})});
+      var txt=await res.text(); var d;
+      try{d=JSON.parse(txt);}catch(e){throw new Error("Respuesta inválida");}
+      if(!d.ok)throw new Error(d.error||"Error del servidor");
+      teoHistorial.push({role:"assistant",content:d.respuesta});
+      typing.remove(); teoAddMsg(d.respuesta,'bot'); return;
+    }catch(e){ console.warn("[Teo]",e); }
+  }
+
+  // Fallback: respuesta contextual sin IA
+  typing.remove();
+  var resp=teoRespuestaLocal(pregunta,stats);
+  teoHistorial.push({role:"assistant",content:resp});
+  teoAddMsg(resp,'bot');
+}
+
+function teoRespuestaLocal(q,stats){
+  var ql=q.toLowerCase();
+  if(ql.includes("tutela")||ql.includes("urgente")){
+    if(stats.urgentes>0) return `Hay <strong>${stats.urgentes}</strong> proceso(s) urgentes hoy y <strong>${stats.tutelas||'—'}</strong> tutelas activas en total. Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a> para verlos.`;
+    return `Hay <strong>${stats.tutelas||'—'}</strong> tutelas activas. ${stats.urgentes===0?'Sin urgencias hoy ✅':''} Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a>.`;
+  }
+  if(ql.includes("embargo")||ql.includes("desembargo")||ql.includes("oficio"))
+    return 'Para generar oficios de desembargo o embargo, usa el módulo <a href="index.html" style="color:#60a5fa">Desembargos</a>.';
+  if(ql.includes("buscar")||ql.includes("contribuyente")||ql.includes("expediente"))
+    return 'Para buscar contribuyentes o expedientes de cobro coactivo, entra al <a href="buscador.html" style="color:#60a5fa">Buscador de Guías</a>.';
+  if(ql.includes("acuerdo")||ql.includes("cuota")||ql.includes("convenio"))
+    return 'Para proyectar cuotas y generar el formulario F-GAF-68, usa <a href="acuerdos.html" style="color:#60a5fa">Acuerdos de Pago</a>.';
+  if(ql.includes("cartera")||ql.includes("seguimiento")||ql.includes("estadística"))
+    return 'Las estadísticas de expedientes y cartera fiscal están en <a href="seguimiento.html" style="color:#60a5fa">Seguimiento de Cartera</a>.';
+  return 'Puedo ayudarte con tutelas, desembargos, búsqueda de expedientes, acuerdos de pago y seguimiento de cartera. ¿Con qué módulo necesitas ayuda?';
+}
 </script>
 </body>
 </html>
