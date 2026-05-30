@@ -507,6 +507,63 @@ footer strong { color: rgba(255,255,255,0.55); }
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
   color:rgba(255,255,255,.45);
 }
+
+/* ── RESUMEN DEL DÍA ── */
+.resumen-dia{
+  width:100%;max-width:680px;margin-bottom:20px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:18px;overflow:hidden;
+  animation:fadeUp .6s .18s ease both;
+}
+.resumen-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.resumen-titulo{
+  font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(255,255,255,.45);
+  display:flex;align-items:center;gap:7px;
+}
+.resumen-fecha{
+  font-size:11px;color:rgba(255,255,255,.3);
+}
+.resumen-items{
+  padding:10px 6px;display:flex;flex-direction:column;gap:2px;
+}
+.ri{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:10px;
+  transition:background .15s;cursor:default;
+}
+.ri.clickable{cursor:pointer;}
+.ri.clickable:hover{background:rgba(255,255,255,.06);}
+.ri-icon{font-size:15px;flex-shrink:0;width:22px;text-align:center}
+.ri-txt{flex:1;font-size:12.5px;color:rgba(255,255,255,.8);line-height:1.3}
+.ri-txt strong{color:#fff;font-weight:600}
+.ri-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;
+  white-space:nowrap;flex-shrink:0}
+.ri-tag.rojo  {background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.ri-tag.ambar {background:rgba(245,158,11,.18);color:#fbbf24;border:1px solid rgba(245,158,11,.25)}
+.ri-tag.verde {background:rgba(34,197,94,.18);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
+.ri-tag.azul  {background:rgba(59,130,246,.18);color:#93c5fd;border:1px solid rgba(59,130,246,.25)}
+.ri-tag.gris  {background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.1)}
+.ri.urgente{background:rgba(239,68,68,.07);border-left:2px solid rgba(239,68,68,.5);}
+.resumen-loading{
+  padding:18px;text-align:center;
+  font-size:12px;color:rgba(255,255,255,.3);
+}
+.resumen-skeleton{
+  display:flex;flex-direction:column;gap:8px;padding:12px 18px;
+}
+.sk-line{
+  height:12px;border-radius:6px;
+  background:linear-gradient(90deg,rgba(255,255,255,.06) 25%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.06) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 /* ── ANIMACIONES ── */
 
 
@@ -629,6 +686,25 @@ footer strong { color: rgba(255,255,255,0.55); }
   </div>
 
   <!-- ══════════════════════════════
+       RESUMEN DEL DÍA
+  ══════════════════════════════ -->
+  <div class="resumen-dia" id="resumen-dia">
+    <div class="resumen-header">
+      <div class="resumen-titulo">
+        <span>📅</span> Resumen del día
+      </div>
+      <span class="resumen-fecha" id="resumen-fecha">—</span>
+    </div>
+    <div class="resumen-skeleton" id="resumen-skeleton">
+      <div class="sk-line" style="width:75%"></div>
+      <div class="sk-line" style="width:55%"></div>
+      <div class="sk-line" style="width:65%"></div>
+      <div class="sk-line" style="width:45%"></div>
+    </div>
+    <div class="resumen-items" id="resumen-items" style="display:none"></div>
+  </div>
+
+  <!-- ══════════════════════════════
        MÓDULOS PRINCIPALES
   ══════════════════════════════ -->
   <div class="section-label">
@@ -720,7 +796,7 @@ footer strong { color: rgba(255,255,255,0.55); }
     Gestión Documental y Jurídica
   </div>
 
-  <div class="grid-3x1" style="margin-bottom: 26px;">
+  <div class="grid-2x2" style="margin-bottom: 26px;">
     <a href="seguimiento.html" class="app-card card-green">
       <div class="card-glow"></div>
       <span class="app-icon">📋</span>
@@ -729,14 +805,6 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-arrow">↗</span>
     </a>
 
-    <a href="pqr.html" class="app-card card-purple">
-      <div class="card-glow"></div>
-      <span class="app-icon">📬</span>
-      <div class="app-name">Gestión PQR</div>
-      <div class="app-desc">Peticiones, Quejas y Reclamos ciudadanos</div>
-      <span class="app-badge badge-new">✨ Nuevo</span>
-      <span class="app-arrow">↗</span>
-    </a>
 
     <!-- Card novedades del sistema -->
     <div class="app-card card-news">
@@ -749,22 +817,6 @@ footer strong { color: rgba(255,255,255,0.55); }
         <span id="cs-sistema-txt">Verificando estado...</span>
       </div>
     </div>
-  </div>
-
-  <!-- ── ALERTAS VENCIMIENTOS ── -->
-  <div id="alerta-venc" style="display:none;width:100%;max-width:680px;margin-bottom:12px;
-    background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:14px;
-    padding:12px 18px;display:flex;align-items:center;gap:12px;animation:fadeUp .5s ease both">
-    <span style="font-size:20px">🚨</span>
-    <div>
-      <div style="font-size:13px;font-weight:600;color:#f87171" id="alerta-titulo">Procesos urgentes</div>
-      <div style="font-size:12px;color:rgba(248,113,113,.8);margin-top:2px" id="alerta-sub"></div>
-    </div>
-    <a href="tutelas_v2.html" style="margin-left:auto;font-size:11px;font-weight:600;
-      padding:5px 12px;border-radius:8px;background:rgba(239,68,68,.2);
-      color:#f87171;border:1px solid rgba(239,68,68,.3);text-decoration:none;white-space:nowrap">
-      Ver ahora →
-    </a>
   </div>
 
   <!-- ── STATS DINÁMICAS ── -->
@@ -797,7 +849,7 @@ footer strong { color: rgba(255,255,255,0.55); }
 <script>
 // Leer APPS_URL de la sesión de tutelas si existe
 var TEO_APPS_URL = "";
-var TUTELAS_SHEET_ID = "";
+var TUTELAS_SHEET_ID = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
 try {
   var _sess = JSON.parse(localStorage.getItem("tutelas_sesion_v2")||"null");
 } catch(e){}
@@ -823,7 +875,7 @@ var GID_INCIDENTES = "1082755625";
 // ════════════════════════════════════════
 // CONFIG — IDs de Google Sheets de Tutelas
 // ════════════════════════════════════════
-var SHEET_ID       = "1lvI3QKXXXxxxxxx"; // ← mismo que tutelas_v2.html (APPS_URL no necesario para leer)
+var SHEET_ID       = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU"; // ← mismo que tutelas_v2.html (APPS_URL no necesario para leer)
 var GID_TUTELAS    = "0";
 var GID_FALLOS     = "1973025481";
 var APPS_URL       = ""; // se llena si hay sesión activa de tutelas
@@ -1063,10 +1115,194 @@ async function cargarStatsHome(){
   }catch(e){ console.warn("[home stats]",e); }
 }
 
-// Cargar stats si tenemos SHEET_ID configurado
-// Para configurar: abre este archivo y reemplaza SHEET_ID con el ID real del Sheets de tutelas
-// Ejemplo: var SHEET_ID = "1AbCdEf...";
-cargarStatsHome();
+// ════════════════════════════════════════
+// RESUMEN DEL DÍA — función principal
+// ════════════════════════════════════════
+async function buildResumenDia(){
+  // Fecha en header
+  var ahora = new Date();
+  var opcFecha = {weekday:'long',day:'numeric',month:'long'};
+  var fechaStr = ahora.toLocaleDateString('es-CO',opcFecha);
+  fechaStr = fechaStr.charAt(0).toUpperCase()+fechaStr.slice(1);
+  var el=function(id){return document.getElementById(id);};
+  if(el('resumen-fecha')) el('resumen-fecha').textContent = fechaStr;
+
+  if(!SHEET_ID||SHEET_ID.includes("xxx")){
+    el('resumen-skeleton').style.display='none';
+    el('resumen-items').style.display='flex';
+    el('resumen-items').innerHTML='<div class="ri"><span class="ri-icon">⚙️</span><span class="ri-txt">Configura el SHEET_ID para ver datos en tiempo real</span></div>';
+    return;
+  }
+
+  try{
+    // Cargar las 3 hojas en paralelo
+    var mkUrl=function(gid){
+      return 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:json&gid='+gid+'&nocache='+Date.now();
+    };
+    var [r1,r2,r3]=await Promise.all([
+      fetch(mkUrl(GID_TUTELAS),{cache:"no-store"}),
+      fetch(mkUrl(GID_FALLOS),{cache:"no-store"}),
+      fetch(mkUrl(GID_INCIDENTES),{cache:"no-store"})
+    ]);
+    var parse=function(txt){return JSON.parse(txt.replace(/^[^{]+/,''));};
+    var [d1,d2,d3]=await Promise.all([r1.text().then(parse),r2.text().then(parse),r3.text().then(parse)]);
+
+    var toRows=function(d){return (d.table&&d.table.rows)||[];};
+    var tutelas=toRows(d1), fallos=toRows(d2), incidentes=toRows(d3);
+    var getCol=function(row,i){
+      return row.c&&row.c[i]&&row.c[i].v!=null?String(row.c[i].v).trim():"";
+    };
+    var getDias=function(row,col){
+      var v=row.c&&row.c[col]?row.c[col].v:null;
+      return v!==null&&v!==undefined?parseFloat(v):null;
+    };
+
+    var EST_FIN=["Finalizado","Respondido"];
+    var activos=tutelas.filter(function(r){return !EST_FIN.includes(getCol(r,10));});
+    var fallActivos=fallos.filter(function(r){return !EST_FIN.includes(getCol(r,10));});
+    var incActivos=incidentes.filter(function(r){return !EST_FIN.includes(getCol(r,5));});
+
+    // Vencen hoy (0 días) o ya vencieron (<0)
+    var hoyTutelas=activos.filter(function(r){var d=getDias(r,8);return d!==null&&d<=0;});
+    var hoyFallos=fallActivos.filter(function(r){var d=getDias(r,8);return d!==null&&d<=0;});
+    var hoyInc=incActivos.length; // incidentes no tienen fecha límite definida
+
+    // Vencen esta semana (1-7 días)
+    var semTutelas=activos.filter(function(r){var d=getDias(r,8);return d!==null&&d>0&&d<=7;});
+    var semFallos=fallActivos.filter(function(r){var d=getDias(r,8);return d!==null&&d>0&&d<=7;});
+
+    // Caso más urgente (menor días, negativo = más urgente)
+    var masUrgente=null;
+    var todosCriticos=[].concat(
+      hoyTutelas.map(function(r){return {nombre:getCol(r,2),dias:getDias(r,8),tipo:'Tutela',rad:getCol(r,5)};}),
+      hoyFallos.map(function(r){return {nombre:getCol(r,2),dias:getDias(r,8),tipo:'Fallo',rad:getCol(r,5)};})
+    );
+    if(todosCriticos.length>0){
+      todosCriticos.sort(function(a,b){return a.dias-b.dias;});
+      masUrgente=todosCriticos[0];
+    }
+
+    // Cola de desembargos hoy
+    var colaHoy=0;
+    try{
+      var cola=JSON.parse(localStorage.getItem('cola_local')||'[]');
+      var hoyStr=ahora.toLocaleDateString('es-CO');
+      colaHoy=cola.filter(function(x){return x['Fecha']===hoyStr||x.fecha===hoyStr;}).length;
+    }catch(e){}
+
+    // Acuerdos pendientes
+    var acuerdosPend=0;
+    try{acuerdosPend=JSON.parse(localStorage.getItem('pendientes_acuerdos')||'[]').length;}catch(e){}
+
+    // ── Construir items ──
+    var items=[];
+    var totalUrgentes=(hoyTutelas.length+hoyFallos.length);
+
+    // 1. Caso más urgente (si existe)
+    if(masUrgente){
+      var diasStr=masUrgente.dias<0?Math.abs(masUrgente.dias)+'d vencido':'vence HOY';
+      items.push({
+        icono:'🔴', urgente:true, clickable:true, href:'tutelas_v2.html',
+        txt:'<strong>'+masUrgente.nombre+'</strong> — '+masUrgente.tipo,
+        tag:{txt:diasStr,cls:'rojo'}
+      });
+    }
+
+    // 2. Total urgentes hoy
+    if(totalUrgentes>0){
+      items.push({
+        icono:'⚠️', urgente:false, clickable:true, href:'tutelas_v2.html',
+        txt: totalUrgentes===1?'1 proceso vence <strong>hoy</strong>':
+             '<strong>'+totalUrgentes+'</strong> procesos vencen hoy o ya vencieron',
+        tag:{txt:'Urgente',cls:'rojo'}
+      });
+    } else {
+      items.push({
+        icono:'✅', urgente:false,
+        txt:'Sin procesos que venzan hoy',
+        tag:{txt:'Al día',cls:'verde'}
+      });
+    }
+
+    // 3. Vencen esta semana
+    var semTotal=semTutelas.length+semFallos.length;
+    if(semTotal>0){
+      items.push({
+        icono:'📅', urgente:false, clickable:true, href:'tutelas_v2.html',
+        txt:'<strong>'+semTotal+'</strong> proceso(s) vencen esta semana',
+        tag:{txt:semTotal+' esta semana',cls:'ambar'}
+      });
+    }
+
+    // 4. Tutelas activas
+    items.push({
+      icono:'⚖️', urgente:false, clickable:true, href:'tutelas_v2.html',
+      txt:'<strong>'+activos.length+'</strong> tutelas · <strong>'+fallActivos.length+'</strong> fallos activos',
+      tag:{txt:activos.length+fallActivos.length+' totales',cls:'azul'}
+    });
+
+    // 5. Incidentes/Desacatos
+    if(incActivos.length>0){
+      items.push({
+        icono:'🔔', urgente:false, clickable:true, href:'tutelas_v2.html',
+        txt:'<strong>'+incActivos.length+'</strong> incidente(s)/desacato(s) activo(s)',
+        tag:{txt:'Requiere atención',cls:'ambar'}
+      });
+    }
+
+    // 6. Oficios hoy
+    items.push({
+      icono:'📄', urgente:false, clickable:true, href:'desembargos.html',
+      txt: colaHoy>0?'<strong>'+colaHoy+'</strong> oficio(s) generado(s) hoy':'Sin oficios generados hoy',
+      tag:{txt:colaHoy>0?colaHoy+' hoy':'0 hoy',cls:colaHoy>0?'azul':'gris'}
+    });
+
+    // 7. Acuerdos pendientes
+    if(acuerdosPend>0){
+      items.push({
+        icono:'🤝', urgente:false, clickable:true, href:'acuerdos.html',
+        txt:'<strong>'+acuerdosPend+'</strong> acuerdo(s) pendiente(s) de firma',
+        tag:{txt:'Pendiente',cls:'ambar'}
+      });
+    }
+
+    // ── Renderizar ──
+    var html=items.map(function(item){
+      var cls='ri'+(item.urgente?' urgente':'')+(item.clickable?' clickable':'');
+      var href=item.href||'#'; var onclick=item.clickable?'onclick="location.href=\"'+href+'\""':'';
+      var tag=item.tag?'<span class="ri-tag '+item.tag.cls+'">'+item.tag.txt+'</span>':'';
+      return '<div class="'+cls+'" '+onclick+'><span class="ri-icon">'+item.icono+'</span><span class="ri-txt">'+item.txt+'</span>'+tag+'</div>';
+    }).join('');
+
+    el('resumen-skeleton').style.display='none';
+    el('resumen-items').style.display='flex';
+    el('resumen-items').innerHTML=html;
+
+    // Actualizar stats y cards
+    var stats={tutelas:activos.length,fallos:fallActivos.length,urgentes:totalUrgentes};
+    window._homeStats=stats;
+    actualizarCardStats(stats);
+
+    // Actualizar stat-row
+    if(el('stat-tutelas')) el('stat-tutelas').textContent=activos.length;
+    if(el('stat-urgentes')){
+      el('stat-urgentes').textContent=totalUrgentes;
+      el('stat-urgentes').style.color=totalUrgentes>0?'#f87171':'#4ade80';
+    }
+    if(el('stat-fallos')) el('stat-fallos').textContent=fallActivos.length;
+
+  }catch(err){
+    console.warn('[resumen]',err);
+    var sk=el('resumen-skeleton'), it=el('resumen-items');
+    if(sk) sk.style.display='none';
+    if(it){
+      it.style.display='flex';
+      it.innerHTML='<div class="ri"><span class="ri-icon">⚠️</span><span class="ri-txt">No se pudo cargar el resumen — revisa tu conexión</span></div>';
+    }
+  }
+}
+
+buildResumenDia();
 
 // ════════════════════════════════════════
 // TEO — CHAT IA
