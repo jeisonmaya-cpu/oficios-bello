@@ -271,13 +271,16 @@ body {
   margin-bottom: 13px;
   animation: fadeUp 0.75s 0.22s ease both;
 }
+.grid-3x1 .app-card { padding: 16px 14px; min-height: 140px; }
+.grid-3x1 .app-name { font-size: 12px; }
+.grid-3x1 .app-desc { font-size: 11px; }
 .grid-3x1 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 13px;
+  gap: 10px;
   width: 100%; max-width: 680px;
-  margin-bottom: 13px;
-  animation: fadeUp 0.75s 0.32s ease both;
+  margin-bottom: 10px;
+  animation: fadeUp 0.75s 0.22s ease both;
 }
 /* Segunda fila de la sección principal: 2 cards apiladas + 1 card high */
 .grid-main-bottom {
@@ -569,6 +572,58 @@ footer strong { color: rgba(255,255,255,0.55); }
   animation:shimmer 1.5s infinite;
 }
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── CARD PRÓXIMAMENTE ── */
+.card-soon {
+  background: linear-gradient(135deg,rgba(10,31,61,.8) 0%,rgba(6,18,38,.9) 100%);
+  border: 1px dashed rgba(255,255,255,.18);
+  cursor: default; position: relative; overflow: hidden;
+}
+.card-soon::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg,rgba(109,40,217,.06) 0%,rgba(37,99,235,.04) 100%);
+}
+.card-soon:hover {
+  border-color: rgba(109,40,217,.4);
+  box-shadow: 0 8px 32px rgba(109,40,217,.12);
+  transform: translateY(-2px);
+}
+.soon-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 3px 9px; border-radius: 10px;
+  background: rgba(109,40,217,.2); color: #c4b5fd;
+  border: 1px solid rgba(109,40,217,.3);
+  margin-bottom: 10px;
+}
+.soon-progress-wrap {
+  margin-top: 10px;
+}
+.soon-progress-label {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: rgba(255,255,255,.35);
+  margin-bottom: 5px;
+}
+.soon-progress-track {
+  width: 100%; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,.08);
+  overflow: hidden;
+}
+.soon-progress-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, #6d28d9, #2563eb);
+  animation: progressPulse 2.5s ease-in-out infinite;
+}
+@keyframes progressPulse {
+  0%,100% { opacity: .7; }
+  50%      { opacity: 1;  }
+}
+.soon-eta {
+  font-size: 10px; color: rgba(255,255,255,.25);
+  margin-top: 7px; display: flex; align-items: center; gap: 4px;
+}
 /* ── ANIMACIONES ── */
 
 
@@ -583,7 +638,10 @@ footer strong { color: rgba(255,255,255,0.55); }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 540px) {
-  .grid-2x2, .grid-main-bottom, .grid-3x1 {
+  .grid-2x2, .grid-main-bottom, .grid-3x1 .app-card { padding: 16px 14px; min-height: 140px; }
+.grid-3x1 .app-name { font-size: 12px; }
+.grid-3x1 .app-desc { font-size: 11px; }
+.grid-3x1 {
     grid-template-columns: 1fr;
     max-width: 100%;
   }
@@ -592,7 +650,10 @@ footer strong { color: rgba(255,255,255,0.55); }
   .stat { min-width: 33.33%; border-bottom: 1px solid var(--border); }
 }
 @media (min-width: 541px) and (max-width: 680px) {
-  .grid-3x1 { grid-template-columns: 1fr 1fr; }
+  .grid-3x1 .app-card { padding: 16px 14px; min-height: 140px; }
+.grid-3x1 .app-name { font-size: 12px; }
+.grid-3x1 .app-desc { font-size: 11px; }
+.grid-3x1 { grid-template-columns: 1fr 1fr; }
 }
 </style>
 </head>
@@ -709,16 +770,16 @@ footer strong { color: rgba(255,255,255,0.55); }
     <div class="resumen-items" id="resumen-items" style="display:none"></div>
   </div>
 
-  <!-- ══════════════════════════════
-       MÓDULOS PRINCIPALES
-  ══════════════════════════════ -->
+<!-- ══════════════════════════════
+     MÓDULOS — 3 columnas
+══════════════════════════════ -->
   <div class="section-label">
     <span class="section-label-icon">⚙️</span>
-    Módulos Principales
+    Módulos del sistema
   </div>
 
-  <!-- Fila 1: Desembargos + Buscador -->
-  <div class="grid-2x2">
+  <!-- Fila 1: Desembargos · Buscador · Tutelas -->
+  <div class="grid-3x1">
     <a href="desembargos.html" class="app-card card-blue">
       <div class="card-glow"></div>
       <span class="app-icon">
@@ -733,7 +794,6 @@ footer strong { color: rgba(255,255,255,0.55); }
       <span class="app-badge badge-demand">⚡ Alta demanda</span>
       <span class="app-arrow">↗</span>
     </a>
-
     <a href="buscador.html" class="app-card card-gold">
       <div class="card-glow"></div>
       <span class="app-icon">
@@ -748,10 +808,6 @@ footer strong { color: rgba(255,255,255,0.55); }
       </div>
       <span class="app-arrow">↗</span>
     </a>
-  </div>
-
-  <!-- Fila 2: Sistema de Tutelas + Generar Oficios -->
-  <div class="grid-2x2" style="animation-delay: 0.26s;">
     <a href="tutelas_v2.html" class="app-card card-cyan">
       <div class="card-glow"></div>
       <span class="app-icon">
@@ -765,26 +821,10 @@ footer strong { color: rgba(255,255,255,0.55); }
       </div>
       <span class="app-arrow">↗</span>
     </a>
-
-    <a href="index.html" class="app-card card-purple">
-      <div class="card-glow"></div>
-      <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/>
-          <line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/>
-        </svg></span>
-      <div class="app-name">Generar Oficios</div>
-      <div class="app-desc">Tutelas, notificaciones y carga masiva de documentos</div>
-      <div class="card-stat">
-        <span class="cs-dot cs-purple"></span><span>Word + Sheets integrado</span>
-      </div>
-      <span class="app-arrow">↗</span>
-    </a>
   </div>
 
-  <!-- Fila 3: Acuerdos + Recaudo -->
-  <div class="grid-2x2" style="animation-delay: 0.32s; margin-bottom: 26px;">
+  <!-- Fila 2: Acuerdos · Recaudo · Seguimiento -->
+  <div class="grid-3x1" style="animation-delay:.28s">
     <a href="acuerdos.html" class="app-card card-green">
       <div class="card-glow"></div>
       <span class="app-icon">
@@ -798,7 +838,6 @@ footer strong { color: rgba(255,255,255,0.55); }
       </div>
       <span class="app-arrow">↗</span>
     </a>
-
     <a href="recaudo.html" class="app-card card-orange">
       <div class="card-glow"></div>
       <span class="app-icon">
@@ -814,17 +853,6 @@ footer strong { color: rgba(255,255,255,0.55); }
       </div>
       <span class="app-arrow">↗</span>
     </a>
-  </div>
-
-  <!-- ══════════════════════════════
-       GESTIÓN DOCUMENTAL Y JURÍDICA
-  ══════════════════════════════ -->
-  <div class="section-label" style="animation: fadeUp 0.75s 0.36s ease both;">
-    <span class="section-label-icon">🗂️</span>
-    Gestión Documental y Jurídica
-  </div>
-
-  <div class="grid-2x2" style="margin-bottom: 26px;">
     <a href="seguimiento.html" class="app-card card-green">
       <div class="card-glow"></div>
       <span class="app-icon">
@@ -837,9 +865,25 @@ footer strong { color: rgba(255,255,255,0.55); }
       <div class="app-desc">Estadísticas de expedientes y cobro coactivo</div>
       <span class="app-arrow">↗</span>
     </a>
+  </div>
 
-
-    <!-- Card novedades del sistema -->
+  <!-- Fila 3: Generar Oficios · Novedades · Terminaciones -->
+  <div class="grid-3x1" style="animation-delay:.36s">
+    <a href="index.html" class="app-card card-purple">
+      <div class="card-glow"></div>
+      <span class="app-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/>
+          <line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/>
+        </svg></span>
+      <div class="app-name">Generar Oficios</div>
+      <div class="app-desc">Tutelas, notificaciones y carga masiva de documentos</div>
+      <div class="card-stat">
+        <span class="cs-dot cs-purple"></span><span>Word + Sheets integrado</span>
+      </div>
+      <span class="app-arrow">↗</span>
+    </a>
     <div class="app-card card-news">
       <div class="card-glow"></div>
       <span class="app-icon">
@@ -851,6 +895,30 @@ footer strong { color: rgba(255,255,255,0.55); }
       <div class="card-stat" id="cs-sistema">
         <span class="cs-dot" id="cs-sistema-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e"></span>
         <span id="cs-sistema-txt">Verificando estado...</span>
+      </div>
+    </div>
+  
+    <div class="app-card card-soon">
+      <div class="card-glow"></div>
+      <span class="app-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <polyline points="9 15 11 17 15 13"/>
+        </svg></span>
+      <span class="soon-badge">🔧 En desarrollo</span>
+      <div class="app-name" style="color:rgba(255,255,255,.7)">Terminaciones y Suspensiones</div>
+      <div class="app-desc" style="color:rgba(255,255,255,.35)">Gestión de terminaciones de procesos y suspensiones de cobro coactivo</div>
+      <div class="soon-progress-wrap">
+        <div class="soon-progress-label">
+          <span>Progreso</span><span>35%</span>
+        </div>
+        <div class="soon-progress-track">
+          <div class="soon-progress-fill" style="width:35%"></div>
+        </div>
+        <div class="soon-eta">
+          📅 Estimado: 2º semestre 2026
+        </div>
       </div>
     </div>
   </div>
