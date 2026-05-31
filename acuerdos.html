@@ -4,100 +4,191 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Acuerdos de Pago — Alcaldía de Bello</title>
-<link rel="manifest" href="manifest.json"/>
-<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--navy:#0f2d5e;--navy-mid:#16396e;--blue:#1a6fc4;--gold:#e8a020;--gold2:#f5c050;--green:#16a34a;--red:#dc2626;--bg:#f0f4fa;--surface:#fff;--surface2:#e8edf7;--text:#0f1e35;--text-soft:#4a5a72;--border:#c8d5e8;--radius:12px;--shadow:0 4px 24px rgba(15,45,94,.10)}
+/* ══ VARIABLES ══ */
+:root{
+  --navy:#0a1f3d;--navy2:#0f2d5e;--blue:#1a6fc4;--blue2:#2d8de8;
+  --gold:#e8a020;--gold2:#f5c050;
+  --green:#16a34a;--green2:#22c55e;
+  --red:#dc2626;--red2:#ef4444;
+  --purple:#7c3aed;--purple2:#6d28d9;
+  --surface:rgba(255,255,255,.06);--border:rgba(255,255,255,.10);
+  --text:#ffffff;--soft:rgba(255,255,255,.55);--muted:rgba(255,255,255,.35);
+  --inp:rgba(255,255,255,.07);--inp-b:rgba(255,255,255,.18);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%)}
-.hi{max-width:960px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.hico{width:46px;height:46px;background:rgba(255,255,255,.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
-.htx h1{font-family:'DM Serif Display',serif;color:#fff;font-size:18px;font-weight:400}
-.htx p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
-.hact{margin-left:auto;display:flex;gap:8px}
-.bnav{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;white-space:nowrap;transition:background .2s;cursor:pointer;font-family:'DM Sans',sans-serif}
-.bnav:hover{background:rgba(255,255,255,.22)}
-.tabs{background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.1)}
-.tabsi{max-width:960px;margin:0 auto;display:flex;padding:0 24px;gap:2px}
-.tab{padding:10px 18px;color:rgba(255,255,255,.6);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:'DM Sans',sans-serif;transition:all .2s}
-.tab:hover{color:#fff}
-main{max-width:960px;margin:0 auto;padding:24px 24px 60px}
-.seccion{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
-.seh{background:var(--navy);color:#fff;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
-.seb{padding:18px}
-.cg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.cg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.campo label{display:block;font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-.campo input,.campo select,.campo textarea{width:100%;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border);border-radius:8px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s}
-.campo input:focus,.campo select:focus{border-color:var(--blue);background:#fff}
-.hl{background:#fefce8;border-color:#f59e0b}
-.occ{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text)}
-.occ label{display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0}
-.calc{position:sticky;top:20px}
-.ccard{background:linear-gradient(135deg,var(--navy),#1a4a8a);border-radius:var(--radius);padding:20px;color:#fff;margin-bottom:16px;box-shadow:0 8px 32px rgba(15,45,94,.25)}
-.cct{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:14px}
-.ci{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-.ci:last-child{border-bottom:none}
-.cl{font-size:12px;color:rgba(255,255,255,.7)}
-.cv{font-size:14px;font-weight:700;color:#fff}
-.cv.gold{color:var(--gold2);font-size:18px}
-.cv.green{color:#86efac}
-.ctab{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;max-height:320px;overflow-y:auto}
-.ctabt{background:var(--navy);color:#fff;padding:10px 14px;font-size:12px;font-weight:700}
-.ctab table{width:100%;border-collapse:collapse;font-size:11px}
-.ctab thead tr{background:#e8edf7}
-.ctab thead th{padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--navy)}
-.ctab thead th:first-child{text-align:center}
-.ctab tbody tr{border-bottom:1px solid #f0f4fa}
-.ctab tbody tr:hover{background:#f8fafd}
-.ctab td{padding:6px 10px;text-align:right;color:var(--text)}
-.ctab td:first-child{text-align:center;font-weight:700;color:var(--navy)}
-.accs{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
-.ba{width:100%;padding:12px;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
-.ba:last-child{margin-bottom:0}
-.ba:disabled{opacity:.6;cursor:not-allowed}
-.st{display:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:8px;align-items:center;gap:8px}
-.st.ok{display:flex;background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
-.st.err{display:flex;background:#fef2f2;color:var(--red);border:1px solid #fecaca}
-.st.load{display:flex;background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
-.spin{width:14px;height:14px;border:2px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ── FONDO ── */
+.bg{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 0%,rgba(26,111,196,.22) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 40% at 90% 100%,rgba(232,160,32,.10) 0%,transparent 55%),
+    linear-gradient(160deg,#0a1f3d 0%,#0d2550 45%,#09182f 100%)}
+.bg::before{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 80% 70% at center,black 20%,transparent 75%)}
+
+/* ── NAV ── */
+.nav{position:sticky;top:0;z-index:100;background:rgba(10,31,61,.92);border-bottom:1px solid rgba(232,160,32,.2);backdrop-filter:blur(16px)}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;align-items:stretch;gap:0}
+.nav-brand{color:#fff;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:14px 18px;border-right:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:7px;white-space:nowrap}
+.nav-tabs{display:flex;flex:1;overflow-x:auto}
+.nav-tab{color:rgba(255,255,255,.6);font-size:12.5px;font-weight:600;padding:0 16px;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;gap:6px;min-height:48px;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.nav-tab:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nav-tab.active{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.07)}
+.nav-badge{background:rgba(239,68,68,.9);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px}
+.nav-links{display:flex;align-items:center;gap:6px;padding:0 12px;margin-left:auto}
+.nav-link{color:rgba(255,255,255,.6);font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);text-decoration:none;transition:all .2s;white-space:nowrap}
+.nav-link:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* ── HERO ── */
+.hero{position:relative;z-index:1;padding:28px 20px 16px;max-width:1100px;margin:0 auto}
+.hero-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.hero-label::before{content:'';width:18px;height:1.5px;background:var(--gold)}
+.hero h1{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;margin-bottom:4px}
+.hero h1 em{color:var(--gold);font-style:italic}
+.hero p{font-size:13px;color:var(--soft)}
+
+/* ── LAYOUT ── */
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px 60px}
+.grid-main{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+
+/* ── CARDS ── */
+.gcard{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:16px;overflow:hidden;margin-bottom:14px}
+.gcard-head{padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.gcard-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--gold);display:flex;align-items:center;gap:7px}
+.gcard-body{padding:18px}
+
+/* ── TIPO SELECTOR ── */
+.tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px}
+.tipo-btn{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;padding:12px 10px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:'DM Sans',sans-serif}
+.tipo-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25)}
+.tipo-btn.active{background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.5)}
+.tipo-icon{font-size:22px}
+.tipo-name{font-size:11px;font-weight:600;color:#fff;text-align:center;line-height:1.3}
+.tipo-sub{font-size:9.5px;color:var(--soft);text-align:center}
+
+/* ── CAMPOS CONDICIONALES ── */
+.campo-cond{display:none}
+.campo-cond.show{display:block}
+
+/* ── FORM FIELDS ── */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fg label{font-size:11px;font-weight:600;color:var(--soft);text-transform:uppercase;letter-spacing:.06em}
+.fg input,.fg select,.fg textarea{background:var(--inp);border:1.5px solid var(--inp-b);border-radius:10px;color:var(--text);padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:all .2s;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:rgba(45,141,232,.6);background:rgba(45,141,232,.08)}
+.fg select option{background:#0f2d5e}
+.fg .hint{font-size:10px;color:var(--muted);margin-top:2px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.full{grid-column:1/-1}
+.hl-inp{border-color:rgba(232,160,32,.4)!important;background:rgba(232,160,32,.06)!important}
+
+/* ── OCUPACIÓN ── */
+.ocu-grid{display:flex;flex-wrap:wrap;gap:8px}
+.ocu-opt{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);cursor:pointer;font-size:12px;transition:all .15s}
+.ocu-opt:hover{background:rgba(255,255,255,.1)}
+.ocu-opt input{accent-color:var(--blue2)}
+
+/* ── CALCULADORA ── */
+.calc-sticky{position:sticky;top:68px}
+.calc-card{background:linear-gradient(135deg,var(--navy2),#1a4a8a);border:1px solid rgba(45,141,232,.25);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 8px 32px rgba(15,45,94,.4)}
+.calc-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.calc-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.calc-row:last-child{border-bottom:none}
+.calc-lbl{font-size:12px;color:rgba(255,255,255,.6)}
+.calc-val{font-size:14px;font-weight:700}
+.calc-val.gold{color:var(--gold2);font-size:20px}
+.calc-val.green{color:#86efac}
+
+/* ── TABLA AMORTIZACIÓN ── */
+.amort-wrap{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;max-height:280px;overflow-y:auto;margin-bottom:12px}
+.amort-wrap::-webkit-scrollbar{width:4px}
+.amort-wrap::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.amort-head{background:rgba(255,255,255,.08);padding:9px 13px;font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.07em}
+.amort-wrap table{width:100%;border-collapse:collapse;font-size:11px}
+.amort-wrap thead tr{background:rgba(255,255,255,.06)}
+.amort-wrap thead th{padding:7px 10px;text-align:right;font-size:10px;font-weight:600;color:var(--soft)}
+.amort-wrap thead th:first-child{text-align:center}
+.amort-wrap tbody tr{border-bottom:1px solid rgba(255,255,255,.04)}
+.amort-wrap tbody tr:hover{background:rgba(255,255,255,.04)}
+.amort-wrap td{padding:5px 10px;text-align:right;color:rgba(255,255,255,.8)}
+.amort-wrap td:first-child{text-align:center;font-weight:700;color:var(--blue2)}
+
+/* ── BOTONES ── */
+.btn-acc{width:100%;padding:11px;border:none;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.btn-acc:last-child{margin-bottom:0}
+.btn-acc:disabled{opacity:.5;cursor:not-allowed}
+.btn-navy{background:var(--navy2);color:#fff;border:1px solid rgba(255,255,255,.15)}
+.btn-navy:hover:not(:disabled){background:#1a4a8a}
+.btn-green{background:rgba(22,163,74,.9);color:#fff}
+.btn-green:hover:not(:disabled){background:#15803d}
+.btn-purple{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff}
+.btn-purple:hover:not(:disabled){opacity:.88}
+.btn-ghost{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.12)}
+.btn-ghost:hover:not(:disabled){background:rgba(255,255,255,.12)}
+
+/* ── TOAST / STATUS ── */
+.st{display:none;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:500;margin-bottom:10px;align-items:center;gap:8px}
+.st.show-ok{display:flex;background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)}
+.st.show-err{display:flex;background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.st.show-load{display:flex;background:rgba(45,141,232,.15);color:#93c5fd;border:1px solid rgba(45,141,232,.3)}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-.resmes{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
-.rstt{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:12px}
-.rsti{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--surface2);font-size:12px}
-.rsti:last-child{border-bottom:none}
-.rstv{font-weight:700;color:var(--navy)}
-.pend-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-.pend-hdr{background:var(--navy);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.pend-search{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:220px}
-.pend-search::placeholder{color:rgba(255,255,255,.5)}
-.pitem{padding:14px 18px;border-bottom:1px solid var(--surface2)}
+
+/* ── PENDIENTES ── */
+.pend-search-bar{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.pend-search-bar input{flex:1;background:var(--inp);border:1.5px solid var(--inp-b);border-radius:10px;color:#fff;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.pitem{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
 .pitem:last-child{border-bottom:none}
-.pitem:hover{background:#f8fafd}
-.pnombre{font-size:13px;font-weight:700;color:var(--navy)}
-.pdatos{display:flex;gap:12px;font-size:11px;color:var(--text-soft);margin:6px 0;flex-wrap:wrap}
-.pdatos b{color:var(--text)}
-.pbtns{display:flex;gap:8px;margin-top:8px}
-.pbpago{background:#7c3aed;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
-.pbpago:hover{background:#6d28d9}
-.pbdel{background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
-.pempty{text-align:center;padding:40px 20px;color:var(--text-soft)}
-.badge{background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px}
-.prev-ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.pitem:hover{background:rgba(255,255,255,.03)}
+.pnombre{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+.ptipo{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;margin-bottom:6px}
+.ptipo.predial{background:rgba(26,111,196,.2);color:#93c5fd;border:1px solid rgba(26,111,196,.3)}
+.ptipo.ica{background:rgba(232,160,32,.2);color:#fcd34d;border:1px solid rgba(232,160,32,.3)}
+.ptipo.urbanisticas{background:rgba(22,163,74,.2);color:#86efac;border:1px solid rgba(22,163,74,.3)}
+.ptipo.policia{background:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.ptipo.otro{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15)}
+.pdatos{display:flex;gap:12px;font-size:11px;color:var(--soft);flex-wrap:wrap;margin-bottom:8px}
+.pbtns{display:flex;gap:8px}
+.pbtn{padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s}
+.pbtn-pago{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff}
+.pbtn-del{background:rgba(255,255,255,.07);color:var(--soft);border:1px solid rgba(255,255,255,.12)}
+.pbtn-del:hover{background:rgba(220,38,38,.15);color:#fca5a5}
+.pempty{text-align:center;padding:48px 20px;color:var(--muted)}
+.pempty-icon{font-size:40px;margin-bottom:10px}
+
+/* ── MODAL ── */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(5,12,30,.8);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-ov.open{display:flex}
+.modal-box{background:linear-gradient(155deg,#111827,#0d1525);border:1px solid rgba(255,255,255,.1);border-radius:20px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:0 32px 64px rgba(0,0,0,.7)}
+.modal-head{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.modal-head h3{font-size:15px;font-weight:700;flex:1}
+.modal-close{background:none;border:none;color:var(--soft);cursor:pointer;font-size:18px;padding:4px;transition:color .15s}
+.modal-close:hover{color:#fff}
+.modal-body{padding:20px}
+.modal-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:10px}
+.modal-foot button{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;transition:all .2s}
+
+/* ── PREVIEW DOCUMENTO ── */
+.prev-ov{display:none;position:fixed;inset:0;background:rgba(5,12,30,.85);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px)}
 .prev-ov.open{display:flex}
-.prev-mod{background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:720px;max-height:92vh;display:flex;flex-direction:column}
-.prev-hdr{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:14px 20px;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.prev-mod{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.5);width:100%;max-width:760px;max-height:94vh;display:flex;flex-direction:column}
+.prev-hdr{background:linear-gradient(135deg,#0f2d5e,#1a4a8a);color:#fff;padding:14px 20px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .prev-hdr h3{font-size:14px;font-weight:600}
-.prev-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.prev-close2{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
 .prev-body{padding:20px;overflow-y:auto;flex:1;background:#f5f5f5}
 .prev-doc{background:#fff;margin:0 auto;padding:2cm 2.2cm;box-shadow:0 2px 20px rgba(0,0,0,.12);min-height:26cm;font-family:Arial,sans-serif;font-size:10pt;color:#1a1a2e;max-width:21cm}
-.prev-foot{padding:12px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
-.bprint{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer}
-.bprint:hover{background:var(--blue)}
-.bcancel{background:#f3f4f6;border:1.5px solid #e5e7eb;color:#374151;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}
+.prev-foot{padding:12px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;background:#fff;border-radius:0 0 16px 16px}
+.btn-print{background:#0f2d5e;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-print:hover{background:#1a6fc4}
+.btn-cancel{background:#f3f4f6;border:1.5px solid #e5e7eb;color:#374151;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}
+
+/* Estilos documento */
 .dh-table{width:100%;border-collapse:collapse;margin-bottom:14pt}
 .dh-table td{border:2px solid #0f2d5e;padding:6px 10px;font-size:10pt}
 .dh-blue{background:#0f2d5e;color:white;text-align:center;font-weight:bold;font-size:12pt;padding:10px}
@@ -118,448 +209,573 @@ main{max-width:960px;margin:0 auto;padding:24px 24px 60px}
 .damort thead th{padding:6px 8px;text-align:center;font-size:9pt}
 .damort tbody tr:nth-child(even){background:#f8fafd}
 .damort tbody td{border:1px solid #e8edf7;padding:5px 8px}
-.des-ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
-.des-ov.open{display:flex}
-.des-mod{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:480px;overflow:hidden}
-.des-hdr{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px}
-.des-hdr h3{font-size:15px;font-weight:600}
-.des-body{padding:20px}
-.des-info{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:9px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#5b21b6}
-.des-info b{color:#4c1d95}
+
 @media print{body>*:not(.prev-ov){display:none!important}.prev-ov{display:block!important;position:static!important;background:none!important;padding:0!important}.prev-mod{box-shadow:none!important;max-height:none!important;border-radius:0!important;max-width:none!important}.prev-hdr,.prev-foot{display:none!important}.prev-body{padding:0!important;background:#fff!important;overflow:visible!important}.prev-doc{box-shadow:none!important;margin:0!important;padding:1.5cm 2cm!important;max-width:none!important}}
-@media(max-width:768px){.cg{grid-template-columns:1fr}.cg3{grid-template-columns:1fr}.calc{position:static}}
+@media(max-width:900px){.grid-main{grid-template-columns:1fr}.calc-sticky{position:static}.tipo-grid{grid-template-columns:repeat(2,1fr)}.g2,.g3{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header>
-<div class="hi">
-  <div class="hico">🤝</div>
-  <div class="htx"><h1>Acuerdos de Pago</h1><p>Predial · Industria y Comercio · Obligaciones Urbanísticas</p></div>
-  <div class="hact">
-    <a href="home.html" class="bnav">🏛️ Inicio</a>
-    <a href="index.html" class="bnav">📄 Oficios</a>
+<div class="bg"></div>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand">🤝 Acuerdos de Pago</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-nuevo" onclick="goTab('nuevo')">✏️ Nuevo acuerdo</button>
+      <button class="nav-tab" id="tab-pend" onclick="goTab('pendientes')">⏳ Pendientes <span class="nav-badge" id="badge">0</span></button>
+    </div>
+    <div class="nav-links">
+      <a href="home.html" class="nav-link">🏛️ Inicio</a>
+      <a href="desembargos.html" class="nav-link">📄 Oficios</a>
+    </div>
   </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="hero-label">🤝 Módulo</div>
+  <h1>Acuerdos <em>de Pago</em></h1>
+  <p>Predial · ICA · Obligaciones Urbanísticas · Policía Nacional · Otros</p>
 </div>
-<div class="tabs">
-  <div class="tabsi">
-    <button class="tab" id="tab-nuevo" onclick="goTab('nuevo')" style="border-bottom-color:#f5c050;color:#fff">✏️ Nuevo acuerdo</button>
-    <button class="tab" id="tab-pend" onclick="goTab('pendientes')">⏳ Pendientes <span class="badge" id="badge">0</span></button>
-  </div>
-</div>
-</header>
 
-<main>
+<div class="wrap">
 
-<!-- PANEL NUEVO ACUERDO -->
-<div id="panel-nuevo" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+<!-- ═══ PANEL NUEVO ═══ -->
+<div id="panel-nuevo">
+<div class="grid-main">
 
-<!-- FORMULARIO -->
+<!-- ── FORMULARIO ── -->
 <div>
-<div class="seccion">
-  <div class="seh">⚙️ Configuración del acuerdo</div>
-  <div class="seb">
-    <div class="cg3">
-      <div class="campo"><label>Tipo de obligación *</label>
-        <select id="tipoObligacion" onchange="calcular()">
-          <option value="">Seleccione...</option>
-          <option value="IP — Impuesto Predial">IP — Impuesto Predial</option>
-          <option value="ICO — Industria y Comercio">ICO — Industria y Comercio</option>
-          <option value="CONS — Obligaciones Urbanísticas">CONS — Obligaciones Urbanísticas</option>
-        </select>
-      </div>
-      <div class="campo"><label>Tasa mensual (%) *</label>
-        <input type="number" id="tasaMensual" placeholder="Ej: 1.4445" step="0.0001" min="0" oninput="calcular()" onchange="calcular()"/>
-      </div>
-      <div class="campo"><label>Mes inicio cuotas</label>
-        <input type="month" id="mesInicio"/>
-      </div>
-    </div>
-    <div class="campo" style="margin-top:12px"><label>Funcionario que proyecta *</label>
-      <input type="text" id="funcionario" placeholder="Nombre del funcionario"/>
-    </div>
-  </div>
-</div>
 
-<div class="seccion">
-  <div class="seh">👤 Información del contribuyente</div>
-  <div class="seb">
-    <div class="cg">
-      <div class="campo"><label>Nombres *</label><input type="text" id="nombres" placeholder="Nombres"/></div>
-      <div class="campo"><label>Apellidos *</label><input type="text" id="apellidos" placeholder="Apellidos"/></div>
-    </div>
-    <div class="cg3" style="margin-top:12px">
-      <div class="campo"><label>Tipo documento</label>
-        <select id="tipoDoc"><option value="C.C">C.C</option><option value="C.E">C.E</option><option value="NIT">NIT</option></select>
+  <!-- Tipo de obligación -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">📋 Tipo de obligación</span></div>
+    <div class="gcard-body">
+      <div class="tipo-grid" id="tipo-grid">
+        <button class="tipo-btn active" data-tipo="IP — Impuesto Predial" onclick="selTipo(this)">
+          <span class="tipo-icon">🏠</span>
+          <span class="tipo-name">Predial</span>
+          <span class="tipo-sub">Impuesto Predial</span>
+        </button>
+        <button class="tipo-btn" data-tipo="ICA — Industria y Comercio" onclick="selTipo(this)">
+          <span class="tipo-icon">🏭</span>
+          <span class="tipo-name">ICA</span>
+          <span class="tipo-sub">Industria y Comercio</span>
+        </button>
+        <button class="tipo-btn" data-tipo="OU — Obligaciones Urbanísticas" onclick="selTipo(this)">
+          <span class="tipo-icon">🏗️</span>
+          <span class="tipo-name">Urbanísticas</span>
+          <span class="tipo-sub">Oblig. Urbanísticas</span>
+        </button>
+        <button class="tipo-btn" data-tipo="PM — Policía Nacional" onclick="selTipo(this)">
+          <span class="tipo-icon">👮</span>
+          <span class="tipo-name">Policía</span>
+          <span class="tipo-sub">Multas Policía Nal.</span>
+        </button>
+        <button class="tipo-btn" data-tipo="TRS — Tránsito" onclick="selTipo(this)">
+          <span class="tipo-icon">🚗</span>
+          <span class="tipo-name">Tránsito</span>
+          <span class="tipo-sub">Multas tránsito</span>
+        </button>
+        <button class="tipo-btn" data-tipo="OTR — Otro" onclick="selTipo(this)">
+          <span class="tipo-icon">📁</span>
+          <span class="tipo-name">Otro</span>
+          <span class="tipo-sub">Otra obligación</span>
+        </button>
       </div>
-      <div class="campo"><label>Número documento *</label><input type="text" id="cedula" placeholder="Número"/></div>
-      <div class="campo"><label>Teléfono</label><input type="text" id="telefono" placeholder="Fijo"/></div>
-    </div>
-    <div class="cg" style="margin-top:12px">
-      <div class="campo"><label>Celular</label><input type="text" id="celular" placeholder="Celular"/></div>
-      <div class="campo"><label>Correo electrónico</label><input type="email" id="correo" placeholder="correo@ejemplo.com"/></div>
-    </div>
-    <div class="campo" style="margin-top:12px"><label>Dirección</label><input type="text" id="direccion" placeholder="Dirección completa"/></div>
-    <div style="margin-top:14px">
-      <label style="font-size:11px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px">Ocupación</label>
-      <div class="occ">
-        <label><input type="radio" name="ocu" value="Empleado"> Empleado</label>
-        <label><input type="radio" name="ocu" value="Jubilado"> Jubilado</label>
-        <label><input type="radio" name="ocu" value="Pensionado"> Pensionado</label>
-        <label><input type="radio" name="ocu" value="Desempleado"> Desempleado</label>
-        <label><input type="radio" name="ocu" value="Independiente"> Independiente</label>
-        <label><input type="radio" name="ocu" value="Ama de casa"> Ama de casa</label>
-        <label><input type="radio" name="ocu" value="Estudiante"> Estudiante</label>
+      <!-- Campos condicionales por tipo -->
+      <div class="campo-cond" id="cond-ica">
+        <div class="fg" style="margin-top:12px">
+          <label>Vigencia(s) ICA *</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="ica-vigencias">
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--soft);text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" value="2019" style="accent-color:var(--blue2)"> ICA 2019</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--soft);text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" value="2020" style="accent-color:var(--blue2)"> ICA 2020</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--soft);text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" value="2021" style="accent-color:var(--blue2)"> ICA 2021</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--soft);text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" value="2022" style="accent-color:var(--blue2)"> ICA 2022</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--soft);text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" value="2023" style="accent-color:var(--blue2)"> ICA 2023</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--soft);text-transform:none;letter-spacing:0;cursor:pointer"><input type="checkbox" value="2024" style="accent-color:var(--blue2)"> ICA 2024</label>
+          </div>
+          <div class="hint">Según resolución aportada por Rentas. Puede seleccionar varias.</div>
+        </div>
+        <div class="fg">
+          <label>N° Resolución Rentas</label>
+          <input type="text" id="ica-resolucion" placeholder="Ej. Resolución No. 2024-00123"/>
+        </div>
       </div>
-    </div>
-    <div class="cg" style="margin-top:12px">
-      <div class="campo"><label>Cargo</label><input type="text" id="cargo" placeholder="Cargo o profesión"/></div>
-      <div class="campo"><label>Ingreso mensual ($)</label><input type="number" id="ingresoMensual" placeholder="0" min="0"/></div>
-    </div>
-  </div>
-</div>
-
-<div class="seccion">
-  <div class="seh">💰 Valores del acuerdo</div>
-  <div class="seb">
-    <div class="cg3">
-      <div class="campo"><label>Valor total factura ($) *</label>
-        <input type="number" id="valorFactura" placeholder="0" min="0" oninput="calcular()" onchange="calcular()" class="hl"/>
+      <div class="campo-cond" id="cond-ou">
+        <div class="g2" style="margin-top:12px">
+          <div class="fg"><label>N° Lote / Predio</label><input type="text" id="ou-lote" placeholder="Número de lote o predio"/></div>
+          <div class="fg"><label>N° Resolución urbanística</label><input type="text" id="ou-resolucion" placeholder="Ej. Res. 2024-456"/></div>
+        </div>
+        <div class="fg"><label>N° Plano / Urbanización</label><input type="text" id="ou-plano" placeholder="Nombre o número del plano"/></div>
       </div>
-      <div class="campo"><label>Cuota inicial ($) *</label>
-        <input type="number" id="cuotaInicial" placeholder="0" min="0" oninput="calcular()" onchange="calcular()" class="hl"/>
+      <div class="campo-cond" id="cond-policia">
+        <div class="g2" style="margin-top:12px">
+          <div class="fg"><label>N° Orden de comparendo</label><input type="text" id="pm-orden" placeholder="Número del comparendo"/></div>
+          <div class="fg"><label>Dependencia Policía</label><input type="text" id="pm-dependencia" placeholder="Ej. Estación de Policía Bello"/></div>
+        </div>
+        <div class="fg"><label>Descripción de la infracción</label><input type="text" id="pm-infraccion" placeholder="Ej. Comportamiento contrario a la convivencia — Pandemia COVID-19"/></div>
       </div>
-      <div class="campo"><label>N° cuotas solicitadas *</label>
-        <input type="number" id="numCuotas" placeholder="Ej: 12" min="1" max="36" oninput="calcular()" onchange="calcular()" class="hl"/>
-      </div>
-    </div>
-    <div class="cg" style="margin-top:12px">
-      <div class="campo"><label>Valor a financiar ($)</label>
-        <input type="number" id="valorFinanciar" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;color:var(--text-soft)"/>
-      </div>
-      <div class="campo"><label>Valor cuota mensual ($)</label>
-        <input type="number" id="valorCuota" placeholder="Calculado automáticamente" readonly style="background:#f0f4fa;color:var(--text-soft)"/>
+      <div class="campo-cond" id="cond-otro">
+        <div class="fg" style="margin-top:12px">
+          <label>Descripción de la obligación *</label>
+          <input type="text" id="otro-desc" placeholder="Describa el tipo de obligación"/>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="seccion">
-  <div class="seh">👥 Información del codeudor</div>
-  <div class="seb">
-    <div class="cg">
-      <div class="campo"><label>Nombres codeudor</label><input type="text" id="cod_nombres" placeholder="Nombres"/></div>
-      <div class="campo"><label>Apellidos codeudor</label><input type="text" id="cod_apellidos" placeholder="Apellidos"/></div>
-    </div>
-    <div class="cg3" style="margin-top:12px">
-      <div class="campo"><label>Tipo documento</label>
-        <select id="cod_tipoDoc"><option value="C.C">C.C</option><option value="C.E">C.E</option><option value="NIT">NIT</option></select>
+  <!-- Configuración -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">⚙️ Configuración del acuerdo</span></div>
+    <div class="gcard-body">
+      <div class="g3">
+        <div class="fg">
+          <label>Tasa mensual (%) *</label>
+          <input type="number" id="tasaMensual" placeholder="Ej: 1.4445" step="0.0001" min="0" oninput="calcular()" class="hl-inp"/>
+        </div>
+        <div class="fg">
+          <label>Mes inicio cuotas</label>
+          <input type="month" id="mesInicio"/>
+        </div>
+        <div class="fg">
+          <label>Funcionario que proyecta *</label>
+          <input type="text" id="funcionario" placeholder="Nombre del funcionario"/>
+        </div>
       </div>
-      <div class="campo"><label>Número documento</label><input type="text" id="cod_cedula" placeholder="Número"/></div>
-      <div class="campo"><label>Teléfono / Celular</label><input type="text" id="cod_telefono" placeholder="Teléfono"/></div>
-    </div>
-    <div class="campo" style="margin-top:12px"><label>Dirección codeudor</label><input type="text" id="cod_direccion" placeholder="Dirección"/></div>
-    <div class="cg" style="margin-top:12px">
-      <div class="campo"><label>Matrícula inmueble</label><input type="text" id="matricula" placeholder="Número de matrícula"/></div>
-      <div class="campo"><label>Dirección predio</label><input type="text" id="cod_dirPredio" placeholder="Dirección del predio"/></div>
     </div>
   </div>
-</div>
-</div>
 
-<!-- CALCULADORA -->
-<div class="calc">
-  <div class="resmes" id="resmes" style="display:none">
-    <div class="rstt">📊 Acuerdos este mes</div>
-    <div class="rsti"><span>Total acuerdos</span><span class="rstv" id="res-total">—</span></div>
-    <div class="rsti"><span>Valor total cartera</span><span class="rstv" id="res-valor">—</span></div>
-    <div id="res-tipos"></div>
+  <!-- Contribuyente -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">👤 Información del contribuyente</span></div>
+    <div class="gcard-body">
+      <div class="g2">
+        <div class="fg"><label>Nombres *</label><input type="text" id="nombres" placeholder="Nombres"/></div>
+        <div class="fg"><label>Apellidos *</label><input type="text" id="apellidos" placeholder="Apellidos"/></div>
+      </div>
+      <div class="g3" style="margin-top:4px">
+        <div class="fg">
+          <label>Tipo documento</label>
+          <select id="tipoDoc"><option value="C.C">C.C</option><option value="C.E">C.E</option><option value="NIT">NIT</option></select>
+        </div>
+        <div class="fg"><label>Número documento *</label><input type="text" id="cedula" placeholder="Número"/></div>
+        <div class="fg"><label>Teléfono</label><input type="text" id="telefono" placeholder="Fijo"/></div>
+      </div>
+      <div class="g2" style="margin-top:4px">
+        <div class="fg"><label>Celular</label><input type="text" id="celular" placeholder="Celular"/></div>
+        <div class="fg"><label>Correo electrónico</label><input type="email" id="correo" placeholder="correo@ejemplo.com"/></div>
+      </div>
+      <div class="fg" style="margin-top:4px"><label>Dirección</label><input type="text" id="direccion" placeholder="Dirección completa"/></div>
+      <div style="margin-top:12px">
+        <label style="font-size:11px;font-weight:600;color:var(--soft);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px">Ocupación</label>
+        <div class="ocu-grid">
+          <label class="ocu-opt"><input type="radio" name="ocu" value="Empleado"> Empleado</label>
+          <label class="ocu-opt"><input type="radio" name="ocu" value="Jubilado"> Jubilado</label>
+          <label class="ocu-opt"><input type="radio" name="ocu" value="Pensionado"> Pensionado</label>
+          <label class="ocu-opt"><input type="radio" name="ocu" value="Desempleado"> Desempleado</label>
+          <label class="ocu-opt"><input type="radio" name="ocu" value="Independiente"> Independiente</label>
+          <label class="ocu-opt"><input type="radio" name="ocu" value="Ama de casa"> Ama de casa</label>
+          <label class="ocu-opt"><input type="radio" name="ocu" value="Estudiante"> Estudiante</label>
+        </div>
+      </div>
+      <div class="g2" style="margin-top:12px">
+        <div class="fg"><label>Cargo / Profesión</label><input type="text" id="cargo" placeholder="Cargo o profesión"/></div>
+        <div class="fg"><label>Ingreso mensual ($)</label><input type="number" id="ingresoMensual" placeholder="0" min="0"/></div>
+      </div>
+    </div>
   </div>
 
-  <div class="ccard">
-    <div class="cct">📐 Proyección calculada</div>
-    <div class="ci"><span class="cl">Valor factura</span><span class="cv" id="c-fac">$ 0</span></div>
-    <div class="ci"><span class="cl">Cuota inicial</span><span class="cv" id="c-ini">$ 0</span></div>
-    <div class="ci"><span class="cl">Valor a financiar</span><span class="cv" id="c-fin">$ 0</span></div>
-    <div class="ci"><span class="cl">N° cuotas</span><span class="cv" id="c-ncu">—</span></div>
-    <div class="ci"><span class="cl">Tasa mensual</span><span class="cv" id="c-tas">—</span></div>
-    <div class="ci"><span class="cl">Total intereses</span><span class="cv green" id="c-int">$ 0</span></div>
-    <div class="ci"><span class="cl">💰 Cuota mensual</span><span class="cv gold" id="c-cuo">$ 0</span></div>
+  <!-- Valores -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">💰 Valores del acuerdo</span></div>
+    <div class="gcard-body">
+      <div class="g3">
+        <div class="fg">
+          <label>Valor total factura ($) *</label>
+          <input type="number" id="valorFactura" placeholder="0" min="0" oninput="calcular()" class="hl-inp"/>
+        </div>
+        <div class="fg">
+          <label>Cuota inicial ($) *</label>
+          <input type="number" id="cuotaInicial" placeholder="0" min="0" oninput="calcular()" class="hl-inp"/>
+        </div>
+        <div class="fg">
+          <label>N° cuotas solicitadas *</label>
+          <input type="number" id="numCuotas" placeholder="Ej: 12" min="1" max="36" oninput="calcular()" class="hl-inp"/>
+        </div>
+      </div>
+      <div class="g2" style="margin-top:4px">
+        <div class="fg">
+          <label>Valor a financiar ($)</label>
+          <input type="number" id="valorFinanciar" readonly style="opacity:.6;cursor:not-allowed"/>
+        </div>
+        <div class="fg">
+          <label>Valor cuota mensual ($)</label>
+          <input type="number" id="valorCuota" readonly style="opacity:.6;cursor:not-allowed"/>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="ctab" id="tabla-proy" style="display:none">
-    <div class="ctabt">📅 Tabla de pagos</div>
+  <!-- Codeudor -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">👥 Información del codeudor</span><span style="font-size:10px;color:var(--muted)">(opcional)</span></div>
+    <div class="gcard-body">
+      <div class="g2">
+        <div class="fg"><label>Nombres codeudor</label><input type="text" id="cod_nombres" placeholder="Nombres"/></div>
+        <div class="fg"><label>Apellidos codeudor</label><input type="text" id="cod_apellidos" placeholder="Apellidos"/></div>
+      </div>
+      <div class="g3" style="margin-top:4px">
+        <div class="fg"><label>Tipo documento</label>
+          <select id="cod_tipoDoc"><option value="C.C">C.C</option><option value="C.E">C.E</option><option value="NIT">NIT</option></select>
+        </div>
+        <div class="fg"><label>Número documento</label><input type="text" id="cod_cedula" placeholder="Número"/></div>
+        <div class="fg"><label>Teléfono / Celular</label><input type="text" id="cod_telefono" placeholder="Teléfono"/></div>
+      </div>
+      <div class="fg" style="margin-top:4px"><label>Dirección codeudor</label><input type="text" id="cod_direccion" placeholder="Dirección"/></div>
+      <div class="g2" style="margin-top:4px">
+        <div class="fg"><label>Matrícula inmueble</label><input type="text" id="matricula" placeholder="Número de matrícula"/></div>
+        <div class="fg"><label>Dirección predio</label><input type="text" id="cod_dirPredio" placeholder="Dirección del predio"/></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- fin formulario -->
+
+<!-- ── CALCULADORA STICKY ── -->
+<div class="calc-sticky">
+
+  <div class="calc-card">
+    <div class="calc-title">📐 Proyección calculada</div>
+    <div class="calc-row"><span class="calc-lbl">Valor factura</span><span class="calc-val" id="c-fac">$ 0</span></div>
+    <div class="calc-row"><span class="calc-lbl">Cuota inicial</span><span class="calc-val" id="c-ini">$ 0</span></div>
+    <div class="calc-row"><span class="calc-lbl">Valor a financiar</span><span class="calc-val" id="c-fin">$ 0</span></div>
+    <div class="calc-row"><span class="calc-lbl">N° cuotas</span><span class="calc-val" id="c-ncu">—</span></div>
+    <div class="calc-row"><span class="calc-lbl">Tasa mensual</span><span class="calc-val" id="c-tas">—</span></div>
+    <div class="calc-row"><span class="calc-lbl">Total intereses</span><span class="calc-val green" id="c-int">$ 0</span></div>
+    <div class="calc-row"><span class="calc-lbl">💰 Cuota mensual</span><span class="calc-val gold" id="c-cuo">$ 0</span></div>
+  </div>
+
+  <div class="amort-wrap" id="amort-wrap" style="display:none">
+    <div class="amort-head">📅 Tabla de pagos</div>
     <table>
-      <thead><tr><th>#</th><th style="text-align:center">Cuota</th><th>Interés</th><th>Capital</th><th>Saldo</th></tr></thead>
+      <thead><tr><th>#</th><th style="text-align:right">Cuota</th><th style="text-align:right">Interés</th><th style="text-align:right">Capital</th><th style="text-align:right">Saldo</th></tr></thead>
       <tbody id="tbody-proy"></tbody>
     </table>
   </div>
 
-  <div class="accs" style="margin-top:16px">
+  <div style="margin-top:4px">
     <div class="st" id="st"></div>
-    <button class="ba" onclick="generarFormulario()" style="background:var(--navy);color:#fff">📄 Generar Formulario F-GAF-68</button>
-    <button class="ba" onclick="generarProyeccion()" style="background:#16a34a;color:#fff">📊 Generar Proyección de Pagos</button>
-    <button class="ba" id="btn-des" onclick="abrirDes()" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;display:none">✅ Cuota inicial pagada — Enviar a desembargo</button>
-    <button class="ba" onclick="confirmarLimpiar()" style="background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb">🗑️ Limpiar formulario</button>
+    <button class="btn-acc btn-navy" onclick="generarFormulario()">📄 Generar Formulario F-GAF-68</button>
+    <button class="btn-acc btn-green" onclick="generarProyeccion()">📊 Generar Proyección de Pagos</button>
+    <button class="btn-acc btn-purple" id="btn-des" onclick="abrirDes()" style="display:none">✅ Cuota inicial pagada — Enviar a desembargo</button>
+    <button class="btn-acc btn-ghost" onclick="confirmarLimpiar()">🗑️ Limpiar formulario</button>
   </div>
 </div>
 
+</div><!-- fin grid-main -->
 </div><!-- fin panel-nuevo -->
 
-<!-- PANEL PENDIENTES -->
+<!-- ═══ PANEL PENDIENTES ═══ -->
 <div id="panel-pend" style="display:none">
-  <div class="pend-wrap">
-    <div class="pend-hdr">
-      <span style="font-size:13px;font-weight:700">⏳ Acuerdos pendientes de pago de cuota inicial</span>
-      <input type="text" class="pend-search" id="search-pend" placeholder="Buscar nombre o cédula..." oninput="filtrarPend()"/>
+  <div class="gcard">
+    <div class="gcard-head">
+      <span class="gcard-title">⏳ Acuerdos pendientes de pago de cuota inicial</span>
+      <input type="text" placeholder="Buscar nombre o cédula..." id="search-pend" oninput="filtrarPend()" style="background:var(--inp);border:1px solid var(--inp-b);border-radius:8px;color:#fff;padding:6px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:220px"/>
     </div>
     <div id="lista-pend"></div>
   </div>
 </div>
 
-</main>
+</div><!-- fin wrap -->
 
-<!-- MODAL LIMPIAR -->
-<div id="mLimpiar" style="display:none;position:fixed;inset:0;background:rgba(10,20,50,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)">
-  <div style="background:#fff;border-radius:16px;width:100%;max-width:380px;overflow:hidden">
-    <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:16px 20px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:22px">🗑️</span>
-      <div style="color:#fff;font-weight:700;font-size:14px">¿Limpiar el formulario?</div>
+<!-- ═══ MODAL LIMPIAR ═══ -->
+<div class="modal-ov" id="mLimpiar">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-head">
+      <span style="font-size:20px">🗑️</span>
+      <h3>¿Limpiar el formulario?</h3>
+      <button class="modal-close" onclick="document.getElementById('mLimpiar').classList.remove('open')">✕</button>
     </div>
-    <div style="padding:18px 20px">
-      <p style="font-size:13px;color:#374151;margin-bottom:16px">Se borrarán todos los datos. ¿Está seguro?</p>
-      <div style="display:flex;gap:10px">
-        <button onclick="document.getElementById('mLimpiar').style.display='none'" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
-        <button onclick="limpiarForm()" style="flex:1;padding:10px;background:#374151;border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">Sí, limpiar</button>
-      </div>
+    <div class="modal-body"><p style="font-size:13px;color:var(--soft)">Se borrarán todos los datos ingresados. ¿Está seguro?</p></div>
+    <div class="modal-foot">
+      <button onclick="document.getElementById('mLimpiar').classList.remove('open')" style="background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.12)">Cancelar</button>
+      <button onclick="limpiarForm()" style="background:var(--red);color:#fff">Sí, limpiar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL VISTA PREVIA PDF -->
+<!-- ═══ MODAL VISTA PREVIA ═══ -->
 <div class="prev-ov" id="prev-ov">
   <div class="prev-mod">
-    <div class="prev-hdr"><h3 id="prev-title">Vista previa</h3><button class="prev-close" onclick="cerrarPrev()">✕</button></div>
+    <div class="prev-hdr"><h3 id="prev-title">Vista previa</h3><button class="prev-close2" onclick="cerrarPrev()">✕</button></div>
     <div class="prev-body"><div class="prev-doc" id="prev-doc"></div></div>
-    <div class="prev-foot"><button class="bcancel" onclick="cerrarPrev()">Cerrar</button><button class="bprint" onclick="window.print()">🖨️ Imprimir / PDF</button></div>
+    <div class="prev-foot"><button class="btn-cancel" onclick="cerrarPrev()">Cerrar</button><button class="btn-print" onclick="window.print()">🖨️ Imprimir / PDF</button></div>
   </div>
 </div>
 
-<!-- MODAL ENVIAR A DESEMBARGO -->
-<div class="des-ov" id="des-ov">
-  <div class="des-mod">
-    <div class="des-hdr"><span style="font-size:22px">✅</span><h3>Enviar a cola de desembargo</h3></div>
-    <div class="des-body">
-      <div class="des-info">
-        <b>Contribuyente:</b> <span id="des-nom">—</span><br>
-        <b>Cédula:</b> <span id="des-ced">—</span><br>
-        <b>Tipo obligación:</b> <span id="des-tip">—</span>
+<!-- ═══ MODAL ENVIAR A DESEMBARGO ═══ -->
+<div class="modal-ov" id="des-ov">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-head">
+      <span style="font-size:22px">✅</span>
+      <h3>Enviar a cola de desembargo</h3>
+      <button class="modal-close" onclick="cerrarDes()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#c4b5fd">
+        <b style="color:#e9d5ff">Contribuyente:</b> <span id="des-nom">—</span><br>
+        <b style="color:#e9d5ff">Cédula:</b> <span id="des-ced">—</span><br>
+        <b style="color:#e9d5ff">Tipo obligación:</b> <span id="des-tip">—</span>
       </div>
-      <div class="campo" style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Radicado del proceso</label>
-        <input type="text" id="des-rad" placeholder="Ej: 20242023843" style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #ddd6fe;border-radius:8px;outline:none;font-family:inherit"/>
-        <div style="font-size:11px;color:#6b7280;margin-top:3px">Opcional — puede completarlo después en el generador de oficios.</div>
+      <div class="fg" style="margin-bottom:12px">
+        <label>Radicado del proceso</label>
+        <input type="text" id="des-rad" placeholder="Ej: 20242023843"/>
+        <span class="hint">Opcional — puede completarlo después en el generador de oficios.</span>
       </div>
-      <div class="campo" style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Concepto / Radicados del desembargo</label>
-        <textarea id="des-conc" rows="3" placeholder="Describa los radicados y el motivo del desembargo..." style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #ddd6fe;border-radius:8px;outline:none;font-family:inherit;resize:vertical"></textarea>
+      <div class="fg" style="margin-bottom:12px">
+        <label>Concepto / Radicados del desembargo</label>
+        <textarea id="des-conc" rows="3" placeholder="Describa los radicados y el motivo del desembargo..."></textarea>
       </div>
-      <div class="campo" style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:600;color:#4a5a72;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Observación</label>
-        <input type="text" id="des-obs" placeholder="Acuerdo de pago — cuota inicial cancelada" style="width:100%;padding:9px 12px;font-size:13px;border:1.5px solid #c8d5e8;border-radius:8px;outline:none;font-family:inherit"/>
+      <div class="fg" style="margin-bottom:4px">
+        <label>Observación</label>
+        <input type="text" id="des-obs" placeholder="Acuerdo de pago — cuota inicial cancelada"/>
       </div>
-      <div id="des-st" style="display:none;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px"></div>
-      <div style="display:flex;gap:10px">
-        <button onclick="cerrarDes()" style="flex:1;padding:10px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:inherit">Cancelar</button>
-        <button onclick="enviarDes()" style="flex:1;padding:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:9px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit">🖨️ Enviar a cola</button>
-      </div>
+      <div id="des-st" style="display:none;padding:10px 14px;border-radius:8px;font-size:12px;margin-top:10px"></div>
+    </div>
+    <div class="modal-foot">
+      <button onclick="cerrarDes()" style="background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.12)">Cancelar</button>
+      <button onclick="enviarDes()" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff">🖨️ Enviar a cola</button>
     </div>
   </div>
 </div>
 
-<footer style="text-align:center;padding:16px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border)">
-  Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello
-</footer>
-
 <script>
-const GAS_INDEX = "https://script.google.com/macros/s/AKfycbwzZWWIj2zx4_S-qNOK2SRtUsbKm8SIdsyTtIDDLOeKqmH7dsNcngboxo5c7XQ9dfFRlA/exec";
-const GAS_ACUERDOS = "https://script.google.com/macros/s/AKfycbzEpNUeH2kZs2cxSw64rM9q8T6vWCfSZxPvCOwjXS41IGulD7Ud-TGWdnyHrEd6JJE/exec";
+const GAS_INDEX   = "https://script.google.com/macros/s/AKfycbwzZWWIj2zx4_S-qNOK2SRtUsbKm8SIdsyTtIDDLOeKqmH7dsNcngboxo5c7XQ9dfFRlA/exec";
+const GAS_ACUERDOS= "https://script.google.com/macros/s/AKfycbzEpNUeH2kZs2cxSw64rM9q8T6vWCfSZxPvCOwjXS41IGulD7Ud-TGWdnyHrEd6JJE/exec";
 const PKEY = 'acuerdos_pendientes_v3';
 var proyeccion = [];
 var pendienteActivo = null;
+var tipoSeleccionado = 'IP — Impuesto Predial';
+
+// ── TIPO SELECTOR ──
+function selTipo(btn){
+  document.querySelectorAll('.tipo-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  tipoSeleccionado = btn.dataset.tipo;
+  // Ocultar todos los condicionales
+  ['cond-ica','cond-ou','cond-policia','cond-otro'].forEach(function(id){
+    document.getElementById(id).classList.remove('show');
+  });
+  // Mostrar el correspondiente
+  if(tipoSeleccionado.startsWith('ICA'))    document.getElementById('cond-ica').classList.add('show');
+  if(tipoSeleccionado.startsWith('OU'))     document.getElementById('cond-ou').classList.add('show');
+  if(tipoSeleccionado.startsWith('PM'))     document.getElementById('cond-policia').classList.add('show');
+  if(tipoSeleccionado.startsWith('OTR'))    document.getElementById('cond-otro').classList.add('show');
+}
 
 // ── TABS ──
-function goTab(t) {
-  var pN = document.getElementById('panel-nuevo');
-  var pP = document.getElementById('panel-pend');
-  var tN = document.getElementById('tab-nuevo');
-  var tP = document.getElementById('tab-pend');
-  document.body.style.overflow = '';
-  if (t === 'pendientes') {
-    pN.style.display = 'none';
-    pP.style.display = 'block';
-    tN.style.borderBottomColor = 'transparent';
-    tN.style.color = 'rgba(255,255,255,.6)';
-    tP.style.borderBottomColor = '#f5c050';
-    tP.style.color = '#fff';
+function goTab(t){
+  var pN=document.getElementById('panel-nuevo');
+  var pP=document.getElementById('panel-pend');
+  var tN=document.getElementById('tab-nuevo');
+  var tP=document.getElementById('tab-pend');
+  if(t==='pendientes'){
+    pN.style.display='none'; pP.style.display='block';
+    tN.classList.remove('active'); tP.classList.add('active');
     renderPend();
   } else {
-    pN.style.display = 'grid';
-    pP.style.display = 'none';
-    tN.style.borderBottomColor = '#f5c050';
-    tN.style.color = '#fff';
-    tP.style.borderBottomColor = 'transparent';
-    tP.style.color = 'rgba(255,255,255,.6)';
+    pN.style.display='block'; pP.style.display='none';
+    tP.classList.remove('active'); tN.classList.add('active');
   }
 }
 
 // ── PENDIENTES ──
-function getPend() { try { return JSON.parse(localStorage.getItem(PKEY) || '[]'); } catch(e) { return []; } }
-function setPend(lista) { localStorage.setItem(PKEY, JSON.stringify(lista)); updateBadge(); }
-function updateBadge() { var b = document.getElementById('badge'); if(b) b.textContent = getPend().length; }
+function getPend(){ try{return JSON.parse(localStorage.getItem(PKEY)||'[]');}catch(e){return[];} }
+function setPend(lista){ localStorage.setItem(PKEY,JSON.stringify(lista)); updateBadge(); }
+function updateBadge(){ var b=document.getElementById('badge'); if(b) b.textContent=getPend().length||'0'; }
 
-function savePend(d) {
-  var lista = getPend();
+function getTipoClass(tipo){
+  if(!tipo) return 'otro';
+  if(tipo.startsWith('IP')) return 'predial';
+  if(tipo.startsWith('ICA')) return 'ica';
+  if(tipo.startsWith('OU')) return 'urbanisticas';
+  if(tipo.startsWith('PM')) return 'policia';
+  return 'otro';
+}
+
+function savePend(d){
+  var lista=getPend();
   lista.unshift({
-    id: 'P' + Date.now(),
-    fecha: new Date().toLocaleDateString('es-CO', {day:'2-digit',month:'2-digit',year:'numeric'}),
-    hora: new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}),
-    nombres: d.nombres, apellidos: d.apellidos, cedula: d.cedula,
-    tipoObligacion: d.tipoObligacion, valorFactura: d.valorFactura,
-    cuotaInicial: d.cuotaInicial, numCuotas: d.numCuotas,
-    funcionario: d.funcionario, tasaMensual: d.tasaMensual
+    id:'P'+Date.now(),
+    fecha:new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    hora:new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}),
+    nombres:d.nombres, apellidos:d.apellidos, cedula:d.cedula,
+    tipoObligacion:d.tipoObligacion, valorFactura:d.valorFactura,
+    cuotaInicial:d.cuotaInicial, numCuotas:d.numCuotas,
+    funcionario:d.funcionario, tasaMensual:d.tasaMensual
   });
   setPend(lista);
 }
 
-function renderPend(filtro) {
-  var lista = getPend();
-  if (filtro) {
-    var f = filtro.toLowerCase();
-    lista = lista.filter(function(p) {
-      return ((p.nombres||'')+' '+(p.apellidos||'')).toLowerCase().indexOf(f) >= 0 || (p.cedula||'').indexOf(f) >= 0;
+function renderPend(filtro){
+  var lista=getPend();
+  if(filtro){
+    var f=filtro.toLowerCase();
+    lista=lista.filter(function(p){
+      return ((p.nombres||'')+' '+(p.apellidos||'')).toLowerCase().indexOf(f)>=0||(p.cedula||'').indexOf(f)>=0;
     });
   }
-  var el = document.getElementById('lista-pend');
-  if (!el) return;
-  if (!lista.length) {
-    el.innerHTML = '<div class="pempty"><div style="font-size:36px;margin-bottom:8px">📋</div><p style="font-size:14px">No hay acuerdos pendientes de pago</p></div>';
+  var el=document.getElementById('lista-pend');
+  if(!el) return;
+  if(!lista.length){
+    el.innerHTML='<div class="pempty"><div class="pempty-icon">📋</div><p style="font-size:14px;color:var(--soft)">No hay acuerdos pendientes de pago</p><p style="font-size:12px;color:var(--muted);margin-top:4px">Los acuerdos aparecerán aquí al generar el formulario F-GAF-68</p></div>';
     return;
   }
-  var html = '';
-  for (var i = 0; i < lista.length; i++) {
-    var p = lista[i];
-    html += '<div class="pitem">' +
-      '<div style="display:flex;justify-content:space-between;margin-bottom:4px">' +
-        '<span class="pnombre">' + eh(p.nombres) + ' ' + eh(p.apellidos) + '</span>' +
-        '<span style="font-size:11px;color:var(--text-soft)">' + eh(p.fecha) + ' ' + eh(p.hora) + '</span>' +
-      '</div>' +
-      '<div class="pdatos">' +
-        '<span><b>CC/NIT:</b> ' + eh(p.cedula) + '</span>' +
-        '<span><b>Tipo:</b> ' + eh(p.tipoObligacion) + '</span>' +
-        '<span><b>Factura:</b> ' + fmtN(p.valorFactura) + '</span>' +
-        '<span><b>Cuota inicial:</b> ' + fmtN(p.cuotaInicial) + '</span>' +
-        '<span><b>Funcionario:</b> ' + eh(p.funcionario) + '</span>' +
-      '</div>' +
-      '<div class="pbtns">' +
-        '<button class="pbpago" onclick="abrirDesDe(\'' + p.id + '\')">✅ Pagó — Enviar a desembargo</button>' +
-        '<button class="pbdel" onclick="delPend(\'' + p.id + '\')">🗑️ Eliminar</button>' +
-      '</div>' +
+  var html='';
+  for(var i=0;i<lista.length;i++){
+    var p=lista[i];
+    var tc=getTipoClass(p.tipoObligacion);
+    html+='<div class="pitem">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'+
+        '<span class="pnombre">'+eh(p.nombres)+' '+eh(p.apellidos)+'</span>'+
+        '<span style="font-size:11px;color:var(--muted)">'+eh(p.fecha)+' '+eh(p.hora)+'</span>'+
+      '</div>'+
+      '<span class="ptipo '+tc+'">'+eh(p.tipoObligacion)+'</span>'+
+      '<div class="pdatos">'+
+        '<span><b style="color:rgba(255,255,255,.7)">CC/NIT:</b> '+eh(p.cedula)+'</span>'+
+        '<span><b style="color:rgba(255,255,255,.7)">Factura:</b> '+fmtN(p.valorFactura)+'</span>'+
+        '<span><b style="color:rgba(255,255,255,.7)">Cuota inicial:</b> '+fmtN(p.cuotaInicial)+'</span>'+
+        '<span><b style="color:rgba(255,255,255,.7)">Cuotas:</b> '+eh(p.numCuotas)+'</span>'+
+        '<span><b style="color:rgba(255,255,255,.7)">Funcionario:</b> '+eh(p.funcionario)+'</span>'+
+      '</div>'+
+      '<div class="pbtns">'+
+        '<button class="pbtn pbtn-pago" onclick="abrirDesDe(\''+p.id+'\')">✅ Pagó — Enviar a desembargo</button>'+
+        '<button class="pbtn pbtn-del" onclick="delPend(\''+p.id+'\')">🗑️ Eliminar</button>'+
+      '</div>'+
     '</div>';
   }
-  el.innerHTML = html;
+  el.innerHTML=html;
 }
 
-function filtrarPend() { renderPend(document.getElementById('search-pend').value); }
-
-function delPend(id) {
-  if (!confirm('¿Eliminar este acuerdo de la lista?')) return;
-  setPend(getPend().filter(function(p) { return p.id !== id; }));
+function filtrarPend(){ renderPend(document.getElementById('search-pend').value); }
+function delPend(id){
+  if(!confirm('¿Eliminar este acuerdo de la lista?')) return;
+  setPend(getPend().filter(function(p){return p.id!==id;}));
   renderPend();
 }
-
-function abrirDesDe(id) {
-  var p = getPend().filter(function(x) { return x.id === id; })[0];
-  if (!p) return;
-  pendienteActivo = p;
-  document.getElementById('des-nom').textContent = (p.nombres||'') + ' ' + (p.apellidos||'');
-  document.getElementById('des-ced').textContent = p.cedula || '';
-  document.getElementById('des-tip').textContent = p.tipoObligacion || '';
-  document.getElementById('des-rad').value = '';
-  document.getElementById('des-conc').value = '';
-  document.getElementById('des-obs').value = 'Acuerdo de pago — cuota inicial cancelada';
-  document.getElementById('des-st').style.display = 'none';
+function abrirDesDe(id){
+  var p=getPend().filter(function(x){return x.id===id;})[0];
+  if(!p) return;
+  pendienteActivo=p;
+  document.getElementById('des-nom').textContent=(p.nombres||'')+' '+(p.apellidos||'');
+  document.getElementById('des-ced').textContent=p.cedula||'';
+  document.getElementById('des-tip').textContent=p.tipoObligacion||'';
+  document.getElementById('des-rad').value='';
+  document.getElementById('des-conc').value='';
+  document.getElementById('des-obs').value='Acuerdo de pago — cuota inicial cancelada';
+  document.getElementById('des-st').style.display='none';
   document.getElementById('des-ov').classList.add('open');
-  document.body.style.overflow = 'hidden';
 }
 
 // ── CALCULADORA ──
-function calcular() {
-  var vF = parseFloat(document.getElementById('valorFactura').value) || 0;
-  var vI = parseFloat(document.getElementById('cuotaInicial').value) || 0;
-  var nC = parseInt(document.getElementById('numCuotas').value) || 0;
-  var tP = parseFloat(document.getElementById('tasaMensual').value) || 0;
-  var ta = tP / 100;
-  var vFin = Math.max(0, vF - vI);
-  document.getElementById('valorFinanciar').value = Math.round(vFin);
-  proyeccion = [];
-  document.getElementById('c-fac').textContent = fmt(vF);
-  document.getElementById('c-ini').textContent = fmt(vI);
-  document.getElementById('c-fin').textContent = fmt(vFin);
-  document.getElementById('c-ncu').textContent = nC || '—';
-  document.getElementById('c-tas').textContent = tP ? tP + '%' : '—';
-  if (vFin > 0 && nC > 0 && ta > 0) {
-    var cuo = vFin * (ta * Math.pow(1+ta, nC)) / (Math.pow(1+ta, nC) - 1);
-    document.getElementById('valorCuota').value = Math.round(cuo);
-    var saldo = vFin, totalInt = 0;
-    for (var i = 1; i <= nC; i++) {
-      var interes = saldo * ta;
-      var capital = cuo - interes;
-      saldo -= capital;
-      totalInt += interes;
-      proyeccion.push({ cuota: i, valorCuota: cuo, interes: interes, capital: capital, saldo: Math.max(0, saldo) });
+function calcular(){
+  var vF=parseFloat(document.getElementById('valorFactura').value)||0;
+  var vI=parseFloat(document.getElementById('cuotaInicial').value)||0;
+  var nC=parseInt(document.getElementById('numCuotas').value)||0;
+  var tP=parseFloat(document.getElementById('tasaMensual').value)||0;
+  var ta=tP/100;
+  var vFin=Math.max(0,vF-vI);
+  document.getElementById('valorFinanciar').value=Math.round(vFin);
+  proyeccion=[];
+  document.getElementById('c-fac').textContent=fmt(vF);
+  document.getElementById('c-ini').textContent=fmt(vI);
+  document.getElementById('c-fin').textContent=fmt(vFin);
+  document.getElementById('c-ncu').textContent=nC||'—';
+  document.getElementById('c-tas').textContent=tP?tP+'%':'—';
+  if(vFin>0&&nC>0&&ta>0){
+    var cuo=vFin*(ta*Math.pow(1+ta,nC))/(Math.pow(1+ta,nC)-1);
+    document.getElementById('valorCuota').value=Math.round(cuo);
+    var saldo=vFin, totalInt=0;
+    for(var i=1;i<=nC;i++){
+      var interes=saldo*ta;
+      var capital=cuo-interes;
+      saldo-=capital; totalInt+=interes;
+      proyeccion.push({cuota:i,valorCuota:cuo,interes:interes,capital:capital,saldo:Math.max(0,saldo)});
     }
-    document.getElementById('c-int').textContent = fmt(totalInt);
-    document.getElementById('c-cuo').textContent = fmt(cuo);
-    var tbody = document.getElementById('tbody-proy');
-    tbody.innerHTML = proyeccion.map(function(p) {
-      return '<tr><td>' + p.cuota + '</td><td style="text-align:right">' + fc(p.valorCuota) + '</td><td>' + fc(p.interes) + '</td><td>' + fc(p.capital) + '</td><td>' + fc(p.saldo) + '</td></tr>';
+    document.getElementById('c-int').textContent=fmt(totalInt);
+    document.getElementById('c-cuo').textContent=fmt(cuo);
+    var tbody=document.getElementById('tbody-proy');
+    tbody.innerHTML=proyeccion.map(function(p){
+      return '<tr><td>'+p.cuota+'</td><td>'+fc(p.valorCuota)+'</td><td>'+fc(p.interes)+'</td><td>'+fc(p.capital)+'</td><td>'+fc(p.saldo)+'</td></tr>';
     }).join('');
-    document.getElementById('tabla-proy').style.display = 'block';
+    document.getElementById('amort-wrap').style.display='block';
   } else {
-    document.getElementById('valorCuota').value = '';
-    document.getElementById('c-int').textContent = '$ 0';
-    document.getElementById('c-cuo').textContent = '$ 0';
-    document.getElementById('tabla-proy').style.display = 'none';
+    document.getElementById('valorCuota').value='';
+    document.getElementById('c-int').textContent='$ 0';
+    document.getElementById('c-cuo').textContent='$ 0';
+    document.getElementById('amort-wrap').style.display='none';
   }
 }
 
-function fmt(n)  { return '$ ' + Math.round(n||0).toLocaleString('es-CO'); }
-function fmtN(n) { return '$ ' + Math.round(n||0).toLocaleString('es-CO'); }
-function fc(n)   { return Math.round(n||0).toLocaleString('es-CO'); }
-function eh(v)   { if(!v&&v!==0)return''; return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmt(n){ return '$ '+Math.round(n||0).toLocaleString('es-CO'); }
+function fmtN(n){ return '$ '+Math.round(n||0).toLocaleString('es-CO'); }
+function fc(n){ return Math.round(n||0).toLocaleString('es-CO'); }
+function eh(v){ if(!v&&v!==0)return''; return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── GET TIPO DESCRIPCIÓN COMPLETA ──
+function getTipoDesc(){
+  var base=tipoSeleccionado;
+  if(tipoSeleccionado.startsWith('ICA')){
+    var vigencias=[...document.querySelectorAll('#ica-vigencias input:checked')].map(function(c){return 'ICA '+c.value;});
+    var res=document.getElementById('ica-resolucion').value.trim();
+    if(vigencias.length) base='ICA — '+vigencias.join(', ');
+    if(res) base+=' ('+res+')';
+  } else if(tipoSeleccionado.startsWith('OU')){
+    var lote=document.getElementById('ou-lote').value.trim();
+    var resou=document.getElementById('ou-resolucion').value.trim();
+    if(lote) base+=' — Lote '+lote;
+    if(resou) base+=' '+resou;
+  } else if(tipoSeleccionado.startsWith('PM')){
+    var comp=document.getElementById('pm-orden').value.trim();
+    var inf=document.getElementById('pm-infraccion').value.trim();
+    if(comp) base+=' — Comparendo N°'+comp;
+    if(inf) base+=' ('+inf+')';
+  } else if(tipoSeleccionado.startsWith('OTR')){
+    var desc=document.getElementById('otro-desc').value.trim();
+    if(desc) base=desc;
+  }
+  return base;
+}
 
 // ── VALIDAR ──
-function validar() {
-  var req = [['tipoObligacion','Tipo de obligación'],['tasaMensual','Tasa mensual'],['funcionario','Funcionario'],['nombres','Nombres'],['apellidos','Apellidos'],['cedula','Cédula'],['valorFactura','Valor factura'],['cuotaInicial','Cuota inicial'],['numCuotas','Número de cuotas']];
-  for (var i = 0; i < req.length; i++) {
-    var el = document.getElementById(req[i][0]);
-    if (!el || !el.value.trim()) { setSt('err', '⚠️ El campo "' + req[i][1] + '" es obligatorio.'); if(el) el.focus(); return false; }
+function validar(){
+  var req=[['tasaMensual','Tasa mensual'],['funcionario','Funcionario'],['nombres','Nombres'],['apellidos','Apellidos'],['cedula','Cédula'],['valorFactura','Valor factura'],['cuotaInicial','Cuota inicial'],['numCuotas','Número de cuotas']];
+  for(var i=0;i<req.length;i++){
+    var el=document.getElementById(req[i][0]);
+    if(!el||!el.value.trim()){setSt('err','⚠️ El campo "'+req[i][1]+'" es obligatorio.');if(el)el.focus();return false;}
   }
-  if (!proyeccion.length) { setSt('err', '⚠️ Verifique los valores — la proyección no está calculada.'); return false; }
+  if(!proyeccion.length){setSt('err','⚠️ Verifique los valores — la proyección no está calculada.');return false;}
+  // Validar ICA
+  if(tipoSeleccionado.startsWith('ICA')){
+    var vigChecks=[...document.querySelectorAll('#ica-vigencias input:checked')];
+    if(!vigChecks.length){setSt('err','⚠️ Seleccione al menos una vigencia de ICA.');return false;}
+  }
   return true;
 }
 
-function setSt(tipo, msg) {
-  var el = document.getElementById('st');
-  el.className = 'st ' + tipo;
-  el.innerHTML = tipo==='load' ? '<div class="spin"></div><span>' + msg + '</span>' : msg;
+function setSt(tipo,msg){
+  var el=document.getElementById('st');
+  el.className='st show-'+tipo;
+  el.innerHTML=tipo==='load'?'<div class="spin"></div><span>'+msg+'</span>':msg;
 }
 
 // ── GETDATOS ──
-function getDatos() {
-  var ocu = document.querySelector('input[name="ocu"]:checked');
+function getDatos(){
+  var ocu=document.querySelector('input[name="ocu"]:checked');
   return {
-    tipoObligacion: document.getElementById('tipoObligacion').value,
+    tipoObligacion: getTipoDesc(),
     tasaMensual: document.getElementById('tasaMensual').value,
     mesInicio: document.getElementById('mesInicio').value,
     funcionario: document.getElementById('funcionario').value,
@@ -571,13 +787,13 @@ function getDatos() {
     celular: document.getElementById('celular').value,
     correo: document.getElementById('correo').value,
     direccion: document.getElementById('direccion').value,
-    ocupacion: ocu ? ocu.value : '',
+    ocupacion: ocu?ocu.value:'',
     cargo: document.getElementById('cargo').value,
     ingresoMensual: document.getElementById('ingresoMensual').value,
-    valorFactura: parseFloat(document.getElementById('valorFactura').value) || 0,
-    cuotaInicial: parseFloat(document.getElementById('cuotaInicial').value) || 0,
-    valorFinanciar: parseFloat(document.getElementById('valorFinanciar').value) || 0,
-    numCuotas: parseInt(document.getElementById('numCuotas').value) || 0,
+    valorFactura: parseFloat(document.getElementById('valorFactura').value)||0,
+    cuotaInicial: parseFloat(document.getElementById('cuotaInicial').value)||0,
+    valorFinanciar: parseFloat(document.getElementById('valorFinanciar').value)||0,
+    numCuotas: parseInt(document.getElementById('numCuotas').value)||0,
     cod_nombres: document.getElementById('cod_nombres').value,
     cod_apellidos: document.getElementById('cod_apellidos').value,
     cod_tipoDoc: document.getElementById('cod_tipoDoc').value,
@@ -590,179 +806,165 @@ function getDatos() {
 }
 
 // ── REGISTRAR EN SHEET ──
-async function registrarSheet(d) {
-  try {
-    var p = new URLSearchParams({ accion:'registrar', funcionario:d.funcionario, tipoObligacion:d.tipoObligacion, nombres:d.nombres, apellidos:d.apellidos, cedula:d.cedula, telefono:d.telefono, celular:d.celular, correo:d.correo, direccion:d.direccion, valorFactura:d.valorFactura, cuotaInicial:d.cuotaInicial, valorFinanciar:d.valorFinanciar, numCuotas:d.numCuotas, valorCuota:proyeccion[0]?Math.round(proyeccion[0].valorCuota):0, totalIntereses:Math.round(proyeccion.reduce(function(s,x){return s+x.interes;},0)), tasaMensual:d.tasaMensual, mesInicio:d.mesInicio, ocupacion:d.ocupacion, ingresoMensual:d.ingresoMensual });
-    await fetch(GAS_ACUERDOS + '?' + p);
-  } catch(e) { console.warn('Sheet error:', e.message); }
+async function registrarSheet(d){
+  try{
+    var p=new URLSearchParams({accion:'registrar',funcionario:d.funcionario,tipoObligacion:d.tipoObligacion,nombres:d.nombres,apellidos:d.apellidos,cedula:d.cedula,telefono:d.telefono,celular:d.celular,correo:d.correo,direccion:d.direccion,valorFactura:d.valorFactura,cuotaInicial:d.cuotaInicial,valorFinanciar:d.valorFinanciar,numCuotas:d.numCuotas,valorCuota:proyeccion[0]?Math.round(proyeccion[0].valorCuota):0,totalIntereses:Math.round(proyeccion.reduce(function(s,x){return s+x.interes;},0)),tasaMensual:d.tasaMensual,mesInicio:d.mesInicio,ocupacion:d.ocupacion,ingresoMensual:d.ingresoMensual});
+    await fetch(GAS_ACUERDOS+'?'+p);
+  }catch(e){console.warn('Sheet error:',e.message);}
 }
 
 // ── GENERAR FORMULARIO ──
-async function generarFormulario() {
-  if (!validar()) return;
-  setSt('load', 'Generando formulario F-GAF-68...');
-  try {
-    var d = getDatos();
+async function generarFormulario(){
+  if(!validar()) return;
+  setSt('load','Generando formulario F-GAF-68...');
+  try{
+    var d=getDatos();
     await registrarSheet(d);
-    savePend(d);
-    updateBadge();
+    savePend(d); updateBadge();
     mostrarFormPrev(d);
-    setSt('ok', '✅ Formulario generado. Quedó en la lista de pendientes de pago.');
-    document.getElementById('btn-des').style.display = 'flex';
-    pendienteActivo = null;
-    cargarResumen();
-  } catch(e) { setSt('err', '❌ Error: ' + e.message); }
+    setSt('ok','✅ Formulario generado. Quedó en la lista de pendientes de pago.');
+    document.getElementById('btn-des').style.display='flex';
+    pendienteActivo=null;
+  }catch(e){setSt('err','❌ Error: '+e.message);}
 }
 
-function mostrarFormPrev(d) {
-  var fecha = new Date().toLocaleDateString('es-CO');
-  document.getElementById('prev-title').textContent = '📄 F-GAF-68 — ' + d.apellidos + ', ' + d.nombres;
-  document.getElementById('prev-doc').innerHTML =
-    '<table class="dh-table"><tr><td style="width:15%;text-align:center;font-weight:bold;font-size:11pt">1070.02</td><td class="dh-blue">SOLICITUD ACUERDOS Y/O CONVENIOS DE PAGO</td><td style="width:18%;text-align:center"><b>FECHA:</b><br>' + fecha + '</td></tr></table>' +
-    '<div class="dsec">INFORMACIÓN DEL CONTRIBUYENTE</div>' +
-    '<div class="dfila"><b>Nombres:</b> ' + eh(d.nombres) + ' &nbsp;&nbsp; <b>Apellidos:</b> ' + eh(d.apellidos) + '</div>' +
-    '<div class="dfila"><b>Tipo documento:</b> ' + eh(d.tipoDoc) + ' &nbsp;&nbsp; <b>Número:</b> ' + eh(d.cedula) + '</div>' +
-    '<div class="dfila"><b>Origen obligación:</b> ' + eh(d.tipoObligacion) + '</div>' +
-    '<div class="dfila"><b>Dirección:</b> ' + eh(d.direccion||'___________________________') + '</div>' +
-    '<div class="dfila"><b>Teléfono:</b> ' + eh(d.telefono||'_______________') + ' &nbsp;&nbsp; <b>Celular:</b> ' + eh(d.celular||'_______________') + '</div>' +
-    '<div class="dfila"><b>Correo:</b> ' + eh(d.correo||'___________________________') + '</div>' +
-    '<div class="dfila"><b>Valor factura:</b> ' + fmt(d.valorFactura) + '</div>' +
-    '<div class="dfila"><b>Cuota inicial:</b> ' + fmt(d.cuotaInicial) + ' &nbsp;&nbsp; <b>Valor a financiar:</b> ' + fmt(d.valorFinanciar) + ' &nbsp;&nbsp; <b>N° cuotas:</b> ' + d.numCuotas + '</div>' +
-    '<div class="dfila"><b>Ocupación:</b> ' + eh(d.ocupacion||'_______________') + ' &nbsp;&nbsp; <b>Ingreso mensual:</b> ' + (d.ingresoMensual ? fmt(d.ingresoMensual) : '_______________') + '</div>' +
-    '<div class="dsec">INFORMACIÓN DEL CODEUDOR</div>' +
-    '<div class="dfila"><b>Nombres:</b> ' + eh(d.cod_nombres||'___________________________') + ' &nbsp;&nbsp; <b>Apellidos:</b> ' + eh(d.cod_apellidos||'___________________________') + '</div>' +
-    '<div class="dfila"><b>Tipo documento:</b> ' + eh(d.cod_tipoDoc) + ' &nbsp;&nbsp; <b>Número:</b> ' + eh(d.cod_cedula||'_______________') + '</div>' +
-    '<div class="dfila"><b>Dirección:</b> ' + eh(d.cod_direccion||'___________________________') + ' &nbsp;&nbsp; <b>Teléfono:</b> ' + eh(d.cod_telefono||'_______________') + '</div>' +
-    '<div class="dfila"><b>Matrícula:</b> ' + eh(d.matricula||'_______________') + ' &nbsp;&nbsp; <b>Dir. predio:</b> ' + eh(d.cod_dirPredio||'_______________') + '</div>' +
-    '<div class="dsec">AUTORIZACIÓN</div>' +
-    '<p class="dnota">- REPORTE A CONTADURÍA GRAL DE LA NACIÓN: tanto el titular de la obligación, como el deudor solidario, a través del presente convenio autorizan a la administración Municipal para la consulta, reporte y suministro de información a la contaduría general de la nación, división de deudores morosos del estado; según la ley 1266 de 2008 en el artículo 3º y la sentencia c-1011 de 2008.</p>' +
-    '<p class="dnota">- Así mismo autorizo recibir la notificación por correo electrónico en caso de inicio del cobro coactivo.</p>' +
-    '<p class="dnota">- Autorizo que si pasados cinco (5) días hábiles NO SE HA LEGALIZADO el convenio solicitado por parte del contribuyente será anulado, y el saldo existente se cargará en el próximo periodo de facturación.</p>' +
-    '<table class="dfirmas"><tr><td>' + eh(d.nombres) + ' ' + eh(d.apellidos) + '<br><span style="font-size:8pt;font-weight:normal">' + eh(d.tipoDoc) + ': ' + eh(d.cedula) + '</span></td><td>FIRMA</td><td>AUTORIZO</td></tr></table>' +
+function mostrarFormPrev(d){
+  var fecha=new Date().toLocaleDateString('es-CO');
+  document.getElementById('prev-title').textContent='📄 F-GAF-68 — '+d.apellidos+', '+d.nombres;
+  document.getElementById('prev-doc').innerHTML=
+    '<table class="dh-table"><tr><td style="width:15%;text-align:center;font-weight:bold;font-size:11pt">1070.02</td><td class="dh-blue">SOLICITUD ACUERDOS Y/O CONVENIOS DE PAGO</td><td style="width:18%;text-align:center"><b>FECHA:</b><br>'+fecha+'</td></tr></table>'+
+    '<div class="dsec">INFORMACIÓN DEL CONTRIBUYENTE</div>'+
+    '<div class="dfila"><b>Nombres:</b> '+eh(d.nombres)+' &nbsp;&nbsp; <b>Apellidos:</b> '+eh(d.apellidos)+'</div>'+
+    '<div class="dfila"><b>Tipo documento:</b> '+eh(d.tipoDoc)+' &nbsp;&nbsp; <b>Número:</b> '+eh(d.cedula)+'</div>'+
+    '<div class="dfila"><b>Origen obligación:</b> '+eh(d.tipoObligacion)+'</div>'+
+    '<div class="dfila"><b>Dirección:</b> '+eh(d.direccion||'___________________________')+'</div>'+
+    '<div class="dfila"><b>Teléfono:</b> '+eh(d.telefono||'_______________')+' &nbsp;&nbsp; <b>Celular:</b> '+eh(d.celular||'_______________')+'</div>'+
+    '<div class="dfila"><b>Correo:</b> '+eh(d.correo||'___________________________')+'</div>'+
+    '<div class="dfila"><b>Valor factura:</b> '+fmt(d.valorFactura)+'</div>'+
+    '<div class="dfila"><b>Cuota inicial:</b> '+fmt(d.cuotaInicial)+' &nbsp;&nbsp; <b>Valor a financiar:</b> '+fmt(d.valorFinanciar)+' &nbsp;&nbsp; <b>N° cuotas:</b> '+d.numCuotas+'</div>'+
+    '<div class="dfila"><b>Ocupación:</b> '+eh(d.ocupacion||'_______________')+' &nbsp;&nbsp; <b>Ingreso mensual:</b> '+(d.ingresoMensual?fmt(d.ingresoMensual):'_______________')+'</div>'+
+    '<div class="dsec">INFORMACIÓN DEL CODEUDOR</div>'+
+    '<div class="dfila"><b>Nombres:</b> '+eh(d.cod_nombres||'___________________________')+' &nbsp;&nbsp; <b>Apellidos:</b> '+eh(d.cod_apellidos||'___________________________')+'</div>'+
+    '<div class="dfila"><b>Tipo documento:</b> '+eh(d.cod_tipoDoc)+' &nbsp;&nbsp; <b>Número:</b> '+eh(d.cod_cedula||'_______________')+'</div>'+
+    '<div class="dfila"><b>Dirección:</b> '+eh(d.cod_direccion||'___________________________')+' &nbsp;&nbsp; <b>Teléfono:</b> '+eh(d.cod_telefono||'_______________')+'</div>'+
+    '<div class="dfila"><b>Matrícula:</b> '+eh(d.matricula||'_______________')+' &nbsp;&nbsp; <b>Dir. predio:</b> '+eh(d.cod_dirPredio||'_______________')+'</div>'+
+    '<div class="dsec">AUTORIZACIÓN</div>'+
+    '<p class="dnota">- REPORTE A CONTADURÍA GRAL DE LA NACIÓN: tanto el titular de la obligación, como el deudor solidario, a través del presente convenio autorizan a la administración Municipal para la consulta, reporte y suministro de información a la contaduría general de la nación, división de deudores morosos del estado; según la ley 1266 de 2008 en el artículo 3º y la sentencia c-1011 de 2008.</p>'+
+    '<p class="dnota">- Así mismo autorizo recibir la notificación por correo electrónico en caso de inicio del cobro coactivo.</p>'+
+    '<p class="dnota">- Autorizo que si pasados cinco (5) días hábiles NO SE HA LEGALIZADO el convenio solicitado por parte del contribuyente será anulado, y el saldo existente se cargará en el próximo periodo de facturación.</p>'+
+    '<table class="dfirmas"><tr><td>'+eh(d.nombres)+' '+eh(d.apellidos)+'<br><span style="font-size:8pt;font-weight:normal">'+eh(d.tipoDoc)+': '+eh(d.cedula)+'</span></td><td>FIRMA</td><td>AUTORIZO</td></tr></table>'+
     '<table class="dpie"><tr><td>Código: F-GAF-68</td><td class="dpie-blue">Versión: 03 | Fecha: 2026/01/01</td><td style="text-align:center">Página 1 de 1</td></tr></table>';
   abrirPrev();
 }
 
-// ── GENERAR PROYECCIÓN ──
-async function generarProyeccion() {
-  if (!validar()) return;
-  setSt('load', 'Generando proyección de pagos...');
-  try {
-    var d = getDatos();
-    var mi = document.getElementById('mesInicio').value;
-    var fb = mi ? new Date(mi + '-01') : new Date();
-    var totalInt = proyeccion.reduce(function(s,p){return s+p.interes;},0);
-    var cuo = proyeccion[0] ? proyeccion[0].valorCuota : 0;
-    var filas = proyeccion.map(function(p, i) {
-      var fc2 = new Date(fb); fc2.setMonth(fc2.getMonth()+i);
-      var mes = fc2.toLocaleDateString('es-CO',{month:'long',year:'numeric'});
-      return '<tr><td style="text-align:center">' + p.cuota + '</td><td>' + mes + '</td><td style="text-align:right">' + fc(p.valorCuota) + '</td><td style="text-align:right">' + fc(p.interes) + '</td><td style="text-align:right">' + fc(p.capital) + '</td><td style="text-align:right">' + fc(p.saldo) + '</td></tr>';
+// ── PROYECCIÓN ──
+async function generarProyeccion(){
+  if(!validar()) return;
+  setSt('load','Generando proyección de pagos...');
+  try{
+    var d=getDatos();
+    var mi=document.getElementById('mesInicio').value;
+    var fb=mi?new Date(mi+'-01'):new Date();
+    var totalInt=proyeccion.reduce(function(s,p){return s+p.interes;},0);
+    var cuo=proyeccion[0]?proyeccion[0].valorCuota:0;
+    var filas=proyeccion.map(function(p,i){
+      var fc2=new Date(fb); fc2.setMonth(fc2.getMonth()+i);
+      var mes=fc2.toLocaleDateString('es-CO',{month:'long',year:'numeric'});
+      return '<tr><td style="text-align:center">'+p.cuota+'</td><td>'+mes+'</td><td style="text-align:right">'+fc(p.valorCuota)+'</td><td style="text-align:right">'+fc(p.interes)+'</td><td style="text-align:right">'+fc(p.capital)+'</td><td style="text-align:right">'+fc(p.saldo)+'</td></tr>';
     }).join('');
-    document.getElementById('prev-title').textContent = '📊 Proyección — ' + d.apellidos + ', ' + d.nombres;
-    document.getElementById('prev-doc').innerHTML =
-      '<div style="background:#0f2d5e;color:white;text-align:center;padding:10px;font-weight:bold;font-size:12pt">SECRETARÍA DE RECAUDOS Y PAGOS</div>' +
-      '<div style="text-align:center;font-size:10pt;color:#0f2d5e;margin:6pt 0;font-weight:bold">DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES<br>PROYECCIÓN DE PAGOS — CONVENIO DE PAGO</div>' +
-      '<table class="ddatos"><tr><td class="lbl">DEUDOR</td><td colspan="3">' + eh(d.nombres) + ' ' + eh(d.apellidos) + '</td></tr><tr><td class="lbl">CÉDULA</td><td>' + eh(d.cedula) + '</td><td class="lbl">TELÉFONO</td><td>' + eh(d.celular||d.telefono||'—') + '</td></tr><tr><td class="lbl">CONCEPTO</td><td>' + eh(d.tipoObligacion) + '</td><td class="lbl">TASA MENSUAL</td><td>' + eh(d.tasaMensual) + '%</td></tr><tr><td class="lbl">VALOR FACTURA</td><td>' + fmt(d.valorFactura) + '</td><td class="lbl">CUOTA INICIAL</td><td>' + fmt(d.cuotaInicial) + '</td></tr><tr><td class="lbl">V/FINANCIACIÓN</td><td>' + fmt(d.valorFinanciar) + '</td><td class="lbl">V/CUOTA</td><td>' + fmt(cuo) + '</td></tr><tr><td class="lbl">N° CUOTAS</td><td>' + d.numCuotas + '</td><td class="lbl">TOTAL INTERESES</td><td>' + fmt(totalInt) + '</td></tr></table>' +
-      '<table class="damort"><thead><tr><th>#</th><th>MES</th><th>VALOR CUOTA</th><th>ABONO INTERÉS</th><th>ABONO CAPITAL</th><th>SALDO CAPITAL</th></tr></thead><tbody>' + filas + '</tbody></table>' +
-      '<table class="dfirmas"><tr><td>' + eh(d.funcionario) + '</td><td>JUAN PABLO GÓMEZ</td><td>&nbsp;</td></tr><tr style="border:none"><td style="border:none;font-size:8pt">ELABORÓ</td><td style="border:none;font-size:8pt">REVISÓ</td><td style="border:none;font-size:8pt">AUTORIZÓ</td></tr></table>';
+    document.getElementById('prev-title').textContent='📊 Proyección — '+d.apellidos+', '+d.nombres;
+    document.getElementById('prev-doc').innerHTML=
+      '<div style="background:#0f2d5e;color:white;text-align:center;padding:10px;font-weight:bold;font-size:12pt">SECRETARÍA DE RECAUDOS Y PAGOS</div>'+
+      '<div style="text-align:center;font-size:10pt;color:#0f2d5e;margin:6pt 0;font-weight:bold">DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES<br>PROYECCIÓN DE PAGOS — CONVENIO DE PAGO</div>'+
+      '<table class="ddatos"><tr><td class="lbl">DEUDOR</td><td colspan="3">'+eh(d.nombres)+' '+eh(d.apellidos)+'</td></tr><tr><td class="lbl">CÉDULA</td><td>'+eh(d.cedula)+'</td><td class="lbl">TELÉFONO</td><td>'+eh(d.celular||d.telefono||'—')+'</td></tr><tr><td class="lbl">CONCEPTO</td><td>'+eh(d.tipoObligacion)+'</td><td class="lbl">TASA MENSUAL</td><td>'+eh(d.tasaMensual)+'%</td></tr><tr><td class="lbl">VALOR FACTURA</td><td>'+fmt(d.valorFactura)+'</td><td class="lbl">CUOTA INICIAL</td><td>'+fmt(d.cuotaInicial)+'</td></tr><tr><td class="lbl">V/FINANCIACIÓN</td><td>'+fmt(d.valorFinanciar)+'</td><td class="lbl">V/CUOTA</td><td>'+fmt(cuo)+'</td></tr><tr><td class="lbl">N° CUOTAS</td><td>'+d.numCuotas+'</td><td class="lbl">TOTAL INTERESES</td><td>'+fmt(totalInt)+'</td></tr></table>'+
+      '<table class="damort"><thead><tr><th>#</th><th>MES</th><th>VALOR CUOTA</th><th>ABONO INTERÉS</th><th>ABONO CAPITAL</th><th>SALDO CAPITAL</th></tr></thead><tbody>'+filas+'</tbody></table>'+
+      '<table class="dfirmas"><tr><td>'+eh(d.funcionario)+'</td><td>JUAN PABLO GÓMEZ</td><td>&nbsp;</td></tr><tr style="border:none"><td style="border:none;font-size:8pt">ELABORÓ</td><td style="border:none;font-size:8pt">REVISÓ</td><td style="border:none;font-size:8pt">AUTORIZÓ</td></tr></table>';
     abrirPrev();
-    setSt('ok', '✅ Proyección generada.');
-  } catch(e) { setSt('err', '❌ Error: ' + e.message); }
+    setSt('ok','✅ Proyección generada.');
+  }catch(e){setSt('err','❌ Error: '+e.message);}
 }
 
 // ── VISTA PREVIA ──
-function abrirPrev() { document.getElementById('prev-ov').classList.add('open'); document.body.style.overflow='hidden'; }
-function cerrarPrev() { document.getElementById('prev-ov').classList.remove('open'); document.body.style.overflow=''; }
+function abrirPrev(){ document.getElementById('prev-ov').classList.add('open'); document.body.style.overflow='hidden'; }
+function cerrarPrev(){ document.getElementById('prev-ov').classList.remove('open'); document.body.style.overflow=''; }
 
-// ── MODAL DESEMBARGO DESDE FORMULARIO ──
-function abrirDes() {
-  var d = getDatos();
-  pendienteActivo = null;
-  document.getElementById('des-nom').textContent = d.nombres + ' ' + d.apellidos;
-  document.getElementById('des-ced').textContent = d.cedula;
-  document.getElementById('des-tip').textContent = d.tipoObligacion;
-  document.getElementById('des-rad').value = '';
-  document.getElementById('des-conc').value = '';
-  document.getElementById('des-obs').value = 'Acuerdo de pago — cuota inicial cancelada';
-  document.getElementById('des-st').style.display = 'none';
+// ── DESEMBARGO ──
+function abrirDes(){
+  var d=getDatos();
+  pendienteActivo=null;
+  document.getElementById('des-nom').textContent=d.nombres+' '+d.apellidos;
+  document.getElementById('des-ced').textContent=d.cedula;
+  document.getElementById('des-tip').textContent=d.tipoObligacion;
+  document.getElementById('des-rad').value='';
+  document.getElementById('des-conc').value='';
+  document.getElementById('des-obs').value='Acuerdo de pago — cuota inicial cancelada';
+  document.getElementById('des-st').style.display='none';
   document.getElementById('des-ov').classList.add('open');
-  document.body.style.overflow = 'hidden';
 }
-function cerrarDes() { document.getElementById('des-ov').classList.remove('open'); document.body.style.overflow=''; }
+function cerrarDes(){ document.getElementById('des-ov').classList.remove('open'); }
 
-async function enviarDes() {
-  var d = pendienteActivo || getDatos();
-  var rad = document.getElementById('des-rad').value.trim();
-  var conc = document.getElementById('des-conc').value.trim();
-  var obs = document.getElementById('des-obs').value.trim();
-  var stEl = document.getElementById('des-st');
-  stEl.style.cssText = 'display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe';
-  stEl.textContent = '⏳ Enviando a la cola...';
-  try {
-    var fecha = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-    var params = new URLSearchParams({ accion:'encolar', tipoOficio:'Desembargo', numOficio:'', fechaOficio:fecha, nombre:(d.nombres||'')+' '+(d.apellidos||''), cedula:d.cedula||'', concepto:conc||d.tipoObligacion||'', radicado:rad||'(Pendiente)', fechaAuto:fecha, motivo:'Acuerdo de pago suscrito y cuota inicial cancelada', proyNombre:d.funcionario||'', funcionario:d.funcionario||'', equipo:'', observacion:obs||'Acuerdo de pago — cuota inicial cancelada', comparendo:'' });
-    await fetch(GAS_INDEX + '?' + params);
-    var localCola = JSON.parse(localStorage.getItem('cola_local') || '[]');
-    localCola.unshift({ id:'AC-'+Date.now(), 'Fecha':fecha, 'Hora':new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}), 'Funcionario':d.funcionario||'', 'Estado':'PENDIENTE', 'Tipo Oficio':'Desembargo', 'N° Oficio':'', 'Contribuyente':(d.nombres||'')+' '+(d.apellidos||''), 'Cédula':d.cedula||'', 'Radicado':rad||'(Pendiente)', 'Concepto':conc||d.tipoObligacion||'', 'Observación':obs });
-    localStorage.setItem('cola_local', JSON.stringify(localCola));
-    if (pendienteActivo) {
-      setPend(getPend().filter(function(p) { return p.id !== pendienteActivo.id; }));
-      pendienteActivo = null;
+async function enviarDes(){
+  var d=pendienteActivo||getDatos();
+  var rad=document.getElementById('des-rad').value.trim();
+  var conc=document.getElementById('des-conc').value.trim();
+  var obs=document.getElementById('des-obs').value.trim();
+  var stEl=document.getElementById('des-st');
+  stEl.style.cssText='display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-top:10px;background:rgba(45,141,232,.15);color:#93c5fd;border:1px solid rgba(45,141,232,.3)';
+  stEl.textContent='⏳ Enviando a la cola...';
+  try{
+    var fecha=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+    var params=new URLSearchParams({accion:'encolar',tipoOficio:'Desembargo',numOficio:'',fechaOficio:fecha,nombre:(d.nombres||'')+' '+(d.apellidos||''),cedula:d.cedula||'',concepto:conc||d.tipoObligacion||'',radicado:rad||'(Pendiente)',fechaAuto:fecha,motivo:'Acuerdo de pago suscrito y cuota inicial cancelada',proyNombre:d.funcionario||'',funcionario:d.funcionario||'',equipo:'',observacion:obs||'Acuerdo de pago — cuota inicial cancelada',comparendo:''});
+    await fetch(GAS_INDEX+'?'+params);
+    var localCola=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+    localCola.unshift({id:'AC-'+Date.now(),'ID':'AC-'+Date.now(),'Fecha':fecha,'Hora':new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}),'Funcionario':d.funcionario||'','Estado':'PENDIENTE','Tipo Oficio':'Desembargo','N° Oficio':'','Fecha Oficio':fecha,'Contribuyente':(d.nombres||'')+' '+(d.apellidos||''),'Cédula/NIT':d.cedula||'','Radicado':rad||'(Pendiente)','Concepto':conc||d.tipoObligacion||'','Motivo':'Acuerdo de pago suscrito y cuota inicial cancelada','Proyectó':d.funcionario||'','Observación':obs});
+    localStorage.setItem('cola_local_desem',JSON.stringify(localCola));
+    if(pendienteActivo){
+      setPend(getPend().filter(function(p){return p.id!==pendienteActivo.id;}));
+      pendienteActivo=null;
     }
-    stEl.style.cssText = 'display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0';
-    stEl.textContent = '✅ Enviado a la cola correctamente.';
-    setTimeout(function() { cerrarDes(); renderPend(); }, 2000);
-  } catch(e) {
-    stEl.style.cssText = 'display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-bottom:12px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca';
-    stEl.textContent = '❌ Error: ' + e.message;
+    stEl.style.cssText='display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-top:10px;background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)';
+    stEl.textContent='✅ Enviado a la cola correctamente.';
+    setTimeout(function(){cerrarDes();renderPend();},2000);
+  }catch(e){
+    stEl.style.cssText='display:flex;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:500;margin-top:10px;background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)';
+    stEl.textContent='❌ Error: '+e.message;
   }
 }
 
 // ── LIMPIAR ──
-function confirmarLimpiar() {
-  var n = document.getElementById('nombres');
-  var c = document.getElementById('cedula');
-  if ((!n||!n.value) && (!c||!c.value)) { limpiarForm(); return; }
-  document.getElementById('mLimpiar').style.display = 'flex';
+function confirmarLimpiar(){
+  var n=document.getElementById('nombres');
+  var c=document.getElementById('cedula');
+  if((!n||!n.value)&&(!c||!c.value)){limpiarForm();return;}
+  document.getElementById('mLimpiar').classList.add('open');
 }
-function limpiarForm() {
-  document.getElementById('mLimpiar').style.display = 'none';
-  document.querySelectorAll('input[type=text],input[type=number],input[type=email],input[type=month],select').forEach(function(el){el.value='';});
-  document.querySelectorAll('input[type=radio]').forEach(function(el){el.checked=false;});
-  document.getElementById('tipoDoc').value = 'C.C';
-  document.getElementById('cod_tipoDoc').value = 'C.C';
-  proyeccion = [];
-  document.getElementById('tabla-proy').style.display = 'none';
-  document.getElementById('tbody-proy').innerHTML = '';
+function limpiarForm(){
+  document.getElementById('mLimpiar').classList.remove('open');
+  document.querySelectorAll('input[type=text],input[type=number],input[type=email],input[type=month],select,textarea').forEach(function(el){el.value='';});
+  document.querySelectorAll('input[type=radio],input[type=checkbox]').forEach(function(el){el.checked=false;});
+  document.getElementById('tipoDoc').value='C.C';
+  document.getElementById('cod_tipoDoc').value='C.C';
+  // Reset tipo
+  document.querySelectorAll('.tipo-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelector('[data-tipo="IP — Impuesto Predial"]').classList.add('active');
+  tipoSeleccionado='IP — Impuesto Predial';
+  ['cond-ica','cond-ou','cond-policia','cond-otro'].forEach(function(id){document.getElementById(id).classList.remove('show');});
+  proyeccion=[];
+  document.getElementById('amort-wrap').style.display='none';
+  document.getElementById('tbody-proy').innerHTML='';
   ['c-fac','c-ini','c-fin'].forEach(function(id){document.getElementById(id).textContent='$ 0';});
-  document.getElementById('c-ncu').textContent = '—';
-  document.getElementById('c-tas').textContent = '—';
-  document.getElementById('c-int').textContent = '$ 0';
-  document.getElementById('c-cuo').textContent = '$ 0';
-  document.getElementById('st').className = 'st';
-  document.getElementById('btn-des').style.display = 'none';
-  var mi = document.getElementById('mesInicio');
-  mi.value = new Date().toISOString().slice(0,7);
-}
-
-// ── RESUMEN MES ──
-async function cargarResumen() {
-  try {
-    var res = await fetch(GAS_ACUERDOS + '?accion=resumen');
-    var data = await res.json();
-    if (data.error || data.total === 0) return;
-    document.getElementById('resmes').style.display = 'block';
-    document.getElementById('res-total').textContent = data.total;
-    document.getElementById('res-valor').textContent = '$ ' + Math.round(data.valorTotal||0).toLocaleString('es-CO');
-    var tip = document.getElementById('res-tipos');
-    tip.innerHTML = Object.entries(data.porTipo||{}).map(function(e){ return '<div class="rsti"><span>' + e[0].split('—')[0].trim() + '</span><span class="rstv">' + e[1] + '</span></div>'; }).join('');
-  } catch(e) {}
+  document.getElementById('c-ncu').textContent='—';
+  document.getElementById('c-tas').textContent='—';
+  document.getElementById('c-int').textContent='$ 0';
+  document.getElementById('c-cuo').textContent='$ 0';
+  document.getElementById('st').className='st';
+  document.getElementById('btn-des').style.display='none';
+  document.getElementById('mesInicio').value=new Date().toISOString().slice(0,7);
 }
 
 // ── INIT ──
-document.getElementById('mesInicio').value = new Date().toISOString().slice(0,7);
+document.getElementById('mesInicio').value=new Date().toISOString().slice(0,7);
 updateBadge();
-cargarResumen();
 renderPend();
 </script>
 </body>
