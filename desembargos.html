@@ -624,6 +624,23 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
   .charts-grid { grid-template-columns:1fr; }
   .tipo-grid { grid-template-columns:repeat(2,1fr); }
 }
+
+/* ── FILA URGENTE EN COLA ── */
+.fila-urgente {
+  border-left: 3px solid var(--red) !important;
+  background: rgba(220,38,38,.06) !important;
+}
+.fila-urgente:hover {
+  background: rgba(220,38,38,.12) !important;
+}
+.edad-urgente {
+  color: var(--red2) !important;
+  font-weight: 700;
+  animation: pulseRed .9s ease-in-out infinite;
+}
+@keyframes pulseRed {
+  0%,100%{opacity:1} 50%{opacity:.5}
+}
 </style>
 </head>
 <body>
@@ -1264,8 +1281,23 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
 <!-- ═══════════════════════════ MODAL SIGUIENTE ═══════════════════════════ -->
 <div class="modal-overlay" id="modalSig">
   <div class="modal">
-    <h3>✅ Oficio generado</h3>
-    <p>¿Desea continuar con el mismo contribuyente (agregar otro concepto) o iniciar uno nuevo?</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div style="width:40px;height:40px;border-radius:12px;background:rgba(22,163,74,.2);
+        border:1px solid rgba(34,197,94,.3);display:flex;align-items:center;
+        justify-content:center;font-size:20px;flex-shrink:0">✅</div>
+      <div>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:2px">Oficio generado</h3>
+        <p style="font-size:11px;color:rgba(255,255,255,.45)">Descargado en tu carpeta de archivos</p>
+      </div>
+    </div>
+    <!-- Resumen del oficio recién generado -->
+    <div id="modal-resumen" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+      border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;
+      display:grid;grid-template-columns:1fr 1fr;gap:6px 14px">
+    </div>
+    <p style="font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px">
+      ¿Continuar con el mismo contribuyente o iniciar uno nuevo?
+    </p>
     <div class="modal-row">
       <button class="btn btn-ghost" onclick="sigMismoContrib()">👤 Mismo contribuyente</button>
       <button class="btn btn-primary" onclick="sigNuevo()">➕ Nuevo</button>
@@ -1835,11 +1867,35 @@ function getRadicadoForm(){
 function checkDup(val){
   if(!val||val.length<4){hideAlert('f_dup');return;}
   const v=val.toLowerCase();
-  const f=cache.find(r=>(r['Radicado']&&r['Radicado'].toLowerCase()===v)||(r['Contribuyente']&&r['Contribuyente'].toLowerCase()===v));
+
+  // 1. Revisar cola activa (PENDIENTE) — más urgente
+  const enCola=colaCache.find(r=>
+    (r['Estado']||'').toUpperCase()==='PENDIENTE' &&
+    ((r['Contribuyente']&&r['Contribuyente'].toLowerCase()===v)||
+     (r['Cédula/NIT']&&r['Cédula/NIT'].toLowerCase()===v))
+  );
+  if(enCola){
+    document.getElementById('f_dupmsg').innerHTML=
+      `⏳ <strong>Ya está en cola pendiente:</strong> "${enCola['Contribuyente']}" — `+
+      `${enCola['Tipo Oficio']||'—'} · ${enCola['Concepto']||'—'} `+
+      `(${enCola['Fecha']||'?'} ${enCola['Hora']||''} por ${enCola['Funcionario']||'?'})`;
+    showAlert('f_dup','e','');
+    return;
+  }
+
+  // 2. Revisar historial de Sheets (ya generado antes)
+  const f=cache.find(r=>
+    (r['Contribuyente']&&r['Contribuyente'].toLowerCase()===v)||
+    (r['Cédula/NIT']&&r['Cédula/NIT'].toLowerCase()===v)
+  );
   if(f){
-    document.getElementById('f_dupmsg').textContent=`Ya existe: "${f['Contribuyente']}" — Rad. ${f['Radicado']||'—'} (${f['Fecha']||'?'} por ${f['Funcionario']||'?'})`;
+    document.getElementById('f_dupmsg').innerHTML=
+      `⚠️ <strong>Ya existe en historial:</strong> "${f['Contribuyente']}" — `+
+      `Rad. ${f['Radicado']||'—'} (${f['Fecha']||'?'} por ${f['Funcionario']||'?'})`;
     showAlert('f_dup','w','');
-  } else hideAlert('f_dup');
+  } else {
+    hideAlert('f_dup');
+  }
 }
 
 // ════════════════════════════════════════
@@ -2091,7 +2147,7 @@ async function generarDesdeForm(){
       await apiPost(pd); guardarLocalCache(pd);
       showAlert('f_alert','s',`✅ Oficio generado con ${bancosSelec.length} banco(s). Revise Descargas.`);
       incrementarContadorD(); guardarUltimo(d);
-      cargarRemoto(); setTimeout(()=>document.getElementById('modalSig').classList.add('open'),800);
+      cargarRemoto(); mostrarModalResumen(d, bancosSelec.length); setTimeout(()=>document.getElementById('modalSig').classList.add('open'),800);
     }catch(e){showAlert('f_alert','e','Error: '+e.message);}
     btn.disabled=false; btn.innerHTML='⬇️ Generar oficio con todos los bancos';
   } else {
@@ -2106,7 +2162,7 @@ async function generarDesdeForm(){
         guardarLocalCache({tipoOficio:d.tipoOficio,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,radicado:d.radicado,fechaAuto:d.fechaAuto,motivo:d.motivo,proyNombre:d.proyNombre});
         showAlert('f_alert','s','✅ Oficio generado y registrado en Google Sheets.');
         incrementarContadorD(); guardarUltimo(d);
-        cargarRemoto(); setTimeout(()=>document.getElementById('modalSig').classList.add('open'),800);
+        cargarRemoto(); mostrarModalResumen(d, null); setTimeout(()=>document.getElementById('modalSig').classList.add('open'),800);
       } else if(res&&res.local){
         showAlert('f_alert','w','Descargado. Sin conexión al Sheet.');
       } else {
@@ -2142,6 +2198,22 @@ function limpiarForm(){
   document.getElementById('btnGen').innerHTML='⬇️ Generar y descargar Word';
   hideAlert('f_alert'); hideAlert('f_dup');
 }
+function mostrarModalResumen(d, bancosN){
+  const el = document.getElementById('modal-resumen');
+  if(!el) return;
+  const fila = (label, val) =>
+    `<div style="color:rgba(255,255,255,.45);font-size:11px">${label}</div>`+
+    `<div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${val||'—'}</div>`;
+  const bancosStr = bancosN ? bancosN+' banco(s)' : '—';
+  el.innerHTML =
+    fila('Contribuyente', d.nombre) +
+    fila('Cédula / NIT',  d.cedula) +
+    fila('Tipo',          d.tipoOficio) +
+    fila('Concepto',      d.concepto ? d.concepto.substring(0,30)+(d.concepto.length>30?'…':'') : '—') +
+    fila('Fecha auto',    d.fechaAuto) +
+    fila('Bancos',        bancosStr);
+}
+
 function sigMismoContrib(){
   const nom=document.getElementById('f_nombre').value;
   const ced=document.getElementById('f_cedula').value;
@@ -2473,10 +2545,17 @@ function renderCola(){
     const edadHtml=edad?`<br><span class="edad-badge ${edad.cls}">${edad.txt}</span>`:'';
     const tipo=r['Tipo Oficio']||'';
     const tagClass=tipo.startsWith('Desembargo')?'tag-desembargo':tipo.startsWith('Embargo')?'tag-embargo':'tag-otro';
-    return `<tr>
+    // Determinar urgencia: PENDIENTE y más de 3 días
+    const esUrgente = esPend && edad && edad.cls === 'edad-old';
+    const filaClass = esUrgente ? 'fila-urgente' : '';
+    const edadClsReal = esUrgente ? 'edad-urgente' : edad ? edad.cls : '';
+    const edadHtmlFinal = edad
+      ? `<br><span class="edad-badge ${edadClsReal}">${esUrgente?'🔴 ':''} ${edad.txt}</span>`
+      : '';
+    return `<tr class="${filaClass}">
       <td><input type="checkbox" class="chk-cola" data-id="${id}" ${esPend?'':'disabled'}
         style="width:14px;height:14px;accent-color:var(--blue2)" onchange="actualizarConteoSel()"></td>
-      <td style="font-size:10.5px;color:var(--soft)">${r['Fecha']||''} ${r['Hora']||''}${edadHtml}</td>
+      <td style="font-size:10.5px;color:var(--soft)">${r['Fecha']||''} ${r['Hora']||''}${edadHtmlFinal}</td>
       <td style="font-size:11.5px">${r['Funcionario']||'—'}</td>
       <td>${estadoTag}</td>
       <td><span class="tipo-tag ${tagClass}">${tipo}</span></td>
