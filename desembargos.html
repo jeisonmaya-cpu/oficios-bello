@@ -1144,6 +1144,11 @@ tbody td { padding:8px 12px; color:rgba(255,255,255,.8); }
         <button class="btn btn-primary btn-sm" id="btnImprimirSel" onclick="imprimirSeleccionados()" disabled>
           ⬇️ Generar seleccionados (<span id="cntSel">0</span>)
         </button>
+        <button class="btn btn-sm" id="btnPdfSel" onclick="generarPdfUnificado()"
+          disabled title="Abre una ventana de impresión con todos los oficios seleccionados en una sola vista"
+          style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none">
+          🖨️ Imprimir PDF unificado (<span id="cntSelPdf">0</span>)
+        </button>
       </div>
     </div>
     <div class="gcard-body" style="padding-bottom:8px">
@@ -2576,8 +2581,12 @@ function actualizarConteoSel(){
   const sel=document.querySelectorAll('.chk-cola:checked').length;
   const el=document.getElementById('cntSel');
   if(el) el.textContent=sel;
+  const elPdf=document.getElementById('cntSelPdf');
+  if(elPdf) elPdf.textContent=sel;
   const btn=document.getElementById('btnImprimirSel');
   if(btn) btn.disabled=sel===0;
+  const btnPdf=document.getElementById('btnPdfSel');
+  if(btnPdf) btnPdf.disabled=sel===0;
 }
 function seleccionarTodosCola(estado){
   document.querySelectorAll('.chk-cola:not(:disabled)').forEach(c=>c.checked=estado);
@@ -2682,6 +2691,194 @@ async function confirmarEliminar(){
   await cargarCola();
 }
 
+
+// ════════════════════════════════════════
+// PDF UNIFICADO — impresión de todos los seleccionados
+// ════════════════════════════════════════
+async function generarPdfUnificado(){
+  const checks=[...document.querySelectorAll('.chk-cola:checked')];
+  if(!checks.length){ alert('Selecciona al menos un oficio.'); return; }
+
+  const btn=document.getElementById('btnPdfSel');
+  btn.disabled=true;
+  btn.innerHTML='⏳ Preparando…';
+
+  const ids=checks.map(c=>c.dataset.id);
+  const items=ids.map(id=>colaCache.find(r=>(r['ID']||r.id)===id)).filter(Boolean);
+
+  // Construir HTML de cada oficio
+  const paginas = items.map((item,idx) => {
+    const nombre   = item['Contribuyente'] || '—';
+    const cedula   = item['Cédula/NIT']    || '—';
+    const tipo     = item['Tipo Oficio']   || '—';
+    const concepto = item['Concepto']      || '—';
+    const radicado = item['Radicado']      || '—';
+    const fechaAuto= item['Fecha Auto']    || '—';
+    const motivo   = item['Motivo']        || '—';
+    const fecha    = item['Fecha Oficio']  || item['Fecha'] || '—';
+    const proyNom  = item['Proyectó']      || item['Funcionario'] || '—';
+    const numOficio= item['N° Oficio']     || '1070.02';
+    const funcion  = item['Funcionario']   || '—';
+
+    // Formatear fecha larga
+    const meses=['enero','febrero','marzo','abril','mayo','junio',
+                 'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    let fechaLarga = fecha;
+    try{
+      const [d,m,y] = fecha.includes('-') ? fecha.split('-') : fecha.split('/');
+      const dd=parseInt(d), mm=parseInt(m)-1, yy=parseInt(y);
+      fechaLarga = `${dd} de ${meses[mm]} de ${yy}`;
+    }catch(e){}
+
+    return `
+    <div class="oficio-page" ${idx>0?'style="page-break-before:always"':''}>
+      <div class="oficio-header">
+        <div class="oficio-membrete">
+          <div class="oficio-logo">🏛️</div>
+          <div>
+            <div class="oficio-entidad">ALCALDÍA DE BELLO</div>
+            <div class="oficio-dep">Dirección Administrativa de Ejecuciones Fiscales</div>
+          </div>
+        </div>
+        <div class="oficio-num-fecha">
+          <div><strong>Oficio N°</strong> ${numOficio}</div>
+          <div>Bello, ${fechaLarga}</div>
+        </div>
+      </div>
+
+      <div class="oficio-asunto">
+        <strong>ASUNTO:</strong> ${tipo} — Radicado(s): <span class="oficio-rad">${radicado}</span>
+      </div>
+
+      <div class="oficio-destinatario">
+        <strong>Señores:</strong><br>
+        Entidades Bancarias y Financieras / Autoridades competentes<br>
+        <strong>Ciudad</strong>
+      </div>
+
+      <div class="oficio-cuerpo">
+        <p>La Dirección Administrativa de Ejecuciones Fiscales de la Alcaldía de Bello, en uso de sus facultades legales,
+        <strong>${tipo.toLowerCase().includes('desembargo')?'LEVANTA':'ORDENA'}</strong>
+        la medida cautelar que pesa sobre el contribuyente identificado a continuación,
+        por concepto de <strong>${concepto}</strong>, toda vez que el motivo es:
+        <strong>${motivo}</strong>.</p>
+
+        <p>Fecha del auto que ordena el ${tipo.toLowerCase().includes('desembargo')?'levantamiento':'embargo'}: <u>${fechaAuto}</u></p>
+      </div>
+
+      <div class="oficio-tabla">
+        <table>
+          <thead>
+            <tr>
+              <th>Contribuyente</th>
+              <th>Cédula / NIT</th>
+              <th>Concepto / Radicado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>${nombre}</strong></td>
+              <td>${cedula}</td>
+              <td>${concepto} ${radicado}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="oficio-firmas">
+        <div class="oficio-firma">
+          <div class="firma-linea"></div>
+          <div class="firma-nombre">${proyNom}</div>
+          <div class="firma-cargo">Proyectó</div>
+        </div>
+        <div class="oficio-firma">
+          <div class="firma-linea"></div>
+          <div class="firma-nombre">Director(a)</div>
+          <div class="firma-cargo">Dirección de Ejecuciones Fiscales</div>
+        </div>
+      </div>
+
+      <div class="oficio-pie">
+        Generado por Sistema de Oficios — Alcaldía de Bello &nbsp;·&nbsp;
+        Funcionario: ${funcion} &nbsp;·&nbsp; ${new Date().toLocaleString('es-CO')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // CSS de impresión
+  const estilos = `
+    @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #111; background: #fff; }
+    .oficio-page { padding: 2cm 2.5cm; min-height: 27cm; position: relative; }
+    @media print {
+      .oficio-page { page-break-after: always; padding: 1.5cm 2cm; }
+      .oficio-page:last-child { page-break-after: avoid; }
+    }
+    .oficio-header { display: flex; justify-content: space-between; align-items: flex-start;
+      border-bottom: 2px solid #0f2d5e; padding-bottom: 10px; margin-bottom: 16px; }
+    .oficio-membrete { display: flex; align-items: center; gap: 12px; }
+    .oficio-logo { font-size: 32px; }
+    .oficio-entidad { font-size: 14pt; font-weight: 700; color: #0f2d5e; }
+    .oficio-dep { font-size: 9pt; color: #555; margin-top: 2px; }
+    .oficio-num-fecha { text-align: right; font-size: 10pt; color: #333; line-height: 1.8; }
+    .oficio-asunto { background: #f0f4ff; border-left: 4px solid #0f2d5e;
+      padding: 8px 12px; margin-bottom: 16px; font-size: 10.5pt; border-radius: 0 4px 4px 0; }
+    .oficio-rad { color: #dc2626; font-weight: 700; }
+    .oficio-destinatario { margin-bottom: 16px; font-size: 10.5pt; line-height: 1.7; }
+    .oficio-cuerpo { margin-bottom: 16px; font-size: 10.5pt; line-height: 1.8; text-align: justify; }
+    .oficio-cuerpo p { margin-bottom: 10px; }
+    .oficio-tabla { margin-bottom: 24px; }
+    .oficio-tabla table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    .oficio-tabla th { background: #0f2d5e; color: #fff; padding: 7px 10px; text-align: left; }
+    .oficio-tabla td { border: 1px solid #d1d5db; padding: 7px 10px; }
+    .oficio-tabla tr:nth-child(even) td { background: #f9fafb; }
+    .oficio-firmas { display: flex; gap: 40px; margin-top: 40px; margin-bottom: 16px; }
+    .oficio-firma { flex: 1; text-align: center; }
+    .firma-linea { border-top: 1px solid #333; margin-bottom: 6px; }
+    .firma-nombre { font-weight: 700; font-size: 10pt; }
+    .firma-cargo { font-size: 9pt; color: #555; }
+    .oficio-pie { font-size: 8pt; color: #aaa; border-top: 1px solid #e5e7eb;
+      padding-top: 8px; text-align: center; position: absolute; bottom: 1cm; left: 2.5cm; right: 2.5cm; }
+  `;
+
+  // Abrir ventana de impresión
+  const win = window.open('', '_blank', 'width=900,height=700');
+  if(!win){ alert('El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio.'); btn.disabled=false; btn.innerHTML='🖨️ Imprimir PDF unificado (<span id="cntSelPdf">0</span>)'; return; }
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Oficios — ${new Date().toLocaleDateString('es-CO')} — ${items.length} oficio(s)</title>
+  <style>${estilos}</style>
+</head>
+<body>
+  ${paginas}
+  <script>
+    window.onload = function(){
+      window.print();
+      // No cerrar automáticamente — el usuario puede guardar como PDF
+    };
+  <\/script>
+</body>
+</html>`);
+  win.document.close();
+
+  // Marcar como impresos
+  await apiPost({accion:'marcar_impreso', ids});
+  const local=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
+  ids.forEach(id=>{
+    const idx=local.findIndex(x=>x.id===id||x['ID']===id);
+    if(idx>-1) local[idx]['Estado']='IMPRESO';
+  });
+  localStorage.setItem('cola_local_desem',JSON.stringify(local));
+  await cargarCola();
+
+  btn.disabled=false;
+  btn.innerHTML=`🖨️ Imprimir PDF unificado (<span id="cntSelPdf">0</span>)`;
+  actualizarConteoSel();
+}
 function cancelarEliminar(){
   document.getElementById('modalEliminar').classList.remove('open');
   document.getElementById('btnConfirmarDel').disabled = false;
