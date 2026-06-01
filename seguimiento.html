@@ -338,6 +338,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
       <tbody id="ou-estados"></tbody>
     </table>
   </div>
+  <div class="section-title" id="ou-s-top" style="display:none">⚡ Top 20 Activos — mayor valor</div>
+  <div class="table-wrap" id="ou-tw-top" style="display:none">
+    <table>
+      <thead><tr><th>#</th><th>Radicado</th><th>Contribuyente</th><th>Valor ($)</th><th>Estado proceso</th><th>Acción</th></tr></thead>
+      <tbody id="ou-top-activos"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- PANEL PREDIAL -->
@@ -652,6 +659,25 @@ function renderOU(d) {
         <td style="min-width:120px"><div style="display:flex;align-items:center;gap:8px"><div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:${color}"></div></div></div></td>
       </tr>`;
     }).join('');
+
+  // ── Top 20 activos OU (si vienen del GAS) ──
+  const topActivos = d.topActivos || [];
+  const ouTop  = document.getElementById('ou-top-activos');
+  const ouSTop = document.getElementById('ou-s-top');
+  const ouTwTop= document.getElementById('ou-tw-top');
+  if(topActivos.length && ouTop){
+    if(ouSTop)  ouSTop.style.display  = '';
+    if(ouTwTop) ouTwTop.style.display = '';
+    ouTop.innerHTML = topActivos.map((e,i)=>`
+      <tr>
+        <td style="text-align:center;font-weight:700;color:#60a5fa">${i+1}</td>
+        <td class="mono">${e.radicado||'—'}</td>
+        <td style="font-weight:600;color:#fff">${e.nombre||'—'}</td>
+        <td style="text-align:right;font-weight:700;color:#fca5a5">${fmt(e.valorTotal||0)}</td>
+        <td style="font-size:11px;color:var(--soft)">${e.estadoProceso||'—'}</td>
+        <td><button class="btn-act" onclick="abrirAct('${(e.radicado||'').replace(/'/g,"\'")}','${(e.nombre||'').replace(/'/g,"\'")}',${e.valorTotal||0},'OU')">📝 Actuación</button></td>
+      </tr>`).join('');
+  }
 }
 
 // ── RENDER PREDIAL ──
