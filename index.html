@@ -2959,48 +2959,11 @@ document.head.appendChild(pulseCSS);
 // ════════════════════════════════════════════════════════════
 // SISTEMA DE PIN PERSONAL CON REGISTRO
 // ════════════════════════════════════════════════════════════
-const SESSION_KEY = 'oficios_session_v2';
+const USUARIOS_KEY  = 'oficios_usuarios_local'; // cache local de usuarios
+const SESSION_KEY   = 'oficios_session';         // sesión activa
 let pinActual = '';
 let usuarioActual = null;
 let pinNuevoGenerado = '';
-
-// ── TABLA DE USUARIOS — el administrador edita esto ──────────
-// Para agregar usuarios: añadir una línea { pin:'XXXX', nombre:'Nombre', cargo:'Cargo' }
-// Para desactivar: eliminar la línea o cambiar activo a false
-const USUARIOS_SISTEMA = [
-  { pin:'0000', nombre:'Administrador',          cargo:'Admin',                          activo:true },
-  { pin:'2824', nombre:'Anderson Correa',         cargo:'Contratista',                    activo:true },
-  { pin:'1409', nombre:'Andres Bedoya',           cargo:'Contratista',                    activo:true },
-  { pin:'5506', nombre:'Camila Puerta',           cargo:'Contratista',                    activo:true },
-  { pin:'5012', nombre:'Carlos Hurtado',          cargo:'Contratista',                    activo:true },
-  { pin:'4657', nombre:'Daniela Higuita',         cargo:'Contratista',                    activo:true },
-  { pin:'3286', nombre:'Dario Pelaez',            cargo:'Contratista',                    activo:true },
-  { pin:'2679', nombre:'Dayse Nathaly Rodriguez', cargo:'Contratista',                    activo:true },
-  { pin:'9935', nombre:'Marcela Duque',           cargo:'Contratista',                    activo:true },
-  { pin:'2424', nombre:'Henrry Triana',           cargo:'Contratista',                    activo:true },
-  { pin:'7912', nombre:'Andrea Valencia',         cargo:'Contratista',                    activo:true },
-  { pin:'1520', nombre:'Jeison Maya',             cargo:'Contratista',                    activo:true },
-  { pin:'1488', nombre:'Jesus Osorio',            cargo:'Contratista',                    activo:true },
-  { pin:'2535', nombre:'Jose Francineth',         cargo:'Contratista',                    activo:true },
-  { pin:'4582', nombre:'Jose Zapata',             cargo:'Contratista',                    activo:true },
-  { pin:'4811', nombre:'Juan Pablo Villa',        cargo:'Contratista',                    activo:true },
-  { pin:'9279', nombre:'Julian Perea',            cargo:'Contratista',                    activo:true },
-  { pin:'1434', nombre:'Juliet Duque',            cargo:'Contratista',                    activo:true },
-  { pin:'4257', nombre:'Juliana',                 cargo:'Contratista',                    activo:true },
-  { pin:'9928', nombre:'Liseth Murillo',          cargo:'Contratista',                    activo:true },
-  { pin:'7873', nombre:'Luisa Mira',              cargo:'Contratista',                    activo:true },
-  { pin:'4611', nombre:'Veronica Suarez',         cargo:'Contratista',                    activo:true },
-  { pin:'8359', nombre:'Wilson Ortiz',            cargo:'Contratista',                    activo:true },
-  { pin:'5557', nombre:'Vanesa Perez',            cargo:'Contratista',                    activo:true },
-  { pin:'1106', nombre:'Yeniffer Chaverra',       cargo:'Contratista',                    activo:true },
-  { pin:'3615', nombre:'Yoban Jimenez',           cargo:'Contratista',                    activo:true },
-  { pin:'7924', nombre:'Juan Pablo Gomez',        cargo:'Director Ejecuciones Fiscales',  activo:true },
-  { pin:'6574', nombre:'Catalina Tamayo',         cargo:'Profesional Universitaria',      activo:true },
-  { pin:'5552', nombre:'Leidy Perea',             cargo:'Profesional Universitaria',      activo:true },
-  { pin:'3547', nombre:'Andres Henao',            cargo:'Profesional Universitaria',      activo:true },
-  { pin:'4527', nombre:'Deisy Lopez',             cargo:'Profesional Universitaria',      activo:true },
-  { pin:'6514', nombre:'Dario Baldrich',          cargo:'Profesional Universitaria',      activo:true },
-];
 
 // ── Inicialización ──────────────────────────────────────────
 (function initPin() {
@@ -3014,8 +2977,7 @@ const USUARIOS_SISTEMA = [
       return;
     }
   } catch(e) {}
-  // Limpiar sesión expirada y mostrar PIN
-  localStorage.removeItem(SESSION_KEY);
+  // Mostrar pantalla de PIN
   irAPin();
 })();
 
@@ -3090,48 +3052,47 @@ function actualizarDots() {
   }
 }
 
-// ── Verificar PIN ────────────────────────────────────────────
+// ── Verificar PIN contra Sheet ──────────────────────────────
 async function verificarPin() {
-  mostrarCargando('Verificando…');
+  mostrarCargando('Verificando PIN…');
 
-  // 1. Buscar en tabla estática del HTML (siempre disponible)
-  let usuario = USUARIOS_SISTEMA.find(u => u.pin === pinActual && u.activo !== false);
+  // Buscar en cache local primero (rápido)
+  const localUsers = JSON.parse(localStorage.getItem(USUARIOS_KEY) || '[]');
+  let usuario = localUsers.find(u => u.pin === pinActual);
 
-  // 2. Si no está en tabla estática, buscar en Sheet (usuarios registrados en línea)
+  // Si no está en local, consultar Sheet
   if (!usuario && cfg.apiUrl) {
     try {
       const r = await fetch(cfg.apiUrl + '?accion=verificar_pin&pin=' + pinActual + '&t=' + Date.now());
       const res = await r.json();
       if (res && res.ok && res.usuario) {
         usuario = res.usuario;
+        // Actualizar cache local
+        const idx = localUsers.findIndex(u => u.pin === pinActual);
+        if (idx > -1) localUsers[idx] = usuario;
+        else localUsers.push(usuario);
+        localStorage.setItem(USUARIOS_KEY, JSON.stringify(localUsers));
       }
     } catch(e) {
-      console.warn('Sheet no disponible, usando solo tabla local');
+      console.warn('No se pudo verificar contra Sheet:', e.message);
     }
   }
 
-  // 3. También revisar registros locales (usuarios que se registraron en este computador)
-  if (!usuario) {
-    try {
-      const localReg = JSON.parse(localStorage.getItem('oficios_usuarios_local') || '[]');
-      usuario = localReg.find(u => u.pin === pinActual);
-    } catch(e) {}
-  }
-
   if (usuario) {
-    // Sesión de 8 horas
+    // PIN correcto — crear sesión de 8 horas
     const sess = { ...usuario, expira: Date.now() + 8 * 60 * 60 * 1000 };
     localStorage.setItem(SESSION_KEY, JSON.stringify(sess));
     usuarioActual = sess;
     document.getElementById('pinOverlay').style.display = 'none';
     aplicarSesion(sess);
   } else {
+    // PIN incorrecto
     irAPin();
     for (let i = 0; i < 4; i++) {
       const d = document.getElementById('d' + i);
       if (d) d.className = 'pin-dot error';
     }
-    showError('pinError', '❌ PIN incorrecto. Verifique su PIN o regístrese si es primera vez.');
+    showError('pinError', '❌ PIN incorrecto. Intente de nuevo o regístrese si es primera vez.');
     setTimeout(() => { pinActual = ''; actualizarDots(); }, 900);
   }
 }
