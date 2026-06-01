@@ -346,8 +346,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 <script>
 const URL_OU      = "https://script.google.com/macros/s/AKfycbzx1qwma1Xqbpfk2SqFG0mOJWC4P3h_WevQceiA7cB6wFScJYgXljkc9MgYRjt_yxs9KQ/exec";
 const URL_PREDIAL = "https://script.google.com/macros/s/AKfycbydwEvBzVzV_QN4yYtZem7ytX_RwWvMBXiwZJ29s1FznIkRL1eDh4jDqfiefu3332ow/exec";
-const ICA_SHEET_ID='12tUlW_OYx6NPSvvSGO8YYGw-RRjRKseMNuvVk8GzTuw';
-const ICA_GID='0';
+const URL_ICA='https://script.google.com/macros/s/AKfycbyzBxtdg1znZ0LuCJtoypPs9-vVKfaWc50A4c1-Wlr7Tn2u7KmSGf6D312UUThz-8w/exec';
 let datosGlobales=null;
 let datosICA=null;
 let tabActual = 'ou';
@@ -817,31 +816,12 @@ async function cargarICA(){
   if(loader) loader.style.display='block';
   ids.forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
   try{
-    const url=`https://docs.google.com/spreadsheets/d/${ICA_SHEET_ID}/gviz/tq?tqx=out:json&gid=${ICA_GID}&nocache=${Date.now()}`;
-    const res=await fetch(url,{cache:'no-store'});
-    const txt=await res.text();
-    const data=JSON.parse(txt.replace(/^[^{]+/,''));
-    const rows=(data.table&&data.table.rows)||[];
-    const cols=(data.table&&data.table.cols)||[];
-    const colIdx={};
-    cols.forEach((c,i)=>{colIdx[c.label.trim()]=i;});
-    const get=(row,name)=>{const i=colIdx[name];if(i===undefined||!row.c||!row.c[i]||row.c[i].v===null)return '';return row.c[i].v;};
-    const getNum=(row,name)=>{const v=parseFloat(get(row,name));return isNaN(v)?0:v;};
-    const exp=rows.map(row=>({
-      radicado:String(get(row,'Radicado')||''),
-      nit:String(get(row,'NIT')||''),
-      nombre:String(get(row,'Nombre contribuyente')||''),
-      vigencia:String(get(row,'Vigencia')||''),
-      tipo:String(get(row,'Tipo')||''),
-      responsable:String(get(row,'Responsable')||''),
-      estado:String(get(row,'Estado proceso')||'Sin estado'),
-      valorTotal:getNum(row,'Valor total adeudado ($)'),
-      recaudado:getNum(row,'Valor recaudado ($)'),
-      saldo:getNum(row,'Saldo pendiente ($)'),
-    })).filter(e=>e.radicado&&e.nombre);
-    datosICA=exp;
+    const res=await fetch(URL_ICA,{redirect:'follow'});
+    const data=await res.json();
+    if(data.error) throw new Error(data.error);
+    datosICA=data;
     if(loader) loader.style.display='none';
-    renderICA(exp);
+    renderICA_GAS(data);
   }catch(err){
     console.warn('[ICA]',err);
     if(loader) loader.style.display='none';
@@ -897,6 +877,150 @@ function renderICA(exp){
   const top=exp.filter(e=>e.estado==='Trámite').sort((a,b)=>b.valorTotal-a.valorTotal).slice(0,15);
   show('ica-s5');show('ica-tw-top');
   document.getElementById('ica-top-tramite').innerHTML=top.map((e,i)=>`<tr><td style="text-align:center;font-weight:700;color:#60a5fa">${i+1}</td><td class="mono">${e.radicado}</td><td style="font-weight:600;color:#fff">${e.nombre}</td><td style="text-align:center">${e.vigencia||'—'}</td><td style="font-size:11px;color:var(--soft)">${e.tipo||'—'}</td><td style="text-align:right;font-weight:700;color:#fca5a5">${fmt(e.valorTotal)}</td><td style="font-size:11px;color:var(--soft)">${e.responsable}</td></tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--muted)">Sin expedientes en trámite</td></tr>';
+}
+
+
+// ════════════════════════════════════════
+// ICA — Renderizar desde Apps Script (GAS)
+// ════════════════════════════════════════
+function renderICA_GAS(d){
+  const total          = d.totalExp        || 0;
+  const totalAdeudado  = d.totalAdeudado   || 0;
+  const totalRecaudado = d.totalRecaudado  || 0;
+  const totalSaldo     = d.totalSaldo      || 0;
+  const pctRec         = d.pctRecaudo      || 0;
+  const estados        = d.estados         || [];
+  const tipos          = d.tipos           || [];
+  const responsables   = d.responsables    || [];
+  const convenios      = d.convenios       || [];
+  const topTramite     = d.topTramite      || [];
+  const show = id => { const e=document.getElementById(id); if(e) e.style.display=''; };
+
+  // ── Cartera card ──
+  show('ica-cartera');
+  document.getElementById('ica-cartera').innerHTML=`
+    <div class="cartera-main">
+      <div class="cartera-label">🏭 Industria y Comercio (ICA) — Cartera Total</div>
+      <div class="cartera-value">${fmt(totalAdeudado)}</div>
+      <div class="cartera-sub">${total.toLocaleString()} expedientes · Actualizado: ${d.actualizado||'—'}</div>
+    </div>
+    <div class="cartera-recaudo">
+      <div class="cartera-recaudo-label">Total recaudado</div>
+      <div class="cartera-recaudo-val">${fmt(totalRecaudado)}</div>
+      <div class="cartera-pct">${pctRec.toFixed(1)}% de la cartera</div>
+    </div>`;
+
+  // ── Stats por estado ──
+  const sE = name => (estados.find(e=>e.estado===name)||{count:0,valor:0});
+  show('ica-stats');
+  document.getElementById('ica-stats').innerHTML=`
+    <div class="stat-card blue">
+      <div class="stat-label">🔵 En Trámite</div>
+      <div class="stat-value">${sE('Trámite').count.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(sE('Trámite').valor)}</div>
+      <span class="stat-badge blue">${pct(sE('Trámite').count,total)}</span>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">🤝 Convenios</div>
+      <div class="stat-value">${sE('Convenio').count.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(sE('Convenio').valor)}</div>
+      <span class="stat-badge gold">${pct(sE('Convenio').count,total)}</span>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">✅ Cancelados</div>
+      <div class="stat-value">${sE('Cancelado').count.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(sE('Cancelado').valor)}</div>
+      <span class="stat-badge green">${pct(sE('Cancelado').count,total)}</span>
+    </div>
+    <div class="stat-card navy">
+      <div class="stat-label">📁 Terminados</div>
+      <div class="stat-value">${sE('Terminado').count.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(sE('Terminado').valor)}</div>
+      <span class="stat-badge blue">${pct(sE('Terminado').count,total)}</span>
+    </div>`;
+
+  // ── Responsables ──
+  const cR={'Gabriel Bedoya':'#60a5fa','Jeison Maya':'#fcd34d','Juan Pablo':'#86efac'};
+  show('ica-s1'); show('ica-tw-resp');
+  document.getElementById('ica-responsables').innerHTML = responsables.map(r=>`
+    <tr>
+      <td><strong style="color:${cR[r.responsable]||'rgba(255,255,255,.6)'}">${r.responsable}</strong></td>
+      <td><strong>${r.count.toLocaleString()}</strong></td>
+      <td>${fmt(r.valor)}</td>
+      <td>${fmt(r.saldo)}</td>
+      <td>${total>0?(r.count/total*100).toFixed(1):0}%</td>
+    </tr>`).join('');
+
+  // ── Tipos ──
+  show('ica-s2'); show('ica-tw-tipos');
+  document.getElementById('ica-tipos').innerHTML = tipos.map(t=>{
+    const p = totalAdeudado>0?(t.valor/totalAdeudado*100).toFixed(1):0;
+    return `<tr>
+      <td>${t.tipo}</td>
+      <td>${t.count.toLocaleString()}</td>
+      <td>${fmt(t.valor)}</td>
+      <td>${p}%</td>
+      <td style="min-width:100px">
+        <div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:#2d8de8"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // ── Estados ──
+  const cE={'Trámite':'#60a5fa','Convenio':'#fcd34d','Cancelado':'#86efac',
+    'Terminado':'rgba(255,255,255,.4)','Reorganización':'#c4b5fd',
+    'Repetido':'#fca5a5','Sin estado':'rgba(255,255,255,.2)'};
+  show('ica-s3'); show('ica-tw-estados');
+  document.getElementById('ica-estados').innerHTML = estados.map(e=>{
+    const p = total>0?(e.count/total*100).toFixed(1):0;
+    const c = cE[e.estado]||'rgba(255,255,255,.3)';
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:7px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0;display:inline-block"></span>
+        ${e.estado}
+      </span></td>
+      <td><strong>${e.count.toLocaleString()}</strong></td>
+      <td>${fmt(e.valor)}</td>
+      <td>${p}%</td>
+      <td style="min-width:100px">
+        <div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:${c}"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // ── Convenios activos ──
+  show('ica-s4'); show('ica-tw-conv');
+  document.getElementById('ica-convenios').innerHTML = convenios.length
+    ? convenios.map(e=>`
+      <tr>
+        <td class="mono">${e.radicado}</td>
+        <td style="font-weight:600;color:#fff">${e.nombre}</td>
+        <td style="text-align:center">${e.vigencia||'—'}</td>
+        <td style="text-align:right">${fmt(e.valorTotal)}</td>
+        <td style="text-align:right;color:#86efac">${fmt(e.recaudado)}</td>
+        <td style="text-align:right;color:#fcd34d;font-weight:700">${fmt(e.saldo)}</td>
+        <td style="font-size:11px;color:var(--soft)">${e.responsable}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sin convenios activos</td></tr>';
+
+  // ── Top 15 trámite ──
+  show('ica-s5'); show('ica-tw-top');
+  document.getElementById('ica-top-tramite').innerHTML = topTramite.length
+    ? topTramite.map((e,i)=>`
+      <tr>
+        <td style="text-align:center;font-weight:700;color:#60a5fa">${i+1}</td>
+        <td class="mono">${e.radicado}</td>
+        <td style="font-weight:600;color:#fff">${e.nombre}</td>
+        <td style="text-align:center">${e.vigencia||'—'}</td>
+        <td style="font-size:11px;color:var(--soft)">${e.tipo||'—'}</td>
+        <td style="text-align:right;font-weight:700;color:#fca5a5">${fmt(e.valorTotal)}</td>
+        <td style="font-size:11px;color:var(--soft)">${e.responsable}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Sin expedientes en trámite</td></tr>';
+
+  // Actualizar hora en nav
+  const up=document.getElementById('update-time');
+  if(up) up.textContent='ICA: '+( d.actualizado||new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}));
 }
 
 </script>
