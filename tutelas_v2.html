@@ -378,7 +378,7 @@
 <script>
 const SHEET_ID    = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
 const GID_TUT     = "0";
-const GID_FAL     = "1973025481";
+const GID_FAL     = "995241537";
 const GID_INC     = "528315836";
 const APPS_URL    = "https://script.google.com/macros/s/AKfycbxQK9MojlvC3aZoQR4fCPL_ScKQ58OYJinHlp9K19y9RcQNensF8olOiaaMHidSgiqF/exec";
 const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño"];
@@ -415,19 +415,35 @@ async function leerGviz(gid) {
   const json=JSON.parse(txt.replace(/^[^(]+\(/,"").replace(/\);?\s*$/,""));
   const cols=json.table.cols, rows=json.table.rows;
   if (!rows) return [];
+  // Construir mapa de etiqueta → índice para robustez ante columnas de fórmula o vacías
+  const colMap={};
+  cols.forEach((col,i)=>{
+    const lbl=(col.label||"").trim();
+    if(lbl && !(lbl in colMap)) colMap[lbl]=i;
+  });
+  function getCell(row,idx){
+    if(idx===undefined||idx===null)return"";
+    const cell=row.c?row.c[idx]:null;
+    if(!cell||cell.v===null||cell.v===undefined)return"";
+    if(typeof cell.v==="string"&&cell.v.startsWith("Date(")){
+      const p=cell.v.replace("Date(","").replace(")","").split(",").map(Number);
+      return`${String(p[2]).padStart(2,"0")}/${String(p[1]+1).padStart(2,"0")}/${p[0]}`;
+    }
+    if(cell.v instanceof Object&&typeof cell.v.getDate==="function"){
+      const d=cell.v;
+      return`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+    }
+    return String(cell.f??cell.v??"").trim();
+  }
   return rows.map(row=>{
     const r={};
-    cols.forEach((col,i)=>{
-      const cell=row.c?row.c[i]:null;
-      if (!cell||cell.v===null||cell.v===undefined){r[col.label]="";return;}
-      if (cell.v instanceof Object&&cell.v.constructor===Date){const d=cell.v;r[col.label]=`${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;}
-      else if (typeof cell.v==="string"&&cell.v.startsWith("Date(")){const p=cell.v.replace("Date(","").replace(")","").split(",").map(Number);r[col.label]=`${String(p[2]).padStart(2,"0")}/${String(p[1]+1).padStart(2,"0")}/${p[0]}`;}
-      else{r[col.label]=String(cell.f??cell.v??"").trim();}
-    });
+    // Leer por nombre de columna usando el mapa — inmune a desplazamientos por fórmulas
+    Object.keys(colMap).forEach(lbl=>{ r[lbl]=getCell(row,colMap[lbl]); });
     const flim=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
     r._dias=calcDias(flim);
     return r;
-  }).filter(r=>r["ACCIONANTE"]||r["TIPO"]);
+  // Filtro ampliado: basta con RADICADO para considerar la fila válida
+  }).filter(r=>(r["ACCIONANTE"]||"").trim()||(r["TIPO"]||"").trim()||(r["RADICADO"]||"").trim());
 }
 
 function calcDias(fecha){
@@ -749,22 +765,22 @@ async function guardarEstado(){
   actual["RADICADO DE CUMPLIMIENTO"]=respRad;
   if(!APPS_URL){toast("⚠️ Cambio local. Configura APPS_URL para persistir en Sheets.","err");}
   else{
-    // origenModal es la fuente confiable: "tutela", "fallo", "incidente", "historico"
-    const hojaDestino = esInc ? "incidente" : esFallo ? "fallo" : "tutela";
-    const campos = { estado: nuevoEst, respuestaPQR: respPQR, respuestaRadicado: respRad, encargadoPQR: encPQR };
-    const payload = JSON.stringify({accion:"actualizarCampos", radicado:actual["RADICADO"], campos:campos, tipo:hojaDestino});
     try{
-      const res=await fetch(APPS_URL,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain"},body:payload});
+      const campos = { estado: nuevoEst, respuestaPQR: respPQR, respuestaRadicado: respRad, encargadoPQR: encPQR };
+    try{
+      const res=await fetch(APPS_URL,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain"},
+        body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
       const d=await res.json();
-      if(d.ok)toast("✅ Guardado en Sheets","ok");
-      else toast("❌ Error: "+d.error,"err");
+      if(d.ok)toast("✅ Guardado en Sheets","ok");else toast("Error: "+d.error,"err");
     }catch(e){
       // Fallback no-cors — el POST llega al servidor aunque no podemos leer la respuesta
       try{
-        await fetch(APPS_URL,{method:"POST",mode:"no-cors",redirect:"follow",headers:{"Content-Type":"text/plain"},body:payload});
-        toast("✅ Enviado al Sheets (sin confirmación de respuesta)","ok");
-      }catch(e2){toast("❌ Error de red: "+e2.message,"err");}
+        await fetch(APPS_URL,{method:"POST",mode:"no-cors",redirect:"follow",headers:{"Content-Type":"text/plain"},
+          body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
+        toast("✅ Enviado al Sheets (sin confirmación)","ok");
+      }catch(e2){toast("Error de red: "+e2.message,"err");}
     }
+    }catch(e){toast("Error de red: "+e.message,"err");}
   }
   renderAll();
   document.getElementById("overlay").classList.remove("open");
