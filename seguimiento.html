@@ -181,6 +181,86 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 .btn-cancel{background:#f3f4f6;border:1.5px solid #e5e7eb;color:#374151;
   border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer}
 
+
+/* ── MODAL ACTUACIONES ── */
+.act-overlay{display:none;position:fixed;inset:0;background:rgba(5,12,30,.85);
+  z-index:9999;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(8px)}
+.act-overlay.open{display:flex}
+.act-modal{background:linear-gradient(155deg,#111827,#0d1525);
+  border:1px solid rgba(255,255,255,.1);border-radius:20px;
+  width:100%;max-width:560px;max-height:92vh;overflow-y:auto;
+  box-shadow:0 32px 64px rgba(0,0,0,.7)}
+.act-head{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;gap:10px;flex-shrink:0}
+.act-head h3{font-size:15px;font-weight:700;flex:1;color:#fff}
+.act-close{background:none;border:none;color:rgba(255,255,255,.4);
+  cursor:pointer;font-size:18px;padding:4px;transition:color .15s;line-height:1}
+.act-close:hover{color:#fff}
+.act-body{padding:20px}
+.act-info{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+  border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px}
+.act-info-row{display:flex;justify-content:space-between;margin-bottom:5px;gap:12px}
+.act-info-row:last-child{margin-bottom:0}
+.act-info-lbl{color:rgba(255,255,255,.45);flex-shrink:0}
+.act-info-val{color:#fff;font-weight:600;text-align:right}
+.act-info-val.deuda{color:#fcd34d;font-size:13px}
+.act-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.act-fg label{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);
+  text-transform:uppercase;letter-spacing:.06em}
+.act-fg input,.act-fg select,.act-fg textarea{
+  background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);
+  border-radius:10px;color:#fff;padding:9px 13px;font-size:13px;
+  font-family:'DM Sans',sans-serif;outline:none;transition:all .2s;width:100%}
+.act-fg input:focus,.act-fg select:focus,.act-fg textarea:focus{
+  border-color:rgba(45,141,232,.6);background:rgba(45,141,232,.08)}
+.act-fg select option{background:#0f2d5e}
+.act-g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.act-foot{padding:14px 20px;border-top:1px solid rgba(255,255,255,.07);
+  display:flex;gap:10px}
+.act-foot button{flex:1;padding:11px;border-radius:10px;font-size:13px;
+  font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;
+  border:none;transition:all .2s}
+.act-btn-cancel{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);
+  border:1px solid rgba(255,255,255,.12)!important}
+.act-btn-save{background:linear-gradient(135deg,#1a6fc4,#2d8de8);color:#fff}
+.act-btn-save:hover{opacity:.88}
+.act-st{display:none;padding:9px 13px;border-radius:9px;font-size:12px;
+  font-weight:500;margin-bottom:12px;align-items:center;gap:8px}
+.act-st.ok{display:flex;background:rgba(22,163,74,.15);color:#86efac;
+  border:1px solid rgba(22,163,74,.3)}
+.act-st.err{display:flex;background:rgba(220,38,38,.15);color:#fca5a5;
+  border:1px solid rgba(220,38,38,.3)}
+.act-st.load{display:flex;background:rgba(45,141,232,.15);color:#93c5fd;
+  border:1px solid rgba(45,141,232,.3)}
+.act-spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+
+/* ── HISTORIAL DE ACTUACIONES ── */
+.hist-wrap{margin-top:16px;display:none}
+.hist-title{font-size:11px;font-weight:700;color:rgba(255,255,255,.45);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;
+  display:flex;align-items:center;justify-content:space-between}
+.hist-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;padding:11px 13px;margin-bottom:8px}
+.hist-item:last-child{margin-bottom:0}
+.hist-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.hist-fecha{font-size:10px;color:rgba(255,255,255,.4)}
+.hist-tipo{font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px}
+.hist-tipo.pago{background:rgba(22,163,74,.2);color:#86efac}
+.hist-tipo.promesa{background:rgba(245,158,11,.2);color:#fcd34d}
+.hist-tipo.nocontesta{background:rgba(220,38,38,.2);color:#fca5a5}
+.hist-tipo.proceso{background:rgba(45,141,232,.2);color:#93c5fd}
+.hist-tipo.default{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)}
+.hist-func{font-size:10px;color:rgba(255,255,255,.35);margin-left:auto}
+.hist-desc{font-size:12px;color:rgba(255,255,255,.75);line-height:1.4}
+.hist-empty{text-align:center;padding:20px;color:rgba(255,255,255,.3);font-size:12px}
+
+/* ── BOTÓN ACTUACIÓN EN TABLAS ── */
+.btn-act{background:rgba(45,141,232,.15);border:1px solid rgba(45,141,232,.25);
+  color:#93c5fd;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:600;
+  cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn-act:hover{background:rgba(45,141,232,.3);color:#fff}
 @media(max-width:768px){
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .masivos-grid{grid-template-columns:repeat(2,1fr)}
@@ -311,7 +391,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
   <div class="section-title" id="ica-s4" style="display:none">🤝 Convenios activos</div>
   <div class="table-wrap" id="ica-tw-conv" style="display:none">
     <table>
-      <thead><tr><th>Radicado</th><th>Contribuyente</th><th>Vigencia</th><th>Valor adeudado ($)</th><th>Recaudado ($)</th><th>Saldo ($)</th><th>Responsable</th></tr></thead>
+      <thead><tr><th>Radicado</th><th>Contribuyente</th><th>Vigencia</th><th>Valor adeudado ($)</th><th>Recaudado ($)</th><th>Saldo ($)</th><th>Responsable</th><th>Acción</th></tr></thead>
       <tbody id="ica-convenios"></tbody>
     </table>
   </div>
@@ -319,13 +399,110 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
   <div class="section-title" id="ica-s5" style="display:none">⚡ Top 15 en Trámite — mayor valor</div>
   <div class="table-wrap" id="ica-tw-top" style="display:none">
     <table>
-      <thead><tr><th>#</th><th>Radicado</th><th>Contribuyente</th><th>Vigencia</th><th>Tipo</th><th>Valor adeudado ($)</th><th>Responsable</th></tr></thead>
+      <thead><tr><th>#</th><th>Radicado</th><th>Contribuyente</th><th>Vigencia</th><th>Tipo</th><th>Valor adeudado ($)</th><th>Responsable</th><th>Acción</th></tr></thead>
       <tbody id="ica-top-tramite"></tbody>
     </table>
   </div>
 </div>
 
 </div><!-- /main-wrap -->
+
+
+<!-- ═══ MODAL ACTUACIONES ═══ -->
+<div class="act-overlay" id="act-overlay">
+  <div class="act-modal">
+    <div class="act-head">
+      <span style="font-size:20px">📝</span>
+      <h3 id="act-titulo">Registrar actuación</h3>
+      <button class="act-close" onclick="cerrarAct()">✕</button>
+    </div>
+    <div class="act-body">
+
+      <!-- Info del expediente -->
+      <div class="act-info">
+        <div class="act-info-row">
+          <span class="act-info-lbl">Radicado</span>
+          <span class="act-info-val" id="act-radicado">—</span>
+        </div>
+        <div class="act-info-row">
+          <span class="act-info-lbl">Contribuyente</span>
+          <span class="act-info-val" id="act-nombre">—</span>
+        </div>
+        <div class="act-info-row">
+          <span class="act-info-lbl">Módulo</span>
+          <span class="act-info-val" id="act-modulo-lbl">—</span>
+        </div>
+        <div class="act-info-row">
+          <span class="act-info-lbl">Valor adeudado</span>
+          <span class="act-info-val deuda" id="act-valor">—</span>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="act-st" id="act-st"></div>
+
+      <!-- Formulario -->
+      <div class="act-g2">
+        <div class="act-fg">
+          <label>Tipo de actuación *</label>
+          <select id="act-tipo">
+            <option value="">Seleccione...</option>
+            <option value="Llamada telefónica">📞 Llamada telefónica</option>
+            <option value="Notificación">📬 Notificación</option>
+            <option value="Visita domiciliaria">🏠 Visita domiciliaria</option>
+            <option value="Correo electrónico">✉️ Correo electrónico</option>
+            <option value="Embargo">⚖️ Embargo</option>
+            <option value="Desembargo">✅ Desembargo</option>
+            <option value="Acuerdo de pago">🤝 Acuerdo de pago</option>
+            <option value="Mandamiento de pago">📋 Mandamiento de pago</option>
+            <option value="Diligencia">📁 Diligencia</option>
+            <option value="Otro">📌 Otro</option>
+          </select>
+        </div>
+        <div class="act-fg">
+          <label>Resultado *</label>
+          <select id="act-resultado">
+            <option value="">Seleccione...</option>
+            <option value="Contactado">✅ Contactado</option>
+            <option value="Prometió pagar">🤝 Prometió pagar</option>
+            <option value="Pagó">💰 Pagó</option>
+            <option value="No contestó">📵 No contestó</option>
+            <option value="Dirección incorrecta">❌ Dirección incorrecta</option>
+            <option value="En proceso">⏳ En proceso</option>
+            <option value="Fallecido">📋 Fallecido</option>
+            <option value="Insolvente">⚠️ Insolvente</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="act-fg">
+        <label>Descripción *</label>
+        <textarea id="act-desc" rows="3"
+          placeholder="Detalle lo que se realizó y el resultado obtenido..."></textarea>
+      </div>
+
+      <div class="act-fg">
+        <label>Funcionario *</label>
+        <input type="text" id="act-funcionario"
+          placeholder="Nombre del funcionario que realizó la actuación"/>
+      </div>
+
+      <!-- Historial -->
+      <div class="hist-wrap" id="hist-wrap">
+        <div class="hist-title">
+          <span>📋 Historial de actuaciones</span>
+          <span id="hist-count" style="color:rgba(255,255,255,.3)"></span>
+        </div>
+        <div id="hist-items"></div>
+      </div>
+
+    </div>
+    <div class="act-foot">
+      <button class="act-btn-cancel" onclick="cerrarAct()">Cancelar</button>
+      <button class="act-btn-save" onclick="guardarActuacion()">💾 Guardar actuación</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ MODAL PDF ═══ -->
 <div class="pdf-overlay" id="pdf-overlay">
@@ -1000,8 +1177,9 @@ function renderICA_GAS(d){
         <td style="text-align:right;color:#86efac">${fmt(e.recaudado)}</td>
         <td style="text-align:right;color:#fcd34d;font-weight:700">${fmt(e.saldo)}</td>
         <td style="font-size:11px;color:var(--soft)">${e.responsable}</td>
+        <td><button class="btn-act" onclick="abrirAct('${e.radicado}','${e.nombre.replace(/'/g,"\\'")}',${e.valorTotal},'ICA')">📝 Actuación</button></td>
       </tr>`).join('')
-    : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sin convenios activos</td></tr>';
+    : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sin convenios activos</td></tr>';
 
   // ── Top 15 trámite ──
   show('ica-s5'); show('ica-tw-top');
@@ -1015,12 +1193,165 @@ function renderICA_GAS(d){
         <td style="font-size:11px;color:var(--soft)">${e.tipo||'—'}</td>
         <td style="text-align:right;font-weight:700;color:#fca5a5">${fmt(e.valorTotal)}</td>
         <td style="font-size:11px;color:var(--soft)">${e.responsable}</td>
+        <td><button class="btn-act" onclick="abrirAct('${e.radicado}','${e.nombre.replace(/'/g,"\\'")}',${e.valorTotal},'ICA')">📝 Actuación</button></td>
       </tr>`).join('')
-    : '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Sin expedientes en trámite</td></tr>';
+    : '<tr><td colspan="8" style="text-align:center;color:var(--muted)">Sin expedientes en trámite</td></tr>';
 
   // Actualizar hora en nav
   const up=document.getElementById('update-time');
   if(up) up.textContent='ICA: '+( d.actualizado||new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}));
+}
+
+
+// ════════════════════════════════════════
+// ACTUACIONES — Modal registro
+// ════════════════════════════════════════
+var actActivo = null; // expediente actualmente en edición
+
+function abrirAct(radicado, nombre, valorAdeudado, modulo){
+  actActivo = { radicado, nombre, valorAdeudado, modulo };
+
+  // Rellenar info
+  document.getElementById('act-titulo').textContent   = 'Registrar actuación — ' + modulo;
+  document.getElementById('act-radicado').textContent  = radicado || '—';
+  document.getElementById('act-nombre').textContent    = nombre   || '—';
+  document.getElementById('act-modulo-lbl').textContent= modulo   || '—';
+  document.getElementById('act-valor').textContent     = fmt(valorAdeudado||0);
+
+  // Limpiar form
+  document.getElementById('act-tipo').value        = '';
+  document.getElementById('act-resultado').value   = '';
+  document.getElementById('act-desc').value        = '';
+  document.getElementById('act-st').className      = 'act-st';
+
+  // Funcionario desde sesión guardada
+  var func = '';
+  try{
+    var s = JSON.parse(localStorage.getItem('tutelas_sesion_v2')||'null');
+    if(s && s.usuario) func = s.usuario;
+  }catch(e){}
+  document.getElementById('act-funcionario').value = func;
+
+  // Abrir modal
+  document.getElementById('act-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Cargar historial
+  cargarHistorial(radicado, modulo);
+}
+
+function cerrarAct(){
+  document.getElementById('act-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  actActivo = null;
+}
+
+function setActSt(tipo, msg){
+  var el = document.getElementById('act-st');
+  el.className = 'act-st ' + tipo;
+  el.innerHTML = tipo === 'load'
+    ? '<div class="act-spin"></div><span>' + msg + '</span>'
+    : msg;
+}
+
+async function guardarActuacion(){
+  if(!actActivo) return;
+  var tipo    = document.getElementById('act-tipo').value.trim();
+  var result  = document.getElementById('act-resultado').value.trim();
+  var desc    = document.getElementById('act-desc').value.trim();
+  var func    = document.getElementById('act-funcionario').value.trim();
+
+  if(!tipo)   { setActSt('err','⚠️ Selecciona el tipo de actuación.'); return; }
+  if(!result) { setActSt('err','⚠️ Selecciona el resultado.'); return; }
+  if(!desc)   { setActSt('err','⚠️ La descripción es obligatoria.'); return; }
+  if(!func)   { setActSt('err','⚠️ El nombre del funcionario es obligatorio.'); return; }
+
+  setActSt('load','Guardando actuación...');
+
+  // URL según módulo
+  var url = actActivo.modulo === 'OU' ? URL_OU : URL_ICA;
+
+  try{
+    var body = JSON.stringify({
+      accion:         'registrarActuacion',
+      modulo:          actActivo.modulo,
+      radicado:        actActivo.radicado,
+      contribuyente:   actActivo.nombre,
+      valorAdeudado:   actActivo.valorAdeudado || 0,
+      tipoActuacion:   tipo,
+      descripcion:     desc,
+      resultado:       result,
+      funcionario:     func
+    });
+
+    var res  = await fetch(url, { method:'POST', redirect:'follow',
+      headers:{'Content-Type':'application/json'}, body });
+    var data = await res.json();
+
+    if(!data.ok) throw new Error(data.error || 'Error del servidor');
+
+    setActSt('ok','✅ Actuación registrada — ' + data.fecha + ' ' + data.hora);
+
+    // Limpiar campos
+    document.getElementById('act-tipo').value      = '';
+    document.getElementById('act-resultado').value = '';
+    document.getElementById('act-desc').value      = '';
+
+    // Recargar historial
+    setTimeout(() => cargarHistorial(actActivo.radicado, actActivo.modulo), 800);
+
+  }catch(err){
+    setActSt('err','❌ Error: ' + err.message);
+  }
+}
+
+async function cargarHistorial(radicado, modulo){
+  var hw = document.getElementById('hist-wrap');
+  var hi = document.getElementById('hist-items');
+  if(!hw || !hi) return;
+  hw.style.display = 'block';
+  hi.innerHTML = '<div class="hist-empty">Cargando historial...</div>';
+
+  var url = (modulo === 'OU' ? URL_OU : URL_ICA)
+    + '?radicado=' + encodeURIComponent(radicado)
+    + '&modulo='   + encodeURIComponent(modulo);
+
+  try{
+    var res  = await fetch(url, { redirect:'follow' });
+    var data = await res.json();
+    var acts = data.actuaciones || [];
+
+    document.getElementById('hist-count').textContent =
+      acts.length ? acts.length + ' actuación(es)' : '';
+
+    if(!acts.length){
+      hi.innerHTML = '<div class="hist-empty">Sin actuaciones registradas para este expediente</div>';
+      return;
+    }
+
+    var claseResult = {
+      'Pagó':            'pago',
+      'Prometió pagar':  'promesa',
+      'No contestó':     'nocontesta',
+      'En proceso':      'proceso',
+    };
+
+    hi.innerHTML = acts.map(function(a){
+      var cls = claseResult[a.resultado] || 'default';
+      return '<div class="hist-item">' +
+        '<div class="hist-meta">' +
+          '<span class="hist-fecha">' + (a.fecha||'') + ' ' + (a.hora||'') + '</span>' +
+          '<span class="hist-tipo ' + cls + '">' + (a.tipoActuacion||'—') + '</span>' +
+          '<span class="hist-tipo ' + cls + '">' + (a.resultado||'—') + '</span>' +
+          '<span class="hist-func">' + (a.funcionario||'—') + '</span>' +
+        '</div>' +
+        '<div class="hist-desc">' + (a.descripcion||'—') + '</div>' +
+      '</div>';
+    }).join('');
+
+  }catch(err){
+    hi.innerHTML = '<div class="hist-empty" style="color:#fca5a5">No se pudo cargar el historial</div>';
+  }
 }
 
 </script>
