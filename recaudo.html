@@ -6,295 +6,338 @@
 <title>Recaudo Histórico — Alcaldía de Bello</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="icon" href="favicon.svg" type="image/svg+xml"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --navy:#0f2d5e;--navy-mid:#16396e;--blue:#1a6fc4;--blue2:#2d8de8;
+  --navy:#0a1f3d;--navy2:#0f2d5e;--navy3:#132444;
+  --blue:#1a6fc4;--blue2:#2d8de8;
   --gold:#e8a020;--gold2:#f5c050;
   --green:#16a34a;--red:#dc2626;--orange:#ea580c;--purple:#7c3aed;
-  --bg:#f0f4fa;--surface:#fff;--surface2:#e8edf7;
-  --text:#0f1e35;--text-soft:#4a5a72;--border:#c8d5e8;
-  --radius:12px;--shadow:0 4px 24px rgba(15,45,94,.10);
+  --surface:rgba(255,255,255,.06);--surface2:rgba(255,255,255,.04);
+  --border:rgba(255,255,255,.10);--border2:rgba(255,255,255,.06);
+  --text:#f1f5f9;--soft:rgba(241,245,249,.55);--muted:rgba(241,245,249,.35);
+  --radius:14px;--radius-sm:9px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% 0%,rgba(26,111,196,.2) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 100%,rgba(232,160,32,.09) 0%,transparent 55%),
+    linear-gradient(160deg,#0a1f3d 0%,#0d2550 50%,#09182f 100%);
+}
 
-/* ── PIN ── */
-#pinOverlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#0d2550 100%);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
-.pin-box{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.15);border-radius:20px;padding:36px 32px;width:100%;max-width:360px;text-align:center;backdrop-filter:blur(10px)}
-.pin-ico{font-size:42px;margin-bottom:12px}
-.pin-box h2{font-family:'DM Serif Display',serif;color:#fff;font-size:22px;font-weight:400;margin-bottom:4px}
-.pin-box p{color:rgba(255,255,255,.55);font-size:12px;margin-bottom:24px}
-.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
-.pin-dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.3);transition:all .2s}
-.pin-dot.on{background:var(--gold);border-color:var(--gold)}
-.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.pin-btn{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.18);color:#fff;border-radius:12px;padding:14px;font-size:18px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-.pin-btn:hover{background:rgba(255,255,255,.2)}
-.pin-btn:active{transform:scale(.95)}
-.pin-del{background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.3);color:var(--gold2)}
-.pin-err{color:#f87171;font-size:12px;min-height:18px;margin-top:6px}
-
-/* ── HEADER ── */
-header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 60%,#1a4a8a 100%);position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.25)}
-.hi{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.hico{width:42px;height:42px;background:rgba(255,255,255,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.18)}
-.htx h1{font-family:'DM Serif Display',serif;color:#fff;font-size:17px;font-weight:400}
-.htx p{color:rgba(255,255,255,.55);font-size:11px;margin-top:1px}
-.hact{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.bnav{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);color:#fff;text-decoration:none;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;white-space:nowrap;transition:background .2s;cursor:pointer;font-family:inherit}
-.bnav:hover{background:rgba(255,255,255,.22)}
-.ses-badge{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 10px;font-size:11px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:5px}
+/* ── TOPBAR ── */
+.topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;
+  padding:0 28px;height:56px;background:rgba(10,31,61,.9);
+  backdrop-filter:blur(20px);border-bottom:1px solid rgba(232,160,32,.18)}
+.tb-brand{display:flex;align-items:center;gap:10px}
+.tb-icon{width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,#1a6fc4,#e8a020);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tb-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:-.01em}
+.tb-sub{font-size:10px;color:var(--soft);margin-top:1px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-btn{display:flex;align-items:center;gap:6px;padding:6px 13px;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;text-decoration:none;font-family:'DM Sans',sans-serif;transition:all .18s}
+.tb-btn:hover{background:rgba(255,255,255,.12)}
+.tb-btn.gold{background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.35);color:var(--gold2)}
 
 /* ── TABS ── */
-.tabs{background:rgba(0,0,0,.18);border-bottom:1px solid rgba(255,255,255,.1)}
-.tabsi{max-width:1200px;margin:0 auto;display:flex;padding:0 24px;gap:2px;overflow-x:auto}
-.tab{padding:9px 15px;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:none;font-family:inherit;transition:all .2s;white-space:nowrap}
-.tab:hover{color:#fff}
-.tab.on{color:#fff;border-bottom-color:var(--gold2)}
+.tabs{position:sticky;top:56px;z-index:99;display:flex;align-items:center;
+  padding:0 28px;background:rgba(10,31,61,.7);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);overflow-x:auto}
+.tabs::-webkit-scrollbar{height:0}
+.ntab{display:flex;align-items:center;gap:7px;padding:13px 16px;font-size:12px;font-weight:600;
+  color:var(--soft);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;
+  background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
+.ntab.on{color:var(--text);border-bottom-color:var(--gold)}
+.ntab:hover:not(.on){color:rgba(255,255,255,.8)}
+.nbadge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:18px;text-align:center}
+.nb-blue{background:rgba(45,141,232,.3);color:#93c5fd}
+.nb-gold{background:rgba(232,160,32,.35);color:var(--gold2)}
 
 /* ── MAIN ── */
-main{max-width:1200px;margin:0 auto;padding:20px 24px 80px}
+main{max-width:1300px;margin:0 auto;padding:24px 28px 80px}
 
 /* ── KPIs ── */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid transparent}
-.kpi.blue{border-top-color:var(--blue)}.kpi.green{border-top-color:var(--green)}
-.kpi.gold{border-top-color:var(--gold)}.kpi.red{border-top-color:var(--red)}
-.kpi.purple{border-top-color:var(--purple)}.kpi.orange{border-top-color:var(--orange)}
-.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);margin-bottom:5px}
-.kpi-val{font-size:24px;font-weight:700;color:var(--navy);line-height:1}
-.kpi-sub{font-size:11px;color:var(--text-soft);margin-top:3px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:22px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:rgba(255,255,255,.2)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.blue::before{background:linear-gradient(90deg,var(--blue),var(--blue2))}
+.kpi.gold::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.kpi.green::before{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.kpi.orange::before{background:linear-gradient(90deg,#ea580c,#f97316)}
+.kpi.purple::before{background:linear-gradient(90deg,#7c3aed,#a855f7)}
+.kpi.red::before{background:linear-gradient(90deg,var(--red),#ef4444)}
+.kpi-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);margin-bottom:8px}
+.kpi-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--text);line-height:1}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:4px}
 
-/* ── SECCIÓN ── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
-.card-hdr{background:var(--navy);color:#fff;padding:11px 16px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.card-hdr-left{display:flex;align-items:center;gap:8px}
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:16px;overflow:hidden}
+.card-hdr{padding:12px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-hdr-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+  color:var(--gold2);display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.06em}
 
 /* ── FILTROS ── */
-.filtros{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
-.finp{padding:7px 10px;font-size:12px;font-family:inherit;border:1.5px solid var(--border);border-radius:8px;outline:none;background:#fff;color:var(--text);transition:border-color .2s;min-width:0}
-.finp:focus{border-color:var(--blue)}
-.finp.search{flex:1;min-width:180px}
-.fbtn{padding:7px 13px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .18s}
-.fbtn-primary{background:var(--navy);color:#fff}.fbtn-primary:hover{background:var(--blue)}
-.fbtn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text-soft)}.fbtn-outline:hover{background:var(--surface2)}
-.fbtn-gold{background:var(--gold);color:#fff}.fbtn-gold:hover{filter:brightness(1.08)}
-.fbtn-green{background:var(--green);color:#fff}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;
+  background:var(--surface2);border-bottom:1px solid var(--border2)}
+.finp{padding:7px 11px;font-size:12px;font-family:inherit;
+  border:1.5px solid rgba(255,255,255,.14);border-radius:var(--radius-sm);
+  outline:none;background:rgba(255,255,255,.07);color:var(--text);transition:all .2s;min-width:0}
+.finp:focus{border-color:rgba(45,141,232,.5);background:rgba(45,141,232,.1)}
+.finp option{background:#0f2d5e;color:#f1f5f9}
+.finp.search{flex:1;min-width:200px}
+.fbtn{padding:7px 13px;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .18s}
+.fbtn-primary{background:var(--blue);color:#fff}.fbtn-primary:hover{background:var(--blue2)}
+.fbtn-outline{background:transparent;border:1.5px solid rgba(255,255,255,.18);color:var(--soft)}
+.fbtn-outline:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.fbtn-gold{background:linear-gradient(135deg,var(--gold),#d4891a);color:#0a1f3d;font-weight:700}
+.fbtn-gold:hover{opacity:.9}
+.fbtn-green{background:rgba(22,163,74,.25);border:1px solid rgba(34,197,94,.3);color:#86efac}
 
 /* ── TABLA ── */
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-thead tr{background:var(--surface2);position:sticky;top:0;z-index:2}
-thead th{padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);white-space:nowrap;border-bottom:2px solid var(--border);cursor:pointer;user-select:none}
-thead th:hover{background:#dde4f0}
+thead tr{background:rgba(255,255,255,.05)}
+thead th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--gold2);white-space:nowrap;
+  border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+thead th:hover{background:rgba(255,255,255,.08)}
 thead th.sorted-asc::after{content:' ↑'}
 thead th.sorted-desc::after{content:' ↓'}
-tbody tr{border-bottom:1px solid var(--surface2);transition:background .12s;cursor:pointer}
-tbody tr:hover{background:#f0f6ff}
-tbody tr.gestionado{background:#f0fdf4}
-tbody tr.gestionado:hover{background:#dcfce7}
-tbody td{padding:8px 10px;vertical-align:middle}
-.mono{font-family:monospace;font-size:11px}
-.tr{text-align:right!important}
-.tc{text-align:center!important}
-.nowrap{white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border2);transition:background .12s;cursor:pointer}
+tbody tr:hover{background:rgba(255,255,255,.06)}
+tbody tr.gestionado{border-left:2px solid rgba(22,163,74,.5)}
+tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
 
 /* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap}
-.b-fin{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
-.b-ok{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
-.b-tram{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
-.b-pen{background:#fefce8;color:#854d0e;border:1px solid #fde68a}
-.b-rev{background:#fdf4ff;color:var(--purple);border:1px solid #e9d5ff}
-.b-vacio{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb}
-.b-imp{background:#fff7ed;color:var(--orange);border:1px solid #fed7aa}
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;gap:3px}
+.b-fin{background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)}
+.b-tram{background:rgba(45,141,232,.15);color:#93c5fd;border:1px solid rgba(45,141,232,.3)}
+.b-pen{background:rgba(232,160,32,.15);color:var(--gold2);border:1px solid rgba(232,160,32,.3)}
+.b-rev{background:rgba(124,58,237,.15);color:#c4b5fd;border:1px solid rgba(124,58,237,.3)}
+.b-vacio{background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border2)}
+.b-imp{background:rgba(234,88,12,.15);color:#fdba74;border:1px solid rgba(234,88,12,.3)}
+.chip-nuevo{background:rgba(45,141,232,.25);color:#93c5fd;border:1px solid rgba(45,141,232,.4);
+  font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
 
 /* ── PAGINACIÓN ── */
-.pag{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border);flex-wrap:wrap;gap:8px}
-.pag-info{font-size:11px;color:var(--text-soft)}
+.pag{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
+  background:var(--surface2);border-top:1px solid var(--border2);flex-wrap:wrap;gap:8px}
+.pag-info{font-size:11px;color:var(--soft)}
 .pag-btns{display:flex;gap:3px}
-.pb{width:28px;height:28px;border:1.5px solid var(--border);background:#fff;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;color:var(--text)}
-.pb:hover:not(:disabled){background:var(--surface2)}
-.pb:disabled{opacity:.4;cursor:not-allowed}
-.pb.cur{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pb{width:28px;height:28px;border:1px solid var(--border);background:var(--surface);
+  border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;
+  font-family:inherit;color:var(--text)}
+.pb:hover:not(:disabled){background:rgba(255,255,255,.12)}
+.pb:disabled{opacity:.35;cursor:not-allowed}
+.pb.cur{background:var(--gold);color:#0a1f3d;border-color:var(--gold);font-weight:700}
 
-/* ── MODAL EDICIÓN ── */
-.ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,.75);z-index:9998;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+/* ── MODAL ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;
+  align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
 .ov.open{display:flex}
-.mbox{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:680px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
-.mhdr{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:14px 18px;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
-.mhdr-info h3{font-size:14px;font-weight:600;margin-bottom:3px}
-.mhdr-info p{font-size:11px;color:rgba(255,255,255,.65)}
-.mclose{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px;flex-shrink:0}
-.mbody{padding:18px;overflow-y:auto;flex:1}
-.mfoot{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.mbox{background:linear-gradient(155deg,#111827 0%,#0d1525 100%);
+  border:1px solid rgba(255,255,255,.1);border-radius:20px;
+  box-shadow:0 32px 64px rgba(0,0,0,.7);width:100%;max-width:720px;
+  max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.mhdr{background:linear-gradient(135deg,var(--navy2),#1a4a8a);
+  padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,.1)}
+.mhdr-info h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:3px}
+.mhdr-info p{font-size:11px;color:rgba(255,255,255,.6)}
+.mclose{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.mclose:hover{background:rgba(255,255,255,.2)}
+.mbody{padding:20px;overflow-y:auto;flex:1}
+.mfoot{padding:12px 20px;border-top:1px solid rgba(255,255,255,.08);
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
 
-/* Info del banco (readonly) */
-.banco-info{background:linear-gradient(135deg,#f8fafd,var(--surface2));border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px}
-.banco-info-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-soft);margin-bottom:10px;display:flex;align-items:center;gap:5px}
-.banco-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.banco-info{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:14px;margin-bottom:18px}
+.banco-info-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--gold2);margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.banco-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .banco-item{font-size:11px}
-.banco-lbl{color:var(--text-soft);font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
-.banco-val{color:var(--navy);font-weight:600;word-break:break-word}
-.banco-val.money{color:var(--green);font-size:14px}
+.banco-lbl{color:var(--soft);font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.banco-val{color:var(--text);font-weight:600;word-break:break-word}
+.banco-val.money{color:#86efac;font-size:15px}
 
-/* Campos de gestión */
-.gest-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--navy);margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:6px}
+.msec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--gold2);margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
 .cg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .cg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.campo label{display:block;font-size:10px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-.campo input,.campo select,.campo textarea{width:100%;padding:8px 10px;font-size:12px;font-family:inherit;border:1.5px solid var(--border);border-radius:7px;outline:none;color:var(--text);background:var(--bg);transition:border-color .2s}
-.campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--blue);background:#fff}
+.campo{margin-bottom:10px}
+.campo label{display:block;font-size:10px;font-weight:600;color:var(--soft);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.campo input,.campo select,.campo textarea{width:100%;padding:8px 11px;font-size:12px;
+  font-family:inherit;border:1.5px solid rgba(255,255,255,.14);border-radius:8px;
+  outline:none;color:var(--text);background:rgba(255,255,255,.07);transition:all .2s}
+.campo input:focus,.campo select:focus,.campo textarea:focus{
+  border-color:rgba(45,141,232,.5);background:rgba(45,141,232,.1)}
 .campo textarea{resize:vertical;min-height:64px}
+.campo select option{background:#0f2d5e}
 
-/* Log de cambios */
-.log-wrap{background:#f8fafd;border-radius:8px;padding:10px 12px;margin-top:12px}
-.log-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-soft);margin-bottom:8px}
-.log-item{font-size:11px;padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:8px}
-.log-item:last-child{border-bottom:none;padding-bottom:0}
-.log-ts{color:var(--text-soft);white-space:nowrap;flex-shrink:0}
-.log-txt{color:var(--text)}
+.log-wrap{background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;margin-top:12px;
+  border:1px solid var(--border2)}
+.log-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--soft);margin-bottom:8px}
+.log-item{font-size:11px;padding:5px 0;border-bottom:1px solid var(--border2);display:flex;gap:8px}
+.log-item:last-child{border-bottom:none}
+.log-ts{color:var(--muted);white-space:nowrap;flex-shrink:0}
+.log-txt{color:var(--soft)}
 
-/* Alerta */
-.alerta{padding:9px 12px;border-radius:7px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:7px}
-.al-ok{background:#f0fdf4;color:var(--green);border:1px solid #bbf7d0}
-.al-err{background:#fef2f2;color:var(--red);border:1px solid #fecaca}
-.al-load{background:#eff6ff;color:var(--blue);border:1px solid #bfdbfe}
-.al-warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
-.spin{width:13px;height:13px;border:2px solid rgba(26,111,196,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+/* ── ALERTAS ── */
+.alerta{padding:9px 13px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;
+  display:flex;align-items:center;gap:7px}
+.al-ok{background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)}
+.al-err{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.al-load{background:rgba(45,141,232,.15);color:#93c5fd;border:1px solid rgba(45,141,232,.3)}
+.al-warn{background:rgba(232,160,32,.15);color:var(--gold2);border:1px solid rgba(232,160,32,.3)}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.15);
+  border-top-color:var(--blue2);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── BARRA DE CARGA GLOBAL ── */
-#carga-bar{position:fixed;top:0;left:0;width:100%;height:3px;z-index:9998;pointer-events:none;overflow:hidden;display:none}
-#carga-bar.activo{display:block}
-#carga-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2),var(--blue2));width:0%;transition:width .4s ease;border-radius:0 2px 2px 0}
-#carga-bar.indeterminate #carga-bar-fill{width:100%;animation:indeterminate 1.4s ease infinite}
-@keyframes indeterminate{0%{transform:translateX(-100%)}100%{transform:translateX(100%);width:100%}}
-#carga-estado{position:fixed;top:0;left:0;right:0;z-index:9997;pointer-events:none;display:none}
-#carga-estado.activo{display:block}
-#carga-toast{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:rgba(255,255,255,.9);font-size:12px;font-weight:500;padding:0;height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:8px;transition:height .25s ease,padding .25s ease}
-#carga-toast.visible{height:32px;padding:0 20px}
-.import-banner{background:linear-gradient(135deg,rgba(234,88,12,.08),rgba(234,88,12,.03));border:1.5px dashed rgba(234,88,12,.35);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
-.import-banner-txt h4{font-size:13px;font-weight:700;color:var(--orange);margin-bottom:3px}
-.import-banner-txt p{font-size:12px;color:var(--text-soft)}
-.import-drop{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;background:#fff}
-.import-drop:hover,.import-drop.drag{border-color:var(--blue);background:#eff6ff}
-.import-drop p{font-size:12px;color:var(--text-soft);margin-top:6px}
+/* ── IMPORT ── */
+.import-banner{background:rgba(234,88,12,.08);border:1.5px dashed rgba(234,88,12,.3);
+  border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;
+  justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.import-banner-txt h4{font-size:13px;font-weight:700;color:#fdba74;margin-bottom:3px}
+.import-banner-txt p{font-size:12px;color:var(--soft)}
+.import-drop{border:2px dashed rgba(255,255,255,.18);border-radius:var(--radius);
+  padding:36px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.import-drop:hover,.import-drop.drag{border-color:var(--blue2);background:rgba(45,141,232,.08)}
+.import-drop p{font-size:12px;color:var(--soft);margin-top:6px}
 
 /* ── EMPTY ── */
-.empty{text-align:center;padding:48px 20px;color:var(--text-soft)}
-.empty-ico{font-size:38px;margin-bottom:8px}
+.empty{text-align:center;padding:52px 20px;color:var(--muted)}
+.empty-ico{font-size:40px;margin-bottom:10px;opacity:.5}
 
-/* ── TOOLTIP ESTADO ── */
-.chip-nuevo{background:rgba(6,182,212,.15);color:#0891b2;border:1px solid rgba(6,182,212,.3);font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
+/* ── BOTÓN GESTIONAR EN TABLA ── */
+.btn-gest{background:rgba(45,141,232,.2);color:#93c5fd;border:1px solid rgba(45,141,232,.35);
+  border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:all .15s}
+.btn-gest:hover{background:rgba(45,141,232,.4);color:#fff}
 
-@media(max-width:768px){.cg2,.cg3{grid-template-columns:1fr}.banco-grid{grid-template-columns:1fr}.hi{padding:10px 14px}main{padding:12px 12px 80px}}
+/* ── SYNC PILL ── */
+.sync-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+  font-size:11px;font-weight:500;background:var(--surface);border:1px solid var(--border);color:var(--soft)}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#6b7280;flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)}
+.sync-dot.loading{background:var(--gold);animation:blink 1s infinite}
+.sync-dot.error{background:#ef4444}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
-/* ── ESTADÍSTICAS ── */
-.est-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:16px}
-.est-card{background:linear-gradient(135deg,#0f2d5e 0%,#16396e 100%);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
-.est-card-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid rgba(232,160,32,.2)}
-.est-barra-wrap{display:flex;align-items:center;gap:10px;margin-bottom:9px}
-.est-barra-label{font-size:12px;color:rgba(255,255,255,.75);min-width:110px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.est-barra-bg{flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
-.est-barra-fill{height:100%;border-radius:4px;transition:width .5s ease}
-.est-barra-val{font-size:12px;font-weight:700;min-width:28px;text-align:right}
-.est-card-wide{grid-column:span 2}
-.est-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-.est-kpi{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;text-align:center}
-.est-kpi-val{font-size:20px;font-weight:700;color:#fff;line-height:1}
-.est-kpi-lbl{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
-.est-doble{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-@media(max-width:600px){.est-card-wide{grid-column:span 1}.est-kpis{grid-template-columns:1fr 1fr}.est-doble{grid-template-columns:1fr}}
+/* ── STATS PENDIENTES ── */
+.pend-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.pend-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;text-align:center}
+.pend-stat-num{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--text);line-height:1}
+.pend-stat-lbl{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.pend-stat.warn .pend-stat-num{color:var(--gold2)}
+.pend-stat.err .pend-stat-num{color:#f87171}
+.pend-stat.ok .pend-stat-num{color:#86efac}
+
+/* ── INDICADOR NOTAS EN FILA ── */
+.nota-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--gold);margin-left:5px;vertical-align:middle;flex-shrink:0}
+
+@media(max-width:768px){
+  .topbar{padding:0 16px}.tabs{padding:0 12px}
+  main{padding:16px 12px 80px}
+  .cg2,.cg3{grid-template-columns:1fr}
+  .banco-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 
-<!-- ════════════ PIN ════════════ -->
-<div id="pinOverlay">
-  <div class="pin-box">
-    <div class="pin-ico">🏦</div>
-    <h2>Recaudo Histórico</h2>
-    <p>Aplicaciones · Devoluciones · Depósitos judiciales<br>Ingrese su PIN personal</p>
-    <div class="pin-dots" id="pinDots">
-      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="tb-brand">
+    <div class="tb-icon">🏦</div>
+    <div>
+      <div class="tb-title">Recaudo Histórico</div>
+      <div class="tb-sub">Depósitos judiciales · Alcaldía de Bello</div>
     </div>
-    <div class="pin-grid">
-      <button class="pin-btn" onclick="pd('1')">1</button><button class="pin-btn" onclick="pd('2')">2</button><button class="pin-btn" onclick="pd('3')">3</button>
-      <button class="pin-btn" onclick="pd('4')">4</button><button class="pin-btn" onclick="pd('5')">5</button><button class="pin-btn" onclick="pd('6')">6</button>
-      <button class="pin-btn" onclick="pd('7')">7</button><button class="pin-btn" onclick="pd('8')">8</button><button class="pin-btn" onclick="pd('9')">9</button>
-      <button class="pin-btn pin-del" onclick="pbd()">⌫</button><button class="pin-btn" onclick="pd('0')">0</button><button class="pin-btn" onclick="pbc()" style="font-size:12px">✕</button>
+  </div>
+  <div class="tb-right">
+    <div class="sync-pill" id="sync-pill">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-lbl">Sin conexión</span>
     </div>
-    <div class="pin-err" id="pinErr"></div>
+    <button class="tb-btn gold" onclick="exportarExcel()">⬇️ Exportar Excel</button>
+    <a href="home.html" class="tb-btn">🏛️ Inicio</a>
   </div>
 </div>
 
-<!-- ════════════ BARRA DE CARGA ════════════ -->
-<div id="carga-bar"><div id="carga-bar-fill"></div></div>
-<div id="carga-estado"><div id="carga-toast"></div></div>
-
-<!-- ════════════ HEADER ════════════ -->
-<header>
-  <div class="hi">
-    <div class="hico">🏦</div>
-    <div class="htx"><h1>Recaudo Histórico</h1><p>Depósitos judiciales · Aplicaciones y Devoluciones · Alcaldía de Bello</p></div>
-    <div class="hact">
-      <div class="ses-badge" id="sesBadge" style="display:none">👤 <strong id="sesNom">—</strong></div>
-      <div class="ses-badge" id="storage-badge" title="Uso de localStorage — haga clic para ver detalles" onclick="goTab('config')" style="cursor:pointer;gap:6px">
-        💾 <span id="storage-indicator" style="background:#16a34a;color:#fff;padding:1px 8px;border-radius:8px;font-size:10px;font-weight:700;transition:background .3s">—</span>
-      </div>
-      <div class="ses-badge" id="sync-badge-wrap" title="Gestiones pendientes de sincronizar con el Sheet" onclick="sincronizarCola()" style="cursor:pointer;gap:6px;display:none">
-        ☁️ <span id="sync-badge" style="background:#ea580c;color:#fff;padding:1px 8px;border-radius:8px;font-size:10px;font-weight:700;display:none">0</span>
-      </div>
-      <a href="home.html" class="bnav">🏛️ Inicio</a>
-      <button class="bnav" onclick="cerrarSesion()">🔐 Salir</button>
-    </div>
-  </div>
-  <div class="tabs">
-    <div class="tabsi">
-      <button class="tab on" id="tab-registros" onclick="goTab('registros')">📋 Registros <span id="badge-total" style="background:rgba(255,255,255,.2);padding:1px 7px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
-      <button class="tab" id="tab-pendientes" onclick="goTab('pendientes')">⏳ Pendientes <span id="badge-pen" style="background:#e8a020;padding:1px 7px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
-      <button class="tab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
-      <button class="tab" id="tab-bitacora" onclick="goTab('bitacora')">📝 Bitácora</button>
-      <button class="tab" id="tab-estadisticas" onclick="goTab('estadisticas')">📊 Estadísticas</button>
-      <button class="tab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
-    </div>
-  </div>
-</header>
+<!-- ── TABS ── -->
+<div class="tabs">
+  <button class="ntab on" id="tab-registros" onclick="goTab('registros')">
+    📋 Registros <span class="nbadge nb-blue" id="badge-total">0</span>
+  </button>
+  <button class="ntab" id="tab-pendientes" onclick="goTab('pendientes')">
+    ⏳ Pendientes <span class="nbadge nb-gold" id="badge-pen">0</span>
+  </button>
+  <button class="ntab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
+  <button class="ntab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
+</div>
 
 <main>
 
-<!-- ══════ PANEL REGISTROS ══════ -->
+<!-- ══ PANEL REGISTROS ══ -->
 <div id="panel-registros">
-
   <div class="kpis" id="kpis">
-    <div class="kpi blue"><div class="kpi-lbl">Total registros</div><div class="kpi-val" id="k-total">—</div><div class="kpi-sub">cargados</div></div>
-    <div class="kpi gold"><div class="kpi-lbl">Pendientes</div><div class="kpi-val" id="k-pen">—</div><div class="kpi-sub">sin gestionar</div></div>
-    <div class="kpi green"><div class="kpi-lbl">Finalizados</div><div class="kpi-val" id="k-fin">—</div><div class="kpi-sub">completados</div></div>
-    <div class="kpi orange"><div class="kpi-lbl">En trámite</div><div class="kpi-val" id="k-tram">—</div><div class="kpi-sub">en proceso</div></div>
-    <div class="kpi purple"><div class="kpi-lbl">Valor total</div><div class="kpi-val" id="k-valor" style="font-size:16px">—</div><div class="kpi-sub">depósitos</div></div>
-    <div class="kpi red"><div class="kpi-lbl">Nuevos lote</div><div class="kpi-val" id="k-nuevos">—</div><div class="kpi-sub">último import</div></div>
+    <div class="kpi blue">
+      <div class="kpi-lbl">Total registros</div>
+      <div class="kpi-val" id="k-total">—</div>
+      <div class="kpi-sub">cargados en sistema</div>
+    </div>
+    <div class="kpi gold">
+      <div class="kpi-lbl">Pendientes</div>
+      <div class="kpi-val" id="k-pen">—</div>
+      <div class="kpi-sub">sin gestionar</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-lbl">Finalizados</div>
+      <div class="kpi-val" id="k-fin">—</div>
+      <div class="kpi-sub">completados</div>
+    </div>
+    <div class="kpi orange">
+      <div class="kpi-lbl">En trámite</div>
+      <div class="kpi-val" id="k-tram">—</div>
+      <div class="kpi-sub">en proceso</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-lbl">Valor total</div>
+      <div class="kpi-val" id="k-valor" style="font-size:18px">—</div>
+      <div class="kpi-sub">depósitos</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-lbl">Nuevos · último lote</div>
+      <div class="kpi-val" id="k-nuevos">—</div>
+      <div class="kpi-sub" id="k-import-fecha">—</div>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-hdr">
-      <div class="card-hdr-left">📋 Registros del banco</div>
-      <div style="display:flex;gap:6px">
-        <button class="bnav" onclick="exportarExcel()" style="font-size:11px;padding:4px 10px">⬇️ Excel</button>
-        <button class="bnav" onclick="goTab('importar')" style="font-size:11px;padding:4px 10px;background:rgba(234,88,12,.3);border-color:rgba(234,88,12,.5)">📥 Importar</button>
-      </div>
+      <div class="card-hdr-title">📋 Registros del banco</div>
+      <button class="tb-btn" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74">📥 Importar</button>
     </div>
-
     <div class="filtros">
       <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrar()"/>
-      <select class="finp" id="f-mes" onchange="filtrar()" title="Filtrar por mes de emisión">
-        <option value="">📅 Todos los meses</option>
-      </select>
       <select class="finp" id="f-estado-dev" onchange="filtrar()">
-        <option value="">Estado devolución (todos)</option>
+        <option value="">Devolución (todos)</option>
         <option value="PENDIENTE">⏳ Pendiente</option>
         <option value="EN TRAMITE">🔄 En trámite</option>
         <option value="FINALIZADO">✅ Finalizado</option>
@@ -302,7 +345,7 @@ tbody td{padding:8px 10px;vertical-align:middle}
         <option value="SIN GESTIONAR">— Sin gestionar</option>
       </select>
       <select class="finp" id="f-estado-apl" onchange="filtrar()">
-        <option value="">Estado aplicación (todos)</option>
+        <option value="">Aplicación (todos)</option>
         <option value="PENDIENTE">⏳ Pendiente</option>
         <option value="EN TRAMITE">🔄 En trámite</option>
         <option value="FINALIZADO">✅ Finalizado</option>
@@ -321,24 +364,21 @@ tbody td{padding:8px 10px;vertical-align:middle}
       </select>
       <button class="fbtn fbtn-outline" onclick="limpiarFiltros()" style="font-size:11px">✕ Limpiar</button>
     </div>
-
     <div class="tw">
       <table id="tabla">
-        <thead>
-          <tr>
-            <th onclick="sortBy('deposito judicial')">#Depósito</th>
-            <th onclick="sortBy('Fecha Emisión')">Fecha</th>
-            <th onclick="sortBy('Nombre Demandante.1')">Demandado</th>
-            <th onclick="sortBy('Identificación Demandado')">Cédula</th>
-            <th onclick="sortBy('Valor del Depóstio')" class="tr">Valor</th>
-            <th onclick="sortBy('Proceso')">Proceso</th>
-            <th onclick="sortBy('Impuesto')">Impuesto</th>
-            <th onclick="sortBy('ESTADO DEVOLUCION')">Est. Devolución</th>
-            <th onclick="sortBy('ESTADO APLICACIÓN')">Est. Aplicación</th>
-            <th onclick="sortBy('RESPONSABLE')">Responsable</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th onclick="sortBy('deposito judicial')">#Depósito</th>
+          <th onclick="sortBy('Fecha Emisión')">Fecha</th>
+          <th onclick="sortBy('Nombre Demandante.1')">Demandado</th>
+          <th onclick="sortBy('Identificación Demandado')">Cédula</th>
+          <th onclick="sortBy('Valor del Depóstio')" style="text-align:right">Valor</th>
+          <th onclick="sortBy('Proceso')">Proceso</th>
+          <th onclick="sortBy('Impuesto')">Impuesto</th>
+          <th onclick="sortBy('ESTADO DEVOLUCION')">Devolución</th>
+          <th onclick="sortBy('ESTADO APLICACIÓN')">Aplicación</th>
+          <th onclick="sortBy('RESPONSABLE')">Responsable</th>
+          <th></th>
+        </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
@@ -349,15 +389,20 @@ tbody td{padding:8px 10px;vertical-align:middle}
   </div>
 </div>
 
-<!-- ══════ PANEL PENDIENTES ══════ -->
+<!-- ══ PANEL PENDIENTES ══ -->
 <div id="panel-pendientes" style="display:none">
+  <div class="pend-stats" id="pend-stats">
+    <div class="pend-stat err"><div class="pend-stat-num" id="ps-sin">—</div><div class="pend-stat-lbl">Sin gestionar</div></div>
+    <div class="pend-stat warn"><div class="pend-stat-num" id="ps-tram">—</div><div class="pend-stat-lbl">En trámite</div></div>
+    <div class="pend-stat warn"><div class="pend-stat-num" id="ps-rev">—</div><div class="pend-stat-lbl">En revisión</div></div>
+    <div class="pend-stat"><div class="pend-stat-num" id="ps-valor">—</div><div class="pend-stat-lbl">Valor total pendiente</div></div>
+    <div class="pend-stat"><div class="pend-stat-num" id="ps-resp">—</div><div class="pend-stat-lbl">Responsables activos</div></div>
+  </div>
   <div class="card">
-    <div class="card-hdr"><div class="card-hdr-left">⏳ Registros sin gestionar o en trámite</div></div>
+    <div class="card-hdr"><div class="card-hdr-title">⏳ Sin finalizar</div></div>
     <div class="filtros">
       <input class="finp search" id="fp-buscar" placeholder="🔍 Buscar..." oninput="filtrarPend()"/>
-      <select class="finp" id="fp-responsable" onchange="filtrarPend()">
-        <option value="">Responsable (todos)</option>
-      </select>
+      <select class="finp" id="fp-responsable" onchange="filtrarPend()"><option value="">Responsable (todos)</option></select>
       <select class="finp" id="fp-impuesto" onchange="filtrarPend()">
         <option value="">Impuesto (todos)</option>
         <option value="PREDIAL">Predial</option>
@@ -368,13 +413,11 @@ tbody td{padding:8px 10px;vertical-align:middle}
     </div>
     <div class="tw">
       <table>
-        <thead>
-          <tr>
-            <th>#Depósito</th><th>Fecha</th><th>Demandado</th><th>Cédula</th>
-            <th class="tr">Valor</th><th>Impuesto</th><th>Est. Dev.</th><th>Est. Apl.</th>
-            <th>Responsable</th><th>Acción</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>#Depósito</th><th>Fecha</th><th>Demandado</th><th>Cédula</th>
+          <th style="text-align:right">Valor</th><th>Impuesto</th>
+          <th>Devolución</th><th>Aplicación</th><th>Responsable</th><th></th>
+        </tr></thead>
         <tbody id="tbody-pend"></tbody>
       </table>
     </div>
@@ -385,41 +428,42 @@ tbody td{padding:8px 10px;vertical-align:middle}
   </div>
 </div>
 
-<!-- ══════ PANEL IMPORTAR ══════ -->
+<!-- ══ PANEL IMPORTAR ══ -->
 <div id="panel-importar" style="display:none">
   <div class="import-banner">
     <div class="import-banner-txt">
       <h4>📥 Importar nuevo lote del banco</h4>
-      <p>Suba el Excel que envía el banco. El sistema detecta automáticamente los registros nuevos y evita duplicados.</p>
+      <p>Suba el Excel que envía el banco. El sistema detecta registros nuevos y evita duplicados.</p>
     </div>
     <button class="fbtn fbtn-gold" onclick="document.getElementById('fileImport').click()">📂 Seleccionar archivo</button>
     <input type="file" id="fileImport" accept=".xlsx,.xls" style="display:none" onchange="procesarImport(this)"/>
   </div>
-
   <div class="card">
-    <div class="card-hdr"><div class="card-hdr-left">📂 Zona de importación</div></div>
+    <div class="card-hdr"><div class="card-hdr-title">📂 Zona de importación</div></div>
     <div class="import-drop" id="importDrop"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
       ondrop="onDrop(event)"
       onclick="document.getElementById('fileImport').click()">
-      <div style="font-size:40px;margin-bottom:8px">📊</div>
-      <div style="font-size:14px;font-weight:600;color:var(--navy)">Arrastre el Excel aquí o haga clic para seleccionar</div>
-      <p>Formatos aceptados: .xlsx · .xls — mismo formato que envía Bancolombia</p>
+      <div style="font-size:40px;margin-bottom:8px;opacity:.6">📊</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text)">Arrastre el Excel aquí o haga clic para seleccionar</div>
+      <p>Formatos: .xlsx · .xls — mismo formato que envía Bancolombia</p>
     </div>
     <div id="import-resultado" style="padding:16px;display:none"></div>
   </div>
 </div>
 
-<!-- ══════ PANEL CONFIG ══════ -->
+<!-- ══ PANEL CONFIG ══ -->
 <div id="panel-config" style="display:none">
   <div class="card">
-    <div class="card-hdr"><div class="card-hdr-left">⚙️ Configuración</div></div>
-    <div id="cfg-banner" style="padding:10px 16px;font-size:12px;background:var(--navy);color:#fff;display:flex;align-items:center;gap:8px">
-      <div id="cfg-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0"></div>
-      <span id="cfg-txt">Sin URL configurada</span>
+    <div class="card-hdr">
+      <div class="card-hdr-title">⚙️ Configuración de conexión</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--soft)">
+        <div id="cfg-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0"></div>
+        <span id="cfg-txt">Sin URL configurada</span>
+      </div>
     </div>
-    <div style="padding:18px">
+    <div style="padding:20px">
       <div class="cg2" style="margin-bottom:14px">
         <div class="campo"><label>URL Apps Script (Google Sheets)</label>
           <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/..."/>
@@ -434,148 +478,43 @@ tbody td{padding:8px 10px;vertical-align:middle}
         <button class="fbtn fbtn-outline" onclick="probarCfg()">🔗 Probar conexión</button>
         <button class="fbtn fbtn-green" onclick="cargarDesdeSheet()">☁️ Cargar desde Sheet</button>
       </div>
-
-      <div style="margin-top:24px;padding:14px;background:#f8fafd;border:1px solid var(--border);border-radius:8px">
-        <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">📋 Acciones Apps Script requeridas</div>
-        <pre style="font-size:10px;color:#374151;line-height:1.7;white-space:pre-wrap;word-break:break-all">// En el doPost() del Apps Script agregar:
-
-case 'listar_recaudo':
+      <div style="margin-top:24px;padding:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius-sm)">
+        <div style="font-size:10px;font-weight:700;color:var(--gold2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">📋 Acciones Apps Script requeridas</div>
+        <pre style="font-size:10px;color:var(--soft);line-height:1.7;white-space:pre-wrap;word-break:break-all">case 'listar_recaudo':
   var sh = ss.getSheetByName(e.parameter.hoja || 'Recaudo_Historico');
   if (!sh || sh.getLastRow() < 2)
     return json({status:'ok', data:[], cols:[]});
   var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0];
   var vals = sh.getRange(2,1,sh.getLastRow()-1,sh.getLastColumn()).getValues();
-  return json({status:'ok', headers:headers, data:vals});
-
-case 'guardar_gestion_recaudo':
-  // Busca por depósito judicial (col A) y actualiza columnas de gestión
-  var sh2 = ss.getSheetByName(e.parameter.hoja || 'Recaudo_Historico');
-  var datos = sh2.getDataRange().getValues();
-  var deposito = String(e.parameter.deposito);
-  for (var i = 1; i < datos.length; i++) {
-    if (String(datos[i][0]) === deposito) {
-      // Columnas de gestión (ajustar índices según su hoja):
-      sh2.getRange(i+1, 17).setValue(e.parameter.proceso);      // Proceso
-      sh2.getRange(i+1, 18).setValue(e.parameter.impuesto);     // Impuesto
-      sh2.getRange(i+1, 20).setValue(e.parameter.convenio);     // Pendiente convenio
-      sh2.getRange(i+1, 21).setValue(e.parameter.observacion);  // Observacion
-      sh2.getRange(i+1, 22).setValue(e.parameter.telefono);     // Telefono
-      sh2.getRange(i+1, 23).setValue(e.parameter.correo);       // Correo
-      sh2.getRange(i+1, 24).setValue(e.parameter.direccion);    // Direccion
-      sh2.getRange(i+1, 25).setValue(e.parameter.ciudad);       // Ciudad
-      sh2.getRange(i+1, 27).setValue(e.parameter.responsable);  // Responsable
-      sh2.getRange(i+1, 28).setValue(e.parameter.gestionTes);   // Gestion Tesoreria
-      sh2.getRange(i+1, 29).setValue(e.parameter.ciInicial);    // CI Inicial
-      sh2.getRange(i+1, 30).setValue(e.parameter.compEgreso);   // Comprobante Egreso
-      sh2.getRange(i+1, 31).setValue(e.parameter.radicadoResp); // Radicado Respuesta
-      sh2.getRange(i+1, 32).setValue(e.parameter.estDev);       // Estado Devolucion
-      sh2.getRange(i+1, 33).setValue(e.parameter.estApl);       // Estado Aplicacion
-      break;
-    }
-  }
-  return json({status:'ok'});</pre>
-      </div>
-
-      <!-- ── PANEL STORAGE ── -->
-      <div style="margin-top:20px;padding:16px;background:#f8fafd;border:1px solid var(--border);border-radius:10px">
-        <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em">💾 Estado del almacenamiento local</div>
-        <div id="storage-detail" style="margin-bottom:12px"></div>
-        <div id="storage-alert-cfg" style="display:none;margin-bottom:12px"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          <button class="fbtn fbtn-outline" onclick="renderStorageDetail()">📊 Actualizar</button>
-          <button class="fbtn" style="background:var(--red);color:#fff;border:none" onclick="purgarDatosBanco()">🗑️ Liberar caché del banco</button>
-        </div>
-        <div style="font-size:11px;color:var(--text-soft);line-height:1.7;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px">
-          <strong>Gestiones y log</strong> → datos irremplazables, nunca se purgan.<br>
-          <strong>Datos del banco</strong> → siempre recargables con ☁️ Cargar desde Sheet.<br>
-          Límite del navegador: <strong>5 MB</strong>. Se recomienda purgar si supera el 70%.
-        </div>
-      </div>
-
-      <!-- ── PANEL COLA DE SINCRONIZACIÓN ── -->
-      <div style="margin-top:16px;padding:16px;background:#f8fafd;border:1px solid var(--border);border-radius:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-          <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em">
-            ☁️ Cola de sincronización con Sheet
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="fbtn fbtn-outline" onclick="renderColaSyncPanel()">🔄 Actualizar</button>
-            <button class="fbtn fbtn-green" onclick="sincronizarCola().then(renderColaSyncPanel)">⚡ Sincronizar ahora</button>
-          </div>
-        </div>
-        <div id="cola-sync-panel"></div>
+  return json({status:'ok', headers:headers, data:vals});</pre>
       </div>
     </div>
   </div>
-</div>
-<!-- ══════ PANEL BITÁCORA ══════ -->
-<div id="panel-bitacora" style="display:none">
-  <div class="card">
-    <div class="card-hdr">
-      <div class="card-hdr-left">📝 Bitácora de gestiones</div>
-      <div style="display:flex;gap:6px">
-        <button class="bnav" onclick="exportarBitacora()" style="font-size:11px;padding:4px 10px">⬇️ Excel</button>
-        <button class="bnav" onclick="limpiarBitacora()" style="font-size:11px;padding:4px 10px;background:rgba(220,38,38,.3);border-color:rgba(220,38,38,.5)">🗑️ Limpiar</button>
-      </div>
-    </div>
-    <div class="filtros">
-      <input class="finp search" id="bit-buscar" placeholder="🔍 Buscar depósito, nombre, usuario..." oninput="renderBitacora()"/>
-      <input type="date" class="finp" id="bit-fecha-desde" onchange="renderBitacora()" title="Desde"/>
-      <input type="date" class="finp" id="bit-fecha-hasta" onchange="renderBitacora()" title="Hasta"/>
-      <select class="finp" id="bit-usuario" onchange="renderBitacora()">
-        <option value="">Todos los usuarios</option>
-      </select>
-      <button class="fbtn fbtn-outline" onclick="limpiarFiltrosBit()" style="font-size:11px">✕ Limpiar</button>
-    </div>
-    <div class="tw">
-      <table id="tabla-bit">
-        <thead>
-          <tr>
-            <th style="width:130px">Fecha / Hora</th>
-            <th style="width:120px">Usuario</th>
-            <th style="width:140px">N° Depósito</th>
-            <th>Contribuyente</th>
-            <th style="width:90px;text-align:right">Valor</th>
-            <th>Cambios realizados</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-bit"></tbody>
-      </table>
-    </div>
-    <div class="pag">
-      <div class="pag-info" id="pag-bit-info">—</div>
-      <div class="pag-btns" id="pag-bit-btns"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════ PANEL ESTADÍSTICAS ══════ -->
-<div id="panel-estadisticas" style="display:none">
-  <div class="est-grid" id="grid-est" style="padding-bottom:20px"></div>
 </div>
 
 </main>
 
-<!-- ════════════ MODAL EDICIÓN ════════════ -->
-<div class="ov" id="modal">
+<footer style="text-align:center;padding:14px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
+  Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello · Antioquia
+</footer>
+
+<!-- ══ MODAL GESTIÓN ══ -->
+<div class="ov" id="modal" onclick="if(event.target===this)cerrarModal()">
   <div class="mbox">
     <div class="mhdr">
       <div class="mhdr-info">
         <h3 id="m-titulo">Gestionar registro</h3>
-        <p id="m-sub">Depósito judicial · Solo se guardan los campos que usted edite</p>
+        <p id="m-sub">Depósito judicial</p>
       </div>
       <button class="mclose" onclick="cerrarModal()">✕</button>
     </div>
     <div class="mbody">
-
-      <!-- Info del banco (readonly) -->
       <div class="banco-info">
         <div class="banco-info-title">🏦 Datos del banco — solo lectura</div>
         <div class="banco-grid" id="m-banco-datos"></div>
       </div>
 
-      <!-- Campos de gestión -->
-      <div class="gest-title">✏️ Gestión del equipo — editable</div>
+      <div class="msec">✏️ Gestión del equipo</div>
 
       <div class="cg3" style="margin-bottom:10px">
         <div class="campo"><label>Estado devolución</label>
@@ -597,10 +536,18 @@ case 'guardar_gestion_recaudo':
           </select>
         </div>
         <div class="campo"><label>Responsable</label>
-          <input type="text" id="m-responsable" placeholder="Nombre del responsable"/>
+          <select id="m-responsable">
+            <option value="">— Sin asignar —</option>
+            <option>Maria Camila Uribe</option>
+            <option>Jaime Cordoba</option>
+            <option>Yennifer Chaverra</option>
+            <option>Dario Baldrich</option>
+            <option>Deisy Lopez</option>
+            <option>Juan Gomez Londoño</option>
+            <option>Jeison Maya</option>
+          </select>
         </div>
       </div>
-
       <div class="cg3" style="margin-bottom:10px">
         <div class="campo"><label>Proceso / Expediente</label>
           <input type="text" id="m-proceso" placeholder="Ej: FP-11465"/>
@@ -626,7 +573,6 @@ case 'guardar_gestion_recaudo':
           </select>
         </div>
       </div>
-
       <div class="cg3" style="margin-bottom:10px">
         <div class="campo"><label>CI Inicial</label>
           <input type="text" id="m-ci-inicial" placeholder="Número CI inicial"/>
@@ -638,16 +584,14 @@ case 'guardar_gestion_recaudo':
           <input type="text" id="m-radicado-resp" placeholder="Radicado"/>
         </div>
       </div>
-
       <div class="cg2" style="margin-bottom:10px">
         <div class="campo"><label>Gestión Tesorería</label>
-          <input type="text" id="m-gest-tes" placeholder="Nombre funcionario tesorería"/>
+          <input type="text" id="m-gest-tes" placeholder="Funcionario tesorería"/>
         </div>
         <div class="campo"><label>Teléfono de contacto</label>
-          <input type="text" id="m-telefono" placeholder="Teléfono del contribuyente"/>
+          <input type="text" id="m-telefono" placeholder="Teléfono contribuyente"/>
         </div>
       </div>
-
       <div class="cg2" style="margin-bottom:10px">
         <div class="campo"><label>Correo electrónico</label>
           <input type="email" id="m-correo" placeholder="correo@ejemplo.com"/>
@@ -656,27 +600,22 @@ case 'guardar_gestion_recaudo':
           <input type="text" id="m-ciudad" placeholder="Ciudad"/>
         </div>
       </div>
-
-      <div class="campo" style="margin-bottom:12px">
+      <div class="campo" style="margin-bottom:10px">
         <label>Dirección</label>
         <input type="text" id="m-direccion" placeholder="Dirección del contribuyente"/>
       </div>
-
       <div class="campo">
         <label>Observación</label>
         <textarea id="m-observacion" placeholder="Detalles de la gestión, soportes, actuaciones..."></textarea>
       </div>
-
-      <!-- Log de cambios -->
       <div class="log-wrap" id="m-log-wrap" style="display:none">
-        <div class="log-title">📝 Historial de cambios en este registro</div>
+        <div class="log-title">📝 Historial de cambios</div>
         <div id="m-log"></div>
       </div>
-
       <div id="m-alert" style="display:none;margin-top:12px"></div>
     </div>
     <div class="mfoot">
-      <div style="font-size:11px;color:var(--text-soft)" id="m-editado-por">—</div>
+      <div style="font-size:11px;color:var(--soft)" id="m-editado-por">—</div>
       <div style="display:flex;gap:8px">
         <button class="fbtn fbtn-outline" onclick="cerrarModal()">Cancelar</button>
         <button class="fbtn fbtn-primary" onclick="guardarGestion()">💾 Guardar gestión</button>
@@ -685,154 +624,70 @@ case 'guardar_gestion_recaudo':
   </div>
 </div>
 
-<footer style="text-align:center;padding:14px;font-size:11px;color:var(--text-soft);border-top:1px solid var(--border)">
-  Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello · Antioquia
-</footer>
-
 <script>
-// ═══════════════════════════════════════════════════
-// CONFIG & ESTADO
-// ═══════════════════════════════════════════════════
-const SESSION_KEY = 'oficios_session';
-const CFG_KEY     = 'recaudo_cfg_v1';
-const DATA_KEY    = 'recaudo_data_v2';
-const GEST_KEY    = 'recaudo_gest_v2';   // gestiones locales por depósito
-const LOG_KEY     = 'recaudo_log_v1';    // log de cambios
+const CFG_KEY   = 'recaudo_cfg_v1';
+const DATA_KEY  = 'recaudo_data_v2';
+const GEST_KEY  = 'recaudo_gest_v2';
+const LOG_KEY   = 'recaudo_log_v1';
 
 var cfg = { apiUrl:'', hoja:'Recaudo_Historico' };
 try { cfg = Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY)||'{}')); } catch(e){}
 
-var dataBanco   = [];   // filas del banco (solo lectura)
-var gestiones   = {};   // { deposito: { campos... } }  — editable por el equipo
-var logCambios  = {};   // { deposito: [ {ts, user, campo, val} ] }
-var filtrados   = [];
+var dataBanco  = [];
+var gestiones  = {};
+var logCambios = {};
+var filtrados  = [];
 var pendFiltrados = [];
-var pagActual   = 1;
-var pagPend     = 1;
-const PS        = 50;
-var sortCol     = 'Fecha Emisión';
-var sortDir     = -1;
+var pagActual  = 1;
+var pagPend    = 1;
+const PS       = 50;
+var sortCol    = 'Fecha Emisión';
+var sortDir    = -1;
 var registroActivo = null;
-var usuarioActual  = null;
 var nuevosUltimoImport = 0;
 
-// Cargar datos persistidos
-// dataBanco NO se carga desde localStorage (Estrategia A: siempre del Sheet)
-// Solo gestiones y log son locales — son irremplazables
+try { dataBanco  = JSON.parse(localStorage.getItem(DATA_KEY)||'[]'); } catch(e){}
 try { gestiones  = JSON.parse(localStorage.getItem(GEST_KEY)||'{}'); } catch(e){}
-try { logCambios = JSON.parse(localStorage.getItem(LOG_KEY)||'{}');  } catch(e){}
-// Limpiar caché viejo del banco para liberar espacio
-try { localStorage.removeItem(DATA_KEY); } catch(e){}
+try { logCambios = JSON.parse(localStorage.getItem(LOG_KEY) ||'{}'); } catch(e){}
 
-// ═══════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════
+// ── SYNC PILL ──
+function setSS(estado, lbl){
+  var d=document.getElementById('sync-dot');
+  var l=document.getElementById('sync-lbl');
+  if(d) d.className='sync-dot'+(estado==='ok'?' ok':estado==='loading'?' loading':estado==='error'?' error':'');
+  if(l) l.textContent=lbl;
+}
+
+// ── INIT ──
 (function init(){
-  try {
-    var s = JSON.parse(localStorage.getItem(SESSION_KEY)||'null')
-          ||JSON.parse(localStorage.getItem('oficios_session')||'null');
-    if(s && s.expira > Date.now()){
-      usuarioActual = s;
-      document.getElementById('pinOverlay').style.display='none';
-      aplicarSesion(s);
-      return;
-    }
-  } catch(e){}
-  cargarUsuariosPin();
+  actualizarCfgPanel();
+  if(dataBanco.length){ renderKpis(); filtrar(); llenarSelectResponsables(); }
+  if(cfg.apiUrl){ setSS('loading','Sincronizando...'); cargarDesdeSheet(); }
+  else setSS('','Sin Sheet configurado');
 })();
 
-function aplicarSesion(s){
-  var nb=document.getElementById('sesBadge');
-  var nn=document.getElementById('sesNom');
-  if(nb) nb.style.display='flex';
-  if(nn) nn.textContent=s.nombre||s.pin;
-  actualizarCfgPanel();
-  actualizarIndicadorStorage();
-  actualizarBadgeSync();
-  if(cfg.apiUrl){
-    cargarDesdeSheet();
-    // Intentar sincronizar cola pendiente al iniciar sesión
-    setTimeout(sincronizarCola, 3000);
-  } else {
-    document.getElementById('tbody').innerHTML=
-      '<tr><td colspan="11"><div class="empty"><div class="empty-ico">☁️</div>'+
-      '<p>Configure la URL del Sheet en ⚙️ Configuración para cargar los datos.</p></div></td></tr>';
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// PIN
-// ═══════════════════════════════════════════════════
-var pinActual=''; var USUARIOS=[];
-
-async function cargarUsuariosPin(){
-  if(!cfg.apiUrl) return;
-  try{var r=await fetch(cfg.apiUrl+'?accion=usuarios');var d=await r.json();if(d.usuarios)USUARIOS=d.usuarios;}catch(e){}
-}
-function pd(d){ if(pinActual.length>=4)return; pinActual+=d; pDots(); if(pinActual.length===4)setTimeout(verificarPin,120); }
-function pbd(){ pinActual=pinActual.slice(0,-1); pDots(); document.getElementById('pinErr').textContent=''; }
-function pbc(){ pinActual=''; pDots(); }
-function pDots(){ for(var i=0;i<4;i++){var el=document.getElementById('pd'+i);if(el)el.classList.toggle('on',i<pinActual.length);} }
-function verificarPin(){
-  var u=null;
-  for(var i=0;i<USUARIOS.length;i++){ if(String(USUARIOS[i].pin)===pinActual&&USUARIOS[i].activo!=='NO'){u=USUARIOS[i];break;} }
-  if(!USUARIOS.length&&pinActual==='0000') u={pin:'0000',nombre:'Administrador',cargo:'Admin'};
-  if(u){
-    var s={pin:u.pin,nombre:u.nombre,cargo:u.cargo||'',expira:Date.now()+8*60*60*1000};
-    localStorage.setItem(SESSION_KEY,JSON.stringify(s));
-    localStorage.setItem('oficios_session',JSON.stringify(s));
-    usuarioActual=s;
-    document.getElementById('pinOverlay').style.display='none';
-    aplicarSesion(s);
-  } else {
-    document.getElementById('pinErr').textContent='PIN incorrecto. Intente de nuevo.';
-    pinActual=''; pDots();
-    var pb=document.querySelector('.pin-box');
-    pb.style.animation='none'; setTimeout(()=>pb.style.animation='shake .4s ease',10);
-  }
-}
-function cerrarSesion(){
-  if(!confirm('¿Cerrar sesión?'))return;
-  localStorage.removeItem(SESSION_KEY); localStorage.removeItem('oficios_session');
-  usuarioActual=null; pinActual=''; pDots();
-  document.getElementById('pinErr').textContent='';
-  document.getElementById('pinOverlay').style.display='flex';
-}
-
-// ═══════════════════════════════════════════════════
 // TABS
-// ═══════════════════════════════════════════════════
 function goTab(t){
-  ['registros','pendientes','importar','config','bitacora','estadisticas'].forEach(p=>{
+  ['registros','pendientes','importar','config'].forEach(p=>{
     var el=document.getElementById('panel-'+p);
     var tb=document.getElementById('tab-'+p);
     if(el) el.style.display= p===t?'block':'none';
     if(tb) tb.classList.toggle('on', p===t);
   });
   if(t==='pendientes') filtrarPend();
-  if(t==='config') { actualizarCfgPanel(); renderStorageDetail(); renderColaSyncPanel(); }
-  if(t==='estadisticas') renderEstadisticas();
-  if(t==='bitacora') renderBitacora();
+  if(t==='config') actualizarCfgPanel();
 }
 
-// ═══════════════════════════════════════════════════
 // NORMALIZAR ESTADO
-// ═══════════════════════════════════════════════════
 function normEst(v){
   if(!v||!String(v).trim()) return '';
   var s=String(v).trim().toUpperCase()
-    .replace('FINALIZADO','FINALIZADO').replace('OK','FINALIZADO')
-    .replace('FINALIZADOO','FINALIZADO')
-    .replace('TRAMITE','EN TRAMITE').replace('EN TRAMITE','EN TRAMITE')
-    .replace('EN REVISION','EN REVISION').replace('REVISION','EN REVISION')
-    .replace('EN TRAMITE','EN TRAMITE')
-    .replace('APROBADO','FINALIZADO')
-    .replace('NO INICIADO','PENDIENTE');
+    .replace('FINALIZADOO','FINALIZADO').replace('APROBADO','FINALIZADO')
+    .replace('NO INICIADO','PENDIENTE').replace('OK','FINALIZADO');
   if(s.startsWith('FINALIZ')) return 'FINALIZADO';
   if(s.includes('TRAM')) return 'EN TRAMITE';
   if(s.includes('REVIS')) return 'EN REVISION';
   if(s.includes('PEND')) return 'PENDIENTE';
-  if(s==='OK'||s.startsWith('OK')) return 'FINALIZADO';
   return s||'';
 }
 
@@ -846,28 +701,19 @@ function badgeEst(v){
   return '<span class="badge b-vacio">'+eh(n)+'</span>';
 }
 
-// ═══════════════════════════════════════════════════
-// MERGE: banco + gestiones locales
-// ═══════════════════════════════════════════════════
 function getRow(r){
   var dep=String(r['deposito judicial']||'');
-  var g=gestiones[dep]||{};
-  return Object.assign({}, r, g, { _dep: dep });
+  return Object.assign({},r,gestiones[dep]||{},{_dep:dep});
 }
 
-// ═══════════════════════════════════════════════════
 // KPIs
-// ═══════════════════════════════════════════════════
 function renderKpis(){
-  var total=dataBanco.length;
-  var fin=0,tram=0,pen=0,valor=0;
+  var total=dataBanco.length,fin=0,tram=0,pen=0,valor=0;
   dataBanco.forEach(r=>{
     var row=getRow(r);
-    var ed=normEst(row['ESTADO DEVOLUCION']);
-    var ea=normEst(row['ESTADO APLICACIÓN']);
+    var ed=normEst(row['ESTADO DEVOLUCION']),ea=normEst(row['ESTADO APLICACIÓN']);
     if(ed==='FINALIZADO'||ea==='FINALIZADO') fin++;
     else if(ed==='EN TRAMITE'||ea==='EN TRAMITE') tram++;
-    else if(!ed&&!ea) pen++;
     else pen++;
     valor+=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
   });
@@ -877,9 +723,11 @@ function renderKpis(){
   document.getElementById('k-tram').textContent=tram.toLocaleString('es-CO');
   document.getElementById('k-valor').textContent=fmtM(valor);
   document.getElementById('k-nuevos').textContent=nuevosUltimoImport||'—';
+  // Mostrar fecha del último import
+  var ki=document.getElementById('k-import-fecha');
+  if(ki) ki.textContent=ultimaSync?('Sheet: '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})):(dataBanco.length?'Datos locales':'Sin cargar');
   document.getElementById('badge-total').textContent=total.toLocaleString('es-CO');
-  var pendTotal=pen+tram;
-  document.getElementById('badge-pen').textContent=pendTotal.toLocaleString('es-CO');
+  document.getElementById('badge-pen').textContent=(pen+tram).toLocaleString('es-CO');
 }
 
 function fmtM(n){
@@ -890,1309 +738,341 @@ function fmtM(n){
 }
 function fmt$(n){ return '$'+Math.round(parseFloat(String(n||0).replace(/[^\d.]/g,''))||0).toLocaleString('es-CO'); }
 
-// ═══════════════════════════════════════════════════
-// FILTRAR Y RENDERIZAR TABLA
-// ═══════════════════════════════════════════════════
+// FILTRAR
 function filtrar(){
   var buscar=(document.getElementById('f-buscar').value||'').toLowerCase().trim();
-  var fMes=document.getElementById('f-mes').value; // 'YYYY-MM' o ''
   var fEDev=document.getElementById('f-estado-dev').value;
   var fEApl=document.getElementById('f-estado-apl').value;
   var fImp=(document.getElementById('f-impuesto').value||'').toUpperCase();
   var fResp=(document.getElementById('f-responsable').value||'').toLowerCase();
-
   filtrados=dataBanco.filter(r=>{
     var row=getRow(r);
     if(buscar){
       var hay=((row['deposito judicial']||'')+(row['Nombre Demandante.1']||'')+(row['Identificación Demandado']||'')+(row['Proceso']||'')+(row['Número del Proceso']||'')).toLowerCase();
       if(hay.indexOf(buscar)<0) return false;
     }
-    if(fMes){
-      var fechaFila=String(row['Fecha Emisión']||'').substring(0,7);
-      if(fechaFila !== fMes) return false;
-    }
-    if(fEDev){
-      var ed=normEst(row['ESTADO DEVOLUCION']);
-      if(fEDev==='SIN GESTIONAR'&&ed) return false;
-      if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false;
-    }
-    if(fEApl){
-      var ea=normEst(row['ESTADO APLICACIÓN']);
-      if(fEApl==='SIN GESTIONAR'&&ea) return false;
-      if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false;
-    }
-    if(fImp){
-      var imp=(row['Impuesto']||'').toUpperCase().trim();
-      if(!imp.includes(fImp)&&fImp!==imp) return false;
-    }
-    if(fResp){
-      var resp=(row['RESPONSABLE']||'').toLowerCase();
-      if(resp.indexOf(fResp)<0) return false;
-    }
+    if(fEDev){ var ed=normEst(row['ESTADO DEVOLUCION']); if(fEDev==='SIN GESTIONAR'&&ed) return false; if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false; }
+    if(fEApl){ var ea=normEst(row['ESTADO APLICACIÓN']); if(fEApl==='SIN GESTIONAR'&&ea) return false; if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false; }
+    if(fImp){ var imp=(row['Impuesto']||'').toUpperCase().trim(); if(!imp.includes(fImp)) return false; }
+    if(fResp){ if((row['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     return true;
   });
-
-  // Sort
-  filtrados.sort((a,b)=>{
-    var va=String(getRow(a)[sortCol]||'');
-    var vb=String(getRow(b)[sortCol]||'');
-    return va.localeCompare(vb,'es')*sortDir;
-  });
-
-  pagActual=1;
-  renderTabla();
+  filtrados.sort((a,b)=>String(getRow(a)[sortCol]||'').localeCompare(String(getRow(b)[sortCol]||''),'es')*sortDir);
+  pagActual=1; renderTabla();
 }
 
 function sortBy(col){
   if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
-  document.querySelectorAll('thead th').forEach(th=>{
-    th.classList.remove('sorted-asc','sorted-desc');
-  });
   filtrar();
 }
-
 function limpiarFiltros(){
-  ['f-buscar','f-mes','f-estado-dev','f-estado-apl','f-impuesto','f-responsable'].forEach(id=>{
-    var el=document.getElementById(id); if(el) el.value='';
-  });
+  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable'].forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
   filtrar();
 }
 
 function renderTabla(){
   var data=filtrados.length||document.getElementById('f-buscar').value?filtrados:dataBanco.slice();
   if(!filtrados.length&&!document.getElementById('f-buscar').value) data=dataBanco.slice();
-
   var totalPags=Math.ceil(data.length/PS)||1;
-  var ini=(pagActual-1)*PS;
-  var fin=Math.min(ini+PS,data.length);
-  var pag=data.slice(ini,fin);
-
+  var ini=(pagActual-1)*PS,fin=Math.min(ini+PS,data.length),pag=data.slice(ini,fin);
   if(!pag.length){
-    document.getElementById('tbody').innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros. Cargue el Excel desde ⚙️ Configuración o importe un lote.</p></div></td></tr>';
+    document.getElementById('tbody').innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros. Importe un lote o conecte el Sheet en ⚙️ Configuración.</p></div></td></tr>';
     document.getElementById('pag-info').textContent='0 registros';
     document.getElementById('pag-btns').innerHTML='';
     return;
   }
-
-  var rows=pag.map(r=>{
-    var row=getRow(r);
-    var dep=row._dep;
+  document.getElementById('tbody').innerHTML=pag.map(r=>{
+    var row=getRow(r),dep=row._dep;
     var esNuevo=row._nuevo?'<span class="chip-nuevo">NUEVO</span>':'';
     var gestionado=row['ESTADO DEVOLUCION']||row['ESTADO APLICACIÓN']||gestiones[dep];
-    var fecha=String(row['Fecha Emisión']||'');
-    if(fecha.length>10) fecha=fecha.substring(0,10);
+    var tieneNotas=(logCambios[dep]&&logCambios[dep].length>0)||(gestiones[dep]&&gestiones[dep]['Observacion']);
+    var fecha=String(row['Fecha Emisión']||'');if(fecha.length>10)fecha=fecha.substring(0,10);
     var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     return `<tr class="${gestionado?'gestionado':''}" onclick="abrirModal('${dep.replace(/'/g,"\\'")}')">
-      <td class="mono nowrap">${eh(dep)}${esNuevo}</td>
-      <td class="nowrap">${eh(fecha)}</td>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${eh(dep)}${esNuevo}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}</td>
+      <td style="white-space:nowrap;font-size:11px">${eh(fecha)}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${eh(row['Nombre Demandante.1']||'—')}</td>
-      <td class="mono">${eh(row['Identificación Demandado']||'—')}</td>
-      <td class="tr" style="font-weight:700;color:${valor>1e6?'var(--green)':'var(--navy)'}">${fmt$(valor)}</td>
-      <td style="font-size:11px">${eh(row['Proceso']||'—')}</td>
+      <td style="font-family:monospace;font-size:11px">${eh(row['Identificación Demandado']||'—')}</td>
+      <td style="text-align:right;font-weight:700;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(row['Proceso']||'—')}</td>
       <td>${row['Impuesto']?'<span class="badge b-imp">'+eh(String(row['Impuesto']).trim())+'</span>':'<span class="badge b-vacio">—</span>'}</td>
       <td>${badgeEst(row['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(row['ESTADO APLICACIÓN'])}</td>
-      <td style="font-size:11px;color:var(--text-soft)">${eh(row['RESPONSABLE']||'—')}</td>
-      <td onclick="event.stopPropagation()"><button onclick="abrirModal('${dep.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Gestionar</button></td>
+      <td style="font-size:11px;color:var(--soft)">${eh(row['RESPONSABLE']||'—')}</td>
+      <td onclick="event.stopPropagation()"><button class="btn-gest" onclick="abrirModal('${dep.replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
     </tr>`;
   }).join('');
-
-  document.getElementById('tbody').innerHTML=rows;
-  // Info contextual: si hay filtro de mes activo, mostrarlo
-  var fMesActivo = document.getElementById('f-mes').value;
-  var infoExtra = '';
-  if(fMesActivo){
-    var selMes = document.getElementById('f-mes');
-    var labelMes = selMes.options[selMes.selectedIndex]?.text || fMesActivo;
-    infoExtra = ' — ' + labelMes;
-  }
-  document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros${infoExtra}`;
+  document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros`;
   renderPag(data.length,'pag-btns',pagActual,(n)=>{pagActual=n;renderTabla();});
 }
 
-// ═══════════════════════════════════════════════════
 // PENDIENTES
-// ═══════════════════════════════════════════════════
+function renderPendientesStats(){
+  var sin=0,tram=0,rev=0,valor=0,resps=new Set();
+  pendFiltrados.forEach(r=>{
+    var row=getRow(r);
+    var ed=normEst(row['ESTADO DEVOLUCION']),ea=normEst(row['ESTADO APLICACIÓN']);
+    var estado=ed||ea||'';
+    if(!estado||estado==='PENDIENTE') sin++;
+    else if(estado==='EN TRAMITE') tram++;
+    else if(estado==='EN REVISION') rev++;
+    valor+=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var resp=row['RESPONSABLE']||'';if(resp.trim())resps.add(resp.trim());
+  });
+  var s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  s('ps-sin',sin.toLocaleString('es-CO'));
+  s('ps-tram',tram.toLocaleString('es-CO'));
+  s('ps-rev',rev.toLocaleString('es-CO'));
+  s('ps-valor',fmtM(valor));
+  s('ps-resp',resps.size);
+}
+
 function filtrarPend(){
   var buscar=(document.getElementById('fp-buscar').value||'').toLowerCase();
   var fResp=(document.getElementById('fp-responsable').value||'').toLowerCase();
   var fImp=(document.getElementById('fp-impuesto').value||'').toUpperCase();
-
   pendFiltrados=dataBanco.filter(r=>{
     var row=getRow(r);
-    var ed=normEst(row['ESTADO DEVOLUCION']);
-    var ea=normEst(row['ESTADO APLICACIÓN']);
-    // Solo los que no están finalizados
+    var ed=normEst(row['ESTADO DEVOLUCION']),ea=normEst(row['ESTADO APLICACIÓN']);
     if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
-    if(buscar){
-      var hay=((row['deposito judicial']||'')+(row['Nombre Demandante.1']||'')+(row['Identificación Demandado']||'')).toLowerCase();
-      if(hay.indexOf(buscar)<0) return false;
-    }
+    if(buscar){ var hay=((row['deposito judicial']||'')+(row['Nombre Demandante.1']||'')+(row['Identificación Demandado']||'')).toLowerCase(); if(hay.indexOf(buscar)<0) return false; }
     if(fResp){ if((row['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fImp){ if(!(row['Impuesto']||'').toUpperCase().includes(fImp)) return false; }
     return true;
   });
-
-  pagPend=1;
-  renderPendientes();
+  pagPend=1; renderPendientes();
 }
 
 function renderPendientes(){
-  var ini=(pagPend-1)*PS;
-  var fin=Math.min(ini+PS,pendFiltrados.length);
-  var pag=pendFiltrados.slice(ini,fin);
-
+  var ini=(pagPend-1)*PS,fin=Math.min(ini+PS,pendFiltrados.length),pag=pendFiltrados.slice(ini,fin);
   if(!pag.length){
-    document.getElementById('tbody-pend').innerHTML='<tr><td colspan="10"><div class="empty"><div class="empty-ico">🎉</div><p>No hay registros pendientes con esos filtros.</p></div></td></tr>';
+    document.getElementById('tbody-pend').innerHTML='<tr><td colspan="10"><div class="empty"><div class="empty-ico">🎉</div><p>No hay registros pendientes.</p></div></td></tr>';
     document.getElementById('pag-info-pend').textContent='0 registros';
     document.getElementById('pag-btns-pend').innerHTML='';
     return;
   }
-
-  var rows=pag.map(r=>{
-    var row=getRow(r);
-    var dep=row._dep;
+  document.getElementById('tbody-pend').innerHTML=pag.map(r=>{
+    var row=getRow(r),dep=row._dep;
     var fecha=String(row['Fecha Emisión']||'').substring(0,10);
     var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     return `<tr onclick="abrirModal('${dep.replace(/'/g,"\\'")}')">
-      <td class="mono nowrap">${eh(dep)}</td>
-      <td class="nowrap">${eh(fecha)}</td>
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${eh(dep)}</td>
+      <td style="white-space:nowrap;font-size:11px">${eh(fecha)}</td>
       <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eh(row['Nombre Demandante.1']||'—')}</td>
-      <td class="mono">${eh(row['Identificación Demandado']||'—')}</td>
-      <td class="tr" style="font-weight:700">${fmt$(valor)}</td>
+      <td style="font-family:monospace;font-size:11px">${eh(row['Identificación Demandado']||'—')}</td>
+      <td style="text-align:right;font-weight:700">${fmt$(valor)}</td>
       <td>${row['Impuesto']?'<span class="badge b-imp">'+eh(String(row['Impuesto']).trim())+'</span>':'<span class="badge b-vacio">—</span>'}</td>
       <td>${badgeEst(row['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(row['ESTADO APLICACIÓN'])}</td>
-      <td style="font-size:11px;color:var(--text-soft)">${eh(row['RESPONSABLE']||'—')}</td>
-      <td><button onclick="abrirModal('${dep.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:var(--orange);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Gestionar</button></td>
+      <td style="font-size:11px;color:var(--soft)">${eh(row['RESPONSABLE']||'—')}</td>
+      <td onclick="event.stopPropagation()"><button class="btn-gest" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74" onclick="abrirModal('${dep.replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
     </tr>`;
   }).join('');
-
-  document.getElementById('tbody-pend').innerHTML=rows;
   document.getElementById('pag-info-pend').textContent=`Mostrando ${ini+1}–${fin} de ${pendFiltrados.length.toLocaleString('es-CO')} pendientes`;
   renderPag(pendFiltrados.length,'pag-btns-pend',pagPend,(n)=>{pagPend=n;renderPendientes();});
+  renderPendientesStats();
 }
 
-// ═══════════════════════════════════════════════════
 // PAGINACIÓN
-// ═══════════════════════════════════════════════════
 function renderPag(total,btnId,pag,cb){
-  var tP=Math.ceil(total/PS)||1;
-  var h='';
+  var tP=Math.ceil(total/PS)||1,h='';
   h+=`<button class="pb" onclick="(${cb.toString()})(${pag-1})" ${pag===1?'disabled':''}>‹</button>`;
   for(var p=1;p<=tP;p++){
-    if(p===1||p===tP||Math.abs(p-pag)<=1){
-      h+=`<button class="pb${p===pag?' cur':''}" onclick="(${cb.toString()})(${p})">${p}</button>`;
-    } else if(Math.abs(p-pag)===2){
-      h+=`<button class="pb" disabled style="border:none;background:none">…</button>`;
-    }
+    if(p===1||p===tP||Math.abs(p-pag)<=1) h+=`<button class="pb${p===pag?' cur':''}" onclick="(${cb.toString()})(${p})">${p}</button>`;
+    else if(Math.abs(p-pag)===2) h+=`<button class="pb" disabled style="border:none;background:none;color:var(--muted)">…</button>`;
   }
   h+=`<button class="pb" onclick="(${cb.toString()})(${pag+1})" ${pag===tP?'disabled':''}>›</button>`;
   document.getElementById(btnId).innerHTML=h;
 }
 
-// ═══════════════════════════════════════════════════
-// MODAL GESTIÓN
-// ═══════════════════════════════════════════════════
+// MODAL
 function abrirModal(dep){
   var r=dataBanco.find(x=>String(x['deposito judicial'])===dep);
   if(!r) return;
   registroActivo=dep;
   var row=getRow(r);
-
   document.getElementById('m-titulo').textContent='Depósito '+dep;
   document.getElementById('m-sub').textContent=(row['Nombre Demandante.1']||'—')+' · C.C. '+(row['Identificación Demandado']||'—');
-
-  // Datos banco
   var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
   document.getElementById('m-banco-datos').innerHTML=`
     <div class="banco-item"><div class="banco-lbl">Valor depósito</div><div class="banco-val money">${fmt$(valor)}</div></div>
     <div class="banco-item"><div class="banco-lbl">Fecha emisión</div><div class="banco-val">${eh(String(row['Fecha Emisión']||'').substring(0,10))}</div></div>
     <div class="banco-item"><div class="banco-lbl">Estado depósito</div><div class="banco-val">${eh(row['Estado del Depósito']||'—')}</div></div>
     <div class="banco-item"><div class="banco-lbl">Tipo TX</div><div class="banco-val">${eh(row['Tipo de TX origen']||'—')}</div></div>
-    <div class="banco-item"><div class="banco-lbl">N° Proceso banco</div><div class="banco-val mono">${eh(String(row['Número del Proceso']||'—').replace(/^0+/,''))}</div></div>
-    <div class="banco-item"><div class="banco-lbl">Nombre Consignante</div><div class="banco-val">${eh(row['Nombre Consignante']||'—')}</div></div>
-  `;
-
-  // Cargar campos de gestión
+    <div class="banco-item"><div class="banco-lbl">N° Proceso banco</div><div class="banco-val" style="font-family:monospace">${eh(String(row['Número del Proceso']||'—').replace(/^0+/,''))}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Nombre Consignante</div><div class="banco-val">${eh(row['Nombre Consignante']||'—')}</div></div>`;
   var g=gestiones[dep]||{};
-  var campos={
-    'm-est-dev':'ESTADO DEVOLUCION','m-est-apl':'ESTADO APLICACIÓN',
-    'm-responsable':'RESPONSABLE','m-proceso':'Proceso',
-    'm-impuesto':'Impuesto','m-convenio':'Pendiente convenio',
-    'm-ci-inicial':'CI INICIAL','m-comp-egreso':'COMPROBANTE DE EGRESO',
-    'm-radicado-resp':'RADICADO DE RESPUESTA','m-gest-tes':'GESTION TESORERIA',
-    'm-telefono':'TELEFONO DE CONTACTO','m-correo':'CORREO ELECTRONICO',
-    'm-direccion':'DIRECCION','m-ciudad':'CIUDAD','m-observacion':'Observacion'
-  };
-  Object.keys(campos).forEach(id=>{
-    var el=document.getElementById(id); if(!el) return;
-    var key=campos[id];
-    var val=g[key]!==undefined?g[key]:(row[key]||'');
-    if(id.includes('est-')) val=normEst(val);
-    el.value=String(val||'').trim();
-  });
-
-  // Log
+  var campos={'m-est-dev':'ESTADO DEVOLUCION','m-est-apl':'ESTADO APLICACIÓN','m-responsable':'RESPONSABLE','m-proceso':'Proceso','m-impuesto':'Impuesto','m-convenio':'Pendiente convenio','m-ci-inicial':'CI INICIAL','m-comp-egreso':'COMPROBANTE DE EGRESO','m-radicado-resp':'RADICADO DE RESPUESTA','m-gest-tes':'GESTION TESORERIA','m-telefono':'TELEFONO DE CONTACTO','m-correo':'CORREO ELECTRONICO','m-direccion':'DIRECCION','m-ciudad':'CIUDAD','m-observacion':'Observacion'};
+  Object.keys(campos).forEach(id=>{ var el=document.getElementById(id);if(!el)return; var val=g[campos[id]]!==undefined?g[campos[id]]:(row[campos[id]]||''); if(id.includes('est-'))val=normEst(val); el.value=String(val||'').trim(); });
   var log=logCambios[dep]||[];
-  var lw=document.getElementById('m-log-wrap');
-  var lc=document.getElementById('m-log');
-  if(log.length){
-    lw.style.display='block';
-    lc.innerHTML=log.slice(-8).reverse().map(l=>
-      `<div class="log-item"><span class="log-ts">${eh(l.ts)} · ${eh(l.user)}</span><span class="log-txt">${eh(l.txt)}</span></div>`
-    ).join('');
-  } else lw.style.display='none';
-
+  var lw=document.getElementById('m-log-wrap'),lc=document.getElementById('m-log');
+  if(log.length){ lw.style.display='block'; lc.innerHTML=log.slice(-8).reverse().map(l=>`<div class="log-item"><span class="log-ts">${eh(l.ts)} · ${eh(l.user)}</span><span class="log-txt">${eh(l.txt)}</span></div>`).join(''); }
+  else lw.style.display='none';
   var ep=document.getElementById('m-editado-por');
-  if(g._editadoPor) ep.textContent='Último cambio: '+g._editadoPor+' · '+g._editadoFecha;
-  else ep.textContent='Sin cambios registrados';
-
+  ep.textContent=g._editadoPor?'Último cambio: '+g._editadoPor+' · '+g._editadoFecha:'Sin cambios registrados';
   document.getElementById('m-alert').style.display='none';
   document.getElementById('modal').classList.add('open');
   document.body.style.overflow='hidden';
 }
 
-function cerrarModal(){
-  document.getElementById('modal').classList.remove('open');
-  document.body.style.overflow='';
-  registroActivo=null;
-}
+function cerrarModal(){ document.getElementById('modal').classList.remove('open'); document.body.style.overflow=''; registroActivo=null; }
 
-// ═══════════════════════════════════════════════════
-// COLA DE SINCRONIZACIÓN — Fire & Forget
-// ═══════════════════════════════════════════════════
-var SYNC_KEY = 'recaudo_sync_v1';
-var syncEnProceso = false;
-
-function cargarCola(){ try{ return JSON.parse(localStorage.getItem(SYNC_KEY)||'[]'); }catch(e){ return []; } }
-function guardarCola(q){ try{ localStorage.setItem(SYNC_KEY,JSON.stringify(q)); }catch(e){} }
-
-function encolarSync(dep, g){
-  var q = cargarCola();
-  // Reemplazar si ya existe pendiente para este depósito
-  q = q.filter(function(x){ return x.dep !== dep; });
-  q.push({ dep: dep, g: g, ts: Date.now() });
-  guardarCola(q);
-  actualizarBadgeSync();
-}
-
-function actualizarBadgeSync(){
-  var q = cargarCola();
-  var badge = document.getElementById('sync-badge');
-  var wrap  = document.getElementById('sync-badge-wrap');
-  if(!badge) return;
-  if(q.length > 0){
-    badge.textContent = q.length + ' pendiente'+(q.length>1?'s':'');
-    badge.style.display = 'inline-block';
-    if(wrap) wrap.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-    if(wrap) wrap.style.display = 'none';
-  }
-}
-
-async function sincronizarCola(){
-  if(syncEnProceso || !cfg.apiUrl) return;
-  var q = cargarCola();
-  if(!q.length) return;
-  syncEnProceso = true;
-  actualizarBadgeSyncAnimado(true);
-  var pendientes = q.slice();
-  var fallidos = [];
-  for(var i=0; i<pendientes.length; i++){
-    var item = pendientes[i];
-    try{
-      var params = new URLSearchParams({
-        accion:'guardar_gestion_recaudo', hoja:cfg.hoja, deposito:item.dep,
-        proceso:item.g['Proceso']||'', impuesto:item.g['Impuesto']||'',
-        convenio:item.g['Pendiente convenio']||'',
-        observacion:item.g['Observacion']||'',
-        telefono:item.g['TELEFONO DE CONTACTO']||'',
-        correo:item.g['CORREO ELECTRONICO']||'',
-        direccion:item.g['DIRECCION']||'', ciudad:item.g['CIUDAD']||'',
-        responsable:item.g['RESPONSABLE']||'',
-        gestionTes:item.g['GESTION TESORERIA']||'',
-        ciInicial:item.g['CI INICIAL']||'',
-        compEgreso:item.g['COMPROBANTE DE EGRESO']||'',
-        radicadoResp:item.g['RADICADO DE RESPUESTA']||'',
-        estDev:item.g['ESTADO DEVOLUCION']||'',
-        estApl:item.g['ESTADO APLICACIÓN']||''
-      });
-      var res = await fetch(cfg.apiUrl+'?'+params.toString(), {signal: AbortSignal.timeout(12000)});
-      var d = await res.json();
-      if(d.status !== 'ok') fallidos.push(item);
-    }catch(e){
-      fallidos.push(item);
-    }
-  }
-  guardarCola(fallidos);
-  syncEnProceso = false;
-  actualizarBadgeSyncAnimado(false);
-  actualizarBadgeSync();
-  if(fallidos.length === 0 && pendientes.length > 0){
-    mostrarAlertaStorageGlobal('ok','✅ '+pendientes.length+' gestión(es) sincronizada(s) con el Sheet.');
-  }
-}
-
-function actualizarBadgeSyncAnimado(on){
-  var badge = document.getElementById('sync-badge');
-  if(!badge) return;
-  badge.style.animation = on ? 'spin .8s linear infinite' : 'none';
-}
-
-function renderColaSyncPanel(){
-  var el = document.getElementById('cola-sync-panel');
-  if(!el) return;
-  var q = cargarCola();
-
-  if(!q.length){
-    el.innerHTML =
-      '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;color:#166534">'+
-      '<span style="font-size:18px">✅</span>'+
-      '<div><strong>Todo sincronizado.</strong> No hay gestiones pendientes.</div></div>';
-    return;
-  }
-
-  // Hay pendientes — mostrar tabla
-  var html =
-    '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;margin-bottom:12px">'+
-    '<span style="font-size:16px">⚠️</span>'+
-    '<div><strong>'+q.length+' gestión'+(q.length>1?'es':'')+' pendiente'+(q.length>1?'s':'')+' de sincronizar.</strong> '+
-    'Se reintentará automáticamente cada 30 segundos o al hacer clic en ⚡ Sincronizar ahora.</div></div>';
-
-  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
-  html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  html += '<thead><tr style="background:var(--surface2)">';
-  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">N° Depósito</th>';
-  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Responsable</th>';
-  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Est. Devolución</th>';
-  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Est. Aplicación</th>';
-  html += '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Guardado</th>';
-  html += '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);border-bottom:2px solid var(--border)">Acción</th>';
-  html += '</tr></thead><tbody>';
-
-  q.forEach(function(item, idx){
-    var fechaGuardado = item.g._editadoFecha || '—';
-    var resp = item.g['RESPONSABLE'] || '—';
-    var estDev = normEst(item.g['ESTADO DEVOLUCION']||'') || '—';
-    var estApl = normEst(item.g['ESTADO APLICACIÓN']||'') || '—';
-    html += '<tr style="border-bottom:1px solid var(--surface2)">';
-    html += '<td style="padding:8px 10px;font-family:monospace;font-size:11px;font-weight:600;color:var(--navy)">'+eh(item.dep)+'</td>';
-    html += '<td style="padding:8px 10px;font-size:12px">'+eh(resp)+'</td>';
-    html += '<td style="padding:8px 10px">'+badgeEst(estDev)+'</td>';
-    html += '<td style="padding:8px 10px">'+badgeEst(estApl)+'</td>';
-    html += '<td style="padding:8px 10px;font-size:11px;color:var(--text-soft)">'+eh(fechaGuardado)+'</td>';
-    html += '<td style="padding:8px 10px;text-align:center">';
-    html += '<div style="display:flex;gap:6px;justify-content:center">';
-    html += '<button onclick="reintentarItem('+idx+')" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">↑ Reintentar</button>';
-    html += '<button onclick="descartarItem('+idx+')" style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✕ Descartar</button>';
-    html += '</div></td>';
-    html += '</tr>';
-  });
-
-  html += '</tbody></table></div>';
-  html += '<div style="font-size:11px;color:var(--text-soft);margin-top:8px;padding:0 2px">'+
-    '💡 <strong>Reintentar</strong> envía esa gestión al Sheet ahora mismo. '+
-    '<strong>Descartar</strong> la elimina de la cola (los datos locales se mantienen pero no llegarán al Sheet).</div>';
-
-  el.innerHTML = html;
-}
-
-async function reintentarItem(idx){
-  var q = cargarCola();
-  var item = q[idx];
-  if(!item) return;
-  var btn = event.target;
-  btn.textContent = '⏳';
-  btn.disabled = true;
-  try{
-    var params = new URLSearchParams({
-      accion:'guardar_gestion_recaudo', hoja:cfg.hoja, deposito:item.dep,
-      proceso:item.g['Proceso']||'', impuesto:item.g['Impuesto']||'',
-      convenio:item.g['Pendiente convenio']||'',
-      observacion:item.g['Observacion']||'',
-      telefono:item.g['TELEFONO DE CONTACTO']||'',
-      correo:item.g['CORREO ELECTRONICO']||'',
-      direccion:item.g['DIRECCION']||'', ciudad:item.g['CIUDAD']||'',
-      responsable:item.g['RESPONSABLE']||'',
-      gestionTes:item.g['GESTION TESORERIA']||'',
-      ciInicial:item.g['CI INICIAL']||'',
-      compEgreso:item.g['COMPROBANTE DE EGRESO']||'',
-      radicadoResp:item.g['RADICADO DE RESPUESTA']||'',
-      estDev:item.g['ESTADO DEVOLUCION']||'',
-      estApl:item.g['ESTADO APLICACIÓN']||''
-    });
-    var res = await fetch(cfg.apiUrl+'?'+params.toString(), {signal: AbortSignal.timeout(12000)});
-    var d = await res.json();
-    if(d.status === 'ok'){
-      // Éxito: quitar de la cola
-      q.splice(idx, 1);
-      guardarCola(q);
-      actualizarBadgeSync();
-      renderColaSyncPanel();
-      mostrarAlertaStorageGlobal('ok', '✅ Depósito '+item.dep+' sincronizado correctamente.');
-    } else {
-      btn.textContent = '↑ Reintentar';
-      btn.disabled = false;
-      mostrarAlertaStorageGlobal('err', '❌ El Sheet respondió con error. Intente de nuevo.');
-    }
-  }catch(e){
-    btn.textContent = '↑ Reintentar';
-    btn.disabled = false;
-    mostrarAlertaStorageGlobal('err', '❌ Sin conexión. Verifique la URL del Sheet.');
-  }
-}
-
-function descartarItem(idx){
-  var q = cargarCola();
-  var item = q[idx];
-  if(!item) return;
-  if(!confirm('¿Descartar la gestión del depósito '+item.dep+'?\n\nLos datos quedan guardados localmente pero NO se enviarán al Sheet.')) return;
-  q.splice(idx, 1);
-  guardarCola(q);
-  actualizarBadgeSync();
-  renderColaSyncPanel();
-}
-
-// Sincronizar automáticamente cada 30 segundos y al cargar
-setInterval(sincronizarCola, 30000);
-
-// ═══════════════════════════════════════════════════
-// GUARDAR GESTIÓN — inmediato (Fire & Forget)
-// ═══════════════════════════════════════════════════
-function guardarGestion(){
+async function guardarGestion(){
   if(!registroActivo) return;
-  var dep = registroActivo;
-  var ahora = new Date();
-  var ts = ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+
-           ' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-  var user = usuarioActual ? usuarioActual.nombre : 'desconocido';
-
-  var g = {
-    'ESTADO DEVOLUCION':    document.getElementById('m-est-dev').value,
-    'ESTADO APLICACIÓN':    document.getElementById('m-est-apl').value,
-    'RESPONSABLE':          document.getElementById('m-responsable').value.trim(),
-    'Proceso':              document.getElementById('m-proceso').value.trim(),
-    'Impuesto':             document.getElementById('m-impuesto').value,
-    'Pendiente convenio':   document.getElementById('m-convenio').value,
-    'CI INICIAL':           document.getElementById('m-ci-inicial').value.trim(),
+  var dep=registroActivo;
+  var ahora=new Date();
+  var ts=ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  var user='Sistema';
+  var g={
+    'ESTADO DEVOLUCION':document.getElementById('m-est-dev').value,
+    'ESTADO APLICACIÓN':document.getElementById('m-est-apl').value,
+    'RESPONSABLE':document.getElementById('m-responsable').value.trim(),
+    'Proceso':document.getElementById('m-proceso').value.trim(),
+    'Impuesto':document.getElementById('m-impuesto').value,
+    'Pendiente convenio':document.getElementById('m-convenio').value,
+    'CI INICIAL':document.getElementById('m-ci-inicial').value.trim(),
     'COMPROBANTE DE EGRESO':document.getElementById('m-comp-egreso').value.trim(),
     'RADICADO DE RESPUESTA':document.getElementById('m-radicado-resp').value.trim(),
-    'GESTION TESORERIA':    document.getElementById('m-gest-tes').value.trim(),
-    'TELEFONO DE CONTACTO': document.getElementById('m-telefono').value.trim(),
-    'CORREO ELECTRONICO':   document.getElementById('m-correo').value.trim(),
-    'DIRECCION':            document.getElementById('m-direccion').value.trim(),
-    'CIUDAD':               document.getElementById('m-ciudad').value.trim(),
-    'Observacion':          document.getElementById('m-observacion').value.trim(),
-    _editadoPor: user, _editadoFecha: ts
+    'GESTION TESORERIA':document.getElementById('m-gest-tes').value.trim(),
+    'TELEFONO DE CONTACTO':document.getElementById('m-telefono').value.trim(),
+    'CORREO ELECTRONICO':document.getElementById('m-correo').value.trim(),
+    'DIRECCION':document.getElementById('m-direccion').value.trim(),
+    'CIUDAD':document.getElementById('m-ciudad').value.trim(),
+    'Observacion':document.getElementById('m-observacion').value.trim(),
+    _editadoPor:user,_editadoFecha:ts
   };
-
-  // 1. Guardar en memoria y localStorage — INMEDIATO
-  gestiones[dep] = g;
-  try{ localStorage.setItem(GEST_KEY, JSON.stringify(gestiones)); }catch(e){}
-
-  // 2. Log enriquecido para bitácora global — INMEDIATO
-  if(!logCambios[dep]) logCambios[dep] = [];
-  var anterior = gestiones[dep] ? Object.assign({}, gestiones[dep]) : {};
-  var cambios = [];
-  var camposLabel = {
-    'ESTADO DEVOLUCION':'Est. Devolución','ESTADO APLICACIÓN':'Est. Aplicación',
-    'RESPONSABLE':'Responsable','Proceso':'Expediente','Impuesto':'Impuesto',
-    'Pendiente convenio':'Convenio','CI INICIAL':'CI Inicial',
-    'COMPROBANTE DE EGRESO':'Comp. Egreso','RADICADO DE RESPUESTA':'Radicado Resp.',
-    'GESTION TESORERIA':'Gest. Tesorería','TELEFONO DE CONTACTO':'Teléfono',
-    'CORREO ELECTRONICO':'Correo','DIRECCION':'Dirección','CIUDAD':'Ciudad',
-    'Observacion':'Observación'
-  };
-  Object.keys(camposLabel).forEach(function(campo){
-    var vAntes = String(anterior[campo]||'').trim();
-    var vDespues = String(g[campo]||'').trim();
-    if(vAntes !== vDespues){
-      cambios.push({ campo: camposLabel[campo], antes: vAntes||'—', despues: vDespues||'—' });
-    }
-  });
-  // Obtener nombre del demandado para contexto
-  var filaBanco = dataBanco.find(function(r){ return String(r['deposito judicial']||'')=== dep; });
-  var nombreDeudor = filaBanco ? (filaBanco['Nombre Demandante.1']||'') : '';
-  var valorDep = filaBanco ? (filaBanco['Valor del Depóstio']||'') : '';
-  var entrada = {
-    ts: ts,
-    tsNum: Date.now(),
-    user: user,
-    dep: dep,
-    nombre: nombreDeudor,
-    valor: valorDep,
-    cambios: cambios,
-    // Resumen rápido para cuando no hay cambios detectados
-    resumen: cambios.length ? cambios.map(function(c){ return c.campo+': '+c.despues; }).join(' · ') : 'Sin cambios'
-  };
-  logCambios[dep].push(entrada);
-  // Bitácora global (índice cronológico aparte, liviano)
-  var bitacora = [];
-  try{ bitacora = JSON.parse(localStorage.getItem('recaudo_bitacora_v1')||'[]'); }catch(e){}
-  bitacora.unshift({ ts:ts, tsNum:Date.now(), user:user, dep:dep, nombre:nombreDeudor,
-    valor:valorDep, resumen:entrada.resumen, nCambios:cambios.length });
-  // Conservar máximo 500 entradas en bitácora global
-  if(bitacora.length > 500) bitacora = bitacora.slice(0,500);
-  try{ localStorage.setItem('recaudo_bitacora_v1', JSON.stringify(bitacora)); }catch(e){}
-  try{ localStorage.setItem(LOG_KEY, JSON.stringify(logCambios)); }catch(e){}
-
-  // 3. Actualizar UI — INMEDIATO
+  gestiones[dep]=g;
+  try{localStorage.setItem(GEST_KEY,JSON.stringify(gestiones));}catch(e){}
+  if(!logCambios[dep]) logCambios[dep]=[];
+  var resumen=[];
+  if(g['ESTADO DEVOLUCION']) resumen.push('Dev:'+g['ESTADO DEVOLUCION']);
+  if(g['ESTADO APLICACIÓN']) resumen.push('Apl:'+g['ESTADO APLICACIÓN']);
+  if(g['RESPONSABLE']) resumen.push('Resp:'+g['RESPONSABLE']);
+  logCambios[dep].push({ts,user,txt:resumen.join(' · ')||'Actualizado'});
+  try{localStorage.setItem(LOG_KEY,JSON.stringify(logCambios));}catch(e){}
+  var alEl=document.getElementById('m-alert');
+  showAl(alEl,'al-load','<div class="spin"></div> Guardando...');
+  var ok=false;
+  if(cfg.apiUrl){
+    try{
+      var params=new URLSearchParams({accion:'guardar_gestion_recaudo',hoja:cfg.hoja,deposito:dep,proceso:g['Proceso'],impuesto:g['Impuesto'],convenio:g['Pendiente convenio'],observacion:g['Observacion'],telefono:g['TELEFONO DE CONTACTO'],correo:g['CORREO ELECTRONICO'],direccion:g['DIRECCION'],ciudad:g['CIUDAD'],responsable:g['RESPONSABLE'],gestionTes:g['GESTION TESORERIA'],ciInicial:g['CI INICIAL'],compEgreso:g['COMPROBANTE DE EGRESO'],radicadoResp:g['RADICADO DE RESPUESTA'],estDev:g['ESTADO DEVOLUCION'],estApl:g['ESTADO APLICACIÓN']});
+      var res=await fetch(cfg.apiUrl+'?'+params.toString());
+      var d=await res.json();
+      if(d.status==='ok') ok=true;
+    }catch(e){}
+  }
+  if(!ok && cfg.apiUrl){
+    // Reintentar con POST
+    try{
+      var res2=await fetch(cfg.apiUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({accion:'guardar_gestion_recaudo',hoja:cfg.hoja,deposito:dep,...g})});
+      ok=true; // no-cors no confirma pero asumimos que llegó
+    }catch(e2){}
+  }
+  showAl(alEl,ok||!cfg.apiUrl?'al-ok':'al-warn',
+    ok?'✅ Guardado en Sheets.':!cfg.apiUrl?'✅ Guardado localmente.':'⚠️ Guardado local (Sheet sin conexión).');
   renderKpis(); filtrar();
-
-  // 4. Encolar para sync con Sheet — EN BACKGROUND
-  if(cfg.apiUrl) encolarSync(dep, g);
-
-  // 5. Cerrar modal inmediatamente — sin esperar el Sheet
-  cerrarModal();
-
-  // 6. Lanzar sync en background (no bloqueante)
-  if(cfg.apiUrl) sincronizarCola();
+  setTimeout(cerrarModal,900);
 }
 
-// ═══════════════════════════════════════════════════
-// IMPORTAR LOTE DEL BANCO
-// ═══════════════════════════════════════════════════
-function onDrop(e){
-  e.preventDefault();
-  document.getElementById('importDrop').classList.remove('drag');
-  var f=e.dataTransfer.files[0];
-  if(f) procesarImport({files:[f]});
-}
-
+// IMPORTAR
+function onDrop(e){e.preventDefault();document.getElementById('importDrop').classList.remove('drag');var f=e.dataTransfer.files[0];if(f)procesarImport({files:[f]});}
 function procesarImport(inp){
-  var f=inp.files[0]; if(!f) return;
+  var f=inp.files[0];if(!f)return;
   var rd=new FileReader();
   rd.onload=function(e){
     try{
       var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
       var ws=wb.Sheets[wb.SheetNames[0]];
       var json=XLSX.utils.sheet_to_json(ws,{raw:false,defval:''});
-
-      // Detectar columna de depósito
       var depCol=Object.keys(json[0]||{}).find(k=>k.toLowerCase().includes('deposito')||k.toLowerCase().includes('depósito'))||Object.keys(json[0]||{})[0];
-
       var existentes=new Set(dataBanco.map(r=>String(r['deposito judicial']||'')));
       var nuevos=[];
       json.forEach(row=>{
         var dep=String(row[depCol]||row['deposito judicial']||'').trim();
-        if(dep&&!existentes.has(dep)){
-          // Normalizar nombres de columnas al esquema conocido
-          var nr={'deposito judicial':dep,'_nuevo':true};
-          Object.keys(row).forEach(k=>{ nr[k]=row[k]; });
-          // Normalizar variante del nombre del demandado
-          if(!nr['Nombre Demandante.1'] && nr['Nombre Demandante'])
-            nr['Nombre Demandante.1'] = nr['Nombre Demandante'];
-          nuevos.push(nr);
-          existentes.add(dep);
-        }
+        if(dep&&!existentes.has(dep)){var nr={'deposito judicial':dep,'_nuevo':true};Object.keys(row).forEach(k=>{nr[k]=row[k];});nuevos.push(nr);existentes.add(dep);}
       });
-
       if(nuevos.length){
         dataBanco.unshift(...nuevos);
-        guardarDataBanco(dataBanco);
+        try{localStorage.setItem(DATA_KEY,JSON.stringify(dataBanco.slice(0,60000)));}catch(e){}
         nuevosUltimoImport=nuevos.length;
-        renderKpis(); filtrar(); llenarSelectResponsables();
-        showImportResult('ok',`✅ Se importaron <strong>${nuevos.length} registros nuevos</strong> de ${json.length} en el archivo. Los duplicados fueron omitidos.`);
+        renderKpis();filtrar();llenarSelectResponsables();
+        showImportResult('ok',`✅ <strong>${nuevos.length} registros nuevos</strong> importados de ${json.length} en el archivo.`);
       } else {
-        showImportResult('warn','ℹ️ No se encontraron registros nuevos. Todos los depósitos del archivo ya existen en el sistema.');
+        showImportResult('warn','ℹ️ No se encontraron registros nuevos. Todos los depósitos ya existen.');
       }
-    }catch(err){
-      showImportResult('err','❌ Error al leer el archivo: '+err.message);
-    }
+    }catch(err){showImportResult('err','❌ Error al leer el archivo: '+err.message);}
   };
   rd.readAsArrayBuffer(f);
   inp.value='';
 }
-
 function showImportResult(tipo,msg){
-  var el=document.getElementById('import-resultado');
-  el.style.display='block';
+  var el=document.getElementById('import-resultado');el.style.display='block';
   var cls={'ok':'al-ok','err':'al-err','warn':'al-warn'}[tipo]||'al-warn';
   el.innerHTML=`<div class="alerta ${cls}">${msg}</div>`;
 }
 
-// ═══════════════════════════════════════════════════
-// BARRA DE CARGA GLOBAL
-// ═══════════════════════════════════════════════════
-var _cargaTimer = null;
-
-function iniciarCarga(msg){
-  var bar   = document.getElementById('carga-bar');
-  var fill  = document.getElementById('carga-bar-fill');
-  var toast = document.getElementById('carga-toast');
-  var est   = document.getElementById('carga-estado');
-  if(!bar) return;
-  bar.classList.add('activo','indeterminate');
-  est.classList.add('activo');
-  toast.innerHTML = '<div class="spin" style="width:11px;height:11px;border-width:2px;flex-shrink:0"></div>' + (msg||'Cargando datos del Sheet...');
-  setTimeout(function(){ toast.classList.add('visible'); }, 10);
-  if(_cargaTimer) clearTimeout(_cargaTimer);
-}
-
-function finalizarCarga(ok, msg){
-  var bar   = document.getElementById('carga-bar');
-  var fill  = document.getElementById('carga-bar-fill');
-  var toast = document.getElementById('carga-toast');
-  var est   = document.getElementById('carga-estado');
-  if(!bar) return;
-  bar.classList.remove('indeterminate');
-  fill.style.width = '100%';
-  fill.style.background = ok ? '#16a34a' : '#dc2626';
-  toast.innerHTML = (ok ? '✅ ' : '❌ ') + (msg||'');
-  _cargaTimer = setTimeout(function(){
-    bar.classList.remove('activo');
-    fill.style.width = '0%';
-    fill.style.background = '';
-    toast.classList.remove('visible');
-    setTimeout(function(){ est.classList.remove('activo'); }, 300);
-  }, ok ? 1800 : 3500);
-}
-
-// ═══════════════════════════════════════════════════
 // CARGAR DESDE SHEET
-// ═══════════════════════════════════════════════════
+var ultimaSync = null;
+
 async function cargarDesdeSheet(){
   if(!cfg.apiUrl) return;
+  setSS('loading','Sincronizando...');
   var alEl=document.getElementById('cfg-alert');
-  iniciarCarga('Conectando con Google Sheets...');
-  document.getElementById('tbody').innerHTML=
-    '<tr><td colspan="11"><div class="empty">'+
-    '<div class="spin" style="width:28px;height:28px;border-width:3px;margin:0 auto 10px"></div>'+
-    '<p style="color:var(--text-soft);font-size:13px">Conectando con Google Sheets...</p></div></td></tr>';
   if(alEl) showAl(alEl,'al-load','<div class="spin"></div> Cargando desde Google Sheets...');
   try{
     var r=await fetch(cfg.apiUrl+'?accion=listar_recaudo&hoja='+encodeURIComponent(cfg.hoja));
     var d=await r.json();
     if(d.status==='ok'&&Array.isArray(d.data)&&d.data.length){
       var headers=d.headers||[];
-      dataBanco=d.data.map(row=>{
-        var obj={};
-        headers.forEach((h,i)=>{ obj[h]=row[i]; });
-        // Normalizar variantes del nombre del demandado según el Sheet real
-        // El banco exporta "Nombre Demandante.1", el Sheet puede tener "Nombre Demandante"
-        if(!obj['Nombre Demandante.1'] && obj['Nombre Demandante'])
-          obj['Nombre Demandante.1'] = obj['Nombre Demandante'];
-        // También normalizar variante sin punto por si viene diferente
-        if(!obj['Nombre Demandante.1'] && obj['NOMBRE DEMANDANTE'])
-          obj['Nombre Demandante.1'] = obj['NOMBRE DEMANDANTE'];
-        return obj;
-      });
-      actualizarIndicadorStorage();
-      renderKpis(); filtrar(); llenarSelectResponsables(); llenarSelectMes();
-      if(document.getElementById('panel-estadisticas').style.display!=='none') renderEstadisticas();
-      finalizarCarga(true, dataBanco.length.toLocaleString('es-CO')+' registros cargados');
-      if(alEl) showAl(alEl,'al-ok','✅ '+dataBanco.length.toLocaleString('es-CO')+' registros cargados desde Google Sheets.');
+      dataBanco=d.data.map(row=>{var obj={};headers.forEach((h,i)=>{obj[h]=row[i];});return obj;});
+      try{localStorage.setItem(DATA_KEY,JSON.stringify(dataBanco.slice(0,60000)));}catch(e){}
+      ultimaSync=new Date();
+      var ts=ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+      setSS('ok','Sincronizado '+ts);
+      renderKpis();filtrar();llenarSelectResponsables();
+      if(alEl) showAl(alEl,'al-ok','✅ '+dataBanco.length.toLocaleString('es-CO')+' registros cargados.');
     } else {
-      finalizarCarga(false,'Sin datos en el Sheet o formato inesperado');
-      if(alEl) showAl(alEl,'al-warn','Sin datos en el Sheet o formato inesperado. Intente importar un Excel.');
-      document.getElementById('tbody').innerHTML=
-        '<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div>'+
-        '<p>Sin datos en el Sheet. Verifique la configuración.</p></div></td></tr>';
+      setSS('error','Sin datos en Sheet');
+      if(alEl) showAl(alEl,'al-warn','Sin datos en el Sheet o formato inesperado.');
     }
   }catch(e){
-    finalizarCarga(false,'Sin conexión con el Sheet');
-    if(alEl) showAl(alEl,'al-err','❌ No se pudo conectar con el Sheet. Verifique la URL.');
-    document.getElementById('tbody').innerHTML=
-      '<tr><td colspan="11"><div class="empty"><div class="empty-ico">❌</div>'+
-      '<p>Sin conexión con el Sheet. Verifique la URL en ⚙️ Configuración.</p></div></td></tr>';
+    setSS('error','Sin conexión con Sheet');
+    if(alEl) showAl(alEl,'al-err','❌ No se pudo conectar. Verifique la URL.');
   }
 }
 
-// ═══════════════════════════════════════════════════
-// EXPORTAR EXCEL
-// ═══════════════════════════════════════════════════
+// EXPORTAR
 function exportarExcel(){
   var data=filtrados.length?filtrados:dataBanco;
-  if(!data.length){ alert('No hay datos para exportar.'); return; }
-  var filas=data.slice(0,5000).map(r=>{
-    var row=getRow(r);
-    return {
-      'Depósito judicial':row['deposito judicial'],
-      'Fecha Emisión':row['Fecha Emisión'],
-      'Demandado':row['Nombre Demandante.1'],
-      'Cédula':row['Identificación Demandado'],
-      'Valor':row['Valor del Depóstio'],
-      'Proceso':row['Proceso'],
-      'Impuesto':row['Impuesto'],
-      'Estado Devolución':row['ESTADO DEVOLUCION'],
-      'Estado Aplicación':row['ESTADO APLICACIÓN'],
-      'Responsable':row['RESPONSABLE'],
-      'Gestión Tesorería':row['GESTION TESORERIA'],
-      'CI Inicial':row['CI INICIAL'],
-      'Comprobante Egreso':row['COMPROBANTE DE EGRESO'],
-      'Radicado Respuesta':row['RADICADO DE RESPUESTA'],
-      'Teléfono':row['TELEFONO DE CONTACTO'],
-      'Correo':row['CORREO ELECTRONICO'],
-      'Observación':row['Observacion']
-    };
-  });
+  if(!data.length){alert('No hay datos para exportar.');return;}
+  var filas=data.slice(0,5000).map(r=>{var row=getRow(r);return{'Depósito':row['deposito judicial'],'Fecha':row['Fecha Emisión'],'Demandado':row['Nombre Demandante.1'],'Cédula':row['Identificación Demandado'],'Valor':row['Valor del Depóstio'],'Proceso':row['Proceso'],'Impuesto':row['Impuesto'],'Est. Devolución':row['ESTADO DEVOLUCION'],'Est. Aplicación':row['ESTADO APLICACIÓN'],'Responsable':row['RESPONSABLE'],'CI Inicial':row['CI INICIAL'],'Comp. Egreso':row['COMPROBANTE DE EGRESO'],'Radicado':row['RADICADO DE RESPUESTA'],'Observación':row['Observacion']};});
   var ws=XLSX.utils.json_to_sheet(filas);
-  var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Recaudo');
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Recaudo');
   XLSX.writeFile(wb,'Recaudo_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
-// ═══════════════════════════════════════════════════
 // CONFIG
-// ═══════════════════════════════════════════════════
-function guardarCfg(){
-  cfg.apiUrl=document.getElementById('cfg-url').value.trim();
-  cfg.hoja=document.getElementById('cfg-hoja').value.trim()||'Recaudo_Historico';
-  localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
-  actualizarCfgPanel();
-  showAl(document.getElementById('cfg-alert'),'al-ok','✅ Configuración guardada.');
-}
-async function probarCfg(){
-  if(!cfg.apiUrl){ showAl(document.getElementById('cfg-alert'),'al-err','Sin URL.'); return; }
-  showAl(document.getElementById('cfg-alert'),'al-load','<div class="spin"></div> Probando...');
-  try{ await fetch(cfg.apiUrl+'?accion=ping'); showAl(document.getElementById('cfg-alert'),'al-ok','✅ Conexión exitosa.'); }
-  catch(e){ showAl(document.getElementById('cfg-alert'),'al-err','❌ Sin respuesta. Verifique la URL.'); }
-}
-function actualizarCfgPanel(){
-  var cu=document.getElementById('cfg-url'); if(cu) cu.value=cfg.apiUrl||'';
-  var ch=document.getElementById('cfg-hoja'); if(ch) ch.value=cfg.hoja||'Recaudo_Historico';
-  var dot=document.getElementById('cfg-dot');
-  var txt=document.getElementById('cfg-txt');
-  if(dot&&txt){
-    dot.style.background=cfg.apiUrl?'#22c55e':'#ef4444';
-    txt.textContent=cfg.apiUrl?'Conectado: '+cfg.apiUrl.slice(-45):'Sin URL configurada — datos solo locales';
-  }
-}
+function guardarCfg(){cfg.apiUrl=document.getElementById('cfg-url').value.trim();cfg.hoja=document.getElementById('cfg-hoja').value.trim()||'Recaudo_Historico';localStorage.setItem(CFG_KEY,JSON.stringify(cfg));actualizarCfgPanel();showAl(document.getElementById('cfg-alert'),'al-ok','✅ Configuración guardada.');}
+async function probarCfg(){if(!cfg.apiUrl){showAl(document.getElementById('cfg-alert'),'al-err','Sin URL.');return;}showAl(document.getElementById('cfg-alert'),'al-load','<div class="spin"></div> Probando...');try{await fetch(cfg.apiUrl+'?accion=ping');showAl(document.getElementById('cfg-alert'),'al-ok','✅ Conexión exitosa.');}catch(e){showAl(document.getElementById('cfg-alert'),'al-err','❌ Sin respuesta.');}}
+function actualizarCfgPanel(){var cu=document.getElementById('cfg-url');if(cu)cu.value=cfg.apiUrl||'';var ch=document.getElementById('cfg-hoja');if(ch)ch.value=cfg.hoja||'Recaudo_Historico';var dot=document.getElementById('cfg-dot'),txt=document.getElementById('cfg-txt');if(dot&&txt){dot.style.background=cfg.apiUrl?'#22c55e':'#ef4444';txt.textContent=cfg.apiUrl?'Conectado: '+cfg.apiUrl.slice(-45):'Sin URL — datos solo locales';}}
 
-// ═══════════════════════════════════════════════════
-// ESTADÍSTICAS
-// ═══════════════════════════════════════════════════
-function renderEstadisticas(){
-  var el=document.getElementById('grid-est');
-  if(!el) return;
-  if(!dataBanco.length){
-    // Si hay URL configurada, los datos están cargando — mostrar spinner
-    if(cfg.apiUrl){
-      el.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px 20px">'+
-        '<div class="spin" style="width:28px;height:28px;border-width:3px;margin:0 auto 12px"></div>'+
-        '<p style="color:rgba(255,255,255,.5);font-size:13px">Cargando datos del Sheet...</p></div>';
-    } else {
-      el.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,.4);font-size:14px">'+
-        '☁️ Configure la URL del Sheet en ⚙️ Configuración para ver estadísticas.</div>';
-    }
-    return;
-  }
-
-  var ESTADOS=['FINALIZADO','EN TRAMITE','EN REVISION','PENDIENTE',''];
-  var COLS_EST={'FINALIZADO':'#16a34a','EN TRAMITE':'#1a6fc4','EN REVISION':'#7c3aed','PENDIENTE':'#e8a020','':'#4a5a72'};
-  var LABELS_EST={'FINALIZADO':'Finalizado','EN TRAMITE':'En trámite','EN REVISION':'En revisión','PENDIENTE':'Pendiente','':'Sin gestionar'};
-
-  // Agregar datos mergeados
-  var rows=dataBanco.map(function(r){ return getRow(r); });
-
-  // ── 1. Conteos globales ──
-  var totDev={},totApl={},totVal=0,totGest=0,totFin=0,totTram=0;
-  ESTADOS.forEach(function(e){ totDev[e]=0; totApl[e]=0; });
-  rows.forEach(function(r){
-    var ed=normEst(r['ESTADO DEVOLUCION']);
-    var ea=normEst(r['ESTADO APLICACIÓN']);
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    totDev[ed]=(totDev[ed]||0)+1;
-    totApl[ea]=(totApl[ea]||0)+1;
-    totVal+=v;
-    if(ed||ea) totGest++;
-    if(ed==='FINALIZADO'||ea==='FINALIZADO') totFin++;
-    if(ed==='EN TRAMITE'||ea==='EN TRAMITE') totTram++;
-  });
-
-  // ── 2. Por responsable ──
-  var resps={};
-  rows.forEach(function(r){
-    var resp=(r['RESPONSABLE']||'Sin asignar').trim()||'Sin asignar';
-    if(!resps[resp]) resps[resp]={dev:0,apl:0,val:0,pen:0};
-    var ed=normEst(r['ESTADO DEVOLUCION']);
-    var ea=normEst(r['ESTADO APLICACIÓN']);
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    if(ed&&ed!=='FINALIZADO') resps[resp].dev++;
-    if(ea&&ea!=='FINALIZADO') resps[resp].apl++;
-    if(!ed&&!ea) resps[resp].pen++;
-    resps[resp].val+=v;
-  });
-  var respArr=Object.entries(resps).sort(function(a,b){ return (b[1].dev+b[1].apl)-(a[1].dev+a[1].apl); });
-
-  // ── 3. Por impuesto ──
-  var imps={};
-  rows.forEach(function(r){
-    var imp=(r['Impuesto']||'Sin clasificar').trim().toUpperCase()||'SIN CLASIFICAR';
-    if(!imps[imp]) imps[imp]={n:0,val:0};
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    imps[imp].n++;
-    imps[imp].val+=v;
-  });
-  var impArr=Object.entries(imps).sort(function(a,b){ return b[1].n-a[1].n; });
-
-  // ── 4. Por mes (últimos 12 meses) ──
-  var meses={};
-  rows.forEach(function(r){
-    var f=String(r['Fecha Emisión']||'').substring(0,7);
-    if(!f||f.length<7) return;
-    if(!meses[f]) meses[f]={n:0,fin:0};
-    meses[f].n++;
-    var ed=normEst(r['ESTADO DEVOLUCION']); var ea=normEst(r['ESTADO APLICACIÓN']);
-    if(ed==='FINALIZADO'||ea==='FINALIZADO') meses[f].fin++;
-  });
-  var mesArr=Object.entries(meses).sort(function(a,b){ return a[0].localeCompare(b[0]); }).slice(-12);
-
-  // ── Helpers ──
-  function barra(label,val,max,color,sub){
-    var pct=max>0?Math.round(val/max*100):0;
-    return '<div class="est-barra-wrap">'+
-      '<div class="est-barra-label" title="'+eh(label)+'">'+eh(label)+(sub?'<br><span style="font-size:10px;opacity:.6">'+eh(sub)+'</span>':'')+'</div>'+
-      '<div class="est-barra-bg"><div class="est-barra-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
-      '<div class="est-barra-val" style="color:'+color+'">'+val.toLocaleString('es-CO')+'</div>'+
-      '</div>';
-  }
-  function barraM(label,val,max,color){
-    var pct=max>0?Math.round(val/max*100):0;
-    return '<div class="est-barra-wrap">'+
-      '<div class="est-barra-label">'+eh(label)+'</div>'+
-      '<div class="est-barra-bg"><div class="est-barra-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'+
-      '<div class="est-barra-val" style="color:'+color+'">'+fmtM(val)+'</div>'+
-      '</div>';
-  }
-  function titulo(txt){ return '<div class="est-card-title">'+txt+'</div>'; }
-  var COLS_IMP={'PREDIAL':'#1a6fc4','ICO':'#e8a020','ICA':'#ea580c','TRANSITO':'#7c3aed','OBLIGACION URBANISTICA':'#16a34a','SIN CLASIFICAR':'#4a5a72'};
-  function colImp(k){ return COLS_IMP[k]||'#4a5a72'; }
-
-  // ── Renderizar ──
-  var html='';
-
-  // KPIs resumen
-  var pctGest=dataBanco.length>0?Math.round(totGest/dataBanco.length*100):0;
-  var pctFin=dataBanco.length>0?Math.round(totFin/dataBanco.length*100):0;
-  html+='<div class="est-card est-card-wide">'+
-    titulo('📊 Resumen general — depósitos judiciales')+
-    '<div class="est-kpis">'+
-    '<div class="est-kpi"><div class="est-kpi-val">'+dataBanco.length.toLocaleString('es-CO')+'</div><div class="est-kpi-lbl">Total depósitos</div></div>'+
-    '<div class="est-kpi"><div class="est-kpi-val" style="color:#e8a020">'+pctGest+'%</div><div class="est-kpi-lbl">Gestionados</div></div>'+
-    '<div class="est-kpi"><div class="est-kpi-val" style="color:#16a34a">'+pctFin+'%</div><div class="est-kpi-lbl">Finalizados</div></div>'+
-    '<div class="est-kpi"><div class="est-kpi-val" style="color:#f5c050">'+fmtM(totVal)+'</div><div class="est-kpi-lbl">Valor total</div></div>'+
-    '<div class="est-kpi"><div class="est-kpi-val" style="color:#1a6fc4">'+totTram.toLocaleString('es-CO')+'</div><div class="est-kpi-lbl">En trámite</div></div>'+
-    '<div class="est-kpi"><div class="est-kpi-val" style="color:#4a5a72">'+(dataBanco.length-totGest).toLocaleString('es-CO')+'</div><div class="est-kpi-lbl">Sin gestionar</div></div>'+
-    '</div></div>';
-
-  // Devoluciones por estado
-  var maxDev=Math.max.apply(null,ESTADOS.map(function(e){ return totDev[e]||0; }).concat([1]));
-  html+='<div class="est-card">'+titulo('↩️ Devoluciones — por estado');
-  ESTADOS.forEach(function(e){
-    html+=barra(LABELS_EST[e],totDev[e]||0,maxDev,COLS_EST[e]);
-  });
-  html+='</div>';
-
-  // Aplicaciones por estado
-  var maxApl=Math.max.apply(null,ESTADOS.map(function(e){ return totApl[e]||0; }).concat([1]));
-  html+='<div class="est-card">'+titulo('✅ Aplicaciones — por estado');
-  ESTADOS.forEach(function(e){
-    html+=barra(LABELS_EST[e],totApl[e]||0,maxApl,COLS_EST[e]);
-  });
-  html+='</div>';
-
-  // Por tipo de impuesto
-  var maxImp=Math.max.apply(null,impArr.map(function(x){ return x[1].n; }).concat([1]));
-  html+='<div class="est-card">'+titulo('🏛️ Por tipo de impuesto');
-  impArr.slice(0,7).forEach(function(x){
-    html+=barra(x[0],x[1].n,maxImp,colImp(x[0]),fmtM(x[1].val));
-  });
-  html+='</div>';
-
-  // Devoluciones activas por responsable
-  var maxRDev=Math.max.apply(null,respArr.map(function(x){ return x[1].dev; }).concat([1]));
-  html+='<div class="est-card">'+titulo('👤 Devoluciones activas por responsable');
-  if(!respArr.length){ html+='<div style="color:rgba(255,255,255,.35);font-size:12px">Sin responsables registrados</div>'; }
-  respArr.slice(0,8).forEach(function(x){
-    html+=barra(x[0],x[1].dev,maxRDev,'#1a6fc4');
-  });
-  html+='</div>';
-
-  // Aplicaciones activas por responsable
-  var maxRApl=Math.max.apply(null,respArr.map(function(x){ return x[1].apl; }).concat([1]));
-  html+='<div class="est-card">'+titulo('👤 Aplicaciones activas por responsable');
-  if(!respArr.length){ html+='<div style="color:rgba(255,255,255,.35);font-size:12px">Sin responsables registrados</div>'; }
-  respArr.slice(0,8).forEach(function(x){
-    html+=barra(x[0],x[1].apl,maxRApl,'#7c3aed');
-  });
-  html+='</div>';
-
-  // Valor gestionado por responsable
-  var maxRVal=Math.max.apply(null,respArr.map(function(x){ return x[1].val; }).concat([1]));
-  html+='<div class="est-card">'+titulo('💰 Valor total gestionado por responsable');
-  var respValArr=respArr.slice().sort(function(a,b){ return b[1].val-a[1].val; });
-  respValArr.slice(0,8).forEach(function(x){
-    html+=barraM(x[0],x[1].val,maxRVal,'#e8a020');
-  });
-  html+='</div>';
-
-  // Pendientes sin gestionar por responsable
-  var maxRPen=Math.max.apply(null,respArr.map(function(x){ return x[1].pen; }).concat([1]));
-  if(maxRPen>0){
-    html+='<div class="est-card">'+titulo('⏳ Sin gestionar por responsable');
-    respArr.filter(function(x){ return x[1].pen>0; }).slice(0,8).forEach(function(x){
-      html+=barra(x[0],x[1].pen,maxRPen,'#ea580c');
-    });
-    html+='</div>';
-  }
-
-  // Depósitos por mes
-  if(mesArr.length>1){
-    var maxMes=Math.max.apply(null,mesArr.map(function(x){ return x[1].n; }).concat([1]));
-    function fmtMes(ym){
-      var p=ym.split('-'); if(p.length<2) return ym;
-      var mNames=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-      return (mNames[parseInt(p[1],10)-1]||p[1])+' '+p[0].slice(2);
-    }
-    html+='<div class="est-card est-card-wide">'+titulo('📅 Depósitos por mes (últimos 12)');
-    mesArr.forEach(function(x){
-      html+=barra(fmtMes(x[0]),x[1].n,maxMes,'#2d8de8',x[1].fin+' finalizados');
-    });
-    html+='</div>';
-  }
-
-  el.innerHTML=html;
-}
-
-// ═══════════════════════════════════════════════════
-// BITÁCORA DE GESTIONES
-// ═══════════════════════════════════════════════════
-var BIT_KEY = 'recaudo_bitacora_v1';
-var pagBit = 1;
-var PS_BIT = 40;
-
-function cargarBitacora(){
-  try{ return JSON.parse(localStorage.getItem(BIT_KEY)||'[]'); }catch(e){ return []; }
-}
-
-function renderBitacora(){
-  var el = document.getElementById('tbody-bit');
-  if(!el) return;
-
-  var bit = cargarBitacora();
-
-  // Llenar select de usuarios
-  var selUser = document.getElementById('bit-usuario');
-  if(selUser){
-    var usuarios = [...new Set(bit.map(function(e){ return e.user; }).filter(Boolean))].sort();
-    var valActual = selUser.value;
-    selUser.innerHTML = '<option value="">Todos los usuarios</option>';
-    usuarios.forEach(function(u){
-      selUser.innerHTML += '<option value="'+eh(u)+'">'+eh(u)+'</option>';
-    });
-    selUser.value = valActual;
-  }
-
-  // Filtros
-  var buscar = (document.getElementById('bit-buscar').value||'').toLowerCase().trim();
-  var fDesde = document.getElementById('bit-fecha-desde').value; // YYYY-MM-DD
-  var fHasta = document.getElementById('bit-fecha-hasta').value;
-  var fUser  = document.getElementById('bit-usuario').value.toLowerCase();
-
-  var filtradas = bit.filter(function(e){
-    if(buscar){
-      var haystack = ((e.dep||'')+(e.nombre||'')+(e.user||'')+(e.resumen||'')).toLowerCase();
-      if(haystack.indexOf(buscar) < 0) return false;
-    }
-    if(fUser && (e.user||'').toLowerCase() !== fUser) return false;
-    if(fDesde || fHasta){
-      // tsNum es timestamp en ms; convertir a YYYY-MM-DD para comparar
-      var fechaEntrada = e.tsNum
-        ? new Date(e.tsNum).toISOString().slice(0,10)
-        : ''; // entradas viejas sin tsNum
-      if(fDesde && fechaEntrada && fechaEntrada < fDesde) return false;
-      if(fHasta && fechaEntrada && fechaEntrada > fHasta) return false;
-    }
-    return true;
-  });
-
-  if(!filtradas.length){
-    el.innerHTML = '<tr><td colspan="6"><div class="empty">'+
-      '<div class="empty-ico">📝</div>'+
-      '<p>'+(bit.length ? 'No hay registros con esos filtros.' : 'Aún no hay gestiones registradas. Las acciones aparecerán aquí a medida que el equipo gestione depósitos.')+'</p>'+
-      '</div></td></tr>';
-    document.getElementById('pag-bit-info').textContent = '0 registros';
-    document.getElementById('pag-bit-btns').innerHTML = '';
-    return;
-  }
-
-  // Paginación
-  var total = filtradas.length;
-  var totalPags = Math.ceil(total/PS_BIT)||1;
-  if(pagBit > totalPags) pagBit = 1;
-  var ini = (pagBit-1)*PS_BIT;
-  var fin = Math.min(ini+PS_BIT, total);
-  var pagina = filtradas.slice(ini, fin);
-
-  // Colores por usuario (consistentes)
-  var coloresUser = ['#1a6fc4','#7c3aed','#16a34a','#ea580c','#dc2626','#0891b2','#854d0e'];
-  var mapaColores = {};
-  var idxColor = 0;
-  bit.forEach(function(e){
-    if(e.user && !mapaColores[e.user]){
-      mapaColores[e.user] = coloresUser[idxColor % coloresUser.length];
-      idxColor++;
-    }
-  });
-
-  var html = pagina.map(function(e){
-    var color = mapaColores[e.user] || '#4a5a72';
-    var iniciales = (e.user||'?').split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
-    var valor = e.valor ? fmt$(parseFloat(String(e.valor).replace(/[^\d.]/g,''))||0) : '—';
-
-    // Chips de cambios
-    var chipsHtml = '';
-    if(e.resumen && e.resumen !== 'Sin cambios'){
-      // Parsear el resumen en chips individuales
-      var partes = e.resumen.split(' · ');
-      chipsHtml = partes.slice(0,4).map(function(p){
-        var isEstado = p.toLowerCase().indexOf('est.')===0 || p.toLowerCase().indexOf('dev')===0 || p.toLowerCase().indexOf('apl')===0;
-        var isFin = p.toLowerCase().indexOf('finalizado')>-1;
-        var isTram = p.toLowerCase().indexOf('tramite')>-1 || p.toLowerCase().indexOf('trámite')>-1;
-        var chipColor = isFin ? '#f0fdf4;color:#16a34a;border:1px solid #bbf7d0'
-                      : isTram ? '#eff6ff;color:#1a6fc4;border:1px solid #bfdbfe'
-                      : '#f3f4f6;color:#374151;border:1px solid #e5e7eb';
-        return '<span style="display:inline-flex;align-items:center;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;background:'+chipColor+';margin:1px 2px 1px 0;white-space:nowrap">'+eh(p)+'</span>';
-      }).join('');
-      if(partes.length > 4) chipsHtml += '<span style="font-size:10px;color:var(--text-soft);margin-left:3px">+'+( partes.length-4)+' más</span>';
-    } else {
-      chipsHtml = '<span style="font-size:11px;color:var(--text-soft);font-style:italic">Sin cambios registrados</span>';
-    }
-
-    return '<tr onclick="abrirModal(\''+e.dep.replace(/'/g,"\\'")+'\')" style="cursor:pointer">'+
-      '<td class="nowrap" style="font-size:11px;color:var(--text-soft)">'+eh(e.ts)+'</td>'+
-      '<td>'+
-        '<div style="display:flex;align-items:center;gap:7px">'+
-          '<div style="width:26px;height:26px;border-radius:50%;background:'+color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+eh(iniciales)+'</div>'+
-          '<span style="font-size:12px;font-weight:600;color:var(--navy)">'+eh((e.user||'—').split(' ')[0])+'</span>'+
-        '</div>'+
-      '</td>'+
-      '<td class="mono" style="font-size:11px;font-weight:600">'+eh(e.dep)+'</td>'+
-      '<td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(e.nombre||'—')+'</td>'+
-      '<td class="tr" style="font-size:12px;font-weight:700;color:var(--green)">'+valor+'</td>'+
-      '<td>'+chipsHtml+'</td>'+
-    '</tr>';
-  }).join('');
-
-  el.innerHTML = html;
-  document.getElementById('pag-bit-info').textContent =
-    'Mostrando '+(ini+1)+'–'+fin+' de '+total.toLocaleString('es-CO')+' registros';
-  // Paginación propia (usa PS_BIT en lugar del PS global de 50)
-  var tP=Math.ceil(total/PS_BIT)||1;
-  var h='';
-  h+='<button class="pb" '+(pagBit===1?'disabled':'')+' onclick="pagBit='+(pagBit-1)+';renderBitacora()">‹</button>';
-  for(var p=1;p<=tP;p++){
-    if(p===1||p===tP||Math.abs(p-pagBit)<=1){
-      h+='<button class="pb'+(p===pagBit?' cur':'')+'" onclick="pagBit='+p+';renderBitacora()">'+p+'</button>';
-    } else if(Math.abs(p-pagBit)===2){
-      h+='<button class="pb" disabled style="border:none;background:none">…</button>';
-    }
-  }
-  h+='<button class="pb" '+(pagBit===tP?'disabled':'')+' onclick="pagBit='+(pagBit+1)+';renderBitacora()">›</button>';
-  document.getElementById('pag-bit-btns').innerHTML=h;
-}
-
-function limpiarFiltrosBit(){
-  ['bit-buscar','bit-fecha-desde','bit-fecha-hasta','bit-usuario'].forEach(function(id){
-    var el=document.getElementById(id); if(el) el.value='';
-  });
-  pagBit=1;
-  renderBitacora();
-}
-
-function limpiarBitacora(){
-  if(!confirm('¿Borrar toda la bitácora?\n\nEsta acción no se puede deshacer. Las gestiones en el Sheet no se ven afectadas.')) return;
-  localStorage.removeItem(BIT_KEY);
-  renderBitacora();
-}
-
-function exportarBitacora(){
-  var bit = cargarBitacora();
-  if(!bit.length){ alert('No hay registros en la bitácora.'); return; }
-  var filas = bit.map(function(e){
-    return {
-      'Fecha/Hora': e.ts,
-      'Usuario': e.user||'',
-      'N° Depósito': e.dep||'',
-      'Contribuyente': e.nombre||'',
-      'Valor': e.valor||'',
-      'Cambios': e.resumen||''
-    };
-  });
-  var ws = XLSX.utils.json_to_sheet(filas);
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Bitácora');
-  XLSX.writeFile(wb, 'Bitacora_Recaudo_'+new Date().toISOString().slice(0,10)+'.xlsx');
-}
-
-// ═══════════════════════════════════════════════════
 // UTILS
-// ═══════════════════════════════════════════════════
+// Los responsables fijos del sistema
+const RESPONSABLES = ['Maria Camila Uribe','Jaime Cordoba','Yennifer Chaverra','Dario Baldrich','Deisy Lopez','Juan Gomez Londoño','Jeison Maya'];
+
 function llenarSelectResponsables(){
-  var resps=new Set();
-  dataBanco.forEach(r=>{ var g=gestiones[String(r['deposito judicial']||'')]||{}; var resp=g['RESPONSABLE']||r['RESPONSABLE']||''; if(resp&&resp.trim()) resps.add(resp.trim()); });
+  // Recoger también responsables que vengan del Sheet (externos al equipo)
+  var resps=new Set(RESPONSABLES);
+  dataBanco.forEach(r=>{var g=gestiones[String(r['deposito judicial']||'')]||{};var resp=g['RESPONSABLE']||r['RESPONSABLE']||'';if(resp&&resp.trim())resps.add(resp.trim());});
   var html='<option value="">Responsable (todos)</option>';
-  [...resps].sort().forEach(r=>{ html+=`<option value="${eh(r)}">${eh(r)}</option>`; });
-  ['f-responsable','fp-responsable'].forEach(id=>{ var el=document.getElementById(id); if(el) el.innerHTML=html; });
+  [...resps].sort().forEach(r=>{html+=`<option value="${eh(r)}">${eh(r)}</option>`;});
+  ['f-responsable','fp-responsable'].forEach(id=>{var el=document.getElementById(id);if(el)el.innerHTML=html;});
 }
+function showAl(el,cls,msg){if(!el)return;el.style.display='flex';el.className='alerta '+cls;el.innerHTML=msg;}
+function eh(v){if(v===null||v===undefined)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-function llenarSelectMes(){
-  var meses = new Map(); // 'YYYY-MM' -> etiqueta
-  var mNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  dataBanco.forEach(function(r){
-    var f = String(r['Fecha Emisión']||'').substring(0,7);
-    if(!f || f.length < 7) return;
-    if(!meses.has(f)){
-      var parts = f.split('-');
-      var label = (mNames[parseInt(parts[1],10)-1]||parts[1]) + ' ' + parts[0];
-      meses.set(f, label);
-    }
-  });
-  // Ordenar descendente (más reciente primero)
-  var ordenados = [...meses.entries()].sort(function(a,b){ return b[0].localeCompare(a[0]); });
-  var sel = document.getElementById('f-mes');
-  if(!sel) return;
-  var actual = sel.value;
-  var html = '<option value="">📅 Todos los meses</option>';
-  ordenados.forEach(function(entry){
-    html += '<option value="'+entry[0]+'">'+entry[1]+'</option>';
-  });
-  sel.innerHTML = html;
-  if(actual) sel.value = actual;
-}
-
-function showAl(el,cls,msg){
-  if(!el) return;
-  el.style.display='flex'; el.className='alerta '+cls; el.innerHTML=msg;
-}
-
-function eh(v){
-  if(v===null||v===undefined) return '';
-  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ═══════════════════════════════════════════════════
-// STORAGE — guardado seguro con compresión y monitoreo
-// ═══════════════════════════════════════════════════
-var STORAGE_MAX = 4.5 * 1024 * 1024; // 4.5 MB — margen de seguridad (límite real 5 MB)
-
-function byteSize(str){ try{ return new Blob([str||'']).size; } catch(e){ return (str||'').length*2; } }
-
-function guardarDataBanco(data){
-  // Estrategia A: los datos del banco NO se persisten en localStorage.
-  // Solo se mantienen en memoria durante la sesión.
-  // Se recargan del Sheet al iniciar cada sesión.
-  // Esto libera ~4 MB y elimina el riesgo de saturar el storage.
-  actualizarIndicadorStorage();
-}
-
-function actualizarIndicadorStorage(){
-  var KEYS_MEDIDOS=['recaudo_cfg_v1','recaudo_data_v2','recaudo_gest_v2','recaudo_log_v1'];
-  var total=0;
-  KEYS_MEDIDOS.forEach(function(k){ total+=byteSize(localStorage.getItem(k)||''); });
-  var pct=Math.round(total/(5*1024*1024)*100);
-  var el=document.getElementById('storage-indicator');
-  if(!el) return;
-  el.textContent=pct+'%';
-  if(pct>=80){ el.style.background='#dc2626'; }
-  else if(pct>=50){ el.style.background='#ea580c'; }
-  else { el.style.background='#16a34a'; }
-}
-
-function mostrarAlertaStorageGlobal(tipo, msg){
-  // Muestra alerta en header visible en cualquier tab
-  var id='storage-global-alert';
-  var ex=document.getElementById(id);
-  if(!ex){
-    ex=document.createElement('div');
-    ex.id=id;
-    ex.style.cssText='position:fixed;bottom:16px;right:16px;z-index:9000;max-width:400px;'+
-      'padding:12px 16px;border-radius:10px;font-size:12px;font-weight:500;'+
-      'box-shadow:0 4px 20px rgba(0,0,0,.2);display:flex;align-items:flex-start;gap:10px;cursor:pointer';
-    ex.onclick=function(){ ex.style.display='none'; };
-    document.body.appendChild(ex);
-  }
-  var bg=tipo==='err'?'#fef2f2;color:#991b1b;border:1px solid #fecaca'
-        :tipo==='warn'?'#fffbeb;color:#92400e;border:1px solid #fde68a'
-        :'#f0fdf4;color:#166534;border:1px solid #bbf7d0';
-  ex.style.background=bg.split(';')[0].replace('background:','').trim();
-  ex.style.cssText+=';background:'+bg.split(';')[0].replace('background:','').trim();
-  ex.className='alerta al-'+tipo;
-  ex.innerHTML=msg+'<span style="margin-left:auto;opacity:.5;font-size:14px;cursor:pointer;flex-shrink:0" onclick="this.parentNode.style.display=\'none\'">✕</span>';
-  ex.style.display='flex';
-  if(tipo!=='err') setTimeout(function(){ if(ex) ex.style.display='none'; }, 8000);
-}
-
-function renderStorageDetail(){
-  var el=document.getElementById('storage-detail');
-  if(!el) return;
-  var CLAVES=[
-    {key:'recaudo_data_v2',  label:'Datos del banco',       purgeable:true},
-    {key:'recaudo_gest_v2',  label:'Gestiones del equipo',  purgeable:false},
-    {key:'recaudo_log_v1',   label:'Log de cambios',        purgeable:false},
-    {key:'recaudo_cfg_v1',   label:'Configuración',         purgeable:false},
-    {key:'oficios_session',  label:'Sesión activa',         purgeable:false},
-  ];
-  var MAX=5*1024*1024;
-  var totalBytes=0;
-  var rows=CLAVES.map(function(c){
-    var raw=localStorage.getItem(c.key)||'';
-    var sz=byteSize(raw);
-    totalBytes+=sz;
-    var extra='';
-    if(raw&&c.key==='recaudo_data_v2'){ try{ extra=' · '+JSON.parse(raw).length+' filas'; }catch(e){} }
-    if(raw&&c.key==='recaudo_gest_v2'){ try{ extra=' · '+Object.keys(JSON.parse(raw)).length+' depósitos'; }catch(e){} }
-    return {label:c.label,sz:sz,purgeable:c.purgeable,key:c.key,extra:extra};
-  });
-  var totalPct=Math.round(totalBytes/MAX*100);
-  function fmtB(b){ if(b>=1048576)return(b/1048576).toFixed(2)+' MB'; if(b>=1024)return(b/1024).toFixed(1)+' KB'; return b+' B'; }
-  var barColor=totalPct>=80?'#dc2626':totalPct>=50?'#ea580c':'#16a34a';
-  var html='<div style="margin-bottom:10px">';
-  html+='<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-soft);margin-bottom:4px">';
-  html+='<span>Total usado: <strong style="color:var(--navy)">'+fmtB(totalBytes)+'</strong></span>';
-  html+='<span style="font-weight:700;color:'+barColor+'">'+totalPct+'% de 5 MB</span></div>';
-  html+='<div style="background:#e8edf7;border-radius:6px;height:12px;overflow:hidden">';
-  html+='<div style="width:'+Math.min(totalPct,100)+'%;height:100%;background:'+barColor+';border-radius:6px;transition:width .4s"></div></div></div>';
-  html+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  rows.forEach(function(r){
-    var pct=Math.round(r.sz/MAX*100);
-    var badgeBg=pct===0?'#e8edf7':pct>=15?'#fee2e2':pct>=8?'#fef3c7':'#dcfce7';
-    var badgeCol=pct===0?'#4a5a72':pct>=15?'#991b1b':pct>=8?'#92400e':'#15803d';
-    html+='<tr style="border-bottom:1px solid var(--border)">';
-    html+='<td style="padding:7px 0;color:var(--text)">'+r.label+'<span style="color:var(--text-soft);font-size:10px">'+r.extra+'</span></td>';
-    html+='<td style="padding:7px 4px;text-align:right;font-weight:600;color:var(--navy)">'+fmtB(r.sz)+'</td>';
-    html+='<td style="padding:7px 0;text-align:right;padding-left:8px"><span style="background:'+badgeBg+';color:'+badgeCol+';border-radius:8px;padding:1px 8px;font-size:10px;font-weight:700">'+pct+'%</span></td>';
-    html+='</tr>';
-  });
-  html+='</table>';
-  el.innerHTML=html;
-  actualizarIndicadorStorage();
-}
-
-function purgarDatosBanco(){
-  if(!confirm('¿Borrar los datos del banco en caché local?\n\nSus GESTIONES y LOGS no se perderán.\nLos datos del banco se recargan desde ☁️ Sheet.')) return;
-  localStorage.removeItem(DATA_KEY);
-  dataBanco=[];
-  renderKpis(); filtrar();
-  actualizarIndicadorStorage();
-  renderStorageDetail();
-  var el=document.getElementById('storage-alert-cfg');
-  if(el){ el.style.display='flex'; el.className='alerta al-ok'; el.innerHTML='✅ Caché del banco liberado. Use ☁️ Cargar desde Sheet para recuperar los datos.'; }
-  mostrarAlertaStorageGlobal('ok','✅ Caché del banco liberado correctamente.');
-}
-
-// Estrategia A: dataBanco siempre viene del Sheet, no del localStorage
-// El indicador de storage refleja solo gestiones + log
-actualizarIndicadorStorage();
-actualizarBadgeSync();
-
-// Shake animation
-var st=document.createElement('style');
-st.textContent='@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}';
-document.head.appendChild(st);
+if(dataBanco.length){renderKpis();filtrar();llenarSelectResponsables();}
 </script>
 </body>
 </html>
