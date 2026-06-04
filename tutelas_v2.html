@@ -745,45 +745,60 @@ function setEl(id,html){const e=document.getElementById(id);if(e)e.innerHTML=htm
 
 async function guardarEstado(){
   if(!actual)return;
-  const nuevoEst   = document.getElementById("m-esel").value;
-  const respPQR    = document.getElementById("m-resp-pqr").value;
-  const respRad    = document.getElementById("m-resp-rad").value;
-  const encPQR     = document.getElementById("m-pqrenc-sel").value;
+  const nuevoEst = document.getElementById("m-esel").value;
+  const respPQR  = document.getElementById("m-resp-pqr").value;
+  const respRad  = document.getElementById("m-resp-rad").value;
+  // FIX: si el selector quedó vacío, preservar el valor original del registro
+  const encPQR   = document.getElementById("m-pqrenc-sel").value || actual["ENCARGADO PQR"] || "";
+
   if(!confirm(`¿Confirmar guardar cambios para ${actual["ACCIONANTE"]||"este registro"}?`))return;
-  const esInc      = origenModal === "incidente";
-  const esFallo    = origenModal === "fallo";
-  const arr        = esInc ? incidentes : esFallo ? fallos : tutelas;
-  const tipoEnvio  = esInc ? "Incidente/Desacato" : actual["TIPO"];
-  const idx        = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
-  if(idx>=0){
-    arr[idx]["ESTADO"]=nuevoEst;
-    arr[idx]["RESPUESTA PQR"]=respPQR;
-    arr[idx]["RADICADO DE CUMPLIMIENTO"]=respRad;
-  }
-  actual["ESTADO"]=nuevoEst;
-  actual["RESPUESTA PQR"]=respPQR;
-  actual["RADICADO DE CUMPLIMIENTO"]=respRad;
-  if(!APPS_URL){toast("⚠️ Cambio local. Configura APPS_URL para persistir en Sheets.","err");}
-  else{
-    try{
-      const campos = { estado: nuevoEst, respuestaPQR: respPQR, respuestaRadicado: respRad, encargadoPQR: encPQR };
-    try{
-      const res=await fetch(APPS_URL,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain"},
-        body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
-      const d=await res.json();
-      if(d.ok)toast("✅ Guardado en Sheets","ok");else toast("Error: "+d.error,"err");
-    }catch(e){
-      // Fallback no-cors — el POST llega al servidor aunque no podemos leer la respuesta
-      try{
-        await fetch(APPS_URL,{method:"POST",mode:"no-cors",redirect:"follow",headers:{"Content-Type":"text/plain"},
-          body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
-        toast("✅ Enviado al Sheets (sin confirmación)","ok");
-      }catch(e2){toast("Error de red: "+e2.message,"err");}
+
+  const esInc     = origenModal === "incidente";
+  const esFallo   = origenModal === "fallo";
+  const arr       = esInc ? incidentes : esFallo ? fallos : tutelas;
+  const tipoEnvio = esInc ? "Incidente/Desacato" : actual["TIPO"];
+
+  if(!APPS_URL){ toast("⚠️ Sin APPS_URL configurada","err"); return; }
+
+  toast("⏳ Guardando...","");
+
+  try {
+    // FIX: usamos GET en lugar de POST para evitar el problema CORS/302 de Apps Script
+    const params = new URLSearchParams({
+      accion:            "actualizarCampos",
+      radicado:          actual["RADICADO"],
+      tipo:              tipoEnvio,
+      estado:            nuevoEst,
+      respuestaPQR:      respPQR,
+      respuestaRadicado: respRad,
+      encargadoPQR:      encPQR
+    });
+    const res = await fetch(APPS_URL + "?" + params.toString());
+    const d   = await res.json();
+
+    if(d.ok){
+      // Actualizar array local SOLO después de confirmar que el servidor guardó
+      const idx = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
+      if(idx>=0){
+        arr[idx]["ESTADO"]                   = nuevoEst;
+        arr[idx]["RESPUESTA PQR"]            = respPQR;
+        arr[idx]["RADICADO DE CUMPLIMIENTO"] = respRad;
+        arr[idx]["ENCARGADO PQR"]            = encPQR;
+      }
+      actual["ESTADO"]                   = nuevoEst;
+      actual["RESPUESTA PQR"]            = respPQR;
+      actual["RADICADO DE CUMPLIMIENTO"] = respRad;
+      actual["ENCARGADO PQR"]            = encPQR;
+
+      toast("✅ Guardado en Sheets","ok");
+      renderAll();
+      document.getElementById("overlay").classList.remove("open");
+    } else {
+      toast("❌ Error: " + (d.error||"Sin detalle"),"err");
     }
-    }catch(e){toast("Error de red: "+e.message,"err");}
+  } catch(e) {
+    toast("❌ Error de red: " + e.message,"err");
   }
-  renderAll();
-  document.getElementById("overlay").classList.remove("open");
 }
 
 function irOficio(){
