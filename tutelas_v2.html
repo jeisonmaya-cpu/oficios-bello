@@ -697,30 +697,46 @@ function renderReparto(){
     const cerr=mine.filter(r=>EST_HIST.includes(r["ESTADO"])).length;
     const total=act+cerr;
     const pct=total?Math.round(cerr/total*100):0;
-    return{a,act,cerr,total,pct};
+    // Gestión preventiva: cerrados desde tutelas/admites sin haber llegado a fallo
+    // = registros en tutelas con estado cerrado cuyo radicado NO aparece en fallos ni incidentes
+    const radicadosFallos=new Set([...fallos,...incidentes].map(r=>r["RADICADO"]));
+    const preventivos=tutelas.filter(r=>
+      r["RESPONSABLE"]===a &&
+      EST_HIST.includes(r["ESTADO"]) &&
+      !radicadosFallos.has(r["RADICADO"])
+    ).length;
+    const pctPrev=cerr?Math.round(preventivos/cerr*100):0;
+    return{a,act,cerr,total,pct,preventivos,pctPrev};
   }).sort((a,b)=>b.total-a.total);
   const maxTotal=Math.max(...rankData.map(d=>d.total),1);
   document.getElementById("ranking-reparto").innerHTML=`
     <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
-      <div style="display:grid;grid-template-columns:24px 1fr 70px 80px 70px 90px 130px;gap:0;padding:9px 16px;background:rgba(255,255,255,.05);border-bottom:1px solid var(--border)">
+      <div style="display:grid;grid-template-columns:24px 1fr 60px 70px 60px 80px 110px 120px;gap:0;padding:9px 16px;background:rgba(255,255,255,.05);border-bottom:1px solid var(--border)">
         <div style="font-size:10px;font-weight:700;color:var(--soft);text-transform:uppercase">#</div>
         <div style="font-size:10px;font-weight:700;color:var(--soft);text-transform:uppercase">Abogado</div>
         <div style="font-size:10px;font-weight:700;color:#60a5fa;text-transform:uppercase;text-align:center">Activos</div>
         <div style="font-size:10px;font-weight:700;color:#4ade80;text-transform:uppercase;text-align:center">Cerrados</div>
         <div style="font-size:10px;font-weight:700;color:var(--gold2);text-transform:uppercase;text-align:center">Total</div>
-        <div style="font-size:10px;font-weight:700;color:var(--soft);text-transform:uppercase;text-align:center">Tasa cierre</div>
-        <div style="font-size:10px;font-weight:700;color:var(--soft);text-transform:uppercase">Volumen relativo</div>
+        <div style="font-size:10px;font-weight:700;color:var(--soft);text-transform:uppercase;text-align:center">% Cierre</div>
+        <div style="font-size:10px;font-weight:700;color:#c084fc;text-transform:uppercase;text-align:center">🛡️ Preventivos</div>
+        <div style="font-size:10px;font-weight:700;color:var(--soft);text-transform:uppercase">Volumen</div>
       </div>
       ${rankData.map((d,i)=>{
         const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":`<span style="color:var(--muted);font-size:11px">${i+1}</span>`;
         const barraPct=Math.round(d.total/maxTotal*100);
-        return`<div style="display:grid;grid-template-columns:24px 1fr 70px 80px 70px 90px 130px;gap:0;padding:11px 16px;border-top:1px solid rgba(255,255,255,.04);align-items:center;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+        const prevColor=d.pctPrev>=80?"#c084fc":d.pctPrev>=50?"#a78bfa":"#7c3aed";
+        const prevTip=d.preventivos>0?`${d.preventivos} tutela${d.preventivos!==1?"s":""} cerrada${d.preventivos!==1?"s":""} sin llegar a fallo (${d.pctPrev}% de sus cierres)`:"Sin cierres preventivos aún";
+        return`<div style="display:grid;grid-template-columns:24px 1fr 60px 70px 60px 80px 110px 120px;gap:0;padding:11px 16px;border-top:1px solid rgba(255,255,255,.04);align-items:center;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
           <div style="font-size:13px">${medal}</div>
           <div style="font-size:13px;font-weight:500">${pNom(d.a)}</div>
           <div style="font-size:13px;font-weight:600;color:#60a5fa;text-align:center">${d.act}</div>
           <div style="font-size:13px;font-weight:600;color:#4ade80;text-align:center">${d.cerr}</div>
           <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--gold2);text-align:center">${d.total}</div>
           <div style="text-align:center"><span style="font-size:12px;font-weight:600;color:${d.pct>=70?"#4ade80":d.pct>=40?"#fbbf24":"#f87171"}">${d.pct}%</span></div>
+          <div style="text-align:center" title="${prevTip}">
+            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:${prevColor}">${d.preventivos}</div>
+            <div style="font-size:9px;color:var(--soft)">${d.pctPrev}% de cierres</div>
+          </div>
           <div style="display:flex;align-items:center;gap:6px">
             <div style="flex:1;height:6px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden">
               <div style="height:100%;width:${barraPct}%;background:linear-gradient(90deg,#3b82f6,#06b6d4);border-radius:3px"></div>
@@ -729,6 +745,9 @@ function renderReparto(){
           </div>
         </div>`;
       }).join("")}
+    </div>
+    <div style="margin-top:10px;padding:10px 14px;background:rgba(192,132,252,.08);border:1px solid rgba(192,132,252,.2);border-radius:var(--radius-sm);font-size:11px;color:rgba(192,132,252,.8)">
+      🛡️ <strong>Gestión preventiva:</strong> tutelas cerradas directamente sin escalar a fallo ni incidente — indica respuesta oportuna dentro del término legal.
     </div>`;
 }
 
