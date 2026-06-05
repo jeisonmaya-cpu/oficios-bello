@@ -596,7 +596,9 @@ function renderAdmites(){
   const pag=renderPag(filtAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
   const el=document.getElementById("body-admites");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
-  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModal('${da}','tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  // Guardar datos en window para acceso seguro desde onclick (evita bug de comillas en nombres)
+  window._pagAdmites=pag;
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
   window._exportAdmites=filtAdm;
 }
 
@@ -625,7 +627,8 @@ function renderFallos(){
   const pag=renderPag(filtFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
-  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModal('${da}','fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  window._pagFallos=pag;
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
   window._exportFallos=filtFal;
 }
 
@@ -650,7 +653,8 @@ function renderOtros(){
   const pag=renderPag(datos,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
   const el=document.getElementById("body-otros");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
-  el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModal('${da}','incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  window._pagOtros=pag;
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
   window._exportOtros=datos;
 }
 
@@ -678,7 +682,12 @@ function renderHistorico(){
   const pag=renderPag(filtHis,pagHis,"pag-his-info","pag-his-btns","pag-his");
   const el=document.getElementById("body-historico");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🗂️</div>Sin registros históricos</div>`;return;}
-  el.innerHTML=pag.map(r=>{const esI=incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila tcols-his" onclick="abrirModal('${da}','${esI?"incidente":TIPOS_FALLO.includes(r["TIPO"])?"fallo":"tutela"}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;}).join("");
+  window._pagHistorico=pag;
+  el.innerHTML=pag.map((r,i)=>{
+    const esI=incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
+    const origen=esI?"incidente":TIPOS_FALLO.includes(r["TIPO"])?"fallo":"tutela";
+    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;
+  }).join("");
   window._exportHistorico=filtHis;
 }
 
@@ -875,6 +884,12 @@ function poblarSelects(){
   });
 }
 
+function abrirModalIdx(arrKey, idx, origen){
+  const arr=window[arrKey];
+  if(!arr||!arr[idx])return;
+  abrirModal(encodeURIComponent(JSON.stringify(arr[idx])),origen);
+}
+
 function abrirModal(da, origen){
   let r;try{r=JSON.parse(decodeURIComponent(da));}catch(e){return;}
   actual=r;
@@ -959,8 +974,18 @@ function switchMTab(tab){
 }
 
 function scardClick(n,label,cls,filtroId,filtroVal){
-  const clickable=filtroId?`style="cursor:pointer" onclick="document.getElementById('${filtroId}').value='${filtroVal}';${filtroId==='fa-est'?'renderAdmites()':filtroId==='ff-est'?'renderFallos()':'renderOtros()'}" title="Clic para filtrar por: ${label}"`:'';
-  return`<div class="scard" ${clickable}><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}${filtroId?` <span style="font-size:8px;opacity:.5">▶</span>`:''}</div></div>`;
+  if(!filtroId) return`<div class="scard"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}</div></div>`;
+  const renderFn=filtroId==='fa-est'||filtroId==='fa-abo'?'renderAdmites':filtroId==='ff-est'||filtroId==='ff-tp'?'renderFallos':'renderOtros';
+  return`<div class="scard" style="cursor:pointer" title="Clic para filtrar: ${label}" onclick="filtrarDesdeCard('${filtroId}','${filtroVal}','${renderFn}')"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label} <span style="font-size:8px;opacity:.4">▶</span></div></div>`;
+}
+
+function filtrarDesdeCard(filtroId,filtroVal,renderFn){
+  const el=document.getElementById(filtroId);
+  if(!el)return;
+  el.value=filtroVal;
+  if(renderFn==='renderAdmites')renderAdmites();
+  else if(renderFn==='renderFallos')renderFallos();
+  else renderOtros();
 }
 
 async function guardarEstado(){
@@ -998,7 +1023,10 @@ async function guardarEstado(){
       toast(EST_HIST.includes(nuevoEst)?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado en Sheets","ok");
       renderAll();
       document.getElementById("overlay").classList.remove("open");
-    }else{toast("❌ Error: "+(d.error||"Sin detalle"),"err");}
+    }else{
+      // Bug 3 fix: NO cerrar el modal si el servidor reportó error
+      toast("❌ Error al guardar: "+(d.error||"Sin detalle")+" — los cambios NO se guardaron","err");
+    }
   }catch(e){toast("❌ Error de red: "+e.message,"err");}
 }
 
@@ -1105,7 +1133,7 @@ let cargando = false;
 async function cargarDatosSafe() {
   if (cargando) return;
   cargando = true;
-  try { await cargarDatos(); } finally { cargando = false; }
+  try { await cargarDatos(); } catch(e){ console.error(e); } finally { cargando = false; }
 }
 cargarDatosSafe();
 setInterval(cargarDatosSafe, 5*60*1000);
