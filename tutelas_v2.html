@@ -231,6 +231,7 @@
     <select class="fi" id="fa-abo" onchange="renderAdmites()"><option value="">Todos los abogados</option></select>
     <select class="fi" id="fa-est" onchange="renderAdmites()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
     <button class="btn-refresh" id="btnref" onclick="cargarDatos()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Actualizar</button>
+    <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('admites')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
   </div>
   <div class="twrap">
     <div class="thead tcols-adm"><div class="cel">Urgencia</div><div class="cel">Vence</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div></div>
@@ -246,6 +247,7 @@
     <select class="fi" id="ff-tp" onchange="renderFallos()"><option value="">Fallo y sentencia</option><option>Fallo de tutela</option><option>Sentencia</option></select>
     <select class="fi" id="ff-abo" onchange="renderFallos()"><option value="">Todos los abogados</option></select>
     <select class="fi" id="ff-est" onchange="renderFallos()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option></select>
+    <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('fallos')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
   </div>
   <div class="twrap">
     <div class="thead tcols-fal"><div class="cel">Urgencia</div><div class="cel">Tipo</div><div class="cel">Vence</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel">Radicado</div></div>
@@ -260,6 +262,7 @@
     <input class="fi fi-buscar" id="fo-q" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderOtros()"/>
     <select class="fi" id="fo-abo" onchange="renderOtros()"><option value="">Todos los abogados</option></select>
     <select class="fi" id="fo-est" onchange="renderOtros()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
+    <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('otros')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
   </div>
   <div class="twrap">
     <div class="thead tcols-otr"><div class="cel">Urgencia</div><div class="cel">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div></div>
@@ -286,7 +289,23 @@
     <input class="fi fi-buscar" id="fh-q" placeholder="🔍 Buscar en histórico..." oninput="renderHistorico()"/>
     <select class="fi" id="fh-abo" onchange="renderHistorico()"><option value="">Todos los abogados</option></select>
     <select class="fi" id="fh-tipo" onchange="renderHistorico()"><option value="">Todos los tipos</option><option>Tutela</option><option>Fallo de tutela</option><option>Sentencia</option><option>Desacato</option></select>
+    <select class="fi" id="fh-mes" onchange="renderHistorico()">
+      <option value="">Todos los meses</option>
+      <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+      <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
+      <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
+      <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+    </select>
+    <select class="fi" id="fh-anio" onchange="renderHistorico()">
+      <option value="">Todos los años</option>
+      <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+    </select>
+    <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('historico')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar Excel
+    </button>
   </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:0 2px" id="his-contador"></div>
   <div class="twrap">
     <div class="thead tcols-his"><div class="cel">Estado</div><div class="cel">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div><div class="cel">Vence</div></div>
     <div id="body-historico"><div class="loader"><div class="spinner"></div></div></div>
@@ -526,23 +545,29 @@ function renderAdmites(){
   const q=document.getElementById("fa-q").value;
   const abo=document.getElementById("fa-abo").value;
   const est=document.getElementById("fa-est").value;
+  // Solo activos en la tabla principal (excluir EST_HIST salvo que se filtre explícitamente)
   const filtAdm=byUrg(tutelas.filter(r=>{
     if(TIPOS_FALLO.concat(TIPOS_OTROS).includes(r["TIPO"]))return false;
+    if(!est && EST_HIST.includes(r["ESTADO"]))return false; // ocultar finalizados por defecto
     if(abo&&r["RESPONSABLE"]!==abo)return false;
     if(est&&r["ESTADO"]!==est)return false;
     return fBusc(r,q);
   }));
-  const urg=filtAdm.filter(r=>r._dias!==null&&r._dias<=1);
-  const prox=filtAdm.filter(r=>r._dias!==null&&r._dias>1&&r._dias<=3);
-  const ok=filtAdm.filter(r=>r._dias!==null&&r._dias>3);
-  const nue=filtAdm.filter(r=>r["ESTADO"]==="Nuevo");
-  const venc=filtAdm.filter(r=>r._dias!==null&&r._dias<0);
-  document.getElementById("stats-admites").innerHTML=scard(filtAdm.length,"Total activos","c-blue")+scard(venc.length,"Vencidos","c-red")+scard(urg.length,"Urgentes ≤1d","c-red")+scard(prox.length,"Próximos 2-3d","c-amber")+scard(ok.length,"Con tiempo","c-green")+scard(nue.length,"Nuevas","c-purple");
-  document.getElementById("badge-admites").textContent=(venc.length||urg.length)||filtAdm.length;
+  // Stats solo sobre activos reales
+  const activos=filtAdm.filter(r=>!EST_HIST.includes(r["ESTADO"]));
+  const urg=activos.filter(r=>r._dias!==null&&r._dias<=1);
+  const prox=activos.filter(r=>r._dias!==null&&r._dias>1&&r._dias<=3);
+  const ok=activos.filter(r=>r._dias!==null&&r._dias>3);
+  const nue=activos.filter(r=>r["ESTADO"]==="Nuevo");
+  const venc=activos.filter(r=>r._dias!==null&&r._dias<0);
+  document.getElementById("stats-admites").innerHTML=scard(activos.length,"Total activos","c-blue")+scard(venc.length,"Vencidos","c-red")+scard(urg.length,"Urgentes ≤1d","c-red")+scard(prox.length,"Próximos 2-3d","c-amber")+scard(ok.length,"Con tiempo","c-green")+scard(nue.length,"Nuevas","c-purple");
+  document.getElementById("badge-admites").textContent=(venc.length||urg.length)||activos.length;
   const pag=renderPag(filtAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
   const el=document.getElementById("body-admites");
-  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros</div>`;return;}
+  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModal('${da}','tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  // Guardar datos filtrados para exportar
+  window._exportAdmites = filtAdm;
 }
 
 function renderFallos(){
@@ -551,20 +576,23 @@ function renderFallos(){
   const abo=document.getElementById("ff-abo").value;
   const est=document.getElementById("ff-est").value;
   const filtFal=byUrg(fallos.filter(r=>{
+    if(!est && EST_HIST.includes(r["ESTADO"]))return false; // ocultar finalizados por defecto
     if(tp&&r["TIPO"]!==tp)return false;
     if(abo&&r["RESPONSABLE"]!==abo)return false;
     if(est&&r["ESTADO"]!==est)return false;
     return fBusc(r,q);
   }));
-  const urg=filtFal.filter(r=>r._dias!==null&&r._dias<=3);
-  const fal=filtFal.filter(r=>r["TIPO"]==="Fallo de tutela");
-  const sent=filtFal.filter(r=>r["TIPO"]==="Sentencia");
-  document.getElementById("stats-fallos").innerHTML=scard(filtFal.length,"Total","c-blue")+scard(urg.length,"Urgentes ≤3d","c-red")+scard(fal.length,"Fallos","c-amber")+scard(sent.length,"Sentencias","c-purple");
-  document.getElementById("badge-fallos").textContent=filtFal.filter(r=>!EST_HIST.includes(r["ESTADO"])).length;
+  const activos=filtFal.filter(r=>!EST_HIST.includes(r["ESTADO"]));
+  const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
+  const fal=activos.filter(r=>r["TIPO"]==="Fallo de tutela");
+  const sent=activos.filter(r=>r["TIPO"]==="Sentencia");
+  document.getElementById("stats-fallos").innerHTML=scard(activos.length,"Total activos","c-blue")+scard(urg.length,"Urgentes ≤3d","c-red")+scard(fal.length,"Fallos","c-amber")+scard(sent.length,"Sentencias","c-purple");
+  document.getElementById("badge-fallos").textContent=activos.length;
   const pag=renderPag(filtFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
-  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros</div>`;return;}
+  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModal('${da}','fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  window._exportFallos = filtFal;
 }
 
 function renderOtros(){
@@ -572,37 +600,49 @@ function renderOtros(){
   const abo=document.getElementById("fo-abo").value;
   const est=document.getElementById("fo-est").value;
   const datos=byUrg(incidentes.filter(r=>{
+    if(!est && EST_HIST.includes(r["ESTADO"]))return false; // ocultar finalizados por defecto
     if(abo&&r["RESPONSABLE"]!==abo)return false;
     if(est&&r["ESTADO"]!==est)return false;
     return fBusc(r,q);
   }));
-  // Stats cards
-  const urg=datos.filter(r=>r._dias!==null&&r._dias<=3&&!EST_HIST.includes(r["ESTADO"]));
   const activos=datos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
-  const nuevos=datos.filter(r=>r["ESTADO"]==="Nuevo");
-  const finalizados=datos.filter(r=>EST_HIST.includes(r["ESTADO"]));
-  document.getElementById("stats-inc").innerHTML=scard(datos.length,"Total","c-amber")+scard(activos.length,"Activos","c-blue")+scard(urg.length,"Urgentes ≤3d","c-red")+scard(nuevos.length,"Nuevos","c-purple")+scard(finalizados.length,"Finalizados","c-green");
+  const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
+  const nuevos=activos.filter(r=>r["ESTADO"]==="Nuevo");
+  document.getElementById("stats-inc").innerHTML=scard(activos.length,"Total activos","c-amber")+scard(urg.length,"Urgentes ≤3d","c-red")+scard(nuevos.length,"Nuevos","c-purple");
   document.getElementById("badge-otros").textContent=activos.length;
   const pag=renderPag(datos,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
   const el=document.getElementById("body-otros");
-  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros</div>`;return;}
+  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   el.innerHTML=pag.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModal('${da}','incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;}).join("");
+  window._exportOtros = datos;
 }
 
 function renderHistorico(){
   const q=document.getElementById("fh-q").value;
   const abo=document.getElementById("fh-abo").value;
   const tipo=document.getElementById("fh-tipo").value;
+  const mes=document.getElementById("fh-mes").value;
+  const anio=document.getElementById("fh-anio").value;
   const filtHis=[...tutelas,...fallos,...incidentes.map(r=>({...r,TIPO:r["TIPO"]||"Desacato"}))].filter(r=>{
     if(!EST_HIST.includes(r["ESTADO"]))return false;
     if(abo&&r["RESPONSABLE"]!==abo)return false;
     if(tipo&&r["TIPO"]!==tipo)return false;
+    if(mes||anio){
+      const fecha=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
+      if(!fecha.includes("/"))return false;
+      const p=fecha.split("/");
+      if(mes&&p[1]!==mes)return false;
+      if(anio&&p[2]!==anio)return false;
+    }
     return fBusc(r,q);
   });
+  const cEl=document.getElementById("his-contador");
+  if(cEl)cEl.textContent=`${filtHis.length} registro${filtHis.length!==1?"s":""} en histórico`;
   const pag=renderPag(filtHis,pagHis,"pag-his-info","pag-his-btns","pag-his");
   const el=document.getElementById("body-historico");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🗂️</div>Sin registros históricos</div>`;return;}
   el.innerHTML=pag.map(r=>{const esI=incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);const da=encodeURIComponent(JSON.stringify(r));return`<div class="fila tcols-his" onclick="abrirModal('${da}','${esI?"incidente":TIPOS_FALLO.includes(r["TIPO"])?"fallo":"tutela"}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;}).join("");
+  window._exportHistorico = filtHis;
 }
 
 function renderReparto(){
@@ -745,60 +785,45 @@ function setEl(id,html){const e=document.getElementById(id);if(e)e.innerHTML=htm
 
 async function guardarEstado(){
   if(!actual)return;
-  const nuevoEst = document.getElementById("m-esel").value;
-  const respPQR  = document.getElementById("m-resp-pqr").value;
-  const respRad  = document.getElementById("m-resp-rad").value;
-  // FIX: si el selector quedó vacío, preservar el valor original del registro
-  const encPQR   = document.getElementById("m-pqrenc-sel").value || actual["ENCARGADO PQR"] || "";
-
+  const nuevoEst   = document.getElementById("m-esel").value;
+  const respPQR    = document.getElementById("m-resp-pqr").value;
+  const respRad    = document.getElementById("m-resp-rad").value;
+  const encPQR     = document.getElementById("m-pqrenc-sel").value;
   if(!confirm(`¿Confirmar guardar cambios para ${actual["ACCIONANTE"]||"este registro"}?`))return;
-
-  const esInc     = origenModal === "incidente";
-  const esFallo   = origenModal === "fallo";
-  const arr       = esInc ? incidentes : esFallo ? fallos : tutelas;
-  const tipoEnvio = esInc ? "Incidente/Desacato" : actual["TIPO"];
-
-  if(!APPS_URL){ toast("⚠️ Sin APPS_URL configurada","err"); return; }
-
-  toast("⏳ Guardando...","");
-
-  try {
-    // FIX: usamos GET en lugar de POST para evitar el problema CORS/302 de Apps Script
-    const params = new URLSearchParams({
-      accion:            "actualizarCampos",
-      radicado:          actual["RADICADO"],
-      tipo:              tipoEnvio,
-      estado:            nuevoEst,
-      respuestaPQR:      respPQR,
-      respuestaRadicado: respRad,
-      encargadoPQR:      encPQR
-    });
-    const res = await fetch(APPS_URL + "?" + params.toString());
-    const d   = await res.json();
-
-    if(d.ok){
-      // Actualizar array local SOLO después de confirmar que el servidor guardó
-      const idx = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
-      if(idx>=0){
-        arr[idx]["ESTADO"]                   = nuevoEst;
-        arr[idx]["RESPUESTA PQR"]            = respPQR;
-        arr[idx]["RADICADO DE CUMPLIMIENTO"] = respRad;
-        arr[idx]["ENCARGADO PQR"]            = encPQR;
-      }
-      actual["ESTADO"]                   = nuevoEst;
-      actual["RESPUESTA PQR"]            = respPQR;
-      actual["RADICADO DE CUMPLIMIENTO"] = respRad;
-      actual["ENCARGADO PQR"]            = encPQR;
-
-      toast("✅ Guardado en Sheets","ok");
-      renderAll();
-      document.getElementById("overlay").classList.remove("open");
-    } else {
-      toast("❌ Error: " + (d.error||"Sin detalle"),"err");
-    }
-  } catch(e) {
-    toast("❌ Error de red: " + e.message,"err");
+  const esInc      = origenModal === "incidente";
+  const esFallo    = origenModal === "fallo";
+  const arr        = esInc ? incidentes : esFallo ? fallos : tutelas;
+  const tipoEnvio  = esInc ? "Incidente/Desacato" : actual["TIPO"];
+  const idx        = arr.findIndex(r=>r["RADICADO"]===actual["RADICADO"]);
+  if(idx>=0){
+    arr[idx]["ESTADO"]=nuevoEst;
+    arr[idx]["RESPUESTA PQR"]=respPQR;
+    arr[idx]["RADICADO DE CUMPLIMIENTO"]=respRad;
   }
+  actual["ESTADO"]=nuevoEst;
+  actual["RESPUESTA PQR"]=respPQR;
+  actual["RADICADO DE CUMPLIMIENTO"]=respRad;
+  if(!APPS_URL){toast("⚠️ Cambio local. Configura APPS_URL para persistir en Sheets.","err");}
+  else{
+    try{
+      const campos = { estado: nuevoEst, respuestaPQR: respPQR, respuestaRadicado: respRad, encargadoPQR: encPQR };
+    try{
+      const res=await fetch(APPS_URL,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain"},
+        body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
+      const d=await res.json();
+      if(d.ok)toast("✅ Guardado en Sheets","ok");else toast("Error: "+d.error,"err");
+    }catch(e){
+      // Fallback no-cors — el POST llega al servidor aunque no podemos leer la respuesta
+      try{
+        await fetch(APPS_URL,{method:"POST",mode:"no-cors",redirect:"follow",headers:{"Content-Type":"text/plain"},
+          body:JSON.stringify({accion:"actualizarCampos",radicado:actual["RADICADO"],campos:campos,tipo:tipoEnvio})});
+        toast("✅ Enviado al Sheets (sin confirmación)","ok");
+      }catch(e2){toast("Error de red: "+e2.message,"err");}
+    }
+    }catch(e){toast("Error de red: "+e.message,"err");}
+  }
+  renderAll();
+  document.getElementById("overlay").classList.remove("open");
 }
 
 function irOficio(){
@@ -897,6 +922,38 @@ function toast(msg,tipo){
   const t=document.getElementById("toast");
   t.textContent=msg;t.className="toast show "+(tipo||"");
   setTimeout(()=>t.className="toast",4000);
+}
+
+function exportarTabla(tab){
+  const mapas={
+    admites:{datos:()=>window._exportAdmites||[],nombre:"Admites",cols:["ACCIONANTE","CC / NIT","RADICADO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL","RESPUESTA PQR","ENCARGADO PQR"]},
+    fallos: {datos:()=>window._exportFallos||[], nombre:"Fallos_Sentencias",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL"]},
+    otros:  {datos:()=>window._exportOtros||[], nombre:"Incidentes_Desacatos",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","RESPUESTA PQR","ENCARGADO PQR"]},
+    historico:{datos:()=>window._exportHistorico||[],nombre:"Historico",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL","RESPUESTA PQR","ENCARGADO PQR"]}
+  };
+  const m=mapas[tab]; if(!m)return;
+  const regs=m.datos();
+  if(!regs.length){toast("⚠️ No hay datos para exportar","err");return;}
+  // Agregar columna Días restantes calculada
+  const colsExport=[...m.cols,"Días restantes"];
+  const headers=colsExport.map(c=>c==="Días restantes"?"Días restantes":c);
+  const rows=regs.map(r=>{
+    const fila=m.cols.map(c=>{
+      const v=r[c]||r[c.replace("LÍMITE","LIMITE")]||"";
+      return'"'+String(v).replace(/"/g,'""')+'"';
+    });
+    const d=r._dias===null?"Sin fecha":r._dias<0?"Vencido "+Math.abs(r._dias)+"d":r._dias+"d";
+    fila.push('"'+d+'"');
+    return fila.join(",");
+  });
+  const fecha=new Date().toLocaleDateString("es-CO").replace(/\//g,"-");
+  const csv="\uFEFF"+[headers.map(h=>'"'+h+'"').join(","),...rows].join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=`Tutelas_${m.nombre}_${fecha}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  toast(`📥 Exportado: ${regs.length} registros`,"ok");
 }
 
 // Evitar llamadas simultáneas
