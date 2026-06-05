@@ -419,6 +419,19 @@
   </div>
 </div>
 
+<!-- MODAL CONFIRMACIÓN -->
+<div class="overlay" id="overlay-confirm" style="z-index:200">
+  <div class="modal" style="max-width:420px;padding:28px">
+    <div style="font-size:22px;margin-bottom:12px;text-align:center">💾</div>
+    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;text-align:center;margin-bottom:8px" id="confirm-titulo">¿Confirmar cambios?</div>
+    <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px;line-height:1.6" id="confirm-msg">—</div>
+    <div style="display:flex;gap:10px">
+      <button id="confirm-cancel" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.14)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">Cancelar</button>
+      <button id="confirm-ok" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;color:#fff;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -481,14 +494,28 @@ async function leerGviz(gid) {
     }
     return String(cell.f??cell.v??"").trim();
   }
+  // Mapa de normalización de tipos — evita duplicados por capitalización inconsistente en el Sheet
+  const NORM_TIPO={
+    "tutela":"Tutela","admite":"Tutela",
+    "fallo de tutela":"Fallo de tutela","fallo":"Fallo de tutela",
+    "sentencia":"Sentencia",
+    "incidente":"Incidente","incidente de desacato":"Incidente de desacato",
+    "desacato":"Desacato",
+    "impugnacion":"Impugnación","impugnación":"Impugnación",
+    "apertura":"Apertura","requerimiento":"Requerimiento",
+    "sancion":"Sanción","sanción":"Sanción","reparto":"Reparto"
+  };
   return rows.map(row=>{
     const r={};
-    // Leer por nombre de columna usando el mapa — inmune a desplazamientos por fórmulas
     Object.keys(colMap).forEach(lbl=>{ r[lbl]=getCell(row,colMap[lbl]); });
+    // Normalizar TIPO
+    if(r["TIPO"]){
+      const norm=NORM_TIPO[r["TIPO"].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim()];
+      if(norm)r["TIPO"]=norm;
+    }
     const flim=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
     r._dias=calcDias(flim);
     return r;
-  // Filtro ampliado: basta con RADICADO para considerar la fila válida
   }).filter(r=>(r["ACCIONANTE"]||"").trim()||(r["TIPO"]||"").trim()||(r["RADICADO"]||"").trim());
 }
 
@@ -511,10 +538,20 @@ function verificarVencidos(){
 function buscarGlobal(){
   const q=document.getElementById("g-search").value.trim().toLowerCase();
   const el=document.getElementById("global-results");
-  if (q.length<2){el.classList.remove("open");return;}
-  const res=[...tutelas,...fallos,...incidentes].filter(r=>[r["ACCIONANTE"],r["RADICADO"],r["CC / NIT"],r["JUZGADO"]].join(" ").toLowerCase().includes(q)).slice(0,12);
-  if (!res.length){el.innerHTML=`<div class="gr-item"><span style="color:var(--muted)">Sin resultados</span></div>`;el.classList.add("open");return;}
-  el.innerHTML=res.map(r=>{const da=encodeURIComponent(JSON.stringify(r));return`<div class="gr-item" onclick="el.classList.remove('open');abrirModal('${da}')">${badgeTipo(r["TIPO"])}<div><div class="gr-acc">${esc(r["ACCIONANTE"]||"—")}</div><div class="gr-sub">${esc(r["RADICADO"]||"—")} · ${esc((r["JUZGADO"]||"").substring(0,40))}</div></div>${semaforo(r._dias,r["ESTADO"])}</div>`;}).join("");
+  if(q.length<2){el.classList.remove("open");return;}
+  const todos=[...tutelas,...fallos,...incidentes];
+  // Deduplicar por radicado — un radicado que escaló de tutela a fallo solo aparece una vez
+  const vistos=new Set();
+  const res=todos.filter(r=>{
+    const key=r["RADICADO"]||Math.random();
+    if(vistos.has(key))return false;
+    vistos.add(key);
+    return [r["ACCIONANTE"],r["RADICADO"],r["CC / NIT"],r["JUZGADO"]].join(" ").toLowerCase().includes(q);
+  }).slice(0,12);
+  if(!res.length){el.innerHTML=`<div class="gr-item"><span style="color:var(--muted)">Sin resultados</span></div>`;el.classList.add("open");return;}
+  // Guardar resultados para acceso seguro por índice
+  window._globalResults=res;
+  el.innerHTML=res.map((r,i)=>`<div class="gr-item" onclick="cerrarGlobal();abrirModalIdx('_globalResults',${i})">${badgeTipo(r["TIPO"])}<div><div class="gr-acc">${esc(r["ACCIONANTE"]||"—")}</div><div class="gr-sub">${esc(r["RADICADO"]||"—")} · ${esc((r["JUZGADO"]||"").substring(0,40))}</div></div>${semaforo(r._dias,r["ESTADO"])}</div>`).join("");
   el.classList.add("open");
 }
 function cerrarGlobal(){document.getElementById("global-results").classList.remove("open");}
@@ -734,19 +771,18 @@ function renderReparto(){
     </div>`;
   }).join("");
   // Ranking tabla
+  // Calcular radicadosFallos UNA sola vez fuera del loop — no 6 veces
+  const radicadosFallosSet=new Set([...fallos,...incidentes].map(r=>r["RADICADO"]));
   const rankData=ABOGADOS.map(a=>{
     const mine=todos.filter(r=>r["RESPONSABLE"]===a);
     const act=mine.filter(r=>!EST_HIST.includes(r["ESTADO"])).length;
     const cerr=mine.filter(r=>EST_HIST.includes(r["ESTADO"])).length;
     const total=act+cerr;
     const pct=total?Math.round(cerr/total*100):0;
-    // Gestión preventiva: cerrados desde tutelas/admites sin haber llegado a fallo
-    // = registros en tutelas con estado cerrado cuyo radicado NO aparece en fallos ni incidentes
-    const radicadosFallos=new Set([...fallos,...incidentes].map(r=>r["RADICADO"]));
     const preventivos=tutelas.filter(r=>
       r["RESPONSABLE"]===a &&
       EST_HIST.includes(r["ESTADO"]) &&
-      !radicadosFallos.has(r["RADICADO"])
+      !radicadosFallosSet.has(r["RADICADO"])
     ).length;
     const pctPrev=cerr?Math.round(preventivos/cerr*100):0;
     return{a,act,cerr,total,pct,preventivos,pctPrev};
@@ -886,8 +922,15 @@ function poblarSelects(){
 
 function abrirModalIdx(arrKey, idx, origen){
   const arr=window[arrKey];
-  if(!arr||!arr[idx])return;
-  abrirModal(encodeURIComponent(JSON.stringify(arr[idx])),origen);
+  if(!arr||arr[idx]===undefined)return;
+  const r=arr[idx];
+  // Si no se pasa origen, detectarlo por el radicado
+  if(!origen){
+    if(incidentes.some(x=>x["RADICADO"]===r["RADICADO"]))origen="incidente";
+    else if(fallos.some(x=>x["RADICADO"]===r["RADICADO"]))origen="fallo";
+    else origen="tutela";
+  }
+  abrirModal(encodeURIComponent(JSON.stringify(r)),origen);
 }
 
 function abrirModal(da, origen){
@@ -958,6 +1001,24 @@ function abrirModal(da, origen){
   document.getElementById("overlay").classList.add("open");
 }
 
+function confirmar(titulo, msg){
+  return new Promise(resolve=>{
+    document.getElementById("confirm-titulo").textContent=titulo;
+    document.getElementById("confirm-msg").textContent=msg;
+    const ov=document.getElementById("overlay-confirm");
+    ov.classList.add("open");
+    const ok=document.getElementById("confirm-ok");
+    const cancel=document.getElementById("confirm-cancel");
+    function cerrar(val){
+      ov.classList.remove("open");
+      ok.onclick=null; cancel.onclick=null;
+      resolve(val);
+    }
+    ok.onclick=()=>cerrar(true);
+    cancel.onclick=()=>cerrar(false);
+  });
+}
+
 function setEl(id,html){const e=document.getElementById(id);if(e)e.innerHTML=html;}
 
 function switchMTab(tab){
@@ -994,7 +1055,11 @@ async function guardarEstado(){
   const respPQR  = document.getElementById("m-resp-pqr").value;
   const respRad  = document.getElementById("m-resp-rad").value;
   const encPQR   = document.getElementById("m-pqrenc-sel").value || actual["ENCARGADO PQR"] || "";
-  if(!confirm(`¿Confirmar guardar cambios para ${actual["ACCIONANTE"]||"este registro"}?`))return;
+  const ok = await confirmar(
+    "¿Guardar cambios?",
+    `${actual["ACCIONANTE"]||"este registro"} — Estado: ${nuevoEst}`
+  );
+  if(!ok)return;
   const esInc     = origenModal === "incidente";
   const esFallo   = origenModal === "fallo";
   const arr       = esInc ? incidentes : esFallo ? fallos : tutelas;
@@ -1066,11 +1131,12 @@ function filtrarPQRModal(){
 function renderPQRModal(regs){
   document.getElementById("pqr-enc-sub").textContent=`${regs.length} petición(es)`;
   const ordenadas=byUrg(regs);
-  document.getElementById("pqr-lista-body").innerHTML=ordenadas.map(r=>{
-    const da=encodeURIComponent(JSON.stringify(r));
+  // Guardar para acceso seguro por índice
+  window._pqrModalRegs=ordenadas;
+  document.getElementById("pqr-lista-body").innerHTML=ordenadas.map((r,i)=>{
     const dc=r._dias===null?"var(--muted)":r._dias<0?"#f87171":r._dias<=2?"#fb923c":"#4ade80";
     const dt=r._dias===null?"Sin fecha":r._dias<0?"Vencido "+Math.abs(r._dias)+"d":r._dias+"d";
-    return`<div style="display:grid;grid-template-columns:1fr 110px 90px 70px;gap:8px;align-items:center;padding:11px 13px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.04)'" onclick="document.getElementById('overlay-pqr').classList.remove('open');abrirModal('${da}')">
+    return`<div style="display:grid;grid-template-columns:1fr 110px 90px 70px;gap:8px;align-items:center;padding:11px 13px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.04)'" onclick="document.getElementById('overlay-pqr').classList.remove('open');abrirModalIdx('_pqrModalRegs',${i})">
       <div><div style="font-size:13px;font-weight:500">${esc(r["ACCIONANTE"]||"—")}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(r["RADICADO"]||"—")}</div></div>
       <div style="font-size:11px;color:var(--muted)">${esc(r["RESPONSABLE"]||"—")}</div>
       <div style="font-size:11px;color:var(--muted);white-space:nowrap">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div>
@@ -1114,6 +1180,11 @@ function goTab(tab){
     document.getElementById("tab-"+t).classList.toggle("active",t===tab);
     document.getElementById("panel-"+t).classList.toggle("active",t===tab);
   });
+  // Resetear paginación al cambiar tab
+  if(tab==="admites")pagAdm=1;
+  else if(tab==="fallos")pagFal=1;
+  else if(tab==="otros")pagInc=1;
+  else if(tab==="historico")pagHis=1;
 }
 
 function setSS(estado,label){
@@ -1130,13 +1201,16 @@ function toast(msg,tipo){
 
 // Evitar llamadas simultáneas
 let cargando = false;
-async function cargarDatosSafe() {
+async function cargarDatosSafe(esAutoRefresh=false) {
   if (cargando) return;
   cargando = true;
-  try { await cargarDatos(); } catch(e){ console.error(e); } finally { cargando = false; }
+  try {
+    await cargarDatos();
+    if(esAutoRefresh) toast("🔄 Datos actualizados","");
+  } catch(e){ console.error(e); } finally { cargando = false; }
 }
 cargarDatosSafe();
-setInterval(cargarDatosSafe, 5*60*1000);
+setInterval(()=>cargarDatosSafe(true), 5*60*1000);
 </script>
 </body>
 </html>
