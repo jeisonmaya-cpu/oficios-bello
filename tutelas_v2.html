@@ -941,7 +941,7 @@ function abrirModal(da, origen){
   const origenLabel={"tutela":"📋 Tutela / Admite","fallo":"⚖️ Fallo / Sentencia","incidente":"⚡ Incidente / Desacato","historico":"🗂️ Histórico"}[origenModal]||"";
   setEl("m-badge",badgeTipo(r["TIPO"]||(origenModal==="incidente"?"Desacato":""))+(origenLabel?`<span style="margin-left:8px;font-size:10px;color:var(--muted);font-weight:400">${origenLabel}</span>`:""));
   setEl("m-acc",esc(r["ACCIONANTE"]||"—"));
-  setEl("m-rad","Radicado: "+esc(r["RADICADO"]||"—"));
+  setEl("m-rad",`Radicado: ${esc(r["RADICADO"]||"—")} <button onclick="copiarRadicado()" title="Copiar radicado" style="background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:5px;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 7px;margin-left:6px;font-family:'DM Sans',sans-serif;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.18)';this.style.color='var(--text)'" onmouseout="this.style.background='rgba(255,255,255,.08)';this.style.color='var(--muted)'">📋 Copiar</button>`);
   setEl("m-juz",esc(r["JUZGADO"]||"—"));
   setEl("m-cc",esc(r["CC / NIT"]||"—"));
   setEl("m-fini",esc(r["FECHA INICIAL"]||"—"));
@@ -1016,6 +1016,22 @@ function confirmar(titulo, msg){
     }
     ok.onclick=()=>cerrar(true);
     cancel.onclick=()=>cerrar(false);
+  });
+}
+
+function copiarRadicado(){
+  if(!actual||!actual["RADICADO"])return;
+  navigator.clipboard.writeText(actual["RADICADO"]).then(()=>{
+    toast("📋 Radicado copiado: "+actual["RADICADO"],"ok");
+  }).catch(()=>{
+    // Fallback para navegadores sin clipboard API
+    const ta=document.createElement("textarea");
+    ta.value=actual["RADICADO"];
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    toast("📋 Radicado copiado: "+actual["RADICADO"],"ok");
   });
 }
 
