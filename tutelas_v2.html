@@ -345,55 +345,77 @@
 
 <!-- MODAL DETALLE -->
 <div class="overlay" id="overlay" onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="modal">
+  <div class="modal" style="max-width:780px">
     <div class="modal-top">
       <div><div id="m-badge" style="margin-bottom:8px"></div><div class="m-acc" id="m-acc">—</div><div class="m-rad" id="m-rad">—</div></div>
       <button class="modal-close" onclick="document.getElementById('overlay').classList.remove('open')">✕</button>
     </div>
-    <div class="m-grid">
-      <div class="mf"><label>Juzgado</label><div class="v" id="m-juz">—</div></div>
-      <div class="mf"><label>CC / NIT</label><div class="v" id="m-cc">—</div></div>
-      <div class="mf"><label>Fecha inicial</label><div class="v" id="m-fini">—</div></div>
-      <div class="mf"><label>Fecha límite</label><div class="v" id="m-flim">—</div></div>
-      <div class="mf"><label>Abogado reparto</label><div class="v" id="m-resp">—</div></div>
-      <div class="mf"><label>Encargado PQR</label><div class="v" id="m-pqrenc">—</div></div>
-      <div class="mf"><label>Días restantes</label><div class="v" id="m-dias">—</div></div>
-      <div class="mf"><label>Estado</label><div class="v" id="m-est-txt">—</div></div>
+
+    <!-- PESTAÑAS MODAL -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)">
+      <button id="mtab-info" onclick="switchMTab('info')" style="padding:9px 20px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;background:none;border:none;border-bottom:2px solid var(--gold);color:var(--text);cursor:pointer;transition:all .2s">📋 Información</button>
+      <button id="mtab-gestion" onclick="switchMTab('gestion')" style="padding:9px 20px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .2s">⚙️ Gestión</button>
     </div>
-    <div id="m-derecho-w" style="display:none"><div class="msec">Derecho invocado</div><div class="mtext" id="m-derecho"></div></div>
-    <div id="m-hechos-w"  style="display:none"><div class="msec">Hechos resumidos</div><div class="mtext" id="m-hechos"></div></div>
-    <div id="m-pret-w"    style="display:none"><div class="msec">Pretensiones</div><div class="mtext" id="m-pret"></div></div>
-    <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
-    <div class="msec">Actualizar información</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px" id="m-campos-extra">
-      <div class="mf full">
-        <label>Estado</label>
-        <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
+
+    <!-- PESTAÑA INFORMACIÓN -->
+    <div id="mpanel-info">
+      <div class="m-grid">
+        <div class="mf"><label>Juzgado</label><div class="v" id="m-juz">—</div></div>
+        <div class="mf"><label>CC / NIT</label><div class="v" id="m-cc">—</div></div>
+        <div class="mf"><label>Fecha inicial</label><div class="v" id="m-fini">—</div></div>
+        <div class="mf"><label>Fecha límite</label><div class="v" id="m-flim">—</div></div>
+        <div class="mf"><label>Abogado reparto</label><div class="v" id="m-resp">—</div></div>
+        <div class="mf"><label>Encargado PQR</label><div class="v" id="m-pqrenc">—</div></div>
+        <div class="mf"><label>Días restantes</label><div class="v" id="m-dias">—</div></div>
+        <div class="mf"><label>Estado</label><div class="v" id="m-est-txt">—</div></div>
       </div>
-      <div class="mf full">
-        <label>Encargado PQR</label>
-        <select class="esel" id="m-pqrenc-sel" style="width:100%">
-          <option value="">— Sin asignar —</option>
-          <option>Maria Camila Uribe</option><option>Jaime Cordoba</option><option>Yennifer Chaverra</option><option>Dario Baldrich</option><option>Deisy Lopez</option><option>Juan Gomez Londoño</option>
-        </select>
-      </div>
-      <div class="mf full" id="m-pqr-wrap">
-        <label id="m-lbl-pqr">Respuesta PQR</label>
-        <textarea id="m-resp-pqr" rows="3" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el número de radicado de respuesta PQR..."></textarea>
-      </div>
-      <div class="mf full" id="m-rad-wrap">
-        <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
-        <textarea id="m-resp-rad" rows="3" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
+      <div id="m-derecho-w" style="display:none"><div class="msec">Derecho invocado</div><div class="mtext" id="m-derecho"></div></div>
+      <div id="m-hechos-w"  style="display:none"><div class="msec">Hechos resumidos</div><div class="mtext" id="m-hechos"></div></div>
+      <div id="m-pret-w"    style="display:none"><div class="msec">Pretensiones</div><div class="mtext" id="m-pret"></div></div>
+      <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
+      <div class="m-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
+        <button class="mbtn mbtn-s" onclick="switchMTab('gestion')">⚙️ Ir a Gestión →</button>
+        <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
       </div>
     </div>
-    <div class="mf full" id="m-sp-wrap" style="display:none;margin-bottom:8px">
-      <label style="font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-transform:uppercase">📎 Documento SharePoint</label>
-      <button id="m-sp-btn" style="width:100%;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:10px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
-    </div>
-    <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px">💾 Guardar cambios</button>
-    <div class="m-actions">
-      <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
-      <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
+
+    <!-- PESTAÑA GESTIÓN -->
+    <div id="mpanel-gestion" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="mf full">
+          <label>Estado</label>
+          <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
+        </div>
+        <div class="mf full">
+          <label>Encargado PQR</label>
+          <select class="esel" id="m-pqrenc-sel" style="width:100%">
+            <option value="">— Sin asignar —</option>
+            <option>Maria Camila Uribe</option><option>Jaime Cordoba</option><option>Yennifer Chaverra</option><option>Dario Baldrich</option><option>Deisy Lopez</option><option>Juan Gomez Londoño</option>
+          </select>
+        </div>
+        <div class="mf full" id="m-pqr-wrap">
+          <label id="m-lbl-pqr">Respuesta PQR</label>
+          <textarea id="m-resp-pqr" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el número de radicado de respuesta PQR..."></textarea>
+        </div>
+        <div class="mf full" id="m-rad-wrap">
+          <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
+          <textarea id="m-resp-rad" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
+        </div>
+      </div>
+      <div class="mf full" id="m-sp-wrap" style="display:none;margin-bottom:12px">
+        <label style="font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-transform:uppercase">📎 Documento SharePoint</label>
+        <button id="m-sp-btn" style="width:100%;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:10px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
+      </div>
+      <!-- Alerta de paso a histórico -->
+      <div id="m-aviso-historico" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius-sm);font-size:12px;color:#4ade80">
+        ✅ Al guardar, este proceso pasará al <strong>Histórico</strong> y saldrá de la lista activa.
+      </div>
+      <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-bottom:8px">💾 Guardar cambios</button>
+      <div class="m-actions" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="mbtn mbtn-s" onclick="switchMTab('info')">← Ver información</button>
+        <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -564,7 +586,13 @@ function renderAdmites(){
   const ok=activos.filter(r=>r._dias!==null&&r._dias>3);
   const nue=activos.filter(r=>r["ESTADO"]==="Nuevo");
   const venc=activos.filter(r=>r._dias!==null&&r._dias<0);
-  document.getElementById("stats-admites").innerHTML=scard(activos.length,"Total activos","c-blue")+scard(venc.length,"Vencidos","c-red")+scard(urg.length,"Urgentes ≤1d","c-red")+scard(prox.length,"Próximos 2-3d","c-amber")+scard(ok.length,"Con tiempo","c-green")+scard(nue.length,"Nuevas","c-purple");
+  document.getElementById("stats-admites").innerHTML=
+    scardClick(activos.length,"Total activos","c-blue","fa-est","")+
+    scardClick(venc.length,"Vencidos","c-red","fa-est","Vencido")+
+    scardClick(urg.length,"Urgentes ≤1d","c-red","fa-est","Nuevo")+
+    scardClick(prox.length,"Próximos 2-3d","c-amber","fa-est","En proceso")+
+    scardClick(ok.length,"Con tiempo","c-green","fa-est","")+
+    scardClick(nue.length,"Nuevas","c-purple","fa-est","Nuevo");
   document.getElementById("badge-admites").textContent=(venc.length||urg.length)||activos.length;
   const pag=renderPag(filtAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
   const el=document.getElementById("body-admites");
@@ -589,7 +617,11 @@ function renderFallos(){
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const fal=activos.filter(r=>r["TIPO"]==="Fallo de tutela");
   const sent=activos.filter(r=>r["TIPO"]==="Sentencia");
-  document.getElementById("stats-fallos").innerHTML=scard(activos.length,"Total activos","c-blue")+scard(urg.length,"Urgentes ≤3d","c-red")+scard(fal.length,"Fallos","c-amber")+scard(sent.length,"Sentencias","c-purple");
+  document.getElementById("stats-fallos").innerHTML=
+    scardClick(activos.length,"Total activos","c-blue","ff-est","")+
+    scardClick(urg.length,"Urgentes ≤3d","c-red","ff-est","Nuevo")+
+    scardClick(fal.length,"Fallos","c-amber","ff-tp","Fallo de tutela")+
+    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia");
   document.getElementById("badge-fallos").textContent=activos.length;
   const pag=renderPag(filtFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
@@ -611,7 +643,10 @@ function renderOtros(){
   const activos=datos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const nuevos=activos.filter(r=>r["ESTADO"]==="Nuevo");
-  document.getElementById("stats-inc").innerHTML=scard(activos.length,"Total activos","c-amber")+scard(urg.length,"Urgentes ≤3d","c-red")+scard(nuevos.length,"Nuevos","c-purple");
+  document.getElementById("stats-inc").innerHTML=
+    scardClick(activos.length,"Total activos","c-amber","fo-est","")+
+    scardClick(urg.length,"Urgentes ≤3d","c-red","fo-est","Nuevo")+
+    scardClick(nuevos.length,"Nuevos","c-purple","fo-est","Nuevo");
   document.getElementById("badge-otros").textContent=activos.length;
   const pag=renderPag(datos,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
   const el=document.getElementById("body-otros");
@@ -868,6 +903,17 @@ function abrirModal(da, origen){
     const val=r[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
   });
   document.getElementById("m-esel").value=r["ESTADO"]||"Nuevo";
+  // Aviso histórico si ya está en estado final
+  const avisoHist=document.getElementById("m-aviso-historico");
+  if(avisoHist) avisoHist.style.display=EST_HIST.includes(r["ESTADO"]||"")?"none":"none";
+  // Listener para mostrar aviso cuando seleccionan Finalizado/Respondido
+  const mEsel=document.getElementById("m-esel");
+  mEsel.onchange=function(){
+    const av=document.getElementById("m-aviso-historico");
+    if(av) av.style.display=EST_HIST.includes(this.value)?"block":"none";
+  };
+  // Siempre abrir en pestaña Información
+  switchMTab('info');
   document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
   // Adaptar etiquetas y visibilidad según tipo
   const esFallo = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"].includes(r["TIPO"]);
@@ -899,7 +945,22 @@ function abrirModal(da, origen){
   document.getElementById("overlay").classList.add("open");
 }
 
-function setEl(id,html){const e=document.getElementById(id);if(e)e.innerHTML=html;}
+function switchMTab(tab){
+  const tabs={info:{btn:'mtab-info',panel:'mpanel-info'},gestion:{btn:'mtab-gestion',panel:'mpanel-gestion'}};
+  Object.entries(tabs).forEach(([k,v])=>{
+    const btn=document.getElementById(v.btn);
+    const panel=document.getElementById(v.panel);
+    const activo=k===tab;
+    btn.style.borderBottomColor=activo?'var(--gold)':'transparent';
+    btn.style.color=activo?'var(--text)':'var(--muted)';
+    panel.style.display=activo?'block':'none';
+  });
+}
+
+function scardClick(n,label,cls,filtroId,filtroVal){
+  const clickable=filtroId?`style="cursor:pointer" onclick="document.getElementById('${filtroId}').value='${filtroVal}';${filtroId==='fa-est'?'renderAdmites()':filtroId==='ff-est'?'renderFallos()':'renderOtros()'}" title="Clic para filtrar por: ${label}"`:'';
+  return`<div class="scard" ${clickable}><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}${filtroId?` <span style="font-size:8px;opacity:.5">▶</span>`:''}</div></div>`;
+}
 
 async function guardarEstado(){
   if(!actual)return;
@@ -933,7 +994,7 @@ async function guardarEstado(){
       actual["RESPUESTA PQR"]=respPQR;
       actual["RADICADO DE CUMPLIMIENTO"]=respRad;
       actual["ENCARGADO PQR"]=encPQR;
-      toast("✅ Guardado en Sheets","ok");
+      toast(EST_HIST.includes(nuevoEst)?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado en Sheets","ok");
       renderAll();
       document.getElementById("overlay").classList.remove("open");
     }else{toast("❌ Error: "+(d.error||"Sin detalle"),"err");}
