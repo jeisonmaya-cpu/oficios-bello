@@ -1126,23 +1126,22 @@ function renderMorosidad(vigencias, totalActivosGAS) {
   }
 
   document.getElementById('mora-barras').innerHTML = vigencias.map(d => {
-    const pctBg   = Math.round((d.cantidad / maximo) * 100);
-    const pctMand = d.conMandamiento > 0 ? Math.round((d.conMandamiento / maximo) * 100) : 0;
-    const color   = colorBarra(d.pctGestion || 0);
+    const color = colorBarra(d.pctGestion || 0);
+    const pctFill = d.pctGestion || 0;
     const moraLbl = d.mora !== null
       ? `${d.mora} año${d.mora!==1?'s':''} de mora · ${d.cantidad.toLocaleString('es-CO')} exp.`
       : `sin fecha · ${d.cantidad.toLocaleString('es-CO')} exp.`;
-    const etiqueta = pctMand > 16 ? `${d.conMandamiento.toLocaleString('es-CO')} con mandamiento` : '';
+    const etiqueta = pctFill > 16 ? `${d.conMandamiento.toLocaleString('es-CO')} con mandamiento (${pctFill}%)` : `${pctFill}%`;
     return `
       <div class="mora-row">
         <div class="mora-row-top">
           <span class="mora-row-anio">${d.anio==='Sin determinar'?'S/D':d.anio}</span>
           <span class="mora-row-meta">${moraLbl}</span>
-          <span class="mora-row-pct" style="color:${color}">${d.pctGestion||0}% gestionado</span>
+          <span class="mora-row-pct" style="color:${color}">${pctFill}% gestionado</span>
         </div>
         <div class="mora-track">
-          <div class="mora-bar-bg" style="width:${pctBg}%"></div>
-          <div class="mora-bar-fill" style="width:${pctMand}%;background:${color}">${etiqueta}</div>
+          <div class="mora-bar-bg" style="width:100%"></div>
+          <div class="mora-bar-fill" style="width:${pctFill}%;background:${color}">${etiqueta}</div>
         </div>
         <div class="mora-counts">
           <span class="mora-count-ok" style="color:${color}">✓ ${d.conMandamiento.toLocaleString('es-CO')} con mandamiento</span>
