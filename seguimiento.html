@@ -143,6 +143,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 /* ── BAR ── */
 .bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;min-width:80px}
 .bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+/* MOROSIDAD */
+.mora-track{position:relative;height:22px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:3px}
+.mora-bar-bg{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:rgba(255,255,255,.06)}
+.mora-bar-fill{position:absolute;top:0;left:0;height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;transition:width .7s ease}
+.mora-row{margin-bottom:14px}
+.mora-row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px;flex-wrap:wrap}
+.mora-row-anio{font-size:12px;font-weight:700;color:#fff;min-width:36px}
+.mora-row-meta{font-size:11px;color:var(--soft);flex:1}
+.mora-row-pct{font-size:12px;font-weight:700;white-space:nowrap}
+.mora-counts{display:flex;justify-content:space-between}
+.mora-count-ok{font-size:10px;font-weight:600}
+.mora-count-nd{font-size:10px;color:var(--soft)}
 
 /* ── MASIVOS ── */
 .masivos-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
@@ -288,6 +300,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
       <button class="nav-tab active" id="tab-ou"      onclick="goTab('ou')">🏘️ Urbanísticas</button>
       <button class="nav-tab"        id="tab-predial" onclick="goTab('predial')">🏠 Predial</button>
       <button class="nav-tab"        id="tab-ica"     onclick="goTab('ica')">🏭 ICA</button>
+      <button class="nav-tab"        id="tab-mora"    onclick="goTab('mora')">📊 Morosidad</button>
     </div>
     <div class="nav-links">
       <span class="update-pill" id="update-time"></span>
@@ -413,6 +426,30 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 </div>
 
 </div><!-- /main-wrap -->
+
+<!-- PANEL MOROSIDAD -->
+<div class="panel" id="panel-mora">
+  <div class="main-wrap">
+
+    <!-- KPIs -->
+    <div class="stats-grid" id="mora-stats" style="grid-template-columns:repeat(3,1fr)"></div>
+
+    <!-- Gráfico por vigencia -->
+    <div class="section-title">Gestión de cobro coactivo por año de ejecutoria</div>
+    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:20px">
+      <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap" id="mora-leyenda"></div>
+      <div id="mora-barras"><p style="color:var(--soft);font-size:13px;padding:8px">Cargando datos...</p></div>
+    </div>
+
+    <!-- Texto para Control Interno -->
+    <div id="mora-nota-box" style="display:none;background:rgba(22,163,74,.08);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:20px;margin-bottom:20px">
+      <div style="font-size:10px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">✅ Texto para respuesta a Control Interno</div>
+      <div id="mora-nota-txt" style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.75"></div>
+      <button onclick="copiarNotaMora()" style="margin-top:14px;background:rgba(22,163,74,.3);border:1px solid rgba(34,197,94,.4);color:#4ade80;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">📋 Copiar texto</button>
+    </div>
+
+  </div>
+</div>
 
 
 <!-- ═══ MODAL ACTUACIONES ═══ -->
@@ -544,6 +581,7 @@ async function cargarDatos() {
   document.getElementById('error-state').style.display = 'none';
   document.getElementById('panel-ou').classList.remove('active');
   document.getElementById('panel-predial').classList.remove('active');
+  document.getElementById('panel-mora').classList.remove('active');
 
   try {
     // Llamar a los dos Apps Script en paralelo
@@ -570,6 +608,7 @@ async function cargarDatos() {
     document.getElementById('update-time').textContent = '🕐 ' + datosGlobales.actualizado;
     renderOU(datosGlobales.ou);
     renderPredial(datosGlobales.predial);
+    if (dataPred.porVigencia) renderMorosidad(dataPred.porVigencia);
     goTab(tabActual);
 
   } catch(err) {
@@ -763,6 +802,111 @@ function renderPredial(d) {
       <td style="min-width:120px"><div style="display:flex;align-items:center;gap:8px"><div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:${f.color}"></div></div></div></td>
     </tr>`;
   }).join('');
+}
+
+// ── RENDER MOROSIDAD ──
+function renderMorosidad(vigencias) {
+  if (!vigencias || vigencias.length === 0) return;
+
+  const maximo  = Math.max(...vigencias.map(d => d.cantidad));
+  let totalExp  = 0, totalCon = 0, totalSin = 0;
+  vigencias.forEach(d => { totalExp += d.cantidad; totalCon += d.conMandamiento; totalSin += d.sinMandamiento; });
+  const cobGlobal = totalExp > 0 ? Math.round((totalCon / totalExp) * 100) : 0;
+
+  // KPIs — usando el mismo patrón stat-card del sistema
+  document.getElementById('mora-stats').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-label">Total activos en proceso</div>
+      <div class="stat-value">${totalExp.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">expedientes Predial</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Con mandamiento librado</div>
+      <div class="stat-value">${totalCon.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">acción coactiva iniciada</div>
+      <span class="stat-badge green">${cobGlobal}% de cobertura</span>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">Sin mandamiento registrado</div>
+      <div class="stat-value">${totalSin.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">pendientes de registro/gestión</div>
+    </div>`;
+
+  // Leyenda
+  document.getElementById('mora-leyenda').innerHTML = [
+    ['rgba(255,255,255,.15)','1px solid rgba(255,255,255,.2)','Total activos ese año'],
+    ['#16a34a','none','+75% gestionado'],
+    ['#d97706','none','50–75% gestionado'],
+    ['#ea580c','none','25–50% gestionado'],
+    ['#dc2626','none','–25% gestionado'],
+  ].map(([bg,border,label]) =>
+    `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--soft)">
+      <div style="width:10px;height:10px;border-radius:2px;background:${bg};border:${border};flex-shrink:0"></div>${label}
+    </div>`
+  ).join('');
+
+  function colorBarra(p) {
+    if (p >= 75) return '#16a34a';
+    if (p >= 50) return '#d97706';
+    if (p >= 25) return '#ea580c';
+    return '#dc2626';
+  }
+
+  // Barras
+  document.getElementById('mora-barras').innerHTML = vigencias.map(d => {
+    const pctBg   = Math.round((d.cantidad / maximo) * 100);
+    const pctMand = Math.round((d.conMandamiento / maximo) * 100);
+    const color   = colorBarra(d.pctGestion);
+    const moraLbl = d.mora !== null
+      ? `${d.mora} año${d.mora!==1?'s':''} de mora · ${d.cantidad.toLocaleString('es-CO')} exp.`
+      : `sin fecha · ${d.cantidad.toLocaleString('es-CO')} exp.`;
+    const etiqueta = pctMand > 18 ? `${d.conMandamiento.toLocaleString('es-CO')} con mandamiento` : '';
+    return `
+      <div class="mora-row">
+        <div class="mora-row-top">
+          <span class="mora-row-anio">${d.anio==='Sin determinar'?'S/D':d.anio}</span>
+          <span class="mora-row-meta">${moraLbl}</span>
+          <span class="mora-row-pct" style="color:${color}">${d.pctGestion}% gestionado</span>
+        </div>
+        <div class="mora-track">
+          <div class="mora-bar-bg" style="width:${pctBg}%"></div>
+          <div class="mora-bar-fill" style="width:${pctMand}%;background:${color}">${etiqueta}</div>
+        </div>
+        <div class="mora-counts">
+          <span class="mora-count-ok" style="color:${color}">✓ ${d.conMandamiento.toLocaleString('es-CO')} con mandamiento</span>
+          <span class="mora-count-nd">${d.sinMandamiento.toLocaleString('es-CO')} sin registrar</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Texto defensivo
+  const criticos    = vigencias.filter(d => d.mora !== null && d.mora >= 5);
+  const totalCrit   = criticos.reduce((s,d) => s+d.cantidad, 0);
+  const conMandCrit = criticos.reduce((s,d) => s+d.conMandamiento, 0);
+  const pctCrit     = totalCrit > 0 ? Math.round((conMandCrit/totalCrit)*100) : 0;
+  const aniosCrit   = criticos.map(d => d.anio).join(', ');
+
+  const texto = `En respuesta al hallazgo de Control Interno, la Dirección Administrativa de Ejecuciones Fiscales informa que del total de ${totalExp.toLocaleString('es-CO')} expedientes de cobro coactivo Predial actualmente en proceso, ${totalCon.toLocaleString('es-CO')} cuentan con mandamiento de pago librado, representando una cobertura del ${cobGlobal}% del universo de cartera activa. Para las vigencias de mayor antigüedad (${aniosCrit}), la Dirección ha librado mandamiento en el ${pctCrit}% de los ${totalCrit.toLocaleString('es-CO')} expedientes correspondientes (${conMandCrit.toLocaleString('es-CO')} casos), demostrando gestión activa y sostenida sobre la cartera morosa histórica. La Dirección se compromete a priorizar los expedientes restantes con medidas de cobro coactivo contundentes (embargo de cuentas bancarias, bienes y rentas), conforme a las recomendaciones del ente de control.`;
+
+  window._textoNotaMora = texto;
+  document.getElementById('mora-nota-txt').innerHTML = texto
+    .replace(`${cobGlobal}%`, `<strong style="color:#4ade80">${cobGlobal}%</strong>`)
+    .replace(`${totalCon.toLocaleString('es-CO')} cuentan`, `<strong style="color:#4ade80">${totalCon.toLocaleString('es-CO')} cuentan</strong>`)
+    .replace('embargo de cuentas bancarias, bienes y rentas', '<em style="color:var(--gold)">embargo de cuentas bancarias, bienes y rentas</em>');
+  document.getElementById('mora-nota-box').style.display = 'block';
+}
+
+function copiarNotaMora() {
+  if (!window._textoNotaMora) return;
+  navigator.clipboard.writeText(window._textoNotaMora)
+    .then(() => alert('Texto copiado ✓'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = window._textoNotaMora;
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      alert('Texto copiado ✓');
+    });
 }
 
 // ── EXPORTAR EXCEL ──
