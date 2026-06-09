@@ -36,14 +36,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
   justify-content:space-between;gap:12px;min-height:44px;border-bottom:1px solid rgba(255,255,255,.06)}
 .nav-brand{color:#fff;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
   display:flex;align-items:center;gap:7px;white-space:nowrap}
-.nav-tabs{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;gap:0;overflow-x:auto}
+.nav-tabs{max-width:1100px;margin:0 auto;padding:0 8px;display:flex;overflow-x:auto}
 .nav-tab{color:rgba(255,255,255,.55);font-size:12px;font-weight:600;padding:0 18px;
   border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;
   transition:all .2s;display:flex;align-items:center;gap:6px;min-height:38px;
   font-family:'DM Sans',sans-serif;white-space:nowrap}
 .nav-tab:hover{color:#fff;background:rgba(255,255,255,.05)}
 .nav-tab.active{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.06)}
-.nav-links{display:flex;align-items:center;gap:6px}
+.nav-links{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .nav-link{color:rgba(255,255,255,.6);font-size:11px;font-weight:600;padding:5px 11px;
   border-radius:7px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);
   text-decoration:none;transition:all .2s;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
@@ -64,22 +64,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
   border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
 
 /* ── MAIN ── */
-.mora-track{position:relative;height:22px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:3px}
-.mora-bar-bg{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:rgba(255,255,255,.08)}
-.mora-bar-fill{position:absolute;top:0;left:0;height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;transition:width .7s ease}
-.mora-row{margin-bottom:14px}
-.mora-row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px;flex-wrap:wrap}
-.mora-row-anio{font-size:12px;font-weight:700;color:#fff;min-width:36px}
-.mora-row-meta{font-size:11px;color:var(--soft);flex:1}
-.mora-row-pct{font-size:12px;font-weight:700;white-space:nowrap}
-.mora-counts{display:flex;justify-content:space-between;margin-top:2px}
-.mora-count-ok{font-size:10px;font-weight:600}
-.mora-count-nd{font-size:10px;color:var(--soft)}
-.mora-aviso{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.25);border-radius:10px;padding:18px 20px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px}
-.mora-aviso-icon{font-size:22px;flex-shrink:0;margin-top:2px}
-.mora-aviso-txt{font-size:13px;color:rgba(255,255,255,.7);line-height:1.6}
-.mora-aviso-txt strong{color:var(--gold)}
-.mora-aviso-txt code{background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--gold2)}
+.main-wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 20px 60px}
 
 /* ── PANEL ── */
 .panel{display:none}
@@ -276,6 +261,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
   color:#93c5fd;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:600;
   cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;white-space:nowrap}
 .btn-act:hover{background:rgba(45,141,232,.3);color:#fff}
+.mora-track{position:relative;height:22px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-bottom:3px}
+.mora-bar-bg{position:absolute;top:0;left:0;height:100%;border-radius:4px;background:rgba(255,255,255,.09)}
+.mora-bar-fill{position:absolute;top:0;left:0;height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;transition:width .7s ease}
+.mora-row{margin-bottom:14px}
+.mora-row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px;flex-wrap:wrap}
+.mora-row-anio{font-size:12px;font-weight:700;color:#fff;min-width:36px}
+.mora-row-meta{font-size:11px;color:var(--soft);flex:1}
+.mora-row-pct{font-size:12px;font-weight:700;white-space:nowrap}
+.mora-counts{display:flex;justify-content:space-between;margin-top:2px}
+.mora-count-ok{font-size:10px;font-weight:600}
+.mora-count-nd{font-size:10px;color:var(--soft)}
 @media(max-width:768px){
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .masivos-grid{grid-template-columns:repeat(2,1fr)}
@@ -431,18 +427,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 <!-- PANEL MOROSIDAD -->
 <div class="panel" id="panel-mora">
 
-  <!-- Aviso cuando GAS no tiene porVigencia aún -->
-  <div class="mora-aviso" id="mora-aviso-gas" style="display:none">
-    <div class="mora-aviso-icon">⚙️</div>
-    <div class="mora-aviso-txt">
-      <strong>El GAS de Predial necesita redespliegue</strong> para mostrar el análisis completo.<br>
-      Pega el código actualizado en Apps Script, genera un <strong>nuevo despliegue</strong> y reemplaza
-      <code>URL_PREDIAL</code> con la nueva URL. Mientras tanto se muestran los totales disponibles.
+  <!-- Aviso GAS sin redesplegar -->
+  <div id="mora-aviso-gas" style="display:none;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.25);border-radius:12px;padding:18px 20px;margin-bottom:20px;display:none;align-items:flex-start;gap:14px">
+    <div style="font-size:20px;flex-shrink:0">⚙️</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.6">
+      <strong style="color:var(--gold)">El GAS de Predial necesita redespliegue</strong> para mostrar el análisis completo.<br>
+      Pega el código actualizado en Apps Script, genera un <strong style="color:var(--gold)">nuevo despliegue</strong> y reemplaza <code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--gold2)">URL_PREDIAL</code> con la nueva URL.
     </div>
   </div>
 
   <!-- KPIs -->
-  <div class="stats-grid" id="mora-stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px"></div>
+  <div class="stats-grid" id="mora-stats" style="grid-template-columns:repeat(3,1fr)"></div>
 
   <!-- Gráfico -->
   <div class="section-title">Gestión de cobro coactivo por año de ejecutoria</div>
@@ -577,7 +572,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 
 <script>
 const URL_OU      = "https://script.google.com/macros/s/AKfycbzx1qwma1Xqbpfk2SqFG0mOJWC4P3h_WevQceiA7cB6wFScJYgXljkc9MgYRjt_yxs9KQ/exec";
-const URL_PREDIAL = "https://script.google.com/macros/s/AKfycbwzEPbSJVD9vdftltzmT0d6NeNZI3rc28O9Y4CkofpQTE9UdsKffpBdKc5mZiiX7s0-/exec";
+const URL_PREDIAL = "https://script.google.com/macros/s/AKfycbwBe1q-7rElUSzSwk2NaqwbiWgAzQYeBp24snnYemxkd-aczXO3vq7K7xIZVlF7T5y2/exec";
 const URL_ICA='https://script.google.com/macros/s/AKfycbyzBxtdg1znZ0LuCJtoypPs9-vVKfaWc50A4c1-Wlr7Tn2u7KmSGf6D312UUThz-8w/exec';
 let datosGlobales=null;
 let datosICA=null;
@@ -813,135 +808,6 @@ function renderPredial(d) {
       <td style="min-width:120px"><div style="display:flex;align-items:center;gap:8px"><div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:${f.color}"></div></div></div></td>
     </tr>`;
   }).join('');
-}
-
-// ── RENDER MOROSIDAD ──
-function renderMorosidad(vigencias, totalActivosGAS) {
-
-  // Sin porVigencia — GAS no redesplgado aún
-  if (!vigencias || vigencias.length === 0) {
-    document.getElementById('mora-aviso-gas').style.display = 'flex';
-    document.getElementById('mora-stats').innerHTML = `
-      <div class="stat-card blue">
-        <div class="stat-label">Total activos en proceso</div>
-        <div class="stat-value">${(totalActivosGAS||0).toLocaleString('es-CO')}</div>
-        <div class="stat-sub">expedientes Predial</div>
-      </div>
-      <div class="stat-card gold">
-        <div class="stat-label">Análisis por vigencia</div>
-        <div class="stat-value" style="font-size:18px;margin-top:4px">Pendiente</div>
-        <div class="stat-sub">requiere redespliegue del GAS</div>
-      </div>
-      <div class="stat-card gold">
-        <div class="stat-label">Cobertura mandamiento</div>
-        <div class="stat-value" style="font-size:18px;margin-top:4px">Pendiente</div>
-        <div class="stat-sub">requiere col M en el GAS</div>
-      </div>`;
-    document.getElementById('mora-barras').innerHTML =
-      '<p style="color:var(--soft);font-size:13px;padding:8px 0">Redesplega el GAS para ver el análisis por vigencia.</p>';
-    return;
-  }
-
-  document.getElementById('mora-aviso-gas').style.display = 'none';
-
-  const maximo  = Math.max(...vigencias.map(d => d.cantidad));
-  let totalExp  = 0, totalCon = 0, totalSin = 0;
-  vigencias.forEach(d => { totalExp += d.cantidad; totalCon += d.conMandamiento; totalSin += d.sinMandamiento; });
-  const cobGlobal = totalExp > 0 ? Math.round((totalCon / totalExp) * 100) : 0;
-
-  // KPIs
-  document.getElementById('mora-stats').innerHTML = `
-    <div class="stat-card blue">
-      <div class="stat-label">Total activos en proceso</div>
-      <div class="stat-value">${totalExp.toLocaleString('es-CO')}</div>
-      <div class="stat-sub">expedientes Predial</div>
-    </div>
-    <div class="stat-card green">
-      <div class="stat-label">Con mandamiento librado</div>
-      <div class="stat-value">${totalCon.toLocaleString('es-CO')}</div>
-      <div class="stat-sub">acción coactiva iniciada</div>
-      <span class="stat-badge green">${cobGlobal}% cobertura</span>
-    </div>
-    <div class="stat-card gold">
-      <div class="stat-label">Sin mandamiento registrado</div>
-      <div class="stat-value">${totalSin.toLocaleString('es-CO')}</div>
-      <div class="stat-sub">pendientes de registro/gestión</div>
-    </div>`;
-
-  // Leyenda
-  document.getElementById('mora-leyenda').innerHTML = [
-    ['rgba(255,255,255,.12)','1px solid rgba(255,255,255,.15)','Total ese año'],
-    ['#16a34a','','+ 75% gestionado'],
-    ['#d97706','','50 – 75%'],
-    ['#ea580c','','25 – 50%'],
-    ['#dc2626','','– 25%'],
-  ].map(([bg,border,label]) =>
-    `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--soft)">
-      <div style="width:10px;height:10px;border-radius:2px;flex-shrink:0;background:${bg};${border?'border:'+border:''}"></div>${label}
-    </div>`).join('');
-
-  function colorBarra(p) {
-    if (p >= 75) return '#16a34a';
-    if (p >= 50) return '#d97706';
-    if (p >= 25) return '#ea580c';
-    return '#dc2626';
-  }
-
-  // Barras
-  document.getElementById('mora-barras').innerHTML = vigencias.map(d => {
-    const pctBg   = Math.round((d.cantidad / maximo) * 100);
-    const pctMand = d.conMandamiento > 0 ? Math.round((d.conMandamiento / maximo) * 100) : 0;
-    const color   = colorBarra(d.pctGestion || 0);
-    const moraLbl = d.mora !== null
-      ? `${d.mora} año${d.mora!==1?'s':''} de mora · ${d.cantidad.toLocaleString('es-CO')} exp.`
-      : `sin fecha · ${d.cantidad.toLocaleString('es-CO')} exp.`;
-    const etiqueta = pctMand > 16 ? `${d.conMandamiento.toLocaleString('es-CO')} con mandamiento` : '';
-    return `
-      <div class="mora-row">
-        <div class="mora-row-top">
-          <span class="mora-row-anio">${d.anio==='Sin determinar'?'S/D':d.anio}</span>
-          <span class="mora-row-meta">${moraLbl}</span>
-          <span class="mora-row-pct" style="color:${color}">${d.pctGestion||0}% gestionado</span>
-        </div>
-        <div class="mora-track">
-          <div class="mora-bar-bg" style="width:${pctBg}%"></div>
-          <div class="mora-bar-fill" style="width:${pctMand}%;background:${color}">${etiqueta}</div>
-        </div>
-        <div class="mora-counts">
-          <span class="mora-count-ok" style="color:${color}">✓ ${d.conMandamiento.toLocaleString('es-CO')} con mandamiento</span>
-          <span class="mora-count-nd">${d.sinMandamiento.toLocaleString('es-CO')} sin registrar</span>
-        </div>
-      </div>`;
-  }).join('');
-
-  // Texto defensivo para Control Interno
-  const criticos    = vigencias.filter(d => d.mora !== null && d.mora >= 5);
-  const totalCrit   = criticos.reduce((s,d) => s+d.cantidad, 0);
-  const conMandCrit = criticos.reduce((s,d) => s+d.conMandamiento, 0);
-  const pctCrit     = totalCrit > 0 ? Math.round((conMandCrit/totalCrit)*100) : 0;
-  const aniosCrit   = criticos.map(d => d.anio).join(', ');
-
-  const texto = `En respuesta al hallazgo de Control Interno, la Dirección Administrativa de Ejecuciones Fiscales informa que del total de ${totalExp.toLocaleString('es-CO')} expedientes de cobro coactivo Predial actualmente en proceso, ${totalCon.toLocaleString('es-CO')} cuentan con mandamiento de pago librado, representando una cobertura del ${cobGlobal}% del universo de cartera activa. Para las vigencias de mayor antigüedad (${aniosCrit}), la Dirección ha librado mandamiento en el ${pctCrit}% de los ${totalCrit.toLocaleString('es-CO')} expedientes correspondientes (${conMandCrit.toLocaleString('es-CO')} casos), demostrando gestión activa y sostenida sobre la cartera morosa histórica. La Dirección se compromete a priorizar los expedientes restantes con medidas de cobro coactivo contundentes (embargo de cuentas bancarias, bienes y rentas), conforme a las recomendaciones del ente de control.`;
-
-  window._textoNotaMora = texto;
-  document.getElementById('mora-nota-txt').innerHTML = texto
-    .replace(`${cobGlobal}%`, `<strong style="color:#4ade80">${cobGlobal}%</strong>`)
-    .replace(`${totalCon.toLocaleString('es-CO')} cuentan`, `<strong style="color:#4ade80">${totalCon.toLocaleString('es-CO')} cuentan</strong>`)
-    .replace('embargo de cuentas bancarias, bienes y rentas', '<em style="color:var(--gold)">embargo de cuentas bancarias, bienes y rentas</em>');
-  document.getElementById('mora-nota-box').style.display = 'block';
-}
-
-function copiarNotaMora() {
-  if (!window._textoNotaMora) return;
-  navigator.clipboard.writeText(window._textoNotaMora)
-    .then(() => alert('Texto copiado ✓'))
-    .catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = window._textoNotaMora;
-      document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-      alert('Texto copiado ✓');
-    });
 }
 
 // ── EXPORTAR EXCEL ──
@@ -1187,6 +1053,131 @@ function generarPDF() {
 
   document.getElementById('pdf-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+// ════════════════════════════════════════
+// MOROSIDAD — RENDER
+// ════════════════════════════════════════
+function renderMorosidad(vigencias, totalActivosGAS) {
+  if (!vigencias || vigencias.length === 0) {
+    document.getElementById('mora-aviso-gas').style.display = 'flex';
+    document.getElementById('mora-stats').innerHTML = `
+      <div class="stat-card blue">
+        <div class="stat-label">Total activos en proceso</div>
+        <div class="stat-value">${(totalActivosGAS||0).toLocaleString('es-CO')}</div>
+        <div class="stat-sub">expedientes Predial</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-label">Análisis por vigencia</div>
+        <div class="stat-value" style="font-size:18px;margin-top:6px">Pendiente</div>
+        <div class="stat-sub">requiere redespliegue del GAS</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-label">Cobertura mandamiento</div>
+        <div class="stat-value" style="font-size:18px;margin-top:6px">Pendiente</div>
+        <div class="stat-sub">requiere col M en el GAS</div>
+      </div>`;
+    document.getElementById('mora-barras').innerHTML =
+      '<p style="color:var(--soft);font-size:13px;padding:8px 0">Redesplega el GAS para ver el análisis por vigencia.</p>';
+    return;
+  }
+
+  document.getElementById('mora-aviso-gas').style.display = 'none';
+
+  const maximo = Math.max(...vigencias.map(d => d.cantidad));
+  let totalExp = 0, totalCon = 0, totalSin = 0;
+  vigencias.forEach(d => { totalExp += d.cantidad; totalCon += d.conMandamiento; totalSin += d.sinMandamiento; });
+  const cobGlobal = totalExp > 0 ? Math.round((totalCon / totalExp) * 100) : 0;
+
+  document.getElementById('mora-stats').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-label">Total activos en proceso</div>
+      <div class="stat-value">${totalExp.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">expedientes Predial</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Con mandamiento librado</div>
+      <div class="stat-value">${totalCon.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">acción coactiva iniciada</div>
+      <span class="stat-badge green">${cobGlobal}% cobertura</span>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">Sin mandamiento registrado</div>
+      <div class="stat-value">${totalSin.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">pendientes de registro/gestión</div>
+    </div>`;
+
+  document.getElementById('mora-leyenda').innerHTML = [
+    ['rgba(255,255,255,.12)','1px solid rgba(255,255,255,.15)','Total ese año'],
+    ['#16a34a','','+75% gestionado'],
+    ['#d97706','','50–75%'],
+    ['#ea580c','','25–50%'],
+    ['#dc2626','','–25%'],
+  ].map(([bg,border,label]) =>
+    `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--soft)">
+      <div style="width:10px;height:10px;border-radius:2px;flex-shrink:0;background:${bg};${border?'border:'+border:''}"></div>${label}
+    </div>`).join('');
+
+  function colorBarra(p) {
+    if (p >= 75) return '#16a34a';
+    if (p >= 50) return '#d97706';
+    if (p >= 25) return '#ea580c';
+    return '#dc2626';
+  }
+
+  document.getElementById('mora-barras').innerHTML = vigencias.map(d => {
+    const pctBg   = Math.round((d.cantidad / maximo) * 100);
+    const pctMand = d.conMandamiento > 0 ? Math.round((d.conMandamiento / maximo) * 100) : 0;
+    const color   = colorBarra(d.pctGestion || 0);
+    const moraLbl = d.mora !== null
+      ? `${d.mora} año${d.mora!==1?'s':''} de mora · ${d.cantidad.toLocaleString('es-CO')} exp.`
+      : `sin fecha · ${d.cantidad.toLocaleString('es-CO')} exp.`;
+    const etiqueta = pctMand > 16 ? `${d.conMandamiento.toLocaleString('es-CO')} con mandamiento` : '';
+    return `
+      <div class="mora-row">
+        <div class="mora-row-top">
+          <span class="mora-row-anio">${d.anio==='Sin determinar'?'S/D':d.anio}</span>
+          <span class="mora-row-meta">${moraLbl}</span>
+          <span class="mora-row-pct" style="color:${color}">${d.pctGestion||0}% gestionado</span>
+        </div>
+        <div class="mora-track">
+          <div class="mora-bar-bg" style="width:${pctBg}%"></div>
+          <div class="mora-bar-fill" style="width:${pctMand}%;background:${color}">${etiqueta}</div>
+        </div>
+        <div class="mora-counts">
+          <span class="mora-count-ok" style="color:${color}">✓ ${d.conMandamiento.toLocaleString('es-CO')} con mandamiento</span>
+          <span class="mora-count-nd">${d.sinMandamiento.toLocaleString('es-CO')} sin registrar</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  const criticos    = vigencias.filter(d => d.mora !== null && d.mora >= 5);
+  const totalCrit   = criticos.reduce((s,d) => s+d.cantidad, 0);
+  const conMandCrit = criticos.reduce((s,d) => s+d.conMandamiento, 0);
+  const pctCrit     = totalCrit > 0 ? Math.round((conMandCrit/totalCrit)*100) : 0;
+  const aniosCrit   = criticos.map(d => d.anio).join(', ');
+
+  const texto = `En respuesta al hallazgo de Control Interno, la Dirección Administrativa de Ejecuciones Fiscales informa que del total de ${totalExp.toLocaleString('es-CO')} expedientes de cobro coactivo Predial actualmente en proceso, ${totalCon.toLocaleString('es-CO')} cuentan con mandamiento de pago librado, representando una cobertura del ${cobGlobal}% del universo de cartera activa. Para las vigencias de mayor antigüedad (${aniosCrit}), la Dirección ha librado mandamiento en el ${pctCrit}% de los ${totalCrit.toLocaleString('es-CO')} expedientes correspondientes (${conMandCrit.toLocaleString('es-CO')} casos), demostrando gestión activa y sostenida sobre la cartera morosa histórica. La Dirección se compromete a priorizar los expedientes restantes con medidas de cobro coactivo contundentes (embargo de cuentas bancarias, bienes y rentas), conforme a las recomendaciones del ente de control.`;
+
+  window._textoNotaMora = texto;
+  document.getElementById('mora-nota-txt').innerHTML = texto
+    .replace(`${cobGlobal}%`, `<strong style="color:#4ade80">${cobGlobal}%</strong>`)
+    .replace(`${totalCon.toLocaleString('es-CO')} cuentan`, `<strong style="color:#4ade80">${totalCon.toLocaleString('es-CO')} cuentan</strong>`)
+    .replace('embargo de cuentas bancarias, bienes y rentas', '<em style="color:var(--gold)">embargo de cuentas bancarias, bienes y rentas</em>');
+  document.getElementById('mora-nota-box').style.display = 'block';
+}
+
+function copiarNotaMora() {
+  if (!window._textoNotaMora) return;
+  navigator.clipboard.writeText(window._textoNotaMora)
+    .then(() => alert('Texto copiado ✓'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = window._textoNotaMora;
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      alert('Texto copiado ✓');
+    });
 }
 
 // ════════════════════════════════════════
