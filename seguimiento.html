@@ -428,7 +428,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 <div class="panel" id="panel-mora">
 
   <!-- Aviso GAS sin redesplegar -->
-  <div id="mora-aviso-gas" style="display:none;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.25);border-radius:12px;padding:18px 20px;margin-bottom:20px;display:none;align-items:flex-start;gap:14px">
+  <div id="mora-aviso-gas" style="display:none;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.25);border-radius:12px;padding:18px 20px;margin-bottom:20px;align-items:flex-start;gap:14px">
     <div style="font-size:20px;flex-shrink:0">⚙️</div>
     <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.6">
       <strong style="color:var(--gold)">El GAS de Predial necesita redespliegue</strong> para mostrar el análisis completo.<br>
@@ -436,14 +436,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
     </div>
   </div>
 
+  <!-- Fecha de corte -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div style="font-size:11px;color:var(--soft)">
+      📅 Datos a corte: <strong style="color:#fff" id="mora-fecha-corte">—</strong>
+    </div>
+    <div style="font-size:11px;color:var(--soft)" id="mora-resumen-corte"></div>
+  </div>
+
   <!-- KPIs -->
   <div class="stats-grid" id="mora-stats" style="grid-template-columns:repeat(3,1fr)"></div>
 
   <!-- Gráfico -->
   <div class="section-title">Gestión de cobro coactivo por año de ejecutoria</div>
-  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:20px">
+  <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:16px">
     <div style="display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap" id="mora-leyenda"></div>
     <div id="mora-barras"><p style="color:var(--soft);font-size:13px">Cargando...</p></div>
+  </div>
+
+  <!-- Nota S/D -->
+  <div style="background:rgba(232,160,32,.06);border:1px solid rgba(232,160,32,.15);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,.6);line-height:1.6">
+    <strong style="color:var(--gold)">📌 Nota sobre registros S/D (sin fecha):</strong>
+    Los expedientes sin fecha de ejecutoria registrada corresponden a casos que se encuentran en proceso de digitalización y actualización en el sistema de información. Su ausencia de fecha no implica falta de gestión — muchos de estos expedientes cuentan con actuaciones procesales activas visibles en el módulo de Etapas Procesales.
   </div>
 
   <!-- Texto Control Interno -->
@@ -1059,6 +1073,12 @@ function generarPDF() {
 // MOROSIDAD — RENDER
 // ════════════════════════════════════════
 function renderMorosidad(vigencias, totalActivosGAS) {
+
+  const ahora = new Date();
+  const fechaCorte = ahora.toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric', timeZone:'America/Bogota' });
+  const elFechaCorte = document.getElementById('mora-fecha-corte');
+  if (elFechaCorte) elFechaCorte.textContent = fechaCorte;
+
   if (!vigencias || vigencias.length === 0) {
     document.getElementById('mora-aviso-gas').style.display = 'flex';
     document.getElementById('mora-stats').innerHTML = `
@@ -1084,22 +1104,30 @@ function renderMorosidad(vigencias, totalActivosGAS) {
 
   document.getElementById('mora-aviso-gas').style.display = 'none';
 
-  const maximo = Math.max(...vigencias.map(d => d.cantidad));
   let totalExp = 0, totalCon = 0, totalSin = 0;
   vigencias.forEach(d => { totalExp += d.cantidad; totalCon += d.conMandamiento; totalSin += d.sinMandamiento; });
   const cobGlobal = totalExp > 0 ? Math.round((totalCon / totalExp) * 100) : 0;
+
+  const elResumen = document.getElementById('mora-resumen-corte');
+  if (elResumen) elResumen.textContent = `${vigencias.filter(d=>d.anio!=='Sin determinar').length} vigencias analizadas · ${totalExp.toLocaleString('es-CO')} expedientes activos`;
+
+  const criticos    = vigencias.filter(d => d.mora !== null && d.mora >= 5);
+  const totalCrit   = criticos.reduce((s,d) => s+d.cantidad, 0);
+  const conMandCrit = criticos.reduce((s,d) => s+d.conMandamiento, 0);
+  const pctCrit     = totalCrit > 0 ? Math.round((conMandCrit/totalCrit)*100) : 0;
+  const aniosCrit   = criticos.map(d => d.anio).join(', ');
 
   document.getElementById('mora-stats').innerHTML = `
     <div class="stat-card blue">
       <div class="stat-label">Total activos en proceso</div>
       <div class="stat-value">${totalExp.toLocaleString('es-CO')}</div>
-      <div class="stat-sub">expedientes Predial</div>
+      <div class="stat-sub">expedientes · corte ${fechaCorte}</div>
     </div>
     <div class="stat-card green">
       <div class="stat-label">Con mandamiento librado</div>
       <div class="stat-value">${totalCon.toLocaleString('es-CO')}</div>
       <div class="stat-sub">acción coactiva iniciada</div>
-      <span class="stat-badge green">${cobGlobal}% cobertura</span>
+      <span class="stat-badge green">${cobGlobal}% cobertura global</span>
     </div>
     <div class="stat-card gold">
       <div class="stat-label">Sin mandamiento registrado</div>
@@ -1108,7 +1136,7 @@ function renderMorosidad(vigencias, totalActivosGAS) {
     </div>`;
 
   document.getElementById('mora-leyenda').innerHTML = [
-    ['rgba(255,255,255,.12)','1px solid rgba(255,255,255,.15)','Total ese año'],
+    ['rgba(255,255,255,.12)','1px solid rgba(255,255,255,.15)','Total ese año (100% del track)'],
     ['#16a34a','','+75% gestionado'],
     ['#d97706','','50–75%'],
     ['#ea580c','','25–50%'],
@@ -1126,17 +1154,21 @@ function renderMorosidad(vigencias, totalActivosGAS) {
   }
 
   document.getElementById('mora-barras').innerHTML = vigencias.map(d => {
-    const color = colorBarra(d.pctGestion || 0);
-    const pctFill = d.pctGestion || 0;
-    const moraLbl = d.mora !== null
-      ? `${d.mora} año${d.mora!==1?'s':''} de mora · ${d.cantidad.toLocaleString('es-CO')} exp.`
-      : `sin fecha · ${d.cantidad.toLocaleString('es-CO')} exp.`;
-    const etiqueta = pctFill > 16 ? `${d.conMandamiento.toLocaleString('es-CO')} con mandamiento (${pctFill}%)` : `${pctFill}%`;
+    const color     = colorBarra(d.pctGestion || 0);
+    const pctFill   = d.pctGestion || 0;
+    const esCritico = d.mora !== null && d.mora >= 5;
+    const anioLabel = d.anio === 'Sin determinar' ? 'S/D' : d.anio;
+    const moraLbl   = d.mora !== null
+      ? `${d.mora} año${d.mora!==1?'s':''} de mora`
+      : 'sin fecha de ejecutoria';
+    const etiqueta  = pctFill > 14
+      ? `${d.conMandamiento.toLocaleString('es-CO')} con mandamiento (${pctFill}%)`
+      : `${pctFill}%`;
     return `
       <div class="mora-row">
         <div class="mora-row-top">
-          <span class="mora-row-anio">${d.anio==='Sin determinar'?'S/D':d.anio}</span>
-          <span class="mora-row-meta">${moraLbl}</span>
+          <span class="mora-row-anio" style="${esCritico?'color:var(--gold)':''}">${anioLabel}</span>
+          <span class="mora-row-meta">${moraLbl} · <strong style="color:rgba(255,255,255,.8)">${d.cantidad.toLocaleString('es-CO')} expedientes</strong></span>
           <span class="mora-row-pct" style="color:${color}">${pctFill}% gestionado</span>
         </div>
         <div class="mora-track">
@@ -1144,25 +1176,23 @@ function renderMorosidad(vigencias, totalActivosGAS) {
           <div class="mora-bar-fill" style="width:${pctFill}%;background:${color}">${etiqueta}</div>
         </div>
         <div class="mora-counts">
-          <span class="mora-count-ok" style="color:${color}">✓ ${d.conMandamiento.toLocaleString('es-CO')} con mandamiento</span>
-          <span class="mora-count-nd">${d.sinMandamiento.toLocaleString('es-CO')} sin registrar</span>
+          <span class="mora-count-ok" style="color:${color}">✓ ${d.conMandamiento.toLocaleString('es-CO')} con mandamiento · ${d.sinMandamiento.toLocaleString('es-CO')} sin registrar</span>
+          ${esCritico ? `<span style="font-size:10px;color:var(--gold);font-weight:600">⚠ Vigencia crítica</span>` : ''}
         </div>
       </div>`;
   }).join('');
 
-  const criticos    = vigencias.filter(d => d.mora !== null && d.mora >= 5);
-  const totalCrit   = criticos.reduce((s,d) => s+d.cantidad, 0);
-  const conMandCrit = criticos.reduce((s,d) => s+d.conMandamiento, 0);
-  const pctCrit     = totalCrit > 0 ? Math.round((conMandCrit/totalCrit)*100) : 0;
-  const aniosCrit   = criticos.map(d => d.anio).join(', ');
+  const texto = `DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES — ALCALDÍA DE BELLO\nRespuesta al hallazgo de Control Interno — Cobro Coactivo Predial\nFecha de corte: ${fechaCorte}\n\nEn respuesta al hallazgo formulado por Control Interno, la Dirección Administrativa de Ejecuciones Fiscales informa que del total de ${totalExp.toLocaleString('es-CO')} expedientes de cobro coactivo Predial actualmente en proceso (carpetas FP 1 al 39), ${totalCon.toLocaleString('es-CO')} cuentan con mandamiento de pago librado, representando una cobertura del ${cobGlobal}% del universo de cartera activa a la fecha de corte.\n\nPara las vigencias de mayor antigüedad (${aniosCrit}), clasificadas como cartera de mora crítica (más de 5 años), la Dirección ha librado mandamiento de pago en el ${pctCrit}% de los ${totalCrit.toLocaleString('es-CO')} expedientes correspondientes (${conMandCrit.toLocaleString('es-CO')} casos), demostrando gestión activa y sostenida sobre la cartera morosa histórica.\n\nRespecto a los ${totalSin.toLocaleString('es-CO')} expedientes sin mandamiento registrado en el sistema, se aclara que un porcentaje de estos corresponde a casos en proceso de actualización de datos, y que muchos cuentan con actuaciones procesales activas (citaciones, avisos, diligencias bancarias) visibles en el módulo de etapas procesales.\n\nLa Dirección se compromete a: (1) priorizar la liberación de mandamientos de pago sobre los expedientes de vigencias 2021 y 2022; (2) aplicar medidas de cobro coactivo contundentes (embargo de cuentas bancarias, bienes y rentas) sobre los casos críticos; y (3) completar la actualización de datos de fecha de ejecutoria en el sistema, conforme a las recomendaciones del ente de control.`;
 
-  const texto = `En respuesta al hallazgo de Control Interno, la Dirección Administrativa de Ejecuciones Fiscales informa que del total de ${totalExp.toLocaleString('es-CO')} expedientes de cobro coactivo Predial actualmente en proceso, ${totalCon.toLocaleString('es-CO')} cuentan con mandamiento de pago librado, representando una cobertura del ${cobGlobal}% del universo de cartera activa. Para las vigencias de mayor antigüedad (${aniosCrit}), la Dirección ha librado mandamiento en el ${pctCrit}% de los ${totalCrit.toLocaleString('es-CO')} expedientes correspondientes (${conMandCrit.toLocaleString('es-CO')} casos), demostrando gestión activa y sostenida sobre la cartera morosa histórica. La Dirección se compromete a priorizar los expedientes restantes con medidas de cobro coactivo contundentes (embargo de cuentas bancarias, bienes y rentas), conforme a las recomendaciones del ente de control.`;
+  window._textoNotaMora = texto.replace(/\\n/g, '\n');
 
-  window._textoNotaMora = texto;
   document.getElementById('mora-nota-txt').innerHTML = texto
+    .replace(/\\n/g, '<br>')
     .replace(`${cobGlobal}%`, `<strong style="color:#4ade80">${cobGlobal}%</strong>`)
     .replace(`${totalCon.toLocaleString('es-CO')} cuentan`, `<strong style="color:#4ade80">${totalCon.toLocaleString('es-CO')} cuentan</strong>`)
+    .replace(`${pctCrit}%`, `<strong style="color:#4ade80">${pctCrit}%</strong>`)
     .replace('embargo de cuentas bancarias, bienes y rentas', '<em style="color:var(--gold)">embargo de cuentas bancarias, bienes y rentas</em>');
+
   document.getElementById('mora-nota-box').style.display = 'block';
 }
 
