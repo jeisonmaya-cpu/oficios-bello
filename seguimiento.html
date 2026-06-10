@@ -304,7 +304,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
     </div>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" id="tab-ou"      onclick="goTab('ou')">🏘️ Urbanísticas</button>
+    <button class="nav-tab active" id="tab-consolidado" onclick="goTab('consolidado')">🏛️ Consolidado</button>
+    <button class="nav-tab"        id="tab-ou"      onclick="goTab('ou')">🏘️ Urbanísticas</button>
     <button class="nav-tab"        id="tab-predial" onclick="goTab('predial')">🏠 Predial</button>
     <button class="nav-tab"        id="tab-ica"     onclick="goTab('ica')">🏭 ICA</button>
     <button class="nav-tab"        id="tab-mora"    onclick="goTab('mora')">📊 Morosidad</button>
@@ -335,6 +336,45 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
   <div style="font-size:13px;margin-bottom:14px;color:rgba(252,165,165,.7)" id="error-msg"></div>
   <button onclick="cargarDatos()" style="background:var(--blue2);color:#fff;border:none;
     border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer">Reintentar</button>
+</div>
+
+<!-- PANEL CONSOLIDADO -->
+<div class="panel" id="panel-consolidado">
+
+  <div class="cartera-card" id="cons-cartera">
+    <div class="cartera-main">
+      <div class="cartera-label">🏛️ Cartera Global — Dirección de Ejecuciones Fiscales</div>
+      <div class="cartera-value">Calculando...</div>
+      <div class="cartera-sub">Consolidando Urbanísticas + Predial + ICA</div>
+    </div>
+  </div>
+
+  <div class="stats-grid" id="cons-kpis"></div>
+
+  <div class="section-title">🧾 Composición de la Cartera por Tributo</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tributo</th><th>Expedientes</th><th>Cartera ($)</th><th>% cartera</th><th>Distribución</th></tr></thead>
+      <tbody id="cons-tributos"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Cargando fuentes de datos...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">📈 Estado Global de los Procesos</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Estado</th><th>Expedientes</th><th>% del total</th><th>Distribución</th></tr></thead>
+      <tbody id="cons-estados"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div id="cons-nota" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;padding:14px 16px;font-size:11.5px;color:rgba(255,255,255,.45);line-height:1.6;margin-top:4px">
+    <strong style="color:rgba(255,255,255,.65)">📌 Fuentes y criterios:</strong>
+    Obligaciones Urbanísticas (Masivos 2–6), Predial (Carpetas FP 1–39) e ICA (Industria y Comercio).
+    Los datos se consolidan en tiempo real desde las bases de gestión de cada tributo vía Google Apps Script.
+    El indicador de recaudo se calcula sobre las carteras con recaudo reportado (Urbanísticas e ICA).
+    <span id="cons-corte"></span>
+  </div>
 </div>
 
 <!-- PANEL OU -->
@@ -590,7 +630,7 @@ const URL_PREDIAL = "https://script.google.com/macros/s/AKfycbz5tkVbM_Da0qsKA-4X
 const URL_ICA='https://script.google.com/macros/s/AKfycbyzBxtdg1znZ0LuCJtoypPs9-vVKfaWc50A4c1-Wlr7Tn2u7KmSGf6D312UUThz-8w/exec';
 let datosGlobales=null;
 let datosICA=null;
-let tabActual = 'ou';
+let tabActual = 'consolidado';
 
 // ── INIT ──
 cargarDatos();
@@ -629,6 +669,7 @@ async function cargarDatos() {
     renderOU(datosGlobales.ou);
     renderPredial(datosGlobales.predial);
     renderMorosidad(dataPred.porVigencia || null, dataPred.activos || 0);
+    renderConsolidado();
     goTab(tabActual);
 
   } catch(err) {
@@ -824,6 +865,118 @@ function renderPredial(d) {
   }).join('');
 }
 
+// ════════════════════════════════════════
+// CONSOLIDADO — vista ejecutiva global
+// ════════════════════════════════════════
+function icaResumen(){
+  if(!datosICA) return null;
+  const d = datosICA;
+  const sE = name => (d.estados||[]).find(e=>e.estado===name) || {count:0,valor:0};
+  return {
+    cartera:    d.totalAdeudado  || 0,
+    totalExp:   d.totalExp       || 0,
+    recaudo:    d.totalRecaudado || 0,
+    activos:    sE('Trámite').count,
+    convenios:  sE('Convenio').count,
+    cancelados: sE('Cancelado').count,
+    terminados: sE('Terminado').count
+  };
+}
+
+function renderConsolidado(){
+  const ou   = datosGlobales ? datosGlobales.ou      : null;
+  const pred = datosGlobales ? datosGlobales.predial : null;
+  const ica  = icaResumen();
+  const fuentes = [
+    ou   ? {n:'🏘️ Obligaciones Urbanísticas', d:{cartera:ou.cartera, totalExp:ou.totalExp, recaudo:ou.recaudo||0, activos:ou.activos, convenios:ou.convenios, cancelados:ou.cancelados, terminados:ou.terminados}, rec:true,  c:'#2d8de8'} : null,
+    pred ? {n:'🏠 Predial',                   d:{cartera:pred.cartera, totalExp:pred.totalExp, recaudo:0, activos:pred.activos, convenios:pred.convenios, cancelados:pred.cancelados, terminados:pred.terminados}, rec:false, c:'#f5c050'} : null,
+    ica  ? {n:'🏭 Industria y Comercio (ICA)', d:ica, rec:true, c:'#86efac'} : null
+  ].filter(Boolean);
+  if(!fuentes.length) return;
+
+  const carteraTotal = fuentes.reduce((s,f)=>s+f.d.cartera,0);
+  const expTotal     = fuentes.reduce((s,f)=>s+f.d.totalExp,0);
+  const recTotal     = fuentes.filter(f=>f.rec).reduce((s,f)=>s+f.d.recaudo,0);
+  const carteraConRec= fuentes.filter(f=>f.rec).reduce((s,f)=>s+f.d.cartera,0);
+  const activos      = fuentes.reduce((s,f)=>s+f.d.activos,0);
+  const convenios    = fuentes.reduce((s,f)=>s+f.d.convenios,0);
+  const cancelados   = fuentes.reduce((s,f)=>s+f.d.cancelados,0);
+  const terminados   = fuentes.reduce((s,f)=>s+f.d.terminados,0);
+  const resueltos    = cancelados + terminados;
+  const pendientes   = fuentes.length < 3 ? ` · ${3-fuentes.length} fuente(s) cargando...` : '';
+
+  document.getElementById('cons-cartera').innerHTML = `
+    <div class="cartera-main">
+      <div class="cartera-label">🏛️ Cartera Global — Dirección de Ejecuciones Fiscales</div>
+      <div class="cartera-value">${fmt(carteraTotal)}</div>
+      <div class="cartera-sub">${expTotal.toLocaleString()} expedientes en ${fuentes.length} tributos${pendientes}</div>
+    </div>
+    <div class="cartera-recaudo">
+      <div class="cartera-recaudo-label">Recaudo registrado (OU + ICA)</div>
+      <div class="cartera-recaudo-val">${fmt(recTotal)}</div>
+      <div class="cartera-pct">${pct(recTotal, carteraConRec)} de la cartera con recaudo reportado</div>
+    </div>`;
+
+  document.getElementById('cons-kpis').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-label">⚙️ En Gestión Activa</div>
+      <div class="stat-value">${activos.toLocaleString()}</div>
+      <div class="stat-sub">expedientes en cobro coactivo</div>
+      <span class="stat-badge blue">${pct(activos, expTotal)}</span>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">🤝 En Convenio de Pago</div>
+      <div class="stat-value">${convenios.toLocaleString()}</div>
+      <div class="stat-sub">cartera normalizada</div>
+      <span class="stat-badge gold">${pct(convenios, expTotal)}</span>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">🎯 Índice de Resolución</div>
+      <div class="stat-value">${pct(resueltos, expTotal)}</div>
+      <div class="stat-sub">${resueltos.toLocaleString()} cancelados + terminados</div>
+      <span class="stat-badge green">gestión cerrada</span>
+    </div>
+    <div class="stat-card navy">
+      <div class="stat-label">💰 Recaudo / Cartera</div>
+      <div class="stat-value">${pct(recTotal, carteraConRec)}</div>
+      <div class="stat-sub">${fmt(recTotal)} recuperados</div>
+      <span class="stat-badge blue">OU + ICA</span>
+    </div>`;
+
+  document.getElementById('cons-tributos').innerHTML = fuentes
+    .slice().sort((a,b)=>b.d.cartera-a.d.cartera)
+    .map(f=>{
+      const p = carteraTotal>0 ? (f.d.cartera/carteraTotal*100).toFixed(1) : 0;
+      return `<tr>
+        <td><strong>${f.n}</strong></td>
+        <td>${f.d.totalExp.toLocaleString()}</td>
+        <td><strong>${fmt(f.d.cartera)}</strong></td>
+        <td>${p}%</td>
+        <td style="min-width:140px"><div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:${f.c}"></div></div></td>
+      </tr>`;
+    }).join('');
+
+  const filasEstado = [
+    {n:'🔵 Activos en proceso', v:activos,    c:'#1a6fc4'},
+    {n:'🤝 En convenio',        v:convenios,  c:'#e8a020'},
+    {n:'✅ Cancelados',          v:cancelados, c:'#16a34a'},
+    {n:'📁 Terminados',          v:terminados, c:'#374151'}
+  ];
+  document.getElementById('cons-estados').innerHTML = filasEstado.map(f=>{
+    const p = expTotal>0 ? (f.v/expTotal*100).toFixed(1) : 0;
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${f.c};display:inline-block"></span>${f.n}</span></td>
+      <td><strong>${f.v.toLocaleString()}</strong></td>
+      <td>${p}%</td>
+      <td style="min-width:140px"><div class="bar-wrap"><div class="bar-fill" style="width:${p}%;background:${f.c}"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  const corte = document.getElementById('cons-corte');
+  if(corte) corte.innerHTML = '<br><strong style="color:rgba(255,255,255,.65)">📅 Fecha de corte:</strong> ' +
+    new Date().toLocaleString('es-CO',{timeZone:'America/Bogota',day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
 // ── EXPORTAR EXCEL ──
 function exportarExcel() {
   if (!datosGlobales) return;
@@ -863,6 +1016,59 @@ function exportarExcel() {
   ]);
   XLSX.utils.book_append_sheet(wb, wsPred, 'Predial');
 
+  // Hoja Morosidad Predial (por vigencia)
+  const vig = (datosGlobales.predial.porVigencia || []);
+  if (vig.length) {
+    const wsMora = XLSX.utils.aoa_to_sheet([
+      ['MOROSIDAD PREDIAL — GESTIÓN POR AÑO DE EJECUTORIA'],
+      ['Fecha de corte', new Date().toLocaleDateString('es-CO',{timeZone:'America/Bogota'})],
+      [],
+      ['Año ejecutoria', 'Años de mora', 'Expedientes', 'Con mandamiento', 'Sin mandamiento', '% gestionado'],
+      ...vig.map(v => [v.anio, v.mora !== null ? v.mora : 'S/D', v.cantidad, v.conMandamiento, v.sinMandamiento, (v.pctGestion||0)+'%'])
+    ]);
+    XLSX.utils.book_append_sheet(wb, wsMora, 'Morosidad Predial');
+  }
+
+  // Hoja ICA (si está cargada)
+  const icaR = icaResumen();
+  if (icaR && datosICA) {
+    const filasICA = [
+      ['INDUSTRIA Y COMERCIO (ICA) — ESTADÍSTICAS'],
+      [],
+      ['Indicador', 'Valor'],
+      ['Total expedientes', icaR.totalExp],
+      ['Cartera total adeudada', icaR.cartera],
+      ['Total recaudado', icaR.recaudo],
+      ['Saldo pendiente', datosICA.totalSaldo || (icaR.cartera - icaR.recaudo)],
+      [],
+      ['DISTRIBUCIÓN POR ESTADO'],
+      ['Estado', 'Expedientes', 'Valor ($)'],
+      ...(datosICA.estados||[]).map(e => [e.estado, e.count, e.valor]),
+      [],
+      ['CARGA POR RESPONSABLE'],
+      ['Responsable', 'Expedientes', 'Valor ($)', 'Saldo ($)'],
+      ...(datosICA.responsables||[]).map(r => [r.responsable||r.nombre||'—', r.count||0, r.valor||0, r.saldo||0])
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(filasICA), 'ICA');
+  }
+
+  // Hoja Consolidado (primera del libro)
+  const consFuentes = [
+    ['CONSOLIDADO GLOBAL — DIRECCIÓN DE EJECUCIONES FISCALES'],
+    ['Fecha de corte', new Date().toLocaleString('es-CO',{timeZone:'America/Bogota'})],
+    [],
+    ['Tributo', 'Expedientes', 'Cartera ($)', 'Recaudo reportado ($)'],
+    ['Obligaciones Urbanísticas', ou.totalExp, ou.cartera, ou.recaudo||0],
+    ['Predial', pred.totalExp, pred.cartera, 'No reportado'],
+    icaR ? ['ICA', icaR.totalExp, icaR.cartera, icaR.recaudo] : ['ICA', 'No cargado', 'No cargado', 'No cargado'],
+    [],
+    ['TOTAL', ou.totalExp + pred.totalExp + (icaR?icaR.totalExp:0),
+              ou.cartera  + pred.cartera  + (icaR?icaR.cartera:0),
+              (ou.recaudo||0) + (icaR?icaR.recaudo:0)]
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(consFuentes), 'Consolidado');
+  wb.SheetNames.splice(0, 0, wb.SheetNames.pop());
+
   XLSX.writeFile(wb, `cartera_fiscal_bello_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
@@ -888,6 +1094,51 @@ function generarPDF() {
   const ahora = new Date();
   const fechaCorte = ahora.toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
   const horaGen    = ahora.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+  const consecutivo = 'EF-INF-' + ahora.toISOString().slice(0,10).replace(/-/g,'') + '-' +
+    String(ahora.getHours()).padStart(2,'0') + String(ahora.getMinutes()).padStart(2,'0');
+
+  // Datos consolidados y de morosidad para el informe
+  const icaRep = icaResumen();
+  const consTotal = {
+    cartera: ou.cartera + pred.cartera + (icaRep ? icaRep.cartera : 0),
+    exp:     ou.totalExp + pred.totalExp + (icaRep ? icaRep.totalExp : 0),
+    recaudo: (ou.recaudo||0) + (icaRep ? icaRep.recaudo : 0),
+    carteraConRec: ou.cartera + (icaRep ? icaRep.cartera : 0),
+    fuentes: icaRep ? 3 : 2
+  };
+  const vigMora = pred.porVigencia || [];
+  let moraHTML = '';
+  if (vigMora.length) {
+    let mTot=0, mCon=0;
+    vigMora.forEach(v=>{mTot+=v.cantidad; mCon+=v.conMandamiento;});
+    const mCob = mTot>0 ? Math.round(mCon/mTot*100) : 0;
+    moraHTML = `
+    <hr class="rep-divider">
+    <div class="rep-seccion">
+      <div class="rep-seccion-titulo">⚖️ Análisis de Morosidad — Cobro Coactivo Predial</div>
+      <p style="font-size:12px;color:#374151;line-height:1.6;margin-bottom:12px">
+        Del universo de <strong>${mTot.toLocaleString('es-CO')}</strong> expedientes activos analizados por año de ejecutoria,
+        <strong>${mCon.toLocaleString('es-CO')}</strong> cuentan con mandamiento de pago librado,
+        para una cobertura global del <strong>${mCob}%</strong> de la acción coactiva.
+      </p>
+      <table class="rep-table">
+        <thead><tr><th>Año ejecutoria</th><th>Años de mora</th><th>Expedientes</th><th>Con mandamiento</th><th>% gestionado</th></tr></thead>
+        <tbody>
+          ${vigMora.map(v=>`<tr${v.mora!==null&&v.mora>=5?' style="background:#fef9ec"':''}>
+            <td>${v.anio==='Sin determinar'?'S/D':v.anio}${v.mora!==null&&v.mora>=5?' ⚠':''}</td>
+            <td>${v.mora!==null?v.mora:'—'}</td>
+            <td><strong>${v.cantidad.toLocaleString('es-CO')}</strong></td>
+            <td>${v.conMandamiento.toLocaleString('es-CO')}</td>
+            <td>${v.pctGestion||0}%</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <p style="font-size:10.5px;color:#6b7280;line-height:1.5;margin-top:8px">
+        ⚠ Vigencias con más de 5 años de mora se resaltan como cartera crítica.
+        Los registros S/D corresponden a expedientes en proceso de digitalización; su ausencia de fecha no implica falta de gestión.
+      </p>
+    </div>`;
+  }
 
   // Estados OU
   const estadosOU = ou.estados && Object.keys(ou.estados).length > 0
@@ -916,9 +1167,37 @@ function generarPDF() {
       <div class="rep-meta">
         <span>📅 Fecha de corte: <strong>${fechaCorte}</strong></span>
         <span>🕐 Generado a las: <strong>${horaGen}</strong></span>
-        <span>📋 Versión: <strong>v2.0</strong></span>
+        <span>🔖 Consecutivo: <strong>${consecutivo}</strong></span>
       </div>
     </div>
+
+    <!-- RESUMEN EJECUTIVO CONSOLIDADO -->
+    <div class="rep-seccion">
+      <div class="rep-seccion-titulo">📊 Resumen Ejecutivo — Cartera Consolidada</div>
+      <div class="rep-cartera-box">
+        <div>
+          <div class="rep-cartera-label">Cartera Global de la Dirección</div>
+          <div class="rep-cartera-val">${fmt(consTotal.cartera)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:4px">${consTotal.exp.toLocaleString()} expedientes · ${consTotal.fuentes} tributos consolidados</div>
+        </div>
+        <div class="rep-cartera-right">
+          <div class="rep-cartera-label">Recaudo Registrado (OU + ICA)</div>
+          <div class="rep-cartera-recaudo">${fmt(consTotal.recaudo)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:4px">${pct(consTotal.recaudo, consTotal.carteraConRec)} de la cartera con recaudo reportado</div>
+        </div>
+      </div>
+      <table class="rep-table">
+        <thead><tr><th>Tributo</th><th>Expedientes</th><th>Cartera ($)</th><th>% del total</th></tr></thead>
+        <tbody>
+          <tr><td>🏘️ Obligaciones Urbanísticas</td><td><strong>${ou.totalExp.toLocaleString()}</strong></td><td>${fmt(ou.cartera)}</td><td>${pct(ou.cartera, consTotal.cartera)}</td></tr>
+          <tr><td>🏠 Predial</td><td><strong>${pred.totalExp.toLocaleString()}</strong></td><td>${fmt(pred.cartera)}</td><td>${pct(pred.cartera, consTotal.cartera)}</td></tr>
+          ${icaRep ? `<tr><td>🏭 Industria y Comercio (ICA)</td><td><strong>${icaRep.totalExp.toLocaleString()}</strong></td><td>${fmt(icaRep.cartera)}</td><td>${pct(icaRep.cartera, consTotal.cartera)}</td></tr>` : '<tr><td colspan="4" style="color:#9ca3af;font-size:11px">ICA: datos no disponibles al momento de generar el informe</td></tr>'}
+          <tr style="font-weight:700;background:#f0f4fa"><td>TOTAL</td><td>${consTotal.exp.toLocaleString()}</td><td>${fmt(consTotal.cartera)}</td><td>100%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="rep-divider">
 
     <!-- SECCIÓN 1: OBLIGACIONES URBANÍSTICAS -->
     <div class="rep-seccion">
@@ -1043,6 +1322,66 @@ function generarPDF() {
       <div class="rep-etapas">${etapasHTML}</div>
     </div>
 
+    ${moraHTML}
+
+    ${icaRep && datosICA ? `
+    <hr class="rep-divider">
+
+    <!-- SECCIÓN ICA -->
+    <div class="rep-seccion">
+      <div class="rep-seccion-titulo">🏭 Industria y Comercio (ICA)</div>
+
+      <div class="rep-cartera-box">
+        <div>
+          <div class="rep-cartera-label">Cartera Total Adeudada</div>
+          <div class="rep-cartera-val">${fmt(icaRep.cartera)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:4px">${icaRep.totalExp.toLocaleString()} expedientes</div>
+        </div>
+        <div class="rep-cartera-right">
+          <div class="rep-cartera-label">Total Recaudado</div>
+          <div class="rep-cartera-recaudo">${fmt(icaRep.recaudo)}</div>
+          <div style="font-size:11px;opacity:.6;margin-top:4px">${pct(icaRep.recaudo, icaRep.cartera)} de la cartera</div>
+        </div>
+      </div>
+
+      <div class="rep-stats">
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#1a6fc4">${icaRep.activos.toLocaleString()}</div>
+          <div class="rep-stat-label">⚙️ En Trámite</div>
+          <div class="rep-stat-sub">${pct(icaRep.activos, icaRep.totalExp)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#e8a020">${icaRep.convenios.toLocaleString()}</div>
+          <div class="rep-stat-label">🤝 Convenios</div>
+          <div class="rep-stat-sub">${pct(icaRep.convenios, icaRep.totalExp)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#16a34a">${icaRep.cancelados.toLocaleString()}</div>
+          <div class="rep-stat-label">✅ Cancelados</div>
+          <div class="rep-stat-sub">${pct(icaRep.cancelados, icaRep.totalExp)}</div>
+        </div>
+        <div class="rep-stat">
+          <div class="rep-stat-val" style="color:#374151">${icaRep.terminados.toLocaleString()}</div>
+          <div class="rep-stat-label">📁 Terminados</div>
+          <div class="rep-stat-sub">${pct(icaRep.terminados, icaRep.totalExp)}</div>
+        </div>
+      </div>
+
+      <div style="font-size:12px;font-weight:700;color:#0f2d5e;margin-bottom:10px">👤 Carga de Trabajo por Responsable</div>
+      <table class="rep-table">
+        <thead><tr><th>Responsable</th><th>Expedientes</th><th>Valor ($)</th><th>Saldo pendiente ($)</th></tr></thead>
+        <tbody>
+          ${(datosICA.responsables||[]).map(r=>`
+            <tr>
+              <td>${r.responsable||r.nombre||'—'}</td>
+              <td><strong>${(r.count||0).toLocaleString()}</strong></td>
+              <td>${fmt(r.valor||0)}</td>
+              <td>${fmt(r.saldo||0)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+
     <!-- FIRMA -->
     <div class="rep-firma">
       <div class="rep-firma-linea">
@@ -1060,7 +1399,7 @@ function generarPDF() {
     </div>
 
     <div class="rep-footer">
-      Informe generado automáticamente por el Sistema de Ejecuciones Fiscales · Alcaldía de Bello · ${fechaCorte} · ${horaGen}<br>
+      Informe ${consecutivo} · Generado automáticamente por el Sistema de Ejecuciones Fiscales · Alcaldía de Bello · ${fechaCorte} · ${horaGen}<br>
       Este documento es de carácter informativo y refleja el estado de la cartera a la fecha de corte indicada.
     </div>
   `;
@@ -1182,7 +1521,13 @@ function renderMorosidad(vigencias, totalActivosGAS) {
       </div>`;
   }).join('');
 
-  const texto = `DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES — ALCALDÍA DE BELLO\nRespuesta al hallazgo de Control Interno — Cobro Coactivo Predial\nFecha de corte: ${fechaCorte}\n\nEn respuesta al hallazgo formulado por Control Interno, la Dirección Administrativa de Ejecuciones Fiscales informa que del total de ${totalExp.toLocaleString('es-CO')} expedientes de cobro coactivo Predial actualmente en proceso (carpetas FP 1 al 39), ${totalCon.toLocaleString('es-CO')} cuentan con mandamiento de pago librado, representando una cobertura del ${cobGlobal}% del universo de cartera activa a la fecha de corte.\n\nPara las vigencias de mayor antigüedad (${aniosCrit}), clasificadas como cartera de mora crítica (más de 5 años), la Dirección ha librado mandamiento de pago en el ${pctCrit}% de los ${totalCrit.toLocaleString('es-CO')} expedientes correspondientes (${conMandCrit.toLocaleString('es-CO')} casos), demostrando gestión activa y sostenida sobre la cartera morosa histórica.\n\nRespecto a los ${totalSin.toLocaleString('es-CO')} expedientes sin mandamiento registrado en el sistema, se aclara que un porcentaje de estos corresponde a casos en proceso de actualización de datos, y que muchos cuentan con actuaciones procesales activas (citaciones, avisos, diligencias bancarias) visibles en el módulo de etapas procesales.\n\nLa Dirección se compromete a: (1) priorizar la liberación de mandamientos de pago sobre los expedientes de vigencias 2021 y 2022; (2) aplicar medidas de cobro coactivo contundentes (embargo de cuentas bancarias, bienes y rentas) sobre los casos críticos; y (3) completar la actualización de datos de fecha de ejecutoria en el sistema, conforme a las recomendaciones del ente de control.`;
+  // Vigencias prioritarias: las 2 con menor % de gestión (excluyendo S/D)
+  const vigPrioridad = vigencias
+    .filter(d => d.anio !== 'Sin determinar')
+    .slice().sort((a,b) => (a.pctGestion||0) - (b.pctGestion||0))
+    .slice(0,2).map(d => d.anio).sort().join(' y ') || 'recientes';
+
+  const texto = `DIRECCIÓN ADMINISTRATIVA DE EJECUCIONES FISCALES — ALCALDÍA DE BELLO\nRespuesta al hallazgo de Control Interno — Cobro Coactivo Predial\nFecha de corte: ${fechaCorte}\n\nEn respuesta al hallazgo formulado por Control Interno, la Dirección Administrativa de Ejecuciones Fiscales informa que del total de ${totalExp.toLocaleString('es-CO')} expedientes de cobro coactivo Predial actualmente en proceso (carpetas FP 1 al 39), ${totalCon.toLocaleString('es-CO')} cuentan con mandamiento de pago librado, representando una cobertura del ${cobGlobal}% del universo de cartera activa a la fecha de corte.\n\nPara las vigencias de mayor antigüedad (${aniosCrit}), clasificadas como cartera de mora crítica (más de 5 años), la Dirección ha librado mandamiento de pago en el ${pctCrit}% de los ${totalCrit.toLocaleString('es-CO')} expedientes correspondientes (${conMandCrit.toLocaleString('es-CO')} casos), demostrando gestión activa y sostenida sobre la cartera morosa histórica.\n\nRespecto a los ${totalSin.toLocaleString('es-CO')} expedientes sin mandamiento registrado en el sistema, se aclara que un porcentaje de estos corresponde a casos en proceso de actualización de datos, y que muchos cuentan con actuaciones procesales activas (citaciones, avisos, diligencias bancarias) visibles en el módulo de etapas procesales.\n\nLa Dirección se compromete a: (1) priorizar la liberación de mandamientos de pago sobre los expedientes de vigencias ${vigPrioridad}; (2) aplicar medidas de cobro coactivo contundentes (embargo de cuentas bancarias, bienes y rentas) sobre los casos críticos; y (3) completar la actualización de datos de fecha de ejecutoria en el sistema, conforme a las recomendaciones del ente de control.`;
 
   window._textoNotaMora = texto.replace(/\\n/g, '\n');
 
@@ -1224,6 +1569,7 @@ async function cargarICA(){
     datosICA=data;
     if(loader) loader.style.display='none';
     renderICA_GAS(data);
+    renderConsolidado();
   }catch(err){
     console.warn('[ICA]',err);
     if(loader) loader.style.display='none';
