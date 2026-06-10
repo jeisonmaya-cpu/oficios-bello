@@ -116,113 +116,7 @@ body {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 
-/* Robot Teodoro */
-.teodoro-robot {
-  position: relative;
-  animation: robotFloat 3s ease-in-out infinite;
-  filter: drop-shadow(0 8px 20px rgba(45,141,232,0.35));
-  cursor: pointer;
-  transition: filter 0.3s;
-}
-.teodoro-robot:hover {
-  filter: drop-shadow(0 10px 28px rgba(245,192,80,0.45));
-}
-.robot-svg { width: 64px; height: 80px; overflow: visible; }
 
-/* Flotación suave */
-@keyframes robotFloat {
-  0%, 100% { transform: translateY(0px) rotate(-1deg); }
-  50%       { transform: translateY(-7px) rotate(1deg); }
-}
-
-/* Ojos parpadeantes */
-.eye-left, .eye-right,
-.pupil-left, .pupil-right,
-.gleam-left, .gleam-right {
-  animation: eyeBlink 4s ease-in-out infinite;
-}
-@keyframes eyeBlink {
-  0%, 90%, 100% { transform: scaleY(1); }
-  95%            { transform: scaleY(0.08); }
-}
-
-/* LEDs del pecho pulsando */
-.chest-led1 {
-  animation: ledPulse1 1.8s ease-in-out infinite;
-}
-.chest-led2 {
-  animation: ledPulse2 1.8s ease-in-out infinite 0.6s;
-}
-@keyframes ledPulse1 {
-  0%, 100% { opacity: 0.9; r: 3.5; }
-  50%       { opacity: 0.35; r: 2.8; }
-}
-@keyframes ledPulse2 {
-  0%, 100% { opacity: 0.9; r: 3.5; }
-  50%       { opacity: 0.35; r: 2.8; }
-}
-
-/* Barra de pecho animada */
-.chest-bar {
-  animation: barScroll 2s linear infinite;
-}
-@keyframes barScroll {
-  0%   { opacity: 0.7; width: 8px; x: 20px; }
-  50%  { opacity: 1;   width: 14px; x: 20px; }
-  100% { opacity: 0.7; width: 8px; x: 20px; }
-}
-
-/* Brazos oscilando */
-.arm-left {
-  transform-origin: 5.5px 47px;
-  animation: armSwingL 3s ease-in-out infinite;
-}
-.arm-right {
-  transform-origin: 58.5px 47px;
-  animation: armSwingR 3s ease-in-out infinite;
-}
-@keyframes armSwingL {
-  0%, 100% { transform: rotate(-6deg); }
-  50%       { transform: rotate(6deg); }
-}
-@keyframes armSwingR {
-  0%, 100% { transform: rotate(6deg); }
-  50%       { transform: rotate(-6deg); }
-}
-
-/* Antena parpadeante */
-.antenna-ball {
-  animation: antennaBlink 2.5s ease-in-out infinite;
-}
-@keyframes antennaBlink {
-  0%, 100% { fill: #f5c050; opacity: 1; }
-  50%       { fill: #fff;    opacity: 0.4; }
-}
-
-/* LEDs boca */
-.mouth-led1, .mouth-led3 {
-  animation: mouthLed 1.4s ease-in-out infinite alternate;
-}
-.mouth-led2 {
-  animation: mouthLed 1.4s ease-in-out infinite alternate-reverse;
-}
-@keyframes mouthLed {
-  from { opacity: 1; }
-  to   { opacity: 0.2; }
-}
-
-/* Sacudir al click */
-.teodoro-robot.shake {
-  animation: robotShake 0.5s ease, robotFloat 3s ease-in-out infinite 0.5s;
-}
-@keyframes robotShake {
-  0%,100% { transform: rotate(0deg); }
-  15%     { transform: rotate(-12deg) scale(1.08); }
-  30%     { transform: rotate(12deg)  scale(1.1); }
-  45%     { transform: rotate(-8deg)  scale(1.06); }
-  60%     { transform: rotate(8deg)   scale(1.04); }
-  80%     { transform: rotate(-3deg)  scale(1.01); }
-}
 
 /* Pill */
 .saludo {
@@ -653,6 +547,86 @@ footer strong { color: rgba(255,255,255,0.55); }
   min-height: 16px; transition: opacity .3s;
   font-style: italic;
 }
+/* ── TEO — CHAT FLOTANTE ── */
+.teo-fab{
+  position:fixed;bottom:22px;right:22px;z-index:50;
+  width:58px;height:58px;border-radius:50%;
+  border:1px solid rgba(99,102,241,.45);
+  background:linear-gradient(145deg,#1e1b4b,#0a0d24);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 8px 28px rgba(79,70,229,.4);
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s;
+}
+.teo-fab:hover{transform:scale(1.08) translateY(-2px);box-shadow:0 12px 34px rgba(99,102,241,.5)}
+.teo-fab.open{transform:scale(.92)}
+.teo-fab svg{width:36px;height:36px;pointer-events:none}
+.teo-badge{
+  position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;
+  border-radius:9px;background:#ef4444;color:#fff;
+  font-size:10px;font-weight:700;display:none;
+  align-items:center;justify-content:center;padding:0 5px;
+  box-shadow:0 0 8px rgba(239,68,68,.6);
+}
+.teo-badge.show{display:flex}
+.teo-panel{
+  position:fixed;bottom:92px;right:22px;z-index:50;
+  width:min(360px,calc(100vw - 32px));
+  height:min(500px,calc(100vh - 130px));
+  display:flex;flex-direction:column;
+  background:linear-gradient(160deg,rgba(15,23,42,.97),rgba(7,9,26,.98));
+  border:1px solid rgba(99,102,241,.3);border-radius:18px;
+  box-shadow:0 24px 60px rgba(0,0,0,.55);backdrop-filter:blur(16px);
+  opacity:0;transform:translateY(14px) scale(.97);
+  pointer-events:none;transition:opacity .25s,transform .25s;overflow:hidden;
+}
+.teo-panel.open{opacity:1;transform:none;pointer-events:auto}
+.teo-head{
+  display:flex;align-items:center;gap:10px;padding:13px 16px;
+  border-bottom:1px solid rgba(255,255,255,.08);background:rgba(99,102,241,.08);
+}
+.teo-head-dot{width:9px;height:9px;border-radius:50%;background:#4ade80;box-shadow:0 0 7px #4ade80;flex-shrink:0}
+.teo-head-title{font-size:13px;font-weight:700;color:#e0e7ff;line-height:1.2}
+.teo-head-sub{font-size:10px;color:rgba(255,255,255,.4)}
+.teo-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px}
+.teo-msgs::-webkit-scrollbar{width:5px}
+.teo-msgs::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:3px}
+.teo-bbl{max-width:85%;padding:9px 12px;border-radius:13px;font-size:12.5px;line-height:1.55}
+.teo-bbl.bot{align-self:flex-start;background:rgba(99,102,241,.14);border:1px solid rgba(129,140,248,.2);color:rgba(255,255,255,.88);border-bottom-left-radius:4px}
+.teo-bbl.usr{align-self:flex-end;background:rgba(232,160,32,.16);border:1px solid rgba(245,192,80,.25);color:#fde9c2;border-bottom-right-radius:4px}
+.teo-bbl a{color:#93c5fd}
+.teo-dots{display:flex;gap:4px;padding:3px 1px}
+.teo-dots span{width:6px;height:6px;border-radius:50%;background:#818cf8;animation:teoDot 1.2s infinite}
+.teo-dots span:nth-child(2){animation-delay:.18s}
+.teo-dots span:nth-child(3){animation-delay:.36s}
+@keyframes teoDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.teo-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}
+.teo-chip{
+  font-size:11px;padding:5px 11px;border-radius:14px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.65);cursor:pointer;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.teo-chip:hover{background:rgba(99,102,241,.18);border-color:rgba(129,140,248,.4);color:#e0e7ff}
+.teo-input{display:flex;gap:8px;padding:11px 13px;border-top:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.25)}
+.teo-input input{
+  flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;padding:9px 12px;color:#fff;font-size:12.5px;
+  font-family:'DM Sans',sans-serif;outline:none;
+}
+.teo-input input:focus{border-color:rgba(129,140,248,.5)}
+.teo-input input::placeholder{color:rgba(255,255,255,.3)}
+.teo-input button{
+  width:38px;height:38px;border-radius:12px;border:none;flex-shrink:0;
+  background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  transition:transform .15s;
+}
+.teo-input button:hover{transform:scale(1.06)}
+@media (max-width:540px){
+  .teo-fab{right:14px;bottom:14px;width:54px;height:54px}
+  .teo-panel{right:14px;bottom:80px}
+}
+
 /* ── ANIMACIONES ── */
 
 
@@ -1018,24 +992,49 @@ footer strong { color: rgba(255,255,255,0.55); }
 
 </div><!-- /wrap -->
 
-<!-- ══ CONFIG — mismas URLs que tutelas_v2 ══ -->
-<script>
-// Leer APPS_URL de la sesión de tutelas si existe
-var TEO_APPS_URL = "";
-var TUTELAS_SHEET_ID = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
-try {
-  var _sess = JSON.parse(localStorage.getItem("tutelas_sesion_v2")||"null");
-} catch(e){}
-// IDs de Sheets de tutelas — mismos que tutelas_v2.html
-var GID_TUTELAS    = "0";
-var GID_FALLOS     = "1973025481";
-var GID_INCIDENTES = "1082755625";
-</script>
+<!-- ══ TEO — CHAT FLOTANTE ══ -->
+<button class="teo-fab" id="teo-fab" onclick="teoToggle()" aria-label="Abrir chat con Teo, asistente del sistema">
+  <svg viewBox="30 4 130 110" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <line x1="95" y1="14" x2="95" y2="24" stroke="#818cf8" stroke-width="2"/>
+    <circle cx="95" cy="11" r="4" fill="#fbbf24">
+      <animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="95" cy="68" r="44" fill="#1e1b4b" stroke="#4f46e5" stroke-width="2"/>
+    <rect x="66" y="52" width="20" height="20" rx="6" fill="#4f46e5"/>
+    <rect x="104" y="52" width="20" height="20" rx="6" fill="#4f46e5"/>
+    <rect x="71" y="57" width="10" height="10" rx="3" fill="white"/>
+    <rect x="109" y="57" width="10" height="10" rx="3" fill="white"/>
+    <rect x="76" y="84" width="8" height="8" rx="4" fill="#818cf8"/>
+    <rect x="87" y="84" width="8" height="8" rx="4" fill="#6366f1"/>
+    <rect x="98" y="84" width="8" height="8" rx="4" fill="#818cf8"/>
+  </svg>
+  <span class="teo-badge" id="teo-badge">1</span>
+</button>
 
+<div class="teo-panel" id="teo-panel" role="dialog" aria-label="Chat con Teo">
+  <div class="teo-head">
+    <span class="teo-head-dot"></span>
+    <div>
+      <div class="teo-head-title">Teo · Asistente IA</div>
+      <div class="teo-head-sub">Ejecuciones Fiscales — Bello</div>
+    </div>
+  </div>
+  <div class="teo-msgs" id="teo-msgs"></div>
+  <div class="teo-chips" id="teo-chips">
+    <span class="teo-chip" onclick="teoChip(this)">¿Cómo genero un oficio de desembargo?</span>
+    <span class="teo-chip" onclick="teoChip(this)">¿Dónde busco un expediente?</span>
+    <span class="teo-chip" onclick="teoChip(this)">¿Cómo hago un acuerdo de pago?</span>
+    <span class="teo-chip" onclick="teoChip(this)">¿Qué hay urgente hoy?</span>
+  </div>
+  <div class="teo-input">
+    <input id="teo-inp" placeholder="Escríbele a Teo..." onkeydown="if(event.key==='Enter')teoEnviar()" aria-label="Mensaje para Teo"/>
+    <button onclick="teoEnviar()" aria-label="Enviar mensaje">➤</button>
+  </div>
+</div>
 
 <footer>
   <div class="footer-info">
-    <span class="footer-pill" id="fp-version">v2.4</span>
+    <span class="footer-pill" id="fp-version">v2.5</span>
     <span class="footer-pill" id="fp-actualizado">Actualizando...</span>
     <span class="footer-pill" id="fp-usuario">—</span>
     <span class="footer-pill" id="fp-modulos">7 módulos activos</span>
@@ -1046,17 +1045,25 @@ var GID_INCIDENTES = "1082755625";
 
 <script>
 // ════════════════════════════════════════
-// CONFIG — IDs de Google Sheets de Tutelas
+// CONFIG GENERAL
+// Nota: el ID del Sheet de tutelas NO se expone aquí.
+// Todo acceso a datos pasa por el Apps Script (URL guardada
+// en localStorage por tutelas_v2 tras login con PIN).
 // ════════════════════════════════════════
-var SHEET_ID       = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU"; // ← mismo que tutelas_v2.html (APPS_URL no necesario para leer)
-var GID_TUTELAS    = "0";
-var GID_FALLOS     = "1973025481";
-var APPS_URL       = ""; // se llena si hay sesión activa de tutelas
-var EST_HIST       = ["Finalizado","Respondido"];
+var CONFIG = {
+  version: "v2.5",
+  modulos: 7
+};
 
-// Leer APPS_URL de la sesión de tutelas si existe
+// Stats cacheadas (opcional) — tutelas_v2.html puede escribirlas tras login:
+// localStorage.setItem("tutelas_stats_cache",
+//   JSON.stringify({tutelas:N, urgentes:N, fallos:N, ts:Date.now()}));
+// Si existen y tienen menos de 6 horas, alimentan a Teo y las cards.
 try {
-  var _tsess = JSON.parse(localStorage.getItem("tutelas_sesion_v2")||"null");
+  var _statsCache = JSON.parse(localStorage.getItem("tutelas_stats_cache")||"null");
+  if (_statsCache && Date.now() - (_statsCache.ts||0) < 6*3600*1000) {
+    window._homeStats = _statsCache;
+  }
 } catch(e){}
 
 // ── SALUDO TEODORO — typewriter ──
@@ -1268,7 +1275,7 @@ function cargarNovedades(){
   var desc=document.getElementById('news-desc');
   var sist=document.getElementById('cs-sistema-txt');
   if(desc) desc.textContent=nov.icono+' '+nov.txt;
-  if(sist) sist.textContent='v2.4 · última actualización hoy';
+  if(sist) sist.textContent=CONFIG.version+' · última actualización hoy';
 }
 
 // ════════════════════════════════════════
@@ -1294,6 +1301,23 @@ function actualizarFooter(){
 verificarSistema();
 cargarNovedades();
 actualizarFooter();
+actualizarCardStats(window._homeStats || {});
+
+// Footer desde CONFIG (una sola fuente de verdad)
+(function(){
+  var v=document.getElementById('fp-version');
+  var m=document.getElementById('fp-modulos');
+  if(v) v.textContent = CONFIG.version;
+  if(m) m.textContent = CONFIG.modulos + ' módulos activos';
+})();
+
+// Badge de Teo: invitar al chat si nunca se ha abierto en esta sesión
+setTimeout(function(){
+  if(!teoAbierto && teoHistorial.length===0){
+    var b=document.getElementById('teo-badge');
+    if(b) b.classList.add('show');
+  }
+}, 4000);
 
 // ════════════════════════════════════════
 // RESUMEN DEL DÍA — versión básica (sin Sheets)
@@ -1363,16 +1387,17 @@ function buildResumenDia(){
     href: 'tutelas_v2.html'
   });
 
-  // Renderizar
+  // Renderizar (sin onclick inline: data-href + listeners, accesible por teclado)
   var html = items.map(function(item){
     var cls = 'ri' + (item.clickable?' clickable':'');
-    var href = item.href||'#';
-    var onclick = item.clickable ? 'onclick="location.href=\"'+href+'\""' : '';
+    var attrs = item.clickable
+      ? ' data-href="'+(item.href||'#')+'" tabindex="0" role="link"'
+      : '';
     var tag = item.tag
       ? '<span class="ri-tag '+item.tag.cls+'">'+item.tag.txt+'</span>'
       : '';
-    return '<div class="'+cls+'" '+onclick+'>'+
-      '<span class="ri-icon">'+item.icono+'</span>'+
+    return '<div class="'+cls+'"'+attrs+'>'+
+      '<span class="ri-icon" aria-hidden="true">'+item.icono+'</span>'+
       '<span class="ri-txt">'+item.txt+'</span>'+
       tag+'</div>';
   }).join('');
@@ -1381,12 +1406,12 @@ function buildResumenDia(){
   if(el('resumen-items')){
     el('resumen-items').style.display='flex';
     el('resumen-items').innerHTML = html;
+    el('resumen-items').querySelectorAll('.ri.clickable').forEach(function(ri){
+      function ir(){ location.href = ri.getAttribute('data-href'); }
+      ri.addEventListener('click', ir);
+      ri.addEventListener('keydown', function(ev){ if(ev.key==='Enter') ir(); });
+    });
   }
-
-  // Stats row básicas
-  if(el('stat-tutelas')) el('stat-tutelas').textContent='—';
-  if(el('stat-urgentes')){ el('stat-urgentes').textContent='—'; el('stat-urgentes').style.color='rgba(255,255,255,.5)'; }
-  if(el('stat-fallos')) el('stat-fallos').textContent='—';
 }
 
 buildResumenDia();
@@ -1442,12 +1467,14 @@ async function teoResponder(pregunta){
   var stats=window._homeStats||{};
   var contexto=`Eres Teo, asistente IA del Sistema de Ejecuciones Fiscales de la Alcaldía de Bello, Antioquia, Colombia. Respondes en español, de forma concisa y amigable. Usas HTML básico (strong, br) para dar formato. Máximo 4 líneas salvo que sea necesario más.
 
-El sistema tiene 6 módulos principales:
-- Desembargos y embargos (index.html): genera oficios bancarios Word
-- Buscador de guías (buscador.html): busca contribuyentes y expedientes
-- Tutelas V2 (tutelas_v2.html): gestión completa de tutelas con IA
+El sistema tiene estos módulos:
+- Desembargos y embargos (desembargos.html): oficios bancarios, mandamientos y órdenes de embargo
+- Buscador de guías (buscador.html): busca contribuyentes, radicados y expedientes
+- Tutelas V2 (tutelas_v2.html): gestión completa de tutelas con IA (requiere PIN)
 - Acuerdos de pago (acuerdos.html): proyecta cuotas y genera F-GAF-68
-- Seguimiento de cartera (seguimiento.html): estadísticas de cobro coactivo
+- Recaudo histórico (recaudo.html): depósitos judiciales, aplicaciones y devoluciones
+- Seguimiento de procesos (seguimiento.html): estadísticas de cobro coactivo
+- Central Jurídica (index.html): paz y salvo, resoluciones y documentos jurídicos
 - Home (home.html): esta pantalla de inicio
 
 ${stats.tutelas!==undefined?`Estado actual: ${stats.tutelas} tutelas activas, ${stats.fallos} fallos activos, ${stats.urgentes} urgentes hoy.`:''}
@@ -1486,14 +1513,18 @@ function teoRespuestaLocal(q,stats){
     return `Hay <strong>${stats.tutelas||'—'}</strong> tutelas activas. ${stats.urgentes===0?'Sin urgencias hoy ✅':''} Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a>.`;
   }
   if(ql.includes("embargo")||ql.includes("desembargo")||ql.includes("oficio"))
-    return 'Para generar oficios de desembargo o embargo, usa el módulo <a href="index.html" style="color:#60a5fa">Desembargos</a>.';
+    return 'Para generar oficios de desembargo o embargo, usa el módulo <a href="desembargos.html" style="color:#60a5fa">Desembargos</a>.';
   if(ql.includes("buscar")||ql.includes("contribuyente")||ql.includes("expediente"))
     return 'Para buscar contribuyentes o expedientes de cobro coactivo, entra al <a href="buscador.html" style="color:#60a5fa">Buscador de Guías</a>.';
   if(ql.includes("acuerdo")||ql.includes("cuota")||ql.includes("convenio"))
     return 'Para proyectar cuotas y generar el formulario F-GAF-68, usa <a href="acuerdos.html" style="color:#60a5fa">Acuerdos de Pago</a>.';
-  if(ql.includes("cartera")||ql.includes("seguimiento")||ql.includes("estadística"))
-    return 'Las estadísticas de expedientes y cartera fiscal están en <a href="seguimiento.html" style="color:#60a5fa">Seguimiento de Cartera</a>.';
-  return 'Puedo ayudarte con tutelas, desembargos, búsqueda de expedientes, acuerdos de pago y seguimiento de cartera. ¿Con qué módulo necesitas ayuda?';
+  if(ql.includes("cartera")||ql.includes("seguimiento")||ql.includes("estadística")||ql.includes("estadistica"))
+    return 'Las estadísticas de expedientes y cobro coactivo están en <a href="seguimiento.html" style="color:#60a5fa">Seguimiento de Procesos</a>.';
+  if(ql.includes("recaudo")||ql.includes("depósito")||ql.includes("deposito")||ql.includes("devoluci"))
+    return 'Los depósitos judiciales, aplicaciones y devoluciones están en <a href="recaudo.html" style="color:#60a5fa">Recaudo Histórico</a>.';
+  if(ql.includes("paz y salvo")||ql.includes("resoluci")||ql.includes("jurídic")||ql.includes("juridic"))
+    return 'Paz y salvos, resoluciones y documentos jurídicos se generan en la <a href="index.html" style="color:#60a5fa">Central Jurídica</a>.';
+  return 'Puedo ayudarte con tutelas, desembargos, búsqueda de expedientes, acuerdos de pago, recaudo, seguimiento y documentos jurídicos. ¿Con qué módulo necesitas ayuda?';
 }
 </script>
 </body>
