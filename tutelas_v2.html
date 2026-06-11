@@ -181,6 +181,29 @@
     .toast.ok{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.12)}
     .toast.err{border-color:rgba(239,68,68,.4)}
     @media(max-width:900px){.tcols-adm,.tcols-fal,.tcols-otr,.tcols-his{grid-template-columns:90px 1fr 90px}.col-hide{display:none}.main{padding:16px}.topbar{padding:0 16px}.topbar-mid{display:none}.nav-tabs{padding:0 16px}.m-grid{grid-template-columns:1fr}}
+    /* ── INFORME EJECUTIVO ── */
+    .informe-doc{background:#fff;color:#111827;max-width:840px;width:94vw;max-height:88vh;overflow:auto;border-radius:14px;padding:30px 38px;font-size:12.5px;line-height:1.55}
+    .inf-h{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:3px solid #0f2d5e;padding-bottom:12px;margin-bottom:16px;flex-wrap:wrap}
+    .inf-titulo{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:#0f2d5e}
+    .inf-sub{font-size:11px;color:#6b7280;margin-top:2px}
+    .inf-sec{font-size:13px;font-weight:700;color:#0f2d5e;margin:18px 0 8px;border-left:3px solid #f59e0b;padding-left:8px}
+    .inf-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .inf-kpi{border:1px solid #e5e7eb;border-radius:8px;padding:10px 6px;text-align:center}
+    .inf-kpi .n{font-family:'Syne',sans-serif;font-size:19px;font-weight:700}
+    .inf-kpi .l{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-top:3px}
+    .inf-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:4px}
+    .inf-table th{background:#f3f6fb;color:#0f2d5e;text-align:left;padding:7px 9px;border:1px solid #e5e7eb;font-size:10px;text-transform:uppercase;letter-spacing:.03em}
+    .inf-table td{padding:6px 9px;border:1px solid #e5e7eb}
+    .inf-note{font-size:10px;color:#6b7280;margin-top:16px;border-top:1px solid #e5e7eb;padding-top:8px;line-height:1.6}
+    .inf-btn{border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer}
+    @media print{
+      body{background:#fff!important}
+      body>*{display:none!important}
+      #overlay-informe{display:block!important;position:static!important;background:#fff!important;padding:0!important}
+      #overlay-informe .informe-doc{max-height:none!important;width:100%!important;max-width:none!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+      .inf-noprint{display:none!important}
+      .inf-kpi .n{color:#0f2d5e!important}
+    }
   </style>
 </head>
 <body>
@@ -319,7 +342,12 @@
   <div class="pag" id="pag-his" style="display:none"><span id="pag-his-info"></span><div class="pag-btns" id="pag-his-btns"></div></div>
 </div>
 
-<div class="panel" id="panel-estadisticas"><div class="est-grid" id="grid-est"></div></div>
+<div class="panel" id="panel-estadisticas">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button onclick="generarInformeTutelas()" style="display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.35);color:var(--gold2);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(245,158,11,.22)'" onmouseout="this.style.background='rgba(245,158,11,.14)'">📄 Informe ejecutivo</button>
+  </div>
+  <div class="est-grid" id="grid-est"></div>
+</div>
 
 </div>
 
@@ -448,6 +476,7 @@ const PER_PAGE    = 50;
 
 let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
 let pagAdm=1, pagFal=1, pagHis=1, pagInc=1;
+let quickAdm=null, quickFal=null, quickOtr=null; // filtro rápido por urgencia (tarjetas)
 
 async function cargarDatos() {
   setSS("loading","Actualizando...");
@@ -466,7 +495,79 @@ async function cargarDatos() {
   document.getElementById("btnref").classList.remove("spin");
 }
 
-async function leerGviz(gid) {
+// ── Normalización de tipos (compartida por ambos lectores) ──
+const NORM_TIPO={
+  "tutela":"Tutela","admite":"Tutela",
+  "fallo de tutela":"Fallo de tutela","fallo":"Fallo de tutela",
+  "sentencia":"Sentencia",
+  "incidente":"Incidente","incidente de desacato":"Incidente de desacato",
+  "desacato":"Desacato",
+  "impugnacion":"Impugnación","impugnación":"Impugnación",
+  "apertura":"Apertura","requerimiento":"Requerimiento",
+  "sancion":"Sanción","sanción":"Sanción","reparto":"Reparto"
+};
+function normalizarRegistro(r){
+  if(r["TIPO"]){
+    const norm=NORM_TIPO[r["TIPO"].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim()];
+    if(norm)r["TIPO"]=norm;
+  }
+  const flim=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
+  r._dias=calcDias(flim);
+  return r;
+}
+const filaValida=r=>(r["ACCIONANTE"]||"").trim()||(r["TIPO"]||"").trim()||(r["RADICADO"]||"").trim();
+
+// ── Parser CSV robusto (comillas, comas y saltos de línea dentro de celdas) ──
+function parseCSV(txt){
+  const filas=[];let fila=[],celda="",enComillas=false;
+  for(let i=0;i<txt.length;i++){
+    const ch=txt[i];
+    if(enComillas){
+      if(ch==='"'){
+        if(txt[i+1]==='"'){celda+='"';i++;}
+        else enComillas=false;
+      } else celda+=ch;
+    } else {
+      if(ch==='"') enComillas=true;
+      else if(ch===','){fila.push(celda);celda="";}
+      else if(ch==='\n'||ch==='\r'){
+        if(ch==='\r'&&txt[i+1]==='\n')i++;
+        fila.push(celda);celda="";
+        if(fila.length>1||fila[0]!=="")filas.push(fila);
+        fila=[];
+      }
+      else celda+=ch;
+    }
+  }
+  if(celda!==""||fila.length){fila.push(celda);if(fila.length>1||fila[0]!=="")filas.push(fila);}
+  return filas;
+}
+
+// ── Lector principal: CSV (preserva texto en columnas de tipo mixto) ──
+// Soluciona el bug de RESPUESTA PQR: gviz JSON devolvía null en celdas de texto
+// cuando la columna era mayoritariamente numérica. CSV devuelve todo como texto.
+async function leerGviz(gid){
+  try{
+    const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
+    const res=await fetch(url);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const txt=await res.text();
+    const tabla=parseCSV(txt);
+    if(tabla.length<2) return [];
+    const headers=tabla[0].map(h=>String(h||"").trim());
+    return tabla.slice(1).map(cels=>{
+      const r={};
+      headers.forEach((h,i)=>{ if(h) r[h]=String(cels[i]??"").trim(); });
+      return normalizarRegistro(r);
+    }).filter(filaValida);
+  }catch(e){
+    console.warn("[tutelas] Lector CSV falló, usando fallback JSON:",e.message);
+    return leerGvizJSON(gid);
+  }
+}
+
+// ── Fallback: lector JSON original ──
+async function leerGvizJSON(gid) {
   const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
   const res=await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -474,7 +575,6 @@ async function leerGviz(gid) {
   const json=JSON.parse(txt.replace(/^[^(]+\(/,"").replace(/\);?\s*$/,""));
   const cols=json.table.cols, rows=json.table.rows;
   if (!rows) return [];
-  // Construir mapa de etiqueta → índice para robustez ante columnas de fórmula o vacías
   const colMap={};
   cols.forEach((col,i)=>{
     const lbl=(col.label||"").trim();
@@ -494,34 +594,19 @@ async function leerGviz(gid) {
     }
     return String(cell.f??cell.v??"").trim();
   }
-  // Mapa de normalización de tipos — evita duplicados por capitalización inconsistente en el Sheet
-  const NORM_TIPO={
-    "tutela":"Tutela","admite":"Tutela",
-    "fallo de tutela":"Fallo de tutela","fallo":"Fallo de tutela",
-    "sentencia":"Sentencia",
-    "incidente":"Incidente","incidente de desacato":"Incidente de desacato",
-    "desacato":"Desacato",
-    "impugnacion":"Impugnación","impugnación":"Impugnación",
-    "apertura":"Apertura","requerimiento":"Requerimiento",
-    "sancion":"Sanción","sanción":"Sanción","reparto":"Reparto"
-  };
   return rows.map(row=>{
     const r={};
     Object.keys(colMap).forEach(lbl=>{ r[lbl]=getCell(row,colMap[lbl]); });
-    // Normalizar TIPO
-    if(r["TIPO"]){
-      const norm=NORM_TIPO[r["TIPO"].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim()];
-      if(norm)r["TIPO"]=norm;
-    }
-    const flim=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
-    r._dias=calcDias(flim);
-    return r;
-  }).filter(r=>(r["ACCIONANTE"]||"").trim()||(r["TIPO"]||"").trim()||(r["RADICADO"]||"").trim());
+    return normalizarRegistro(r);
+  }).filter(filaValida);
 }
 
 function calcDias(fecha){
-  if (!fecha||!fecha.includes("/")) return null;
-  const p=fecha.split("/"); if (p.length!==3) return null;
+  if(!fecha) return null;
+  let p=null;
+  if(fecha.includes("/")){ p=fecha.split("/"); if(p.length!==3) return null; }
+  else if(/^\d{4}-\d{2}-\d{2}/.test(fecha)){ const q=fecha.slice(0,10).split("-"); p=[q[2],q[1],q[0]]; }
+  else return null;
   const fLim=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
   if (isNaN(fLim.getTime())) return null;
   const hoy=new Date(); hoy.setHours(0,0,0,0);
@@ -612,7 +697,7 @@ function renderAdmites(){
   const filtAdm=byUrg(tutelas.filter(r=>{
     if(TIPOS_FALLO.concat(TIPOS_OTROS).includes(r["TIPO"]))return false;
     if(!est&&EST_HIST.includes(r["ESTADO"]))return false;
-    if(abo&&r["RESPONSABLE"]!==abo)return false;
+    if(abo&&!matchAbo(r["RESPONSABLE"],abo))return false;
     if(est&&r["ESTADO"]!==est)return false;
     return fBusc(r,q);
   }));
@@ -623,20 +708,21 @@ function renderAdmites(){
   const nue=activos.filter(r=>r["ESTADO"]==="Nuevo");
   const venc=activos.filter(r=>r._dias!==null&&r._dias<0);
   document.getElementById("stats-admites").innerHTML=
-    scardClick(activos.length,"Total activos","c-blue","fa-est","")+
-    scardClick(venc.length,"Vencidos","c-red","fa-est","Vencido")+
-    scardClick(urg.length,"Urgentes ≤1d","c-red","fa-est","Nuevo")+
-    scardClick(prox.length,"Próximos 2-3d","c-amber","fa-est","En proceso")+
-    scardClick(ok.length,"Con tiempo","c-green","fa-est","")+
-    scardClick(nue.length,"Nuevas","c-purple","fa-est","Nuevo");
+    scardQuick(activos.length,"Total activos","c-blue","adm",null)+
+    scardQuick(venc.length,"Vencidos","c-red","adm","venc")+
+    scardQuick(urg.length,"Urgentes ≤1d","c-red","adm","urg1")+
+    scardQuick(prox.length,"Próximos 2-3d","c-amber","adm","prox")+
+    scardQuick(ok.length,"Con tiempo","c-green","adm","ok")+
+    scardQuick(nue.length,"Nuevas","c-purple","adm","nuevo");
   document.getElementById("badge-admites").textContent=(venc.length||urg.length)||activos.length;
-  const pag=renderPag(filtAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
+  const visiblesAdm=aplicarQuick(filtAdm,quickAdm);
+  const pag=renderPag(visiblesAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
   const el=document.getElementById("body-admites");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   // Guardar datos en window para acceso seguro desde onclick (evita bug de comillas en nombres)
   window._pagAdmites=pag;
   el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
-  window._exportAdmites=filtAdm;
+  window._exportAdmites=visiblesAdm;
 }
 
 function renderFallos(){
@@ -647,7 +733,7 @@ function renderFallos(){
   const filtFal=byUrg(fallos.filter(r=>{
     if(!est&&EST_HIST.includes(r["ESTADO"]))return false;
     if(tp&&r["TIPO"]!==tp)return false;
-    if(abo&&r["RESPONSABLE"]!==abo)return false;
+    if(abo&&!matchAbo(r["RESPONSABLE"],abo))return false;
     if(est&&r["ESTADO"]!==est)return false;
     return fBusc(r,q);
   }));
@@ -656,17 +742,18 @@ function renderFallos(){
   const fal=activos.filter(r=>r["TIPO"]==="Fallo de tutela");
   const sent=activos.filter(r=>r["TIPO"]==="Sentencia");
   document.getElementById("stats-fallos").innerHTML=
-    scardClick(activos.length,"Total activos","c-blue","ff-est","")+
-    scardClick(urg.length,"Urgentes ≤3d","c-red","ff-est","Nuevo")+
+    scardQuick(activos.length,"Total activos","c-blue","fal",null)+
+    scardQuick(urg.length,"Urgentes ≤3d","c-red","fal","urg3")+
     scardClick(fal.length,"Fallos","c-amber","ff-tp","Fallo de tutela")+
     scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia");
   document.getElementById("badge-fallos").textContent=activos.length;
-  const pag=renderPag(filtFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
+  const visiblesFal=aplicarQuick(filtFal,quickFal);
+  const pag=renderPag(visiblesFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagFallos=pag;
   el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
-  window._exportFallos=filtFal;
+  window._exportFallos=visiblesFal;
 }
 
 function renderOtros(){
@@ -675,7 +762,7 @@ function renderOtros(){
   const est=document.getElementById("fo-est").value;
   const datos=byUrg(incidentes.filter(r=>{
     if(!est&&EST_HIST.includes(r["ESTADO"]))return false;
-    if(abo&&r["RESPONSABLE"]!==abo)return false;
+    if(abo&&!matchAbo(r["RESPONSABLE"],abo))return false;
     if(est&&r["ESTADO"]!==est)return false;
     return fBusc(r,q);
   }));
@@ -683,16 +770,17 @@ function renderOtros(){
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const nuevos=activos.filter(r=>r["ESTADO"]==="Nuevo");
   document.getElementById("stats-inc").innerHTML=
-    scardClick(activos.length,"Total activos","c-amber","fo-est","")+
-    scardClick(urg.length,"Urgentes ≤3d","c-red","fo-est","Nuevo")+
+    scardQuick(activos.length,"Total activos","c-amber","otr",null)+
+    scardQuick(urg.length,"Urgentes ≤3d","c-red","otr","urg3")+
     scardClick(nuevos.length,"Nuevos","c-purple","fo-est","Nuevo");
   document.getElementById("badge-otros").textContent=activos.length;
-  const pag=renderPag(datos,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
+  const visiblesOtr=aplicarQuick(datos,quickOtr);
+  const pag=renderPag(visiblesOtr,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
   const el=document.getElementById("body-otros");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagOtros=pag;
   el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
-  window._exportOtros=datos;
+  window._exportOtros=visiblesOtr;
 }
 
 function renderHistorico(){
@@ -703,7 +791,7 @@ function renderHistorico(){
   const anio=document.getElementById("fh-anio").value;
   const filtHis=[...tutelas,...fallos,...incidentes.map(r=>({...r,TIPO:r["TIPO"]||"Desacato"}))].filter(r=>{
     if(!EST_HIST.includes(r["ESTADO"]))return false;
-    if(abo&&r["RESPONSABLE"]!==abo)return false;
+    if(abo&&!matchAbo(r["RESPONSABLE"],abo))return false;
     if(tipo&&r["TIPO"]!==tipo)return false;
     if(mes||anio){
       const fecha=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
@@ -732,13 +820,13 @@ function renderReparto(){
   const todos=[...tutelas,...fallos,...incidentes];
   const activos=todos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const cerrados=todos.filter(r=>EST_HIST.includes(r["ESTADO"]));
-  const maxActivo=Math.max(...ABOGADOS.map(a=>activos.filter(r=>r["RESPONSABLE"]===a).length),1);
+  const maxActivo=Math.max(...ABOGADOS.map(a=>activos.filter(r=>matchAbo(r["RESPONSABLE"],a)).length),1);
   document.getElementById("grid-reparto").innerHTML=ABOGADOS.map(a=>{
-    const mine=activos.filter(r=>r["RESPONSABLE"]===a);
-    const mineCerrados=cerrados.filter(r=>r["RESPONSABLE"]===a);
+    const mine=activos.filter(r=>matchAbo(r["RESPONSABLE"],a));
+    const mineCerrados=cerrados.filter(r=>matchAbo(r["RESPONSABLE"],a));
     const tuts=mine.filter(r=>!TIPOS_FALLO.includes(r["TIPO"])&&!incidentes.some(x=>x["RADICADO"]===r["RADICADO"]));
     const fals=mine.filter(r=>TIPOS_FALLO.includes(r["TIPO"]));
-    const incs=incidentes.filter(r=>r["RESPONSABLE"]===a&&!EST_HIST.includes(r["ESTADO"]));
+    const incs=incidentes.filter(r=>matchAbo(r["RESPONSABLE"],a)&&!EST_HIST.includes(r["ESTADO"]));
     const urg=mine.filter(r=>r._dias!==null&&r._dias<=2);
     const nue=mine.filter(r=>r["ESTADO"]==="Nuevo");
     const total=mine.length+mineCerrados.length;
@@ -774,7 +862,7 @@ function renderReparto(){
   // Calcular radicadosFallos UNA sola vez fuera del loop — no 6 veces
   const radicadosFallosSet=new Set([...fallos,...incidentes].map(r=>r["RADICADO"]));
   const rankData=ABOGADOS.map(a=>{
-    const mine=todos.filter(r=>r["RESPONSABLE"]===a);
+    const mine=todos.filter(r=>matchAbo(r["RESPONSABLE"],a));
     const act=mine.filter(r=>!EST_HIST.includes(r["ESTADO"])).length;
     const cerr=mine.filter(r=>EST_HIST.includes(r["ESTADO"])).length;
     const total=act+cerr;
@@ -868,11 +956,11 @@ function renderPQR(){
   sinR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";if(!grpSin[e])grpSin[e]=[];grpSin[e].push(r);});
   const gSin=document.getElementById("grid-sin-pqr");
   if(!sinR.length){gSin.innerHTML=`<div class="empty"><div class="empty-icon">✅</div>¡Todas tienen respuesta!</div>`;}
-  else{gSin.innerHTML=Object.entries(grpSin).sort((a,b)=>b[1].length-a[1].length).map(([enc,regs])=>{const urg=regs.filter(r=>r._dias!==null&&r._dias<=2);const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}${r._dias!==null?`<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>`:""}</div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#f87171;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";const rd=encodeURIComponent(JSON.stringify(regs));return`<div class="pqr-card" onclick="abrirGrupoPQR('${esc(enc)}',${regs.length},'${rd}','sin')"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av" style="background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.3);color:#fca5a5">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#f87171">${regs.length}</div><div style="font-size:10px;color:var(--muted)">sin respuesta</div></div></div>${urg.length?`<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} vencen pronto</div>`:""}${lista}${mas}</div>`;}).join("");}
+  else{window._pqrGruposSin=Object.entries(grpSin).sort((a,b)=>b[1].length-a[1].length);gSin.innerHTML=window._pqrGruposSin.map(([enc,regs],gi)=>{const urg=regs.filter(r=>r._dias!==null&&r._dias<=2);const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}${r._dias!==null?`<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>`:""}</div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#f87171;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('sin',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av" style="background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.3);color:#fca5a5">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#f87171">${regs.length}</div><div style="font-size:10px;color:var(--muted)">sin respuesta</div></div></div>${urg.length?`<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} vencen pronto</div>`:""}${lista}${mas}</div>`;}).join("");}
   const grpCon={};
   conR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";if(!grpCon[e])grpCon[e]=[];grpCon[e].push(r);});
   const gCon=document.getElementById("grid-con-pqr");
-  gCon.innerHTML=Object.entries(grpCon).sort((a,b)=>b[1].length-a[1].length).map(([enc,regs])=>{const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}<span style="float:right;color:#4ade80">✓</span></div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#4ade80;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";const rd=encodeURIComponent(JSON.stringify(regs));return`<div class="pqr-card" onclick="abrirGrupoPQR('${esc(enc)}',${regs.length},'${rd}','con')"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#4ade80">${regs.length}</div><div style="font-size:10px;color:var(--muted)">respondidas</div></div></div>${lista}${mas}</div>`;}).join("");
+  window._pqrGruposCon=Object.entries(grpCon).sort((a,b)=>b[1].length-a[1].length);gCon.innerHTML=window._pqrGruposCon.map(([enc,regs],gi)=>{const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}<span style="float:right;color:#4ade80">✓</span></div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#4ade80;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('con',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#4ade80">${regs.length}</div><div style="font-size:10px;color:var(--muted)">respondidas</div></div></div>${lista}${mas}</div>`;}).join("");
 }
 
 function renderEstadisticas(){
@@ -889,17 +977,17 @@ function renderEstadisticas(){
   const maxE=Math.max(...Object.values(estC),1);
   const estCols={"Nuevo":"#60a5fa","En proceso":"#fbbf24","Respondido":"#4ade80","Finalizado":"#6b7280","Vencido":"#f87171"};
   const estH=ests.map(e=>barra(e,estC[e],maxE,estCols[e])).join("");
-  const maxA=Math.max(...ABOGADOS.map(a=>activ.filter(r=>r["RESPONSABLE"]===a).length),1);
-  const aboH=ABOGADOS.map(a=>barra(pNom(a),activ.filter(r=>r["RESPONSABLE"]===a).length,maxA,"#2d8de8")).join("");
+  const maxA=Math.max(...ABOGADOS.map(a=>activ.filter(r=>matchAbo(r["RESPONSABLE"],a)).length),1);
+  const aboH=ABOGADOS.map(a=>barra(pNom(a),activ.filter(r=>matchAbo(r["RESPONSABLE"],a)).length,maxA,"#2d8de8")).join("");
   const falActiv=fallos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
-  const maxF=Math.max(...ABOGADOS.map(a=>falActiv.filter(r=>r["RESPONSABLE"]===a).length),1);
-  const falH=ABOGADOS.map(a=>barra(pNom(a),falActiv.filter(r=>r["RESPONSABLE"]===a).length,maxF,"#f87171")).join("");
+  const maxF=Math.max(...ABOGADOS.map(a=>falActiv.filter(r=>matchAbo(r["RESPONSABLE"],a)).length),1);
+  const falH=ABOGADOS.map(a=>barra(pNom(a),falActiv.filter(r=>matchAbo(r["RESPONSABLE"],a)).length,maxF,"#f87171")).join("");
   // Incidentes/Desacatos stats
   const estIncC={};ests.forEach(e=>{estIncC[e]=incidentes.filter(r=>r["ESTADO"]===e).length;});
   const maxEI=Math.max(...Object.values(estIncC),1);
   const estIncH=ests.map(e=>barra(e,estIncC[e],maxEI,estCols[e])).join("");
-  const maxI=Math.max(...ABOGADOS.map(a=>incActiv.filter(r=>r["RESPONSABLE"]===a).length),1);
-  const incH=ABOGADOS.map(a=>barra(pNom(a),incActiv.filter(r=>r["RESPONSABLE"]===a).length,maxI,"#fb923c")).join("");
+  const maxI=Math.max(...ABOGADOS.map(a=>incActiv.filter(r=>matchAbo(r["RESPONSABLE"],a)).length),1);
+  const incH=ABOGADOS.map(a=>barra(pNom(a),incActiv.filter(r=>matchAbo(r["RESPONSABLE"],a)).length,maxI,"#fb923c")).join("");
   document.getElementById("grid-est").innerHTML=
     `<div class="est-card"><div class="est-title">Por tipo de actuación</div>${tiposH}</div>`+
     `<div class="est-card"><div class="est-title">Por estado (tutelas & fallos)</div>${estH}</div>`+
@@ -1050,6 +1138,31 @@ function switchMTab(tab){
   });
 }
 
+// ── Filtro rápido por urgencia (clic en tarjetas de stats) ──
+function scardQuick(n,label,cls,tab,key){
+  const cur = tab==='adm'?quickAdm : tab==='fal'?quickFal : quickOtr;
+  const activoQ = key!==null && cur===key;
+  const extra = activoQ ? ';outline:2px solid rgba(245,158,11,.65);outline-offset:-2px' : '';
+  const kArg = key===null ? 'null' : `'${key}'`;
+  return `<div class="scard" style="cursor:pointer${extra}" title="${key===null?'Mostrar todos':'Clic para filtrar por urgencia (clic de nuevo para quitar)'}" onclick="setQuick('${tab}',${kArg})"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}${activoQ?' ✕':''} <span style="font-size:8px;opacity:.4">▶</span></div></div>`;
+}
+function setQuick(tab,key){
+  if(tab==='adm'){ quickAdm = (quickAdm===key||key===null)?null:key; pagAdm=1; renderAdmites(); }
+  else if(tab==='fal'){ quickFal = (quickFal===key||key===null)?null:key; pagFal=1; renderFallos(); }
+  else { quickOtr = (quickOtr===key||key===null)?null:key; pagInc=1; renderOtros(); }
+}
+function aplicarQuick(arr,key){
+  if(!key) return arr;
+  const act = r=>!EST_HIST.includes(r["ESTADO"]);
+  if(key==='venc')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias<0);
+  if(key==='urg1')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias<=1);
+  if(key==='urg3')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias<=3);
+  if(key==='prox')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>1&&r._dias<=3);
+  if(key==='ok')    return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>3);
+  if(key==='nuevo') return arr.filter(r=>r["ESTADO"]==="Nuevo");
+  return arr;
+}
+
 function scardClick(n,label,cls,filtroId,filtroVal){
   if(!filtroId) return`<div class="scard"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}</div></div>`;
   const renderFn=filtroId==='fa-est'||filtroId==='fa-abo'?'renderAdmites':filtroId==='ff-est'||filtroId==='ff-tp'?'renderFallos':'renderOtros';
@@ -1119,8 +1232,18 @@ function irOficio(){
 // Estado global del modal PQR
 let pqrRegsActual = [], pqrEncActual = "", pqrTipoActual = "";
 
+function abrirGrupoPQRIdx(tipo,idx){
+  const fuente = tipo==='sin' ? window._pqrGruposSin : window._pqrGruposCon;
+  if(!fuente||!fuente[idx])return;
+  const [enc,regs]=fuente[idx];
+  abrirGrupoPQRDirecto(enc,regs,tipo);
+}
+// Compatibilidad con llamadas antiguas que serializaban los registros
 function abrirGrupoPQR(enc,total,regsData,tipo){
   let regs;try{regs=JSON.parse(decodeURIComponent(regsData));}catch(e){return;}
+  abrirGrupoPQRDirecto(enc,regs,tipo);
+}
+function abrirGrupoPQRDirecto(enc,regs,tipo){
   pqrRegsActual  = regs;
   pqrEncActual   = enc;
   pqrTipoActual  = tipo;
@@ -1225,8 +1348,127 @@ async function cargarDatosSafe(esAutoRefresh=false) {
     if(esAutoRefresh) toast("🔄 Datos actualizados","");
   } catch(e){ console.error(e); } finally { cargando = false; }
 }
+// Tecla Escape cierra cualquier modal abierto
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')['overlay','overlay-pqr','overlay-confirm','overlay-informe'].forEach(id=>{
+    const o=document.getElementById(id); if(o) o.classList.remove('open');
+  });
+});
+
 cargarDatosSafe();
 setInterval(()=>cargarDatosSafe(true), 5*60*1000);
+
+// ════════════════════════════════════════
+// INFORME EJECUTIVO — imprimible para la Dirección
+// ════════════════════════════════════════
+function generarInformeTutelas(){
+  if(!tutelas.length&&!fallos.length&&!incidentes.length){toast("⚠️ Aún no hay datos cargados","err");return;}
+  const ahora=new Date();
+  const fecha=ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'});
+  const hora=ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  const consecutivo='EF-TUT-'+ahora.toISOString().slice(0,10).replace(/-/g,'')+'-'+
+    String(ahora.getHours()).padStart(2,'0')+String(ahora.getMinutes()).padStart(2,'0');
+
+  const todos=[...tutelas,...fallos,...incidentes];
+  const activos=todos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
+  const cerrados=todos.filter(r=>EST_HIST.includes(r["ESTADO"]));
+  const venc=activos.filter(r=>r._dias!==null&&r._dias<0);
+  const urg=activos.filter(r=>r._dias!==null&&r._dias>=0&&r._dias<=3);
+  const sinPQR=activos.filter(r=>!String(r["RESPUESTA PQR"]||"").trim());
+  const tutAct=tutelas.filter(r=>!EST_HIST.includes(r["ESTADO"])&&!TIPOS_FALLO.concat(TIPOS_OTROS).includes(r["TIPO"])).length;
+  const falAct=fallos.filter(r=>!EST_HIST.includes(r["ESTADO"])).length;
+  const incAct=incidentes.filter(r=>!EST_HIST.includes(r["ESTADO"])).length;
+  const tasaCierre=todos.length?Math.round(cerrados.length/todos.length*100):0;
+
+  // Ranking por abogado (mismos criterios del módulo, incl. cierres preventivos)
+  const radFalSet=new Set([...fallos,...incidentes].map(r=>r["RADICADO"]));
+  const rank=ABOGADOS.map(a=>{
+    const mine=todos.filter(r=>matchAbo(r["RESPONSABLE"],a));
+    const act=mine.filter(r=>!EST_HIST.includes(r["ESTADO"])).length;
+    const cerr=mine.filter(r=>EST_HIST.includes(r["ESTADO"])).length;
+    const uA=mine.filter(r=>!EST_HIST.includes(r["ESTADO"])&&r._dias!==null&&r._dias<=2).length;
+    const prev=tutelas.filter(r=>matchAbo(r["RESPONSABLE"],a)&&EST_HIST.includes(r["ESTADO"])&&!radFalSet.has(r["RADICADO"])).length;
+    const total=act+cerr;
+    return{a,act,cerr,total,uA,prev,pct:total?Math.round(cerr/total*100):0};
+  }).sort((x,y)=>y.total-x.total);
+
+  const grpPQR={};
+  sinPQR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";grpPQR[e]=(grpPQR[e]||0)+1;});
+  const pqrRows=Object.entries(grpPQR).sort((a,b)=>b[1]-a[1]);
+
+  const kpi=(n,l,c)=>`<div class="inf-kpi"><div class="n" style="color:${c}">${n}</div><div class="l">${l}</div></div>`;
+
+  document.getElementById('informe-doc').innerHTML=`
+    <div class="inf-noprint" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px">
+      <button class="inf-btn" style="background:#0f2d5e;color:#fff" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+      <button class="inf-btn" style="background:#e5e7eb;color:#374151" onclick="document.getElementById('overlay-informe').classList.remove('open')">✕ Cerrar</button>
+    </div>
+    <div class="inf-h">
+      <div>
+        <div class="inf-titulo">🏛️ Informe Ejecutivo — Gestión de Tutelas</div>
+        <div class="inf-sub">Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello</div>
+      </div>
+      <div style="text-align:right">
+        <div class="inf-sub">📅 Corte: <strong>${fecha} · ${hora}</strong></div>
+        <div class="inf-sub">🔖 Consecutivo: <strong>${consecutivo}</strong></div>
+      </div>
+    </div>
+
+    <div class="inf-sec">Panorama general</div>
+    <div class="inf-kpis">
+      ${kpi(activos.length,'Procesos activos','#1d4ed8')}
+      ${kpi(venc.length,'Vencidos','#dc2626')}
+      ${kpi(urg.length,'Urgentes ≤3 días','#ea580c')}
+      ${kpi(sinPQR.length,'PQR sin respuesta','#d97706')}
+      ${kpi(cerrados.length,'Cerrados (histórico)','#16a34a')}
+    </div>
+
+    <div class="inf-sec">Composición de la carga activa</div>
+    <table class="inf-table">
+      <thead><tr><th>Categoría</th><th>Activos</th><th>% de la carga</th></tr></thead>
+      <tbody>
+        <tr><td>📋 Tutelas / Admites</td><td><strong>${tutAct}</strong></td><td>${activos.length?Math.round(tutAct/activos.length*100):0}%</td></tr>
+        <tr><td>⚖️ Fallos y Sentencias</td><td><strong>${falAct}</strong></td><td>${activos.length?Math.round(falAct/activos.length*100):0}%</td></tr>
+        <tr><td>⚡ Incidentes / Desacatos</td><td><strong>${incAct}</strong></td><td>${activos.length?Math.round(incAct/activos.length*100):0}%</td></tr>
+        <tr style="background:#f8fafc;font-weight:700"><td>TOTAL ACTIVOS</td><td>${activos.length}</td><td>100%</td></tr>
+      </tbody>
+    </table>
+    <div style="font-size:11px;color:#6b7280;margin-top:6px">Tasa de cierre global del sistema: <strong style="color:#16a34a">${tasaCierre}%</strong> (${cerrados.length} de ${todos.length} procesos registrados)</div>
+
+    <div class="inf-sec">Carga y desempeño por abogado</div>
+    <table class="inf-table">
+      <thead><tr><th>#</th><th>Abogado</th><th>Activos</th><th>Urgentes ≤2d</th><th>Cerrados</th><th>% cierre</th><th>🛡️ Preventivos</th></tr></thead>
+      <tbody>
+        ${rank.map((d,i)=>`<tr>
+          <td>${i+1}</td><td><strong>${esc(d.a)}</strong></td>
+          <td>${d.act}</td>
+          <td style="color:${d.uA?'#dc2626':'#9ca3af'}">${d.uA}</td>
+          <td>${d.cerr}</td>
+          <td style="color:${d.pct>=70?'#16a34a':d.pct>=40?'#d97706':'#dc2626'};font-weight:600">${d.pct}%</td>
+          <td>${d.prev}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div style="font-size:10px;color:#6b7280;margin-top:5px">🛡️ <strong>Preventivos:</strong> tutelas cerradas sin escalar a fallo ni incidente — respuesta oportuna dentro del término legal.</div>
+
+    <div class="inf-sec">PQR pendientes de respuesta por encargado</div>
+    ${pqrRows.length?`<table class="inf-table">
+      <thead><tr><th>Encargado PQR</th><th>Pendientes</th></tr></thead>
+      <tbody>${pqrRows.map(([e,n])=>`<tr><td>${esc(e)}</td><td style="color:#dc2626;font-weight:600">${n}</td></tr>`).join('')}</tbody>
+    </table>`:'<div style="font-size:12px;color:#16a34a;font-weight:600">✅ Todas las peticiones activas cuentan con respuesta PQR registrada.</div>'}
+
+    <div class="inf-note">
+      <strong>Fuentes y criterios:</strong> datos en tiempo real del Sistema de Gestión de Tutelas (hojas Tutelas, Fallos e Incidentes).
+      "Activos" excluye estados Finalizado y Respondido. Los días se calculan contra la fecha límite registrada.
+      Informe ${consecutivo} generado automáticamente por el Sistema de Ejecuciones Fiscales · Alcaldía de Bello.
+    </div>`;
+  document.getElementById('overlay-informe').classList.add('open');
+}
 </script>
+
+<!-- ══ OVERLAY INFORME EJECUTIVO ══ -->
+<div class="overlay" id="overlay-informe" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="informe-doc" id="informe-doc"></div>
+</div>
 </body>
 </html>
