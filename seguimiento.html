@@ -975,7 +975,7 @@ function renderConsolidado(){
   const ica  = icaResumen();
   const fuentes = [
     ou   ? {n:'🏘️ Obligaciones Urbanísticas', d:{cartera:ou.cartera, totalExp:ou.totalExp, recaudo:ou.recaudo||0, activos:ou.activos, convenios:ou.convenios, cancelados:ou.cancelados, terminados:ou.terminados}, rec:true,  c:'#2d8de8'} : null,
-    pred ? {n:'🏠 Predial',                   d:{cartera:pred.cartera, totalExp:pred.totalExp, recaudo:0, activos:pred.activos, convenios:pred.convenios, cancelados:pred.cancelados, terminados:pred.terminados}, rec:false, c:'#f5c050'} : null,
+    pred ? {n:'🏠 Predial',                   d:{cartera:pred.cartera, totalExp:pred.totalExp, recaudo:pred.recaudo||0, activos:pred.activos, convenios:pred.convenios, cancelados:pred.cancelados, terminados:pred.terminados}, rec:true,  c:'#f5c050'} : null,
     ica  ? {n:'🏭 Industria y Comercio (ICA)', d:ica, rec:true, c:'#86efac'} : null
   ].filter(Boolean);
   if(!fuentes.length) return;
@@ -998,7 +998,7 @@ function renderConsolidado(){
       <div class="cartera-sub">${expTotal.toLocaleString()} expedientes en ${fuentes.length} tributos${pendientes}</div>
     </div>
     <div class="cartera-recaudo">
-      <div class="cartera-recaudo-label">Recaudo registrado (OU + ICA)</div>
+      <div class="cartera-recaudo-label">Recaudo registrado (OU + ICA + Predial)</div>
       <div class="cartera-recaudo-val">${fmt(recTotal)}</div>
       <div class="cartera-pct">${pct(recTotal, carteraConRec)} de la cartera con recaudo reportado</div>
     </div>`;
