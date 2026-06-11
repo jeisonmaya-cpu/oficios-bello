@@ -625,12 +625,104 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 
 
 <script>
-const URL_OU      = "https://script.google.com/macros/s/AKfycbzx1qwma1Xqbpfk2SqFG0mOJWC4P3h_WevQceiA7cB6wFScJYgXljkc9MgYRjt_yxs9KQ/exec";
-const URL_PREDIAL = "https://script.google.com/macros/s/AKfycbz5tkVbM_Da0qsKA-4X7t6g1otUAJ5jtbLetAHBIhAfqoI10j4zcAFeckRg0bLjQrQH/exec";
-const URL_ICA='https://script.google.com/macros/s/AKfycbyzBxtdg1znZ0LuCJtoypPs9-vVKfaWc50A4c1-Wlr7Tn2u7KmSGf6D312UUThz-8w/exec';
-let datosGlobales=null;
-let datosICA=null;
-let tabActual = 'consolidado';
+// ════════════════════════════════════════════════════════════════
+// CONFIGURACIÓN — edita solo este bloque
+// ════════════════════════════════════════════════════════════════
+
+// GAS — solo Obligaciones Urbanísticas (Predial migró a Supabase)
+const URL_OU  = "https://script.google.com/macros/s/AKfycbzx1qwma1Xqbpfk2SqFG0mOJWC4P3h_WevQceiA7cB6wFScJYgXljkc9MgYRjt_yxs9KQ/exec";
+const URL_ICA = 'https://script.google.com/macros/s/AKfycbyzBxtdg1znZ0LuCJtoypPs9-vVKfaWc50A4c1-Wlr7Tn2u7KmSGf6D312UUThz-8w/exec';
+
+// Supabase — Predial y actuaciones
+// Project Settings → API → Project URL y anon/public key
+const SUPA_URL = 'https://bmurdtfztsltcgwsfbgf.supabase.co';
+const SUPA_KEY = 'sb_publishable_x3Mu7phCEfpJMcKSQYkf8Q_obSOAvfL';
+
+// ════════════════════════════════════════════════════════════════
+
+let datosGlobales = null;
+let datosICA      = null;
+let tabActual     = 'consolidado';
+
+// ── Helper Supabase — fetch de una vista o tabla ──
+async function supaFetch(ruta) {
+  const res = await fetch(SUPA_URL + '/rest/v1/' + ruta, {
+    headers: {
+      'apikey':        SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Accept':        'application/json'
+    }
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error('Supabase ' + res.status + ': ' + txt.slice(0, 120));
+  }
+  return res.json();
+}
+
+// ── Cargar Predial desde Supabase ──
+async function cargarPredialSupa() {
+  // Consultar las 4 vistas en paralelo
+  const [resumen, etapas, morosidad, topActivos] = await Promise.all([
+    supaFetch('v_predial_resumen?select=*'),
+    supaFetch('v_predial_etapas?select=*'),
+    supaFetch('v_predial_morosidad?select=*&order=anio.desc'),
+    supaFetch('v_predial_top_activos?select=*')
+  ]);
+
+  const r = resumen[0] || {};
+  const e = etapas[0]  || {};
+
+  // Construir el mismo objeto que esperan renderPredial y renderMorosidad
+  const dataPred = {
+    cartera:         Number(r.cartera        || 0),
+    totalExp:        Number(r.total_exp      || 0),
+    activos:         Number(r.activos        || 0),
+    valorActivos:    Number(r.valor_activos  || 0),
+    convenios:       Number(r.convenios      || 0),
+    valorConvenios:  Number(r.valor_convenios|| 0),
+    cancelados:      Number(r.cancelados     || 0),
+    valorCancelados: Number(r.valor_cancelados || 0),
+    terminados:      Number(r.terminados     || 0),
+    valorTerminados: Number(r.valor_terminados || 0),
+    recaudo:         Number(r.recaudo        || 0),
+
+    // Etapas procesales — mismo formato que el GAS: { nombre: {con, sin} }
+    etapas: {
+      'Mandamiento de pago':   { con: Number(e.mandamiento_con || 0), sin: Number(e.mandamiento_sin || 0) },
+      'Citación':              { con: Number(e.citacion_con    || 0), sin: Number(e.citacion_sin    || 0) },
+      'Notif. personal':       { con: Number(e.personal_con    || 0), sin: Number(e.personal_sin    || 0) },
+      'Aviso':                 { con: Number(e.aviso_con       || 0), sin: Number(e.aviso_sin       || 0) },
+      'Notif. web':            { con: Number(e.web_con         || 0), sin: Number(e.web_sin         || 0) },
+      'Embargo bancos':        { con: Number(e.bancos_con      || 0), sin: Number(e.bancos_sin      || 0) },
+      'Embargo bienes':        { con: Number(e.bienes_con      || 0), sin: Number(e.bienes_sin      || 0) }
+    },
+
+    // Morosidad — mismo formato que el GAS: array de { anio, cantidad, mora, conMandamiento, sinMandamiento, pctGestion }
+    porVigencia: morosidad.map(d => ({
+      anio:            d.anio === 'Sin determinar' ? 'Sin determinar' : String(d.anio),
+      cantidad:        Number(d.cantidad        || 0),
+      valor:           Number(d.valor           || 0),
+      mora:            d.mora_anios !== null ? Number(d.mora_anios) : null,
+      conMandamiento:  Number(d.con_mandamiento || 0),
+      sinMandamiento:  Number(d.sin_mandamiento || 0),
+      pctGestion:      d.cantidad > 0
+                         ? Math.round(d.con_mandamiento / d.cantidad * 100)
+                         : 0
+    })),
+
+    // Top activos — mismo formato que el GAS
+    topActivos: topActivos.map(d => ({
+      radicado:      d.radicado,
+      nombre:        d.nombre || d.id_contribuyente || '—',
+      valorTotal:    Number(d.valor_total || 0),
+      estadoProceso: d.mandamiento ? 'Con mandamiento' : 'Sin mandamiento',
+      acuerdo:       d.acuerdo_de_pago || ''
+    }))
+  };
+
+  return dataPred;
+}
 
 // ── INIT ──
 cargarDatos();
@@ -644,22 +736,16 @@ async function cargarDatos() {
   document.getElementById('panel-mora').classList.remove('active');
 
   try {
-    // Llamar a los dos Apps Script en paralelo
-    const [resOU, resPred] = await Promise.all([
-      fetch(URL_OU      + '?t=' + Date.now()),
-      fetch(URL_PREDIAL + '?t=' + Date.now())
+    // OU desde GAS, Predial desde Supabase — en paralelo
+    const [resOU, dataPred] = await Promise.all([
+      fetch(URL_OU + '?t=' + Date.now()).then(r => r.json()),
+      cargarPredialSupa()
     ]);
 
-    const [dataOU, dataPred] = await Promise.all([
-      resOU.json(),
-      resPred.json()
-    ]);
-
-    if (dataOU.error)   throw new Error('OU: '      + dataOU.error);
-    if (dataPred.error) throw new Error('Predial: ' + dataPred.error);
+    if (resOU.error) throw new Error('OU: ' + resOU.error);
 
     datosGlobales = {
-      ou:          dataOU,
+      ou:          resOU,
       predial:     dataPred,
       actualizado: new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
     };
@@ -1827,10 +1913,10 @@ function setActSt(tipo, msg){
 
 async function guardarActuacion(){
   if(!actActivo) return;
-  var tipo    = document.getElementById('act-tipo').value.trim();
-  var result  = document.getElementById('act-resultado').value.trim();
-  var desc    = document.getElementById('act-desc').value.trim();
-  var func    = document.getElementById('act-funcionario').value.trim();
+  var tipo   = document.getElementById('act-tipo').value.trim();
+  var result = document.getElementById('act-resultado').value.trim();
+  var desc   = document.getElementById('act-desc').value.trim();
+  var func   = document.getElementById('act-funcionario').value.trim();
 
   if(!tipo)   { setActSt('err','⚠️ Selecciona el tipo de actuación.'); return; }
   if(!result) { setActSt('err','⚠️ Selecciona el resultado.'); return; }
@@ -1839,40 +1925,68 @@ async function guardarActuacion(){
 
   setActSt('load','Guardando actuación...');
 
-  // URL según módulo
-  var url = actActivo.modulo === 'OU' ? URL_OU : URL_ICA;
+  try {
+    var ahora = new Date();
+    var fecha = ahora.toISOString().slice(0,10);
+    var hora  = ahora.toTimeString().slice(0,8);
 
-  try{
-    var body = JSON.stringify({
-      accion:         'registrarActuacion',
-      modulo:          actActivo.modulo,
-      radicado:        actActivo.radicado,
-      contribuyente:   actActivo.nombre,
-      valorAdeudado:   actActivo.valorAdeudado || 0,
-      tipoActuacion:   tipo,
-      descripcion:     desc,
-      resultado:       result,
-      funcionario:     func
-    });
+    if (actActivo.modulo === 'PREDIAL') {
+      // ── Guardar en Supabase ──
+      var res = await fetch(SUPA_URL + '/rest/v1/actuaciones', {
+        method: 'POST',
+        headers: {
+          'apikey':        SUPA_KEY,
+          'Authorization': 'Bearer ' + SUPA_KEY,
+          'Content-Type':  'application/json',
+          'Prefer':        'return=minimal'
+        },
+        body: JSON.stringify({
+          radicado:       actActivo.radicado,
+          modulo:         'PREDIAL',
+          tipo_actuacion: tipo,
+          resultado:      result,
+          descripcion:    desc,
+          funcionario:    func,
+          fecha:          fecha,
+          hora:           hora
+        })
+      });
+      if (!res.ok) {
+        var txt = await res.text();
+        throw new Error('Supabase ' + res.status + ': ' + txt.slice(0,120));
+      }
+    } else {
+      // ── Guardar en GAS (OU e ICA siguen igual) ──
+      var url = actActivo.modulo === 'OU' ? URL_OU : URL_ICA;
+      var gasRes = await fetch(url, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accion:        'registrarActuacion',
+          modulo:         actActivo.modulo,
+          radicado:       actActivo.radicado,
+          contribuyente:  actActivo.nombre,
+          valorAdeudado:  actActivo.valorAdeudado || 0,
+          tipoActuacion:  tipo,
+          descripcion:    desc,
+          resultado:      result,
+          funcionario:    func
+        })
+      });
+      var gasData = await gasRes.json();
+      if (!gasData.ok) throw new Error(gasData.error || 'Error del servidor');
+      fecha = gasData.fecha || fecha;
+      hora  = gasData.hora  || hora;
+    }
 
-    var res  = await fetch(url, { method:'POST', redirect:'follow',
-      headers:{'Content-Type':'application/json'}, body });
-    var data = await res.json();
-
-    if(!data.ok) throw new Error(data.error || 'Error del servidor');
-
-    setActSt('ok','✅ Actuación registrada — ' + data.fecha + ' ' + data.hora);
-
-    // Limpiar campos
+    setActSt('ok', '✅ Actuación registrada — ' + fecha + ' ' + hora);
     document.getElementById('act-tipo').value      = '';
     document.getElementById('act-resultado').value = '';
     document.getElementById('act-desc').value      = '';
-
-    // Recargar historial
     setTimeout(() => cargarHistorial(actActivo.radicado, actActivo.modulo), 800);
 
-  }catch(err){
-    setActSt('err','❌ Error: ' + err.message);
+  } catch(err) {
+    setActSt('err', '❌ Error: ' + err.message);
   }
 }
 
@@ -1883,28 +1997,48 @@ async function cargarHistorial(radicado, modulo){
   hw.style.display = 'block';
   hi.innerHTML = '<div class="hist-empty">Cargando historial...</div>';
 
-  var url = (modulo === 'OU' ? URL_OU : URL_ICA)
-    + '?radicado=' + encodeURIComponent(radicado)
-    + '&modulo='   + encodeURIComponent(modulo);
+  try {
+    var acts = [];
 
-  try{
-    var res  = await fetch(url, { redirect:'follow' });
-    var data = await res.json();
-    var acts = data.actuaciones || [];
+    if (modulo === 'PREDIAL') {
+      // ── Leer de Supabase ──
+      var data = await supaFetch(
+        'actuaciones?select=fecha,hora,tipo_actuacion,resultado,descripcion,funcionario' +
+        '&radicado=eq.' + encodeURIComponent(radicado) +
+        '&modulo=eq.PREDIAL' +
+        '&order=created_at.desc'
+      );
+      acts = data.map(a => ({
+        fecha:         a.fecha,
+        hora:          a.hora,
+        tipoActuacion: a.tipo_actuacion,
+        resultado:     a.resultado,
+        descripcion:   a.descripcion,
+        funcionario:   a.funcionario
+      }));
+    } else {
+      // ── Leer de GAS (OU e ICA) ──
+      var url = (modulo === 'OU' ? URL_OU : URL_ICA)
+        + '?radicado=' + encodeURIComponent(radicado)
+        + '&modulo='   + encodeURIComponent(modulo);
+      var res  = await fetch(url, { redirect: 'follow' });
+      var json = await res.json();
+      acts = json.actuaciones || [];
+    }
 
     document.getElementById('hist-count').textContent =
       acts.length ? acts.length + ' actuación(es)' : '';
 
-    if(!acts.length){
+    if (!acts.length) {
       hi.innerHTML = '<div class="hist-empty">Sin actuaciones registradas para este expediente</div>';
       return;
     }
 
     var claseResult = {
-      'Pagó':            'pago',
-      'Prometió pagar':  'promesa',
-      'No contestó':     'nocontesta',
-      'En proceso':      'proceso',
+      'Pagó':           'pago',
+      'Prometió pagar': 'promesa',
+      'No contestó':    'nocontesta',
+      'En proceso':     'proceso'
     };
 
     hi.innerHTML = acts.map(function(a){
@@ -1920,7 +2054,7 @@ async function cargarHistorial(radicado, modulo){
       '</div>';
     }).join('');
 
-  }catch(err){
+  } catch(err) {
     hi.innerHTML = '<div class="hist-empty" style="color:#fca5a5">No se pudo cargar el historial</div>';
   }
 }
