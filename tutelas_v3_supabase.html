@@ -160,6 +160,12 @@
     .mf label{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:3px}
     .mf .v{font-size:13px;font-weight:500;line-height:1.5}
     .mf.full{grid-column:1/-1}
+    .v-copy{display:inline-flex;align-items:center;gap:6px}
+    .v-copy .v{flex:1;min-width:0;word-break:break-word}
+    .btn-copy{flex-shrink:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;transition:all .15s;padding:0}
+    .btn-copy:hover{background:rgba(212,175,55,.18);border-color:var(--gold);color:var(--gold)}
+    .btn-copy svg{width:13px;height:13px}
+    .btn-copy.ok{background:rgba(34,197,94,.2);border-color:#22c55e;color:#4ade80}
     .msec{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--gold2);margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
     .mtext{font-size:13px;line-height:1.75;color:rgba(241,245,249,.82);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
     .m-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)}
@@ -375,7 +381,17 @@
 <div class="overlay" id="overlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:780px">
     <div class="modal-top">
-      <div><div id="m-badge" style="margin-bottom:8px"></div><div class="m-acc" id="m-acc">—</div><div class="m-rad" id="m-rad">—</div></div>
+      <div style="flex:1;min-width:0">
+        <div id="m-badge" style="margin-bottom:8px"></div>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <div class="m-acc" id="m-acc" style="flex:1;min-width:0">—</div>
+          <button class="btn-copy" style="margin-top:6px" title="Copiar accionante" onclick="copiarCampo('ACCIONANTE',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <div class="m-rad" id="m-rad">—</div>
+          <button class="btn-copy" style="width:20px;height:20px" title="Copiar radicado" onclick="copiarCampo('RADICADO',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+      </div>
       <button class="modal-close" onclick="document.getElementById('overlay').classList.remove('open')">✕</button>
     </div>
 
@@ -388,8 +404,8 @@
     <!-- PESTAÑA INFORMACIÓN -->
     <div id="mpanel-info">
       <div class="m-grid">
-        <div class="mf"><label>Juzgado</label><div class="v" id="m-juz">—</div></div>
-        <div class="mf"><label>CC / NIT</label><div class="v" id="m-cc">—</div></div>
+        <div class="mf"><label>Juzgado</label><div class="v-copy"><div class="v" id="m-juz">—</div><button class="btn-copy" title="Copiar juzgado" onclick="copiarCampo('JUZGADO',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+        <div class="mf"><label>CC / NIT</label><div class="v-copy"><div class="v" id="m-cc">—</div><button class="btn-copy" title="Copiar CC / NIT" onclick="copiarCampo('CC / NIT',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
         <div class="mf"><label>Fecha inicial</label><div class="v" id="m-fini">—</div></div>
         <div class="mf"><label>Fecha límite</label><div class="v" id="m-flim">—</div></div>
         <div class="mf"><label>Abogado reparto</label><div class="v" id="m-resp">—</div></div>
@@ -397,12 +413,29 @@
         <div class="mf"><label>Días restantes</label><div class="v" id="m-dias">—</div></div>
         <div class="mf"><label>Estado</label><div class="v" id="m-est-txt">—</div></div>
       </div>
+
+      <!-- Gestión visible para abogados (diligenciado por Verónica) -->
+      <div id="m-info-gestion-w" style="display:none;margin-top:4px;margin-bottom:4px;padding:12px 14px;background:rgba(0,120,212,.07);border:1px solid rgba(0,120,212,.2);border-radius:10px">
+        <div style="font-size:10px;letter-spacing:.08em;color:#60a5fa;font-weight:600;text-transform:uppercase;margin-bottom:10px">📌 Gestión registrada</div>
+        <div class="m-grid" style="margin-bottom:0;gap:10px">
+          <div class="mf" id="m-info-pqr-w" style="display:none"><label>Respuesta PQR</label><div class="v-copy"><div class="v" id="m-info-pqr">—</div></div></div>
+          <div class="mf" id="m-info-rad-w" style="display:none"><label>Rad. cumplimiento</label><div class="v-copy"><div class="v" id="m-info-rad">—</div></div></div>
+        </div>
+        <div class="mf full" id="m-info-sp-w" style="display:none;margin-top:10px">
+          <label>📎 Documento SharePoint</label>
+          <div class="v-copy">
+            <div class="v" id="m-info-sp" style="color:#60a5fa">—</div>
+            <button class="btn-copy" title="Copiar SharePoint" onclick="copiarCampo('SHAREPOINT',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          </div>
+          <button id="m-info-sp-btn" style="display:none;margin-top:8px;width:100%;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:9px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
+        </div>
+      </div>
+
       <div id="m-derecho-w" style="display:none"><div class="msec">Derecho invocado</div><div class="mtext" id="m-derecho"></div></div>
       <div id="m-hechos-w"  style="display:none"><div class="msec">Hechos resumidos</div><div class="mtext" id="m-hechos"></div></div>
       <div id="m-pret-w"    style="display:none"><div class="msec">Pretensiones</div><div class="mtext" id="m-pret"></div></div>
       <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
       <div class="m-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <button class="mbtn mbtn-p" onclick="copiarDatosClave()" style="background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#4ade80">📋 Copiar datos clave</button>
         <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
         <button class="mbtn mbtn-s" onclick="switchMTab('gestion')">⚙️ Ir a Gestión →</button>
         <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
@@ -411,32 +444,41 @@
 
     <!-- PESTAÑA GESTIÓN -->
     <div id="mpanel-gestion" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-        <div class="mf full">
+
+      <!-- ⚖️ GESTIÓN JURÍDICA -->
+      <div style="margin-bottom:18px">
+        <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--gold)">⚖️ Gestión Jurídica</div>
+        <div class="mf full" style="margin-bottom:10px">
           <label>Estado</label>
           <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
         </div>
-        <div class="mf full">
+        <div class="mf full" id="m-pqr-wrap" style="margin-bottom:10px">
+          <label id="m-lbl-pqr">Respuesta PQR</label>
+          <textarea id="m-resp-pqr" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el número de radicado de respuesta PQR..."></textarea>
+        </div>
+        <div class="mf full" id="m-rad-wrap" style="margin-bottom:0">
+          <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
+          <textarea id="m-resp-rad" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
+        </div>
+      </div>
+
+      <!-- 🔧 GESTIÓN TÉCNICA -->
+      <div style="margin-bottom:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:#60a5fa">🔧 Gestión Técnica</div>
+        <div class="mf full" style="margin-bottom:10px">
           <label>Encargado PQR</label>
           <select class="esel" id="m-pqrenc-sel" style="width:100%">
             <option value="">— Sin asignar —</option>
             <option>Maria Camila Uribe</option><option>Jaime Cordoba</option><option>Yennifer Chaverra</option><option>Dario Baldrich</option><option>Deisy Lopez</option><option>Juan Gomez Londoño</option>
           </select>
         </div>
+        <div class="mf full" id="m-sp-wrap" style="margin-bottom:0">
+          <label style="font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-transform:uppercase">📎 Documento SharePoint <span style="color:#f87171">*obligatorio</span></label>
+          <textarea id="m-sharepoint" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Pega aquí el link de SharePoint o el texto de referencia..." oninput="actualizarBtnSP()"></textarea>
+          <button id="m-sp-btn" style="display:none;width:100%;margin-top:6px;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:9px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
+        </div>
       </div>
-      <div class="mf full" id="m-pqr-wrap" style="margin-bottom:10px">
-        <label id="m-lbl-pqr">Respuesta PQR</label>
-        <textarea id="m-resp-pqr" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el número de radicado de respuesta PQR..."></textarea>
-      </div>
-      <div class="mf full" id="m-rad-wrap" style="margin-bottom:10px">
-        <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
-        <textarea id="m-resp-rad" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
-      </div>
-      <div class="mf full" id="m-sp-wrap" style="margin-bottom:12px">
-        <label style="font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-transform:uppercase">📎 Documento SharePoint <span style="color:#f87171">*obligatorio</span></label>
-        <textarea id="m-sharepoint" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Pega aquí el link de SharePoint o el texto de referencia..." oninput="actualizarBtnSP()"></textarea>
-        <button id="m-sp-btn" style="display:none;width:100%;margin-top:6px;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:9px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
-      </div>
+
       <div id="m-aviso-historico" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius-sm);font-size:12px;color:#4ade80">
         ✅ Al guardar, este proceso pasará al <strong>Histórico</strong> y saldrá de la lista activa.
       </div>
@@ -1178,7 +1220,43 @@ function abrirModal(da, origen){
     spInput.value = r["SHAREPOINT"]||"";
     actualizarBtnSP();
   }
+  // ── Gestión visible en pestaña Información (para que los abogados la vean sin entrar a Gestión) ──
+  llenarGestionVisible(r);
   document.getElementById("overlay").classList.add("open");
+}
+
+// Rellena la tarjeta "Gestión registrada" de la pestaña Información
+function llenarGestionVisible(r){
+  const pqr = String(r["RESPUESTA PQR"]||"").trim();
+  const rad = String(r["RADICADO DE CUMPLIMIENTO"]||r["RESPUESTA RADICADO TUTELA"]||"").trim();
+  const sp  = String(r["SHAREPOINT"]||"").trim();
+
+  const setVis=(wid,val,vid)=>{
+    const w=document.getElementById(wid);
+    if(!w)return;
+    if(val){ w.style.display=""; if(vid)document.getElementById(vid).textContent=val; }
+    else w.style.display="none";
+  };
+  setVis("m-info-pqr-w", pqr, "m-info-pqr");
+  setVis("m-info-rad-w", rad, "m-info-rad");
+
+  // SharePoint con botón de abrir si es link
+  const spW=document.getElementById("m-info-sp-w");
+  const spBtn=document.getElementById("m-info-sp-btn");
+  if(spW){
+    if(sp){
+      spW.style.display="";
+      document.getElementById("m-info-sp").textContent=sp;
+      if(/^https?:\/\//i.test(sp)){
+        spBtn.style.display="block";
+        spBtn.onclick=()=>window.open(sp,"_blank");
+      } else spBtn.style.display="none";
+    } else spW.style.display="none";
+  }
+
+  // Mostrar la tarjeta contenedora solo si hay al menos un dato
+  const cont=document.getElementById("m-info-gestion-w");
+  if(cont) cont.style.display=(pqr||rad||sp)?"":"none";
 }
 
 // Muestra el botón "Abrir" solo si el contenido del SharePoint es un link (http...)
@@ -1195,25 +1273,28 @@ function actualizarBtnSP(){
   }
 }
 
-// Copia los datos clave de la tutela al portapapeles (accionante, radicado, juzgado, CC)
-async function copiarDatosClave(){
+// Copia un campo individual de la tutela al portapapeles, con feedback visual en el botón
+async function copiarCampo(campo, btn){
   if(!actual){ toast("⚠️ No hay registro abierto","err"); return; }
-  const texto =
-    "Accionante: " + (actual["ACCIONANTE"]||"—") + "\n" +
-    "Radicado: "   + (actual["RADICADO"]||"—")   + "\n" +
-    "Juzgado: "    + (actual["JUZGADO"]||"—")     + "\n" +
-    "CC / NIT: "   + (actual["CC / NIT"]||"—");
+  const valor = String(actual[campo]||"").trim();
+  if(!valor || valor==="—"){ toast("⚠️ Campo vacío","err"); return; }
   try{
     if(navigator.clipboard && navigator.clipboard.writeText){
-      await navigator.clipboard.writeText(texto);
+      await navigator.clipboard.writeText(valor);
     } else {
-      // Fallback para navegadores sin clipboard API
       const ta=document.createElement("textarea");
-      ta.value=texto; ta.style.position="fixed"; ta.style.opacity="0";
+      ta.value=valor; ta.style.position="fixed"; ta.style.opacity="0";
       document.body.appendChild(ta); ta.select();
       document.execCommand("copy"); document.body.removeChild(ta);
     }
-    toast("📋 Datos clave copiados — listos para pegar","ok");
+    // Feedback visual: el botón se pone verde con un check por 1.2s
+    if(btn){
+      const orig=btn.innerHTML;
+      btn.classList.add("ok");
+      btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
+      setTimeout(()=>{ btn.classList.remove("ok"); btn.innerHTML=orig; }, 1200);
+    }
+    toast("📋 Copiado","ok");
   }catch(e){
     toast("❌ No se pudo copiar: "+e.message,"err");
   }
