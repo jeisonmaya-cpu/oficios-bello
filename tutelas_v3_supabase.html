@@ -881,13 +881,15 @@ function renderAdmites(){
   const ok=activos.filter(r=>r._dias!==null&&r._dias>3);
   const nue=activos.filter(r=>r["ESTADO"]==="Nuevo");
   const venc=activos.filter(r=>r._dias!==null&&r._dias<0);
+  const pendTec=activos.filter(r=>faltaTecnico(r));
   document.getElementById("stats-admites").innerHTML=
     scardQuick(activos.length,"Total activos","c-blue","adm",null)+
     scardQuick(venc.length,"Vencidos","c-red","adm","venc")+
     scardQuick(urg.length,"Urgentes ≤1d","c-red","adm","urg1")+
     scardQuick(prox.length,"Próximos 2-3d","c-amber","adm","prox")+
     scardQuick(ok.length,"Con tiempo","c-green","adm","ok")+
-    scardQuick(nue.length,"Nuevas","c-purple","adm","nuevo");
+    scardQuick(nue.length,"Nuevas","c-purple","adm","nuevo")+
+    scardQuick(pendTec.length,"⚠️ Pendientes técnicos","c-amber","adm","pendtec");
   document.getElementById("badge-admites").textContent=(venc.length||urg.length)||activos.length;
   const visiblesAdm=aplicarQuick(filtAdm,quickAdm);
   const pag=renderPag(visiblesAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
@@ -895,7 +897,11 @@ function renderAdmites(){
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   // Guardar datos en window para acceso seguro desde onclick (evita bug de comillas en nombres)
   window._pagAdmites=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
+  el.innerHTML=pag.map((r,i)=>{
+    const falta=queFaltaTecnico(r);
+    const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;
+  }).join("");
   window._exportAdmites=visiblesAdm;
 }
 
@@ -1409,7 +1415,24 @@ function aplicarQuick(arr,key){
   if(key==='prox')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>1&&r._dias<=3);
   if(key==='ok')    return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>3);
   if(key==='nuevo') return arr.filter(r=>r["ESTADO"]==="Nuevo");
+  if(key==='pendtec') return arr.filter(r=>act(r)&&faltaTecnico(r));
   return arr;
+}
+
+// ── Gestión técnica de Verónica: ¿le falta SharePoint, Radicado PQR o Encargado PQR? ──
+function faltaTecnico(r){
+  const sp  = String(r["SHAREPOINT"]||"").trim();
+  const pqr = String(r["PQR"]||"").trim();           // Radicado PQR
+  const enc = String(r["ENCARGADO PQR"]||"").trim();
+  return !sp || !pqr || !enc;
+}
+// Devuelve la lista de qué campos faltan (para el tooltip del indicador)
+function queFaltaTecnico(r){
+  const f=[];
+  if(!String(r["ENCARGADO PQR"]||"").trim()) f.push("Encargado PQR");
+  if(!String(r["PQR"]||"").trim())           f.push("Radicado PQR");
+  if(!String(r["SHAREPOINT"]||"").trim())    f.push("SharePoint");
+  return f;
 }
 
 function scardClick(n,label,cls,filtroId,filtroVal){
