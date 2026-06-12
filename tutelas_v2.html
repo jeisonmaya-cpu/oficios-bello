@@ -160,6 +160,12 @@
     .mf label{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:3px}
     .mf .v{font-size:13px;font-weight:500;line-height:1.5}
     .mf.full{grid-column:1/-1}
+    .v-copy{display:inline-flex;align-items:center;gap:6px}
+    .v-copy .v{flex:1;min-width:0;word-break:break-word}
+    .btn-copy{flex-shrink:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;transition:all .15s;padding:0}
+    .btn-copy:hover{background:rgba(212,175,55,.18);border-color:var(--gold);color:var(--gold)}
+    .btn-copy svg{width:13px;height:13px}
+    .btn-copy.ok{background:rgba(34,197,94,.2);border-color:#22c55e;color:#4ade80}
     .msec{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--gold2);margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
     .mtext{font-size:13px;line-height:1.75;color:rgba(241,245,249,.82);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
     .m-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)}
@@ -375,21 +381,32 @@
 <div class="overlay" id="overlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:780px">
     <div class="modal-top">
-      <div><div id="m-badge" style="margin-bottom:8px"></div><div class="m-acc" id="m-acc">—</div><div class="m-rad" id="m-rad">—</div></div>
+      <div style="flex:1;min-width:0">
+        <div id="m-badge" style="margin-bottom:8px"></div>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <div class="m-acc" id="m-acc" style="flex:1;min-width:0">—</div>
+          <button class="btn-copy" style="margin-top:6px" title="Copiar accionante" onclick="copiarCampo('ACCIONANTE',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <div class="m-rad" id="m-rad">—</div>
+          <button class="btn-copy" style="width:20px;height:20px" title="Copiar radicado" onclick="copiarCampo('RADICADO',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+      </div>
       <button class="modal-close" onclick="document.getElementById('overlay').classList.remove('open')">✕</button>
     </div>
 
     <!-- PESTAÑAS MODAL -->
     <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)">
-      <button id="mtab-info" onclick="switchMTab('info')" style="padding:9px 20px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;background:none;border:none;border-bottom:2px solid var(--gold);color:var(--text);cursor:pointer;transition:all .2s">📋 Información</button>
-      <button id="mtab-gestion" onclick="switchMTab('gestion')" style="padding:9px 20px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .2s">⚙️ Gestión</button>
+      <button id="mtab-info" onclick="switchMTab('info')" style="padding:9px 16px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;background:none;border:none;border-bottom:2px solid var(--gold);color:var(--text);cursor:pointer;transition:all .2s">📋 Información</button>
+      <button id="mtab-juridica" onclick="switchMTab('juridica')" style="padding:9px 16px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .2s">⚖️ Jurídica</button>
+      <button id="mtab-tecnica" onclick="switchMTab('tecnica')" style="padding:9px 16px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;transition:all .2s">🔧 Técnica</button>
     </div>
 
     <!-- PESTAÑA INFORMACIÓN -->
     <div id="mpanel-info">
       <div class="m-grid">
-        <div class="mf"><label>Juzgado</label><div class="v" id="m-juz">—</div></div>
-        <div class="mf"><label>CC / NIT</label><div class="v" id="m-cc">—</div></div>
+        <div class="mf"><label>Juzgado</label><div class="v-copy"><div class="v" id="m-juz">—</div><button class="btn-copy" title="Copiar juzgado" onclick="copiarCampo('JUZGADO',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+        <div class="mf"><label>CC / NIT</label><div class="v-copy"><div class="v" id="m-cc">—</div><button class="btn-copy" title="Copiar CC / NIT" onclick="copiarCampo('CC / NIT',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
         <div class="mf"><label>Fecha inicial</label><div class="v" id="m-fini">—</div></div>
         <div class="mf"><label>Fecha límite</label><div class="v" id="m-flim">—</div></div>
         <div class="mf"><label>Abogado reparto</label><div class="v" id="m-resp">—</div></div>
@@ -397,50 +414,107 @@
         <div class="mf"><label>Días restantes</label><div class="v" id="m-dias">—</div></div>
         <div class="mf"><label>Estado</label><div class="v" id="m-est-txt">—</div></div>
       </div>
+
+      <!-- Gestión visible para abogados (diligenciado por Verónica) -->
+      <div id="m-info-gestion-w" style="display:none;margin-top:4px;margin-bottom:4px;padding:12px 14px;background:rgba(0,120,212,.07);border:1px solid rgba(0,120,212,.2);border-radius:10px">
+        <div style="font-size:10px;letter-spacing:.08em;color:#60a5fa;font-weight:600;text-transform:uppercase;margin-bottom:10px">📌 Gestión registrada</div>
+        <div class="m-grid" style="margin-bottom:0;gap:10px">
+          <div class="mf" id="m-info-pqr-w" style="display:none"><label>Respuesta PQR</label><div class="v-copy"><div class="v" id="m-info-pqr">—</div></div></div>
+          <div class="mf" id="m-info-rad-w" style="display:none"><label>Rad. cumplimiento</label><div class="v-copy"><div class="v" id="m-info-rad">—</div></div></div>
+        </div>
+        <div class="mf full" id="m-info-sp-w" style="display:none;margin-top:10px">
+          <label>📎 Documento SharePoint</label>
+          <div class="v-copy">
+            <div class="v" id="m-info-sp" style="color:#60a5fa">—</div>
+            <button class="btn-copy" title="Copiar SharePoint" onclick="copiarCampo('SHAREPOINT',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          </div>
+          <button id="m-info-sp-btn" style="display:none;margin-top:8px;width:100%;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:9px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
+        </div>
+      </div>
+
       <div id="m-derecho-w" style="display:none"><div class="msec">Derecho invocado</div><div class="mtext" id="m-derecho"></div></div>
       <div id="m-hechos-w"  style="display:none"><div class="msec">Hechos resumidos</div><div class="mtext" id="m-hechos"></div></div>
       <div id="m-pret-w"    style="display:none"><div class="msec">Pretensiones</div><div class="mtext" id="m-pret"></div></div>
       <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
       <div class="m-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
-        <button class="mbtn mbtn-s" onclick="switchMTab('gestion')">⚙️ Ir a Gestión →</button>
+        <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">⚖️ Gestión Jurídica →</button>
         <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
       </div>
     </div>
 
-    <!-- PESTAÑA GESTIÓN -->
-    <div id="mpanel-gestion" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-        <div class="mf full">
-          <label>Estado</label>
-          <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
-        </div>
-        <div class="mf full">
-          <label>Encargado PQR</label>
-          <select class="esel" id="m-pqrenc-sel" style="width:100%">
-            <option value="">— Sin asignar —</option>
-            <option>Maria Camila Uribe</option><option>Jaime Cordoba</option><option>Yennifer Chaverra</option><option>Dario Baldrich</option><option>Deisy Lopez</option><option>Juan Gomez Londoño</option>
-          </select>
-        </div>
+    <!-- PESTAÑA GESTIÓN JURÍDICA -->
+    <div id="mpanel-juridica" style="display:none">
+      <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;color:var(--gold)">⚖️ Gestión Jurídica</div>
+      <div class="mf full" style="margin-bottom:12px">
+        <label>Estado</label>
+        <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
       </div>
-      <div class="mf full" id="m-pqr-wrap" style="margin-bottom:10px">
+      <div class="mf full" id="m-pqr-wrap" style="margin-bottom:12px">
         <label id="m-lbl-pqr">Respuesta PQR</label>
         <textarea id="m-resp-pqr" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el número de radicado de respuesta PQR..."></textarea>
       </div>
-      <div class="mf full" id="m-rad-wrap" style="margin-bottom:10px">
+      <div class="mf full" id="m-rad-wrap" style="margin-bottom:12px">
         <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
         <textarea id="m-resp-rad" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
-      </div>
-      <div class="mf full" id="m-sp-wrap" style="display:none;margin-bottom:12px">
-        <label style="font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-transform:uppercase">📎 Documento SharePoint</label>
-        <button id="m-sp-btn" style="width:100%;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:10px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
       </div>
       <div id="m-aviso-historico" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius-sm);font-size:12px;color:#4ade80">
         ✅ Al guardar, este proceso pasará al <strong>Histórico</strong> y saldrá de la lista activa.
       </div>
       <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-bottom:8px">💾 Guardar cambios</button>
       <div class="m-actions" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
-        <button class="mbtn mbtn-s" onclick="switchMTab('info')">← Ver información</button>
+        <button class="mbtn mbtn-s" onclick="switchMTab('info')">← Información</button>
+        <button class="mbtn mbtn-s" onclick="switchMTab('tecnica')">🔧 Técnica →</button>
+        <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
+      </div>
+    </div>
+
+    <!-- PESTAÑA GESTIÓN TÉCNICA -->
+    <div id="mpanel-tecnica" style="display:none">
+      <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;color:#60a5fa">🔧 Gestión Técnica</div>
+      <div class="mf full" style="margin-bottom:12px">
+        <label>Encargado PQR</label>
+        <select class="esel" id="m-pqrenc-sel" style="width:100%">
+          <option value="">— Sin asignar —</option>
+          <option>No registra PQR</option>
+          <option>Gestion Cobro Coactivo</option>
+          <option>Anderson Correa</option>
+          <option>Andres Felipe Bedoya Fonnegra</option>
+          <option>Camila Puerta Camargo</option>
+          <option>Carlos Enrique Hurtado Cano</option>
+          <option>Dayse Nathaly Rodriguez Ochoa</option>
+          <option>Gabriel Jaime Bedoya Fonnegra</option>
+          <option>Gilma Andrea Valencia Cañas</option>
+          <option>Gloria Marcela Duque</option>
+          <option>Jesus Alberto Osorio Garcia</option>
+          <option>Jorge Andres Henao</option>
+          <option>Jose Francineth Trespalacios</option>
+          <option>Juan Pablo Gomez Londoño</option>
+          <option>Juan Pablo Mendoza</option>
+          <option>Juan Pablo Villa</option>
+          <option>Julian Esteban Perea</option>
+          <option>Julieth Katherine Duque</option>
+          <option>Leon Dario Pelaez</option>
+          <option>Liseth Murillo Copete</option>
+          <option>Luisa Fernanda Mira</option>
+          <option>Paula Carolina Yepes Rojas</option>
+          <option>Vanessa Perez Holguin</option>
+          <option>Wilson Ortiz Correa</option>
+          <option>Yoban Jimenez</option>
+        </select>
+      </div>
+      <div class="mf full" id="m-radpqr-wrap" style="margin-bottom:12px">
+        <label>Radicado PQR</label>
+        <input id="m-radpqr" type="text" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;line-height:1.6" placeholder="Ingresa el radicado de la PQR...">
+      </div>
+      <div class="mf full" id="m-sp-wrap" style="margin-bottom:12px">
+        <label style="font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-transform:uppercase">📎 Documento SharePoint <span style="color:#f87171">*obligatorio</span></label>
+        <textarea id="m-sharepoint" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Pega aquí el link de SharePoint o el texto de referencia..." oninput="actualizarBtnSP()"></textarea>
+        <button id="m-sp-btn" style="display:none;width:100%;margin-top:6px;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:9px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
+      </div>
+      <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-bottom:8px">💾 Guardar cambios</button>
+      <div class="m-actions" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
+        <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">← Jurídica</button>
         <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
       </div>
     </div>
@@ -468,6 +542,94 @@ const GID_TUT     = "0";
 const GID_FAL     = "995241537";
 const GID_INC     = "528315836";
 const APPS_URL    = "https://script.google.com/macros/s/AKfycby7Jp0dp3GLFMQAKSbGvXuHDKEg6PrInrdZjEIQZq_zpsYcmPP6GRcnwhMAhPJUwU7K/exec";
+
+// ════════════════════════════════════════════════════════════
+// SUPABASE — capa de datos (Paso 3)
+// La llave anon es pública por diseño y está limitada por RLS:
+// solo puede leer/insertar/editar tutelas, nunca borrar.
+// ════════════════════════════════════════════════════════════
+const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
+const SB_TABLA      = "actuaciones_tutela";
+// Interruptor: true = lee/guarda en Supabase. Si se pone false, vuelve a gviz/Apps Script.
+const USAR_SUPABASE = true;
+
+// ── Mapa de traducción: columna Supabase (snake_case) → nombre que usa el dashboard (Sheet) ──
+const MAPA_SB_A_SHEET = {
+  accionante:            "ACCIONANTE",
+  cc_nit:                "CC / NIT",
+  radicado:              "RADICADO",
+  juzgado:               "JUZGADO",
+  tipo:                  "TIPO",
+  responsable:           "RESPONSABLE",
+  estado:                "ESTADO",
+  fecha_inicial:         "FECHA INICIAL",
+  fecha_limite:          "FECHA LÍMITE",
+  derecho_invocado:      "DERECHO INVOCADO",
+  hechos_resumidos:      "HECHOS RESUMIDOS",
+  pretensiones:          "PRETENSIONES",
+  observaciones:         "OBSERVACIONES",
+  encargado_pqr:         "ENCARGADO PQR",
+  radicado_pqr:          "PQR",
+  respuesta_pqr:         "RESPUESTA PQR",
+  radicado_cumplimiento: "RADICADO DE CUMPLIMIENTO",
+  sharepoint:            "SHAREPOINT"
+};
+// Mapa inverso: nombre del Sheet → columna Supabase (para guardar)
+const MAPA_SHEET_A_SB = Object.fromEntries(Object.entries(MAPA_SB_A_SHEET).map(([k,v])=>[v,k]));
+
+// Convierte un registro de Supabase a la forma que el dashboard espera (nombres del Sheet)
+function sbASheet(reg){
+  const r={};
+  for(const [colSB,colSheet] of Object.entries(MAPA_SB_A_SHEET)){
+    r[colSheet] = String(reg[colSB] ?? "").trim();
+  }
+  r._id = reg.id; // guardamos el id de Supabase para poder editar con precisión
+  return normalizarRegistro(r);
+}
+
+// ── Repo: única parte que sabe de dónde vienen los datos ──
+const Repo = {
+  // Lee una categoría desde Supabase. Devuelve registros con nombres del Sheet.
+  async listar(categoria){
+    const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`
+      + `?categoria=eq.${encodeURIComponent(categoria)}`
+      + `&select=*&order=id.asc`;
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON, Authorization: "Bearer "+SUPABASE_ANON }
+    });
+    if(!res.ok) throw new Error(`Supabase HTTP ${res.status}`);
+    const filas = await res.json();
+    return filas.map(sbASheet).filter(filaValida);
+  },
+
+  // Actualiza campos de un registro por su id de Supabase.
+  async actualizar(id, camposSheet){
+    // Traduce los nombres del Sheet a columnas snake_case
+    const payload={};
+    for(const [colSheet,valor] of Object.entries(camposSheet)){
+      const colSB = MAPA_SHEET_A_SB[colSheet];
+      if(colSB) payload[colSB]=valor;
+    }
+    const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}?id=eq.${encodeURIComponent(id)}`;
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_ANON,
+        Authorization: "Bearer "+SUPABASE_ANON,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      const txt = await res.text();
+      throw new Error(`Supabase HTTP ${res.status}: ${txt.slice(0,120)}`);
+    }
+    const arr = await res.json();
+    return arr && arr.length ? arr[0] : null;
+  }
+};
 const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño"];
 const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"];
 const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
@@ -482,8 +644,20 @@ async function cargarDatos() {
   setSS("loading","Actualizando...");
   document.getElementById("btnref").classList.add("spin");
   try {
-    const [t,f,inc] = await Promise.all([leerGviz(GID_TUT),leerGviz(GID_FAL),leerGviz(GID_INC)]);
-    tutelas=t; fallos=f; incidentes=inc;
+    if(USAR_SUPABASE){
+      // Tutelas desde Supabase; fallos e incidentes siguen en gviz hasta migrarlos.
+      const r = await Promise.allSettled([
+        Repo.listar("tutela"),
+        leerGviz(GID_FAL),
+        leerGviz(GID_INC)
+      ]);
+      tutelas    = r[0].status==="fulfilled" ? r[0].value : (toast("⚠️ Tutelas (Supabase) no cargó: "+r[0].reason.message,"err"), []);
+      fallos     = r[1].status==="fulfilled" ? r[1].value : [];
+      incidentes = r[2].status==="fulfilled" ? r[2].value : [];
+    } else {
+      const [t,f,inc] = await Promise.all([leerGviz(GID_TUT),leerGviz(GID_FAL),leerGviz(GID_INC)]);
+      tutelas=t; fallos=f; incidentes=inc;
+    }
     poblarSelects();
     renderAll();
     verificarVencidos();
@@ -707,13 +881,15 @@ function renderAdmites(){
   const ok=activos.filter(r=>r._dias!==null&&r._dias>3);
   const nue=activos.filter(r=>r["ESTADO"]==="Nuevo");
   const venc=activos.filter(r=>r._dias!==null&&r._dias<0);
+  const pendTec=activos.filter(r=>faltaTecnico(r));
   document.getElementById("stats-admites").innerHTML=
     scardQuick(activos.length,"Total activos","c-blue","adm",null)+
     scardQuick(venc.length,"Vencidos","c-red","adm","venc")+
     scardQuick(urg.length,"Urgentes ≤1d","c-red","adm","urg1")+
     scardQuick(prox.length,"Próximos 2-3d","c-amber","adm","prox")+
     scardQuick(ok.length,"Con tiempo","c-green","adm","ok")+
-    scardQuick(nue.length,"Nuevas","c-purple","adm","nuevo");
+    scardQuick(nue.length,"Nuevas","c-purple","adm","nuevo")+
+    scardQuick(pendTec.length,"⚠️ Pendientes técnicos","c-amber","adm","pendtec");
   document.getElementById("badge-admites").textContent=(venc.length||urg.length)||activos.length;
   const visiblesAdm=aplicarQuick(filtAdm,quickAdm);
   const pag=renderPag(visiblesAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
@@ -721,7 +897,11 @@ function renderAdmites(){
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   // Guardar datos en window para acceso seguro desde onclick (evita bug de comillas en nombres)
   window._pagAdmites=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
+  el.innerHTML=pag.map((r,i)=>{
+    const falta=queFaltaTecnico(r);
+    const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;
+  }).join("");
   window._exportAdmites=visiblesAdm;
 }
 
@@ -1071,22 +1251,93 @@ function abrirModal(da, origen){
   document.getElementById("m-resp-rad").placeholder = esInc ? "Ingresa el radicado de cumplimiento..." : esFallo ? "Ingresa el radicado de cumplimiento..." : "Ingresa el radicado de respuesta a la tutela...";
   document.getElementById("m-resp-pqr").value = r["RESPUESTA PQR"] || "";
   document.getElementById("m-resp-rad").value = r["RADICADO DE CUMPLIMIENTO"] || r["RESPUESTA RADICADO TUTELA"] || "";
-  // SharePoint
-  const spVal = r["SHAREPOINT"]||"";
-  const spWrap = document.getElementById("m-sp-wrap");
-  if(spWrap){
-    if(spVal){
-      spWrap.style.display="block";
-      const spBtn=document.getElementById("m-sp-btn");
-      if(spBtn){
-        spBtn.textContent="📎 Abrir documento en SharePoint";
-        spBtn.onclick=()=>window.open(spVal,"_blank");
-      }
-    } else {
-      spWrap.style.display="none";
-    }
+  // Radicado PQR (columna "PQR" del Sheet)
+  const radpqrInput = document.getElementById("m-radpqr");
+  if(radpqrInput) radpqrInput.value = r["PQR"] || "";
+  // SharePoint — editable y obligatorio. Acepta link o texto de referencia.
+  const spInput = document.getElementById("m-sharepoint");
+  if(spInput){
+    spInput.value = r["SHAREPOINT"]||"";
+    actualizarBtnSP();
   }
+  // ── Gestión visible en pestaña Información (para que los abogados la vean sin entrar a Gestión) ──
+  llenarGestionVisible(r);
   document.getElementById("overlay").classList.add("open");
+}
+
+// Rellena la tarjeta "Gestión registrada" de la pestaña Información
+function llenarGestionVisible(r){
+  const pqr = String(r["RESPUESTA PQR"]||"").trim();
+  const rad = String(r["RADICADO DE CUMPLIMIENTO"]||r["RESPUESTA RADICADO TUTELA"]||"").trim();
+  const sp  = String(r["SHAREPOINT"]||"").trim();
+
+  const setVis=(wid,val,vid)=>{
+    const w=document.getElementById(wid);
+    if(!w)return;
+    if(val){ w.style.display=""; if(vid)document.getElementById(vid).textContent=val; }
+    else w.style.display="none";
+  };
+  setVis("m-info-pqr-w", pqr, "m-info-pqr");
+  setVis("m-info-rad-w", rad, "m-info-rad");
+
+  // SharePoint con botón de abrir si es link
+  const spW=document.getElementById("m-info-sp-w");
+  const spBtn=document.getElementById("m-info-sp-btn");
+  if(spW){
+    if(sp){
+      spW.style.display="";
+      document.getElementById("m-info-sp").textContent=sp;
+      if(/^https?:\/\//i.test(sp)){
+        spBtn.style.display="block";
+        spBtn.onclick=()=>window.open(sp,"_blank");
+      } else spBtn.style.display="none";
+    } else spW.style.display="none";
+  }
+
+  // Mostrar la tarjeta contenedora solo si hay al menos un dato
+  const cont=document.getElementById("m-info-gestion-w");
+  if(cont) cont.style.display=(pqr||rad||sp)?"":"none";
+}
+
+// Muestra el botón "Abrir" solo si el contenido del SharePoint es un link (http...)
+function actualizarBtnSP(){
+  const spInput = document.getElementById("m-sharepoint");
+  const spBtn   = document.getElementById("m-sp-btn");
+  if(!spInput||!spBtn) return;
+  const val = spInput.value.trim();
+  if(/^https?:\/\//i.test(val)){
+    spBtn.style.display="block";
+    spBtn.onclick=()=>window.open(val,"_blank");
+  } else {
+    spBtn.style.display="none";
+  }
+}
+
+// Copia un campo individual de la tutela al portapapeles, con feedback visual en el botón
+async function copiarCampo(campo, btn){
+  if(!actual){ toast("⚠️ No hay registro abierto","err"); return; }
+  const valor = String(actual[campo]||"").trim();
+  if(!valor || valor==="—"){ toast("⚠️ Campo vacío","err"); return; }
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(valor);
+    } else {
+      const ta=document.createElement("textarea");
+      ta.value=valor; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    // Feedback visual: el botón se pone verde con un check por 1.2s
+    if(btn){
+      const orig=btn.innerHTML;
+      btn.classList.add("ok");
+      btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
+      setTimeout(()=>{ btn.classList.remove("ok"); btn.innerHTML=orig; }, 1200);
+    }
+    toast("📋 Copiado","ok");
+  }catch(e){
+    toast("❌ No se pudo copiar: "+e.message,"err");
+  }
 }
 
 function confirmar(titulo, msg){
@@ -1126,13 +1377,17 @@ function copiarRadicado(){
 function setEl(id,html){const e=document.getElementById(id);if(e)e.innerHTML=html;}
 
 function switchMTab(tab){
-  const tabs={info:{btn:'mtab-info',panel:'mpanel-info'},gestion:{btn:'mtab-gestion',panel:'mpanel-gestion'}};
+  const tabs={
+    info:    {btn:'mtab-info',    panel:'mpanel-info',    color:'var(--gold)'},
+    juridica:{btn:'mtab-juridica',panel:'mpanel-juridica',color:'var(--gold)'},
+    tecnica: {btn:'mtab-tecnica', panel:'mpanel-tecnica', color:'#60a5fa'}
+  };
   Object.entries(tabs).forEach(([k,v])=>{
     const btn=document.getElementById(v.btn);
     const panel=document.getElementById(v.panel);
     if(!btn||!panel)return;
     const activo=k===tab;
-    btn.style.borderBottomColor=activo?'var(--gold)':'transparent';
+    btn.style.borderBottomColor=activo?v.color:'transparent';
     btn.style.color=activo?'var(--text)':'var(--muted)';
     panel.style.display=activo?'block':'none';
   });
@@ -1160,7 +1415,24 @@ function aplicarQuick(arr,key){
   if(key==='prox')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>1&&r._dias<=3);
   if(key==='ok')    return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>3);
   if(key==='nuevo') return arr.filter(r=>r["ESTADO"]==="Nuevo");
+  if(key==='pendtec') return arr.filter(r=>act(r)&&faltaTecnico(r));
   return arr;
+}
+
+// ── Gestión técnica de Verónica: ¿le falta SharePoint, Radicado PQR o Encargado PQR? ──
+function faltaTecnico(r){
+  const sp  = String(r["SHAREPOINT"]||"").trim();
+  const pqr = String(r["PQR"]||"").trim();           // Radicado PQR
+  const enc = String(r["ENCARGADO PQR"]||"").trim();
+  return !sp || !pqr || !enc;
+}
+// Devuelve la lista de qué campos faltan (para el tooltip del indicador)
+function queFaltaTecnico(r){
+  const f=[];
+  if(!String(r["ENCARGADO PQR"]||"").trim()) f.push("Encargado PQR");
+  if(!String(r["PQR"]||"").trim())           f.push("Radicado PQR");
+  if(!String(r["SHAREPOINT"]||"").trim())    f.push("SharePoint");
+  return f;
 }
 
 function scardClick(n,label,cls,filtroId,filtroVal){
@@ -1184,6 +1456,8 @@ async function guardarEstado(){
   const respPQR  = document.getElementById("m-resp-pqr").value;
   const respRad  = document.getElementById("m-resp-rad").value;
   const encPQR   = document.getElementById("m-pqrenc-sel").value || actual["ENCARGADO PQR"] || "";
+  const sharePoint = (document.getElementById("m-sharepoint") ? document.getElementById("m-sharepoint").value : actual["SHAREPOINT"]||"").trim();
+  const radicadoPQR = (document.getElementById("m-radpqr") ? document.getElementById("m-radpqr").value : actual["PQR"]||"").trim();
   const ok = await confirmar(
     "¿Guardar cambios?",
     `${actual["ACCIONANTE"]||"este registro"} — Estado: ${nuevoEst}`
@@ -1192,9 +1466,47 @@ async function guardarEstado(){
   const esInc     = origenModal === "incidente";
   const esFallo   = origenModal === "fallo";
   const arr       = esInc ? incidentes : esFallo ? fallos : tutelas;
+  toast("⏳ Guardando...","");
+
+  // ── Camino Supabase: si el registro tiene _id, escribe directo (estable, atómico) ──
+  if(USAR_SUPABASE && actual._id){
+    try{
+      const guardado = await Repo.actualizar(actual._id, {
+        "ESTADO": nuevoEst,
+        "RESPUESTA PQR": respPQR,
+        "RADICADO DE CUMPLIMIENTO": respRad,
+        "ENCARGADO PQR": encPQR,
+        "SHAREPOINT": sharePoint,
+        "PQR": radicadoPQR
+      });
+      if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
+      const idx=arr.findIndex(r=>r._id===actual._id);
+      if(idx>=0){
+        arr[idx]["ESTADO"]=nuevoEst;
+        arr[idx]["RESPUESTA PQR"]=respPQR;
+        arr[idx]["RADICADO DE CUMPLIMIENTO"]=respRad;
+        arr[idx]["ENCARGADO PQR"]=encPQR;
+        arr[idx]["SHAREPOINT"]=sharePoint;
+        arr[idx]["PQR"]=radicadoPQR;
+      }
+      actual["ESTADO"]=nuevoEst;
+      actual["RESPUESTA PQR"]=respPQR;
+      actual["RADICADO DE CUMPLIMIENTO"]=respRad;
+      actual["ENCARGADO PQR"]=encPQR;
+      actual["SHAREPOINT"]=sharePoint;
+      actual["PQR"]=radicadoPQR;
+      toast(EST_HIST.includes(nuevoEst)?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado en Supabase","ok");
+      renderAll();
+      document.getElementById("overlay").classList.remove("open");
+    }catch(e){
+      toast("❌ Error al guardar en Supabase: "+e.message+" — los cambios NO se guardaron","err");
+    }
+    return;
+  }
+
+  // ── Camino antiguo (fallos/incidentes en gviz): Apps Script ──
   const tipoEnvio = esInc ? "Incidente/Desacato" : actual["TIPO"];
   if(!APPS_URL){toast("⚠️ Sin APPS_URL configurada","err");return;}
-  toast("⏳ Guardando...","");
   try{
     const params=new URLSearchParams({
       accion:"actualizarCampos",radicado:actual["RADICADO"],tipo:tipoEnvio,
@@ -1218,7 +1530,6 @@ async function guardarEstado(){
       renderAll();
       document.getElementById("overlay").classList.remove("open");
     }else{
-      // Bug 3 fix: NO cerrar el modal si el servidor reportó error
       toast("❌ Error al guardar: "+(d.error||"Sin detalle")+" — los cambios NO se guardaron","err");
     }
   }catch(e){toast("❌ Error de red: "+e.message,"err");}
