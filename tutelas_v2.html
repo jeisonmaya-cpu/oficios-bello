@@ -450,10 +450,6 @@
         <label>Estado</label>
         <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
       </div>
-      <div class="mf full" id="m-pqr-wrap" style="margin-bottom:12px">
-        <label id="m-lbl-pqr">Respuesta PQR</label>
-        <textarea id="m-resp-pqr" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el número de radicado de respuesta PQR..."></textarea>
-      </div>
       <div class="mf full" id="m-rad-wrap" style="margin-bottom:12px">
         <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
         <textarea id="m-resp-rad" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
@@ -486,6 +482,7 @@
           <option>Gabriel Jaime Bedoya Fonnegra</option>
           <option>Gilma Andrea Valencia Cañas</option>
           <option>Gloria Marcela Duque</option>
+          <option>Henry Camilo Triana</option>
           <option>Jesus Alberto Osorio Garcia</option>
           <option>Jorge Andres Henao</option>
           <option>Jose Francineth Trespalacios</option>
@@ -503,10 +500,25 @@
           <option>Yoban Jimenez</option>
         </select>
       </div>
-      <div class="mf full" id="m-radpqr-wrap" style="margin-bottom:12px">
-        <label>Radicado PQR</label>
-        <input id="m-radpqr" type="text" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;line-height:1.6" placeholder="Ingresa el radicado de la PQR...">
+
+      <!-- Toggle: esta tutela no registra PQR -->
+      <label id="m-nopqr-wrap" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="m-nopqr" onchange="toggleNoPQR()" style="width:16px;height:16px;cursor:pointer;accent-color:#60a5fa">
+        <span style="font-size:13px;color:var(--text)">Esta tutela <strong>no registra PQR</strong></span>
+      </label>
+
+      <!-- Bloque de campos PQR (se deshabilita con el toggle) -->
+      <div id="m-pqr-bloque">
+        <div class="mf full" id="m-radpqr-wrap" style="margin-bottom:12px">
+          <label>Radicado PQR</label>
+          <input id="m-radpqr" type="text" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;line-height:1.6" placeholder="Ingresa el radicado de la PQR...">
+        </div>
+        <div class="mf full" id="m-pqr-wrap" style="margin-bottom:12px">
+          <label id="m-lbl-pqr">Respuesta PQR</label>
+          <textarea id="m-resp-pqr" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa la respuesta de la PQR..."></textarea>
+        </div>
       </div>
+
       <div class="mf full" id="m-sp-wrap" style="margin-bottom:12px">
         <label style="font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:600;text-transform:uppercase">📎 Documento SharePoint <span style="color:#f87171">*obligatorio</span></label>
         <textarea id="m-sharepoint" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Pega aquí el link de SharePoint o el texto de referencia..." oninput="actualizarBtnSP()"></textarea>
@@ -1254,6 +1266,15 @@ function abrirModal(da, origen){
   // Radicado PQR (columna "PQR" del Sheet)
   const radpqrInput = document.getElementById("m-radpqr");
   if(radpqrInput) radpqrInput.value = r["PQR"] || "";
+  // Sincroniza el toggle "No registra PQR" según los datos del registro
+  const nopqrChk = document.getElementById("m-nopqr");
+  if(nopqrChk){
+    const sinPQR = (String(r["ENCARGADO PQR"]||"").trim()==="No registra PQR") ||
+                   (String(r["PQR"]||"").trim().toUpperCase()==="NO REGISTRA");
+    nopqrChk.checked = sinPQR;
+    const bloque=document.getElementById("m-pqr-bloque");
+    if(bloque){ bloque.style.opacity=sinPQR?"0.4":"1"; bloque.style.pointerEvents=sinPQR?"none":"auto"; }
+  }
   // SharePoint — editable y obligatorio. Acepta link o texto de referencia.
   const spInput = document.getElementById("m-sharepoint");
   if(spInput){
@@ -1310,6 +1331,28 @@ function actualizarBtnSP(){
     spBtn.onclick=()=>window.open(val,"_blank");
   } else {
     spBtn.style.display="none";
+  }
+}
+
+// Toggle "No registra PQR": deshabilita los campos de PQR y los marca como sin PQR
+function toggleNoPQR(){
+  const chk = document.getElementById("m-nopqr");
+  const bloque = document.getElementById("m-pqr-bloque");
+  const radpqr = document.getElementById("m-radpqr");
+  const resppqr = document.getElementById("m-resp-pqr");
+  const encsel = document.getElementById("m-pqrenc-sel");
+  if(!chk) return;
+  if(chk.checked){
+    // Atenúa el bloque de PQR y limpia/bloquea los campos
+    if(bloque){ bloque.style.opacity="0.4"; bloque.style.pointerEvents="none"; }
+    if(radpqr) radpqr.value="NO REGISTRA";
+    if(resppqr) resppqr.value="NO REGISTRA";
+    if(encsel) encsel.value="No registra PQR";
+  } else {
+    if(bloque){ bloque.style.opacity="1"; bloque.style.pointerEvents="auto"; }
+    if(radpqr && radpqr.value==="NO REGISTRA") radpqr.value="";
+    if(resppqr && resppqr.value==="NO REGISTRA") resppqr.value="";
+    if(encsel && encsel.value==="No registra PQR") encsel.value="";
   }
 }
 
