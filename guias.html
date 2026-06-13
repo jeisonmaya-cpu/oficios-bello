@@ -128,8 +128,44 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.err{background:rgba(220,38,38,.95)}
 
-@media(max-width:640px){
-  .search-row{flex-direction:column}
+/* BOTONES IMPRIMIR */
+.btn-print{background:rgba(232,160,32,.14);border:1px solid rgba(232,160,32,.3);color:var(--gold2);padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.btn-print:hover{background:rgba(232,160,32,.24)}
+.btn-print.sm{padding:5px 11px;font-size:11px}
+
+/* MODAL */
+.modal-back{display:none;position:fixed;inset:0;z-index:500;background:rgba(5,12,25,.7);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding:30px 14px;overflow-y:auto}
+.modal-back.show{display:flex}
+.modal{background:#fff;color:#1a2332;width:100%;max-width:720px;border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-bar{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;background:#f1f4f8;border-bottom:1px solid #e2e8f0}
+.modal-bar button{padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;border:none}
+.mb-print{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff}
+.mb-close{background:#e2e8f0;color:#475569}
+.doc{padding:34px 40px;font-size:13px;line-height:1.65;color:#1a2332}
+.doc-hdr{text-align:center;border-bottom:2px solid #0a1f3d;padding-bottom:14px;margin-bottom:20px}
+.doc-hdr .ent{font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.02em;color:#0a1f3d}
+.doc-hdr .dep{font-size:12px;color:#475569;margin-top:3px}
+.doc-title{text-align:center;font-weight:700;font-size:14px;margin:18px 0;text-transform:uppercase;letter-spacing:.04em}
+.doc-row{display:flex;gap:8px;margin-bottom:5px}
+.doc-row .k{font-weight:700;min-width:130px;color:#0a1f3d}
+.doc-comp{border:1px solid #cbd5e1;border-radius:8px;padding:13px 15px;margin:13px 0}
+.doc-comp h4{font-size:12.5px;color:#0a1f3d;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:6px}
+.doc-ev{font-size:12px;padding:7px 0;border-bottom:1px dashed #e2e8f0}
+.doc-ev:last-child{border-bottom:none}
+.doc-ev .canal{font-weight:700;color:#0a1f3d}
+.doc-foot{margin-top:26px;padding-top:14px;border-top:1px solid #cbd5e1;font-size:10.5px;color:#64748b;line-height:1.5}
+.doc-meta{font-size:10.5px;color:#94a3b8;text-align:right;margin-bottom:10px}
+
+@media print{
+  body *{visibility:hidden}
+  .modal-back,.modal-back *{visibility:visible}
+  .modal-back{position:absolute;inset:0;padding:0;background:#fff;display:block}
+  .modal{max-width:none;box-shadow:none;border-radius:0}
+  .modal-bar{display:none}
+  .doc{padding:0}
+}
+
+
   .btn-search{width:100%;justify-content:center}
   .form-grid{grid-template-columns:1fr}
 }
@@ -301,6 +337,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 
 </div><!-- /wrap -->
 
+<div class="modal-back" id="modal" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-bar">
+      <button class="mb-print" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="mb-close" onclick="cerrarModal()">Cerrar</button>
+    </div>
+    <div class="doc" id="doc-content"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -418,6 +464,9 @@ async function buscar(){
   }
 }
 
+// Guardamos la última búsqueda para que el modal de impresión la use.
+let _datosActuales = { nombre:"", cedula:"", porComp:{} };
+
 function renderPerfil(filas, termino){
   // Datos de la persona (toma el primero con nombre)
   const conNombre = filas.find(f => f.nombre_resuelto || f.nombre) || filas[0];
@@ -432,6 +481,8 @@ function renderPerfil(filas, termino){
   });
   const comps = Object.keys(porComp);
 
+  _datosActuales = { nombre, cedula, porComp };
+
   let html = `
     <div class="perfil-head">
       <div class="perfil-nombre">${esc(nombre)}</div>
@@ -439,6 +490,9 @@ function renderPerfil(filas, termino){
         <span>Cédula / NIT: <strong>${esc(cedula)}</strong></span>
         <span>Comparendos: <strong>${comps.length}</strong></span>
         <span>Registros de notificación: <strong>${filas.length}</strong></span>
+      </div>
+      <div class="perfil-resumen">
+        <button class="btn-print" onclick="abrirModal('todo')">🖨️ Imprimir todo el perfil</button>
       </div>
     </div>`;
 
@@ -448,6 +502,7 @@ function renderPerfil(filas, termino){
       <div class="comp-card">
         <div class="comp-top">
           <div class="comp-num"><span>Comparendo</span>${esc(comp)}</div>
+          <button class="btn-print sm" onclick="abrirModal('comp', '${esc(comp).replace(/'/g,"\\'")}')">🖨️ Imprimir</button>
         </div>
         <div class="comp-canales">
           ${evidencias.map(renderCanal).join("")}
@@ -496,6 +551,79 @@ function renderCanal(f){
         <div class="canal-detalle">${partes.join(" · ") || "Sin detalle adicional registrado."}</div>
       </div>
     </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// MODAL DE IMPRESIÓN (reporte informativo de uso interno)
+// ════════════════════════════════════════════════════════════
+function abrirModal(modo, comp){
+  const d = _datosActuales;
+  if(!d.nombre){ return; }
+
+  // qué comparendos incluir
+  let comps;
+  if(modo === "comp" && comp){ comps = [comp]; }
+  else { comps = Object.keys(d.porComp); }
+
+  const ahora = new Date();
+  const fechaImp = String(ahora.getDate()).padStart(2,"0") + "/" +
+                   String(ahora.getMonth()+1).padStart(2,"0") + "/" +
+                   ahora.getFullYear() + " " +
+                   String(ahora.getHours()).padStart(2,"0") + ":" +
+                   String(ahora.getMinutes()).padStart(2,"0");
+
+  let html = `
+    <div class="doc-meta">Generado: ${fechaImp}</div>
+    <div class="doc-hdr">
+      <div class="ent">Alcaldía de Bello</div>
+      <div class="dep">Dirección Administrativa de Ejecuciones Fiscales</div>
+      <div class="dep">Secretaría de Recaudos y Pagos</div>
+    </div>
+    <div class="doc-title">Reporte de estado de notificación</div>
+    <div class="doc-row"><span class="k">Ciudadano:</span><span>${esc(d.nombre)}</span></div>
+    <div class="doc-row"><span class="k">Cédula / NIT:</span><span>${esc(d.cedula)}</span></div>
+    <div class="doc-row"><span class="k">Comparendos:</span><span>${comps.length}</span></div>
+  `;
+
+  comps.forEach(c => {
+    const evs = d.porComp[c] || [];
+    html += `<div class="doc-comp"><h4>Comparendo: ${esc(c)}</h4>`;
+    evs.forEach(f => { html += docEvidencia(f); });
+    html += `</div>`;
+  });
+
+  html += `
+    <div class="doc-foot">
+      Documento informativo de uso interno generado por el Sistema Teodoro a partir
+      de los registros de guías de notificación. No constituye certificación ni
+      acto administrativo. La calificación jurídica de la debida notificación
+      corresponde al funcionario competente.
+    </div>`;
+
+  document.getElementById("doc-content").innerHTML = html;
+  document.getElementById("modal").classList.add("show");
+}
+
+function docEvidencia(f){
+  const nombres = { aviso:"Aviso", correo_certificado:"Correo certificado", web:"Publicación web", personal:"Personal" };
+  const canal = nombres[f.canal] || f.canal || "—";
+  const datos = [];
+  if(f.estado) datos.push("Estado: " + esc(f.estado));
+  if(f.fecha_notificacion) datos.push("Fecha notificación: " + esc(fechaCO(f.fecha_notificacion)));
+  if(f.num_guia) datos.push("Guía: " + esc(f.num_guia));
+  if(f.tipo_notificacion) datos.push("Tipo: " + esc(f.tipo_notificacion));
+  if(f.direccion) datos.push("Dirección: " + esc(f.direccion));
+  if(f.municipio) datos.push("Municipio: " + esc(f.municipio));
+  if(f.responsable) datos.push("Responsable: " + esc(f.responsable));
+  if(f.radicado) datos.push("Radicado: " + esc(f.radicado));
+  if(f.folio) datos.push("Folio: " + esc(f.folio));
+  if(f.carpeta) datos.push("Carpeta: " + esc(f.carpeta));
+  if(f.url_evidencia) datos.push("Publicación: " + esc(f.url_evidencia));
+  return `<div class="doc-ev"><span class="canal">${canal}</span> — ${datos.join(" · ") || "Sin detalle registrado."}</div>`;
+}
+
+function cerrarModal(){
+  document.getElementById("modal").classList.remove("show");
 }
 
 // ════════════════════════════════════════════════════════════
@@ -552,6 +680,7 @@ async function guardarGuia(){
   btn.disabled = true; btn.textContent = "Guardando…";
   try{
     await Repo.insertar(reg);
+    if(reg.creado_por) localStorage.setItem("teodoro_usuario", reg.creado_por);
     toast("✓ Guía guardada para el comparendo " + comparendo);
     limpiarForm();
   }catch(err){
@@ -568,7 +697,8 @@ function limpiarForm(){
   document.getElementById("f-canal").value = "";
   document.getElementById("f-estado").value = "";
   cambioCanal();
-  document.getElementById("f-cedula").focus();
+  // NO se borra f-creadopor: queda persistido para los siguientes ingresos.
+  document.getElementById("f-canal").focus();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -576,7 +706,22 @@ function limpiarForm(){
 // ════════════════════════════════════════════════════════════
 document.getElementById("q").addEventListener("keydown", e => { if(e.key==="Enter") buscar(); });
 document.getElementById("empty-state").style.display = "block";
+
+// Autocompletar nombre del operario desde localStorage
+document.getElementById("f-creadopor").value = localStorage.getItem("teodoro_usuario") || "";
+
+// Bloquear caracteres no numéricos en tiempo real (cédula y valor multa)
+["f-cedula","f-valor"].forEach(id => {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.addEventListener("input", () => {
+    const limpio = el.value.replace(/\D/g, "");
+    if(el.value !== limpio) el.value = limpio;
+  });
+});
+
 document.getElementById("q").focus();
+document.addEventListener("keydown", e => { if(e.key==="Escape") cerrarModal(); });
 </script>
 </body>
 </html>
