@@ -251,6 +251,8 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
 .sync-dot.ok{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)}
 .sync-dot.loading{background:var(--gold);animation:blink 1s infinite}
 .sync-dot.error{background:#ef4444}
+.sync-reload{background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;margin-left:2px;opacity:.7;transition:opacity .2s,transform .3s;line-height:1}
+.sync-reload:hover{opacity:1;transform:rotate(180deg)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* ── STATS PENDIENTES ── */
@@ -290,6 +292,7 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
     <div class="sync-pill" id="sync-pill">
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-lbl">Sin conexión</span>
+      <button class="sync-reload" id="sync-reload" onclick="recargarTodo()" title="Traer los últimos cambios del equipo">🔄</button>
     </div>
     <button class="tb-btn gold" onclick="exportarExcel()">⬇️ Exportar Excel</button>
     <a href="home.html" class="tb-btn">🏛️ Inicio</a>
@@ -514,9 +517,6 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
         <div class="campo"><label>Última carga</label><input type="text" id="cfg-info-sync" readonly value="—"/></div>
       </div>
       <div id="cfg-alert" style="display:none;margin-top:14px"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-        <button class="fbtn fbtn-primary" onclick="recargarTodo()">🔄 Recargar datos</button>
-      </div>
     </div>
   </div>
 </div>
@@ -567,13 +567,10 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
         <div class="campo"><label>Responsable</label>
           <select id="m-responsable">
             <option value="">— Sin asignar —</option>
-            <option>Maria Camila Uribe</option>
-            <option>Jaime Cordoba</option>
-            <option>Yennifer Chaverra</option>
-            <option>Dario Baldrich</option>
-            <option>Deisy Lopez</option>
-            <option>Juan Gomez Londoño</option>
-            <option>Jeison Maya</option>
+            <option>Gloria Marcela Duque</option>
+            <option>Jose Francineth</option>
+            <option>Jose Fernando Zapata</option>
+            <option>Julieth Duque</option>
           </select>
         </div>
       </div>
@@ -744,7 +741,7 @@ function filaSupaAUI(r){
     'RADICADO DE RESPUESTA':    r.radicado_respuesta || '',
     'ESTADO DEVOLUCION':        r.estado_devolucion || '',
     'ESTADO APLICACIÓN':        r.estado_aplicacion || '',
-    'Proceso':                  r.numero_proceso || '',   // alias usado por la UI en filtros/columna
+    'Proceso':                  r.numero_proceso_manual || '',   // proceso/expediente que asigna el contador (NO el del banco)
     'Impuesto':                 r.concepto_deposito || '', // no hay tipo de impuesto en datos; se deja editable
     'Pendiente convenio':       '',
     'CI INICIAL':               '',
@@ -767,7 +764,7 @@ function gestionUIASupa(g){
     radicado_respuesta: g['RADICADO DE RESPUESTA'] || null,
     estado_devolucion:  g['ESTADO DEVOLUCION'] || null,
     estado_aplicacion:  g['ESTADO APLICACIÓN'] || null,
-    numero_proceso:     g['Proceso'] || null,
+    numero_proceso_manual: g['Proceso'] || null,
     ultima_edicion:     new Date().toISOString(),
     editado_por:        g._editadoPor || 'Sistema'
   };
@@ -820,6 +817,9 @@ async function recargarTodo(){
   if(alEl) showAl(alEl,'al-load','<div class="spin"></div> Recargando...');
   await cargarTodo();
   if(alEl) showAl(alEl,'al-ok','✅ Datos recargados.');
+  // feedback breve en la sync pill
+  var l=document.getElementById('sync-lbl');
+  if(l){ var prev=l.textContent; l.textContent='✅ Actualizado'; setTimeout(()=>{ if(ultimaSync) l.textContent='Sincronizado '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); },1500); }
 }
 
 // ── INIT ──
@@ -871,8 +871,12 @@ function renderKpis(){
   var total=dataBanco.length,fin=0,tram=0,pen=0,valor=0;
   dataBanco.forEach(r=>{
     var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
-    if(ed==='FINALIZADO'||ea==='FINALIZADO') fin++;
-    else if(ed==='EN TRAMITE'||ea==='EN TRAMITE') tram++;
+    // Un depósito cuenta como EN TRÁMITE/REVISIÓN si alguno de sus estados lo está (trabajo en curso).
+    // Como FINALIZADO solo si ambos lados están finalizados o uno finalizado y el otro vacío.
+    var enCurso = ed==='EN TRAMITE'||ea==='EN TRAMITE'||ed==='EN REVISION'||ea==='EN REVISION';
+    var algunFin = ed==='FINALIZADO'||ea==='FINALIZADO';
+    if(enCurso) tram++;
+    else if(algunFin) fin++;
     else pen++;
     valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
   });
@@ -954,13 +958,20 @@ function renderTabla(){
     var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     var cid=String(r['Identificación Demandado']||'');
     var tieneExp=expedientesPorCedula[cid]?'<span class="nota-dot" title="Tiene expedientes" style="background:#93c5fd"></span>':'';
+    // Columna Proceso: 1) lo que el contador escribió a mano  2) radicado del expediente predial  3) vacío
+    var procManual=String(r['Proceso']||'').trim();
+    var procCell='—';
+    if(procManual){ procCell=eh(procManual); }
+    else if(expedientesPorCedula[cid] && expedientesPorCedula[cid][0] && expedientesPorCedula[cid][0].radicado){
+      procCell='📁 '+eh(expedientesPorCedula[cid][0].radicado);
+    }
     return `<tr class="${gestionado?'gestionado':''}" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')">
       <td style="font-family:monospace;font-size:11px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
       <td style="white-space:nowrap;font-size:11px">${eh(fecha)}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${eh(r['Nombre Demandante.1']||'—')}</td>
       <td style="font-family:monospace;font-size:11px">${eh(r['Identificación Demandado']||'—')}</td>
       <td style="text-align:right;font-weight:700;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
-      <td style="font-size:11px;color:var(--soft)">${eh(r['Proceso']||'—')}</td>
+      <td style="font-size:11px;color:var(--soft)">${procCell}</td>
       <td>${r['Impuesto']?'<span class="badge b-imp">'+eh(String(r['Impuesto']).trim().substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>'}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
@@ -1293,7 +1304,7 @@ function actualizarCfgPanel(){
 }
 
 // UTILS
-const RESPONSABLES = ['Maria Camila Uribe','Jaime Cordoba','Yennifer Chaverra','Dario Baldrich','Deisy Lopez','Juan Gomez Londoño','Jeison Maya'];
+const RESPONSABLES = ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque'];
 
 function llenarSelectResponsables(){
   var resps=new Set(RESPONSABLES);
