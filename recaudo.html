@@ -898,7 +898,13 @@ function fmtM(n){
   if(n>=1e3) return '$'+(n/1e3).toFixed(0)+'k';
   return '$'+Math.round(n).toLocaleString('es-CO');
 }
-function fmt$(n){ return '$'+Math.round(parseFloat(String(n||0).replace(/[^\d.]/g,''))||0).toLocaleString('es-CO'); }
+function fmt$(n){
+  var v=parseFloat(n);
+  if(isNaN(v)) v=0;
+  // Si tiene centavos, mostrarlos (2 decimales). Si es entero, sin decimales.
+  var tieneCentavos = Math.abs(v - Math.round(v)) > 0.0001;
+  return '$'+v.toLocaleString('es-CO',{minimumFractionDigits: tieneCentavos?2:0, maximumFractionDigits:2});
+}
 
 // FILTRAR
 function filtrar(){
