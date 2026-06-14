@@ -228,6 +228,22 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
   font-family:inherit;transition:all .15s}
 .btn-gest:hover{background:rgba(45,141,232,.4);color:#fff}
 
+/* ── VISTA 360 (depósitos + expedientes en modal) ── */
+.vista360{margin-top:18px;padding:14px;background:rgba(26,111,196,.06);border:1px solid rgba(45,141,232,.18);border-radius:var(--radius-sm)}
+.v360-title{font-size:11px;font-weight:700;color:var(--gold2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+.v360-count{background:rgba(232,160,32,.2);color:var(--gold2);font-size:10px;padding:1px 8px;border-radius:10px;font-weight:700}
+.v360-list{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto}
+.v360-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;font-size:12px}
+.v360-row.actual{border-color:rgba(232,160,32,.5);background:rgba(232,160,32,.07)}
+.v360-row-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.v360-row-top{font-family:monospace;font-size:11px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v360-row-sub{font-size:10px;color:var(--muted)}
+.v360-row-right{text-align:right;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.v360-val{font-weight:700;color:#86efac}
+.v360-badge{font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(45,141,232,.18);color:#93c5fd;font-weight:600}
+.v360-aqui{font-size:9px;color:var(--gold2);font-weight:700}
+.v360-empty{font-size:11px;color:var(--muted);font-style:italic;padding:4px 2px}
+
 /* ── SYNC PILL ── */
 .sync-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
   font-size:11px;font-weight:500;background:var(--surface);border:1px solid var(--border);color:var(--soft)}
@@ -457,36 +473,25 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
 <div id="panel-config" style="display:none">
   <div class="card">
     <div class="card-hdr">
-      <div class="card-hdr-title">⚙️ Configuración de conexión</div>
+      <div class="card-hdr-title">⚙️ Estado de la conexión</div>
       <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--soft)">
-        <div id="cfg-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0"></div>
-        <span id="cfg-txt">Sin URL configurada</span>
+        <div id="cfg-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
+        <span id="cfg-txt">Conectado a Supabase</span>
       </div>
     </div>
     <div style="padding:20px">
-      <div class="cg2" style="margin-bottom:14px">
-        <div class="campo"><label>URL Apps Script (Google Sheets)</label>
-          <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/..."/>
-        </div>
-        <div class="campo"><label>Nombre de la hoja en el Sheet</label>
-          <input type="text" id="cfg-hoja" placeholder="Recaudo_Historico" value="Recaudo_Historico"/>
-        </div>
+      <div style="padding:16px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius-sm);margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:#86efac;margin-bottom:6px">✅ Base de datos Supabase (PostgreSQL)</div>
+        <div style="font-size:12px;color:var(--soft);line-height:1.6">Los depósitos y las gestiones se guardan directamente en la base de datos central. Los cambios que hagan los contadores se ven al instante para todo el equipo. Ya no se requiere configurar URL de Google Sheets.</div>
       </div>
-      <div id="cfg-alert" style="display:none;margin-bottom:12px"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="fbtn fbtn-primary" onclick="guardarCfg()">💾 Guardar</button>
-        <button class="fbtn fbtn-outline" onclick="probarCfg()">🔗 Probar conexión</button>
-        <button class="fbtn fbtn-green" onclick="cargarDesdeSheet()">☁️ Cargar desde Sheet</button>
+      <div class="cg3" style="gap:12px">
+        <div class="campo"><label>Total depósitos</label><input type="text" id="cfg-info-total" readonly value="—" style="font-weight:700;color:var(--gold2)"/></div>
+        <div class="campo"><label>Gestionados</label><input type="text" id="cfg-info-gest" readonly value="—" style="font-weight:700;color:#86efac"/></div>
+        <div class="campo"><label>Última carga</label><input type="text" id="cfg-info-sync" readonly value="—"/></div>
       </div>
-      <div style="margin-top:24px;padding:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--radius-sm)">
-        <div style="font-size:10px;font-weight:700;color:var(--gold2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">📋 Acciones Apps Script requeridas</div>
-        <pre style="font-size:10px;color:var(--soft);line-height:1.7;white-space:pre-wrap;word-break:break-all">case 'listar_recaudo':
-  var sh = ss.getSheetByName(e.parameter.hoja || 'Recaudo_Historico');
-  if (!sh || sh.getLastRow() < 2)
-    return json({status:'ok', data:[], cols:[]});
-  var headers = sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0];
-  var vals = sh.getRange(2,1,sh.getLastRow()-1,sh.getLastColumn()).getValues();
-  return json({status:'ok', headers:headers, data:vals});</pre>
+      <div id="cfg-alert" style="display:none;margin-top:14px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <button class="fbtn fbtn-primary" onclick="recargarTodo()">🔄 Recargar datos</button>
       </div>
     </div>
   </div>
@@ -608,6 +613,18 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
         <label>Observación</label>
         <textarea id="m-observacion" placeholder="Detalles de la gestión, soportes, actuaciones..."></textarea>
       </div>
+      <!-- 🆕 OTROS DEPÓSITOS DE ESTA PERSONA -->
+      <div class="vista360" id="m-otros-dep-wrap" style="display:none">
+        <div class="v360-title">💰 Otros depósitos de esta persona <span class="v360-count" id="m-otros-dep-count"></span></div>
+        <div class="v360-list" id="m-otros-dep"></div>
+      </div>
+
+      <!-- 🆕 EXPEDIENTES PREDIALES DE ESTA PERSONA -->
+      <div class="vista360" id="m-expedientes-wrap" style="display:none">
+        <div class="v360-title">📁 Expedientes con la Alcaldía <span class="v360-count" id="m-expedientes-count"></span></div>
+        <div class="v360-list" id="m-expedientes"></div>
+      </div>
+
       <div class="log-wrap" id="m-log-wrap" style="display:none">
         <div class="log-title">📝 Historial de cambios</div>
         <div id="m-log"></div>
@@ -625,17 +642,38 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
 </div>
 
 <script>
-const CFG_KEY   = 'recaudo_cfg_v1';
-const DATA_KEY  = 'recaudo_data_v2';
-const GEST_KEY  = 'recaudo_gest_v2';
-const LOG_KEY   = 'recaudo_log_v1';
+// ════════════════════════════════════════════════════════════
+// RECAUDO HISTÓRICO — Capa de datos Supabase (reemplaza Apps Script/Sheets)
+// ════════════════════════════════════════════════════════════
+const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
 
-var cfg = { apiUrl:'', hoja:'Recaudo_Historico' };
-try { cfg = Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY)||'{}')); } catch(e){}
+function sbHeaders(extra){
+  return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer " + SUPABASE_ANON }, extra || {});
+}
 
-var dataBanco  = [];
-var gestiones  = {};
-var logCambios = {};
+// ── Trae TODAS las filas de una tabla/vista paginando de a 1000 (límite REST de Supabase) ──
+async function sbFetchAll(tabla, select, extraQuery){
+  var todos = [];
+  var desde = 0;
+  var bloque = 1000;
+  while(true){
+    var url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (extraQuery ? "&" + extraQuery : "");
+    var res = await fetch(url, { headers: sbHeaders({ Range: desde + "-" + (desde + bloque - 1), "Range-Unit": "items" }) });
+    if(!res.ok) throw new Error("Supabase HTTP " + res.status);
+    var chunk = await res.json();
+    todos = todos.concat(chunk);
+    if(chunk.length < bloque) break;
+    desde += bloque;
+    if(desde > 200000) break; // tope de seguridad
+  }
+  return todos;
+}
+
+// ════════════════════════════════════════════════════════════
+// ESTADO EN MEMORIA (sin localStorage — el navegador aguanta, localStorage no)
+// ════════════════════════════════════════════════════════════
+var dataBanco  = [];   // depósitos (filas de la tabla recaudo, con nombres de columna originales remapeados)
 var filtrados  = [];
 var pendFiltrados = [];
 var pagActual  = 1;
@@ -643,12 +681,73 @@ var pagPend    = 1;
 const PS       = 50;
 var sortCol    = 'Fecha Emisión';
 var sortDir    = -1;
-var registroActivo = null;
-var nuevosUltimoImport = 0;
+var registroActivo = null;   // guarda el id técnico de Supabase de la fila abierta
+var ultimaSync = null;
 
-try { dataBanco  = JSON.parse(localStorage.getItem(DATA_KEY)||'[]'); } catch(e){}
-try { gestiones  = JSON.parse(localStorage.getItem(GEST_KEY)||'{}'); } catch(e){}
-try { logCambios = JSON.parse(localStorage.getItem(LOG_KEY) ||'{}'); } catch(e){}
+// Índice de expedientes prediales por cédula (se llena al cargar)
+var expedientesPorCedula = {};
+
+// ── Mapeo: columna Supabase (snake) -> clave interna que usa la UI (igual que antes) ──
+// La UI existente usa nombres como 'deposito judicial', 'ESTADO DEVOLUCION', etc.
+// Convertimos cada fila de Supabase a ese formato para no tocar la lógica de render.
+function filaSupaAUI(r){
+  return {
+    _id: r.id,                                   // id técnico (para UPDATE)
+    'deposito judicial':        r.deposito_judicial || '',
+    'Fecha Emisión':            r.fecha_emision || '',
+    'Estado del Depósito':      r.estado_deposito || '',
+    'Identificación Demandante':r.identificacion_demandante || '',
+    'Nombre Demandante':        r.nombre_demandante || '',
+    'Identificación Demandado': r.identificacion_demandado || '',
+    'Nombre Demandante.1':      r.nombre_demandado || '',   // la UI muestra el demandado con esta clave
+    'Identificación Consignante':r.identificacion_consignante || '',
+    'Nombre Consignante':       r.nombre_consignante || '',
+    'Concepto del Depósito':    r.concepto_deposito || '',
+    'Número del Proceso':       r.numero_proceso || '',
+    'Valor del Depóstio':       r.valor_deposito || 0,
+    'Título Padre':             r.titulo_padre || '',
+    'Tipo de TX origen':        r.tipo_tx_origen || '',
+    // campos de gestión
+    'Observacion':              r.observacion || '',
+    'TELEFONO DE CONTACTO':     r.telefono_contacto || '',
+    'CORREO ELECTRONICO':       r.correo_electronico || '',
+    'DIRECCION':                r.direccion || '',
+    'CIUDAD':                   r.ciudad || '',
+    'ANO DE GESTION':           r.ano_gestion || '',
+    'RESPONSABLE':              r.responsable || '',
+    'GESTION TESORERIA':        r.gestion_tesoreria || '',
+    'COMPROBANTE DE EGRESO':    r.comprobante_egreso || '',
+    'RADICADO DE RESPUESTA':    r.radicado_respuesta || '',
+    'ESTADO DEVOLUCION':        r.estado_devolucion || '',
+    'ESTADO APLICACIÓN':        r.estado_aplicacion || '',
+    'Proceso':                  r.numero_proceso || '',   // alias usado por la UI en filtros/columna
+    'Impuesto':                 r.concepto_deposito || '', // no hay tipo de impuesto en datos; se deja editable
+    'Pendiente convenio':       '',
+    'CI INICIAL':               '',
+    _editadoPor:                r.editado_por || '',
+    _editadoFecha:              r.ultima_edicion ? new Date(r.ultima_edicion).toLocaleString('es-CO') : ''
+  };
+}
+
+// ── Mapeo inverso: claves UI -> columnas Supabase (solo campos de gestión editables) ──
+function gestionUIASupa(g){
+  return {
+    observacion:        g['Observacion'] || null,
+    telefono_contacto:  g['TELEFONO DE CONTACTO'] || null,
+    correo_electronico: g['CORREO ELECTRONICO'] || null,
+    direccion:          g['DIRECCION'] || null,
+    ciudad:             g['CIUDAD'] || null,
+    responsable:        g['RESPONSABLE'] || null,
+    gestion_tesoreria:  g['GESTION TESORERIA'] || null,
+    comprobante_egreso: g['COMPROBANTE DE EGRESO'] || null,
+    radicado_respuesta: g['RADICADO DE RESPUESTA'] || null,
+    estado_devolucion:  g['ESTADO DEVOLUCION'] || null,
+    estado_aplicacion:  g['ESTADO APLICACIÓN'] || null,
+    numero_proceso:     g['Proceso'] || null,
+    ultima_edicion:     new Date().toISOString(),
+    editado_por:        g._editadoPor || 'Sistema'
+  };
+}
 
 // ── SYNC PILL ──
 function setSS(estado, lbl){
@@ -658,12 +757,51 @@ function setSS(estado, lbl){
   if(l) l.textContent=lbl;
 }
 
+// ════════════════════════════════════════════════════════════
+// CARGA INICIAL
+// ════════════════════════════════════════════════════════════
+async function cargarTodo(){
+  setSS('loading','Cargando desde Supabase...');
+  try{
+    // 1) Depósitos
+    var filas = await sbFetchAll('recaudo', '*', 'order=fecha_emision.desc.nullslast');
+    dataBanco = filas.map(filaSupaAUI);
+    ultimaSync = new Date();
+
+    // 2) Expedientes prediales -> índice por cédula (para el modal 360)
+    expedientesPorCedula = {};
+    try{
+      var exps = await sbFetchAll('expedientes_predial',
+        'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion');
+      exps.forEach(function(e){
+        var cid = String(e.id_contribuyente || '').trim();
+        if(!cid) return;
+        if(!expedientesPorCedula[cid]) expedientesPorCedula[cid] = [];
+        expedientesPorCedula[cid].push(e);
+      });
+    }catch(e){ /* si falla, el modal simplemente no muestra expedientes */ }
+
+    var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    setSS('ok','Sincronizado '+ts);
+    renderKpis(); filtrar(); llenarSelectResponsables(); actualizarCfgPanel();
+  }catch(err){
+    setSS('error','Error al cargar');
+    var tb=document.getElementById('tbody');
+    if(tb) tb.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la base de datos. Revise su conexión e intente recargar.</p></div></td></tr>';
+  }
+}
+
+async function recargarTodo(){
+  var alEl=document.getElementById('cfg-alert');
+  if(alEl) showAl(alEl,'al-load','<div class="spin"></div> Recargando...');
+  await cargarTodo();
+  if(alEl) showAl(alEl,'al-ok','✅ Datos recargados.');
+}
+
 // ── INIT ──
 (function init(){
   actualizarCfgPanel();
-  if(dataBanco.length){ renderKpis(); filtrar(); llenarSelectResponsables(); }
-  if(cfg.apiUrl){ setSS('loading','Sincronizando...'); cargarDesdeSheet(); }
-  else setSS('','Sin Sheet configurado');
+  cargarTodo();
 })();
 
 // TABS
@@ -701,33 +839,29 @@ function badgeEst(v){
   return '<span class="badge b-vacio">'+eh(n)+'</span>';
 }
 
-function getRow(r){
-  var dep=String(r['deposito judicial']||'');
-  return Object.assign({},r,gestiones[dep]||{},{_dep:dep});
-}
+// En el modelo Supabase la gestión vive en la misma fila -> getRow devuelve la fila tal cual
+function getRow(r){ return r; }
 
 // KPIs
 function renderKpis(){
   var total=dataBanco.length,fin=0,tram=0,pen=0,valor=0;
   dataBanco.forEach(r=>{
-    var row=getRow(r);
-    var ed=normEst(row['ESTADO DEVOLUCION']),ea=normEst(row['ESTADO APLICACIÓN']);
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     if(ed==='FINALIZADO'||ea==='FINALIZADO') fin++;
     else if(ed==='EN TRAMITE'||ea==='EN TRAMITE') tram++;
     else pen++;
-    valor+=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
   });
   document.getElementById('k-total').textContent=total.toLocaleString('es-CO');
   document.getElementById('k-pen').textContent=pen.toLocaleString('es-CO');
   document.getElementById('k-fin').textContent=fin.toLocaleString('es-CO');
   document.getElementById('k-tram').textContent=tram.toLocaleString('es-CO');
   document.getElementById('k-valor').textContent=fmtM(valor);
-  document.getElementById('k-nuevos').textContent=nuevosUltimoImport||'—';
-  // Mostrar fecha del último import
+  var kn=document.getElementById('k-nuevos'); if(kn) kn.textContent='—';
   var ki=document.getElementById('k-import-fecha');
-  if(ki) ki.textContent=ultimaSync?('Sheet: '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})):(dataBanco.length?'Datos locales':'Sin cargar');
-  document.getElementById('badge-total').textContent=total.toLocaleString('es-CO');
-  document.getElementById('badge-pen').textContent=(pen+tram).toLocaleString('es-CO');
+  if(ki) ki.textContent=ultimaSync?('Sync: '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})):'—';
+  var bt=document.getElementById('badge-total'); if(bt) bt.textContent=total.toLocaleString('es-CO');
+  var bp=document.getElementById('badge-pen'); if(bp) bp.textContent=(pen+tram).toLocaleString('es-CO');
 }
 
 function fmtM(n){
@@ -746,18 +880,17 @@ function filtrar(){
   var fImp=(document.getElementById('f-impuesto').value||'').toUpperCase();
   var fResp=(document.getElementById('f-responsable').value||'').toLowerCase();
   filtrados=dataBanco.filter(r=>{
-    var row=getRow(r);
     if(buscar){
-      var hay=((row['deposito judicial']||'')+(row['Nombre Demandante.1']||'')+(row['Identificación Demandado']||'')+(row['Proceso']||'')+(row['Número del Proceso']||'')).toLowerCase();
+      var hay=((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')+(r['Proceso']||'')+(r['Número del Proceso']||'')).toLowerCase();
       if(hay.indexOf(buscar)<0) return false;
     }
-    if(fEDev){ var ed=normEst(row['ESTADO DEVOLUCION']); if(fEDev==='SIN GESTIONAR'&&ed) return false; if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false; }
-    if(fEApl){ var ea=normEst(row['ESTADO APLICACIÓN']); if(fEApl==='SIN GESTIONAR'&&ea) return false; if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false; }
-    if(fImp){ var imp=(row['Impuesto']||'').toUpperCase().trim(); if(!imp.includes(fImp)) return false; }
-    if(fResp){ if((row['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
+    if(fEDev){ var ed=normEst(r['ESTADO DEVOLUCION']); if(fEDev==='SIN GESTIONAR'&&ed) return false; if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false; }
+    if(fEApl){ var ea=normEst(r['ESTADO APLICACIÓN']); if(fEApl==='SIN GESTIONAR'&&ea) return false; if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false; }
+    if(fImp){ var imp=(r['Impuesto']||'').toUpperCase().trim(); if(!imp.includes(fImp)) return false; }
+    if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     return true;
   });
-  filtrados.sort((a,b)=>String(getRow(a)[sortCol]||'').localeCompare(String(getRow(b)[sortCol]||''),'es')*sortDir);
+  filtrados.sort((a,b)=>String(a[sortCol]||'').localeCompare(String(b[sortCol]||''),'es')*sortDir);
   pagActual=1; renderTabla();
 }
 
@@ -771,35 +904,35 @@ function limpiarFiltros(){
 }
 
 function renderTabla(){
-  var data=filtrados.length||document.getElementById('f-buscar').value?filtrados:dataBanco.slice();
-  if(!filtrados.length&&!document.getElementById('f-buscar').value) data=dataBanco.slice();
+  var data=filtrados;
   var totalPags=Math.ceil(data.length/PS)||1;
   var ini=(pagActual-1)*PS,fin=Math.min(ini+PS,data.length),pag=data.slice(ini,fin);
   if(!pag.length){
-    document.getElementById('tbody').innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros. Importe un lote o conecte el Sheet en ⚙️ Configuración.</p></div></td></tr>';
+    document.getElementById('tbody').innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
     document.getElementById('pag-info').textContent='0 registros';
     document.getElementById('pag-btns').innerHTML='';
     return;
   }
   document.getElementById('tbody').innerHTML=pag.map(r=>{
-    var row=getRow(r),dep=row._dep;
-    var esNuevo=row._nuevo?'<span class="chip-nuevo">NUEVO</span>':'';
-    var gestionado=row['ESTADO DEVOLUCION']||row['ESTADO APLICACIÓN']||gestiones[dep];
-    var tieneNotas=(logCambios[dep]&&logCambios[dep].length>0)||(gestiones[dep]&&gestiones[dep]['Observacion']);
-    var fecha=String(row['Fecha Emisión']||'');if(fecha.length>10)fecha=fecha.substring(0,10);
-    var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    return `<tr class="${gestionado?'gestionado':''}" onclick="abrirModal('${dep.replace(/'/g,"\\'")}')">
-      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${eh(dep)}${esNuevo}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}</td>
+    var dep=r['deposito judicial'];
+    var gestionado=r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN'];
+    var tieneNotas=r['Observacion'];
+    var fecha=String(r['Fecha Emisión']||'');if(fecha.length>10)fecha=fecha.substring(0,10);
+    var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var cid=String(r['Identificación Demandado']||'');
+    var tieneExp=expedientesPorCedula[cid]?'<span class="nota-dot" title="Tiene expedientes" style="background:#93c5fd"></span>':'';
+    return `<tr class="${gestionado?'gestionado':''}" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')">
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
       <td style="white-space:nowrap;font-size:11px">${eh(fecha)}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${eh(row['Nombre Demandante.1']||'—')}</td>
-      <td style="font-family:monospace;font-size:11px">${eh(row['Identificación Demandado']||'—')}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${eh(r['Nombre Demandante.1']||'—')}</td>
+      <td style="font-family:monospace;font-size:11px">${eh(r['Identificación Demandado']||'—')}</td>
       <td style="text-align:right;font-weight:700;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
-      <td style="font-size:11px;color:var(--soft)">${eh(row['Proceso']||'—')}</td>
-      <td>${row['Impuesto']?'<span class="badge b-imp">'+eh(String(row['Impuesto']).trim())+'</span>':'<span class="badge b-vacio">—</span>'}</td>
-      <td>${badgeEst(row['ESTADO DEVOLUCION'])}</td>
-      <td>${badgeEst(row['ESTADO APLICACIÓN'])}</td>
-      <td style="font-size:11px;color:var(--soft)">${eh(row['RESPONSABLE']||'—')}</td>
-      <td onclick="event.stopPropagation()"><button class="btn-gest" onclick="abrirModal('${dep.replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
+      <td style="font-size:11px;color:var(--soft)">${eh(r['Proceso']||'—')}</td>
+      <td>${r['Impuesto']?'<span class="badge b-imp">'+eh(String(r['Impuesto']).trim().substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>'}</td>
+      <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
+      <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
+      <td onclick="event.stopPropagation()"><button class="btn-gest" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
     </tr>`;
   }).join('');
   document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros`;
@@ -810,14 +943,13 @@ function renderTabla(){
 function renderPendientesStats(){
   var sin=0,tram=0,rev=0,valor=0,resps=new Set();
   pendFiltrados.forEach(r=>{
-    var row=getRow(r);
-    var ed=normEst(row['ESTADO DEVOLUCION']),ea=normEst(row['ESTADO APLICACIÓN']);
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     var estado=ed||ea||'';
     if(!estado||estado==='PENDIENTE') sin++;
     else if(estado==='EN TRAMITE') tram++;
     else if(estado==='EN REVISION') rev++;
-    valor+=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    var resp=row['RESPONSABLE']||'';if(resp.trim())resps.add(resp.trim());
+    valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var resp=r['RESPONSABLE']||'';if(resp.trim())resps.add(resp.trim());
   });
   var s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
   s('ps-sin',sin.toLocaleString('es-CO'));
@@ -832,12 +964,11 @@ function filtrarPend(){
   var fResp=(document.getElementById('fp-responsable').value||'').toLowerCase();
   var fImp=(document.getElementById('fp-impuesto').value||'').toUpperCase();
   pendFiltrados=dataBanco.filter(r=>{
-    var row=getRow(r);
-    var ed=normEst(row['ESTADO DEVOLUCION']),ea=normEst(row['ESTADO APLICACIÓN']);
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
-    if(buscar){ var hay=((row['deposito judicial']||'')+(row['Nombre Demandante.1']||'')+(row['Identificación Demandado']||'')).toLowerCase(); if(hay.indexOf(buscar)<0) return false; }
-    if(fResp){ if((row['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
-    if(fImp){ if(!(row['Impuesto']||'').toUpperCase().includes(fImp)) return false; }
+    if(buscar){ var hay=((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')).toLowerCase(); if(hay.indexOf(buscar)<0) return false; }
+    if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
+    if(fImp){ if(!(r['Impuesto']||'').toUpperCase().includes(fImp)) return false; }
     return true;
   });
   pagPend=1; renderPendientes();
@@ -852,20 +983,20 @@ function renderPendientes(){
     return;
   }
   document.getElementById('tbody-pend').innerHTML=pag.map(r=>{
-    var row=getRow(r),dep=row._dep;
-    var fecha=String(row['Fecha Emisión']||'').substring(0,10);
-    var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    return `<tr onclick="abrirModal('${dep.replace(/'/g,"\\'")}')">
+    var dep=r['deposito judicial'];
+    var fecha=String(r['Fecha Emisión']||'').substring(0,10);
+    var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    return `<tr onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')">
       <td style="font-family:monospace;font-size:11px;white-space:nowrap">${eh(dep)}</td>
       <td style="white-space:nowrap;font-size:11px">${eh(fecha)}</td>
-      <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eh(row['Nombre Demandante.1']||'—')}</td>
-      <td style="font-family:monospace;font-size:11px">${eh(row['Identificación Demandado']||'—')}</td>
+      <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eh(r['Nombre Demandante.1']||'—')}</td>
+      <td style="font-family:monospace;font-size:11px">${eh(r['Identificación Demandado']||'—')}</td>
       <td style="text-align:right;font-weight:700">${fmt$(valor)}</td>
-      <td>${row['Impuesto']?'<span class="badge b-imp">'+eh(String(row['Impuesto']).trim())+'</span>':'<span class="badge b-vacio">—</span>'}</td>
-      <td>${badgeEst(row['ESTADO DEVOLUCION'])}</td>
-      <td>${badgeEst(row['ESTADO APLICACIÓN'])}</td>
-      <td style="font-size:11px;color:var(--soft)">${eh(row['RESPONSABLE']||'—')}</td>
-      <td onclick="event.stopPropagation()"><button class="btn-gest" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74" onclick="abrirModal('${dep.replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
+      <td>${r['Impuesto']?'<span class="badge b-imp">'+eh(String(r['Impuesto']).trim().substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>'}</td>
+      <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
+      <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
+      <td onclick="event.stopPropagation()"><button class="btn-gest" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
     </tr>`;
   }).join('');
   document.getElementById('pag-info-pend').textContent=`Mostrando ${ini+1}–${fin} de ${pendFiltrados.length.toLocaleString('es-CO')} pendientes`;
@@ -885,41 +1016,99 @@ function renderPag(total,btnId,pag,cb){
   document.getElementById(btnId).innerHTML=h;
 }
 
-// MODAL
+// ════════════════════════════════════════════════════════════
+// MODAL (con vista 360: otros depósitos + expedientes)
+// ════════════════════════════════════════════════════════════
 function abrirModal(dep){
-  var r=dataBanco.find(x=>String(x['deposito judicial'])===dep);
+  var r=dataBanco.find(x=>String(x['deposito judicial'])===String(dep));
   if(!r) return;
-  registroActivo=dep;
-  var row=getRow(r);
+  registroActivo=r._id;   // id técnico de Supabase
   document.getElementById('m-titulo').textContent='Depósito '+dep;
-  document.getElementById('m-sub').textContent=(row['Nombre Demandante.1']||'—')+' · C.C. '+(row['Identificación Demandado']||'—');
-  var valor=parseFloat(String(row['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+  var cid=String(r['Identificación Demandado']||'');
+  document.getElementById('m-sub').textContent=(r['Nombre Demandante.1']||'—')+' · C.C. '+(cid||'—');
+  var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
   document.getElementById('m-banco-datos').innerHTML=`
     <div class="banco-item"><div class="banco-lbl">Valor depósito</div><div class="banco-val money">${fmt$(valor)}</div></div>
-    <div class="banco-item"><div class="banco-lbl">Fecha emisión</div><div class="banco-val">${eh(String(row['Fecha Emisión']||'').substring(0,10))}</div></div>
-    <div class="banco-item"><div class="banco-lbl">Estado depósito</div><div class="banco-val">${eh(row['Estado del Depósito']||'—')}</div></div>
-    <div class="banco-item"><div class="banco-lbl">Tipo TX</div><div class="banco-val">${eh(row['Tipo de TX origen']||'—')}</div></div>
-    <div class="banco-item"><div class="banco-lbl">N° Proceso banco</div><div class="banco-val" style="font-family:monospace">${eh(String(row['Número del Proceso']||'—').replace(/^0+/,''))}</div></div>
-    <div class="banco-item"><div class="banco-lbl">Nombre Consignante</div><div class="banco-val">${eh(row['Nombre Consignante']||'—')}</div></div>`;
-  var g=gestiones[dep]||{};
+    <div class="banco-item"><div class="banco-lbl">Fecha emisión</div><div class="banco-val">${eh(String(r['Fecha Emisión']||'').substring(0,10))}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Estado depósito</div><div class="banco-val">${eh(r['Estado del Depósito']||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Tipo TX</div><div class="banco-val">${eh(r['Tipo de TX origen']||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">N° Proceso banco</div><div class="banco-val" style="font-family:monospace">${eh(String(r['Número del Proceso']||'—').replace(/^0+/,'')||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Nombre Consignante</div><div class="banco-val">${eh(r['Nombre Consignante']||'—')}</div></div>`;
+
   var campos={'m-est-dev':'ESTADO DEVOLUCION','m-est-apl':'ESTADO APLICACIÓN','m-responsable':'RESPONSABLE','m-proceso':'Proceso','m-impuesto':'Impuesto','m-convenio':'Pendiente convenio','m-ci-inicial':'CI INICIAL','m-comp-egreso':'COMPROBANTE DE EGRESO','m-radicado-resp':'RADICADO DE RESPUESTA','m-gest-tes':'GESTION TESORERIA','m-telefono':'TELEFONO DE CONTACTO','m-correo':'CORREO ELECTRONICO','m-direccion':'DIRECCION','m-ciudad':'CIUDAD','m-observacion':'Observacion'};
-  Object.keys(campos).forEach(id=>{ var el=document.getElementById(id);if(!el)return; var val=g[campos[id]]!==undefined?g[campos[id]]:(row[campos[id]]||''); if(id.includes('est-'))val=normEst(val); el.value=String(val||'').trim(); });
-  var log=logCambios[dep]||[];
-  var lw=document.getElementById('m-log-wrap'),lc=document.getElementById('m-log');
-  if(log.length){ lw.style.display='block'; lc.innerHTML=log.slice(-8).reverse().map(l=>`<div class="log-item"><span class="log-ts">${eh(l.ts)} · ${eh(l.user)}</span><span class="log-txt">${eh(l.txt)}</span></div>`).join(''); }
-  else lw.style.display='none';
+  Object.keys(campos).forEach(id=>{ var el=document.getElementById(id);if(!el)return; var val=r[campos[id]]||''; if(id.includes('est-'))val=normEst(val); el.value=String(val||'').trim(); });
+
+  // ── 360: otros depósitos de la misma persona ──
+  renderOtrosDepositos(cid, dep);
+  // ── 360: expedientes prediales de la persona ──
+  renderExpedientes(cid);
+
   var ep=document.getElementById('m-editado-por');
-  ep.textContent=g._editadoPor?'Último cambio: '+g._editadoPor+' · '+g._editadoFecha:'Sin cambios registrados';
+  ep.textContent=r._editadoFecha?('Último cambio: '+(r._editadoPor||'—')+' · '+r._editadoFecha):'Sin cambios registrados';
   document.getElementById('m-alert').style.display='none';
+  document.getElementById('m-log-wrap').style.display='none';
   document.getElementById('modal').classList.add('open');
   document.body.style.overflow='hidden';
 }
 
+function renderOtrosDepositos(cid, depActual){
+  var wrap=document.getElementById('m-otros-dep-wrap');
+  var cont=document.getElementById('m-otros-dep');
+  var cnt=document.getElementById('m-otros-dep-count');
+  if(!cid){ wrap.style.display='none'; return; }
+  var todos=dataBanco.filter(x=>String(x['Identificación Demandado'])===cid);
+  if(todos.length<=1){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  cnt.textContent=todos.length+' en total';
+  cont.innerHTML=todos.map(d=>{
+    var esActual=String(d['deposito judicial'])===String(depActual);
+    var valor=parseFloat(String(d['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var fecha=String(d['Fecha Emisión']||'').substring(0,10);
+    return `<div class="v360-row ${esActual?'actual':''}" ${esActual?'':`onclick="abrirModal('${String(d['deposito judicial']).replace(/'/g,"\\'")}')" style="cursor:pointer"`}>
+      <div class="v360-row-main">
+        <div class="v360-row-top">📄 ${eh(d['deposito judicial'])}${esActual?' <span class="v360-aqui">● AQUÍ</span>':''}</div>
+        <div class="v360-row-sub">${eh(fecha||'sin fecha')} · ${badgeEst(d['ESTADO DEVOLUCION'])}</div>
+      </div>
+      <div class="v360-row-right"><span class="v360-val">${fmt$(valor)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderExpedientes(cid){
+  var wrap=document.getElementById('m-expedientes-wrap');
+  var cont=document.getElementById('m-expedientes');
+  var cnt=document.getElementById('m-expedientes-count');
+  var exps=cid?expedientesPorCedula[cid]:null;
+  if(!exps||!exps.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  cnt.textContent=exps.length+(exps.length===1?' expediente':' expedientes');
+  cont.innerHTML=exps.map(e=>{
+    var valor=parseFloat(String(e.valor_total||0))||0;
+    var detalle=[];
+    if(e.matricula) detalle.push('Mat: '+e.matricula);
+    if(e.numero_factura) detalle.push('Fact: '+e.numero_factura);
+    if(e.direccion) detalle.push(e.direccion);
+    return `<div class="v360-row">
+      <div class="v360-row-main">
+        <div class="v360-row-top">📁 ${eh(e.radicado||'sin radicado')}${e.modulo?' <span class="v360-badge">'+eh(e.modulo)+'</span>':''}</div>
+        <div class="v360-row-sub">${eh(detalle.join(' · ')||'—')}</div>
+      </div>
+      <div class="v360-row-right">
+        ${valor?'<span class="v360-val">'+fmt$(valor)+'</span>':''}
+        ${e.estado?'<span class="v360-badge">'+eh(e.estado)+'</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function cerrarModal(){ document.getElementById('modal').classList.remove('open'); document.body.style.overflow=''; registroActivo=null; }
 
+// ════════════════════════════════════════════════════════════
+// GUARDAR GESTIÓN — PATCH REST real a Supabase (sabe si guardó)
+// ════════════════════════════════════════════════════════════
 async function guardarGestion(){
   if(!registroActivo) return;
-  var dep=registroActivo;
+  var idTec=registroActivo;
   var ahora=new Date();
   var ts=ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
   var user='Sistema';
@@ -928,9 +1117,6 @@ async function guardarGestion(){
     'ESTADO APLICACIÓN':document.getElementById('m-est-apl').value,
     'RESPONSABLE':document.getElementById('m-responsable').value.trim(),
     'Proceso':document.getElementById('m-proceso').value.trim(),
-    'Impuesto':document.getElementById('m-impuesto').value,
-    'Pendiente convenio':document.getElementById('m-convenio').value,
-    'CI INICIAL':document.getElementById('m-ci-inicial').value.trim(),
     'COMPROBANTE DE EGRESO':document.getElementById('m-comp-egreso').value.trim(),
     'RADICADO DE RESPUESTA':document.getElementById('m-radicado-resp').value.trim(),
     'GESTION TESORERIA':document.getElementById('m-gest-tes').value.trim(),
@@ -939,72 +1125,106 @@ async function guardarGestion(){
     'DIRECCION':document.getElementById('m-direccion').value.trim(),
     'CIUDAD':document.getElementById('m-ciudad').value.trim(),
     'Observacion':document.getElementById('m-observacion').value.trim(),
-    _editadoPor:user,_editadoFecha:ts
+    _editadoPor:user
   };
-  gestiones[dep]=g;
-  try{localStorage.setItem(GEST_KEY,JSON.stringify(gestiones));}catch(e){}
-  if(!logCambios[dep]) logCambios[dep]=[];
-  var resumen=[];
-  if(g['ESTADO DEVOLUCION']) resumen.push('Dev:'+g['ESTADO DEVOLUCION']);
-  if(g['ESTADO APLICACIÓN']) resumen.push('Apl:'+g['ESTADO APLICACIÓN']);
-  if(g['RESPONSABLE']) resumen.push('Resp:'+g['RESPONSABLE']);
-  logCambios[dep].push({ts,user,txt:resumen.join(' · ')||'Actualizado'});
-  try{localStorage.setItem(LOG_KEY,JSON.stringify(logCambios));}catch(e){}
   var alEl=document.getElementById('m-alert');
   showAl(alEl,'al-load','<div class="spin"></div> Guardando...');
-  var ok=false;
-  if(cfg.apiUrl){
-    try{
-      var params=new URLSearchParams({accion:'guardar_gestion_recaudo',hoja:cfg.hoja,deposito:dep,proceso:g['Proceso'],impuesto:g['Impuesto'],convenio:g['Pendiente convenio'],observacion:g['Observacion'],telefono:g['TELEFONO DE CONTACTO'],correo:g['CORREO ELECTRONICO'],direccion:g['DIRECCION'],ciudad:g['CIUDAD'],responsable:g['RESPONSABLE'],gestionTes:g['GESTION TESORERIA'],ciInicial:g['CI INICIAL'],compEgreso:g['COMPROBANTE DE EGRESO'],radicadoResp:g['RADICADO DE RESPUESTA'],estDev:g['ESTADO DEVOLUCION'],estApl:g['ESTADO APLICACIÓN']});
-      var res=await fetch(cfg.apiUrl+'?'+params.toString());
-      var d=await res.json();
-      if(d.status==='ok') ok=true;
-    }catch(e){}
+  try{
+    var payload=gestionUIASupa(g);
+    var url=SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec);
+    var res=await fetch(url,{
+      method:'PATCH',
+      headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok){ var t=await res.text(); throw new Error('HTTP '+res.status+' '+t); }
+    // Actualizar la fila en memoria para reflejar el cambio sin recargar todo
+    var fila=dataBanco.find(x=>x._id===idTec);
+    if(fila){
+      Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; });
+      fila['Número del Proceso']=fila['Número del Proceso']; // sin cambio
+      fila._editadoPor=user; fila._editadoFecha=ts;
+    }
+    showAl(alEl,'al-ok','✅ Guardado en la base de datos.');
+    renderKpis(); filtrar();
+    setTimeout(cerrarModal,800);
+  }catch(e){
+    showAl(alEl,'al-err','❌ No se pudo guardar. Revise su conexión e intente de nuevo.');
   }
-  if(!ok && cfg.apiUrl){
-    // Reintentar con POST
-    try{
-      var res2=await fetch(cfg.apiUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({accion:'guardar_gestion_recaudo',hoja:cfg.hoja,deposito:dep,...g})});
-      ok=true; // no-cors no confirma pero asumimos que llegó
-    }catch(e2){}
-  }
-  showAl(alEl,ok||!cfg.apiUrl?'al-ok':'al-warn',
-    ok?'✅ Guardado en Sheets.':!cfg.apiUrl?'✅ Guardado localmente.':'⚠️ Guardado local (Sheet sin conexión).');
-  renderKpis(); filtrar();
-  setTimeout(cerrarModal,900);
 }
 
-// IMPORTAR
+// ════════════════════════════════════════════════════════════
+// IMPORTAR LOTE — inserta depósitos nuevos en Supabase
+// ════════════════════════════════════════════════════════════
 function onDrop(e){e.preventDefault();document.getElementById('importDrop').classList.remove('drag');var f=e.dataTransfer.files[0];if(f)procesarImport({files:[f]});}
 function procesarImport(inp){
   var f=inp.files[0];if(!f)return;
   var rd=new FileReader();
-  rd.onload=function(e){
+  rd.onload=async function(e){
     try{
       var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
       var ws=wb.Sheets[wb.SheetNames[0]];
       var json=XLSX.utils.sheet_to_json(ws,{raw:false,defval:''});
-      var depCol=Object.keys(json[0]||{}).find(k=>k.toLowerCase().includes('deposito')||k.toLowerCase().includes('depósito'))||Object.keys(json[0]||{})[0];
+      if(!json.length){ showImportResult('warn','El archivo está vacío.'); return; }
+      var keys=Object.keys(json[0]);
+      var depCol=keys.find(k=>k.toLowerCase().includes('deposito')||k.toLowerCase().includes('depósito'))||keys[0];
       var existentes=new Set(dataBanco.map(r=>String(r['deposito judicial']||'')));
       var nuevos=[];
       json.forEach(row=>{
-        var dep=String(row[depCol]||row['deposito judicial']||'').trim();
-        if(dep&&!existentes.has(dep)){var nr={'deposito judicial':dep,'_nuevo':true};Object.keys(row).forEach(k=>{nr[k]=row[k];});nuevos.push(nr);existentes.add(dep);}
+        var dep=String(row[depCol]||'').trim();
+        if(dep && !existentes.has(dep)){
+          nuevos.push({
+            deposito_judicial: dep,
+            fecha_emision: parseFechaImport(row['Fecha Emisión']||row['Fecha Emision']||''),
+            estado_deposito: String(row['Estado del Depósito']||row['Estado del Deposito']||'').trim()||null,
+            identificacion_demandado: limpiarCedula(row['Identificación Demandado']||row['Identificacion Demandado']||''),
+            nombre_demandado: String(row['Nombre Demandado']||row['Nombre Demandante']||'').trim()||null,
+            valor_deposito: parseValorImport(row['Valor del Depóstio']||row['Valor del Deposito']||row['Valor']||0),
+            concepto_deposito: String(row['Concepto del Depósito']||'').trim()||null,
+            numero_proceso: String(row['Número del Proceso']||row['Numero del Proceso']||'').trim()||null,
+            nombre_consignante: String(row['Nombre Consignante']||'').trim()||null,
+            tipo_tx_origen: String(row['Tipo de TX origen']||'').trim()||null
+          });
+          existentes.add(dep);
+        }
       });
-      if(nuevos.length){
-        dataBanco.unshift(...nuevos);
-        try{localStorage.setItem(DATA_KEY,JSON.stringify(dataBanco.slice(0,60000)));}catch(e){}
-        nuevosUltimoImport=nuevos.length;
-        renderKpis();filtrar();llenarSelectResponsables();
-        showImportResult('ok',`✅ <strong>${nuevos.length} registros nuevos</strong> importados de ${json.length} en el archivo.`);
-      } else {
-        showImportResult('warn','ℹ️ No se encontraron registros nuevos. Todos los depósitos ya existen.');
+      if(!nuevos.length){ showImportResult('warn','ℹ️ No se encontraron registros nuevos. Todos los depósitos ya existen.'); inp.value=''; return; }
+      showImportResult('warn','<div class="spin"></div> Guardando '+nuevos.length+' registros nuevos en la base de datos...');
+      // Insertar en bloques de 500
+      var insertados=0;
+      for(var i=0;i<nuevos.length;i+=500){
+        var bloque=nuevos.slice(i,i+500);
+        var res=await fetch(SUPABASE_URL+'/rest/v1/recaudo',{
+          method:'POST',
+          headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+          body:JSON.stringify(bloque)
+        });
+        if(!res.ok){ var t=await res.text(); throw new Error('HTTP '+res.status+' '+t); }
+        insertados+=bloque.length;
       }
-    }catch(err){showImportResult('err','❌ Error al leer el archivo: '+err.message);}
+      showImportResult('ok',`✅ <strong>${insertados} registros nuevos</strong> guardados. Recargando...`);
+      await cargarTodo();
+    }catch(err){ showImportResult('err','❌ Error: '+err.message); }
   };
   rd.readAsArrayBuffer(f);
   inp.value='';
+}
+function parseFechaImport(v){
+  v=String(v||'').trim();
+  var m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){ var y=+m[3]; if(y<1990) return null; return y+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2); }
+  if(/^\d{4}-\d{2}-\d{2}/.test(v)) return v.substring(0,10);
+  return null;
+}
+function parseValorImport(v){
+  v=String(v||'').replace(/\./g,'').replace(/,/g,'.').replace(/[^\d.]/g,'');
+  var n=parseFloat(v); return isNaN(n)?null:Math.round(n*100)/100;
+}
+function limpiarCedula(v){
+  var nums=String(v||'').match(/\d+/g);
+  if(!nums) return null;
+  var c=nums.sort((a,b)=>b.length-a.length)[0];
+  return (c.length>=4&&c.length<=20)?c:null;
 }
 function showImportResult(tipo,msg){
   var el=document.getElementById('import-resultado');el.style.display='block';
@@ -1012,59 +1232,32 @@ function showImportResult(tipo,msg){
   el.innerHTML=`<div class="alerta ${cls}">${msg}</div>`;
 }
 
-// CARGAR DESDE SHEET
-var ultimaSync = null;
-
-async function cargarDesdeSheet(){
-  if(!cfg.apiUrl) return;
-  setSS('loading','Sincronizando...');
-  var alEl=document.getElementById('cfg-alert');
-  if(alEl) showAl(alEl,'al-load','<div class="spin"></div> Cargando desde Google Sheets...');
-  try{
-    var r=await fetch(cfg.apiUrl+'?accion=listar_recaudo&hoja='+encodeURIComponent(cfg.hoja));
-    var d=await r.json();
-    if(d.status==='ok'&&Array.isArray(d.data)&&d.data.length){
-      var headers=d.headers||[];
-      dataBanco=d.data.map(row=>{var obj={};headers.forEach((h,i)=>{obj[h]=row[i];});return obj;});
-      try{localStorage.setItem(DATA_KEY,JSON.stringify(dataBanco.slice(0,60000)));}catch(e){}
-      ultimaSync=new Date();
-      var ts=ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-      setSS('ok','Sincronizado '+ts);
-      renderKpis();filtrar();llenarSelectResponsables();
-      if(alEl) showAl(alEl,'al-ok','✅ '+dataBanco.length.toLocaleString('es-CO')+' registros cargados.');
-    } else {
-      setSS('error','Sin datos en Sheet');
-      if(alEl) showAl(alEl,'al-warn','Sin datos en el Sheet o formato inesperado.');
-    }
-  }catch(e){
-    setSS('error','Sin conexión con Sheet');
-    if(alEl) showAl(alEl,'al-err','❌ No se pudo conectar. Verifique la URL.');
-  }
-}
-
 // EXPORTAR
 function exportarExcel(){
   var data=filtrados.length?filtrados:dataBanco;
   if(!data.length){alert('No hay datos para exportar.');return;}
-  var filas=data.slice(0,5000).map(r=>{var row=getRow(r);return{'Depósito':row['deposito judicial'],'Fecha':row['Fecha Emisión'],'Demandado':row['Nombre Demandante.1'],'Cédula':row['Identificación Demandado'],'Valor':row['Valor del Depóstio'],'Proceso':row['Proceso'],'Impuesto':row['Impuesto'],'Est. Devolución':row['ESTADO DEVOLUCION'],'Est. Aplicación':row['ESTADO APLICACIÓN'],'Responsable':row['RESPONSABLE'],'CI Inicial':row['CI INICIAL'],'Comp. Egreso':row['COMPROBANTE DE EGRESO'],'Radicado':row['RADICADO DE RESPUESTA'],'Observación':row['Observacion']};});
+  var filas=data.slice(0,10000).map(r=>({'Depósito':r['deposito judicial'],'Fecha':r['Fecha Emisión'],'Demandado':r['Nombre Demandante.1'],'Cédula':r['Identificación Demandado'],'Valor':r['Valor del Depóstio'],'Proceso':r['Proceso'],'Est. Devolución':r['ESTADO DEVOLUCION'],'Est. Aplicación':r['ESTADO APLICACIÓN'],'Responsable':r['RESPONSABLE'],'Comp. Egreso':r['COMPROBANTE DE EGRESO'],'Radicado':r['RADICADO DE RESPUESTA'],'Observación':r['Observacion']}));
   var ws=XLSX.utils.json_to_sheet(filas);
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Recaudo');
   XLSX.writeFile(wb,'Recaudo_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
-// CONFIG
-function guardarCfg(){cfg.apiUrl=document.getElementById('cfg-url').value.trim();cfg.hoja=document.getElementById('cfg-hoja').value.trim()||'Recaudo_Historico';localStorage.setItem(CFG_KEY,JSON.stringify(cfg));actualizarCfgPanel();showAl(document.getElementById('cfg-alert'),'al-ok','✅ Configuración guardada.');}
-async function probarCfg(){if(!cfg.apiUrl){showAl(document.getElementById('cfg-alert'),'al-err','Sin URL.');return;}showAl(document.getElementById('cfg-alert'),'al-load','<div class="spin"></div> Probando...');try{await fetch(cfg.apiUrl+'?accion=ping');showAl(document.getElementById('cfg-alert'),'al-ok','✅ Conexión exitosa.');}catch(e){showAl(document.getElementById('cfg-alert'),'al-err','❌ Sin respuesta.');}}
-function actualizarCfgPanel(){var cu=document.getElementById('cfg-url');if(cu)cu.value=cfg.apiUrl||'';var ch=document.getElementById('cfg-hoja');if(ch)ch.value=cfg.hoja||'Recaudo_Historico';var dot=document.getElementById('cfg-dot'),txt=document.getElementById('cfg-txt');if(dot&&txt){dot.style.background=cfg.apiUrl?'#22c55e':'#ef4444';txt.textContent=cfg.apiUrl?'Conectado: '+cfg.apiUrl.slice(-45):'Sin URL — datos solo locales';}}
+// CONFIG (informativo)
+function actualizarCfgPanel(){
+  var dot=document.getElementById('cfg-dot'),txt=document.getElementById('cfg-txt');
+  if(dot&&txt){ dot.style.background='#22c55e'; txt.textContent='Conectado a Supabase'; }
+  var t=document.getElementById('cfg-info-total'); if(t) t.value=dataBanco.length.toLocaleString('es-CO');
+  var gestN=dataBanco.filter(r=>r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN']||r['RESPONSABLE']).length;
+  var gv=document.getElementById('cfg-info-gest'); if(gv) gv.value=gestN.toLocaleString('es-CO');
+  var sv=document.getElementById('cfg-info-sync'); if(sv) sv.value=ultimaSync?ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—';
+}
 
 // UTILS
-// Los responsables fijos del sistema
 const RESPONSABLES = ['Maria Camila Uribe','Jaime Cordoba','Yennifer Chaverra','Dario Baldrich','Deisy Lopez','Juan Gomez Londoño','Jeison Maya'];
 
 function llenarSelectResponsables(){
-  // Recoger también responsables que vengan del Sheet (externos al equipo)
   var resps=new Set(RESPONSABLES);
-  dataBanco.forEach(r=>{var g=gestiones[String(r['deposito judicial']||'')]||{};var resp=g['RESPONSABLE']||r['RESPONSABLE']||'';if(resp&&resp.trim())resps.add(resp.trim());});
+  dataBanco.forEach(r=>{var resp=r['RESPONSABLE']||'';if(resp&&resp.trim())resps.add(resp.trim());});
   var html='<option value="">Responsable (todos)</option>';
   [...resps].sort().forEach(r=>{html+=`<option value="${eh(r)}">${eh(r)}</option>`;});
   ['f-responsable','fp-responsable'].forEach(id=>{var el=document.getElementById(id);if(el)el.innerHTML=html;});
@@ -1072,7 +1265,6 @@ function llenarSelectResponsables(){
 function showAl(el,cls,msg){if(!el)return;el.style.display='flex';el.className='alerta '+cls;el.innerHTML=msg;}
 function eh(v){if(v===null||v===undefined)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-if(dataBanco.length){renderKpis();filtrar();llenarSelectResponsables();}
 </script>
 </body>
 </html>
