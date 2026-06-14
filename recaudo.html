@@ -378,6 +378,18 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
       <select class="finp" id="f-responsable" onchange="filtrar()">
         <option value="">Responsable (todos)</option>
       </select>
+      <select class="finp" id="f-monto" onchange="filtrar()">
+        <option value="">💰 Monto (todos)</option>
+        <option value="1000000">≥ $1.000.000</option>
+        <option value="5000000">≥ $5.000.000</option>
+        <option value="10000000">≥ $10.000.000</option>
+        <option value="50000000">≥ $50.000.000</option>
+      </select>
+      <select class="finp" id="f-expediente" onchange="filtrar()">
+        <option value="">📁 Expediente (todos)</option>
+        <option value="con">✅ Con expediente</option>
+        <option value="sin">— Sin expediente</option>
+      </select>
       <button class="fbtn fbtn-outline" onclick="limpiarFiltros()" style="font-size:11px">✕ Limpiar</button>
     </div>
     <div class="tw">
@@ -425,6 +437,18 @@ tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
         <option value="ICO">ICO / ICA</option>
         <option value="TRANSITO">Tránsito</option>
         <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+      </select>
+      <select class="finp" id="fp-monto" onchange="filtrarPend()">
+        <option value="">💰 Monto (todos)</option>
+        <option value="1000000">≥ $1.000.000</option>
+        <option value="5000000">≥ $5.000.000</option>
+        <option value="10000000">≥ $10.000.000</option>
+        <option value="50000000">≥ $50.000.000</option>
+      </select>
+      <select class="finp" id="fp-expediente" onchange="filtrarPend()">
+        <option value="">📁 Expediente (todos)</option>
+        <option value="con">✅ Con expediente</option>
+        <option value="sin">— Sin expediente</option>
       </select>
     </div>
     <div class="tw">
@@ -879,6 +903,8 @@ function filtrar(){
   var fEApl=document.getElementById('f-estado-apl').value;
   var fImp=(document.getElementById('f-impuesto').value||'').toUpperCase();
   var fResp=(document.getElementById('f-responsable').value||'').toLowerCase();
+  var fMonto=parseFloat(document.getElementById('f-monto').value)||0;
+  var fExp=document.getElementById('f-expediente').value;
   filtrados=dataBanco.filter(r=>{
     if(buscar){
       var hay=((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')+(r['Proceso']||'')+(r['Número del Proceso']||'')).toLowerCase();
@@ -888,9 +914,16 @@ function filtrar(){
     if(fEApl){ var ea=normEst(r['ESTADO APLICACIÓN']); if(fEApl==='SIN GESTIONAR'&&ea) return false; if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false; }
     if(fImp){ var imp=(r['Impuesto']||'').toUpperCase().trim(); if(!imp.includes(fImp)) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
+    if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
+    if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&expedientesPorCedula[cid]); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
     return true;
   });
-  filtrados.sort((a,b)=>String(a[sortCol]||'').localeCompare(String(b[sortCol]||''),'es')*sortDir);
+  // Si hay filtro de monto activo, ordenar de mayor a menor para priorizar los grandes
+  if(fMonto){
+    filtrados.sort((a,b)=>(parseFloat(String(b['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0)-(parseFloat(String(a['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0));
+  } else {
+    filtrados.sort((a,b)=>String(a[sortCol]||'').localeCompare(String(b[sortCol]||''),'es')*sortDir);
+  }
   pagActual=1; renderTabla();
 }
 
@@ -899,7 +932,7 @@ function sortBy(col){
   filtrar();
 }
 function limpiarFiltros(){
-  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable'].forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
+  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable','f-monto','f-expediente'].forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
   filtrar();
 }
 
@@ -963,14 +996,21 @@ function filtrarPend(){
   var buscar=(document.getElementById('fp-buscar').value||'').toLowerCase();
   var fResp=(document.getElementById('fp-responsable').value||'').toLowerCase();
   var fImp=(document.getElementById('fp-impuesto').value||'').toUpperCase();
+  var fMonto=parseFloat((document.getElementById('fp-monto')||{}).value)||0;
+  var fExp=(document.getElementById('fp-expediente')||{}).value||'';
   pendFiltrados=dataBanco.filter(r=>{
     var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
     if(buscar){ var hay=((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')).toLowerCase(); if(hay.indexOf(buscar)<0) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fImp){ if(!(r['Impuesto']||'').toUpperCase().includes(fImp)) return false; }
+    if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
+    if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&expedientesPorCedula[cid]); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
     return true;
   });
+  if(fMonto){
+    pendFiltrados.sort((a,b)=>(parseFloat(String(b['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0)-(parseFloat(String(a['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0));
+  }
   pagPend=1; renderPendientes();
 }
 
