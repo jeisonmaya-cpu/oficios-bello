@@ -1052,6 +1052,8 @@ async function recargarTodo(){
 // ════════════════════════════════════════════════════════════
 // USUARIO ACTIVO — integra con la sesión del sistema; si no hay, pregunta
 // ════════════════════════════════════════════════════════════
+// Lista de responsables (definida aquí, ANTES del init que la usa)
+const RESPONSABLES = ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo'];
 var USUARIO_ACTIVO = '';
 
 function detectarUsuario(){
@@ -1071,8 +1073,18 @@ function detectarUsuario(){
   return '';
 }
 
+function llenarBotonesUsuario(){
+  var cont=document.getElementById('user-options');
+  if(!cont) return;
+  cont.innerHTML=RESPONSABLES.map(function(n){
+    var safe=n.replace(/'/g,"\\'");
+    return '<button class="user-opt" onclick="setUsuario(\''+safe+'\')">'+eh(n)+'</button>';
+  }).join('');
+}
+
 function pedirUsuario(){
-  // Muestra el selector de identificación (overlay)
+  // Llenar botones SIEMPRE al mostrar (por si init corrió antes de tiempo)
+  llenarBotonesUsuario();
   var ov=document.getElementById('user-overlay');
   if(ov) ov.classList.add('open');
 }
@@ -1093,30 +1105,23 @@ function pintarUsuarioActivo(){
 function cambiarUsuario(){ pedirUsuario(); }
 
 function initUsuario(){
-  // Lista de responsables (con respaldo por si la constante global aún no está definida por orden de carga)
-  var lista=(typeof RESPONSABLES!=='undefined' && RESPONSABLES.length)
-    ? RESPONSABLES
-    : ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo'];
-  // Llenar el selector PRIMERO (antes de mostrar el overlay)
-  var cont=document.getElementById('user-options');
-  if(cont){
-    cont.innerHTML=lista.map(function(n){
-      var safe=n.replace(/'/g,"\\'");
-      return '<button class="user-opt" onclick="setUsuario(\''+safe+'\')">'+eh(n)+'</button>';
-    }).join('');
-  }
-  // Detectar usuario o pedirlo
+  llenarBotonesUsuario();
   var u=detectarUsuario();
   if(u){ USUARIO_ACTIVO=u; pintarUsuarioActivo(); }
   else { pedirUsuario(); }
 }
 
 // ── INIT ──
-(function init(){
+function arrancar(){
   actualizarCfgPanel();
   initUsuario();
   cargarTodo();
-})();
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', arrancar);
+}else{
+  arrancar();
+}
 
 // TABS
 function goTab(t){
@@ -1744,7 +1749,6 @@ function actualizarCfgPanel(){
 }
 
 // UTILS
-const RESPONSABLES = ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo'];
 
 // ── Mapa de alias: nombres escritos distinto que son la MISMA persona ──
 // Clave = como aparece en los datos (en minúscula y sin tildes); Valor = nombre correcto unificado.
