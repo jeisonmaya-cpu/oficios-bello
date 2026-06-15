@@ -291,6 +291,8 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .sync-pendientes{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#fdba74;background:rgba(234,88,12,.18);border:1px solid rgba(234,88,12,.4);border-radius:20px;padding:4px 11px;cursor:pointer;white-space:nowrap}
 .sync-pendientes:hover{background:rgba(234,88,12,.3)}
 @media(max-width:480px){.user-options{grid-template-columns:1fr}}
+.user-skip{margin-top:16px;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif}
+.user-skip:hover{color:var(--soft)}
 
 /* ── CABECERA MODAL REDISEÑADA ── */
 .mhdr-dep{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace;margin-bottom:6px}
@@ -722,6 +724,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
     <h3 class="user-card-title">¿Quién está gestionando?</h3>
     <p class="user-card-sub">Selecciona tu nombre para registrar tus gestiones. Quedará firmado quién hace cada cambio.</p>
     <div class="user-options" id="user-options"></div>
+    <button class="user-skip" onclick="document.getElementById('user-overlay').classList.remove('open')">Continuar sin identificar por ahora</button>
   </div>
 </div>
 
@@ -1090,14 +1093,22 @@ function pintarUsuarioActivo(){
 function cambiarUsuario(){ pedirUsuario(); }
 
 function initUsuario(){
+  // Lista de responsables (con respaldo por si la constante global aún no está definida por orden de carga)
+  var lista=(typeof RESPONSABLES!=='undefined' && RESPONSABLES.length)
+    ? RESPONSABLES
+    : ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo'];
+  // Llenar el selector PRIMERO (antes de mostrar el overlay)
+  var cont=document.getElementById('user-options');
+  if(cont){
+    cont.innerHTML=lista.map(function(n){
+      var safe=n.replace(/'/g,"\\'");
+      return '<button class="user-opt" onclick="setUsuario(\''+safe+'\')">'+eh(n)+'</button>';
+    }).join('');
+  }
+  // Detectar usuario o pedirlo
   var u=detectarUsuario();
   if(u){ USUARIO_ACTIVO=u; pintarUsuarioActivo(); }
   else { pedirUsuario(); }
-  // llenar el selector con responsables
-  var cont=document.getElementById('user-options');
-  if(cont){
-    cont.innerHTML=RESPONSABLES.map(n=>'<button class="user-opt" onclick="setUsuario(\''+n.replace(/'/g,"\\'")+'\')">'+eh(n)+'</button>').join('');
-  }
 }
 
 // ── INIT ──
