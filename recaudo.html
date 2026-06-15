@@ -6,7 +6,7 @@
 <title>Recaudo Histórico — Alcaldía de Bello</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="icon" href="favicon.svg" type="image/svg+xml"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -104,19 +104,21 @@ main{max-width:1300px;margin:0 auto;padding:24px 28px 80px}
 .fbtn-green{background:rgba(22,163,74,.25);border:1px solid rgba(34,197,94,.3);color:#86efac}
 
 /* ── TABLA ── */
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12px}
-thead tr{background:rgba(255,255,255,.05)}
-thead th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.08em;color:var(--gold2);white-space:nowrap;
-  border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
-thead th:hover{background:rgba(255,255,255,.08)}
+.tw{overflow-x:auto;overflow-y:visible}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#0d2547}
+thead th{padding:11px 12px;text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--gold2);white-space:nowrap;
+  border-bottom:2px solid var(--border);cursor:pointer;user-select:none;
+  position:sticky;top:99px;z-index:10;background:#0d2547}
+thead th:hover{background:#103060}
 thead th.sorted-asc::after{content:' ↑'}
 thead th.sorted-desc::after{content:' ↓'}
 tbody tr{border-bottom:1px solid var(--border2);transition:background .12s;cursor:pointer}
 tbody tr:hover{background:rgba(255,255,255,.06)}
 tbody tr.gestionado{border-left:2px solid rgba(22,163,74,.5)}
-tbody td{padding:9px 12px;vertical-align:middle;color:var(--text)}
+tbody td{padding:10px 12px;vertical-align:middle;color:var(--text);font-size:13px}
+td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 
 /* ── BADGES ── */
 .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;gap:3px}
@@ -1068,16 +1070,16 @@ function renderTabla(){
       procCell='📁 '+eh(expedientesPorCedula[cid][0].radicado);
     }
     return `<tr class="${gestionado?'gestionado':''}" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')">
-      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
-      <td style="white-space:nowrap;font-size:11px">${eh(fecha)}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${eh(r['Nombre Demandante.1']||'—')}</td>
-      <td style="font-family:monospace;font-size:11px">${eh(r['Identificación Demandado']||'—')}</td>
-      <td style="text-align:right;font-weight:700;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
-      <td style="font-size:11px;color:var(--soft)">${procCell}</td>
+      <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
+      <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
+      <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
+      <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
+      <td class="mono" style="font-size:12px;color:var(--soft)">${procCell}</td>
       <td>${r['Impuesto']?'<span class="badge b-imp">'+eh(String(r['Impuesto']).trim().substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>'}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
-      <td style="font-size:11px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
+      <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
       <td onclick="event.stopPropagation()"><button class="btn-gest" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
     </tr>`;
   }).join('');
@@ -1140,15 +1142,15 @@ function renderPendientes(){
     var fecha=String(r['Fecha Emisión']||'').substring(0,10);
     var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     return `<tr onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')">
-      <td style="font-family:monospace;font-size:11px;white-space:nowrap">${eh(dep)}</td>
-      <td style="white-space:nowrap;font-size:11px">${eh(fecha)}</td>
-      <td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eh(r['Nombre Demandante.1']||'—')}</td>
-      <td style="font-family:monospace;font-size:11px">${eh(r['Identificación Demandado']||'—')}</td>
-      <td style="text-align:right;font-weight:700">${fmt$(valor)}</td>
+      <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}</td>
+      <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
+      <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
+      <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
+      <td class="mono" style="text-align:right;font-weight:700;font-size:14px">${fmt$(valor)}</td>
       <td>${r['Impuesto']?'<span class="badge b-imp">'+eh(String(r['Impuesto']).trim().substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>'}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
-      <td style="font-size:11px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
+      <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
       <td onclick="event.stopPropagation()"><button class="btn-gest" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
     </tr>`;
   }).join('');
