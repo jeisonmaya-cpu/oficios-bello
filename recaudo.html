@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{
   --navy:#0a1f3d;--navy2:#0f2d5e;--navy3:#132444;
@@ -260,6 +262,24 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .dash-etotal strong{color:var(--gold2);font-size:14px}
 .dona-total{text-align:center;margin-top:12px;padding-top:11px;border-top:1px solid var(--border);font-size:12px;color:var(--soft)}
 .dona-total strong{color:var(--gold2);font-size:15px}
+/* ── REPORTES ── */
+.rep-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.rep-kpi{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:15px 16px;border-left:3px solid var(--gold)}
+.rep-kpi.green{border-left-color:#22c55e}
+.rep-kpi.orange{border-left-color:#ea580c}
+.rep-kpi.blue{border-left-color:#3b82f6}
+.rep-kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:6px}
+.rep-kpi-val{font-size:20px;font-weight:800;color:var(--text);font-family:'Syne',sans-serif;line-height:1.1}
+.rep-kpi-sub{font-size:11px;color:var(--soft);margin-top:4px}
+.rep-sec-title{font-size:12px;font-weight:700;color:var(--gold2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px}
+.rep-erow{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
+.rep-edot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.rep-elbl{min-width:110px;color:var(--soft)}
+.rep-ebar{flex:1;height:20px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden}
+.rep-ebar-fill{height:100%;border-radius:5px}
+.rep-evals{text-align:right;min-width:140px}
+.rep-eval{font-weight:700;color:var(--text)}
+.rep-ecount{font-size:10px;color:var(--muted)}
 
 /* ── CABECERA MODAL REDISEÑADA ── */
 .mhdr-dep{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace;margin-bottom:6px}
@@ -359,6 +379,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
     ⏳ Pendientes <span class="nbadge nb-gold" id="badge-pen">0</span>
   </button>
   <button class="ntab" id="tab-dashboard" onclick="goTab('dashboard')">📊 Dashboard</button>
+  <button class="ntab" id="tab-reportes" onclick="goTab('reportes')">📑 Reportes</button>
   <button class="ntab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
   <button class="ntab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
 </div>
@@ -565,6 +586,61 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
     <div class="card">
       <div class="card-hdr"><div class="card-hdr-title">🍩 Estado de aplicación</div><div style="font-size:11px;color:var(--soft)">por valor</div></div>
       <div style="padding:18px"><div style="position:relative;height:260px"><canvas id="chart-apl"></canvas></div><div class="dona-total" id="dona-apl-total"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL REPORTES ══ -->
+<div id="panel-reportes" style="display:none">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-hdr-title">📑 Reporte por impuesto</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <select class="finp" id="rep-impuesto" onchange="renderReporte()" style="min-width:160px">
+          <option value="PREDIAL">🏠 Predial</option>
+          <option value="ICA" disabled>🏢 ICA (próximamente)</option>
+          <option value="TRANSITO" disabled>🚗 Tránsito (próximamente)</option>
+          <option value="URBANISTICA" disabled>🏗️ Oblig. Urbanística (próximamente)</option>
+          <option value="POLICIA" disabled>👮 Policía Nacional (próximamente)</option>
+        </select>
+        <button class="tb-btn" onclick="exportarReportePDF()">📄 PDF</button>
+        <button class="tb-btn gold" onclick="exportarReporteExcel()">📊 Excel</button>
+      </div>
+    </div>
+    <div style="padding:20px">
+      <!-- Resumen ejecutivo -->
+      <div class="rep-kpis" id="rep-kpis"></div>
+
+      <!-- Desglose por estado -->
+      <div class="dash-grid" style="margin-top:18px">
+        <div>
+          <div class="rep-sec-title">📊 Estado de Devolución</div>
+          <div id="rep-dev"></div>
+        </div>
+        <div>
+          <div class="rep-sec-title">📊 Estado de Aplicación</div>
+          <div id="rep-apl"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div class="card" style="margin-top:18px">
+    <div class="card-hdr">
+      <div class="card-hdr-title">📋 Detalle de depósitos <span class="nbadge nb-blue" id="rep-count">0</span></div>
+      <input class="finp" id="rep-buscar" placeholder="🔍 Filtrar en el detalle..." oninput="renderReporteDetalle()" style="min-width:220px"/>
+    </div>
+    <div class="tw" style="max-height:60vh">
+      <table>
+        <thead><tr>
+          <th>#Depósito</th><th>Fecha</th><th>Cédula</th><th>Demandado</th>
+          <th style="text-align:right">Valor</th><th>Proceso</th>
+          <th>Est. Devolución</th><th>Est. Aplicación</th><th>Responsable</th>
+          <th>Comp. Egreso</th><th>Radicado Resp.</th><th>Observación</th>
+        </tr></thead>
+        <tbody id="rep-detalle-body"></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -954,7 +1030,7 @@ async function recargarTodo(){
 
 // TABS
 function goTab(t){
-  ['registros','pendientes','dashboard','importar','config'].forEach(p=>{
+  ['registros','pendientes','dashboard','reportes','importar','config'].forEach(p=>{
     var el=document.getElementById('panel-'+p);
     var tb=document.getElementById('tab-'+p);
     if(el) el.style.display= p===t?'block':'none';
@@ -962,6 +1038,7 @@ function goTab(t){
   });
   if(t==='pendientes') filtrarPend();
   if(t==='dashboard') renderDashboard();
+  if(t==='reportes') renderReporte();
   if(t==='config') actualizarCfgPanel();
 }
 
@@ -1713,6 +1790,237 @@ function renderTendencia(){
       }
     }
   });
+}
+
+// ════════════════════════════════════════════════════════════
+// REPORTES por impuesto (hoy Predial; escalable a Tránsito/ICA/OU/Policía)
+// ════════════════════════════════════════════════════════════
+var _repDatos=[];   // depósitos del impuesto seleccionado (para exportar)
+var _repImpuesto='PREDIAL';
+
+function depositosDeImpuesto(tipo){
+  return dataBanco.filter(r=>impuestoDe(r).toUpperCase()===tipo.toUpperCase());
+}
+
+function renderReporte(){
+  _repImpuesto=(document.getElementById('rep-impuesto')||{value:'PREDIAL'}).value||'PREDIAL';
+  _repDatos=depositosDeImpuesto(_repImpuesto);
+  var datos=_repDatos;
+
+  // Resumen ejecutivo
+  var total=datos.length, valorTotal=0;
+  var devFin=0,devFinVal=0, aplFin=0,aplFinVal=0;
+  datos.forEach(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valorTotal+=v;
+    if(normEst(r['ESTADO DEVOLUCION'])==='FINALIZADO'){ devFin++; devFinVal+=v; }
+    if(normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO'){ aplFin++; aplFinVal+=v; }
+  });
+  document.getElementById('rep-kpis').innerHTML=
+    repKpi('','Total depósitos', total.toLocaleString('es-CO'), fmt$(valorTotal))+
+    repKpi('green','Devuelto (finalizado)', devFin.toLocaleString('es-CO'), fmt$(devFinVal))+
+    repKpi('orange','Pendiente devolución', (total-devFin).toLocaleString('es-CO'), fmt$(valorTotal-devFinVal))+
+    repKpi('blue','Aplicado (finalizado)', aplFin.toLocaleString('es-CO'), fmt$(aplFinVal))+
+    repKpi('orange','Pendiente aplicación', (total-aplFin).toLocaleString('es-CO'), fmt$(valorTotal-aplFinVal));
+
+  // Desglose por estado
+  renderRepEstado('rep-dev','ESTADO DEVOLUCION',datos,valorTotal);
+  renderRepEstado('rep-apl','ESTADO APLICACIÓN',datos,valorTotal);
+
+  // Detalle
+  renderReporteDetalle();
+}
+
+function repKpi(cls,lbl,val,sub){
+  return '<div class="rep-kpi '+cls+'"><div class="rep-kpi-lbl">'+lbl+'</div><div class="rep-kpi-val">'+val+'</div><div class="rep-kpi-sub">'+sub+'</div></div>';
+}
+
+function renderRepEstado(contId,campo,datos,valorTotal){
+  var orden=['FINALIZADO','EN TRAMITE','EN REVISION','PENDIENTE','Sin gestionar'];
+  var colores={'FINALIZADO':'#22c55e','EN TRAMITE':'#3b82f6','EN REVISION':'#a855f7','PENDIENTE':'#ea580c','Sin gestionar':'#64748b'};
+  var conteo={},valor={};
+  orden.forEach(k=>{conteo[k]=0;valor[k]=0;});
+  datos.forEach(r=>{
+    var e=normEst(r[campo])||'Sin gestionar';
+    if(conteo[e]===undefined){conteo[e]=0;valor[e]=0;}
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    conteo[e]++; valor[e]+=v;
+  });
+  var maxVal=Math.max(1,...Object.values(valor));
+  var html='';
+  orden.forEach(k=>{
+    if(conteo[k]===0 && k!=='Sin gestionar') return;
+    var w=Math.round(valor[k]/maxVal*100);
+    var pct=valorTotal?Math.round(valor[k]/valorTotal*100):0;
+    html+=`<div class="rep-erow">
+      <div class="rep-edot" style="background:${colores[k]}"></div>
+      <div class="rep-elbl">${eh(k)}</div>
+      <div class="rep-ebar"><div class="rep-ebar-fill" style="width:${w}%;background:${colores[k]}"></div></div>
+      <div class="rep-evals"><div class="rep-eval">${fmt$(valor[k])} <span style="color:var(--gold2)">(${pct}%)</span></div><div class="rep-ecount">${conteo[k].toLocaleString('es-CO')} dep.</div></div>
+    </div>`;
+  });
+  document.getElementById(contId).innerHTML=html;
+}
+
+function renderReporteDetalle(){
+  var buscar=(document.getElementById('rep-buscar')||{value:''}).value.toLowerCase().trim();
+  var datos=_repDatos;
+  if(buscar){
+    datos=datos.filter(r=>((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')+(r['Proceso']||'')+(r['RESPONSABLE']||'')).toLowerCase().indexOf(buscar)>=0);
+  }
+  document.getElementById('rep-count').textContent=datos.length.toLocaleString('es-CO');
+  var body=document.getElementById('rep-detalle-body');
+  if(!datos.length){ body.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:24px">No hay depósitos de '+eh(_repImpuesto)+'.</td></tr>'; return; }
+  // Mostrar hasta 500 en pantalla (el export lleva todos)
+  var muestra=datos.slice(0,500);
+  body.innerHTML=muestra.map(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var proc=String(r['Proceso']||'').trim() || (expedientesPorCedula[String(r['Identificación Demandado']||'')]?'📁 '+(expedientesPorCedula[String(r['Identificación Demandado']||'')][0].radicado||''):'—');
+    return `<tr>
+      <td class="mono" style="font-size:11px">${eh(r['deposito judicial'])}</td>
+      <td class="mono" style="font-size:11px;color:var(--soft)">${eh(String(r['Fecha Emisión']||'').substring(0,10))}</td>
+      <td class="mono" style="font-size:11px">${eh(r['Identificación Demandado']||'—')}</td>
+      <td style="font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eh(r['Nombre Demandante.1']||'—')}</td>
+      <td class="mono" style="text-align:right;font-weight:700;font-size:12px">${fmt$(v)}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(proc)}</td>
+      <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
+      <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(normResp(r['RESPONSABLE'])||'—')}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(r['COMPROBANTE DE EGRESO']||'—')}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(r['RADICADO DE RESPUESTA']||'—')}</td>
+      <td style="font-size:11px;color:var(--soft);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${eh(r['Observacion']||'')}">${eh(r['Observacion']||'—')}</td>
+    </tr>`;
+  }).join('');
+  if(datos.length>500){
+    body.innerHTML+='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:12px;font-style:italic">Mostrando 500 de '+datos.length.toLocaleString('es-CO')+' en pantalla. El archivo exportado incluye todos.</td></tr>';
+  }
+}
+
+// ── EXPORTAR EXCEL (2 hojas: Resumen + Detalle) ──
+function exportarReporteExcel(){
+  if(!_repDatos.length){ alert('No hay datos para exportar.'); return; }
+  var valorTotal=0,devFin=0,devFinVal=0,aplFin=0,aplFinVal=0;
+  _repDatos.forEach(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valorTotal+=v;
+    if(normEst(r['ESTADO DEVOLUCION'])==='FINALIZADO'){devFin++;devFinVal+=v;}
+    if(normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO'){aplFin++;aplFinVal+=v;}
+  });
+  var resumen=[
+    {Concepto:'Impuesto',Valor:_repImpuesto},
+    {Concepto:'Fecha de generación',Valor:new Date().toLocaleString('es-CO')},
+    {Concepto:'Total depósitos',Valor:_repDatos.length},
+    {Concepto:'Valor total',Valor:valorTotal},
+    {Concepto:'Devuelto (finalizado) - cantidad',Valor:devFin},
+    {Concepto:'Devuelto (finalizado) - valor',Valor:devFinVal},
+    {Concepto:'Pendiente devolución - cantidad',Valor:_repDatos.length-devFin},
+    {Concepto:'Pendiente devolución - valor',Valor:valorTotal-devFinVal},
+    {Concepto:'Aplicado (finalizado) - cantidad',Valor:aplFin},
+    {Concepto:'Aplicado (finalizado) - valor',Valor:aplFinVal},
+    {Concepto:'Pendiente aplicación - cantidad',Valor:_repDatos.length-aplFin},
+    {Concepto:'Pendiente aplicación - valor',Valor:valorTotal-aplFinVal}
+  ];
+  var detalle=_repDatos.map(r=>({
+    'Depósito':r['deposito judicial'],
+    'Fecha Emisión':String(r['Fecha Emisión']||'').substring(0,10),
+    'Cédula/NIT':r['Identificación Demandado'],
+    'Demandado':r['Nombre Demandante.1'],
+    'Valor':parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0,
+    'Proceso':r['Proceso']||'',
+    'Estado Devolución':normEst(r['ESTADO DEVOLUCION'])||'Sin gestionar',
+    'Estado Aplicación':normEst(r['ESTADO APLICACIÓN'])||'Sin gestionar',
+    'Responsable':normResp(r['RESPONSABLE'])||'',
+    'Comprobante Egreso':r['COMPROBANTE DE EGRESO']||'',
+    'Radicado Respuesta':r['RADICADO DE RESPUESTA']||'',
+    'Gestión Tesorería':r['GESTION TESORERIA']||'',
+    'Teléfono':r['TELEFONO DE CONTACTO']||'',
+    'Correo':r['CORREO ELECTRONICO']||'',
+    'Dirección':r['DIRECCION']||'',
+    'Observación':r['Observacion']||''
+  }));
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(resumen),'Resumen');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(detalle),'Detalle');
+  XLSX.writeFile(wb,'Reporte_'+_repImpuesto+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ── EXPORTAR PDF (resumen + tabla) ──
+function exportarReportePDF(){
+  if(!_repDatos.length){ alert('No hay datos para exportar.'); return; }
+  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  var W=doc.internal.pageSize.getWidth();
+
+  var valorTotal=0,devFin=0,devFinVal=0,aplFin=0,aplFinVal=0;
+  _repDatos.forEach(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valorTotal+=v;
+    if(normEst(r['ESTADO DEVOLUCION'])==='FINALIZADO'){devFin++;devFinVal+=v;}
+    if(normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO'){aplFin++;aplFinVal+=v;}
+  });
+
+  // Encabezado simple pero bonito
+  doc.setFillColor(10,31,61); doc.rect(0,0,W,60,'F');
+  doc.setTextColor(232,160,32); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('Reporte de '+_repImpuesto, 40, 30);
+  doc.setTextColor(200,210,225); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello', 40, 46);
+  doc.setTextColor(150,160,175);
+  doc.text('Generado: '+new Date().toLocaleString('es-CO'), W-40, 46, {align:'right'});
+
+  // Resumen en cajas
+  var y=80;
+  doc.setTextColor(40,40,40); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Resumen ejecutivo', 40, y);
+  y+=8;
+  var resumenRows=[
+    ['Total depósitos', _repDatos.length.toLocaleString('es-CO'), fmt$(valorTotal)],
+    ['Devuelto (finalizado)', devFin.toLocaleString('es-CO'), fmt$(devFinVal)],
+    ['Pendiente devolución', (_repDatos.length-devFin).toLocaleString('es-CO'), fmt$(valorTotal-devFinVal)],
+    ['Aplicado (finalizado)', aplFin.toLocaleString('es-CO'), fmt$(aplFinVal)],
+    ['Pendiente aplicación', (_repDatos.length-aplFin).toLocaleString('es-CO'), fmt$(valorTotal-aplFinVal)]
+  ];
+  doc.autoTable({
+    startY:y+6,
+    head:[['Concepto','Cantidad','Valor']],
+    body:resumenRows,
+    theme:'grid',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:9},
+    bodyStyles:{fontSize:9,textColor:[40,40,40]},
+    margin:{left:40,right:40},
+    columnStyles:{1:{halign:'right'},2:{halign:'right'}}
+  });
+
+  // Tabla de detalle
+  var detalleRows=_repDatos.map(r=>[
+    r['deposito judicial']||'',
+    String(r['Fecha Emisión']||'').substring(0,10),
+    r['Identificación Demandado']||'',
+    (r['Nombre Demandante.1']||'').substring(0,28),
+    fmt$(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),
+    (normEst(r['ESTADO DEVOLUCION'])||'—'),
+    (normEst(r['ESTADO APLICACIÓN'])||'—'),
+    (normResp(r['RESPONSABLE'])||'—').substring(0,20)
+  ]);
+  doc.autoTable({
+    startY:doc.lastAutoTable.finalY+20,
+    head:[['Depósito','Fecha','Cédula','Demandado','Valor','Devolución','Aplicación','Responsable']],
+    body:detalleRows,
+    theme:'striped',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:8},
+    bodyStyles:{fontSize:7,textColor:[50,50,50]},
+    alternateRowStyles:{fillColor:[245,247,250]},
+    margin:{left:40,right:40},
+    columnStyles:{4:{halign:'right'}},
+    didDrawPage:function(data){
+      var page=doc.internal.getNumberOfPages();
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Página '+doc.internal.getCurrentPageInfo().pageNumber, W-40, doc.internal.pageSize.getHeight()-15, {align:'right'});
+    }
+  });
+
+  doc.save('Reporte_'+_repImpuesto+'_'+new Date().toISOString().slice(0,10)+'.pdf');
 }
 
 function eh(v){if(v===null||v===undefined)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
