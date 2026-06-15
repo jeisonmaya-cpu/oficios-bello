@@ -105,13 +105,13 @@ main{max-width:1300px;margin:0 auto;padding:24px 28px 80px}
 .fbtn-green{background:rgba(22,163,74,.25);border:1px solid rgba(34,197,94,.3);color:#86efac}
 
 /* ── TABLA ── */
-.tw{overflow-x:auto;overflow-y:visible}
+.tw{overflow:auto;max-height:calc(100vh - 230px);border-radius:8px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead tr{background:#0d2547}
 thead th{padding:11px 12px;text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;
   letter-spacing:.05em;color:var(--gold2);white-space:nowrap;
   border-bottom:2px solid var(--border);cursor:pointer;user-select:none;background:#0d2547}
-.tw thead th{position:sticky;top:99px;z-index:10}
+.tw thead th{position:sticky;top:0;z-index:10}
 thead th:hover{background:#103060}
 thead th.sorted-asc::after{content:' ↑'}
 thead th.sorted-desc::after{content:' ↓'}
@@ -865,7 +865,7 @@ function filaSupaAUI(r){
     'ESTADO DEVOLUCION':        r.estado_devolucion || '',
     'ESTADO APLICACIÓN':        r.estado_aplicacion || '',
     'Proceso':                  r.numero_proceso_manual || '',   // proceso/expediente que asigna el contador (NO el del banco)
-    'Impuesto':                 r.concepto_deposito || '', // no hay tipo de impuesto en datos; se deja editable
+    'Impuesto':                 r.tipo_impuesto || '',   // tipo de impuesto (manual); si vacío, se deduce del expediente al mostrar
     'Pendiente convenio':       '',
     'CI INICIAL':               '',
     _editadoPor:                r.editado_por || '',
@@ -888,6 +888,7 @@ function gestionUIASupa(g){
     estado_devolucion:  g['ESTADO DEVOLUCION'] || null,
     estado_aplicacion:  g['ESTADO APLICACIÓN'] || null,
     numero_proceso_manual: g['Proceso'] || null,
+    tipo_impuesto: g['Impuesto'] || null,
     ultima_edicion:     new Date().toISOString(),
     editado_por:        g._editadoPor || 'Sistema'
   };
@@ -965,6 +966,27 @@ function goTab(t){
 }
 
 // NORMALIZAR ESTADO
+// Deduce el tipo de impuesto: 1) el manual guardado  2) del radicado del expediente (FP=Predial)  3) vacío
+function impuestoDe(r){
+  var manual=String(r['Impuesto']||'').trim();
+  if(manual) return manual;
+  var cid=String(r['Identificación Demandado']||'');
+  var exps=cid?expedientesPorCedula[cid]:null;
+  if(exps && exps.length){
+    // buscar un radicado reconocible
+    for(var i=0;i<exps.length;i++){
+      var rad=String(exps[i].radicado||'').toUpperCase();
+      var mod=String(exps[i].modulo||'').toUpperCase();
+      if(rad.indexOf('FP')===0 || mod.indexOf('PREDIAL')>=0) return 'PREDIAL';
+      if(rad.indexOf('ICA')>=0 || mod.indexOf('ICA')>=0 || mod.indexOf('INDUSTRIA')>=0) return 'ICA';
+      if(mod.indexOf('URBAN')>=0) return 'URBANISTICA';
+    }
+    // si tiene expediente predial pero radicado no reconocido, asumir Predial (la tabla es expedientes_predial)
+    return 'PREDIAL';
+  }
+  return '';
+}
+
 function normEst(v){
   if(!v||!String(v).trim()) return '';
   var s=String(v).trim().toUpperCase()
@@ -1046,7 +1068,7 @@ function filtrar(){
     }
     if(fEDev){ var ed=normEst(r['ESTADO DEVOLUCION']); if(fEDev==='SIN GESTIONAR'&&ed) return false; if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false; }
     if(fEApl){ var ea=normEst(r['ESTADO APLICACIÓN']); if(fEApl==='SIN GESTIONAR'&&ea) return false; if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false; }
-    if(fImp){ var imp=(r['Impuesto']||'').toUpperCase().trim(); if(!imp.includes(fImp)) return false; }
+    if(fImp){ var imp=impuestoDe(r).toUpperCase(); if(!imp.includes(fImp)) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
     if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&expedientesPorCedula[cid]); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
@@ -1102,7 +1124,7 @@ function renderTabla(){
       <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
       <td class="mono" style="font-size:12px;color:var(--soft)">${procCell}</td>
-      <td>${r['Impuesto']?'<span class="badge b-imp">'+eh(String(r['Impuesto']).trim().substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>'}</td>
+      <td>${(function(){var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
       <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
@@ -1144,7 +1166,7 @@ function filtrarPend(){
     if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
     if(buscar){ var hay=((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')).toLowerCase(); if(hay.indexOf(buscar)<0) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
-    if(fImp){ if(!(r['Impuesto']||'').toUpperCase().includes(fImp)) return false; }
+    if(fImp){ if(!impuestoDe(r).toUpperCase().includes(fImp)) return false; }
     if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
     if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&expedientesPorCedula[cid]); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
     return true;
@@ -1173,7 +1195,7 @@ function renderPendientes(){
       <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
       <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px">${fmt$(valor)}</td>
-      <td>${r['Impuesto']?'<span class="badge b-imp">'+eh(String(r['Impuesto']).trim().substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>'}</td>
+      <td>${(function(){var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
       <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
@@ -1221,6 +1243,9 @@ function abrirModal(dep){
 
   var campos={'m-est-dev':'ESTADO DEVOLUCION','m-est-apl':'ESTADO APLICACIÓN','m-responsable':'RESPONSABLE','m-proceso':'Proceso','m-impuesto':'Impuesto','m-convenio':'Pendiente convenio','m-ci-inicial':'CI INICIAL','m-comp-egreso':'COMPROBANTE DE EGRESO','m-radicado-resp':'RADICADO DE RESPUESTA','m-gest-tes':'GESTION TESORERIA','m-telefono':'TELEFONO DE CONTACTO','m-correo':'CORREO ELECTRONICO','m-direccion':'DIRECCION','m-ciudad':'CIUDAD','m-observacion':'Observacion'};
   Object.keys(campos).forEach(id=>{ var el=document.getElementById(id);if(!el)return; var val=r[campos[id]]||''; if(id.includes('est-'))val=normEst(val); el.value=String(val||'').trim(); });
+  // Si el impuesto está vacío pero se puede deducir del expediente, pre-seleccionarlo (el contador lo confirma al guardar)
+  var mImp=document.getElementById('m-impuesto');
+  if(mImp && !mImp.value){ var ded=impuestoDe(r); if(ded){ var existe=Array.from(mImp.options).some(o=>o.value===ded); if(existe) mImp.value=ded; } }
 
   // ── 360: otros depósitos de la misma persona ──
   renderOtrosDepositos(cid, dep);
@@ -1350,6 +1375,7 @@ async function guardarGestion(){
     'ESTADO APLICACIÓN':document.getElementById('m-est-apl').value,
     'RESPONSABLE':document.getElementById('m-responsable').value.trim(),
     'Proceso':document.getElementById('m-proceso').value.trim(),
+    'Impuesto':document.getElementById('m-impuesto').value.trim(),
     'COMPROBANTE DE EGRESO':document.getElementById('m-comp-egreso').value.trim(),
     'RADICADO DE RESPUESTA':document.getElementById('m-radicado-resp').value.trim(),
     'GESTION TESORERIA':document.getElementById('m-gest-tes').value.trim(),
