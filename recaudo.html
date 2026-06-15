@@ -115,8 +115,8 @@ thead th{padding:11px 12px;text-align:left;font-size:12px;font-weight:700;text-t
   border-bottom:2px solid var(--border);cursor:pointer;user-select:none;background:#0d2547}
 .tw thead th{position:sticky;top:0;z-index:10}
 thead th:hover{background:#103060}
-thead th.sorted-asc::after{content:' ↑'}
-thead th.sorted-desc::after{content:' ↓'}
+thead th.sorted-asc::after{content:' ↑';color:var(--gold);font-weight:900}
+thead th.sorted-desc::after{content:' ↓';color:var(--gold);font-weight:900}
 tbody tr{border-bottom:1px solid var(--border2);transition:background .12s;cursor:pointer}
 tbody tr:hover{background:rgba(255,255,255,.06)}
 tbody tr.gestionado{border-left:2px solid rgba(22,163,74,.5)}
@@ -290,6 +290,13 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .user-opt:hover{background:rgba(232,160,32,.18);border-color:var(--gold);transform:translateY(-1px)}
 .sync-pendientes{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#fdba74;background:rgba(234,88,12,.18);border:1px solid rgba(234,88,12,.4);border-radius:20px;padding:4px 11px;cursor:pointer;white-space:nowrap}
 .sync-pendientes:hover{background:rgba(234,88,12,.3)}
+/* ── BITÁCORA / HISTORIAL ── */
+.log-item{padding:9px 11px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;margin-bottom:7px}
+.log-item:last-child{margin-bottom:0}
+.log-item-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.log-user{font-size:11px;font-weight:700;color:var(--gold2)}
+.log-fecha{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.log-cambios{font-size:11px;color:var(--soft);line-height:1.5;word-break:break-word}
 @media(max-width:480px){.user-options{grid-template-columns:1fr}}
 .user-skip{margin-top:16px;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif}
 .user-skip:hover{color:var(--soft)}
@@ -442,7 +449,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
       <button class="tb-btn" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74">📥 Importar</button>
     </div>
     <div class="filtros">
-      <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrar()"/>
+      <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrarDebounced()"/>
       <select class="finp" id="f-estado-dev" onchange="filtrar()">
         <option value="">Devolución (todos)</option>
         <option value="PENDIENTE">⏳ Pendiente</option>
@@ -486,16 +493,16 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
     <div class="tw">
       <table id="tabla">
         <thead><tr>
-          <th onclick="sortBy('deposito judicial')">#Depósito</th>
-          <th onclick="sortBy('Fecha Emisión')">Fecha</th>
-          <th onclick="sortBy('Nombre Demandante.1')">Demandado</th>
-          <th onclick="sortBy('Identificación Demandado')">Cédula</th>
-          <th onclick="sortBy('Valor del Depóstio')" style="text-align:right">Valor</th>
-          <th onclick="sortBy('Proceso')">Proceso</th>
-          <th onclick="sortBy('Impuesto')">Impuesto</th>
-          <th onclick="sortBy('ESTADO DEVOLUCION')">Devolución</th>
-          <th onclick="sortBy('ESTADO APLICACIÓN')">Aplicación</th>
-          <th onclick="sortBy('RESPONSABLE')">Responsable</th>
+          <th onclick="sortBy('deposito judicial', this)">#Depósito</th>
+          <th onclick="sortBy('Fecha Emisión', this)">Fecha</th>
+          <th onclick="sortBy('Nombre Demandante.1', this)">Demandado</th>
+          <th onclick="sortBy('Identificación Demandado', this)">Cédula</th>
+          <th onclick="sortBy('Valor del Depóstio', this)" style="text-align:right">Valor</th>
+          <th onclick="sortBy('Proceso', this)">Proceso</th>
+          <th onclick="sortBy('Impuesto', this)">Impuesto</th>
+          <th onclick="sortBy('ESTADO DEVOLUCION', this)">Devolución</th>
+          <th onclick="sortBy('ESTADO APLICACIÓN', this)">Aplicación</th>
+          <th onclick="sortBy('RESPONSABLE', this)">Responsable</th>
           <th></th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -520,7 +527,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   <div class="card">
     <div class="card-hdr"><div class="card-hdr-title">⏳ Sin finalizar</div></div>
     <div class="filtros">
-      <input class="finp search" id="fp-buscar" placeholder="🔍 Buscar..." oninput="filtrarPend()"/>
+      <input class="finp search" id="fp-buscar" placeholder="🔍 Buscar..." oninput="filtrarPendDebounced()"/>
       <select class="finp" id="fp-responsable" onchange="filtrarPend()"><option value="">Responsable (todos)</option></select>
       <select class="finp" id="fp-impuesto" onchange="filtrarPend()">
         <option value="">Impuesto (todos)</option>
@@ -644,7 +651,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   <div class="card" style="margin-top:18px">
     <div class="card-hdr">
       <div class="card-hdr-title">📋 Detalle de depósitos <span class="nbadge nb-blue" id="rep-count">0</span></div>
-      <input class="finp" id="rep-buscar" placeholder="🔍 Filtrar en el detalle..." oninput="renderReporteDetalle()" style="min-width:220px"/>
+      <input class="finp" id="rep-buscar" placeholder="🔍 Filtrar en el detalle..." oninput="renderReporteDetalleDebounced()" style="min-width:220px"/>
     </div>
     <div class="tw" style="max-height:60vh">
       <table>
@@ -786,6 +793,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
             <option>Julieth Duque</option>
             <option>Jhon Fredy Perez</option>
             <option>Nadya Catalina Tamayo</option>
+            <option>Juan Pablo Gómez Londoño</option>
           </select>
         </div>
       </div>
@@ -867,9 +875,12 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
         <div class="v360-body"><div class="v360-list" id="m-expedientes"></div></div>
       </div>
 
-      <div class="log-wrap" id="m-log-wrap" style="display:none">
-        <div class="log-title">📝 Historial de cambios</div>
-        <div id="m-log"></div>
+      <div class="vista360" id="m-log-wrap" style="display:none">
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>📝 Historial de cambios</span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body"><div id="m-log"></div></div>
       </div>
       <div id="m-alert" style="display:none;margin-top:12px"></div>
     </div>
@@ -932,6 +943,13 @@ var expedientesPorCedula = {};
 var _textoDepositos = '';
 // Huella de campos del modal al abrir (para detectar cambios sin guardar)
 var _huellaModal = null;
+
+// ── DEBOUNCE de buscadores: espera 300ms a que el usuario deje de teclear ──
+// Evita recalcular los 48 mil registros en cada tecla (mejora rendimiento en máquinas modestas)
+var _debReg, _debPend, _debRep;
+function filtrarDebounced(){ clearTimeout(_debReg); _debReg=setTimeout(filtrar, 300); }
+function filtrarPendDebounced(){ clearTimeout(_debPend); _debPend=setTimeout(filtrarPend, 300); }
+function renderReporteDetalleDebounced(){ clearTimeout(_debRep); _debRep=setTimeout(renderReporteDetalle, 300); }
 
 // ── Mapeo: columna Supabase (snake) -> clave interna que usa la UI (igual que antes) ──
 // La UI existente usa nombres como 'deposito judicial', 'ESTADO DEVOLUCION', etc.
@@ -1053,7 +1071,7 @@ async function recargarTodo(){
 // USUARIO ACTIVO — integra con la sesión del sistema; si no hay, pregunta
 // ════════════════════════════════════════════════════════════
 // Lista de responsables (definida aquí, ANTES del init que la usa)
-const RESPONSABLES = ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo'];
+const RESPONSABLES = ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo','Juan Pablo Gómez Londoño'];
 var USUARIO_ACTIVO = '';
 
 function detectarUsuario(){
@@ -1255,8 +1273,14 @@ function filtrar(){
   pagActual=1; renderTabla();
 }
 
-function sortBy(col){
+function sortBy(col, th){
   if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  // Limpiar indicadores solo en la tabla de esta cabecera (no en dashboard/reportes)
+  if(th){
+    var thead=th.closest('thead');
+    if(thead) thead.querySelectorAll('th').forEach(function(h){ h.classList.remove('sorted-asc','sorted-desc'); });
+    th.classList.add(sortDir===1?'sorted-asc':'sorted-desc');
+  }
   filtrar();
 }
 function limpiarFiltros(){
@@ -1427,7 +1451,7 @@ function abrirModal(dep){
   var ep=document.getElementById('m-editado-por');
   ep.textContent=r._editadoFecha?('Último cambio: '+(r._editadoPor||'—')+' · '+r._editadoFecha):'Sin cambios registrados';
   document.getElementById('m-alert').style.display='none';
-  document.getElementById('m-log-wrap').style.display='none';
+  cargarBitacora(dep);
   // Restablecer secciones colapsables a estado expandido
   document.querySelectorAll('#modal .vista360').forEach(v=>v.classList.remove('colapsado'));
   document.getElementById('modal').classList.add('open');
@@ -1576,6 +1600,19 @@ async function guardarGestion(){
   }
 
   showAl(alEl,'al-load','<div class="spin"></div> Guardando...');
+  // Capturar valores ANTES de cambiar, para la bitácora
+  var filaPrev=dataBanco.find(x=>x._id===idTec);
+  var camposBitacora=['ESTADO DEVOLUCION','ESTADO APLICACIÓN','RESPONSABLE','Proceso','Impuesto','COMPROBANTE DE EGRESO','RADICADO DE RESPUESTA','GESTION TESORERIA','TELEFONO DE CONTACTO','CORREO ELECTRONICO','DIRECCION','CIUDAD','Observacion'];
+  var cambios=[];
+  if(filaPrev){
+    camposBitacora.forEach(function(k){
+      var antes=String(filaPrev[k]||'').trim();
+      var despues=String(g[k]||'').trim();
+      if(antes!==despues){
+        cambios.push(k+': "'+(antes||'(vacío)')+'" → "'+(despues||'(vacío)')+'"');
+      }
+    });
+  }
   var payload=gestionUIASupa(g);
   var ok=await patchRecaudo(idTec, payload);
   if(ok){
@@ -1584,6 +1621,10 @@ async function guardarGestion(){
     if(fila){
       Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; });
       fila._editadoPor=user; fila._editadoFecha=ts;
+    }
+    // Registrar en bitácora (solo si hubo cambios reales)
+    if(cambios.length){
+      registrarBitacora(document.getElementById('m-dep-num').textContent, user, cambios.join(' · '));
     }
     showAl(alEl,'al-ok','✅ Guardado por '+user.split(' ')[0]+'.');
     renderKpis(); filtrar();
@@ -1609,6 +1650,41 @@ async function patchRecaudo(idTec, payload){
     var res=await fetch(url,{ method:'PATCH', headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}), body:JSON.stringify(payload) });
     return res.ok;
   }catch(e){ return false; }
+}
+
+// ── BITÁCORA: registra cada cambio (trazabilidad) ──
+async function registrarBitacora(deposito, usuario, cambios){
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/recaudo_bitacora',{
+      method:'POST',
+      headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+      body:JSON.stringify({ deposito_judicial:String(deposito), usuario:usuario, cambios:cambios })
+    });
+  }catch(e){ /* si falla, no bloquea el guardado principal */ }
+}
+
+// Carga y muestra el historial de un depósito en el modal
+async function cargarBitacora(deposito){
+  var wrap=document.getElementById('m-log-wrap');
+  var cont=document.getElementById('m-log');
+  if(!wrap||!cont) return;
+  cont.innerHTML='<div style="font-size:11px;color:var(--muted);padding:6px 0">Cargando historial...</div>';
+  wrap.style.display='block';
+  try{
+    var url=SUPABASE_URL+'/rest/v1/recaudo_bitacora?deposito_judicial=eq.'+encodeURIComponent(deposito)+'&order=fecha.desc&select=usuario,cambios,fecha';
+    var res=await fetch(url,{ headers:sbHeaders() });
+    if(!res.ok) throw new Error();
+    var rows=await res.json();
+    if(!rows.length){ cont.innerHTML='<div style="font-size:11px;color:var(--muted);padding:6px 0;font-style:italic">Sin cambios registrados todavía.</div>'; return; }
+    cont.innerHTML=rows.map(function(r){
+      var f=r.fecha?new Date(r.fecha).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+      return '<div class="log-item">'
+        +'<div class="log-item-top"><span class="log-user">👤 '+eh(r.usuario||'—')+'</span><span class="log-fecha">'+eh(f)+'</span></div>'
+        +'<div class="log-cambios">'+eh(r.cambios||'')+'</div></div>';
+    }).join('');
+  }catch(e){
+    cont.innerHTML='<div style="font-size:11px;color:var(--muted);padding:6px 0;font-style:italic">No se pudo cargar el historial.</div>';
+  }
 }
 
 // ── CRÍTICO #3: COLA DE REINTENTOS ──
@@ -1663,7 +1739,21 @@ function procesarImport(inp){
       var json=XLSX.utils.sheet_to_json(ws,{raw:false,defval:''});
       if(!json.length){ showImportResult('warn','El archivo está vacío.'); return; }
       var keys=Object.keys(json[0]);
-      var depCol=keys.find(k=>k.toLowerCase().includes('deposito')||k.toLowerCase().includes('depósito'))||keys[0];
+      // ── VALIDACIÓN: el archivo debe tener columna de depósito reconocible ──
+      var depCol=keys.find(k=>k.toLowerCase().includes('deposito')||k.toLowerCase().includes('depósito'));
+      if(!depCol){
+        showImportResult('err','❌ El archivo no tiene una columna de <strong>depósito judicial</strong> reconocible.<br>Columnas encontradas: '+keys.slice(0,8).map(k=>eh(k)).join(', ')+(keys.length>8?'...':'')+'<br>Verifica que sea el archivo correcto de Bancolombia.');
+        inp.value=''; return;
+      }
+      // Verificar que al menos algunas filas tengan número de depósito válido
+      var conDep=json.filter(row=>String(row[depCol]||'').trim().length>5).length;
+      if(conDep===0){
+        showImportResult('err','❌ La columna de depósito existe pero no tiene números válidos. Revisa el archivo.');
+        inp.value=''; return;
+      }
+      if(conDep < json.length*0.5){
+        if(!confirm('Atención: solo '+conDep+' de '+json.length+' filas tienen número de depósito válido. ¿Deseas continuar de todos modos?')){ inp.value=''; return; }
+      }
       var existentes=new Set(dataBanco.map(r=>String(r['deposito judicial']||'')));
       var nuevos=[];
       json.forEach(row=>{
