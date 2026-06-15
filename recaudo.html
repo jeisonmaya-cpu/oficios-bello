@@ -280,6 +280,17 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .rep-evals{text-align:right;min-width:140px}
 .rep-eval{font-weight:700;color:var(--text)}
 .rep-ecount{font-size:10px;color:var(--muted)}
+/* ── OVERLAY USUARIO ── */
+.user-card{background:linear-gradient(160deg,#11294d,#0a1f3d);border:1px solid rgba(232,160,32,.25);border-radius:18px;padding:34px 30px;max-width:440px;width:90%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.user-card-ico{font-size:42px;margin-bottom:10px}
+.user-card-title{font-family:'DM Serif Display',serif;font-size:24px;color:#fff;margin:0 0 8px}
+.user-card-sub{font-size:13px;color:var(--soft);margin:0 0 22px;line-height:1.5}
+.user-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.user-opt{padding:13px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.user-opt:hover{background:rgba(232,160,32,.18);border-color:var(--gold);transform:translateY(-1px)}
+.sync-pendientes{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#fdba74;background:rgba(234,88,12,.18);border:1px solid rgba(234,88,12,.4);border-radius:20px;padding:4px 11px;cursor:pointer;white-space:nowrap}
+.sync-pendientes:hover{background:rgba(234,88,12,.3)}
+@media(max-width:480px){.user-options{grid-template-columns:1fr}}
 
 /* ── CABECERA MODAL REDISEÑADA ── */
 .mhdr-dep{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace;margin-bottom:6px}
@@ -365,6 +376,8 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
       <span id="sync-lbl">Sin conexión</span>
       <button class="sync-reload" id="sync-reload" onclick="recargarTodo()" title="Traer los últimos cambios del equipo">🔄</button>
     </div>
+    <span class="sync-pendientes" id="sync-pendientes" onclick="procesarCola()" title="Reintentar sincronización" style="display:none"></span>
+    <button class="tb-btn" id="usuario-activo" onclick="cambiarUsuario()" title="Cambiar usuario">👤 Sin identificar</button>
     <button class="tb-btn gold" onclick="exportarExcel()">⬇️ Exportar Excel</button>
     <a href="home.html" class="tb-btn">🏛️ Inicio</a>
   </div>
@@ -702,6 +715,16 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 </footer>
 
 <!-- ══ MODAL GESTIÓN ══ -->
+<!-- ══ OVERLAY IDENTIFICACIÓN ══ -->
+<div class="ov" id="user-overlay">
+  <div class="user-card">
+    <div class="user-card-ico">👤</div>
+    <h3 class="user-card-title">¿Quién está gestionando?</h3>
+    <p class="user-card-sub">Selecciona tu nombre para registrar tus gestiones. Quedará firmado quién hace cada cambio.</p>
+    <div class="user-options" id="user-options"></div>
+  </div>
+</div>
+
 <div class="ov" id="modal" onclick="if(event.target===this)cerrarModal()">
   <div class="mbox">
     <div class="mhdr">
@@ -1005,6 +1028,7 @@ async function cargarTodo(){
     var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     setSS('ok','Sincronizado '+ts);
     renderKpis(); filtrar(); llenarSelectResponsables(); actualizarCfgPanel();
+    actualizarPendientesPill(); procesarCola();
   }catch(err){
     setSS('error','Error al cargar');
     var tb=document.getElementById('tbody');
@@ -1022,9 +1046,64 @@ async function recargarTodo(){
   if(l){ var prev=l.textContent; l.textContent='✅ Actualizado'; setTimeout(()=>{ if(ultimaSync) l.textContent='Sincronizado '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); },1500); }
 }
 
+// ════════════════════════════════════════════════════════════
+// USUARIO ACTIVO — integra con la sesión del sistema; si no hay, pregunta
+// ════════════════════════════════════════════════════════════
+var USUARIO_ACTIVO = '';
+
+function detectarUsuario(){
+  // 1) Intentar leer la sesión compartida de otros módulos
+  var claves=['tutelas_sesion_v2','buscador_session','oficios_session'];
+  for(var i=0;i<claves.length;i++){
+    try{
+      var s=JSON.parse(localStorage.getItem(claves[i])||'null');
+      if(s && (!s.expira || s.expira>Date.now())){
+        var n=s.usuario||s.nombre||'';
+        if(n){ return n; }
+      }
+    }catch(e){}
+  }
+  // 2) Usuario propio de recaudo (si ya lo eligió antes)
+  try{ var r=localStorage.getItem('teodoro_usuario'); if(r) return r; }catch(e){}
+  return '';
+}
+
+function pedirUsuario(){
+  // Muestra el selector de identificación (overlay)
+  var ov=document.getElementById('user-overlay');
+  if(ov) ov.classList.add('open');
+}
+
+function setUsuario(nombre){
+  USUARIO_ACTIVO=nombre;
+  try{ localStorage.setItem('teodoro_usuario', nombre); }catch(e){}
+  var ov=document.getElementById('user-overlay');
+  if(ov) ov.classList.remove('open');
+  pintarUsuarioActivo();
+}
+
+function pintarUsuarioActivo(){
+  var el=document.getElementById('usuario-activo');
+  if(el) el.textContent = USUARIO_ACTIVO ? '👤 '+USUARIO_ACTIVO.split(' ').slice(0,2).join(' ') : '👤 Sin identificar';
+}
+
+function cambiarUsuario(){ pedirUsuario(); }
+
+function initUsuario(){
+  var u=detectarUsuario();
+  if(u){ USUARIO_ACTIVO=u; pintarUsuarioActivo(); }
+  else { pedirUsuario(); }
+  // llenar el selector con responsables
+  var cont=document.getElementById('user-options');
+  if(cont){
+    cont.innerHTML=RESPONSABLES.map(n=>'<button class="user-opt" onclick="setUsuario(\''+n.replace(/'/g,"\\'")+'\')">'+eh(n)+'</button>').join('');
+  }
+}
+
 // ── INIT ──
 (function init(){
   actualizarCfgPanel();
+  initUsuario();
   cargarTodo();
 })();
 
@@ -1443,10 +1522,12 @@ function cerrarModal(forzar){
 // ════════════════════════════════════════════════════════════
 async function guardarGestion(){
   if(!registroActivo) return;
+  // ── CRÍTICO #1: usuario real ──
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
   var idTec=registroActivo;
   var ahora=new Date();
   var ts=ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-  var user='Sistema';
+  var user=USUARIO_ACTIVO;
   var g={
     'ESTADO DEVOLUCION':document.getElementById('m-est-dev').value,
     'ESTADO APLICACIÓN':document.getElementById('m-est-apl').value,
@@ -1464,31 +1545,93 @@ async function guardarGestion(){
     _editadoPor:user
   };
   var alEl=document.getElementById('m-alert');
+
+  // ── CRÍTICO #2: validación al marcar FINALIZADO ──
+  var devFin=normEst(g['ESTADO DEVOLUCION'])==='FINALIZADO';
+  var aplFin=normEst(g['ESTADO APLICACIÓN'])==='FINALIZADO';
+  if(devFin || aplFin){
+    var faltan=[];
+    if(!g['RESPONSABLE']) faltan.push('Responsable');
+    if(!g['COMPROBANTE DE EGRESO'] && !g['RADICADO DE RESPUESTA']) faltan.push('Comprobante de egreso o Radicado de respuesta');
+    if(faltan.length){
+      showAl(alEl,'al-err','⚠️ Para marcar como FINALIZADO falta: '+faltan.join(', ')+'. Complete o cambie el estado.');
+      return;
+    }
+  }
+
   showAl(alEl,'al-load','<div class="spin"></div> Guardando...');
-  try{
-    var payload=gestionUIASupa(g);
-    var url=SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec);
-    var res=await fetch(url,{
-      method:'PATCH',
-      headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
-      body:JSON.stringify(payload)
-    });
-    if(!res.ok){ var t=await res.text(); throw new Error('HTTP '+res.status+' '+t); }
-    // Actualizar la fila en memoria para reflejar el cambio sin recargar todo
+  var payload=gestionUIASupa(g);
+  var ok=await patchRecaudo(idTec, payload);
+  if(ok){
+    // Actualizar la fila en memoria
     var fila=dataBanco.find(x=>x._id===idTec);
     if(fila){
       Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; });
-      fila['Número del Proceso']=fila['Número del Proceso']; // sin cambio
       fila._editadoPor=user; fila._editadoFecha=ts;
     }
-    showAl(alEl,'al-ok','✅ Guardado en la base de datos.');
+    showAl(alEl,'al-ok','✅ Guardado por '+user.split(' ')[0]+'.');
     renderKpis(); filtrar();
-    _huellaModal=null;   // ya se guardó, no advertir cambios
+    _huellaModal=null;
     setTimeout(function(){ cerrarModal(true); },800);
-  }catch(e){
-    showAl(alEl,'al-err','❌ No se pudo guardar. Revise su conexión e intente de nuevo.');
+  }else{
+    // ── CRÍTICO #3: encolar para reintentar ──
+    encolarPendiente(idTec, payload, g, user, ts);
+    var fila=dataBanco.find(x=>x._id===idTec);
+    if(fila){ Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; }); fila._editadoPor=user; fila._editadoFecha=ts; }
+    showAl(alEl,'al-warn','⚠️ Sin conexión. El cambio quedó <strong>guardado localmente</strong> y se sincronizará automáticamente. No lo pierdes.');
+    renderKpis(); filtrar();
+    _huellaModal=null;
+    actualizarPendientesPill();
+    setTimeout(function(){ cerrarModal(true); },1600);
   }
 }
+
+// PATCH con manejo de error (devuelve true/false)
+async function patchRecaudo(idTec, payload){
+  try{
+    var url=SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec);
+    var res=await fetch(url,{ method:'PATCH', headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}), body:JSON.stringify(payload) });
+    return res.ok;
+  }catch(e){ return false; }
+}
+
+// ── CRÍTICO #3: COLA DE REINTENTOS ──
+var COLA_KEY='recaudo_cola_sync_v1';
+function leerCola(){ try{ return JSON.parse(localStorage.getItem(COLA_KEY)||'[]'); }catch(e){ return []; } }
+function escribirCola(c){ try{ localStorage.setItem(COLA_KEY, JSON.stringify(c)); }catch(e){} }
+function encolarPendiente(idTec, payload, g, user, ts){
+  var c=leerCola();
+  // si ya hay uno para este id, reemplazar
+  c=c.filter(x=>x.idTec!==idTec);
+  c.push({idTec:idTec, payload:payload, ts:Date.now()});
+  escribirCola(c);
+}
+async function procesarCola(){
+  var c=leerCola();
+  if(!c.length) return;
+  var quedan=[];
+  for(var i=0;i<c.length;i++){
+    var ok=await patchRecaudo(c[i].idTec, c[i].payload);
+    if(!ok) quedan.push(c[i]);
+  }
+  escribirCola(quedan);
+  actualizarPendientesPill();
+  if(quedan.length===0 && c.length>0){
+    // todo sincronizado
+    var l=document.getElementById('sync-lbl');
+    if(l){ l.textContent='✅ Todo sincronizado'; setTimeout(()=>{ if(ultimaSync) l.textContent='Sincronizado '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); },2500); }
+  }
+}
+function actualizarPendientesPill(){
+  var n=leerCola().length;
+  var el=document.getElementById('sync-pendientes');
+  if(!el) return;
+  if(n>0){ el.style.display='inline-flex'; el.textContent='⏳ '+n+' sin sincronizar'; }
+  else { el.style.display='none'; }
+}
+// Reintentar cada 30s y cuando vuelve la conexión
+setInterval(procesarCola, 30000);
+window.addEventListener('online', procesarCola);
 
 // ════════════════════════════════════════════════════════════
 // IMPORTAR LOTE — inserta depósitos nuevos en Supabase
