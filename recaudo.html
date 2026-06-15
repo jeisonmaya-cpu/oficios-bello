@@ -273,6 +273,12 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 /* ── VISTA 360 (depósitos + expedientes en modal) ── */
 .vista360{margin-top:18px;padding:14px;background:rgba(26,111,196,.06);border:1px solid rgba(45,141,232,.18);border-radius:var(--radius-sm)}
 .v360-title{font-size:11px;font-weight:700;color:var(--gold2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+.v360-toggle{justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:0;padding:2px 0}
+.v360-toggle:hover{opacity:.85}
+.v360-chevron{font-size:9px;transition:transform .25s;color:var(--soft)}
+.vista360.colapsado .v360-chevron{transform:rotate(-90deg)}
+.v360-body{max-height:600px;overflow:hidden;transition:max-height .3s ease,margin .3s,opacity .2s;margin-top:10px;opacity:1}
+.vista360.colapsado .v360-body{max-height:0;margin-top:0;opacity:0}
 .v360-count{background:rgba(232,160,32,.2);color:var(--gold2);font-size:10px;padding:1px 8px;border-radius:10px;font-weight:700}
 .v360-list{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto}
 .v360-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;font-size:12px}
@@ -741,16 +747,22 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
         <label>Observación</label>
         <textarea id="m-observacion" placeholder="Detalles de la gestión, soportes, actuaciones..."></textarea>
       </div>
-      <!-- 🆕 OTROS DEPÓSITOS DE ESTA PERSONA -->
+      <!-- 🆕 OTROS DEPÓSITOS DE ESTA PERSONA (colapsable) -->
       <div class="vista360" id="m-otros-dep-wrap" style="display:none">
-        <div class="v360-title">💰 Otros depósitos de esta persona <span class="v360-count" id="m-otros-dep-count"></span></div>
-        <div class="v360-list" id="m-otros-dep"></div>
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>💰 Otros depósitos de esta persona <span class="v360-count" id="m-otros-dep-count"></span></span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body"><div class="v360-list" id="m-otros-dep"></div></div>
       </div>
 
-      <!-- 🆕 EXPEDIENTES PREDIALES DE ESTA PERSONA -->
+      <!-- 🆕 EXPEDIENTES PREDIALES DE ESTA PERSONA (colapsable) -->
       <div class="vista360" id="m-expedientes-wrap" style="display:none">
-        <div class="v360-title">📁 Expedientes con la Alcaldía <span class="v360-count" id="m-expedientes-count"></span></div>
-        <div class="v360-list" id="m-expedientes"></div>
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>📁 Expedientes con la Alcaldía <span class="v360-count" id="m-expedientes-count"></span></span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body"><div class="v360-list" id="m-expedientes"></div></div>
       </div>
 
       <div class="log-wrap" id="m-log-wrap" style="display:none">
@@ -816,6 +828,8 @@ var ultimaSync = null;
 var expedientesPorCedula = {};
 // Texto plano de todos los depósitos de la persona abierta (para "copiar todos")
 var _textoDepositos = '';
+// Huella de campos del modal al abrir (para detectar cambios sin guardar)
+var _huellaModal = null;
 
 // ── Mapeo: columna Supabase (snake) -> clave interna que usa la UI (igual que antes) ──
 // La UI existente usa nombres como 'deposito judicial', 'ESTADO DEVOLUCION', etc.
@@ -1217,8 +1231,18 @@ function abrirModal(dep){
   ep.textContent=r._editadoFecha?('Último cambio: '+(r._editadoPor||'—')+' · '+r._editadoFecha):'Sin cambios registrados';
   document.getElementById('m-alert').style.display='none';
   document.getElementById('m-log-wrap').style.display='none';
+  // Restablecer secciones colapsables a estado expandido
+  document.querySelectorAll('#modal .vista360').forEach(v=>v.classList.remove('colapsado'));
   document.getElementById('modal').classList.add('open');
   document.body.style.overflow='hidden';
+  // Guardar huella de los campos editables para detectar cambios sin guardar
+  _huellaModal=huellaCampos();
+}
+
+// Devuelve una "firma" de todos los campos editables del modal
+function huellaCampos(){
+  var ids=['m-est-dev','m-est-apl','m-responsable','m-proceso','m-impuesto','m-convenio','m-ci-inicial','m-comp-egreso','m-radicado-resp','m-gest-tes','m-telefono','m-correo','m-direccion','m-ciudad','m-observacion'];
+  return ids.map(id=>{ var el=document.getElementById(id); return el?String(el.value):''; }).join('|‖|');
 }
 
 function renderOtrosDepositos(cid, depActual){
@@ -1299,7 +1323,18 @@ function renderExpedientes(cid){
   }).join('');
 }
 
-function cerrarModal(){ document.getElementById('modal').classList.remove('open'); document.body.style.overflow=''; registroActivo=null; }
+function toggleV360(el){ el.closest('.vista360').classList.toggle('colapsado'); }
+
+function cerrarModal(forzar){
+  // Si hay cambios sin guardar, pedir confirmación (salvo que se fuerce, ej. tras guardar)
+  if(!forzar && registroActivo && _huellaModal!==null && huellaCampos()!==_huellaModal){
+    if(!confirm('Tienes cambios sin guardar. ¿Seguro que deseas salir sin guardar?')) return;
+  }
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow='';
+  registroActivo=null;
+  _huellaModal=null;
+}
 
 // ════════════════════════════════════════════════════════════
 // GUARDAR GESTIÓN — PATCH REST real a Supabase (sabe si guardó)
@@ -1345,7 +1380,8 @@ async function guardarGestion(){
     }
     showAl(alEl,'al-ok','✅ Guardado en la base de datos.');
     renderKpis(); filtrar();
-    setTimeout(cerrarModal,800);
+    _huellaModal=null;   // ya se guardó, no advertir cambios
+    setTimeout(function(){ cerrarModal(true); },800);
   }catch(e){
     showAl(alEl,'al-err','❌ No se pudo guardar. Revise su conexión e intente de nuevo.');
   }
