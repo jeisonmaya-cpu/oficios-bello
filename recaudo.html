@@ -8,6 +8,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
   --navy:#0a1f3d;--navy2:#0f2d5e;--navy3:#132444;
@@ -109,8 +110,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 thead tr{background:#0d2547}
 thead th{padding:11px 12px;text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;
   letter-spacing:.05em;color:var(--gold2);white-space:nowrap;
-  border-bottom:2px solid var(--border);cursor:pointer;user-select:none;
-  position:sticky;top:99px;z-index:10;background:#0d2547}
+  border-bottom:2px solid var(--border);cursor:pointer;user-select:none;background:#0d2547}
+.tw thead th{position:sticky;top:99px;z-index:10}
 thead th:hover{background:#103060}
 thead th.sorted-asc::after{content:' ↑'}
 thead th.sorted-desc::after{content:' ↓'}
@@ -239,7 +240,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
 @media(max-width:760px){.dash-grid{grid-template-columns:1fr}}
 .dash-table{width:100%;border-collapse:collapse;font-size:13px}
-.dash-table th{text-align:left;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:2px solid var(--border);font-weight:700;white-space:nowrap}
+.dash-table th{text-align:left;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:2px solid var(--border);font-weight:700;white-space:nowrap;position:static;cursor:default;background:transparent}
 .dash-table td{padding:11px 12px;border-bottom:1px solid var(--border)}
 .dash-table tr:hover td{background:rgba(255,255,255,.02)}
 .dash-resp-name{font-weight:700;color:var(--text)}
@@ -257,6 +258,8 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .dash-estats-n{font-size:10px;color:var(--muted)}
 .dash-etotal{margin-top:12px;padding-top:11px;border-top:1px solid var(--border);font-size:12px;color:var(--soft);text-align:right}
 .dash-etotal strong{color:var(--gold2);font-size:14px}
+.dona-total{text-align:center;margin-top:12px;padding-top:11px;border-top:1px solid var(--border);font-size:12px;color:var(--soft)}
+.dona-total strong{color:var(--gold2);font-size:15px}
 
 /* ── CABECERA MODAL REDISEÑADA ── */
 .mhdr-dep{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace;margin-bottom:6px}
@@ -519,6 +522,15 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   <!-- Resumen general -->
   <div class="dash-kpis" id="dash-kpis"></div>
 
+  <!-- Tendencia en el tiempo -->
+  <div class="card" style="margin-top:18px">
+    <div class="card-hdr">
+      <div class="card-hdr-title">📈 Tendencia mensual — emitido vs gestionado</div>
+      <div style="font-size:11px;color:var(--soft)">Valor por mes de emisión</div>
+    </div>
+    <div style="padding:18px 18px 22px"><div style="position:relative;height:300px"><canvas id="chart-tendencia"></canvas></div></div>
+  </div>
+
   <!-- Por responsable -->
   <div class="card" style="margin-top:18px">
     <div class="card-hdr"><div class="card-hdr-title">👥 Gestión por responsable</div></div>
@@ -538,15 +550,15 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
     </div>
   </div>
 
-  <!-- Por estado -->
+  <!-- Por estado (donas) -->
   <div class="dash-grid">
     <div class="card">
-      <div class="card-hdr"><div class="card-hdr-title">📊 Estado de devolución</div></div>
-      <div style="padding:18px" id="dash-estado-dev"></div>
+      <div class="card-hdr"><div class="card-hdr-title">🍩 Estado de devolución</div><div style="font-size:11px;color:var(--soft)">por valor</div></div>
+      <div style="padding:18px"><div style="position:relative;height:260px"><canvas id="chart-dev"></canvas></div><div class="dona-total" id="dona-dev-total"></div></div>
     </div>
     <div class="card">
-      <div class="card-hdr"><div class="card-hdr-title">📊 Estado de aplicación</div></div>
-      <div style="padding:18px" id="dash-estado-apl"></div>
+      <div class="card-hdr"><div class="card-hdr-title">🍩 Estado de aplicación</div><div style="font-size:11px;color:var(--soft)">por valor</div></div>
+      <div style="padding:18px"><div style="position:relative;height:260px"><canvas id="chart-apl"></canvas></div><div class="dona-total" id="dona-apl-total"></div></div>
     </div>
   </div>
 </div>
@@ -1538,47 +1550,107 @@ function renderDashboard(){
   }
 
   // Por estado (devolución y aplicación)
-  renderEstadoBars('dash-estado-dev','ESTADO DEVOLUCION');
-  renderEstadoBars('dash-estado-apl','ESTADO APLICACIÓN');
+  // Gráficos Chart.js
+  renderTendencia();
+  renderDonaEstado('chart-dev','dona-dev-total','ESTADO DEVOLUCION');
+  renderDonaEstado('chart-apl','dona-apl-total','ESTADO APLICACIÓN');
 }
 
 function kpiCard(lbl,val,sub){
   return '<div class="dash-kpi"><div class="dash-kpi-lbl">'+lbl+'</div><div class="dash-kpi-val">'+val+'</div><div class="dash-kpi-sub">'+sub+'</div></div>';
 }
 
-function renderEstadoBars(contId, campo){
-  var conteo={'FINALIZADO':0,'EN TRAMITE':0,'EN REVISION':0,'PENDIENTE':0,'Sin gestionar':0};
+// Instancias de gráficos (para destruirlas antes de redibujar)
+var _charts = { tendencia:null, dev:null, apl:null };
+
+var ESTADO_COLORES={'FINALIZADO':'#22c55e','EN TRAMITE':'#3b82f6','EN REVISION':'#a855f7','PENDIENTE':'#ea580c','Sin gestionar':'#64748b'};
+
+// ── DONA de estado por VALOR ──
+function renderDonaEstado(canvasId, totalId, campo){
+  if(typeof Chart==='undefined') return;
   var valorPorEstado={'FINALIZADO':0,'EN TRAMITE':0,'EN REVISION':0,'PENDIENTE':0,'Sin gestionar':0};
+  var conteo={'FINALIZADO':0,'EN TRAMITE':0,'EN REVISION':0,'PENDIENTE':0,'Sin gestionar':0};
   var valorTotal=0;
   dataBanco.forEach(r=>{
     var e=normEst(r[campo]);
     var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     valorTotal+=v;
-    var key = !e ? 'Sin gestionar' : (conteo[e]!==undefined ? e : e);
-    conteo[key]=(conteo[key]||0)+1;
+    var key=!e?'Sin gestionar':(valorPorEstado[e]!==undefined?e:e);
     valorPorEstado[key]=(valorPorEstado[key]||0)+v;
+    conteo[key]=(conteo[key]||0)+1;
   });
-  var colores={'FINALIZADO':'#22c55e','EN TRAMITE':'#3b82f6','EN REVISION':'#a855f7','PENDIENTE':'#ea580c','Sin gestionar':'#64748b'};
-  // La barra se dimensiona por VALOR (no por cantidad), para que refleje el peso en dinero
-  var maxVal=Math.max(1,...Object.values(valorPorEstado));
-  var html='';
-  Object.keys(conteo).forEach(k=>{
-    var n=conteo[k]; if(n===0 && k!=='Sin gestionar') return;
-    var val=valorPorEstado[k]||0;
-    var pctVal=valorTotal?Math.round(val/valorTotal*100):0;
-    var w=Math.round(val/maxVal*100);
-    html+=`<div class="dash-erow">
-      <div class="dash-elbl">${eh(k)}</div>
-      <div class="dash-ebar"><div class="dash-ebar-fill" style="width:${w}%;background:${colores[k]||'#64748b'}">${w>15?fmtM(val):''}</div></div>
-      <div class="dash-estats">
-        <div class="dash-estats-pct">${pctVal}%</div>
-        <div class="dash-estats-n">${n.toLocaleString('es-CO')} dep.</div>
-      </div>
-    </div>`;
+  var labels=[],valores=[],colores=[],conteos=[];
+  Object.keys(valorPorEstado).forEach(k=>{
+    if(valorPorEstado[k]>0 || conteo[k]>0){
+      labels.push(k); valores.push(Math.round(valorPorEstado[k]));
+      colores.push(ESTADO_COLORES[k]||'#64748b'); conteos.push(conteo[k]);
+    }
   });
-  // Pie con el total
-  html+=`<div class="dash-etotal">Valor total: <strong>${fmt$(valorTotal)}</strong></div>`;
-  document.getElementById(contId).innerHTML=html;
+  var key = canvasId==='chart-dev'?'dev':'apl';
+  if(_charts[key]){ _charts[key].destroy(); _charts[key]=null; }
+  var ctx=document.getElementById(canvasId);
+  if(!ctx) return;
+  _charts[key]=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:labels,datasets:[{data:valores,backgroundColor:colores,borderColor:'#0a1f3d',borderWidth:2,_conteos:conteos}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{
+        legend:{position:'right',labels:{color:'#cbd5e1',font:{size:12,family:'DM Sans'},padding:12,boxWidth:14,boxHeight:14}},
+        tooltip:{callbacks:{label:function(c){
+          var pct=valorTotal?Math.round(c.parsed/valorTotal*100):0;
+          var n=c.dataset._conteos[c.dataIndex]||0;
+          return ' '+fmt$(c.parsed)+' ('+pct+'%) · '+n.toLocaleString('es-CO')+' dep.';
+        }}}
+      }
+    }
+  });
+  var te=document.getElementById(totalId);
+  if(te) te.innerHTML='Valor total: <strong>'+fmt$(valorTotal)+'</strong>';
+}
+
+// ── TENDENCIA mensual: emitido vs gestionado ──
+function renderTendencia(){
+  if(typeof Chart==='undefined') return;
+  var porMes={};   // 'YYYY-MM' -> {emitido, gestionado}
+  dataBanco.forEach(r=>{
+    var f=String(r['Fecha Emisión']||'').substring(0,7);  // YYYY-MM
+    if(!/^\d{4}-\d{2}$/.test(f)) return;
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    if(!porMes[f]) porMes[f]={emitido:0,gestionado:0};
+    porMes[f].emitido+=v;
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
+    if(ed==='FINALIZADO'||ea==='FINALIZADO') porMes[f].gestionado+=v;
+  });
+  var meses=Object.keys(porMes).sort();
+  // Limitar a los últimos 24 meses para legibilidad
+  if(meses.length>24) meses=meses.slice(-24);
+  var emit=meses.map(m=>Math.round(porMes[m].emitido));
+  var gest=meses.map(m=>Math.round(porMes[m].gestionado));
+  var labels=meses.map(m=>{ var p=m.split('-'); var mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return mn[parseInt(p[1])-1]+' '+p[0].substring(2); });
+
+  if(_charts.tendencia){ _charts.tendencia.destroy(); _charts.tendencia=null; }
+  var ctx=document.getElementById('chart-tendencia');
+  if(!ctx) return;
+  _charts.tendencia=new Chart(ctx,{
+    type:'line',
+    data:{labels:labels,datasets:[
+      {label:'Emitido',data:emit,borderColor:'#e8a020',backgroundColor:'rgba(232,160,32,.12)',fill:true,tension:.3,borderWidth:2,pointRadius:2,pointHoverRadius:5},
+      {label:'Gestionado',data:gest,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.10)',fill:true,tension:.3,borderWidth:2,pointRadius:2,pointHoverRadius:5}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{color:'#cbd5e1',font:{size:12,family:'DM Sans'},padding:14,boxWidth:14,usePointStyle:true,pointStyle:'circle'}},
+        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmt$(c.parsed.y); }}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',font:{size:11,family:'DM Sans'},maxRotation:45,minRotation:0}},
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',font:{size:11,family:'DM Sans'},callback:function(v){ return fmtM(v); }}}
+      }
+    }
+  });
 }
 
 function eh(v){if(v===null||v===undefined)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
