@@ -1439,6 +1439,33 @@ function actualizarCfgPanel(){
 // UTILS
 const RESPONSABLES = ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo'];
 
+// ── Mapa de alias: nombres escritos distinto que son la MISMA persona ──
+// Clave = como aparece en los datos (en minúscula y sin tildes); Valor = nombre correcto unificado.
+// Editar aquí para agrupar más variantes. Lo que no esté en el mapa se respeta tal cual (solo se corrige mayús/tildes).
+const ALIAS_RESPONSABLES = {
+  'juliet duque':'Julieth Duque',
+  'julieth duque':'Julieth Duque',
+  'marcela duque':'Gloria Marcela Duque',
+  'gloria marcela duque':'Gloria Marcela Duque',
+  'jose zapata':'Jose Fernando Zapata',
+  'jose fernando zapata':'Jose Fernando Zapata',
+  'john fredy perez':'Jhon Fredy Perez',
+  'jhon fredy perez':'Jhon Fredy Perez',
+  'catalina tamayo':'Nadya Catalina Tamayo',
+  'nadya catalina tamayo':'Nadya Catalina Tamayo'
+};
+
+// Normaliza un nombre de responsable a su forma unificada
+function normResp(raw){
+  var s=String(raw||'').trim();
+  if(!s) return '';
+  // quitar tildes y pasar a minúscula para comparar
+  var key=s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  if(ALIAS_RESPONSABLES[key]) return ALIAS_RESPONSABLES[key];
+  // si no está en el mapa, devolver con Capitalización Por Palabra (para unir mayús/minús)
+  return s.replace(/\s+/g,' ').trim().split(' ').map(p=>p?p.charAt(0).toUpperCase()+p.slice(1).toLowerCase():p).join(' ');
+}
+
 function llenarSelectResponsables(){
   var resps=new Set(RESPONSABLES);
   dataBanco.forEach(r=>{var resp=r['RESPONSABLE']||'';if(resp&&resp.trim())resps.add(resp.trim());});
@@ -1474,7 +1501,7 @@ function renderDashboard(){
   var porResp={};
   RESPONSABLES.forEach(n=>porResp[n]={asignados:0,fin:0,tram:0,pen:0,valor:0});
   dataBanco.forEach(r=>{
-    var resp=(r['RESPONSABLE']||'').trim();
+    var resp=normResp(r['RESPONSABLE']);
     if(!resp) return;
     if(!porResp[resp]) porResp[resp]={asignados:0,fin:0,tram:0,pen:0,valor:0};
     var o=porResp[resp];
