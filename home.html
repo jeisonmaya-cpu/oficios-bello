@@ -144,6 +144,24 @@
   </div>
 
   <!-- ══════════════════════════════
+       BANNER MUNDIAL 2026 · COLOMBIA
+  ══════════════════════════════ -->
+  <div class="mundial-banner" id="mundial-banner" style="display:none">
+    <div class="mb-stripes" aria-hidden="true"></div>
+    <div class="mb-flag" aria-hidden="true">
+      <span class="mb-amarillo"></span>
+      <span class="mb-azul"></span>
+      <span class="mb-rojo"></span>
+    </div>
+    <div class="mb-content">
+      <div class="mb-eyebrow">⚽ Mundial 2026</div>
+      <div class="mb-msg" id="mb-msg">¡Vamos Colombia! 🇨🇴</div>
+    </div>
+    <div class="mb-ball" aria-hidden="true">⚽</div>
+    <button class="mb-close" id="mb-close" aria-label="Cerrar banner">✕</button>
+  </div>
+
+  <!-- ══════════════════════════════
        RESUMEN DEL DÍA
   ══════════════════════════════ -->
   <div class="resumen-dia" id="resumen-dia">
@@ -764,6 +782,49 @@ function buildResumenDia(){
 }
 
 buildResumenDia();
+
+// ════════════════════════════════════════
+// BANNER MUNDIAL 2026 · COLOMBIA
+// ════════════════════════════════════════
+(function(){
+  var INICIO = new Date('2026-06-11T00:00:00');
+  var FIN    = new Date('2026-07-20T00:00:00');
+  var hoy = new Date();
+  var KEY = 'mundial_banner_cerrado';
+
+  var cerradoHoy = false;
+  try{ cerradoHoy = localStorage.getItem(KEY) === hoy.toDateString(); }catch(e){}
+
+  if(hoy >= INICIO && hoy < FIN && !cerradoHoy){
+    var banner = document.getElementById('mundial-banner');
+    if(!banner) return;
+    banner.style.display = 'flex';
+
+    var frases = [
+      '¡Vamos Colombia! 🇨🇴',
+      'Con toda la fe, ¡a darlo todo! ⚽',
+      '¡Mi Colombia querida! 💛💙❤️',
+      'Unidos por la tricolor 🇨🇴',
+      '¡A creer, a creer, que Colombia va a vencer! 🎉'
+    ];
+    var i = 0;
+    var msgEl = document.getElementById('mb-msg');
+    setInterval(function(){
+      msgEl.style.opacity = 0;
+      setTimeout(function(){
+        i = (i + 1) % frases.length;
+        msgEl.textContent = frases[i];
+        msgEl.style.opacity = 1;
+      }, 400);
+    }, 5000);
+
+    document.getElementById('mb-close').addEventListener('click', function(){
+      try{ localStorage.setItem(KEY, hoy.toDateString()); }catch(e){}
+      banner.style.animation = 'mbIn .4s ease reverse both';
+      setTimeout(function(){ banner.style.display = 'none'; }, 350);
+    });
+  }
+})();
 
 // ════════════════════════════════════════
 // TEO — CHAT IA
