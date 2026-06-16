@@ -160,6 +160,8 @@
     .mf label{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:3px}
     .mf .v{font-size:13px;font-weight:500;line-height:1.5}
     .mf.full{grid-column:1/-1}
+    .nt-inp{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box}
+    .nt-inp:focus{border-color:var(--gold)}
     .v-copy{display:inline-flex;align-items:center;gap:6px}
     .v-copy .v{flex:1;min-width:0;word-break:break-word}
     .btn-copy{flex-shrink:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;transition:all .15s;padding:0}
@@ -285,6 +287,7 @@
     <select class="fi" id="fa-est" onchange="renderAdmites()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
     <button class="btn-refresh" id="btnref" onclick="cargarDatos()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Actualizar</button>
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('admites')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
+    <button class="btn-refresh" style="background:rgba(232,160,32,.2);border-color:rgba(232,160,32,.4);color:#e8a020" onclick="abrirNuevaTutela()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva tutela</button>
   </div>
   <div class="twrap">
     <div class="thead tcols-adm"><div class="cel">Urgencia</div><div class="cel">Vence</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div></div>
@@ -570,6 +573,66 @@
   </div>
 </div>
 
+<!-- ════════ MODAL: NUEVA TUTELA MANUAL ════════ -->
+<div class="overlay" id="overlay-nueva" style="z-index:200" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-top">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)">➕ Nueva tutela manual</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Para casos que el sistema automático no registró</div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('overlay-nueva').classList.remove('open')">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Accionante *</label>
+        <input id="nt-acc" type="text" class="nt-inp" placeholder="Nombre completo del accionante">
+      </div>
+      <div class="mf">
+        <label>CC / NIT</label>
+        <input id="nt-cc" type="text" class="nt-inp" placeholder="Cédula o NIT">
+      </div>
+      <div class="mf">
+        <label>Radicado *</label>
+        <input id="nt-rad" type="text" class="nt-inp" placeholder="2026-XXXXX">
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Juzgado</label>
+        <input id="nt-juz" type="text" class="nt-inp" placeholder="Nombre del juzgado">
+      </div>
+      <div class="mf">
+        <label>Fecha inicial (dd/mm/aaaa)</label>
+        <input id="nt-fini" type="text" class="nt-inp" placeholder="15/06/2026">
+      </div>
+      <div class="mf">
+        <label>Fecha límite (dd/mm/aaaa)</label>
+        <input id="nt-flim" type="text" class="nt-inp" placeholder="29/06/2026">
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Abogado asignado <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(automático por turno, puedes cambiarlo)</span></label>
+        <select id="nt-abo" class="nt-inp"></select>
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Derecho invocado</label>
+        <input id="nt-derecho" type="text" class="nt-inp" placeholder="Ej: Derecho de petición">
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Hechos resumidos</label>
+        <textarea id="nt-hechos" rows="2" class="nt-inp" style="resize:vertical"></textarea>
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Pretensiones</label>
+        <textarea id="nt-pret" rows="2" class="nt-inp" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div id="nt-error" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:8px;font-size:13px;color:#f87171"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('overlay-nueva').classList.remove('open')" style="flex:1;padding:11px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">Cancelar</button>
+      <button id="nt-guardar" onclick="guardarNuevaTutela()" style="flex:2;padding:11px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--gold),#f0b840);border:none;color:#0a1f3d;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">💾 Crear tutela</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -591,7 +654,16 @@ const SB_TABLA      = "actuaciones_tutela";
 const USAR_SUPABASE = true;
 
 // ── Cliente de Supabase Auth (para login) ──
-const sbAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let sbAuth = null;
+try {
+  if (window.supabase && window.supabase.createClient) {
+    sbAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  } else {
+    console.error("La librería de Supabase no cargó. Revisa la conexión.");
+  }
+} catch(e) {
+  console.error("Error creando cliente Supabase Auth:", e);
+}
 // Token del usuario logueado; mientras no haya login, cae a la llave anon.
 let authToken = SUPABASE_ANON;
 // Devuelve el header de autorización: usa el token del usuario si hay sesión.
@@ -671,6 +743,30 @@ const Repo = {
     }
     const arr = await res.json();
     return arr && arr.length ? arr[0] : null;
+  },
+
+  // Crea una nueva tutela (ingreso manual). Recibe campos con nombres del Sheet.
+  async crear(camposSheet){
+    const payload={ categoria: "tutela" };
+    for(const [colSheet,valor] of Object.entries(camposSheet)){
+      const colSB = MAPA_SHEET_A_SB[colSheet];
+      if(colSB) payload[colSB]=valor;
+    }
+    const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: authHeaders({
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      }),
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      const txt = await res.text();
+      throw new Error(`Supabase HTTP ${res.status}: ${txt.slice(0,120)}`);
+    }
+    const arr = await res.json();
+    return arr && arr.length ? arr[0] : null;
   }
 };
 const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño","Anderson Correa"];
@@ -682,6 +778,75 @@ const PER_PAGE    = 50;
 let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
 let pagAdm=1, pagFal=1, pagHis=1, pagInc=1;
 let quickAdm=null, quickFal=null, quickOtr=null; // filtro rápido por urgencia (tarjetas)
+
+// ════════════════════════════════════════
+// NUEVA TUTELA MANUAL (ingreso manual + round-robin propio del dashboard)
+// ════════════════════════════════════════
+// Calcula el siguiente abogado por turno. Cuenta cuántas tutelas tiene cada uno
+// en memoria y propone el de la rotación. Contador propio del dashboard.
+function siguienteAbogadoRR(){
+  // Round-robin simple basado en un contador en memoria de sesión
+  if(typeof window._rrIdx === "undefined") window._rrIdx = 0;
+  const abo = ABOGADOS[window._rrIdx % ABOGADOS.length];
+  return abo;
+}
+function abrirNuevaTutela(){
+  // Llenar el desplegable de abogados
+  const sel = document.getElementById("nt-abo");
+  sel.innerHTML = ABOGADOS.map(a=>`<option>${a}</option>`).join("");
+  // Pre-seleccionar el siguiente por turno
+  sel.value = siguienteAbogadoRR();
+  // Limpiar campos
+  ["nt-acc","nt-cc","nt-rad","nt-juz","nt-fini","nt-flim","nt-derecho","nt-hechos","nt-pret"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value="";
+  });
+  // Fecha inicial = hoy por defecto
+  const hoy = new Date();
+  document.getElementById("nt-fini").value =
+    String(hoy.getDate()).padStart(2,"0")+"/"+String(hoy.getMonth()+1).padStart(2,"0")+"/"+hoy.getFullYear();
+  document.getElementById("nt-error").style.display="none";
+  document.getElementById("overlay-nueva").classList.add("open");
+}
+async function guardarNuevaTutela(){
+  const errBox = document.getElementById("nt-error");
+  const btn = document.getElementById("nt-guardar");
+  errBox.style.display="none";
+  const acc = document.getElementById("nt-acc").value.trim();
+  const rad = document.getElementById("nt-rad").value.trim();
+  // Validación mínima
+  if(!acc || !rad){
+    errBox.textContent="El accionante y el radicado son obligatorios.";
+    errBox.style.display="block"; return;
+  }
+  const campos = {
+    "ACCIONANTE": acc,
+    "CC / NIT": document.getElementById("nt-cc").value.trim(),
+    "RADICADO": rad,
+    "JUZGADO": document.getElementById("nt-juz").value.trim(),
+    "TIPO": "Tutela",
+    "RESPONSABLE": document.getElementById("nt-abo").value,
+    "ESTADO": "Nuevo",
+    "FECHA INICIAL": document.getElementById("nt-fini").value.trim(),
+    "FECHA LÍMITE": document.getElementById("nt-flim").value.trim(),
+    "DERECHO INVOCADO": document.getElementById("nt-derecho").value.trim(),
+    "HECHOS RESUMIDOS": document.getElementById("nt-hechos").value.trim(),
+    "PRETENSIONES": document.getElementById("nt-pret").value.trim()
+  };
+  btn.textContent="Creando..."; btn.style.pointerEvents="none";
+  try{
+    const creado = await Repo.crear(campos);
+    if(!creado) throw new Error("Supabase no devolvió el registro creado");
+    window._rrIdx = (window._rrIdx||0) + 1; // avanzar el turno
+    toast("✅ Tutela creada correctamente","ok");
+    document.getElementById("overlay-nueva").classList.remove("open");
+    await cargarDatos(); // recargar para que aparezca en la lista
+  }catch(e){
+    errBox.textContent="Error al crear: "+e.message;
+    errBox.style.display="block";
+  }finally{
+    btn.textContent="💾 Crear tutela"; btn.style.pointerEvents="auto";
+  }
+}
 
 async function cargarDatos() {
   setSS("loading","Actualizando...");
@@ -1744,6 +1909,7 @@ document.addEventListener('keydown',e=>{
 // LOGIN / AUTENTICACIÓN
 // ════════════════════════════════════════
 async function hacerLogin(){
+  if(!sbAuth){ mostrarLoginError("Error de conexión con el servidor. Recarga la página."); return; }
   const email = document.getElementById("login-email").value.trim();
   const pass  = document.getElementById("login-pass").value;
   const btn   = document.getElementById("login-btn");
@@ -1776,6 +1942,7 @@ async function cerrarSesion(){
 }
 // Al arrancar: ¿ya hay sesión activa? Si sí, entra directo; si no, muestra login.
 (async function verificarSesionInicial(){
+  if(!sbAuth) return; // si no cargó la librería, se queda en login
   try{
     const { data } = await sbAuth.auth.getSession();
     if(data.session){
