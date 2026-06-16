@@ -666,7 +666,22 @@ try {
 }
 // Token del usuario logueado; mientras no haya login, cae a la llave anon.
 let authToken = SUPABASE_ANON;
-// Devuelve el header de autorización: usa el token del usuario si hay sesión.
+// Pide a Supabase el token FRESCO de la sesión actual (Supabase lo renueva solo).
+// Así evitamos el error "JWT expired" cuando la sesión lleva más de 1 hora.
+async function getAuthHeaders(extra){
+  let token = SUPABASE_ANON;
+  try{
+    if(sbAuth){
+      const { data } = await sbAuth.auth.getSession();
+      if(data && data.session && data.session.access_token){
+        token = data.session.access_token;
+        authToken = token; // cache por si acaso
+      }
+    }
+  }catch(e){ /* si falla, usa el último conocido */ token = authToken; }
+  return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer "+token }, extra||{});
+}
+// Versión síncrona (compatibilidad): usa el último token conocido.
 function authHeaders(extra){
   return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer "+authToken }, extra||{});
 }
@@ -713,7 +728,7 @@ const Repo = {
       + `?categoria=eq.${encodeURIComponent(categoria)}`
       + `&select=*&order=id.asc`;
     const res = await fetch(url, {
-      headers: authHeaders()
+      headers: await getAuthHeaders()
     });
     if(!res.ok) throw new Error(`Supabase HTTP ${res.status}`);
     const filas = await res.json();
@@ -731,7 +746,7 @@ const Repo = {
     const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}?id=eq.${encodeURIComponent(id)}`;
     const res = await fetch(url, {
       method: "PATCH",
-      headers: authHeaders({
+      headers: await getAuthHeaders({
         "Content-Type": "application/json",
         Prefer: "return=representation"
       }),
@@ -755,7 +770,7 @@ const Repo = {
     const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`;
     const res = await fetch(url, {
       method: "POST",
-      headers: authHeaders({
+      headers: await getAuthHeaders({
         "Content-Type": "application/json",
         Prefer: "return=representation"
       }),
@@ -1738,7 +1753,12 @@ async function guardarEstado(){
       renderAll();
       document.getElementById("overlay").classList.remove("open");
     }catch(e){
-      toast("❌ Error al guardar en Supabase: "+e.message+" — los cambios NO se guardaron","err");
+      if(/JWT expired|401/i.test(e.message)){
+        toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
+        setTimeout(()=>{ if(confirm("Tu sesión expiró. ¿Iniciar sesión de nuevo?")) location.reload(); }, 500);
+      } else {
+        toast("❌ Error al guardar en Supabase: "+e.message+" — los cambios NO se guardaron","err");
+      }
     }
     return;
   }
