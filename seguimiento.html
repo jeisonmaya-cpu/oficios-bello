@@ -28,6 +28,7 @@
     <button class="nav-tab"        id="tab-ou"      onclick="goTab('ou')">🏘️ Urbanísticas</button>
     <button class="nav-tab"        id="tab-predial" onclick="goTab('predial')">🏠 Predial</button>
     <button class="nav-tab"        id="tab-ica"     onclick="goTab('ica')">🏭 ICA</button>
+    <button class="nav-tab"        id="tab-transito" onclick="goTab('transito')">🚗 Tránsito</button>
     <button class="nav-tab"        id="tab-mora"    onclick="goTab('mora')">📊 Morosidad</button>
   </div>
 </nav>
@@ -180,6 +181,26 @@
     <table>
       <thead><tr><th>#</th><th>Radicado</th><th>Contribuyente</th><th>Vigencia</th><th>Tipo</th><th>Valor adeudado ($)</th><th>Responsable</th><th>Acción</th></tr></thead>
       <tbody id="ica-top-tramite"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PANEL TRANSITO -->
+<div class="panel" id="panel-transito">
+  <div class="cartera-card" id="trans-cartera"></div>
+  <div class="stats-grid" id="trans-stats"></div>
+  <div class="section-title">📅 Cartera por Vigencia (Año del Comparendo)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Año</th><th>Comparendos</th><th>Valor ($)</th><th>%</th><th>Distribución</th></tr></thead>
+      <tbody id="trans-anios"></tbody>
+    </table>
+  </div>
+  <div class="section-title">🏆 Top 50 Deudores de Tránsito</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Documento</th><th>Nombre</th><th>Comparendos</th><th>Valor Total ($)</th></tr></thead>
+      <tbody id="trans-top"></tbody>
     </table>
   </div>
 </div>
@@ -362,6 +383,7 @@ const SUPA_KEY = 'sb_publishable_x3Mu7phCEfpJMcKSQYkf8Q_obSOAvfL';
 
 let datosGlobales = null;
 let datosICA      = null;
+let datosTransito = null;
 let tabActual     = 'consolidado';
 
 // ── Helper Supabase — fetch de una vista o tabla ──
@@ -444,9 +466,110 @@ async function cargarPredialSupa() {
   return dataPred;
 }
 
-// ── INIT ──
-cargarDatos();
-cargarICA();
+// ── TRÁNSITO (Supabase) ──
+async function cargarTransito() {
+  const cont = document.getElementById('trans-cartera');
+  cont.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-soft)">🔄 Cargando cartera de tránsito…</div>';
+  try {
+    const [resumen, porAnio, topDeudores] = await Promise.all([
+      supaFetch('v_transito_resumen?select=*'),
+      supaFetch('v_transito_por_anio?select=*'),
+      supaFetch('v_transito_top_deudores?select=*')
+    ]);
+    const r = resumen[0] || {};
+    datosTransito = {
+      totalComparendos:  Number(r.total_comparendos    || 0),
+      totalContrib:      Number(r.total_contribuyentes  || 0),
+      carteraMulta:      Number(r.cartera_multa         || 0),
+      carteraInteres:    Number(r.cartera_interes       || 0),
+      carteraTotal:      Number(r.cartera_total         || 0),
+      enCoactivo:        Number(r.en_coactivo           || 0),
+      enAcuerdo:         Number(r.en_acuerdo            || 0),
+      porAnio: porAnio.map(d => ({
+        anio:        String(d.anio),
+        cantidad:    Number(d.cantidad     || 0),
+        valorTotal:  Number(d.valor_total  || 0)
+      })),
+      topDeudores: topDeudores.map(d => ({
+        documento:   d.documento,
+        nombre:      d.nombre || d.documento || '—',
+        comparendos: Number(d.comparendos || 0),
+        valorTotal:  Number(d.valor_total || 0)
+      }))
+    };
+    renderTransito(datosTransito);
+  } catch(err) {
+    cont.innerHTML = '<div style="padding:30px;text-align:center"><div style="font-size:32px;margin-bottom:10px">🔌</div><div style="font-size:15px;font-weight:600;margin-bottom:6px">No se pudo cargar la cartera de Tránsito</div><div style="font-size:12px;color:rgba(252,165,165,.6);margin-bottom:12px">Verifica que las vistas v_transito_* existan en Supabase</div><button onclick="datosTransito=null;cargarTransito()" style="background:#2d8de8;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Reintentar</button></div>';
+  }
+}
+
+function renderTransito(d) {
+  // Cartera
+  document.getElementById('trans-cartera').innerHTML = `
+    <div class="cartera-main">
+      <div class="cartera-label">🚗 Tránsito — Cartera Total de Comparendos</div>
+      <div class="cartera-value">${fmt(d.carteraTotal)}</div>
+      <div class="cartera-sub">${d.totalComparendos.toLocaleString()} comparendos · ${d.totalContrib.toLocaleString()} contribuyentes</div>
+    </div>
+    <div class="cartera-recaudo">
+      <div class="cartera-recaudo-label">Capital (multa)</div>
+      <div class="cartera-recaudo-val">${fmt(d.carteraMulta)}</div>
+      <div class="cartera-pct">${pct(d.carteraMulta, d.carteraTotal)} de la cartera</div>
+    </div>`;
+
+  // Stats
+  document.getElementById('trans-stats').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-label">🚗 Comparendos</div>
+      <div class="stat-value">${d.totalComparendos.toLocaleString()}</div>
+      <div class="stat-sub">${fmt(d.carteraTotal)}</div>
+      <span class="stat-badge blue">100%</span>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">💰 Intereses</div>
+      <div class="stat-value">${fmt(d.carteraInteres)}</div>
+      <div class="stat-sub">acumulados</div>
+      <span class="stat-badge gold">${pct(d.carteraInteres, d.carteraTotal)}</span>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">⚖️ En Cobro Coactivo</div>
+      <div class="stat-value">${d.enCoactivo.toLocaleString()}</div>
+      <div class="stat-sub">comparendos</div>
+      <span class="stat-badge green">${pct(d.enCoactivo, d.totalComparendos)}</span>
+    </div>
+    <div class="stat-card navy">
+      <div class="stat-label">🤝 En Acuerdo de Pago</div>
+      <div class="stat-value">${d.enAcuerdo.toLocaleString()}</div>
+      <div class="stat-sub">comparendos</div>
+      <span class="stat-badge blue">${pct(d.enAcuerdo, d.totalComparendos)}</span>
+    </div>`;
+
+  // Cartera por año
+  const maxValAnio = Math.max(1, ...d.porAnio.map(a => a.valorTotal));
+  document.getElementById('trans-anios').innerHTML = d.porAnio.map(a => {
+    const p = pct(a.valorTotal, d.carteraTotal);
+    const w = (a.valorTotal / maxValAnio * 100).toFixed(1);
+    return `<tr>
+      <td><strong>${a.anio}</strong></td>
+      <td>${a.cantidad.toLocaleString()}</td>
+      <td>${fmt(a.valorTotal)}</td>
+      <td>${p}</td>
+      <td><div class="bar-wrap"><div class="bar-fill" style="width:${w}%;background:var(--gold)"></div></div></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-soft)">Sin datos</td></tr>';
+
+  // Top deudores
+  document.getElementById('trans-top').innerHTML = d.topDeudores.map((t,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${t.documento}</td>
+      <td>${t.nombre}</td>
+      <td>${t.comparendos.toLocaleString()}</td>
+      <td><strong>${fmt(t.valorTotal)}</strong></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-soft)">Sin datos</td></tr>';
+}
+
+
 
 async function cargarDatos() {
   document.getElementById('loading').style.display = 'block';
@@ -491,6 +614,7 @@ function goTab(t) {
   document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-'+t).classList.add('active');
   if(t==='ica'&&!datosICA) cargarICA();
+  if(t==='transito'&&!datosTransito) cargarTransito();
   document.getElementById('panel-'+t).classList.add('active');
 }
 
