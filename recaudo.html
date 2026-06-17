@@ -875,6 +875,15 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
         <div class="v360-body"><div class="v360-list" id="m-expedientes"></div></div>
       </div>
 
+      <!-- 🚗 COMPARENDOS DE TRÁNSITO DE ESTA PERSONA (colapsable, carga bajo demanda) -->
+      <div class="vista360" id="m-transito-wrap" style="display:none">
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>🚗 Comparendos de Tránsito <span class="v360-count" id="m-transito-count"></span></span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body"><div class="v360-list" id="m-transito"></div></div>
+      </div>
+
       <div class="vista360" id="m-log-wrap" style="display:none">
         <div class="v360-title v360-toggle" onclick="toggleV360(this)">
           <span>📝 Historial de cambios</span>
@@ -939,6 +948,8 @@ var ultimaSync = null;
 
 // Índice de expedientes prediales por cédula (se llena al cargar)
 var expedientesPorCedula = {};
+// Índice resumen de tránsito por cédula (liviano: resumen, no comparendos individuales)
+var transitoPorCedula = {};
 // Texto plano de todos los depósitos de la persona abierta (para "copiar todos")
 var _textoDepositos = '';
 // Huella de campos del modal al abrir (para detectar cambios sin guardar)
@@ -1045,6 +1056,24 @@ async function cargarTodo(){
         expedientesPorCedula[cid].push(e);
       });
     }catch(e){ /* si falla, el modal simplemente no muestra expedientes */ }
+
+    // 3) Tránsito -> índice RESUMEN por cédula (liviano, desde la vista v_transito_por_cedula)
+    transitoPorCedula = {};
+    try{
+      var trans = await sbFetchAll('v_transito_por_cedula',
+        'documento,nombre,comparendos,valor_multa,valor_interes,valor_total');
+      trans.forEach(function(t){
+        var cid = String(t.documento || '').trim();
+        if(!cid) return;
+        transitoPorCedula[cid] = {
+          comparendos: Number(t.comparendos || 0),
+          valorMulta:  Number(t.valor_multa || 0),
+          valorInteres:Number(t.valor_interes || 0),
+          valorTotal:  Number(t.valor_total || 0),
+          nombre:      t.nombre || ''
+        };
+      });
+    }catch(e){ /* si falla, simplemente no se cruza tránsito */ }
 
     var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     setSS('ok','Sincronizado '+ts);
@@ -1174,6 +1203,8 @@ function impuestoDe(r){
     // si tiene expediente predial pero radicado no reconocido, asumir Predial (la tabla es expedientes_predial)
     return 'PREDIAL';
   }
+  // Si no tiene expediente predial pero sí comparendos de tránsito -> TRANSITO
+  if(cid && transitoPorCedula[cid]) return 'TRANSITO';
   return '';
 }
 
@@ -1261,7 +1292,7 @@ function filtrar(){
     if(fImp){ var imp=impuestoDe(r).toUpperCase(); if(!imp.includes(fImp)) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
-    if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&expedientesPorCedula[cid]); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
+    if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
     return true;
   });
   // Si hay filtro de monto activo, ordenar de mayor a menor para priorizar los grandes
@@ -1364,7 +1395,7 @@ function filtrarPend(){
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fImp){ if(!impuestoDe(r).toUpperCase().includes(fImp)) return false; }
     if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
-    if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&expedientesPorCedula[cid]); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
+    if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
     return true;
   });
   if(fMonto){
@@ -1447,6 +1478,8 @@ function abrirModal(dep){
   renderOtrosDepositos(cid, dep);
   // ── 360: expedientes prediales de la persona ──
   renderExpedientes(cid);
+  // ── 360: comparendos de tránsito de la persona (bajo demanda) ──
+  renderTransitoModal(cid);
 
   var ep=document.getElementById('m-editado-por');
   ep.textContent=r._editadoFecha?('Último cambio: '+(r._editadoPor||'—')+' · '+r._editadoFecha):'Sin cambios registrados';
@@ -1545,6 +1578,48 @@ function renderExpedientes(cid){
 }
 
 function toggleV360(el){ el.closest('.vista360').classList.toggle('colapsado'); }
+
+// Muestra los comparendos de tránsito de la persona (carga bajo demanda por cédula)
+async function renderTransitoModal(cid){
+  var wrap=document.getElementById('m-transito-wrap');
+  var cont=document.getElementById('m-transito');
+  var cnt=document.getElementById('m-transito-count');
+  // Si la persona no tiene tránsito en el índice resumen, ni mostramos el bloque
+  if(!cid || !transitoPorCedula[cid]){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  var resumen=transitoPorCedula[cid];
+  cnt.textContent=resumen.comparendos+(resumen.comparendos===1?' comparendo':' comparendos');
+  cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">🔄 Cargando comparendos…</div>';
+  try{
+    var comps=await sbFetchAll('expedientes_transito',
+      'nro_comparendo,fecha_comparendo,anio,cod_infraccion,numero_placa,estado_moroso,cobro_coactivo,valor_multa,valor_interes,valor_total',
+      'documento=eq.'+encodeURIComponent(cid)+'&order=fecha_comparendo.desc.nullslast');
+    if(!comps.length){ cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">Sin comparendos.</div>'; return; }
+    cont.innerHTML=comps.map(function(c){
+      var valor=Number(c.valor_total || c.valor_multa || 0)||0;
+      var detalle=[];
+      if(c.anio) detalle.push('Año '+c.anio);
+      if(c.cod_infraccion) detalle.push('Cód: '+c.cod_infraccion);
+      if(c.numero_placa) detalle.push('Placa: '+c.numero_placa);
+      if(c.fecha_comparendo) detalle.push(String(c.fecha_comparendo).substring(0,10));
+      var badges='';
+      if(c.cobro_coactivo==='S') badges+='<span class="v360-badge">⚖️ Coactivo</span>';
+      if(c.estado_moroso) badges+='<span class="v360-badge">'+eh(c.estado_moroso)+'</span>';
+      return `<div class="v360-row">
+        <div class="v360-row-main">
+          <div class="v360-row-top">🚗 ${eh(c.nro_comparendo||'—')}</div>
+          <div class="v360-row-sub">${eh(detalle.join(' · ')||'—')}</div>
+        </div>
+        <div class="v360-row-right">
+          ${valor?'<span class="v360-val">'+fmt$(valor)+'</span>':''}
+          ${badges}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    cont.innerHTML='<div style="padding:14px;text-align:center;color:#fdba74;font-size:12px">No se pudieron cargar los comparendos.</div>';
+  }
+}
 
 function cerrarModal(forzar){
   // Si hay cambios sin guardar, pedir confirmación (salvo que se fuerce, ej. tras guardar)
