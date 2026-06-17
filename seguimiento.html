@@ -578,34 +578,62 @@ async function cargarDatos() {
   document.getElementById('panel-predial').classList.remove('active');
   document.getElementById('panel-mora').classList.remove('active');
 
-  try {
-    // OU desde GAS, Predial desde Supabase — en paralelo
-    const [resOU, dataPred] = await Promise.all([
-      fetch(URL_OU + '?t=' + Date.now()).then(r => r.json()),
-      cargarPredialSupa()
-    ]);
+  // Estado global mínimo: cada fuente se rellena por separado.
+  // Un fallo en una fuente NO tumba a las demás ni al Consolidado.
+  datosGlobales = {
+    ou:          null,
+    predial:     null,
+    actualizado: new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+  };
 
-    if (resOU.error) throw new Error('OU: ' + resOU.error);
+  // ── Predial (Supabase) — independiente ──
+  const pPredial = (async () => {
+    try {
+      const dataPred = await cargarPredialSupa();
+      datosGlobales.predial = dataPred;
+      renderPredial(dataPred);
+      renderMorosidad(dataPred.porVigencia || null, dataPred.activos || 0);
+    } catch (err) {
+      console.warn('[Predial]', err);
+      const panel = document.getElementById('panel-predial');
+      if (panel && !panel.querySelector('.fuente-error')) {
+        const div = document.createElement('div');
+        div.className = 'fuente-error';
+        div.style.cssText = 'background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.3);border-radius:14px;padding:24px;text-align:center;color:#fca5a5;margin-bottom:16px';
+        div.innerHTML = '<div style="font-size:32px;margin-bottom:10px">🔌</div><div style="font-size:15px;font-weight:600;margin-bottom:6px">No se pudo cargar la cartera Predial</div><div style="font-size:12px;color:rgba(252,165,165,.6);margin-bottom:12px">Verifica las vistas v_predial_* en Supabase</div><button onclick="cargarDatos()" style="background:#2d8de8;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Reintentar</button>';
+        panel.insertBefore(div, panel.firstChild);
+      }
+    }
+  })();
 
-    datosGlobales = {
-      ou:          resOU,
-      predial:     dataPred,
-      actualizado: new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
-    };
+  // ── OU (GAS/Sheets) — independiente ──
+  const pOU = (async () => {
+    try {
+      const resOU = await fetch(URL_OU + '?t=' + Date.now()).then(r => r.json());
+      if (resOU.error) throw new Error('OU: ' + resOU.error);
+      datosGlobales.ou = resOU;
+      renderOU(resOU);
+    } catch (err) {
+      console.warn('[OU]', err);
+      const panel = document.getElementById('panel-ou');
+      if (panel && !panel.querySelector('.fuente-error')) {
+        const div = document.createElement('div');
+        div.className = 'fuente-error';
+        div.style.cssText = 'background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.3);border-radius:14px;padding:24px;text-align:center;color:#fca5a5;margin-bottom:16px';
+        div.innerHTML = '<div style="font-size:32px;margin-bottom:10px">🔌</div><div style="font-size:15px;font-weight:600;margin-bottom:6px">No se pudo cargar Obligaciones Urbanísticas</div><div style="font-size:12px;color:rgba(252,165,165,.6);margin-bottom:12px">Verifica el deployment de GAS y que el Sheet esté publicado</div><button onclick="cargarDatos()" style="background:#2d8de8;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Reintentar</button>';
+        panel.insertBefore(div, panel.firstChild);
+      }
+    }
+  })();
 
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('update-time').textContent = '🕐 ' + datosGlobales.actualizado;
-    renderOU(datosGlobales.ou);
-    renderPredial(datosGlobales.predial);
-    renderMorosidad(dataPred.porVigencia || null, dataPred.activos || 0);
-    renderConsolidado();
-    goTab(tabActual);
+  // Apagar el loader y pintar el Consolidado en cuanto ambas terminen
+  // (resuelvan o fallen) — el Consolidado ya tolera fuentes faltantes.
+  await Promise.allSettled([pPredial, pOU]);
 
-  } catch(err) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error-state').style.display = 'block';
-    document.getElementById('error-msg').textContent = err.message || 'Error de conexión';
-  }
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('update-time').textContent = '🕐 ' + datosGlobales.actualizado;
+  renderConsolidado();
+  goTab(tabActual);
 }
 
 function goTab(t) {
@@ -912,42 +940,46 @@ function exportarExcel() {
   if (!datosGlobales) return;
   const wb = XLSX.utils.book_new();
 
-  // Hoja OU
+  // Hoja OU (si está cargada)
   const ou = datosGlobales.ou;
-  const wsOU = XLSX.utils.aoa_to_sheet([
-    ['OBLIGACIONES URBANÍSTICAS — ESTADÍSTICAS'],
-    [],
-    ['Indicador', 'Valor'],
-    ['Total expedientes', ou.totalExp],
-    ['Cartera bruta', ou.cartera],
-    ['Activos en proceso', ou.activos],
-    ['Convenios activos', ou.convenios],
-    ['Cancelados', ou.cancelados],
-    ['Terminados', ou.terminados],
-    ['Recaudo registrado', ou.recaudo],
-    [],
-    ['DISTRIBUCIÓN POR MASIVO'],
-    ['Masivo', 'Expedientes', 'Valor ($)'],
-    ...ou.masivos.map(m => [m.nombre, m.expedientes, m.valor])
-  ]);
-  XLSX.utils.book_append_sheet(wb, wsOU, 'Oblig. Urbanísticas');
+  if (ou) {
+    const wsOU = XLSX.utils.aoa_to_sheet([
+      ['OBLIGACIONES URBANÍSTICAS — ESTADÍSTICAS'],
+      [],
+      ['Indicador', 'Valor'],
+      ['Total expedientes', ou.totalExp],
+      ['Cartera bruta', ou.cartera],
+      ['Activos en proceso', ou.activos],
+      ['Convenios activos', ou.convenios],
+      ['Cancelados', ou.cancelados],
+      ['Terminados', ou.terminados],
+      ['Recaudo registrado', ou.recaudo],
+      [],
+      ['DISTRIBUCIÓN POR MASIVO'],
+      ['Masivo', 'Expedientes', 'Valor ($)'],
+      ...((ou.masivos||[]).map(m => [m.nombre, m.expedientes, m.valor]))
+    ]);
+    XLSX.utils.book_append_sheet(wb, wsOU, 'Oblig. Urbanísticas');
+  }
 
-  // Hoja Predial
+  // Hoja Predial (si está cargada)
   const pred = datosGlobales.predial;
-  const wsPred = XLSX.utils.aoa_to_sheet([
-    ['PREDIAL — ESTADÍSTICAS'],
-    [],
-    ['Estado', 'Expedientes', 'Valor ($)'],
-    ['Activos', pred.activos, pred.valorActivos],
-    ['Convenios', pred.convenios, pred.valorConvenios],
-    ['Cancelados', pred.cancelados, pred.valorCancelados],
-    ['Terminados', pred.terminados, pred.valorTerminados],
-    ['TOTAL', pred.totalExp, pred.cartera],
-  ]);
-  XLSX.utils.book_append_sheet(wb, wsPred, 'Predial');
+  if (pred) {
+    const wsPred = XLSX.utils.aoa_to_sheet([
+      ['PREDIAL — ESTADÍSTICAS'],
+      [],
+      ['Estado', 'Expedientes', 'Valor ($)'],
+      ['Activos', pred.activos, pred.valorActivos],
+      ['Convenios', pred.convenios, pred.valorConvenios],
+      ['Cancelados', pred.cancelados, pred.valorCancelados],
+      ['Terminados', pred.terminados, pred.valorTerminados],
+      ['TOTAL', pred.totalExp, pred.cartera],
+    ]);
+    XLSX.utils.book_append_sheet(wb, wsPred, 'Predial');
+  }
 
   // Hoja Morosidad Predial (por vigencia)
-  const vig = (datosGlobales.predial.porVigencia || []);
+  const vig = ((datosGlobales.predial && datosGlobales.predial.porVigencia) || []);
   if (vig.length) {
     const wsMora = XLSX.utils.aoa_to_sheet([
       ['MOROSIDAD PREDIAL — GESTIÓN POR AÑO DE EJECUTORIA'],
@@ -1021,6 +1053,11 @@ function generarPDF() {
   if (!datosGlobales) { alert('Primero carga los datos con el botón Actualizar.'); return; }
   const ou   = datosGlobales.ou;
   const pred = datosGlobales.predial;
+  if (!ou || !pred) {
+    const faltan = [!ou ? 'Obligaciones Urbanísticas' : null, !pred ? 'Predial' : null].filter(Boolean).join(' y ');
+    alert('El informe consolidado requiere las fuentes de ' + faltan + '. Reintenta cargarlas con el botón Actualizar antes de generar el PDF.');
+    return;
+  }
   const ahora = new Date();
   const fechaCorte = ahora.toLocaleDateString('es-CO', { day:'2-digit', month:'long', year:'numeric' });
   const horaGen    = ahora.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
