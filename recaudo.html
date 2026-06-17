@@ -621,7 +621,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
         <select class="finp" id="rep-impuesto" onchange="renderReporte()" style="min-width:160px">
           <option value="PREDIAL">🏠 Predial</option>
           <option value="ICA" disabled>🏢 ICA (próximamente)</option>
-          <option value="TRANSITO" disabled>🚗 Tránsito (próximamente)</option>
+          <option value="TRANSITO">🚗 Tránsito</option>
           <option value="URBANISTICA" disabled>🏗️ Oblig. Urbanística (próximamente)</option>
           <option value="POLICIA" disabled>👮 Policía Nacional (próximamente)</option>
         </select>
@@ -1208,6 +1208,18 @@ function impuestoDe(r){
   return '';
 }
 
+// Detecta si la persona tiene MÁS DE UN tipo de obligación (predial/ICA/urbanística + tránsito)
+// y el contador AÚN no ha asignado manualmente el impuesto -> hay que revisar a cuál aplica el depósito.
+function tieneConflictoImpuesto(r){
+  var manual=String(r['Impuesto']||'').trim();
+  if(manual) return false; // ya lo asignó el contador, no hay conflicto
+  var cid=String(r['Identificación Demandado']||'');
+  if(!cid) return false;
+  var tienePredial = !!(expedientesPorCedula[cid] && expedientesPorCedula[cid].length);
+  var tieneTransito = !!transitoPorCedula[cid];
+  return tienePredial && tieneTransito;
+}
+
 function normEst(v){
   if(!v||!String(v).trim()) return '';
   var s=String(v).trim().toUpperCase()
@@ -1336,13 +1348,17 @@ function renderTabla(){
     var fecha=String(r['Fecha Emisión']||'');if(fecha.length>10)fecha=fecha.substring(0,10);
     var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     var cid=String(r['Identificación Demandado']||'');
-    var tieneExp=expedientesPorCedula[cid]?'<span class="nota-dot" title="Tiene expedientes" style="background:#93c5fd"></span>':'';
-    // Columna Proceso: 1) lo que el contador escribió a mano  2) radicado del expediente predial  3) vacío
+    var tieneExp=(expedientesPorCedula[cid]||transitoPorCedula[cid])?'<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:#93c5fd"></span>':'';
+    // Columna Proceso: 1) lo que el contador escribió a mano  2) radicado del expediente predial  3) comparendos de tránsito  4) vacío
     var procManual=String(r['Proceso']||'').trim();
     var procCell='—';
     if(procManual){ procCell=eh(procManual); }
     else if(expedientesPorCedula[cid] && expedientesPorCedula[cid][0] && expedientesPorCedula[cid][0].radicado){
       procCell='📁 '+eh(expedientesPorCedula[cid][0].radicado);
+    }
+    else if(transitoPorCedula[cid]){
+      var nc=transitoPorCedula[cid].comparendos;
+      procCell='🚗 '+nc+(nc===1?' comparendo':' comparendos');
     }
     return `<tr class="${gestionado?'gestionado':''}" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')">
       <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
@@ -1351,7 +1367,7 @@ function renderTabla(){
       <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
       <td class="mono" style="font-size:12px;color:var(--soft)">${procCell}</td>
-      <td>${(function(){var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
+      <td>${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
       <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
@@ -1422,7 +1438,7 @@ function renderPendientes(){
       <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
       <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px">${fmt$(valor)}</td>
-      <td>${(function(){var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
+      <td>${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
       <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
@@ -1470,9 +1486,20 @@ function abrirModal(dep){
 
   var campos={'m-est-dev':'ESTADO DEVOLUCION','m-est-apl':'ESTADO APLICACIÓN','m-responsable':'RESPONSABLE','m-proceso':'Proceso','m-impuesto':'Impuesto','m-convenio':'Pendiente convenio','m-ci-inicial':'CI INICIAL','m-comp-egreso':'COMPROBANTE DE EGRESO','m-radicado-resp':'RADICADO DE RESPUESTA','m-gest-tes':'GESTION TESORERIA','m-telefono':'TELEFONO DE CONTACTO','m-correo':'CORREO ELECTRONICO','m-direccion':'DIRECCION','m-ciudad':'CIUDAD','m-observacion':'Observacion'};
   Object.keys(campos).forEach(id=>{ var el=document.getElementById(id);if(!el)return; var val=r[campos[id]]||''; if(id.includes('est-'))val=normEst(val); el.value=String(val||'').trim(); });
-  // Si el impuesto está vacío pero se puede deducir del expediente, pre-seleccionarlo (el contador lo confirma al guardar)
+  // Si el impuesto está vacío pero se puede deducir, pre-seleccionarlo — SALVO que haya conflicto (ahí decide el contador)
   var mImp=document.getElementById('m-impuesto');
-  if(mImp && !mImp.value){ var ded=impuestoDe(r); if(ded){ var existe=Array.from(mImp.options).some(o=>o.value===ded); if(existe) mImp.value=ded; } }
+  if(mImp && !mImp.value && !tieneConflictoImpuesto(r)){ var ded=impuestoDe(r); if(ded){ var existe=Array.from(mImp.options).some(o=>o.value===ded); if(existe) mImp.value=ded; } }
+  // Aviso de conflicto: la persona tiene Predial Y Tránsito, el contador debe decidir a cuál aplica este depósito
+  if(mImp){
+    var prev=document.getElementById('m-impuesto-aviso'); if(prev) prev.remove();
+    if(tieneConflictoImpuesto(r)){
+      var av=document.createElement('div');
+      av.id='m-impuesto-aviso';
+      av.style.cssText='margin-top:6px;font-size:11px;color:#fdba74;background:rgba(234,88,12,.12);border:1px solid rgba(234,88,12,.3);border-radius:6px;padding:6px 9px;line-height:1.4';
+      av.innerHTML='⚠️ Esta persona tiene <strong>Predial</strong> y <strong>Tránsito</strong>. Selecciona a cuál corresponde este depósito antes de guardar.';
+      mImp.parentNode.appendChild(av);
+    }
+  }
 
   // ── 360: otros depósitos de la misma persona ──
   renderOtrosDepositos(cid, dep);
@@ -1593,8 +1620,10 @@ async function renderTransitoModal(cid){
   try{
     var comps=await sbFetchAll('expedientes_transito',
       'nro_comparendo,fecha_comparendo,anio,cod_infraccion,numero_placa,estado_moroso,cobro_coactivo,valor_multa,valor_interes,valor_total',
-      'documento=eq.'+encodeURIComponent(cid)+'&order=fecha_comparendo.desc.nullslast');
+      'documento=eq.'+encodeURIComponent(cid));
     if(!comps.length){ cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">Sin comparendos.</div>'; return; }
+    // ordenar por fecha desc en el cliente (más seguro que el order del servidor)
+    comps.sort(function(a,b){ return String(b.fecha_comparendo||'').localeCompare(String(a.fecha_comparendo||'')); });
     cont.innerHTML=comps.map(function(c){
       var valor=Number(c.valor_total || c.valor_multa || 0)||0;
       var detalle=[];
