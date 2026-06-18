@@ -724,9 +724,19 @@ function renderTablaOU(){
       <td>${fmt(Number(r.valor_total||0))}</td>
       <td>${Number(r.pago||0)?fmt(Number(r.pago)):'—'}</td>
       <td>${r.mandamiento==='X'?'✅':'—'}</td>
-      <td><button class="ou-edit-btn" onclick="abrirModalOU('${ouEsc(r.id).replace(/'/g,"\\'")}')">✏️ Editar</button></td>
+      <td><button class="ou-edit-btn" data-ouid="${ouEsc(r.id)}">✏️ Editar</button></td>
     </tr>`;
   }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Sin resultados con esos filtros.</td></tr>';
+
+  // Delegación de clic en botones Editar (robusto ante cualquier id)
+  const tbody = document.getElementById('ou-tabla');
+  if(tbody && !tbody._ouBound){
+    tbody.addEventListener('click', function(ev){
+      const btn = ev.target.closest('.ou-edit-btn');
+      if(btn && btn.dataset.ouid) abrirModalOU(btn.dataset.ouid);
+    });
+    tbody._ouBound = true;
+  }
 
   // Paginador
   let pg = '';
