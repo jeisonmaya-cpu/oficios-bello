@@ -1049,7 +1049,7 @@ async function cargarDatos() {
     }
   })();
 
-  // ── OU (GAS/Sheets) — independiente ──
+  // ── OU (Supabase) — independiente ──
   const pOU = (async () => {
     try {
       const resOU = await cargarOUSupa();
@@ -1062,7 +1062,7 @@ async function cargarDatos() {
         const div = document.createElement('div');
         div.className = 'fuente-error';
         div.style.cssText = 'background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.3);border-radius:14px;padding:24px;text-align:center;color:#fca5a5;margin-bottom:16px';
-        div.innerHTML = '<div style="font-size:32px;margin-bottom:10px">🔌</div><div style="font-size:15px;font-weight:600;margin-bottom:6px">No se pudo cargar Obligaciones Urbanísticas</div><div style="font-size:12px;color:rgba(252,165,165,.6);margin-bottom:12px">Verifica el deployment de GAS y que el Sheet esté publicado</div><button onclick="cargarDatos()" style="background:#2d8de8;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Reintentar</button>';
+        div.innerHTML = '<div style="font-size:32px;margin-bottom:10px">🔌</div><div style="font-size:15px;font-weight:600;margin-bottom:6px">No se pudo cargar Obligaciones Urbanísticas</div><div style="font-size:12px;color:rgba(252,165,165,.6);margin-bottom:12px">Verifica las vistas v_ou_* en Supabase</div><button onclick="cargarDatos()" style="background:#2d8de8;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Reintentar</button>';
         panel.insertBefore(div, panel.firstChild);
       }
     }
@@ -2384,6 +2384,19 @@ async function cargarHistorial(radicado, modulo){
   } catch(err) {
     hi.innerHTML = '<div class="hist-empty" style="color:#fca5a5">No se pudo cargar el historial</div>';
   }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ── INIT: arranque automático al cargar la página ──
+// ════════════════════════════════════════════════════════════════
+function iniciarSeguimiento(){
+  cargarDatos();   // OU + Predial (Consolidado, Urbanísticas, Predial, Morosidad)
+  cargarICA();     // ICA (carga su propia pestaña; alimenta el Consolidado)
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', iniciarSeguimiento);
+} else {
+  iniciarSeguimiento();
 }
 
 </script>
