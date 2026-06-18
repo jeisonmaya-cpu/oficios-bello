@@ -28,8 +28,7 @@
 .ou-b-Cancelado{background:rgba(22,163,74,.2);color:#86efac}
 .ou-b-Terminado{background:rgba(120,120,120,.25);color:#c0c6d0}
 /* Modal */
-.ou-modal-bg{display:none;position:fixed;inset:0;background:rgba(5,12,25,.72);backdrop-filter:blur(4px);z-index:1000;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto}
-.ou-modal-bg.open{display:flex}
+.ou-modal-bg{position:fixed;inset:0;background:rgba(5,12,25,.72);backdrop-filter:blur(4px);z-index:1000;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto}
 .ou-modal{background:linear-gradient(160deg,#0e2748,#0a1f3d);border:1px solid rgba(232,160,32,.25);border-radius:18px;width:100%;max-width:720px;box-shadow:0 24px 70px rgba(0,0,0,.55);animation:oupop .18s ease}
 @keyframes oupop{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
 .ou-modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 24px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
@@ -210,7 +209,7 @@
 </div>
 
 <!-- ── MODAL EDICIÓN EXPEDIENTE OU ── -->
-<div class="ou-modal-bg" id="ou-modal-bg" onclick="if(event.target===this)cerrarModalOU()">
+<div class="ou-modal-bg" id="ou-modal-bg" style="display:none" onclick="if(event.target===this)cerrarModalOU()">
   <div class="ou-modal">
     <div class="ou-modal-head">
       <div>
@@ -789,7 +788,7 @@ async function abrirModalOU(idExp){
   document.getElementById('ou-f-tel').value    = '';
   document.getElementById('ou-f-email').value  = '';
 
-  document.getElementById('ou-modal-bg').classList.add('open');
+  document.getElementById('ou-modal-bg').style.display = 'flex';
 
   // Traer datos completos del contribuyente desde Supabase
   if(r.id_contribuyente){
@@ -807,7 +806,7 @@ async function abrirModalOU(idExp){
   cargarBitacoraOU(r.radicado);
 }
 
-function cerrarModalOU(){ document.getElementById('ou-modal-bg').classList.remove('open'); ouEditando=null; }
+function cerrarModalOU(){ document.getElementById('ou-modal-bg').style.display = 'none'; ouEditando=null; }
 
 // ── Guardar: PATCH a expedientes_ou (+ contribuyentes) + bitácora ──
 async function guardarOU(){
