@@ -2257,53 +2257,29 @@ async function guardarActuacion(){
     var fecha = ahora.toISOString().slice(0,10);
     var hora  = ahora.toTimeString().slice(0,8);
 
-    if (actActivo.modulo === 'PREDIAL') {
-      // ── Guardar en Supabase ──
-      var res = await fetch(SUPA_URL + '/rest/v1/actuaciones', {
-        method: 'POST',
-        headers: {
-          'apikey':        SUPA_KEY,
-          'Authorization': 'Bearer ' + SUPA_KEY,
-          'Content-Type':  'application/json',
-          'Prefer':        'return=minimal'
-        },
-        body: JSON.stringify({
-          radicado:       actActivo.radicado,
-          modulo:         'PREDIAL',
-          tipo_actuacion: tipo,
-          resultado:      result,
-          descripcion:    desc,
-          funcionario:    func,
-          fecha:          fecha,
-          hora:           hora
-        })
-      });
-      if (!res.ok) {
-        var txt = await res.text();
-        throw new Error('Supabase ' + res.status + ': ' + txt.slice(0,120));
-      }
-    } else {
-      // ── Guardar en GAS (OU e ICA siguen igual) ──
-      var url = actActivo.modulo === 'OU' ? URL_OU : URL_ICA;
-      var gasRes = await fetch(url, {
-        method: 'POST', redirect: 'follow',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accion:        'registrarActuacion',
-          modulo:         actActivo.modulo,
-          radicado:       actActivo.radicado,
-          contribuyente:  actActivo.nombre,
-          valorAdeudado:  actActivo.valorAdeudado || 0,
-          tipoActuacion:  tipo,
-          descripcion:    desc,
-          resultado:      result,
-          funcionario:    func
-        })
-      });
-      var gasData = await gasRes.json();
-      if (!gasData.ok) throw new Error(gasData.error || 'Error del servidor');
-      fecha = gasData.fecha || fecha;
-      hora  = gasData.hora  || hora;
+    // ── Guardar en Supabase (todos los módulos: PREDIAL, OU, ICA) ──
+    var res = await fetch(SUPA_URL + '/rest/v1/actuaciones', {
+      method: 'POST',
+      headers: {
+        'apikey':        SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal'
+      },
+      body: JSON.stringify({
+        radicado:       actActivo.radicado,
+        modulo:         actActivo.modulo,
+        tipo_actuacion: tipo,
+        resultado:      result,
+        descripcion:    desc,
+        funcionario:    func,
+        fecha:          fecha,
+        hora:           hora
+      })
+    });
+    if (!res.ok) {
+      var txt = await res.text();
+      throw new Error('Supabase ' + res.status + ': ' + txt.slice(0,120));
     }
 
     setActSt('ok', '✅ Actuación registrada — ' + fecha + ' ' + hora);
@@ -2327,31 +2303,21 @@ async function cargarHistorial(radicado, modulo){
   try {
     var acts = [];
 
-    if (modulo === 'PREDIAL') {
-      // ── Leer de Supabase ──
-      var data = await supaFetch(
-        'actuaciones?select=fecha,hora,tipo_actuacion,resultado,descripcion,funcionario' +
-        '&radicado=eq.' + encodeURIComponent(radicado) +
-        '&modulo=eq.PREDIAL' +
-        '&order=created_at.desc'
-      );
-      acts = data.map(a => ({
-        fecha:         a.fecha,
-        hora:          a.hora,
-        tipoActuacion: a.tipo_actuacion,
-        resultado:     a.resultado,
-        descripcion:   a.descripcion,
-        funcionario:   a.funcionario
-      }));
-    } else {
-      // ── Leer de GAS (OU e ICA) ──
-      var url = (modulo === 'OU' ? URL_OU : URL_ICA)
-        + '?radicado=' + encodeURIComponent(radicado)
-        + '&modulo='   + encodeURIComponent(modulo);
-      var res  = await fetch(url, { redirect: 'follow' });
-      var json = await res.json();
-      acts = json.actuaciones || [];
-    }
+    // ── Leer de Supabase (todos los módulos) ──
+    var data = await supaFetch(
+      'actuaciones?select=fecha,hora,tipo_actuacion,resultado,descripcion,funcionario' +
+      '&radicado=eq.' + encodeURIComponent(radicado) +
+      '&modulo=eq.' + encodeURIComponent(modulo) +
+      '&order=created_at.desc'
+    );
+    acts = data.map(a => ({
+      fecha:         a.fecha,
+      hora:          a.hora,
+      tipoActuacion: a.tipo_actuacion,
+      resultado:     a.resultado,
+      descripcion:   a.descripcion,
+      funcionario:   a.funcionario
+    }));
 
     document.getElementById('hist-count').textContent =
       acts.length ? acts.length + ' actuación(es)' : '';
