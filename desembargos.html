@@ -193,7 +193,7 @@
           <input id="f_nombre" type="text" placeholder="Apellidos y nombres"
             oninput="checkDup(this.value)"
             onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('f_cedula').focus();}">
-          <div class="alert alert-w" id="f_dup"><span>⚠️</span><span id="f_dupmsg"></span></div>
+          <div class="alert" id="f_dup"><span id="f_dupmsg"></span></div>
         </div>
         <div class="fg fg-rel">
           <label>Cédula / NIT <span class="req">*</span></label>
@@ -686,6 +686,9 @@
 // CONFIG & STORAGE
 // ════════════════════════════════════════
 const CK = 'desembargos_cfg_v1';
+// Clave de localStorage para la plantilla .docx (declarada arriba para evitar
+// el temporal dead zone: cargarConfigPanel() la usa al arrancar iniciarApp()).
+const TMPL_KEY = 'desembargo_tmpl_b64_v1';
 let cfg = {};
 let cache = [];
 let charts = {};
@@ -1425,7 +1428,8 @@ function getRadicadoForm(){
 // DUPLICADOS
 // ════════════════════════════════════════
 function checkDup(val){
-  if(!val||val.length<4){hideAlert('f_dup');return;}
+  const dup=document.getElementById('f_dup');
+  if(!val||val.length<4){ if(dup) dup.className='alert'; return; }
   const v=val.toLowerCase();
 
   // 1. Revisar cola activa (PENDIENTE) — más urgente
@@ -1439,11 +1443,11 @@ function checkDup(val){
       `⏳ <strong>Ya está en cola pendiente:</strong> "${enCola['Contribuyente']}" — `+
       `${enCola['Tipo Oficio']||'—'} · ${enCola['Concepto']||'—'} `+
       `(${enCola['Fecha']||'?'} ${enCola['Hora']||''} por ${enCola['Funcionario']||'?'})`;
-    showAlert('f_dup','e','');
+    dup.className='alert show alert-e';
     return;
   }
 
-  // 2. Revisar historial de Sheets (ya generado antes)
+  // 2. Revisar historial (ya generado antes)
   const f=cache.find(r=>
     (r['Contribuyente']&&r['Contribuyente'].toLowerCase()===v)||
     (r['Cédula/NIT']&&r['Cédula/NIT'].toLowerCase()===v)
@@ -1452,9 +1456,9 @@ function checkDup(val){
     document.getElementById('f_dupmsg').innerHTML=
       `⚠️ <strong>Ya existe en historial:</strong> "${f['Contribuyente']}" — `+
       `Rad. ${f['Radicado']||'—'} (${f['Fecha']||'?'} por ${f['Funcionario']||'?'})`;
-    showAlert('f_dup','w','');
+    dup.className='alert show alert-w';
   } else {
-    hideAlert('f_dup');
+    dup.className='alert';
   }
 }
 
@@ -1499,7 +1503,6 @@ const DATA_ROW_TPL='<w:tr w:rsidR="005F262D" w:rsidTr="005F262D"><w:trPr><w:jc w
 // ════════════════════════════════════════
 // CARGAR PLANTILLA DOCX (lazy, desde index)
 // ════════════════════════════════════════
-const TMPL_KEY = 'desembargo_tmpl_b64_v1';
 
 // Plantilla oficial predeterminada (Desembargo_bancario.docx — aprobado Alcaldía de Bello)
 // Se puede sobreescribir desde Config → "Plantilla Word oficial"
