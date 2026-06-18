@@ -7,6 +7,62 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="seguimiento.css"/>
+<style>
+/* ── Gestión editable OU ── */
+.ou-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0 14px}
+.ou-toolbar input[type=text],.ou-toolbar select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#e8edf5;border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
+.ou-toolbar input[type=text]{flex:1;min-width:220px}
+.ou-toolbar input[type=text]:focus,.ou-toolbar select:focus{border-color:var(--gold,#e8a020)}
+.ou-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#aab4c4;cursor:pointer}
+.ou-conteo{font-size:12px;color:#8b95a7;margin-left:auto}
+.ou-pager{display:flex;gap:6px;justify-content:center;align-items:center;margin:14px 0 4px;flex-wrap:wrap}
+.ou-pager button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#cfd6e2;border-radius:7px;padding:6px 11px;font-size:12px;cursor:pointer;font-family:inherit}
+.ou-pager button.act{background:var(--gold,#e8a020);color:#0a1f3d;border-color:var(--gold,#e8a020);font-weight:700}
+.ou-pager button:disabled{opacity:.35;cursor:default}
+.ou-edit-btn{background:rgba(232,160,32,.15);border:1px solid rgba(232,160,32,.4);color:var(--gold2,#f5c050);border-radius:7px;padding:5px 11px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.ou-edit-btn:hover{background:rgba(232,160,32,.28)}
+.ou-incompleto{color:#fca5a5;font-style:italic;font-size:11px}
+.ou-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600}
+.ou-b-Activo{background:rgba(26,111,196,.2);color:#7db8f0}
+.ou-b-Convenio{background:rgba(232,160,32,.2);color:#f5c050}
+.ou-b-Cancelado{background:rgba(22,163,74,.2);color:#86efac}
+.ou-b-Terminado{background:rgba(120,120,120,.25);color:#c0c6d0}
+/* Modal */
+.ou-modal-bg{display:none;position:fixed;inset:0;background:rgba(5,12,25,.72);backdrop-filter:blur(4px);z-index:1000;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto}
+.ou-modal-bg.open{display:flex}
+.ou-modal{background:linear-gradient(160deg,#0e2748,#0a1f3d);border:1px solid rgba(232,160,32,.25);border-radius:18px;width:100%;max-width:720px;box-shadow:0 24px 70px rgba(0,0,0,.55);animation:oupop .18s ease}
+@keyframes oupop{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
+.ou-modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 24px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.ou-modal-title{font-family:'DM Serif Display',serif;font-size:22px;color:#fff}
+.ou-modal-sub{font-size:12.5px;color:#8b95a7;margin-top:3px}
+.ou-modal-x{background:rgba(255,255,255,.06);border:none;color:#cfd6e2;width:34px;height:34px;border-radius:9px;font-size:16px;cursor:pointer}
+.ou-modal-x:hover{background:rgba(255,255,255,.14)}
+.ou-modal-body{padding:18px 24px;max-height:60vh;overflow-y:auto}
+.ou-fgroup-title{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gold2,#f5c050);margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+.ou-fgroup-title:first-child{margin-top:0}
+.ou-fgroup-title span{font-weight:400;text-transform:none;letter-spacing:0;color:#8b95a7;font-size:11px}
+.ou-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ou-modal-body label{display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:#aab4c4;font-weight:500}
+.ou-modal-body label.ou-full{grid-column:1/-1}
+.ou-full{display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:#aab4c4;margin-top:12px}
+.ou-modal-body input,.ou-modal-body select,.ou-modal-body textarea{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#e8edf5;border-radius:9px;padding:9px 11px;font-size:13px;font-family:inherit;outline:none;width:100%;box-sizing:border-box}
+.ou-modal-body input:focus,.ou-modal-body select:focus,.ou-modal-body textarea:focus{border-color:var(--gold,#e8a020)}
+.ou-modal-body input:disabled{opacity:.55;cursor:not-allowed}
+.ou-m-msg{margin-top:14px;font-size:12.5px;padding:0}
+.ou-m-msg.ok{color:#86efac}.ou-m-msg.err{color:#fca5a5}
+.ou-modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 24px 20px;border-top:1px solid rgba(255,255,255,.08)}
+.ou-btn-sec{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#cfd6e2;border-radius:9px;padding:10px 18px;font-size:13px;cursor:pointer;font-family:inherit}
+.ou-btn-pri{background:var(--gold,#e8a020);border:none;color:#0a1f3d;border-radius:9px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.ou-btn-pri:disabled{opacity:.5;cursor:default}
+.ou-log-wrap{margin-top:8px}
+.ou-log-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:9px 12px;margin-bottom:7px}
+.ou-log-top{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
+.ou-log-user{color:var(--gold2,#f5c050);font-weight:600}
+.ou-log-fecha{color:#8b95a7}
+.ou-log-cambios{font-size:12px;color:#cfd6e2;line-height:1.5}
+@media(max-width:560px){.ou-grid2{grid-template-columns:1fr}}
+</style>
+
 </head>
 <body>
 <div class="bg-wrap"></div>
@@ -118,7 +174,106 @@
       <tbody id="ou-top-activos"></tbody>
     </table>
   </div>
+
+  <!-- ── GESTIÓN / EDICIÓN DE EXPEDIENTES OU ── -->
+  <div class="section-title">✏️ Gestión de Expedientes</div>
+  <div class="ou-toolbar">
+    <input type="text" id="ou-buscar" placeholder="🔍 Buscar por radicado, nombre o cédula…" oninput="renderTablaOU()">
+    <select id="ou-filtro-estado" onchange="renderTablaOU()">
+      <option value="">Todos los estados</option>
+      <option value="Activo">Activo</option>
+      <option value="Convenio">Convenio</option>
+      <option value="Cancelado">Cancelado</option>
+      <option value="Terminado">Terminado</option>
+    </select>
+    <select id="ou-filtro-masivo" onchange="renderTablaOU()">
+      <option value="">Todos los masivos</option>
+      <option value="MASIVO 2">MASIVO 2</option>
+      <option value="MASIVO 3">MASIVO 3</option>
+      <option value="MASIVO 4">MASIVO 4</option>
+      <option value="MASIVO 5">MASIVO 5</option>
+      <option value="MASIVO 6">MASIVO 6</option>
+    </select>
+    <label class="ou-chk"><input type="checkbox" id="ou-solo-incompletos" onchange="renderTablaOU()"> Solo incompletos</label>
+    <span id="ou-conteo" class="ou-conteo"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Radicado</th><th>Contribuyente</th><th>Cédula/NIT</th><th>Masivo</th>
+        <th>Estado</th><th>Valor ($)</th><th>Pagado ($)</th><th>Mand.</th><th></th>
+      </tr></thead>
+      <tbody id="ou-tabla"></tbody>
+    </table>
+  </div>
+  <div class="ou-pager" id="ou-pager"></div>
 </div>
+
+<!-- ── MODAL EDICIÓN EXPEDIENTE OU ── -->
+<div class="ou-modal-bg" id="ou-modal-bg" onclick="if(event.target===this)cerrarModalOU()">
+  <div class="ou-modal">
+    <div class="ou-modal-head">
+      <div>
+        <div class="ou-modal-title" id="ou-m-rad">Expediente</div>
+        <div class="ou-modal-sub" id="ou-m-sub">—</div>
+      </div>
+      <button class="ou-modal-x" onclick="cerrarModalOU()">✕</button>
+    </div>
+    <div class="ou-modal-body">
+      <div class="ou-fgroup-title">📋 Datos del Contribuyente <span>(se actualizan en todos los módulos)</span></div>
+      <div class="ou-grid2">
+        <label>Nombre completo<input type="text" id="ou-f-nombre"></label>
+        <label>Cédula / NIT<input type="text" id="ou-f-id" disabled title="La identificación es la llave; no se edita aquí"></label>
+        <label>Dirección<input type="text" id="ou-f-dir-c"></label>
+        <label>Teléfono<input type="text" id="ou-f-tel"></label>
+        <label>Email<input type="text" id="ou-f-email"></label>
+        <label>Barrio<input type="text" id="ou-f-barrio"></label>
+      </div>
+
+      <div class="ou-fgroup-title">📁 Datos del Expediente</div>
+      <div class="ou-grid2">
+        <label>Radicado<input type="text" id="ou-f-rad"></label>
+        <label>Masivo
+          <select id="ou-f-masivo">
+            <option value="">—</option>
+            <option>MASIVO 2</option><option>MASIVO 3</option><option>MASIVO 4</option>
+            <option>MASIVO 5</option><option>MASIVO 6</option>
+          </select>
+        </label>
+        <label>Estado (categoría)
+          <select id="ou-f-estado">
+            <option>Activo</option><option>Convenio</option>
+            <option>Cancelado</option><option>Terminado</option>
+          </select>
+        </label>
+        <label>Estado consolidado<input type="text" id="ou-f-estcons"></label>
+        <label>Valor total ($)<input type="number" id="ou-f-valor"></label>
+        <label>Valor pagado ($)<input type="number" id="ou-f-pago"></label>
+        <label>Mandamiento
+          <select id="ou-f-mand"><option value="">Sin mandamiento</option><option value="X">Con mandamiento (X)</option></select>
+        </label>
+        <label>Dirección (expediente)<input type="text" id="ou-f-dir-e"></label>
+      </div>
+      <label class="ou-full">Estado del proceso (notas)<textarea id="ou-f-proceso" rows="2"></textarea></label>
+      <label class="ou-full">Acción / pendiente<textarea id="ou-f-accion" rows="2"></textarea></label>
+
+      <div class="ou-fgroup-title">📝 Registro del cambio</div>
+      <label class="ou-full">Tu nombre (para la bitácora)<input type="text" id="ou-f-usuario" placeholder="¿Quién hace el cambio?"></label>
+
+      <div id="ou-m-msg" class="ou-m-msg"></div>
+
+      <div class="ou-log-wrap" id="ou-log-wrap" style="display:none">
+        <div class="ou-fgroup-title">🕐 Historial de cambios</div>
+        <div id="ou-log"></div>
+      </div>
+    </div>
+    <div class="ou-modal-foot">
+      <button class="ou-btn-sec" onclick="cerrarModalOU()">Cancelar</button>
+      <button class="ou-btn-pri" id="ou-btn-guardar" onclick="guardarOU()">💾 Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- PANEL PREDIAL -->
 <div class="panel" id="panel-predial">
@@ -466,6 +621,285 @@ async function cargarPredialSupa() {
   return dataPred;
 }
 
+// ── Cargar OU desde Supabase (reemplaza el GAS) ──
+let dataOU = [];   // detalle completo de expedientes OU (para tabla editable)
+
+async function cargarOUSupa() {
+  // Vistas agregadas + detalle completo, en paralelo
+  const [resumen, porMasivo, topActivos, detalle] = await Promise.all([
+    supaFetch('v_ou_resumen?select=*'),
+    supaFetch('v_ou_por_masivo?select=*'),
+    supaFetch('v_ou_top_activos?select=*'),
+    supaFetch('expedientes_ou?select=*&order=valor_total.desc')
+  ]);
+
+  const r = resumen[0] || {};
+  dataOU = detalle || [];
+
+  // Estados detallados (los 10 consolidados, para el desglose fino del panel)
+  const estados = {};
+  dataOU.forEach(e => {
+    const k = e.estado || '—';
+    estados[k] = (estados[k] || 0) + 1;
+  });
+
+  // Objeto con el MISMO formato que esperaba renderOU desde el GAS
+  return {
+    cartera:    Number(r.cartera    || 0),
+    totalExp:   Number(r.total_exp  || 0),
+    recaudo:    Number(r.recaudo    || 0),
+    activos:    Number(r.activos    || 0),
+    convenios:  Number(r.convenios  || 0),
+    cancelados: Number(r.cancelados || 0),
+    terminados: Number(r.terminados || 0),
+    estados:    estados,
+    masivos: (porMasivo || []).map(m => ({
+      nombre:      m.masivo,
+      expedientes: Number(m.expedientes || 0),
+      valor:       Number(m.valor || 0)
+    })),
+    topActivos: (topActivos || []).map(t => ({
+      radicado:      t.radicado,
+      nombre:        t.nombre || t.id_contribuyente || '—',
+      valorTotal:    Number(t.valor_total || 0),
+      estadoProceso: t.estado_proceso || (t.mandamiento === 'X' ? 'Con mandamiento' : 'Sin mandamiento'),
+      accion:        ''
+    }))
+  };
+}
+
+// ════════════════════════════════════════════════════════════════
+// GESTIÓN EDITABLE DE EXPEDIENTES OU
+// ════════════════════════════════════════════════════════════════
+let ouPagina = 1;
+const OU_POR_PAGINA = 25;
+let ouEditando = null;   // fila de dataOU en edición
+
+function ouEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Un expediente está "incompleto" si le falta info clave
+function ouIncompleto(r){
+  return !r.estado_proceso || !r.barrio || !Number(r.valor_total) || !r.contribuyente;
+}
+
+function ouFiltrados(){
+  const q = (document.getElementById('ou-buscar').value||'').trim().toLowerCase();
+  const fe = document.getElementById('ou-filtro-estado').value;
+  const fm = document.getElementById('ou-filtro-masivo').value;
+  const soloInc = document.getElementById('ou-solo-incompletos').checked;
+  return dataOU.filter(r=>{
+    if(fe && r.estado!==fe) return false;
+    if(fm && r.masivo!==fm) return false;
+    if(soloInc && !ouIncompleto(r)) return false;
+    if(q){
+      const blob = (r.radicado+' '+(r.contribuyente||'')+' '+(r.id_contribuyente||'')).toLowerCase();
+      if(!blob.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTablaOU(){
+  if(!dataOU || !dataOU.length){
+    document.getElementById('ou-tabla').innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Sin datos cargados.</td></tr>';
+    return;
+  }
+  const filas = ouFiltrados();
+  const totalPag = Math.max(1, Math.ceil(filas.length/OU_POR_PAGINA));
+  if(ouPagina>totalPag) ouPagina = totalPag;
+  const ini = (ouPagina-1)*OU_POR_PAGINA;
+  const pagina = filas.slice(ini, ini+OU_POR_PAGINA);
+
+  document.getElementById('ou-conteo').textContent =
+    filas.length.toLocaleString('es-CO')+' expediente(s)' + (filas.length!==dataOU.length ? ' de '+dataOU.length.toLocaleString('es-CO') : '');
+
+  document.getElementById('ou-tabla').innerHTML = pagina.map(r=>{
+    const inc = ouIncompleto(r);
+    return `<tr>
+      <td><strong>${ouEsc(r.radicado||'—')}</strong>${inc?' <span class="ou-incompleto">⚠ incompleto</span>':''}</td>
+      <td>${ouEsc(r.contribuyente||'—')}</td>
+      <td>${ouEsc(r.id_contribuyente||'—')}</td>
+      <td>${ouEsc(r.masivo||'—')}</td>
+      <td><span class="ou-badge ou-b-${ouEsc(r.estado||'')}">${ouEsc(r.estado||'—')}</span></td>
+      <td>${fmt(Number(r.valor_total||0))}</td>
+      <td>${Number(r.pago||0)?fmt(Number(r.pago)):'—'}</td>
+      <td>${r.mandamiento==='X'?'✅':'—'}</td>
+      <td><button class="ou-edit-btn" onclick="abrirModalOU('${ouEsc(r.id).replace(/'/g,"\\'")}')">✏️ Editar</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Sin resultados con esos filtros.</td></tr>';
+
+  // Paginador
+  let pg = '';
+  if(totalPag>1){
+    pg += `<button onclick="ouIrPag(${ouPagina-1})" ${ouPagina<=1?'disabled':''}>‹</button>`;
+    const around = [];
+    for(let p=1;p<=totalPag;p++){
+      if(p===1||p===totalPag||(p>=ouPagina-2&&p<=ouPagina+2)) around.push(p);
+      else if(around[around.length-1]!=='…') around.push('…');
+    }
+    around.forEach(p=>{
+      pg += p==='…' ? '<span style="color:#5a6478;padding:0 4px">…</span>'
+                    : `<button class="${p===ouPagina?'act':''}" onclick="ouIrPag(${p})">${p}</button>`;
+    });
+    pg += `<button onclick="ouIrPag(${ouPagina+1})" ${ouPagina>=totalPag?'disabled':''}>›</button>`;
+  }
+  document.getElementById('ou-pager').innerHTML = pg;
+}
+function ouIrPag(p){ ouPagina = p; renderTablaOU(); window.scrollTo({top:document.getElementById('panel-ou').offsetTop,behavior:'smooth'}); }
+
+// ── Abrir modal con los datos del expediente + contribuyente ──
+async function abrirModalOU(idExp){
+  const r = dataOU.find(x=>String(x.id)===String(idExp));
+  if(!r) return;
+  ouEditando = r;
+
+  document.getElementById('ou-m-rad').textContent = 'Expediente ' + (r.radicado||'—');
+  document.getElementById('ou-m-sub').textContent = (r.masivo||'') + ' · ' + (r.estado||'');
+  document.getElementById('ou-m-msg').textContent = '';
+  document.getElementById('ou-m-msg').className = 'ou-m-msg';
+
+  // Expediente
+  document.getElementById('ou-f-rad').value     = r.radicado||'';
+  document.getElementById('ou-f-masivo').value  = r.masivo||'';
+  document.getElementById('ou-f-estado').value  = r.estado||'Activo';
+  document.getElementById('ou-f-estcons').value = r.estado_consolidado||'';
+  document.getElementById('ou-f-valor').value   = Number(r.valor_total||0);
+  document.getElementById('ou-f-pago').value    = Number(r.pago||0);
+  document.getElementById('ou-f-mand').value    = r.mandamiento==='X'?'X':'';
+  document.getElementById('ou-f-dir-e').value   = r.direccion||'';
+  document.getElementById('ou-f-proceso').value = r.estado_proceso||'';
+  document.getElementById('ou-f-accion').value  = r.accion||'';
+  document.getElementById('ou-f-barrio').value  = r.barrio||'';
+  document.getElementById('ou-f-id').value      = r.id_contribuyente||'';
+  document.getElementById('ou-f-usuario').value = localStorage.getItem('ou_usuario')||'';
+
+  // Contribuyente (lectura inicial; se traen los datos frescos)
+  document.getElementById('ou-f-nombre').value = r.contribuyente||'';
+  document.getElementById('ou-f-dir-c').value  = '';
+  document.getElementById('ou-f-tel').value    = '';
+  document.getElementById('ou-f-email').value  = '';
+
+  document.getElementById('ou-modal-bg').classList.add('open');
+
+  // Traer datos completos del contribuyente desde Supabase
+  if(r.id_contribuyente){
+    try{
+      const c = await supaFetch('contribuyentes?id_contribuyente=eq.'+encodeURIComponent(r.id_contribuyente)+'&select=*');
+      if(c && c[0]){
+        document.getElementById('ou-f-nombre').value = c[0].nombre_completo||r.contribuyente||'';
+        document.getElementById('ou-f-dir-c').value  = c[0].direccion||'';
+        document.getElementById('ou-f-tel').value    = c[0].telefono||'';
+        document.getElementById('ou-f-email').value  = c[0].email||'';
+      }
+    }catch(e){ /* si falla, queda con lo del expediente */ }
+  }
+
+  cargarBitacoraOU(r.radicado);
+}
+
+function cerrarModalOU(){ document.getElementById('ou-modal-bg').classList.remove('open'); ouEditando=null; }
+
+// ── Guardar: PATCH a expedientes_ou (+ contribuyentes) + bitácora ──
+async function guardarOU(){
+  if(!ouEditando) return;
+  const r = ouEditando;
+  const btn = document.getElementById('ou-btn-guardar');
+  const msg = document.getElementById('ou-m-msg');
+  const usuario = (document.getElementById('ou-f-usuario').value||'').trim();
+  if(!usuario){ msg.className='ou-m-msg err'; msg.textContent='Escribe tu nombre para registrar el cambio.'; return; }
+  localStorage.setItem('ou_usuario', usuario);
+
+  btn.disabled=true; msg.className='ou-m-msg'; msg.textContent='Guardando…';
+
+  // Valores nuevos del expediente
+  const nuevoExp = {
+    radicado:           document.getElementById('ou-f-rad').value.trim(),
+    masivo:             document.getElementById('ou-f-masivo').value,
+    estado:             document.getElementById('ou-f-estado').value,
+    estado_consolidado: document.getElementById('ou-f-estcons').value.trim(),
+    valor_total:        Number(document.getElementById('ou-f-valor').value||0),
+    pago:               Number(document.getElementById('ou-f-pago').value||0),
+    mandamiento:        document.getElementById('ou-f-mand').value,
+    direccion:          document.getElementById('ou-f-dir-e').value.trim(),
+    estado_proceso:     document.getElementById('ou-f-proceso').value.trim(),
+    accion:             document.getElementById('ou-f-accion').value.trim(),
+    barrio:             document.getElementById('ou-f-barrio').value.trim()
+  };
+  // Valores nuevos del contribuyente
+  const nuevoContrib = {
+    nombre_completo: document.getElementById('ou-f-nombre').value.trim(),
+    direccion:       document.getElementById('ou-f-dir-c').value.trim(),
+    telefono:        document.getElementById('ou-f-tel').value.trim(),
+    email:           document.getElementById('ou-f-email').value.trim()
+  };
+
+  // Detectar cambios para la bitácora (campos del expediente)
+  const cambios = [];
+  const mapa = {radicado:'Radicado',masivo:'Masivo',estado:'Estado',estado_consolidado:'Estado consolidado',
+    valor_total:'Valor',pago:'Pagado',mandamiento:'Mandamiento',direccion:'Dirección',
+    estado_proceso:'Proceso',accion:'Acción',barrio:'Barrio'};
+  for(const k in nuevoExp){
+    const viejo = (r[k]==null?'':String(r[k]));
+    const nuevo = String(nuevoExp[k]);
+    if(viejo!==nuevo) cambios.push(`${mapa[k]}: "${viejo}" → "${nuevo}"`);
+  }
+
+  try{
+    // 1) PATCH expediente
+    const u1 = SUPA_URL+'/rest/v1/expedientes_ou?id=eq.'+encodeURIComponent(r.id);
+    const res1 = await fetch(u1,{ method:'PATCH',
+      headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+      body:JSON.stringify({...nuevoExp, contribuyente:nuevoContrib.nombre_completo}) });
+    if(!res1.ok) throw new Error('expediente HTTP '+res1.status);
+
+    // 2) PATCH contribuyente (cambio global) — solo si hay id
+    if(r.id_contribuyente){
+      const u2 = SUPA_URL+'/rest/v1/contribuyentes?id_contribuyente=eq.'+encodeURIComponent(r.id_contribuyente);
+      await fetch(u2,{ method:'PATCH',
+        headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+        body:JSON.stringify(nuevoContrib) });
+    }
+
+    // 3) Bitácora (no bloquea si falla)
+    if(cambios.length){
+      fetch(SUPA_URL+'/rest/v1/ou_bitacora',{ method:'POST',
+        headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+        body:JSON.stringify({radicado:r.radicado, usuario:usuario, cambios:cambios.join(' | ')}) }).catch(()=>{});
+    }
+
+    // 4) Actualizar en memoria y re-render
+    Object.assign(r, nuevoExp, {contribuyente:nuevoContrib.nombre_completo});
+    msg.className='ou-m-msg ok'; msg.textContent='✅ Guardado correctamente.';
+    renderTablaOU();
+    // refrescar KPIs/cartera del panel
+    try{ datosGlobales.ou = await cargarOUSupa(); renderOU(datosGlobales.ou); renderConsolidado(); }catch(e){}
+    setTimeout(cerrarModalOU, 900);
+
+  }catch(err){
+    console.warn('[OU guardar]', err);
+    msg.className='ou-m-msg err'; msg.textContent='❌ No se pudo guardar: '+err.message;
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+// ── Historial de cambios del expediente ──
+async function cargarBitacoraOU(radicado){
+  const wrap=document.getElementById('ou-log-wrap');
+  const cont=document.getElementById('ou-log');
+  if(!wrap||!cont) return;
+  cont.innerHTML='<div style="font-size:11px;color:#8b95a7;padding:6px 0">Cargando historial…</div>';
+  wrap.style.display='block';
+  try{
+    const rows = await supaFetch('ou_bitacora?radicado=eq.'+encodeURIComponent(radicado)+'&order=fecha.desc&select=usuario,cambios,fecha');
+    if(!rows.length){ cont.innerHTML='<div style="font-size:11px;color:#8b95a7;padding:6px 0;font-style:italic">Sin cambios registrados todavía.</div>'; return; }
+    cont.innerHTML=rows.map(r=>{
+      const f=r.fecha?new Date(r.fecha).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+      return `<div class="ou-log-item"><div class="ou-log-top"><span class="ou-log-user">👤 ${ouEsc(r.usuario||'—')}</span><span class="ou-log-fecha">${ouEsc(f)}</span></div><div class="ou-log-cambios">${ouEsc(r.cambios||'')}</div></div>`;
+    }).join('');
+  }catch(e){ cont.innerHTML='<div style="font-size:11px;color:#8b95a7;padding:6px 0;font-style:italic">No se pudo cargar el historial.</div>'; }
+}
+
 // ── TRÁNSITO (Supabase) ──
 async function cargarTransito() {
   const cont = document.getElementById('trans-cartera');
@@ -609,8 +1043,7 @@ async function cargarDatos() {
   // ── OU (GAS/Sheets) — independiente ──
   const pOU = (async () => {
     try {
-      const resOU = await fetch(URL_OU + '?t=' + Date.now()).then(r => r.json());
-      if (resOU.error) throw new Error('OU: ' + resOU.error);
+      const resOU = await cargarOUSupa();
       datosGlobales.ou = resOU;
       renderOU(resOU);
     } catch (err) {
@@ -736,6 +1169,10 @@ function renderOU(d) {
         <td><button class="btn-act" onclick="abrirAct('${(e.radicado||'').replace(/'/g,"\'")}','${(e.nombre||'').replace(/'/g,"\'")}',${e.valorTotal||0},'OU')">📝 Actuación</button></td>
       </tr>`).join('');
   }
+
+  // Tabla editable de gestión
+  ouPagina = 1;
+  renderTablaOU();
 }
 
 // ── RENDER PREDIAL ──
