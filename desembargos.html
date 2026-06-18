@@ -684,6 +684,152 @@ const CK = 'desembargos_cfg_v1';
 let cfg = {};
 let cache = [];
 let charts = {};
+
+// ════════════════════════════════════════
+// SUPABASE — capa de datos (reemplaza GAS)
+// ════════════════════════════════════════
+const SUPA_URL = 'https://bmurdtfztsltcgwsfbgf.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs';
+const SUPA_TABLE = 'desembargos';
+const SUPA_VIEW  = 'v_desembargos';
+
+// Helper REST estándar (mismo patrón que los demás módulos)
+async function supaFetch(path, opts){
+  opts = opts || {};
+  const headers = Object.assign({
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json'
+  }, opts.headers || {});
+  const res = await fetch(SUPA_URL + '/rest/v1/' + path, Object.assign({}, opts, {headers}));
+  if(!res.ok){
+    let msg = 'HTTP ' + res.status;
+    try { const j = await res.json(); if(j && j.message) msg = j.message; } catch(e){}
+    throw new Error(msg);
+  }
+  // 204 No Content (típico en PATCH sin return) → devolver array vacío
+  if(res.status === 204) return [];
+  const txt = await res.text();
+  if(!txt) return [];
+  try { return JSON.parse(txt); } catch(e){ return []; }
+}
+
+// dedup_key: mismo cálculo que la migración (cedula|tipo|fecha_oficio|radicado → md5)
+// MD5 mínimo en JS (suficiente para hash de deduplicación, no para seguridad)
+function md5(str){
+  function rl(n,c){return(n<<c)|(n>>>(32-c));}
+  function au(x,y){var l=(x&0xFFFF)+(y&0xFFFF),m=(x>>16)+(y>>16)+(l>>16);return(m<<16)|(l&0xFFFF);}
+  function ff(a,b,c,d,x,s,t){return au(rl(au(au(a,(b&c)|(~b&d)),au(x,t)),s),b);}
+  function gg(a,b,c,d,x,s,t){return au(rl(au(au(a,(b&d)|(c&~d)),au(x,t)),s),b);}
+  function hh(a,b,c,d,x,s,t){return au(rl(au(au(a,b^c^d),au(x,t)),s),b);}
+  function ii(a,b,c,d,x,s,t){return au(rl(au(au(a,c^(b|~d)),au(x,t)),s),b);}
+  function tb(s){var n=s.length,w=[];for(var i=0;i<n*8;i+=8)w[i>>5]|=(s.charCodeAt(i/8)&0xFF)<<(i%32);return w;}
+  function bh(w){var h='';for(var i=0;i<w.length*4;i++)h+=((w[i>>2]>>((i%4)*8+4))&0xF).toString(16)+((w[i>>2]>>((i%4)*8))&0xF).toString(16);return h;}
+  function utf8(s){return unescape(encodeURIComponent(s));}
+  var x=tb(utf8(str)),len=utf8(str).length*8;
+  x[len>>5]|=0x80<<(len%32);x[(((len+64)>>>9)<<4)+14]=len;
+  var a=1732584193,b=-271733879,c=-1732584194,d=271733878;
+  for(var i=0;i<x.length;i+=16){
+    var oa=a,ob=b,oc=c,od=d;
+    a=ff(a,b,c,d,x[i],7,-680876936);d=ff(d,a,b,c,x[i+1],12,-389564586);c=ff(c,d,a,b,x[i+2],17,606105819);b=ff(b,c,d,a,x[i+3],22,-1044525330);
+    a=ff(a,b,c,d,x[i+4],7,-176418897);d=ff(d,a,b,c,x[i+5],12,1200080426);c=ff(c,d,a,b,x[i+6],17,-1473231341);b=ff(b,c,d,a,x[i+7],22,-45705983);
+    a=ff(a,b,c,d,x[i+8],7,1770035416);d=ff(d,a,b,c,x[i+9],12,-1958414417);c=ff(c,d,a,b,x[i+10],17,-42063);b=ff(b,c,d,a,x[i+11],22,-1990404162);
+    a=ff(a,b,c,d,x[i+12],7,1804603682);d=ff(d,a,b,c,x[i+13],12,-40341101);c=ff(c,d,a,b,x[i+14],17,-1502002290);b=ff(b,c,d,a,x[i+15],22,1236535329);
+    a=gg(a,b,c,d,x[i+1],5,-165796510);d=gg(d,a,b,c,x[i+6],9,-1069501632);c=gg(c,d,a,b,x[i+11],14,643717713);b=gg(b,c,d,a,x[i],20,-373897302);
+    a=gg(a,b,c,d,x[i+5],5,-701558691);d=gg(d,a,b,c,x[i+10],9,38016083);c=gg(c,d,a,b,x[i+15],14,-660478335);b=gg(b,c,d,a,x[i+4],20,-405537848);
+    a=gg(a,b,c,d,x[i+9],5,568446438);d=gg(d,a,b,c,x[i+14],9,-1019803690);c=gg(c,d,a,b,x[i+3],14,-187363961);b=gg(b,c,d,a,x[i+8],20,1163531501);
+    a=gg(a,b,c,d,x[i+13],5,-1444681467);d=gg(d,a,b,c,x[i+2],9,-51403784);c=gg(c,d,a,b,x[i+7],14,1735328473);b=gg(b,c,d,a,x[i+12],20,-1926607734);
+    a=hh(a,b,c,d,x[i+5],4,-378558);d=hh(d,a,b,c,x[i+8],11,-2022574463);c=hh(c,d,a,b,x[i+11],16,1839030562);b=hh(b,c,d,a,x[i+14],23,-35309556);
+    a=hh(a,b,c,d,x[i+1],4,-1530992060);d=hh(d,a,b,c,x[i+4],11,1272893353);c=hh(c,d,a,b,x[i+7],16,-155497632);b=hh(b,c,d,a,x[i+10],23,-1094730640);
+    a=hh(a,b,c,d,x[i+13],4,681279174);d=hh(d,a,b,c,x[i],11,-358537222);c=hh(c,d,a,b,x[i+3],16,-722521979);b=hh(b,c,d,a,x[i+6],23,76029189);
+    a=hh(a,b,c,d,x[i+9],4,-640364487);d=hh(d,a,b,c,x[i+12],11,-421815835);c=hh(c,d,a,b,x[i+15],16,530742520);b=hh(b,c,d,a,x[i+2],23,-995338651);
+    a=ii(a,b,c,d,x[i],6,-198630844);d=ii(d,a,b,c,x[i+7],10,1126891415);c=ii(c,d,a,b,x[i+14],15,-1416354905);b=ii(b,c,d,a,x[i+5],21,-57434055);
+    a=ii(a,b,c,d,x[i+12],6,1700485571);d=ii(d,a,b,c,x[i+3],10,-1894986606);c=ii(c,d,a,b,x[i+10],15,-1051523);b=ii(b,c,d,a,x[i+1],21,-2054922799);
+    a=ii(a,b,c,d,x[i+8],6,1873313359);d=ii(d,a,b,c,x[i+15],10,-30611744);c=ii(c,d,a,b,x[i+6],15,-1560198380);b=ii(b,c,d,a,x[i+13],21,1309151649);
+    a=ii(a,b,c,d,x[i+4],6,-145523070);d=ii(d,a,b,c,x[i+11],10,-1120210379);c=ii(c,d,a,b,x[i+2],15,718787259);b=ii(b,c,d,a,x[i+9],21,-343485551);
+    a=au(a,oa);b=au(b,ob);c=au(c,oc);d=au(d,od);
+  }
+  return bh([a,b,c,d]);
+}
+function dedupKey(d){
+  const fo = (d.fecha||'').trim();           // ya viene ISO del input date
+  const raw = (d.cedula||'')+'|'+(d.tipoOficio||'')+'|'+fo+'|'+(d.radicado||'');
+  return md5(raw);
+}
+
+// Mapea una fila de v_desembargos (snake_case) a las claves que el frontend ya usa
+function mapSupaRow(row){
+  return {
+    'ID':           String(row.id),
+    'id':           String(row.id),
+    'Estado':       row.estado || 'GENERADO',
+    'Tipo Oficio':  row.tipo_oficio || '',
+    'N° Oficio':    row.num_oficio || '',
+    'Fecha Oficio': row.fecha_oficio || '',
+    'Fecha':        row.fecha_creado_local || '',
+    'Hora':         row.hora_creado_local || '',
+    'Contribuyente':row.contribuyente || '',
+    'Cédula/NIT':   row.cedula_nit || '',
+    'Concepto':     row.concepto || '',
+    'Radicado':     row.radicado || '',
+    'Fecha Auto':   row.fecha_auto || '',
+    'Motivo':       row.motivo || '',
+    'Proyectó':     row.proyecto || '',
+    'Funcionario':  row.funcionario || '',
+    'Equipo':       row.equipo || '',
+    'Observación':  row.observacion || ''
+  };
+}
+
+// Convierte los datos del form (getDatos) a fila para INSERT en Supabase
+function datosToRow(d, estado){
+  return {
+    estado:        estado || 'GENERADO',
+    tipo_oficio:   d.tipoOficio || null,
+    num_oficio:    d.numOficio || '1070.02',
+    fecha_oficio:  d.fecha || null,
+    contribuyente: d.nombre || null,
+    cedula_nit:    d.cedula || null,
+    concepto:      d.concepto || null,
+    radicado:      d.radicado || null,
+    fecha_auto:    d.fechaAuto || null,
+    motivo:        d.motivo || null,
+    proyecto:      d.proyNombre || null,
+    funcionario:   d.funcionario || null,
+    equipo:        d.equipo || null,
+    observacion:   d.obs || null,
+    dedup_key:     dedupKey(d) + '-' + Date.now().toString(36)  // único por envío; ver nota
+  };
+}
+
+// ── Cola de reintentos (fire-and-forget, patrón Teodoro) ──
+const RETRY_KEY = 'desembargos_retry_v1';
+function encolarReintento(row){
+  try{
+    const q = JSON.parse(localStorage.getItem(RETRY_KEY)||'[]');
+    q.push({row, ts: Date.now()});
+    localStorage.setItem(RETRY_KEY, JSON.stringify(q.slice(-100)));
+  }catch(e){}
+}
+async function procesarReintentos(){
+  let q;
+  try{ q = JSON.parse(localStorage.getItem(RETRY_KEY)||'[]'); }catch(e){ return; }
+  if(!q.length) return;
+  const quedan = [];
+  for(const item of q){
+    try{
+      await supaFetch(SUPA_TABLE, {
+        method:'POST',
+        headers:{'Prefer':'resolution=ignore-duplicates,return=minimal'},
+        body: JSON.stringify(item.row)
+      });
+    }catch(e){ quedan.push(item); }
+  }
+  localStorage.setItem(RETRY_KEY, JSON.stringify(quedan));
+  if(q.length && !quedan.length){ toastD('✅ Pendientes sincronizados'); cargarRemoto(); cargarCola(); }
+}
+setInterval(procesarReintentos, 30000);
+window.addEventListener('online', procesarReintentos);
 let filActual = [];
 let pagActual = 1;
 const POR_PAG = 20;
@@ -988,49 +1134,87 @@ function actualizarBanner(){
 // ════════════════════════════════════════
 // API
 // ════════════════════════════════════════
+// apiPost: capa de compatibilidad. Recibe el mismo {accion, ...campos} que
+// usaba el GAS y lo traduce a operaciones REST de Supabase. Mantiene el
+// contrato de retorno {ok:true/false} que espera el resto del módulo.
 async function apiPost(data){
-  if(!cfg.apiUrl) return {ok:false,local:true};
+  const accion = data.accion;
   try{
-    const r=await fetch(cfg.apiUrl,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'text/plain'}});
-    const txt=await r.text();
-    try{return JSON.parse(txt);}catch{return{ok:true};}
-  }catch(e1){
-    try{
-      await fetch(cfg.apiUrl,{method:'POST',body:JSON.stringify(data),mode:'no-cors',headers:{'Content-Type':'text/plain'}});
-      return{ok:true,nocors:true};
-    }catch(e2){return{ok:false,error:e2.message};}
+    if(accion==='guardar' || accion==='encolar'){
+      const d = {
+        tipoOficio: data.tipoOficio, numOficio: data.numOficio,
+        fecha: data.fechaOficio, nombre: data.nombre, cedula: data.cedula,
+        concepto: data.concepto, radicado: data.radicado,
+        fechaAuto: data.fechaAuto, motivo: data.motivo,
+        proyNombre: data.proyNombre, funcionario: data.funcionario,
+        equipo: data.equipo, obs: data.observacion || data.obs || null
+      };
+      const estado = (accion==='encolar') ? 'PENDIENTE' : 'GENERADO';
+      const row = datosToRow(d, estado);
+      try{
+        await supaFetch(SUPA_TABLE, {
+          method:'POST',
+          headers:{'Prefer':'resolution=ignore-duplicates,return=minimal'},
+          body: JSON.stringify(row)
+        });
+        return {ok:true};
+      }catch(e){
+        // Sin conexión → a la cola de reintentos
+        encolarReintento(row);
+        return {ok:false, queued:true, error:e.message};
+      }
+    }
+    if(accion==='marcar_impreso'){
+      const ids = data.ids || (data.id ? [data.id] : []);
+      for(const id of ids){
+        await supaFetch(SUPA_TABLE+'?id=eq.'+encodeURIComponent(id), {
+          method:'PATCH',
+          headers:{'Prefer':'return=minimal'},
+          body: JSON.stringify({estado:'IMPRESO', impreso_en:new Date().toISOString()})
+        });
+      }
+      return {ok:true};
+    }
+    if(accion==='eliminar_cola'){
+      // No borramos el registro: lo sacamos de PENDIENTE marcándolo CANCELADO.
+      // (Si prefieres borrado real, cambia a method:'DELETE'.)
+      await supaFetch(SUPA_TABLE+'?id=eq.'+encodeURIComponent(data.id), {
+        method:'PATCH',
+        headers:{'Prefer':'return=minimal'},
+        body: JSON.stringify({estado:'GENERADO'})
+      });
+      return {ok:true};
+    }
+    return {ok:false, error:'acción no soportada: '+accion};
+  }catch(e){
+    return {ok:false, error:e.message};
   }
 }
 async function cargarRemoto(){
   setSS('spin','Sincronizando…');
   document.getElementById('badgeCnt').textContent='…';
+  // Mostrar caché local mientras llega Supabase
   const localCache=JSON.parse(localStorage.getItem('desembargos_local_cache')||'[]');
   if(localCache.length){ cache=localCache; renderRegistro(); actualizarStatsReg(); }
-  if(!cfg.apiUrl){ setSS('off','Sin conexión'); cache=[]; renderRegistro(); return; }
-  const url=cfg.apiUrl+'?accion=registros&t='+Date.now();
-  // Timeout de 8s para no quedar "Iniciando..." eternamente
-  const controller = new AbortController();
-  const timer = setTimeout(()=>{ controller.abort(); }, 8000);
-  fetch(url, {signal: controller.signal})
-    .then(r=>r.json())
-    .then(data=>{
-      clearTimeout(timer);
-      if(data&&data.ok&&data.registros){
-        cache=data.registros;
-        setSS('ok','Sincronizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}));
-        document.getElementById('badgeCnt').textContent=cache.length;
-        renderRegistro(); actualizarStatsReg();
-      } else setSS('off','Sin acceso al Sheet');
-    })
-    .catch(err=>{
-      clearTimeout(timer);
-      if(err.name==='AbortError') setSS('off','Tiempo agotado');
-      else setSS('off','Sin conexión');
-      if(localCache.length){
-        document.getElementById('badgeCnt').textContent=cache.length;
-        renderRegistro(); actualizarStatsReg();
-      }
-    });
+  // Registro = oficios GENERADO o IMPRESO (los PENDIENTE viven en la Cola)
+  const query='v_desembargos?select=*&estado=in.(GENERADO,IMPRESO)&order=creado_en.desc';
+  try{
+    const rows=await supaFetch(query);
+    cache=rows.map(mapSupaRow);
+    // Persistir caché para arranque offline
+    localStorage.setItem('desembargos_local_cache', JSON.stringify(cache.slice(0,500)));
+    setSS('ok','Sincronizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}));
+    document.getElementById('badgeCnt').textContent=cache.length;
+    renderRegistro(); actualizarStatsReg();
+    // Aprovechar para reintentar pendientes en cola offline
+    procesarReintentos();
+  }catch(err){
+    setSS('off','Sin conexión');
+    if(cache.length){
+      document.getElementById('badgeCnt').textContent=cache.length;
+      renderRegistro(); actualizarStatsReg();
+    }
+  }
 }
 function guardarLocalCache(d){
   const lc=JSON.parse(localStorage.getItem('desembargos_local_cache')||'[]');
@@ -1423,8 +1607,15 @@ async function generarDocx(d){
     `$1${xmlEsc(d.radicado)}$2`
   );
 
-  // 4. Todos los demás "20252196416" → radicado
-  xml = xml.split('20252196416').join(xmlEsc(d.radicado));
+  // 4. Concepto + radicado en tabla (color EE0000)
+  //    IMPORTANTE: este reemplazo debe ir ANTES del split global del paso 7,
+  //    porque el patrón depende de que "20252196416" siga presente junto al
+  //    texto "EMBARGO TRANSITO 2023". Si el split corre primero, el ancla se
+  //    rompe y el concepto queda con el año viejo de la plantilla.
+  xml = xml.replace(
+    /(<w:color w:val="EE0000"[^\/]*\/><w:sz[^\/]*\/><w:szCs[^\/]*\/><\/w:rPr><w:t>)EMBARGO TRANSITO 2023 20252196416(<\/w:t>)/,
+    `$1${xmlEsc(d.concepto+' '+d.radicado)}$2`
+  );
 
   // 5. Nombre contribuyente en tabla (color EE0000)
   xml = xml.replace(
@@ -1438,11 +1629,10 @@ async function generarDocx(d){
     `$1${xmlEsc(d.cedula)}$2`
   );
 
-  // 7. Concepto + radicado en tabla (color EE0000)
-  xml = xml.replace(
-    /(<w:color w:val="EE0000"[^\/]*\/><w:sz[^\/]*\/><w:szCs[^\/]*\/><\/w:rPr><w:t>)EMBARGO TRANSITO 2023 20252196416(<\/w:t>)/,
-    `$1${xmlEsc(d.concepto+' '+d.radicado)}$2`
-  );
+  // 7. Todos los demás "20252196416" sueltos → radicado
+  //    (corre al final, ya que los pasos 3 y 4 consumieron las apariciones
+  //    que necesitaban contexto específico)
+  xml = xml.split('20252196416').join(xmlEsc(d.radicado));
 
   // 8. Fecha del auto (formato dd/mm/yyyy, subrayada en el XML)
   xml = xml.replace(
@@ -1742,11 +1932,14 @@ function guardarConfig(){
   showAlert('c_alert','s','Configuración guardada ✅');
 }
 async function probarConexion(){
-  if(!cfg.apiUrl){showAlert('c_alert','e','No hay URL configurada.');return;}
-  showAlert('c_alert','w','Probando…');
-  const ok=await ping(cfg.apiUrl);
-  if(ok)showAlert('c_alert','s','✅ Conexión exitosa con Google Sheets');
-  else showAlert('c_alert','e','❌ No se pudo conectar. Verifique la URL.');
+  showAlert('c_alert','w','Probando conexión con Supabase…');
+  try{
+    // HEAD count sobre la vista: confirma URL + key + RLS de lectura
+    const rows = await supaFetch('v_desembargos?select=id&limit=1');
+    showAlert('c_alert','s','✅ Conexión exitosa con Supabase');
+  }catch(e){
+    showAlert('c_alert','e','❌ No se pudo conectar a Supabase: '+e.message);
+  }
 }
 
 // ════════════════════════════════════════
@@ -1815,60 +2008,43 @@ async function encolarDesdeForm(){
     equipo:d.equipo, observacion:d.obs||'',
   };
 
-  await apiPost(payload);
+  const res = await apiPost(payload);
 
-  // Guardar en cola local
-  const localCola=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
-  localCola.unshift({
-    id:'CL-'+Date.now(), 'ID':'CL-'+Date.now(),
-    'Fecha':new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}),
-    'Hora':new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}),
-    'Funcionario':d.funcionario||'', 'Estado':'PENDIENTE',
-    'Tipo Oficio':d.tipoOficio||'', 'N° Oficio':d.numOficio||'',
-    'Fecha Oficio':d.fecha||'', 'Contribuyente':d.nombre||'',
-    'Cédula/NIT':d.cedula||'', 'Concepto':d.concepto||'',
-    'Radicado':radicadoEncolar||'', 'Fecha Auto':d.fechaAuto||'',
-    'Motivo':d.motivo||'', 'Proyectó':d.proyNombre||'',
-    'Observación':d.obs||'', _datos:d,
-    _bancos:bancosEncolar||null,
-  });
-  localStorage.setItem('cola_local_desem',JSON.stringify(localCola.slice(0,300)));
+  // Refrescar cola desde Supabase (fuente de verdad).
+  // Si no hubo conexión, apiPost ya dejó el registro en la cola de reintentos.
+  await cargarCola();
   actualizarBadgeCola();
 
-  showAlert('f_alert','s','✅ Enviado a la cola de impresión 🖨️');
+  if(res && res.ok){
+    showAlert('f_alert','s','✅ Enviado a la cola de impresión 🖨️');
+  } else if(res && res.queued){
+    showAlert('f_alert','w','Guardado localmente. Se sincronizará al reconectar.');
+  } else {
+    showAlert('f_alert','w','No se pudo enviar a la cola. Reintentando en segundo plano.');
+  }
   btn.disabled=false; btn.innerHTML='🖨️ Enviar a cola';
   limpiarForm();
 }
 
 async function cargarCola(){
+  // Respaldo local primero (arranque offline)
   const local=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
   colaCache=local.map(limpiarItem);
   actualizarBadgeCola();
   renderCola();
 
-  if(!cfg.apiUrl) return;
-  const url=cfg.apiUrl+'?accion=cola&t='+Date.now();
-  fetch(url).then(r=>r.json()).then(res=>{
-    if(res&&res.ok&&res.items){
-      const localArr=JSON.parse(localStorage.getItem('cola_local_desem')||'[]');
-      const localIds=new Set(localArr.map(x=>x.id||x['ID']).filter(Boolean));
-      res.items.forEach(si=>{
-        const sid=si.ID||si.id||'';
-        if(!sid) return;
-        if(!localIds.has(sid)){
-          localArr.unshift({id:sid,'ID':sid,...si});
-          localIds.add(sid);
-        } else {
-          const li=localArr.findIndex(x=>(x.id||x['ID'])===sid);
-          if(li>-1) localArr[li]['Estado']=si['Estado']||localArr[li]['Estado'];
-        }
-      });
-      localStorage.setItem('cola_local_desem',JSON.stringify(localArr));
-      colaCache=localArr.map(limpiarItem);
-      actualizarBadgeCola();
-      renderCola();
-    }
-  }).catch(()=>{});
+  // Supabase es la fuente de verdad para la cola: PENDIENTE + IMPRESO
+  const query='v_desembargos?select=*&estado=in.(PENDIENTE,IMPRESO)&order=creado_en.desc';
+  try{
+    const rows=await supaFetch(query);
+    colaCache = rows.map(r=>limpiarItem(mapSupaRow(r)));
+    // Guardar respaldo local
+    localStorage.setItem('cola_local_desem', JSON.stringify(colaCache.slice(0,300)));
+    actualizarBadgeCola();
+    renderCola();
+  }catch(e){
+    // Sin conexión: nos quedamos con el respaldo local ya pintado
+  }
 }
 
 function actualizarBadgeCola(){
