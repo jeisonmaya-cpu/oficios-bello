@@ -515,6 +515,11 @@
           style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none">
           🖨️ Imprimir PDF unificado (<span id="cntSelPdf">0</span>)
         </button>
+        <button class="btn btn-sm" id="btnWordComb" onclick="generarWordCombinado()"
+          disabled title="Genera UN solo archivo Word con todos los oficios seleccionados, cada uno en su página, con el formato oficial intacto"
+          style="background:linear-gradient(135deg,#1e7d54,#155f40);color:#fff;border:none">
+          📄 Word combinado (<span id="cntSelComb">0</span>)
+        </button>
       </div>
     </div>
     <div class="gcard-body" style="padding-bottom:8px">
@@ -1581,11 +1586,10 @@ function eliminarPlantilla(){
   toastD('Plantilla eliminada', 'rgba(234,88,12,.95)');
 }
 
-async function generarDocx(d){
-  if(!B64) throw new Error('Plantilla no cargada.');
-  const zip = await JSZip.loadAsync(b64ToU8(B64));
-  let xml   = await zip.file('word/document.xml').async('string');
-
+// Aplica los reemplazos quirúrgicos sobre el document.xml de la plantilla
+// y devuelve SOLO el XML resultante (string). Reutilizado por generarDocx
+// (un oficio) y por generarDocxCombinado (varios en un mismo Word).
+function construirDocXml(xml, d){
   // ── Reemplazos quirúrgicos — preservan formato XML oficial al 100% ──
 
   // 1. N° de oficio (ej. " 1070.02  ")
@@ -1595,7 +1599,6 @@ async function generarDocx(d){
   );
 
   // 2. Fecha del oficio — va junto a "Bello," como párrafo siguiente
-  //    Insertar fecha en el párrafo vacío después de "Bello,"
   xml = xml.replace(
     /(Bello,<\/w:t><\/w:r><\/w:p>)(<w:p [^>]+><w:pPr>[\s\S]*?<\/w:pPr><\/w:p>)/,
     `$1<w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>${xmlEsc(fmtL(d.fecha))}</w:t></w:r></w:p>`
@@ -1607,11 +1610,7 @@ async function generarDocx(d){
     `$1${xmlEsc(d.radicado)}$2`
   );
 
-  // 4. Concepto + radicado en tabla (color EE0000)
-  //    IMPORTANTE: este reemplazo debe ir ANTES del split global del paso 7,
-  //    porque el patrón depende de que "20252196416" siga presente junto al
-  //    texto "EMBARGO TRANSITO 2023". Si el split corre primero, el ancla se
-  //    rompe y el concepto queda con el año viejo de la plantilla.
+  // 4. Concepto + radicado en tabla (color EE0000) — ANTES del split global
   xml = xml.replace(
     /(<w:color w:val="EE0000"[^\/]*\/><w:sz[^\/]*\/><w:szCs[^\/]*\/><\/w:rPr><w:t>)EMBARGO TRANSITO 2023 20252196416(<\/w:t>)/,
     `$1${xmlEsc(d.concepto+' '+d.radicado)}$2`
@@ -1630,8 +1629,6 @@ async function generarDocx(d){
   );
 
   // 7. Todos los demás "20252196416" sueltos → radicado
-  //    (corre al final, ya que los pasos 3 y 4 consumieron las apariciones
-  //    que necesitaban contexto específico)
   xml = xml.split('20252196416').join(xmlEsc(d.radicado));
 
   // 8. Fecha del auto (formato dd/mm/yyyy, subrayada en el XML)
@@ -1659,7 +1656,14 @@ async function generarDocx(d){
       `$1${xmlEsc(fmtC(d.proyFecha))}$2`
     );
   }
+  return xml;
+}
 
+async function generarDocx(d){
+  if(!B64) throw new Error('Plantilla no cargada.');
+  const zip = await JSZip.loadAsync(b64ToU8(B64));
+  let xml   = await zip.file('word/document.xml').async('string');
+  xml = construirDocXml(xml, d);
   zip.file('word/document.xml', xml);
   return zip.generateAsync({
     type:'blob',
@@ -1680,6 +1684,147 @@ async function generarDocxMulti(d, bancos){
     concepto: d.concepto + ' ' + bancos.map(b => b.banco+': '+b.radicado).join(' | ')
   });
   return generarDocx(dConcepto);
+}
+
+// ════════════════════════════════════════
+// WORD COMBINADO — varios oficios en un solo .docx
+// Cada oficio en su propia página, formato idéntico a la plantilla oficial.
+// Técnica: el primer oficio es la base; de los siguientes se inyecta el
+// contenido de su <w:body> como una nueva sección (preservando su sectPr
+// para que el encabezado/escudo se repita), con salto de página antes.
+// ════════════════════════════════════════
+async function generarDocxCombinado(items){
+  if(!B64) throw new Error('Plantilla no cargada.');
+  if(!items || !items.length) throw new Error('No hay oficios para combinar.');
+
+  // Plantilla base (se reutiliza para generar el XML de cada oficio)
+  const tplZip = await JSZip.loadAsync(b64ToU8(B64));
+  const tplXml = await tplZip.file('word/document.xml').async('string');
+
+  // Construye el XML de cada oficio aplicando los reemplazos
+  const xmls = items.map(d => construirDocXml(tplXml, d));
+
+  // Helpers para extraer partes del body
+  const getBodyInner = (xml) => {
+    const m = xml.match(/<w:body>([\s\S]*)<\/w:body>/);
+    return m ? m[1] : '';
+  };
+  // Separa el sectPr final del resto del cuerpo
+  const splitSectPr = (bodyInner) => {
+    const m = bodyInner.match(/([\s\S]*?)(<w:sectPr[\s\S]*?<\/w:sectPr>)\s*$/);
+    if(m) return { contenido: m[1], sectPr: m[2] };
+    return { contenido: bodyInner, sectPr: '' };
+  };
+
+  // Salto de página (en su propio párrafo)
+  const PAGE_BREAK = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+
+  // El primer oficio es la base: conservamos su documento entero,
+  // solo vamos a inyectar los siguientes ANTES de su sectPr final.
+  const base = xmls[0];
+  const baseBody = getBodyInner(base);
+  const baseSplit = splitSectPr(baseBody);
+
+  // Para insertar una sección por oficio, el sectPr del oficio anterior
+  // debe ir envuelto en un párrafo (w:p > w:pPr > w:sectPr).
+  const sectPrComoParrafo = (sectPr) =>
+    `<w:p><w:pPr>${sectPr}</w:pPr></w:p>`;
+
+  // Empezamos con el contenido del primer oficio
+  let nuevoBody = baseSplit.contenido;
+
+  // Para cada oficio siguiente: cerramos la sección anterior con su sectPr,
+  // metemos salto de página y agregamos el contenido del nuevo oficio.
+  for(let i = 1; i < xmls.length; i++){
+    const prevSect = (i === 1)
+      ? baseSplit.sectPr
+      : splitSectPr(getBodyInner(xmls[i-1])).sectPr;
+    // Cerrar sección del oficio anterior
+    if(prevSect) nuevoBody += sectPrComoParrafo(prevSect);
+    // Salto de página y contenido del oficio actual
+    const curSplit = splitSectPr(getBodyInner(xmls[i]));
+    nuevoBody += PAGE_BREAK + curSplit.contenido;
+  }
+
+  // El sectPr final del documento es el del último oficio
+  const ultimoSect = splitSectPr(getBodyInner(xmls[xmls.length-1])).sectPr
+                     || baseSplit.sectPr;
+  nuevoBody += ultimoSect;
+
+  // Reensamblar el document.xml de la base con el nuevo body
+  const docFinal = base.replace(
+    /<w:body>[\s\S]*<\/w:body>/,
+    '<w:body>' + nuevoBody + '</w:body>'
+  );
+
+  tplZip.file('word/document.xml', docFinal);
+  return tplZip.generateAsync({
+    type:'blob',
+    mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    compression:'DEFLATE'
+  });
+}
+
+// Convierte un item de la cola en el objeto `d` que esperan las funciones de
+// generación, resolviendo multi-banco igual que generarEImprimir.
+function itemAColaDatos(item){
+  const d = {
+    tipoOficio: item['Tipo Oficio']||'',
+    numOficio:  item['N° Oficio']||'',
+    fecha:      item['Fecha Oficio']||'',
+    nombre:     item['Contribuyente']||'',
+    cedula:     item['Cédula/NIT']||'',
+    concepto:   item['Concepto']||'',
+    radicado:   item['Radicado']||'',
+    fechaAuto:  item['Fecha Auto']||'',
+    motivo:     item['Motivo']||'',
+    proyNombre: item['Proyectó']||'',
+    proyFecha:  '',
+  };
+  // Si el radicado ya viene como "BANCO:rad | BANCO:rad", el concepto debe
+  // incluir esa lista (igual que generarDocxMulti arma dConcepto).
+  const bancos = item._bancos || null;
+  if(bancos && bancos.length>1){
+    const allRad = bancos.map(b=>b.radicado).join(', ');
+    return Object.assign({}, d, {
+      radicado: allRad,
+      concepto: d.concepto + ' ' + bancos.map(b=>b.banco+': '+b.radicado).join(' | ')
+    });
+  }
+  return d;
+}
+
+// Genera UN Word con todos los oficios seleccionados (check) en la cola
+// y los marca como IMPRESO en Supabase.
+async function generarWordCombinado(){
+  const checks=[...document.querySelectorAll('.chk-cola:checked')];
+  if(!checks.length){ alert('Selecciona al menos un oficio de la cola.'); return; }
+  const ok=cargarPlantilla();
+  if(!ok) return;
+
+  const btn=document.getElementById('btnWordComb');
+  const original = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled=true; btn.innerHTML='⏳ Combinando…'; }
+
+  const ids=checks.map(c=>c.dataset.id);
+  const items=ids.map(id=>colaCache.find(r=>(r['ID']||r.id)===id)).filter(Boolean);
+  if(!items.length){ if(btn){btn.disabled=false;btn.innerHTML=original;} return; }
+
+  try{
+    const datos=items.map(itemAColaDatos);
+    const blob=await generarDocxCombinado(datos);
+    const hoy=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'-');
+    dlBlob(blob, `Desembargos_combinado_${items.length}_oficios_${hoy}.docx`);
+
+    // Marcar impresos en Supabase
+    await apiPost({accion:'marcar_impreso', ids});
+    await cargarCola();
+
+    showAlert('f_alert','s',`✅ Word combinado con ${items.length} oficio(s). Marcados como impresos.`);
+  }catch(e){
+    showAlert('f_alert','e','Error al combinar: '+e.message);
+  }
+  if(btn){ btn.disabled=false; btn.innerHTML=original || `📄 Word combinado (<span id="cntSelComb">0</span>)`; }
 }
 
 // ════════════════════════════════════════
@@ -2125,10 +2270,14 @@ function actualizarConteoSel(){
   if(el) el.textContent=sel;
   const elPdf=document.getElementById('cntSelPdf');
   if(elPdf) elPdf.textContent=sel;
+  const elComb=document.getElementById('cntSelComb');
+  if(elComb) elComb.textContent=sel;
   const btn=document.getElementById('btnImprimirSel');
   if(btn) btn.disabled=sel===0;
   const btnPdf=document.getElementById('btnPdfSel');
   if(btnPdf) btnPdf.disabled=sel===0;
+  const btnComb=document.getElementById('btnWordComb');
+  if(btnComb) btnComb.disabled=sel===0;
 }
 function seleccionarTodosCola(estado){
   document.querySelectorAll('.chk-cola:not(:disabled)').forEach(c=>c.checked=estado);
