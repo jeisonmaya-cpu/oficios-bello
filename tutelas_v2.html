@@ -784,7 +784,12 @@ const Repo = {
     return arr && arr.length ? arr[0] : null;
   }
 };
-const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Juan Gomez Londoño","Anderson Correa"];
+// Lista COMPLETA — incluye a Deisy para que sus procesos sigan apareciendo en
+// reparto, rankings, filtros y estadísticas (y se puedan cerrar).
+const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño","Anderson Correa"];
+// Lista ACTIVA para reparto — sin Deisy. Solo se usa en el round-robin de
+// "Nueva tutela" para que ya NO reciba asignaciones nuevas.
+const ABOGADOS_RR = ABOGADOS.filter(a => a !== "Deisy Lopez");
 const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"];
 const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
 const EST_HIST    = ["Finalizado","Respondido"];
@@ -802,13 +807,13 @@ let quickAdm=null, quickFal=null, quickOtr=null; // filtro rápido por urgencia 
 function siguienteAbogadoRR(){
   // Round-robin simple basado en un contador en memoria de sesión
   if(typeof window._rrIdx === "undefined") window._rrIdx = 0;
-  const abo = ABOGADOS[window._rrIdx % ABOGADOS.length];
+  const abo = ABOGADOS_RR[window._rrIdx % ABOGADOS_RR.length];
   return abo;
 }
 function abrirNuevaTutela(){
   // Llenar el desplegable de abogados
   const sel = document.getElementById("nt-abo");
-  sel.innerHTML = ABOGADOS.map(a=>`<option>${a}</option>`).join("");
+  sel.innerHTML = ABOGADOS_RR.map(a=>`<option>${a}</option>`).join("");
   // Pre-seleccionar el siguiente por turno
   sel.value = siguienteAbogadoRR();
   // Limpiar campos
