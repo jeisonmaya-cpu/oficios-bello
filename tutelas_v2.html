@@ -1368,7 +1368,7 @@ function renderAdmites(){
     scardQuick(nue.length,"Nuevas","c-purple","adm","nuevo")+
     scardQuick(pendTec.length,"⚠️ Pendientes técnicos","c-amber","adm","pendtec");
   document.getElementById("badge-admites").textContent=(venc.length||urg.length)||activos.length;
-  const visiblesAdm=aplicarQuick(filtAdm,quickAdm);
+  const visiblesAdm=aplicarQuick(filtAdm,quickAdm,'adm');
   const pag=renderPag(visiblesAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
   const el=document.getElementById("body-admites");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
@@ -1398,18 +1398,24 @@ function renderFallos(){
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const fal=activos.filter(r=>r["TIPO"]==="Fallo de tutela");
   const sent=activos.filter(r=>r["TIPO"]==="Sentencia");
+  const pendTecF=activos.filter(r=>faltaTecnicoFallo(r));
   document.getElementById("stats-fallos").innerHTML=
     scardQuick(activos.length,"Total activos","c-blue","fal",null)+
     scardQuick(urg.length,"Urgentes ≤3d","c-red","fal","urg3")+
     scardClick(fal.length,"Fallos","c-amber","ff-tp","Fallo de tutela")+
-    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia");
+    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia")+
+    scardQuick(pendTecF.length,"⚠️ Pendientes técnicos","c-amber","fal","pendtec");
   document.getElementById("badge-fallos").textContent=activos.length;
-  const visiblesFal=aplicarQuick(filtFal,quickFal);
+  const visiblesFal=aplicarQuick(filtFal,quickFal,'fal');
   const pag=renderPag(visiblesFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagFallos=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
+  el.innerHTML=pag.map((r,i)=>{
+    const falta=faltaTecnicoFallo(r)?queFaltaTecnicoFallo(r):[];
+    const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;
+  }).join("");
   window._exportFallos=visiblesFal;
 }
 
@@ -1799,7 +1805,15 @@ function abrirModal(da, origen){
 function llenarGestionVisible(r){
   const pqr = String(r["RESPUESTA PQR"]||"").trim();
   const rad = String(r["RADICADO DE CUMPLIMIENTO"]||r["RESPUESTA RADICADO TUTELA"]||"").trim();
-  const sp  = String(r["SHAREPOINT"]||"").trim();
+  let sp    = String(r["SHAREPOINT"]||"").trim();
+
+  // Si es fallo/incidente SIN SharePoint propio, intentar heredarlo del Admite de origen
+  // (cruce por radicado + accionante). Se muestra en vivo; no se copia a la fila.
+  let spHeredado = false;
+  if(!sp && (origenModal==="fallo" || origenModal==="incidente")){
+    const spOrigen = sharePointDeOrigen(r);
+    if(spOrigen){ sp = spOrigen; spHeredado = true; }
+  }
 
   const setVis=(wid,val,vid)=>{
     const w=document.getElementById(wid);
@@ -1816,6 +1830,11 @@ function llenarGestionVisible(r){
   if(spW){
     if(sp){
       spW.style.display="";
+      // Etiqueta que aclara si el SharePoint viene heredado del Admite
+      const lbl = spW.querySelector("label");
+      if(lbl) lbl.innerHTML = spHeredado
+        ? '📎 Documento SharePoint <span style="color:#fbbf24;font-weight:400;text-transform:none;letter-spacing:0">(heredado del Admite)</span>'
+        : '📎 Documento SharePoint';
       document.getElementById("m-info-sp").textContent=sp;
       if(/^https?:\/\//i.test(sp)){
         spBtn.style.display="block";
@@ -1958,7 +1977,7 @@ function setQuick(tab,key){
   else if(tab==='fal'){ quickFal = (quickFal===key||key===null)?null:key; pagFal=1; renderFallos(); }
   else { quickOtr = (quickOtr===key||key===null)?null:key; pagInc=1; renderOtros(); }
 }
-function aplicarQuick(arr,key){
+function aplicarQuick(arr,key,tab){
   if(!key) return arr;
   const act = r=>!EST_HIST.includes(r["ESTADO"]);
   if(key==='venc')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias<0);
@@ -1967,7 +1986,11 @@ function aplicarQuick(arr,key){
   if(key==='prox')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>1&&r._dias<=3);
   if(key==='ok')    return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>3);
   if(key==='nuevo') return arr.filter(r=>r["ESTADO"]==="Nuevo");
-  if(key==='pendtec') return arr.filter(r=>act(r)&&faltaTecnico(r));
+  if(key==='pendtec'){
+    // En Fallos usa la versión que considera SharePoint heredado del Admite
+    const fn = (tab==='fal') ? faltaTecnicoFallo : faltaTecnico;
+    return arr.filter(r=>act(r)&&fn(r));
+  }
   return arr;
 }
 
@@ -1984,6 +2007,52 @@ function queFaltaTecnico(r){
   if(!String(r["ENCARGADO PQR"]||"").trim()) f.push("Encargado PQR");
   if(!String(r["PQR"]||"").trim())           f.push("Radicado PQR");
   if(!String(r["SHAREPOINT"]||"").trim())    f.push("SharePoint");
+  return f;
+}
+
+// ── Cruce SharePoint: busca el Admite de origen de un fallo/registro ──
+// Coincide por RADICADO + ACCIONANTE (los juzgados a veces reciclan el mismo
+// radicado con distinto accionante, por eso NO basta el radicado solo).
+// Devuelve el SharePoint del Admite, o "" si no hay match con SharePoint.
+function clprivate_norm(s){
+  return String(s||"").replace(/[\s\-]/g,"").toLowerCase();
+}
+function normAcc(s){
+  return String(s||"").replace(/\s+/g,"").toLowerCase().substring(0,12);
+}
+function sharePointDeOrigen(reg){
+  const radF = clprivate_norm(reg["RADICADO"]);
+  const accF = normAcc(reg["ACCIONANTE"]);
+  if(!radF) return "";
+  // Buscar en Admites (tutelas) un registro con mismo radicado Y mismo accionante
+  for(const t of tutelas){
+    if(clprivate_norm(t["RADICADO"]) !== radF) continue;
+    // Verificar nombre — evita el reciclaje de radicados con distinto accionante
+    if(accF && normAcc(t["ACCIONANTE"]) !== accF) continue;
+    const sp = String(t["SHAREPOINT"]||"").trim();
+    if(sp) return sp;
+  }
+  return "";
+}
+
+// Pendiente técnico para FALLOS: igual criterio que Admites, pero el SharePoint
+// se considera presente si lo hereda del Admite de origen (cruce rad+accionante).
+function faltaTecnicoFallo(r){
+  const spPropio   = String(r["SHAREPOINT"]||"").trim();
+  const spHeredado = spPropio ? "" : sharePointDeOrigen(r);
+  const sp  = spPropio || spHeredado;
+  const pqr = String(r["PQR"]||"").trim();
+  const enc = String(r["ENCARGADO PQR"]||"").trim();
+  return !sp || !pqr || !enc;
+}
+// Lista de campos faltantes para el tooltip (considera SharePoint heredado)
+function queFaltaTecnicoFallo(r){
+  const f=[];
+  if(!String(r["ENCARGADO PQR"]||"").trim()) f.push("Encargado PQR");
+  if(!String(r["PQR"]||"").trim())           f.push("Radicado PQR");
+  const spPropio   = String(r["SHAREPOINT"]||"").trim();
+  const spHeredado = spPropio ? "" : sharePointDeOrigen(r);
+  if(!spPropio && !spHeredado)               f.push("SharePoint");
   return f;
 }
 
@@ -2109,10 +2178,6 @@ async function marcarHechoSuperado(){
   const fechaHoy = String(hoy.getDate()).padStart(2,"0")+"/"+
                    String(hoy.getMonth()+1).padStart(2,"0")+"/"+hoy.getFullYear();
 
-  const esInc   = origenModal === "incidente";
-  const esFallo = origenModal === "fallo";
-  const arr     = esInc ? incidentes : esFallo ? fallos : tutelas;
-
   toast("⏳ Marcando hecho superado...","");
 
   if(USAR_SUPABASE && actual._id){
@@ -2122,17 +2187,11 @@ async function marcarHechoSuperado(){
         "FECHA HECHO SUPERADO": fechaHoy
       });
       if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
-      // Reflejar en memoria
-      const idx=arr.findIndex(r=>r._id===actual._id);
-      if(idx>=0){
-        arr[idx]["ESTADO"]="Hecho superado";
-        arr[idx]["FECHA HECHO SUPERADO"]=fechaHoy;
-      }
-      actual["ESTADO"]="Hecho superado";
-      actual["FECHA HECHO SUPERADO"]=fechaHoy;
       toast("✅ Marcado como Hecho Superado — pasó al Histórico","ok");
-      renderAll();
       document.getElementById("overlay").classList.remove("open");
+      // Recargar desde Supabase (fuente de verdad) para que TODO se refresque:
+      // listados, badges y estadísticas — sin necesidad de F5.
+      await cargarDatos();
     }catch(e){
       if(/JWT expired|401/i.test(e.message)){
         toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
