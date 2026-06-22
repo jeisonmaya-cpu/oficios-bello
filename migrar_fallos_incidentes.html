@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Migrador Fallos + Incidentes → Supabase</title>
+<style>
+  :root{--navy:#0a1f3d;--gold:#e8a020;--border:rgba(255,255,255,.12);--muted:#94a3b8;--text:#e8eef7}
+  *{box-sizing:border-box;font-family:'DM Sans',system-ui,sans-serif}
+  body{margin:0;min-height:100vh;background:radial-gradient(1200px 600px at 70% -10%,#15315e 0%,var(--navy) 55%);color:var(--text);padding:32px 18px}
+  .wrap{max-width:820px;margin:0 auto}
+  h1{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:26px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 24px}
+  .card{background:linear-gradient(155deg,#111827 0%,#0d1525 100%);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:18px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  label{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
+  input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-size:13px}
+  .col{flex:1;min-width:200px}
+  button{cursor:pointer;border:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:600;transition:filter .15s}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .b-prev{background:rgba(255,255,255,.08);border:1px solid var(--border);color:var(--text)}
+  .b-go{background:linear-gradient(135deg,var(--gold),#c8851a);color:#1a1206}
+  .b-go:hover:not(:disabled){filter:brightness(1.08)}
+  .warn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:10px;padding:11px 14px;font-size:12.5px;line-height:1.5;margin-bottom:14px}
+  .ok-box{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac;border-radius:10px;padding:11px 14px;font-size:12.5px;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border)}
+  th{color:var(--gold);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+  #log{font-family:'DM Mono',ui-monospace,monospace;font-size:11.5px;line-height:1.6;background:#070d18;border:1px solid var(--border);border-radius:10px;padding:14px;max-height:340px;overflow:auto;white-space:pre-wrap;color:#cbd5e1}
+  .pill{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(232,160,32,.15);color:var(--gold);border:1px solid rgba(232,160,32,.3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Migrador · Fallos &amp; Incidentes → Supabase</h1>
+  <p class="sub">Lee las hojas de Google Sheets con la <strong>misma lógica</strong> que <code>tutelas_v2.html</code> e inserta en <code>actuaciones_tutela</code>. Reutiliza tu mapeo de columnas exacto. No borra nada. Deduplica por radicado + accionante.</p>
+
+  <div class="card">
+    <div class="warn">
+      ⚠️ Ejecuta esto <strong>UNA sola vez</strong>. Primero pulsa <strong>Previsualizar</strong> para revisar qué se va a subir, y solo después <strong>Migrar</strong>. La migración respeta los que ya existan (no duplica).
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Sheet ID (Tutelas)</label>
+        <input id="sheetId" value="1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>GID hoja Fallos</label>
+        <input id="gidFal" value="995241537">
+      </div>
+      <div class="col">
+        <label>GID hoja Incidentes</label>
+        <input id="gidInc" value="528315836">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>Supabase URL</label>
+        <input id="supaUrl" value="https://bmurdtfztsltcgwsfbgf.supabase.co">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>Supabase anon / publishable key</label>
+        <input id="supaKey" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:6px">
+      <button class="b-prev" id="btnPrev">🔍 Previsualizar</button>
+      <button class="b-go" id="btnGo" disabled>⬆️ Migrar a Supabase</button>
+    </div>
+  </div>
+
+  <div class="card" id="prevCard" style="display:none">
+    <div id="prevSummary"></div>
+    <div style="overflow:auto;max-height:260px"><table id="prevTable"></table></div>
+  </div>
+
+  <div class="card">
+    <label>Registro de la operación</label>
+    <div id="log">Esperando…</div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  Lógica de lectura: COPIADA TAL CUAL de tutelas_v2.html
+//  para garantizar mapeo idéntico (mismos nombres de columna).
+// ════════════════════════════════════════════════════════════
+
+// Mapa Sheet → Supabase (idéntico al de tutelas_v2.html)
+const MAPA_SB_A_SHEET = {
+  accionante:"ACCIONANTE", cc_nit:"CC / NIT", radicado:"RADICADO", juzgado:"JUZGADO",
+  tipo:"TIPO", responsable:"RESPONSABLE", estado:"ESTADO",
+  fecha_inicial:"FECHA INICIAL", fecha_limite:"FECHA LÍMITE",
+  derecho_invocado:"DERECHO INVOCADO", hechos_resumidos:"HECHOS RESUMIDOS",
+  pretensiones:"PRETENSIONES", observaciones:"OBSERVACIONES",
+  encargado_pqr:"ENCARGADO PQR", radicado_pqr:"PQR", respuesta_pqr:"RESPUESTA PQR",
+  radicado_cumplimiento:"RADICADO DE CUMPLIMIENTO", sharepoint:"SHAREPOINT"
+};
+const MAPA_SHEET_A_SB = Object.fromEntries(Object.entries(MAPA_SB_A_SHEET).map(([k,v])=>[v,k]));
+
+// parseCSV idéntico
+function parseCSV(txt){
+  const filas=[];let fila=[],celda="",enComillas=false;
+  for(let i=0;i<txt.length;i++){
+    const ch=txt[i];
+    if(enComillas){
+      if(ch==='"'){ if(txt[i+1]==='"'){celda+='"';i++;} else enComillas=false; }
+      else celda+=ch;
+    } else {
+      if(ch==='"') enComillas=true;
+      else if(ch===','){fila.push(celda);celda="";}
+      else if(ch==='\n'||ch==='\r'){
+        if(ch==='\r'&&txt[i+1]==='\n')i++;
+        fila.push(celda);celda="";
+        if(fila.length>1||fila[0]!=="")filas.push(fila);
+        fila=[];
+      } else celda+=ch;
+    }
+  }
+  if(celda!==""||fila.length){fila.push(celda);if(fila.length>1||fila[0]!=="")filas.push(fila);}
+  return filas;
+}
+
+// Lectura por encabezado (igual que leerGviz pero sin normalizar tipos,
+// para preservar el tipo original del Sheet en la migración).
+async function leerHoja(sheetId, gid){
+  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+  const res=await fetch(url);
+  if(!res.ok) throw new Error(`HTTP ${res.status} leyendo gid ${gid}`);
+  const txt=await res.text();
+  const tabla=parseCSV(txt);
+  if(tabla.length<2) return [];
+  const headers=tabla[0].map(h=>String(h||"").trim());
+  return tabla.slice(1).map(cels=>{
+    const r={};
+    headers.forEach((h,i)=>{ if(h) r[h]=String(cels[i]??"").trim(); });
+    return r;
+  }).filter(r => (r["ACCIONANTE"]||"").trim() || (r["RADICADO"]||"").trim() || (r["TIPO"]||"").trim());
+}
+
+// Traduce un registro Sheet → payload Supabase con categoría fija.
+function aPayload(regSheet, categoria){
+  const p={ categoria };
+  for(const [colSheet,valor] of Object.entries(regSheet)){
+    const colSB = MAPA_SHEET_A_SB[colSheet];
+    if(colSB) p[colSB] = String(valor ?? "").trim();
+  }
+  return p;
+}
+
+// ── Estado de la app ──
+let datosFal=[], datosInc=[];
+const log = (m)=>{ const el=document.getElementById("log"); el.textContent += "\n"+m; el.scrollTop=el.scrollHeight; };
+const setLog = (m)=>{ document.getElementById("log").textContent = m; };
+
+function cfg(){
+  return {
+    sheetId: document.getElementById("sheetId").value.trim(),
+    gidFal:  document.getElementById("gidFal").value.trim(),
+    gidInc:  document.getElementById("gidInc").value.trim(),
+    supaUrl: document.getElementById("supaUrl").value.trim().replace(/\/+$/,''),
+    supaKey: document.getElementById("supaKey").value.trim()
+  };
+}
+
+// ── PREVISUALIZAR ──
+document.getElementById("btnPrev").onclick = async ()=>{
+  const c = cfg();
+  setLog("Leyendo hojas de Google Sheets…");
+  try{
+    datosFal = await leerHoja(c.sheetId, c.gidFal);
+    log(`✅ Fallos leídos: ${datosFal.length}`);
+    datosInc = await leerHoja(c.sheetId, c.gidInc);
+    log(`✅ Incidentes leídos: ${datosInc.length}`);
+
+    const card=document.getElementById("prevCard"); card.style.display="block";
+    document.getElementById("prevSummary").innerHTML =
+      `<div class="ok-box">Listos para migrar: <span class="pill">${datosFal.length} fallos</span> &nbsp; <span class="pill">${datosInc.length} incidentes</span>. Revisa la muestra abajo; si se ve bien, pulsa <strong>Migrar</strong>.</div>`;
+
+    // Muestra una pequeña tabla de ejemplo (primeras 6 de cada uno)
+    const muestra = [
+      ...datosFal.slice(0,6).map(r=>({cat:"fallo",...r})),
+      ...datosInc.slice(0,6).map(r=>({cat:"incidente",...r}))
+    ];
+    const cols=["cat","TIPO","ACCIONANTE","RADICADO","RESPONSABLE","ESTADO"];
+    let html="<tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr>";
+    muestra.forEach(r=>{ html+="<tr>"+cols.map(c=>`<td>${(r[c]||"").toString().slice(0,28)}</td>`).join("")+"</tr>"; });
+    document.getElementById("prevTable").innerHTML=html;
+
+    document.getElementById("btnGo").disabled = false;
+    log("👉 Previsualización lista. Pulsa «Migrar a Supabase» cuando quieras.");
+  }catch(e){
+    log("❌ Error: "+e.message);
+  }
+};
+
+// ── INSERTAR UN LOTE en Supabase (POST array) ──
+async function insertarLote(c, payloads){
+  const res = await fetch(`${c.supaUrl}/rest/v1/actuaciones_tutela`, {
+    method:"POST",
+    headers:{
+      "apikey": c.supaKey,
+      "Authorization": "Bearer "+c.supaKey,
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal"
+    },
+    body: JSON.stringify(payloads)
+  });
+  if(!res.ok){
+    const t=await res.text();
+    throw new Error(`HTTP ${res.status}: ${t.slice(0,180)}`);
+  }
+}
+
+// Trae radicados ya existentes de una categoría para no duplicar.
+async function radicadosExistentes(c, categoria){
+  const url=`${c.supaUrl}/rest/v1/actuaciones_tutela?categoria=eq.${encodeURIComponent(categoria)}&select=radicado,accionante`;
+  const res=await fetch(url,{headers:{apikey:c.supaKey,Authorization:"Bearer "+c.supaKey}});
+  if(!res.ok) return new Set();
+  const arr=await res.json();
+  const clave=(rad,acc)=>String(rad||"").replace(/[\s\-]/g,"").toLowerCase()+"|"+String(acc||"").replace(/\s+/g,"").toLowerCase().slice(0,12);
+  return new Set(arr.map(x=>clave(x.radicado,x.accionante)));
+}
+
+// ── MIGRAR ──
+document.getElementById("btnGo").onclick = async ()=>{
+  const c = cfg();
+  document.getElementById("btnGo").disabled = true;
+  document.getElementById("btnPrev").disabled = true;
+  setLog("Iniciando migración…");
+
+  const clave=(rad,acc)=>String(rad||"").replace(/[\s\-]/g,"").toLowerCase()+"|"+String(acc||"").replace(/\s+/g,"").toLowerCase().slice(0,12);
+
+  for(const [categoria, datos, gidName] of [["fallo",datosFal,"Fallos"],["incidente",datosInc,"Incidentes"]]){
+    log(`\n── ${gidName} (categoria='${categoria}') ──`);
+    let existentes;
+    try{ existentes = await radicadosExistentes(c, categoria); }
+    catch(e){ existentes = new Set(); log("⚠️ No pude leer existentes, continúo sin dedup: "+e.message); }
+
+    const nuevos = datos.filter(r=>!existentes.has(clave(r["RADICADO"],r["ACCIONANTE"])));
+    const saltados = datos.length - nuevos.length;
+    log(`   A insertar: ${nuevos.length} | ya existían: ${saltados}`);
+
+    // Lotes de 50 para no saturar
+    let ok=0, err=0;
+    for(let i=0;i<nuevos.length;i+=50){
+      const lote = nuevos.slice(i,i+50).map(r=>aPayload(r, categoria));
+      try{ await insertarLote(c, lote); ok+=lote.length; log(`   ✅ Lote ${Math.floor(i/50)+1}: +${lote.length} (acum ${ok})`); }
+      catch(e){ err+=lote.length; log(`   ❌ Lote ${Math.floor(i/50)+1} falló: ${e.message}`); }
+    }
+    log(`   ▶ ${gidName}: insertados ${ok}, errores ${err}`);
+  }
+  log("\n═══════════════════════════════");
+  log("✅ MIGRACIÓN TERMINADA. Verifica los conteos en Supabase y avísame para continuar con el HTML.");
+  document.getElementById("btnPrev").disabled = false;
+};
+</script>
+</body>
+</html>
