@@ -466,7 +466,8 @@
       <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
       <div class="m-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
-        <button class="mbtn mbtn-s" id="m-btn-actuacion" style="display:none;background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.35);color:var(--gold)" onclick="abrirCrearActuacion()">⚖️ Crear fallo / desacato</button>
+        <button class="mbtn mbtn-s" id="m-btn-fallo" style="display:none;background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.35);color:var(--gold)" onclick="abrirCrearActuacion('fallo')">⚖️ Crear fallo</button>
+        <button class="mbtn mbtn-s" id="m-btn-desacato" style="display:none;background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.35);color:#fb923c" onclick="abrirCrearActuacion('incidente')">⚡ Crear desacato</button>
         <button class="mbtn mbtn-s" id="m-btn-superado" style="display:none;background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#4ade80" onclick="marcarHechoSuperado()">✓ Hecho superado</button>
         <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">⚖️ Gestión Jurídica →</button>
         <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
@@ -641,8 +642,8 @@
   <div class="modal" style="max-width:620px">
     <div class="modal-top">
       <div>
-        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)">⚖️ Crear actuación</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Genera un fallo, sentencia, impugnación o desacato heredando los datos del expediente</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)" id="ac-titulo">⚖️ Crear actuación</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px" id="ac-subtitulo">Hereda los datos del expediente de origen</div>
       </div>
       <button class="modal-close" onclick="document.getElementById('overlay-actuacion').classList.remove('open')">✕</button>
     </div>
@@ -660,11 +661,7 @@
       <div class="mf full" style="grid-column:1/-1">
         <label>Tipo de actuación *</label>
         <select id="ac-tipo" class="nt-inp" onchange="acAlCambiarTipo()">
-          <option value="Fallo de tutela">Fallo de tutela</option>
-          <option value="Sentencia">Sentencia</option>
-          <option value="Impugnación">Impugnación</option>
-          <option value="Desacato">Desacato</option>
-          <option value="Incidente de desacato">Incidente de desacato</option>
+          <!-- opciones llenadas dinámicamente según la categoría (fallo / incidente) -->
         </select>
         <div style="font-size:11px;color:var(--muted);margin-top:5px" id="ac-cat-hint">→ Se guardará en la pestaña <strong>Fallos</strong></div>
       </div>
@@ -986,10 +983,33 @@ function fechaHabilDesde(fechaBase, dias){
   return String(f.getDate()).padStart(2,"0")+"/"+String(f.getMonth()+1).padStart(2,"0")+"/"+f.getFullYear();
 }
 
+// Opciones del selector de tipo, agrupadas por categoría.
+const TIPOS_POR_CATEGORIA = {
+  fallo:     ["Fallo de tutela","Sentencia","Impugnación"],
+  incidente: ["Desacato","Incidente de desacato"]
+};
+
 // Abre el modal de crear actuación heredando datos del registro 'actual' (el Admite abierto).
-function abrirCrearActuacion(){
+// categoria: "fallo" (botón Crear fallo) o "incidente" (botón Crear desacato).
+function abrirCrearActuacion(categoria){
   if(!actual){ toast("⚠️ No hay expediente abierto","err"); return; }
+  const cat = (categoria==="incidente") ? "incidente" : "fallo";
   const r = actual;
+
+  // Título y subtítulo según la categoría
+  if(cat==="incidente"){
+    document.getElementById("ac-titulo").innerHTML = "⚡ Crear desacato";
+    document.getElementById("ac-titulo").style.color = "#fb923c";
+    document.getElementById("ac-subtitulo").textContent = "Registra un incidente de desacato heredando los datos del expediente";
+  } else {
+    document.getElementById("ac-titulo").innerHTML = "⚖️ Crear fallo";
+    document.getElementById("ac-titulo").style.color = "var(--gold)";
+    document.getElementById("ac-subtitulo").textContent = "Registra un fallo, sentencia o impugnación heredando los datos del expediente";
+  }
+
+  // Llenar el selector SOLO con los tipos de esta categoría
+  const selTipo = document.getElementById("ac-tipo");
+  selTipo.innerHTML = TIPOS_POR_CATEGORIA[cat].map(t=>`<option value="${t}">${t}</option>`).join("");
 
   // Banner de origen
   document.getElementById("ac-origen-acc").textContent = r["ACCIONANTE"] || "—";
@@ -1015,8 +1035,7 @@ function abrirCrearActuacion(){
     String(hoy.getDate()).padStart(2,"0")+"/"+String(hoy.getMonth()+1).padStart(2,"0")+"/"+hoy.getFullYear();
   document.getElementById("ac-flim").value = fechaHabilDesde(hoy, 10);
 
-  // Tipo por defecto
-  document.getElementById("ac-tipo").value = "Fallo de tutela";
+  // Refrescar hint + chequeo de duplicados para el primer tipo de la lista
   acAlCambiarTipo();
 
   document.getElementById("ac-error").style.display="none";
@@ -1730,12 +1749,13 @@ function abrirModal(da, origen){
   document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
   const esFallo = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"].includes(r["TIPO"]);
   const esInc   = incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
-  // Botón "Crear actuación": solo visible desde un Admite/Tutela (no desde fallos/incidentes/histórico)
-  const btnAct = document.getElementById("m-btn-actuacion");
-  if(btnAct){
-    const esAdmite = origenModal==="tutela" && !esFallo && !esInc;
-    btnAct.style.display = esAdmite ? "" : "none";
-  }
+  // Botones "Crear fallo" y "Crear desacato": solo visibles desde un Admite/Tutela
+  // (no desde fallos/incidentes/histórico).
+  const esAdmite = origenModal==="tutela" && !esFallo && !esInc;
+  const btnFallo = document.getElementById("m-btn-fallo");
+  const btnDesac = document.getElementById("m-btn-desacato");
+  if(btnFallo) btnFallo.style.display = esAdmite ? "" : "none";
+  if(btnDesac) btnDesac.style.display = esAdmite ? "" : "none";
   // Botón "Hecho superado": visible en Tutelas y Fallos (no incidentes), si aún no está cerrado.
   const btnSup = document.getElementById("m-btn-superado");
   if(btnSup){
