@@ -28,7 +28,11 @@
   th{color:var(--gold);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
   #log{font-family:'DM Mono',ui-monospace,monospace;font-size:11.5px;line-height:1.6;background:#070d18;border:1px solid var(--border);border-radius:10px;padding:14px;max-height:340px;overflow:auto;white-space:pre-wrap;color:#cbd5e1}
   .pill{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(232,160,32,.15);color:var(--gold);border:1px solid rgba(232,160,32,.3)}
+  .auth-state{font-size:12px;padding:6px 12px;border-radius:8px;display:inline-block;margin-top:4px}
+  .auth-in{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+  .auth-out{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="wrap">
@@ -69,7 +73,25 @@
       </div>
     </div>
 
-    <div class="row" style="margin-top:6px">
+    <div class="warn" style="background:rgba(0,120,212,.08);border-color:rgba(0,120,212,.3);color:#93c5fd">
+      🔐 Esta tabla solo permite escritura a usuarios <strong>autenticados</strong>. Inicia sesión con tu correo y contraseña de Supabase (los mismos del login de Tutelas) para que la migración use tu token.
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>Correo (Supabase Auth)</label>
+        <input id="authEmail" type="email" placeholder="tu-correo@dominio.com" autocomplete="username">
+      </div>
+      <div class="col">
+        <label>Contraseña</label>
+        <input id="authPass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+    </div>
+    <div class="row" style="align-items:center;gap:14px">
+      <button class="b-prev" id="btnLogin">🔑 Iniciar sesión</button>
+      <span class="auth-state auth-out" id="authState">No autenticado</span>
+    </div>
+
+    <div class="row" style="margin-top:10px;border-top:1px solid var(--border);padding-top:16px">
       <button class="b-prev" id="btnPrev">🔍 Previsualizar</button>
       <button class="b-go" id="btnGo" disabled>⬆️ Migrar a Supabase</button>
     </div>
@@ -169,6 +191,55 @@ function cfg(){
   };
 }
 
+// ── Cliente Supabase Auth (idéntico a tutelas_v2.html) ──
+let sbAuth = null;
+let accessToken = null; // token del usuario logueado
+
+function initAuth(){
+  const c = cfg();
+  if(window.supabase && window.supabase.createClient){
+    sbAuth = window.supabase.createClient(c.supaUrl, c.supaKey);
+  }
+}
+
+// Devuelve headers con el TOKEN de usuario (no la llave anon cruda),
+// que es lo que la política 'authenticated' exige.
+async function authHeaders(extra){
+  let token = null;
+  try{
+    if(sbAuth){
+      const { data } = await sbAuth.auth.getSession();
+      if(data && data.session && data.session.access_token){
+        token = data.session.access_token;
+        accessToken = token;
+      }
+    }
+  }catch(e){ token = accessToken; }
+  const c = cfg();
+  return Object.assign({ apikey: c.supaKey, Authorization: "Bearer "+(token||c.supaKey) }, extra||{});
+}
+
+// ── LOGIN ──
+document.getElementById("btnLogin").onclick = async ()=>{
+  initAuth();
+  if(!sbAuth){ log("❌ La librería de Supabase no cargó. Revisa la conexión a internet."); return; }
+  const email = document.getElementById("authEmail").value.trim();
+  const pass  = document.getElementById("authPass").value;
+  if(!email || !pass){ log("⚠️ Ingresa correo y contraseña."); return; }
+  const st = document.getElementById("authState");
+  st.textContent = "Iniciando sesión…"; st.className="auth-state auth-out";
+  try{
+    const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
+    if(error) throw error;
+    accessToken = data.session.access_token;
+    st.textContent = "✅ Autenticado como "+email; st.className="auth-state auth-in";
+    log("🔑 Sesión iniciada. Ya puedes previsualizar y migrar.");
+  }catch(e){
+    st.textContent = "Error de login"; st.className="auth-state auth-out";
+    log("❌ Login falló: "+(e.message||e));
+  }
+};
+
 // ── PREVISUALIZAR ──
 document.getElementById("btnPrev").onclick = async ()=>{
   const c = cfg();
@@ -204,12 +275,10 @@ document.getElementById("btnPrev").onclick = async ()=>{
 async function insertarLote(c, payloads){
   const res = await fetch(`${c.supaUrl}/rest/v1/actuaciones_tutela`, {
     method:"POST",
-    headers:{
-      "apikey": c.supaKey,
-      "Authorization": "Bearer "+c.supaKey,
+    headers: await authHeaders({
       "Content-Type": "application/json",
       "Prefer": "return=minimal"
-    },
+    }),
     body: JSON.stringify(payloads)
   });
   if(!res.ok){
@@ -221,7 +290,7 @@ async function insertarLote(c, payloads){
 // Trae radicados ya existentes de una categoría para no duplicar.
 async function radicadosExistentes(c, categoria){
   const url=`${c.supaUrl}/rest/v1/actuaciones_tutela?categoria=eq.${encodeURIComponent(categoria)}&select=radicado,accionante`;
-  const res=await fetch(url,{headers:{apikey:c.supaKey,Authorization:"Bearer "+c.supaKey}});
+  const res=await fetch(url,{headers: await authHeaders()});
   if(!res.ok) return new Set();
   const arr=await res.json();
   const clave=(rad,acc)=>String(rad||"").replace(/[\s\-]/g,"").toLowerCase()+"|"+String(acc||"").replace(/\s+/g,"").toLowerCase().slice(0,12);
@@ -231,6 +300,15 @@ async function radicadosExistentes(c, categoria){
 // ── MIGRAR ──
 document.getElementById("btnGo").onclick = async ()=>{
   const c = cfg();
+  // Verifica sesión activa antes de empezar
+  let sesionOk = false;
+  try{
+    if(sbAuth){ const { data } = await sbAuth.auth.getSession(); sesionOk = !!(data && data.session); }
+  }catch(e){}
+  if(!sesionOk){
+    log("❌ No hay sesión activa. Inicia sesión primero con «🔑 Iniciar sesión».");
+    return;
+  }
   document.getElementById("btnGo").disabled = true;
   document.getElementById("btnPrev").disabled = true;
   setLog("Iniciando migración…");
