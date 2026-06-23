@@ -708,6 +708,13 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ════════════════════════════════════════════════════════════
+// ⚠️ FALLBACK DE EMERGENCIA — Google Sheets / Apps Script.
+// Estas constantes y las funciones leerGviz()/camino gviz de guardarEstado()
+// SOLO se usan si USAR_SUPABASE = false. En operación normal (Supabase activo)
+// este código NO se ejecuta. Se conserva como red de seguridad por si Supabase
+// no estuviera disponible. NO es código activo.
+// ════════════════════════════════════════════════════════════
 const SHEET_ID    = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
 const GID_TUT     = "0";
 const GID_FAL     = "995241537";
@@ -715,14 +722,14 @@ const GID_INC     = "528315836";
 const APPS_URL    = "https://script.google.com/macros/s/AKfycby7Jp0dp3GLFMQAKSbGvXuHDKEg6PrInrdZjEIQZq_zpsYcmPP6GRcnwhMAhPJUwU7K/exec";
 
 // ════════════════════════════════════════════════════════════
-// SUPABASE — capa de datos (Paso 3)
+// SUPABASE — capa de datos ACTIVA
 // La llave anon es pública por diseño y está limitada por RLS:
 // solo puede leer/insertar/editar tutelas, nunca borrar.
 // ════════════════════════════════════════════════════════════
 const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
 const SB_TABLA      = "actuaciones_tutela";
-// Interruptor: true = lee/guarda en Supabase. Si se pone false, vuelve a gviz/Apps Script.
+// Interruptor: true = lee/guarda en Supabase (NORMAL). false = vuelve al fallback gviz/Apps Script.
 const USAR_SUPABASE = true;
 
 // ── Cliente de Supabase Auth (para login) ──
@@ -2088,11 +2095,16 @@ function queFaltaTecnico(r){
 // Coincide por RADICADO + ACCIONANTE (los juzgados a veces reciclan el mismo
 // radicado con distinto accionante, por eso NO basta el radicado solo).
 // Devuelve el SharePoint del Admite, o "" si no hay match con SharePoint.
+// Quita tildes/acentos para comparar nombres que los juzgados escriben inconsistentes
+// (ej. "JOSÉ" vs "JOSE"). normalize NFD separa el acento, y se elimina.
+function sinAcentos(s){
+  return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
 function clprivate_norm(s){
-  return String(s||"").replace(/[\s\-]/g,"").toLowerCase();
+  return sinAcentos(s).replace(/[\s\-]/g,"").toLowerCase();
 }
 function normAcc(s){
-  return String(s||"").replace(/\s+/g,"").toLowerCase().substring(0,12);
+  return sinAcentos(s).replace(/\s+/g,"").toLowerCase().substring(0,12);
 }
 function sharePointDeOrigen(reg){
   const radF = clprivate_norm(reg["RADICADO"]);
@@ -2175,24 +2187,11 @@ async function guardarEstado(){
         "PQR": radicadoPQR
       });
       if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
-      const idx=arr.findIndex(r=>r._id===actual._id);
-      if(idx>=0){
-        arr[idx]["ESTADO"]=nuevoEst;
-        arr[idx]["RESPUESTA PQR"]=respPQR;
-        arr[idx]["RADICADO DE CUMPLIMIENTO"]=respRad;
-        arr[idx]["ENCARGADO PQR"]=encPQR;
-        arr[idx]["SHAREPOINT"]=sharePoint;
-        arr[idx]["PQR"]=radicadoPQR;
-      }
-      actual["ESTADO"]=nuevoEst;
-      actual["RESPUESTA PQR"]=respPQR;
-      actual["RADICADO DE CUMPLIMIENTO"]=respRad;
-      actual["ENCARGADO PQR"]=encPQR;
-      actual["SHAREPOINT"]=sharePoint;
-      actual["PQR"]=radicadoPQR;
       toast(EST_HIST.includes(nuevoEst)?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado en Supabase","ok");
-      renderAll();
       document.getElementById("overlay").classList.remove("open");
+      // Recargar desde Supabase (fuente de verdad): refresca listados, badges y
+      // estadísticas sin necesidad de F5. Mismo patrón que crear/editar/hecho superado.
+      await cargarDatos();
     }catch(e){
       if(/JWT expired|401/i.test(e.message)){
         toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
