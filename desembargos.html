@@ -852,6 +852,13 @@ function fmtL(iso){if(!iso)return'';const[y,m,d]=iso.split('-');const M=['enero'
 function fmtC(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;}
 function hoyISO(){return new Date().toISOString().split('T')[0];}
 function hoyLocal(){return new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});}
+// Sello de impresión: fecha + hora del momento de generación del Word.
+// Sirve para identificar cada oficio impreso cuando se generan varios a la vez.
+function selloGen(){
+  const f=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const h=new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  return f+' '+h;
+}
 
 // ── Toast ──
 function toastD(msg, color){
@@ -1659,6 +1666,46 @@ function construirDocXml(xml, d){
       `$1${xmlEsc(fmtC(d.proyFecha))}$2`
     );
   }
+
+  // 12. Recuadro de control de impresión (esquina superior derecha)
+  //     Fecha/hora de generación + funcionario. Permite identificar cada
+  //     oficio cuando se imprimen varios a la vez para llevar a radicar.
+  //     Se inyecta justo al abrir <w:body> para que quede arriba del oficio.
+  const _sello   = selloGen();
+  const _func    = d.proyNombre || cfg.nombre || 'Funcionario';
+  const _rprSello = '<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="14"/><w:szCs w:val="14"/><w:color w:val="555555"/></w:rPr>';
+  const _bordeCelda =
+    '<w:tcBorders>'+
+    '<w:top w:val="single" w:sz="4" w:space="0" w:color="999999"/>'+
+    '<w:left w:val="single" w:sz="4" w:space="0" w:color="999999"/>'+
+    '<w:bottom w:val="single" w:sz="4" w:space="0" w:color="999999"/>'+
+    '<w:right w:val="single" w:sz="4" w:space="0" w:color="999999"/>'+
+    '</w:tcBorders>';
+  const _lineaSello = (txt) =>
+    '<w:p><w:pPr><w:spacing w:after="0" w:line="200" w:lineRule="auto"/>'+
+    '<w:jc w:val="left"/>'+_rprSello+'</w:pPr>'+
+    '<w:r>'+_rprSello+'<w:t xml:space="preserve">'+txt+'</w:t></w:r></w:p>';
+  const _recuadro =
+    '<w:tbl>'+
+    '<w:tblPr>'+
+    '<w:tblW w:w="2600" w:type="dxa"/>'+
+    '<w:jc w:val="right"/>'+
+    '<w:tblLayout w:type="fixed"/>'+
+    '<w:tblLook w:val="04A0" w:firstRow="0" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="0"/>'+
+    '</w:tblPr>'+
+    '<w:tblGrid><w:gridCol w:w="2600"/></w:tblGrid>'+
+    '<w:tr><w:tc>'+
+    '<w:tcPr><w:tcW w:w="2600" w:type="dxa"/>'+_bordeCelda+
+    '<w:shd w:val="clear" w:color="auto" w:fill="F5F5F5"/>'+
+    '<w:tcMar><w:top w:w="40" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tcMar>'+
+    '</w:tcPr>'+
+    _lineaSello('Generado: '+xmlEsc(_sello))+
+    _lineaSello('Por: '+xmlEsc(_func))+
+    '</w:tc></w:tr>'+
+    '</w:tbl>'+
+    '<w:p><w:pPr><w:spacing w:after="0" w:line="120" w:lineRule="auto"/></w:pPr></w:p>';
+  xml = xml.replace(/(<w:body>)/, '$1'+_recuadro);
+
   return xml;
 }
 
