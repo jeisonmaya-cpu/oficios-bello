@@ -466,6 +466,7 @@
       <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
       <div class="m-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
+        <button class="mbtn mbtn-s" id="m-btn-editar" style="display:none;background:rgba(96,165,250,.15);border-color:rgba(96,165,250,.35);color:#60a5fa" onclick="abrirEditarTutela()">✏️ Editar</button>
         <button class="mbtn mbtn-s" id="m-btn-fallo" style="display:none;background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.35);color:var(--gold)" onclick="abrirCrearActuacion('fallo')">⚖️ Crear fallo</button>
         <button class="mbtn mbtn-s" id="m-btn-desacato" style="display:none;background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.35);color:#fb923c" onclick="abrirCrearActuacion('incidente')">⚡ Crear desacato</button>
         <button class="mbtn mbtn-s" id="m-btn-superado" style="display:none;background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#4ade80" onclick="marcarHechoSuperado()">✓ Hecho superado</button>
@@ -582,8 +583,8 @@
   <div class="modal" style="max-width:600px">
     <div class="modal-top">
       <div>
-        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)">➕ Nueva tutela manual</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Para casos que el sistema automático no registró</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)" id="nt-titulo">➕ Nueva tutela manual</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px" id="nt-subtitulo">Para casos que el sistema automático no registró</div>
       </div>
       <button class="modal-close" onclick="document.getElementById('overlay-nueva').classList.remove('open')">✕</button>
     </div>
@@ -885,6 +886,7 @@ const EST_HIST    = ["Finalizado","Respondido","Hecho superado"];
 const PER_PAGE    = 50;
 
 let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
+let modoEdicion=null; // null = creando nueva tutela; id de Supabase = editando ese registro
 let pagAdm=1, pagFal=1, pagHis=1, pagInc=1;
 let quickAdm=null, quickFal=null, quickOtr=null; // filtro rápido por urgencia (tarjetas)
 
@@ -900,6 +902,11 @@ function siguienteAbogadoRR(){
   return abo;
 }
 function abrirNuevaTutela(){
+  modoEdicion = null; // modo creación
+  // Título y botón en modo "crear"
+  document.getElementById("nt-titulo").innerHTML = "➕ Nueva tutela manual";
+  document.getElementById("nt-subtitulo").textContent = "Para casos que el sistema automático no registró";
+  document.getElementById("nt-guardar").textContent = "💾 Crear tutela";
   // Llenar el desplegable de abogados
   const sel = document.getElementById("nt-abo");
   sel.innerHTML = ABOGADOS_RR.map(a=>`<option>${a}</option>`).join("");
@@ -913,6 +920,40 @@ function abrirNuevaTutela(){
   const hoy = new Date();
   document.getElementById("nt-fini").value =
     String(hoy.getDate()).padStart(2,"0")+"/"+String(hoy.getMonth()+1).padStart(2,"0")+"/"+hoy.getFullYear();
+  document.getElementById("nt-error").style.display="none";
+  document.getElementById("overlay-nueva").classList.add("open");
+}
+
+// Abre el MISMO modal en modo edición, precargado con el registro 'actual'.
+function abrirEditarTutela(){
+  if(!actual){ toast("⚠️ No hay expediente abierto","err"); return; }
+  if(!actual._id){ toast("⚠️ Este registro no tiene id de Supabase; no se puede editar.","err"); return; }
+  modoEdicion = actual._id; // modo edición: guardamos el id a actualizar
+
+  // Título y botón en modo "editar"
+  document.getElementById("nt-titulo").innerHTML = "✏️ Editar expediente";
+  document.getElementById("nt-subtitulo").textContent = "Corrige o completa los datos del expediente";
+  document.getElementById("nt-guardar").textContent = "💾 Guardar cambios";
+
+  // Abogados: lista completa (no RR) para no forzar reparto al editar
+  const sel = document.getElementById("nt-abo");
+  const resp = (actual["RESPONSABLE"]||"").trim();
+  let opciones = ABOGADOS.slice();
+  if(resp && !opciones.includes(resp)) opciones = [resp, ...opciones];
+  sel.innerHTML = opciones.map(a=>`<option>${a}</option>`).join("");
+  if(resp) sel.value = resp;
+
+  // Precargar campos con los datos actuales
+  document.getElementById("nt-acc").value     = actual["ACCIONANTE"] || "";
+  document.getElementById("nt-cc").value      = actual["CC / NIT"] || "";
+  document.getElementById("nt-rad").value     = actual["RADICADO"] || "";
+  document.getElementById("nt-juz").value     = actual["JUZGADO"] || "";
+  document.getElementById("nt-fini").value    = actual["FECHA INICIAL"] || "";
+  document.getElementById("nt-flim").value    = actual["FECHA LÍMITE"] || actual["FECHA LIMITE"] || "";
+  document.getElementById("nt-derecho").value = actual["DERECHO INVOCADO"] || "";
+  document.getElementById("nt-hechos").value  = actual["HECHOS RESUMIDOS"] || "";
+  document.getElementById("nt-pret").value    = actual["PRETENSIONES"] || "";
+
   document.getElementById("nt-error").style.display="none";
   document.getElementById("overlay-nueva").classList.add("open");
 }
@@ -932,15 +973,46 @@ async function guardarNuevaTutela(){
     "CC / NIT": document.getElementById("nt-cc").value.trim(),
     "RADICADO": rad,
     "JUZGADO": document.getElementById("nt-juz").value.trim(),
-    "TIPO": "Tutela",
     "RESPONSABLE": document.getElementById("nt-abo").value,
-    "ESTADO": "Nuevo",
     "FECHA INICIAL": document.getElementById("nt-fini").value.trim(),
     "FECHA LÍMITE": document.getElementById("nt-flim").value.trim(),
     "DERECHO INVOCADO": document.getElementById("nt-derecho").value.trim(),
     "HECHOS RESUMIDOS": document.getElementById("nt-hechos").value.trim(),
     "PRETENSIONES": document.getElementById("nt-pret").value.trim()
   };
+
+  // ── MODO EDICIÓN: actualizar registro existente (con confirmación) ──
+  if(modoEdicion){
+    const ok = await confirmar(
+      "¿Guardar los cambios?",
+      `Se actualizarán los datos de «${acc}».`
+    );
+    if(!ok) return;
+    btn.textContent="Guardando..."; btn.style.pointerEvents="none";
+    try{
+      const guardado = await Repo.actualizar(modoEdicion, campos);
+      if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
+      toast("✅ Cambios guardados","ok");
+      document.getElementById("overlay-nueva").classList.remove("open");
+      document.getElementById("overlay").classList.remove("open"); // cerrar también el modal de detalle
+      modoEdicion=null;
+      await cargarDatos();
+    }catch(e){
+      if(/JWT expired|401/i.test(e.message)){
+        errBox.textContent="Tu sesión expiró. Vuelve a iniciar sesión para guardar.";
+      } else {
+        errBox.textContent="Error al guardar: "+e.message;
+      }
+      errBox.style.display="block";
+    }finally{
+      btn.textContent="💾 Guardar cambios"; btn.style.pointerEvents="auto";
+    }
+    return;
+  }
+
+  // ── MODO CREACIÓN: nueva tutela ──
+  campos["TIPO"]   = "Tutela";
+  campos["ESTADO"] = "Nuevo";
   btn.textContent="Creando..."; btn.style.pointerEvents="none";
   try{
     const creado = await Repo.crear(campos);
@@ -1760,8 +1832,10 @@ function abrirModal(da, origen){
   const esAdmite = origenModal==="tutela" && !esFallo && !esInc;
   const btnFallo = document.getElementById("m-btn-fallo");
   const btnDesac = document.getElementById("m-btn-desacato");
+  const btnEdit  = document.getElementById("m-btn-editar");
   if(btnFallo) btnFallo.style.display = esAdmite ? "" : "none";
   if(btnDesac) btnDesac.style.display = esAdmite ? "" : "none";
+  if(btnEdit)  btnEdit.style.display  = esAdmite ? "" : "none";
   // Botón "Hecho superado": visible en Tutelas y Fallos (no incidentes), si aún no está cerrado.
   const btnSup = document.getElementById("m-btn-superado");
   if(btnSup){
