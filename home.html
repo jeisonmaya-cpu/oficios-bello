@@ -156,6 +156,18 @@
     <div class="mb-content">
       <div class="mb-eyebrow">⚽ Mundial 2026</div>
       <div class="mb-msg" id="mb-msg">¡Vamos Colombia! 🇨🇴</div>
+      <div class="mb-match" id="mb-match">
+        <span class="mb-match-label" id="mb-match-label"></span>
+        <span class="mb-match-meta" id="mb-match-meta"></span>
+      </div>
+    </div>
+    <div class="mb-counter" id="mb-counter" aria-live="polite">
+      <div class="mb-clock" id="mb-clock">
+        <div class="mb-unit"><span id="mb-dd">0</span><small>días</small></div>
+        <div class="mb-unit"><span id="mb-hh">0</span><small>hrs</small></div>
+        <div class="mb-unit"><span id="mb-mm">0</span><small>min</small></div>
+        <div class="mb-unit"><span id="mb-ss">0</span><small>seg</small></div>
+      </div>
     </div>
     <div class="mb-ball" aria-hidden="true">⚽</div>
     <button class="mb-close" id="mb-close" aria-label="Cerrar banner">✕</button>
@@ -333,6 +345,24 @@
     </div>
   </div>
 
+  <!-- ── NOTIFICACIONES ── -->
+  <div class="grid-3x1" style="animation-delay:.44s">
+    <div class="app-card card-notif" onclick="openNotifMenu()" style="cursor:pointer">
+      <div class="card-glow"></div>
+      <span class="app-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg></span>
+      <div class="app-name">Notificaciones</div>
+      <div class="app-desc">Notificación de comparendos 2024 por correo electrónico y certificado</div>
+      <div class="card-stat">
+        <span class="cs-dot cs-rose"></span><span>Con correo · Sin correo (certificado)</span>
+      </div>
+      <span class="app-arrow">↗</span>
+    </div>
+  </div>
+
   <!-- ── STATS ── -->
   <div class="stats-row">
     <div class="stat" title="Ver en Tutelas V2">
@@ -404,11 +434,50 @@
     <span class="footer-pill" id="fp-version">v2.5</span>
     <span class="footer-pill" id="fp-actualizado">Actualizando...</span>
     <span class="footer-pill" id="fp-usuario">—</span>
-    <span class="footer-pill" id="fp-modulos">7 módulos activos</span>
+    <span class="footer-pill" id="fp-modulos">8 módulos activos</span>
   </div>
   <strong>Dirección Administrativa de Ejecuciones Fiscales</strong><br>
   Alcaldía de Bello · Antioquia · Colombia
 </footer>
+
+<!-- Sub-menú Notificaciones -->
+<div id="notifMenu" onclick="if(event.target.id==='notifMenu')closeNotifMenu()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,9,20,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:linear-gradient(160deg,#0d1730,#0a1226);border:1px solid rgba(232,160,32,.25);border-radius:20px;max-width:560px;width:100%;box-shadow:0 30px 70px rgba(0,0,0,.5);overflow:hidden">
+    <div style="padding:22px 26px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:rgba(245,192,80,.85);font-weight:600">Notificaciones · Comparendos 2024</div>
+        <div style="font-size:19px;font-weight:700;color:#fff;margin-top:3px;font-family:'DM Serif Display',serif">Elige el tipo de notificación</div>
+      </div>
+      <button onclick="closeNotifMenu()" style="background:transparent;border:none;color:rgba(255,255,255,.6);font-size:26px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:20px 26px;display:grid;gap:14px">
+      <a href="con_correo.html" style="text-decoration:none;display:block;background:rgba(45,141,232,.08);border:1px solid rgba(45,141,232,.3);border-radius:14px;padding:18px 20px;transition:.2s" onmouseover="this.style.background='rgba(45,141,232,.16)'" onmouseout="this.style.background='rgba(45,141,232,.08)'">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:26px">📧</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:#fff">Con correo</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px">Genera notificaciones (Word) y mandamientos (PDF). Divide el PDF radicado por persona.</div>
+          </div>
+        </div>
+      </a>
+      <a href="certificado.html" style="text-decoration:none;display:block;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.3);border-radius:14px;padding:18px 20px;transition:.2s" onmouseover="this.style.background='rgba(232,160,32,.16)'" onmouseout="this.style.background='rgba(232,160,32,.08)'">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:26px">📭</span>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:#fff">Sin correo (certificado)</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px">Listados para correo certificado por zona, resumen geográfico y notificación web.</div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+function openNotifMenu(){document.getElementById('notifMenu').style.display='flex';}
+function closeNotifMenu(){document.getElementById('notifMenu').style.display='none';}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNotifMenu();});
+</script>
 
 <script>
 // ════════════════════════════════════════
@@ -784,46 +853,125 @@ function buildResumenDia(){
 buildResumenDia();
 
 // ════════════════════════════════════════
-// BANNER MUNDIAL 2026 · COLOMBIA
+// BANNER MUNDIAL 2026 · COLOMBIA + CRONÓMETRO
 // ════════════════════════════════════════
 (function(){
-  var INICIO = new Date('2026-06-11T00:00:00');
-  var FIN    = new Date('2026-07-20T00:00:00');
-  var hoy = new Date();
+  var FIN = new Date('2026-07-20T00:00:00');
   var KEY = 'mundial_banner_cerrado';
+
+  // Partidos de Colombia (hora local Colombia = ET). Formato ISO con offset -05:00.
+  var PARTIDOS = [
+    { rival:'Uzbekistán', vs:'Uzbekistán 🇺🇿 vs Colombia 🇨🇴', sede:'Estadio Azteca, Ciudad de México', fase:'Fase de grupos · J1', inicio:'2026-06-17T22:00:00-05:00' },
+    { rival:'RD Congo',   vs:'Colombia 🇨🇴 vs RD Congo 🇨🇩',   sede:'Estadio Akron, Guadalajara',      fase:'Fase de grupos · J2', inicio:'2026-06-23T22:00:00-05:00' },
+    { rival:'Portugal',   vs:'Colombia 🇨🇴 vs Portugal 🇵🇹',   sede:'Hard Rock Stadium, Miami',         fase:'Fase de grupos · J3', inicio:'2026-06-27T19:30:00-05:00' }
+  ];
+  var DUR_PARTIDO = 2.5 * 3600 * 1000; // 2.5h de "en vivo"
+
+  var hoy = new Date();
+  var INICIO = new Date('2026-06-11T00:00:00');
 
   var cerradoHoy = false;
   try{ cerradoHoy = localStorage.getItem(KEY) === hoy.toDateString(); }catch(e){}
 
-  if(hoy >= INICIO && hoy < FIN && !cerradoHoy){
-    var banner = document.getElementById('mundial-banner');
-    if(!banner) return;
-    banner.style.display = 'flex';
+  if(hoy < INICIO || hoy >= FIN || cerradoHoy) return;
 
-    var frases = [
-      '¡Vamos Colombia! 🇨🇴',
-      'Con toda la fe, ¡a darlo todo! ⚽',
-      '¡Mi Colombia querida! 💛💙❤️',
-      'Unidos por la tricolor 🇨🇴',
-      '¡A creer, a creer, que Colombia va a vencer! 🎉'
-    ];
-    var i = 0;
-    var msgEl = document.getElementById('mb-msg');
-    setInterval(function(){
-      msgEl.style.opacity = 0;
-      setTimeout(function(){
-        i = (i + 1) % frases.length;
-        msgEl.textContent = frases[i];
-        msgEl.style.opacity = 1;
-      }, 400);
-    }, 5000);
+  var banner = document.getElementById('mundial-banner');
+  if(!banner) return;
+  banner.style.display = 'flex';
 
-    document.getElementById('mb-close').addEventListener('click', function(){
-      try{ localStorage.setItem(KEY, hoy.toDateString()); }catch(e){}
-      banner.style.animation = 'mbIn .4s ease reverse both';
-      setTimeout(function(){ banner.style.display = 'none'; }, 350);
-    });
+  // Frases motivacionales (se muestran cuando no hay partido inminente)
+  var frases = [
+    '¡Vamos Colombia! 🇨🇴',
+    'Con toda la fe, ¡a darlo todo! ⚽',
+    '¡Mi Colombia querida! 💛💙❤️',
+    'Unidos por la tricolor 🇨🇴',
+    '¡A creer, a creer, que Colombia va a vencer! 🎉'
+  ];
+  var fi = 0;
+  var msgEl   = document.getElementById('mb-msg');
+  var matchEl = document.getElementById('mb-match');
+  var lblEl   = document.getElementById('mb-match-label');
+  var metaEl  = document.getElementById('mb-match-meta');
+  var counter = document.getElementById('mb-counter');
+  var clock   = document.getElementById('mb-clock');
+  var dd=document.getElementById('mb-dd'), hh=document.getElementById('mb-hh'),
+      mm=document.getElementById('mb-mm'), ss=document.getElementById('mb-ss');
+
+  // Rotación de frases motivacionales
+  var rotador = setInterval(function(){
+    msgEl.style.opacity = 0;
+    setTimeout(function(){
+      fi = (fi + 1) % frases.length;
+      msgEl.textContent = frases[fi];
+      msgEl.style.opacity = 1;
+    }, 400);
+  }, 5000);
+
+  function dos(n){ return n < 10 ? '0'+n : ''+n; }
+
+  // Devuelve el partido relevante: en vivo, o el próximo futuro
+  function partidoActivo(){
+    var ahora = Date.now();
+    for(var i=0;i<PARTIDOS.length;i++){
+      var t = new Date(PARTIDOS[i].inicio).getTime();
+      if(ahora < t + DUR_PARTIDO){
+        return { p:PARTIDOS[i], inicio:t, enVivo: ahora >= t };
+      }
+    }
+    return null; // ya no quedan partidos de fase de grupos
   }
+
+  function pintar(){
+    var act = partidoActivo();
+
+    if(!act){
+      // Terminó la fase de grupos de Colombia
+      counter.style.display = 'none';
+      matchEl.style.display = 'block';
+      lblEl.textContent = '¡Gracias por todo, selección! 🇨🇴';
+      metaEl.textContent = 'Revisa si Colombia clasificó a la siguiente ronda';
+      clearInterval(timer);
+      return;
+    }
+
+    matchEl.style.display = 'block';
+    counter.style.display = 'flex';
+    lblEl.textContent = act.p.vs;
+    metaEl.textContent = act.p.fase + ' · ' + act.p.sede;
+
+    if(act.enVivo){
+      clock.style.display = 'none';
+      counter.classList.add('en-vivo');
+      counter.setAttribute('data-vivo','🔴 EN VIVO');
+      clearInterval(rotador);
+      msgEl.textContent = '¡Está jugando Colombia! 🔥';
+      msgEl.style.opacity = 1;
+      return;
+    }
+
+    counter.classList.remove('en-vivo');
+    counter.removeAttribute('data-vivo');
+    clock.style.display = 'flex';
+    var diff = act.inicio - Date.now();
+    var s = Math.floor(diff/1000);
+    var d = Math.floor(s/86400); s-=d*86400;
+    var h = Math.floor(s/3600);  s-=h*3600;
+    var m = Math.floor(s/60);    s-=m*60;
+    dd.textContent = d;
+    hh.textContent = dos(h);
+    mm.textContent = dos(m);
+    ss.textContent = dos(s);
+  }
+
+  pintar();
+  var timer = setInterval(pintar, 1000);
+
+  document.getElementById('mb-close').addEventListener('click', function(){
+    try{ localStorage.setItem(KEY, hoy.toDateString()); }catch(e){}
+    clearInterval(timer); clearInterval(rotador);
+    banner.style.animation = 'mbIn .4s ease reverse both';
+    setTimeout(function(){ banner.style.display = 'none'; }, 350);
+  });
 })();
 
 // ════════════════════════════════════════
