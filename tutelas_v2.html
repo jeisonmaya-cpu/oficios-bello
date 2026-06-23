@@ -1694,6 +1694,21 @@ function exportarTabla(tab){
   toast(`📥 Exportado: ${regs.length} registros`,"ok");
 }
 
+// Clasifica a qué grupo PQR pertenece un registro.
+// "No registra PQR" se separa de "Sin asignar" para no inflar los pendientes reales.
+// Usa la gestión EFECTIVA: si es un fallo sin encargado propio, hereda el del Admite.
+function grupoPQR(r){
+  const g = gestionTecnicaEfectiva(r);
+  const enc = g.enc;
+  const pqr = g.pqr;
+  // ¿Marcado explícitamente como que no registra PQR? (mismo criterio que el modal)
+  if(enc==="No registra PQR" || pqr.toUpperCase()==="NO REGISTRA") return "No registra PQR";
+  // Si tiene encargado real (propio o heredado), ese es su grupo
+  if(enc) return enc;
+  // Vacío y sin marcar → pendiente real de asignación
+  return "Sin asignar";
+}
+
 function renderPQR(){
   const activos=[...tutelas,...fallos,...incidentes].filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const sinR=activos.filter(r=>!String(r["RESPUESTA PQR"]||"").trim());
@@ -1702,12 +1717,17 @@ function renderPQR(){
   document.getElementById("cnt-con").textContent=conR.length;
   document.getElementById("badge-pqr").textContent=sinR.length;
   const grpSin={};
-  sinR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";if(!grpSin[e])grpSin[e]=[];grpSin[e].push(r);});
+  sinR.forEach(r=>{const e=grupoPQR(r);if(!grpSin[e])grpSin[e]=[];grpSin[e].push(r);});
   const gSin=document.getElementById("grid-sin-pqr");
   if(!sinR.length){gSin.innerHTML=`<div class="empty"><div class="empty-icon">✅</div>¡Todas tienen respuesta!</div>`;}
-  else{window._pqrGruposSin=Object.entries(grpSin).sort((a,b)=>b[1].length-a[1].length);gSin.innerHTML=window._pqrGruposSin.map(([enc,regs],gi)=>{const urg=regs.filter(r=>r._dias!==null&&r._dias<=2);const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}${r._dias!==null?`<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>`:""}</div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#f87171;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('sin',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av" style="background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.3);color:#fca5a5">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#f87171">${regs.length}</div><div style="font-size:10px;color:var(--muted)">sin respuesta</div></div></div>${urg.length?`<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} vencen pronto</div>`:""}${lista}${mas}</div>`;}).join("");}
+  else{window._pqrGruposSin=Object.entries(grpSin).sort((a,b)=>{
+    // "No registra PQR" siempre al final (es neutro, no es pendiente real)
+    const aNR=a[0]==="No registra PQR", bNR=b[0]==="No registra PQR";
+    if(aNR&&!bNR)return 1; if(bNR&&!aNR)return -1;
+    return b[1].length-a[1].length;
+  });gSin.innerHTML=window._pqrGruposSin.map(([enc,regs],gi)=>{const esNoReg=enc==="No registra PQR";const colNum=esNoReg?"var(--muted)":"#f87171";const avBg=esNoReg?"rgba(148,163,184,.18)":"rgba(239,68,68,.2)";const avBd=esNoReg?"rgba(148,163,184,.3)":"rgba(239,68,68,.3)";const avCol=esNoReg?"var(--muted)":"#fca5a5";const urg=esNoReg?[]:regs.filter(r=>r._dias!==null&&r._dias<=2);const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}${(!esNoReg&&r._dias!==null)?`<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>`:""}</div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:${colNum};padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('sin',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av" style="background:${avBg};border-color:${avBd};color:${avCol}">${esNoReg?"—":inic(enc)}</div><div style="font-weight:600;font-size:13px">${esNoReg?"No registra PQR":esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:${colNum}">${regs.length}</div><div style="font-size:10px;color:var(--muted)">${esNoReg?"sin PQR":"sin respuesta"}</div></div></div>${urg.length?`<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} vencen pronto</div>`:""}${lista}${mas}</div>`;}).join("");}
   const grpCon={};
-  conR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";if(!grpCon[e])grpCon[e]=[];grpCon[e].push(r);});
+  conR.forEach(r=>{const e=grupoPQR(r);if(!grpCon[e])grpCon[e]=[];grpCon[e].push(r);});
   const gCon=document.getElementById("grid-con-pqr");
   window._pqrGruposCon=Object.entries(grpCon).sort((a,b)=>b[1].length-a[1].length);gCon.innerHTML=window._pqrGruposCon.map(([enc,regs],gi)=>{const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}<span style="float:right;color:#4ade80">✓</span></div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#4ade80;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('con',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#4ade80">${regs.length}</div><div style="font-size:10px;color:var(--muted)">respondidas</div></div></div>${lista}${mas}</div>`;}).join("");
 }
@@ -1814,7 +1834,13 @@ function abrirModal(da, origen){
   setEl("m-fini",esc(r["FECHA INICIAL"]||"—"));
   setEl("m-flim",esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—"));
   setEl("m-resp",esc(r["RESPONSABLE"]||"—"));
-  setEl("m-pqrenc",esc(r["ENCARGADO PQR"]||"—"));
+  // Encargado PQR: si es fallo/incidente sin encargado propio, mostrar el heredado del Admite
+  let encMostrar = String(r["ENCARGADO PQR"]||"").trim();
+  if(!encMostrar && (origenModal==="fallo" || origenModal==="incidente")){
+    const g = gestionTecnicaEfectiva(r);
+    if(g.heredado.enc) encMostrar = g.enc + " (del Admite)";
+  }
+  setEl("m-pqrenc",esc(encMostrar||"—"));
   setEl("m-est-txt",badgeEst(r["ESTADO"]));
   const dEl=document.getElementById("m-dias");
   if(dias===null){dEl.textContent="—";dEl.style.color="";}
@@ -1893,14 +1919,14 @@ function abrirModal(da, origen){
 function llenarGestionVisible(r){
   const pqr = String(r["RESPUESTA PQR"]||"").trim();
   const rad = String(r["RADICADO DE CUMPLIMIENTO"]||r["RESPUESTA RADICADO TUTELA"]||"").trim();
-  let sp    = String(r["SHAREPOINT"]||"").trim();
 
-  // Si es fallo/incidente SIN SharePoint propio, intentar heredarlo del Admite de origen
-  // (cruce por radicado + accionante). Se muestra en vivo; no se copia a la fila.
+  // Gestión técnica efectiva: hereda del Admite si es fallo/incidente sin datos propios
+  const esHijo = (origenModal==="fallo" || origenModal==="incidente");
+  let sp = String(r["SHAREPOINT"]||"").trim();
   let spHeredado = false;
-  if(!sp && (origenModal==="fallo" || origenModal==="incidente")){
-    const spOrigen = sharePointDeOrigen(r);
-    if(spOrigen){ sp = spOrigen; spHeredado = true; }
+  if(esHijo){
+    const g = gestionTecnicaEfectiva(r);
+    if(!sp && g.heredado.sp){ sp = g.sp; spHeredado = true; }
   }
 
   const setVis=(wid,val,vid)=>{
@@ -2082,7 +2108,60 @@ function aplicarQuick(arr,key,tab){
   return arr;
 }
 
+// ── Cruce con el Admite de origen ──
+// Coincide por RADICADO + ACCIONANTE (los juzgados a veces reciclan el mismo
+// radicado con distinto accionante, por eso NO basta el radicado solo).
+// Quita tildes/acentos para comparar nombres que los juzgados escriben inconsistentes
+// (ej. "JOSÉ" vs "JOSE"). normalize NFD separa el acento, y se elimina.
+function sinAcentos(s){
+  return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+function clprivate_norm(s){
+  return sinAcentos(s).replace(/[\s\-]/g,"").toLowerCase();
+}
+function normAcc(s){
+  return sinAcentos(s).replace(/\s+/g,"").toLowerCase().substring(0,12);
+}
+// Devuelve el registro Admite (tutela) del que proviene un fallo/incidente,
+// o null si no hay match por radicado + accionante.
+function admiteDeOrigen(reg){
+  const radF = clprivate_norm(reg["RADICADO"]);
+  const accF = normAcc(reg["ACCIONANTE"]);
+  if(!radF) return null;
+  for(const t of tutelas){
+    if(clprivate_norm(t["RADICADO"]) !== radF) continue;
+    if(accF && normAcc(t["ACCIONANTE"]) !== accF) continue;
+    return t;
+  }
+  return null;
+}
+// Gestión técnica EFECTIVA de un registro: usa lo propio y, si está vacío,
+// hereda del Admite de origen. Devuelve {enc, pqr, sp, heredado:{...}}.
+// 'heredado' marca qué campos vienen del Admite (para etiquetarlos en el modal).
+function gestionTecnicaEfectiva(reg){
+  let enc = String(reg["ENCARGADO PQR"]||"").trim();
+  let pqr = String(reg["PQR"]||"").trim();
+  let sp  = String(reg["SHAREPOINT"]||"").trim();
+  const heredado = {enc:false, pqr:false, sp:false};
+  // Solo cruzar si falta algo y el registro NO es un Admite (tutela)
+  if((!enc || !pqr || !sp)){
+    const origen = admiteDeOrigen(reg);
+    if(origen){
+      if(!enc){ const v=String(origen["ENCARGADO PQR"]||"").trim(); if(v){ enc=v; heredado.enc=true; } }
+      if(!pqr){ const v=String(origen["PQR"]||"").trim();           if(v){ pqr=v; heredado.pqr=true; } }
+      if(!sp){  const v=String(origen["SHAREPOINT"]||"").trim();     if(v){ sp=v;  heredado.sp=true; } }
+    }
+  }
+  return {enc, pqr, sp, heredado};
+}
+// Compatibilidad: la función anterior ahora delega en la general.
+function sharePointDeOrigen(reg){
+  const origen = admiteDeOrigen(reg);
+  return origen ? String(origen["SHAREPOINT"]||"").trim() : "";
+}
+
 // ── Gestión técnica de Verónica: ¿le falta SharePoint, Radicado PQR o Encargado PQR? ──
+// (Admites: usa solo lo propio, no hereda — es la fuente)
 function faltaTecnico(r){
   const sp  = String(r["SHAREPOINT"]||"").trim();
   const pqr = String(r["PQR"]||"").trim();           // Radicado PQR
@@ -2098,54 +2177,19 @@ function queFaltaTecnico(r){
   return f;
 }
 
-// ── Cruce SharePoint: busca el Admite de origen de un fallo/registro ──
-// Coincide por RADICADO + ACCIONANTE (los juzgados a veces reciclan el mismo
-// radicado con distinto accionante, por eso NO basta el radicado solo).
-// Devuelve el SharePoint del Admite, o "" si no hay match con SharePoint.
-// Quita tildes/acentos para comparar nombres que los juzgados escriben inconsistentes
-// (ej. "JOSÉ" vs "JOSE"). normalize NFD separa el acento, y se elimina.
-function sinAcentos(s){
-  return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-}
-function clprivate_norm(s){
-  return sinAcentos(s).replace(/[\s\-]/g,"").toLowerCase();
-}
-function normAcc(s){
-  return sinAcentos(s).replace(/\s+/g,"").toLowerCase().substring(0,12);
-}
-function sharePointDeOrigen(reg){
-  const radF = clprivate_norm(reg["RADICADO"]);
-  const accF = normAcc(reg["ACCIONANTE"]);
-  if(!radF) return "";
-  // Buscar en Admites (tutelas) un registro con mismo radicado Y mismo accionante
-  for(const t of tutelas){
-    if(clprivate_norm(t["RADICADO"]) !== radF) continue;
-    // Verificar nombre — evita el reciclaje de radicados con distinto accionante
-    if(accF && normAcc(t["ACCIONANTE"]) !== accF) continue;
-    const sp = String(t["SHAREPOINT"]||"").trim();
-    if(sp) return sp;
-  }
-  return "";
-}
-
-// Pendiente técnico para FALLOS: igual criterio que Admites, pero el SharePoint
-// se considera presente si lo hereda del Admite de origen (cruce rad+accionante).
+// Pendiente técnico para FALLOS: igual criterio que Admites, pero considera
+// los tres campos HEREDADOS del Admite de origen (encargado, radicado PQR, SharePoint).
 function faltaTecnicoFallo(r){
-  const spPropio   = String(r["SHAREPOINT"]||"").trim();
-  const spHeredado = spPropio ? "" : sharePointDeOrigen(r);
-  const sp  = spPropio || spHeredado;
-  const pqr = String(r["PQR"]||"").trim();
-  const enc = String(r["ENCARGADO PQR"]||"").trim();
-  return !sp || !pqr || !enc;
+  const g = gestionTecnicaEfectiva(r);
+  return !g.sp || !g.pqr || !g.enc;
 }
-// Lista de campos faltantes para el tooltip (considera SharePoint heredado)
+// Lista de campos faltantes para el tooltip (considera herencia de los tres)
 function queFaltaTecnicoFallo(r){
+  const g = gestionTecnicaEfectiva(r);
   const f=[];
-  if(!String(r["ENCARGADO PQR"]||"").trim()) f.push("Encargado PQR");
-  if(!String(r["PQR"]||"").trim())           f.push("Radicado PQR");
-  const spPropio   = String(r["SHAREPOINT"]||"").trim();
-  const spHeredado = spPropio ? "" : sharePointDeOrigen(r);
-  if(!spPropio && !spHeredado)               f.push("SharePoint");
+  if(!g.enc) f.push("Encargado PQR");
+  if(!g.pqr) f.push("Radicado PQR");
+  if(!g.sp)  f.push("SharePoint");
   return f;
 }
 
