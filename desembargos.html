@@ -1653,19 +1653,30 @@ function construirDocXml(xml, d){
     `$1${xmlEsc(d.motivo)} </w:t>`
   );
 
-  // 10. Proyectó (color EE0000 en tabla de firmas)
+  // 10. Proyectó (fila de firmas): rellena Nombre, Firma y Fecha.
+  //   - Nombre: nombre de quien proyectó (color EE0000, ya en plantilla).
+  //   - Firma: el mismo nombre de quien proyectó.
+  //   - Fecha: la fecha del auto (d.fechaAuto, formato dd/mm/yyyy).
+  const _proy = xmlEsc(d.proyNombre||cfg.nombre||'');
+  // Run reutilizable para Firma y Fecha (Arial 9pt, centrado)
+  const _runFirma = (txt) =>
+    '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>'+
+    '<w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>'+txt+'</w:t></w:r>';
+  // 10a. Nombre del proyectó (color EE0000)
   xml = xml.replace(
     /(<w:color w:val="EE0000"[^\/]*\/><w:sz[^\/]*\/><w:szCs[^\/]*\/><\/w:rPr><w:t>)Jeison Maya(<\/w:t>)/,
-    `$1${xmlEsc(d.proyNombre||cfg.nombre||'')}$2`
+    `$1${_proy}$2`
   );
-
-  // 11. Fecha de proyección en tabla de firmas
-  if(d.proyFecha){
-    xml = xml.replace(
-      /(<w:t>)27\/05\/2026(<\/w:t>)/,
-      `$1${xmlEsc(fmtC(d.proyFecha))}$2`
-    );
-  }
+  // 10b. Firma (misma del proyectó) y Fecha (fecha del auto) en las dos
+  //      celdas que siguen a la del nombre. Se anclan justo tras el cierre
+  //      de la celda del nombre, insertando el contenido en los párrafos
+  //      vacíos de las celdas Firma (1985) y Fecha (2126).
+  xml = xml.replace(
+    /(<\/w:r><\/w:p><\/w:tc>)(<w:tc><w:tcPr><w:tcW w:w="1985"[^>]*\/><\/w:tcPr><w:p [^>]*><w:pPr><w:jc w:val="center"\/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"\/><w:sz w:val="18"\/><w:szCs w:val="18"\/><\/w:rPr><\/w:pPr>)(<\/w:p><\/w:tc>)(<w:tc><w:tcPr><w:tcW w:w="2126"[^>]*\/><\/w:tcPr><w:p [^>]*><w:pPr><w:jc w:val="center"\/><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"\/><w:sz w:val="18"\/><w:szCs w:val="18"\/><\/w:rPr><\/w:pPr>)(<\/w:p><\/w:tc>)/,
+    (mm, cierreNombre, celdaFirma, finFirma, celdaFecha, finFecha) =>
+      cierreNombre + celdaFirma + _runFirma(_proy) + finFirma +
+      celdaFecha + _runFirma(xmlEsc(d.fechaAuto||'')) + finFecha
+  );
 
   // 12. Recuadro de control de impresión (esquina superior derecha)
   //     Fecha/hora de generación + funcionario. Permite identificar cada
