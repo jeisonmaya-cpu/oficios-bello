@@ -289,7 +289,7 @@
     </a>
   </div>
 
-  <!-- Fila 3: Central Jurídica · Novedades · Terminaciones -->
+  <!-- Fila 3: Central Jurídica · Notificaciones -->
   <div class="grid-3x1" style="animation-delay:.36s">
     <a href="index.html" class="app-card card-purple">
       <div class="card-glow"></div>
@@ -306,47 +306,6 @@
       </div>
       <span class="app-arrow">↗</span>
     </a>
-    <div class="app-card card-news">
-      <div class="card-glow"></div>
-      <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg></span>
-      <div class="app-name">Novedades del sistema</div>
-      <div class="app-desc" id="news-desc">Cargando última actividad...</div>
-      <div class="card-stat" id="cs-sistema">
-        <span class="cs-dot" id="cs-sistema-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e"></span>
-        <span id="cs-sistema-txt">Verificando estado...</span>
-      </div>
-    </div>
-  
-    <div class="app-card card-soon">
-      <div class="card-glow"></div>
-      <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <polyline points="9 15 11 17 15 13"/>
-        </svg></span>
-      <span class="soon-badge">🔧 En desarrollo</span>
-      <div class="app-name" style="color:rgba(255,255,255,.7)">Terminaciones y Suspensiones</div>
-      <div class="app-desc" style="color:rgba(255,255,255,.35)">Gestión de terminaciones de procesos y suspensiones de cobro coactivo</div>
-      <div class="soon-progress-wrap">
-        <div class="soon-progress-label">
-          <span>Progreso</span><span>35%</span>
-        </div>
-        <div class="soon-progress-track">
-          <div class="soon-progress-fill" style="width:35%"></div>
-        </div>
-        <div class="soon-eta">
-          📅 Estimado: 2º semestre 2026
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── NOTIFICACIONES ── -->
-  <div class="grid-3x1" style="animation-delay:.44s">
     <div class="app-card card-notif" onclick="openNotifMenu()" style="cursor:pointer">
       <div class="card-glow"></div>
       <span class="app-icon">
@@ -355,9 +314,9 @@
           <polyline points="22,6 12,13 2,6"/>
         </svg></span>
       <div class="app-name">Notificaciones</div>
-      <div class="app-desc">Notificación de comparendos 2024 por correo electrónico y certificado</div>
+      <div class="app-desc">Comparendos 2024 y predial: correo electrónico, certificado y notificación web</div>
       <div class="card-stat">
-        <span class="cs-dot cs-rose"></span><span>Con correo · Sin correo (certificado)</span>
+        <span class="cs-dot cs-rose"></span><span>Con correo · Certificado · Predial</span>
       </div>
       <span class="app-arrow">↗</span>
     </div>
@@ -496,8 +455,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNotifMe
 // en localStorage por tutelas_v2 tras login con PIN).
 // ════════════════════════════════════════
 var CONFIG = {
-  version: "v2.5",
-  modulos: 7
+  version: "v2.6",
+  modulos: 8
 };
 
 // Stats cacheadas (opcional) — tutelas_v2.html puede escribirlas tras login:
@@ -707,20 +666,20 @@ function actualizarCardStats(stats){
 // ════════════════════════════════════════
 // CARD NOVEDADES — historial de actividad
 // ════════════════════════════════════════
+var NOVEDADES=[
+  {icono:'🔐',txt:'Login con PIN activado en Tutelas V2'},
+  {icono:'🤖',txt:'Teo IA disponible en Tutelas V2'},
+  {icono:'📊',txt:'Estadísticas con % de resolución'},
+  {icono:'🔄',txt:'Sincronización Sheets corregida'},
+  {icono:'⚠️',txt:'Alertas de vencimiento activas'},
+  {icono:'📧',txt:'Nuevo módulo de Notificaciones: comparendos y predial'},
+];
+function novedadDelDia(){
+  var idx=new Date().getDate()%NOVEDADES.length;
+  return NOVEDADES[idx];
+}
 function cargarNovedades(){
-  var novedades=[
-    {icono:'🔐',txt:'Login con PIN activado en Tutelas V2'},
-    {icono:'🤖',txt:'Teo IA disponible en Tutelas V2'},
-    {icono:'📊',txt:'Estadísticas con % de resolución'},
-    {icono:'🔄',txt:'Sincronización Sheets corregida'},
-    {icono:'⚠️',txt:'Alertas de vencimiento activas'},
-  ];
-  var idx=new Date().getDate()%novedades.length;
-  var nov=novedades[idx];
-  var desc=document.getElementById('news-desc');
-  var sist=document.getElementById('cs-sistema-txt');
-  if(desc) desc.textContent=nov.icono+' '+nov.txt;
-  if(sist) sist.textContent=CONFIG.version+' · última actualización hoy';
+  // Las novedades ahora las cuenta Teo al abrirse (ya no hay tarjeta en el home).
 }
 
 // ════════════════════════════════════════
@@ -1000,6 +959,10 @@ function teoSaludo(){
   var stats=window._homeStats||{};
   var msg='¡Hola! Soy Teo 🤖, el asistente del sistema.<br><br>Puedo ayudarte a navegar entre los módulos, responder preguntas sobre tutelas y cobro coactivo, o contarte el estado del día.';
   if(stats.urgentes>0) msg+=`<br><br><span style="color:#f87171">⚠️ Hay <strong>${stats.urgentes}</strong> proceso(s) urgentes hoy.</span>`;
+  try{
+    var nov=novedadDelDia();
+    if(nov) msg+=`<br><br><span style="color:#7dd3fc">📣 <strong>Novedad:</strong> ${nov.icono} ${nov.txt}</span>`;
+  }catch(e){}
   teoAddMsg(msg,'bot');
 }
 
