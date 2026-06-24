@@ -437,6 +437,10 @@
       </div>
       <button class="modal-close" onclick="document.getElementById('overlay').classList.remove('open')">✕</button>
     </div>
+    <div id="m-editar-wrap" style="display:none;margin:-6px 0 14px">
+      <button onclick="abrirEditarCaso()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(232,160,32,.14);border:1px solid rgba(232,160,32,.35);color:var(--gold);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(232,160,32,.24)'" onmouseout="this.style.background='rgba(232,160,32,.14)'">✏️ Editar datos del caso</button>
+      <span style="font-size:11px;color:var(--muted);margin-left:8px">Corrige errores de lectura del PDF (accionante, CC, etc.)</span>
+    </div>
 
     <!-- PESTAÑAS MODAL -->
     <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)">
@@ -494,7 +498,8 @@
 
     <!-- PESTAÑA GESTIÓN JURÍDICA -->
     <div id="mpanel-juridica" style="display:none">
-      <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;color:var(--gold)">⚖️ Gestión Jurídica</div>
+      <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;color:var(--gold)">⚖️ Gestión Jurídica</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Para abogados — estado del proceso y radicado de respuesta</div>
       <div class="mf full" style="margin-bottom:12px">
         <label>Estado</label>
         <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option><option>Hecho superado</option><option>Anulado</option></select>
@@ -516,7 +521,8 @@
 
     <!-- PESTAÑA GESTIÓN TÉCNICA -->
     <div id="mpanel-tecnica" style="display:none">
-      <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;color:#60a5fa">🔧 Gestión Técnica</div>
+      <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;color:#60a5fa">🔧 Gestión Técnica</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Para gestión PQR (Verónica / Jeison) — encargado, radicado PQR y SharePoint</div>
       <div class="mf full" style="margin-bottom:12px">
         <label>Encargado PQR</label>
         <select class="esel" id="m-pqrenc-sel" style="width:100%">
@@ -718,6 +724,67 @@
   </div>
 </div>
 
+<!-- ════════ MODAL: EDITAR DATOS DEL CASO ════════ -->
+<div class="overlay" id="overlay-editar" style="z-index:210" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-top">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)">✏️ Editar datos del caso</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Corrige los datos que el sistema leyó mal del PDF. Los cambios se guardan en Supabase.</div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('overlay-editar').classList.remove('open')">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Accionante</label>
+        <input id="ed-acc" type="text" class="nt-inp" placeholder="Nombre completo del accionante">
+      </div>
+      <div class="mf">
+        <label>CC / NIT</label>
+        <input id="ed-cc" type="text" class="nt-inp" placeholder="Cédula o NIT">
+      </div>
+      <div class="mf">
+        <label>Radicado</label>
+        <input id="ed-rad" type="text" class="nt-inp" placeholder="2026-XXXXX">
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Juzgado</label>
+        <input id="ed-juz" type="text" class="nt-inp" placeholder="Nombre del juzgado">
+      </div>
+      <div class="mf">
+        <label>Fecha inicial (dd/mm/aaaa)</label>
+        <input id="ed-fini" type="text" class="nt-inp" placeholder="15/06/2026">
+      </div>
+      <div class="mf">
+        <label>Fecha límite (dd/mm/aaaa)</label>
+        <input id="ed-flim" type="text" class="nt-inp" placeholder="29/06/2026">
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Abogado responsable</label>
+        <select id="ed-abo" class="nt-inp"></select>
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Derecho invocado</label>
+        <input id="ed-derecho" type="text" class="nt-inp" placeholder="Ej: Derecho de petición">
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Hechos resumidos</label>
+        <textarea id="ed-hechos" rows="2" class="nt-inp" style="resize:vertical"></textarea>
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Pretensiones</label>
+        <textarea id="ed-pret" rows="2" class="nt-inp" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div id="ed-error" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:8px;font-size:13px;color:#f87171"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('overlay-editar').classList.remove('open')" style="flex:1;padding:11px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">Cancelar</button>
+      <button id="ed-guardar" onclick="guardarEdicionCaso()" style="flex:2;padding:11px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--gold),#f0b840);border:none;color:#0a1f3d;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">💾 Guardar correcciones</button>
+    </div>
+  </div>
+</div>
+
+
 
 
 <div class="toast" id="toast"></div>
@@ -878,6 +945,19 @@ const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","D
 // Lista ACTIVA para reparto — sin Deisy. Solo se usa en el round-robin de
 // "Nueva tutela" para que ya NO reciba asignaciones nuevas.
 const ABOGADOS_RR = ABOGADOS.filter(a => a !== "Deisy Lopez");
+
+// ── Rol del usuario logueado → en qué pestaña abre el modal ──
+// Técnica (PQR/SharePoint): Verónica y Jeison.  Jurídica (estado): abogados.
+// COMPLETA aquí los correos reales con los que inician sesión:
+let USUARIO_EMAIL = "";
+const EMAILS_TECNICA = [
+  "jeisonmaya@gmail.com",       // Jeison
+  "verosuarez1216@gmail.com"    // Verónica
+].map(e=>e.toLowerCase());
+// Devuelve la pestaña inicial del modal según quién entró.
+function pestanaPorRol(){
+  return EMAILS_TECNICA.includes((USUARIO_EMAIL||"").toLowerCase()) ? "tecnica" : "juridica";
+}
 const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"];
 const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
 const EST_HIST    = ["Finalizado","Respondido","Anulado","Hecho superado"];
@@ -1120,6 +1200,91 @@ async function marcarHechoSuperado(){
     } else {
       toast("❌ Error al guardar: "+e.message,"err");
     }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// EDITAR DATOS DEL CASO — corrige errores de lectura del PDF
+// Edita accionante, CC, radicado, juzgado, fechas, abogado y textos.
+// ════════════════════════════════════════════════════════════
+function abrirEditarCaso(){
+  if(!actual) return;
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||"";};
+  set("ed-acc",     actual["ACCIONANTE"]||"");
+  set("ed-cc",      actual["CC / NIT"]||"");
+  set("ed-rad",     actual["RADICADO"]||"");
+  set("ed-juz",     actual["JUZGADO"]||"");
+  set("ed-fini",    actual["FECHA INICIAL"]||"");
+  set("ed-flim",    actual["FECHA LÍMITE"]||actual["FECHA LIMITE"]||"");
+  set("ed-derecho", actual["DERECHO INVOCADO"]||"");
+  set("ed-hechos",  actual["HECHOS RESUMIDOS"]||"");
+  set("ed-pret",    actual["PRETENSIONES"]||"");
+  // Selector de abogado (lista completa) con el actual preseleccionado
+  const sel=document.getElementById("ed-abo");
+  const actualAbo=actual["RESPONSABLE"]||"";
+  const enLista=ABOGADOS.some(a=>a===actualAbo);
+  sel.innerHTML=ABOGADOS.map(a=>`<option>${a}</option>`).join("")
+    + (enLista?"":`<option>${esc(actualAbo)}</option>`);
+  sel.value=actualAbo;
+  document.getElementById("ed-error").style.display="none";
+  document.getElementById("overlay-editar").classList.add("open");
+}
+
+async function guardarEdicionCaso(){
+  if(!actual) return;
+  const errBox=document.getElementById("ed-error");
+  const btn=document.getElementById("ed-guardar");
+  errBox.style.display="none";
+  const g=id=>document.getElementById(id).value.trim();
+  const acc=g("ed-acc"), rad=g("ed-rad");
+  if(!acc || !rad){
+    errBox.textContent="El accionante y el radicado no pueden quedar vacíos.";
+    errBox.style.display="block"; return;
+  }
+  if(!(USAR_SUPABASE && actual._id)){
+    errBox.textContent="No se encontró el id del registro; no se puede editar.";
+    errBox.style.display="block"; return;
+  }
+  const campos={
+    "ACCIONANTE": acc,
+    "CC / NIT": g("ed-cc"),
+    "RADICADO": rad,
+    "JUZGADO": g("ed-juz"),
+    "FECHA INICIAL": g("ed-fini"),
+    "FECHA LÍMITE": g("ed-flim"),
+    "RESPONSABLE": document.getElementById("ed-abo").value,
+    "DERECHO INVOCADO": g("ed-derecho"),
+    "HECHOS RESUMIDOS": g("ed-hechos"),
+    "PRETENSIONES": g("ed-pret")
+  };
+  btn.textContent="Guardando..."; btn.style.pointerEvents="none";
+  try{
+    const guardado=await Repo.actualizar(actual._id, campos);
+    if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
+    // Refresca el registro en memoria (en el array que corresponda)
+    const arr = origenModal==="incidente" ? incidentes : origenModal==="fallo" ? fallos : tutelas;
+    const idx=arr.findIndex(r=>r._id===actual._id);
+    Object.entries(campos).forEach(([k,v])=>{
+      if(idx>=0) arr[idx][k]=v;
+      actual[k]=v;
+    });
+    // Recalcula días restantes con la nueva fecha límite
+    if(idx>=0) normalizarRegistro(arr[idx]);
+    normalizarRegistro(actual);
+    toast("✅ Correcciones guardadas","ok");
+    document.getElementById("overlay-editar").classList.remove("open");
+    renderAll();
+    // Reabre el modal con los datos ya corregidos
+    abrirModal(encodeURIComponent(JSON.stringify(actual)), origenModal);
+  }catch(e){
+    if(/JWT expired|401/i.test(e.message)){
+      errBox.textContent="Tu sesión expiró. Vuelve a iniciar sesión para guardar.";
+    } else {
+      errBox.textContent="Error al guardar: "+e.message;
+    }
+    errBox.style.display="block";
+  }finally{
+    btn.textContent="💾 Guardar correcciones"; btn.style.pointerEvents="auto";
   }
 }
 
@@ -1735,8 +1900,11 @@ function abrirModal(da, origen){
     const av=document.getElementById("m-aviso-historico");
     if(av) av.style.display=EST_HIST.includes(this.value)?"block":"none";
   };
-  // Siempre abrir en pestaña Información
-  switchMTab('info');
+  // Abrir en la pestaña del rol de quien entró:
+  // abogados → Jurídica (estado), Verónica/Jeison → Técnica (PQR/SharePoint).
+  // Para casos cerrados (histórico) abre en Información, que da el panorama.
+  const enHistorico = EST_HIST.includes(r["ESTADO"]||"");
+  switchMTab(enHistorico ? "info" : pestanaPorRol());
   // Botones de escalado: para TUTELAS, tanto activas como en histórico
   // (a un admite cerrado puede llegarle el fallo o el incidente después).
   const escBox=document.getElementById("m-escalado");
@@ -1747,6 +1915,9 @@ function abrirModal(da, origen){
     const esFalloOInc = /fallo|sentencia|incidente|desacato/.test(tipoR);
     escBox.style.display = (esTutela && !esFalloOInc) ? "flex" : "none";
   }
+  // Botón Editar: disponible para cualquier registro que venga de Supabase (_id)
+  const edWrap=document.getElementById("m-editar-wrap");
+  if(edWrap) edWrap.style.display = (USAR_SUPABASE && r._id) ? "block" : "none";
   document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
   const esFallo = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"].includes(r["TIPO"]);
   const esInc   = incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
@@ -2306,9 +2477,17 @@ async function cargarDatosSafe(esAutoRefresh=false) {
 }
 // Tecla Escape cierra cualquier modal abierto
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')['overlay','overlay-pqr','overlay-confirm','overlay-informe'].forEach(id=>{
+  if(e.key==='Escape')['overlay','overlay-pqr','overlay-confirm','overlay-informe','overlay-nueva','overlay-nuevoinc','overlay-escalar','overlay-editar'].forEach(id=>{
     const o=document.getElementById(id); if(o) o.classList.remove('open');
   });
+  // Ctrl+Enter (o Cmd+Enter) guarda los cambios del caso si el modal principal está abierto
+  if((e.ctrlKey||e.metaKey) && e.key==='Enter'){
+    const ov=document.getElementById('overlay');
+    if(ov && ov.classList.contains('open')){
+      e.preventDefault();
+      guardarEstado();
+    }
+  }
 });
 
 // ════════════════════════════════════════
@@ -2328,6 +2507,7 @@ async function hacerLogin(){
     if(error){ mostrarLoginError("Correo o contraseña incorrectos."); btn.textContent="Ingresar"; btn.style.pointerEvents="auto"; return; }
     // Sesión OK: guardar token y entrar
     authToken = data.session.access_token;
+    USUARIO_EMAIL = (data.session.user && data.session.user.email || "").toLowerCase().trim();
     entrarAlSistema();
   }catch(e){
     mostrarLoginError("Error de conexión. Intenta de nuevo.");
@@ -2353,6 +2533,7 @@ async function cerrarSesion(){
     const { data } = await sbAuth.auth.getSession();
     if(data.session){
       authToken = data.session.access_token;
+      USUARIO_EMAIL = (data.session.user && data.session.user.email || "").toLowerCase().trim();
       entrarAlSistema();
     }
     // si no hay sesión, se queda la pantalla de login visible (ya está por defecto)
