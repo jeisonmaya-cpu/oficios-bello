@@ -110,8 +110,8 @@
     .be-proceso{background:rgba(245,158,11,.12);color:#fcd34d}
     .be-resp{background:rgba(34,197,94,.12);color:#4ade80}
     .be-fin{background:rgba(255,255,255,.07);color:var(--soft)}
-    .be-super{background:rgba(52,211,153,.14);color:#34d399}
     .be-venc{background:rgba(239,68,68,.12);color:#f87171}
+    .be-anulado{background:rgba(120,120,130,.15);color:#9ca3af;text-decoration:line-through}
     /* PAGINACIÓN */
     .pag{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
     .pag-btns{display:flex;gap:4px}
@@ -275,6 +275,7 @@
   <div class="ntab"        id="tab-reparto"      onclick="goTab('reparto')">👤 Por reparto</div>
   <div class="ntab"        id="tab-pqr"          onclick="goTab('pqr')">📝 PQR <span class="nbadge" id="badge-pqr">0</span></div>
   <div class="ntab"        id="tab-historico"    onclick="goTab('historico')">🗂️ Histórico</div>
+  <div class="ntab"        id="tab-duplicados"   onclick="goTab('duplicados')">🔍 Duplicados <span class="nbadge" id="badge-duplicados" style="background:rgba(239,68,68,.2);color:#f87171">0</span></div>
   <div class="ntab"        id="tab-estadisticas" onclick="goTab('estadisticas')">📊 Estadísticas</div>
 </div>
 
@@ -285,7 +286,7 @@
   <div class="filtros">
     <input class="fi fi-buscar" id="fa-q" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderAdmites()"/>
     <select class="fi" id="fa-abo" onchange="renderAdmites()"><option value="">Todos los abogados</option></select>
-    <select class="fi" id="fa-est" onchange="renderAdmites()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Hecho superado</option><option>Vencido</option></select>
+    <select class="fi" id="fa-est" onchange="renderAdmites()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
     <button class="btn-refresh" id="btnref" onclick="cargarDatos()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Actualizar</button>
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('admites')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
     <button class="btn-refresh" style="background:rgba(232,160,32,.2);border-color:rgba(232,160,32,.4);color:#e8a020" onclick="abrirNuevaTutela()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva tutela</button>
@@ -303,7 +304,7 @@
     <input class="fi fi-buscar" id="ff-q" placeholder="🔍 Buscar..." oninput="renderFallos()"/>
     <select class="fi" id="ff-tp" onchange="renderFallos()"><option value="">Fallo y sentencia</option><option>Fallo de tutela</option><option>Sentencia</option></select>
     <select class="fi" id="ff-abo" onchange="renderFallos()"><option value="">Todos los abogados</option></select>
-    <select class="fi" id="ff-est" onchange="renderFallos()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Hecho superado</option></select>
+    <select class="fi" id="ff-est" onchange="renderFallos()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option></select>
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('fallos')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
   </div>
   <div class="twrap">
@@ -383,12 +384,17 @@
   <div class="est-grid" id="grid-est"></div>
 </div>
 
-<!-- ════════ FOOTER · CRÉDITO DE AUTOR ════════ -->
-<footer style="margin:36px auto 8px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);text-align:center">
-  <div style="font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:.04em;color:var(--muted)">
-    Desarrollado por <span style="color:var(--gold);font-weight:600">Jeison Maya</span> · 2026
+<div class="panel" id="panel-duplicados">
+  <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.18);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--soft);line-height:1.6">
+    🔍 <strong style="color:#f87171">Detector de duplicados.</strong> Agrupa registros que comparten el <strong>mismo radicado</strong> y un accionante parecido. Revisa cada grupo y, en el que sea repetido, ábrelo y cambia su estado a <strong>«Anulado»</strong> — no se borra, solo sale de las listas activas y queda registrado. Los procesos que escalan de tutela → fallo → incidente <em>no</em> aparecen aquí: solo se marcan los que son verdaderamente iguales (misma categoría).
   </div>
-</footer>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+    <input class="fi fi-buscar" id="fd-q" placeholder="🔍 Filtrar por accionante o radicado..." oninput="renderDuplicados()" style="flex:1;min-width:200px"/>
+    <button class="btn-refresh" onclick="renderDuplicados()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Re-analizar</button>
+  </div>
+  <div id="dup-resumen" style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:0 2px"></div>
+  <div id="body-duplicados"></div>
+</div>
 
 </div>
 
@@ -473,10 +479,6 @@
       <div id="m-obs-w"     style="display:none"><div class="msec">Observaciones</div><div class="mtext" id="m-obs"></div></div>
       <div class="m-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
-        <button class="mbtn mbtn-s" id="m-btn-editar" style="display:none;background:rgba(96,165,250,.15);border-color:rgba(96,165,250,.35);color:#60a5fa" onclick="abrirEditarTutela()">✏️ Editar</button>
-        <button class="mbtn mbtn-s" id="m-btn-fallo" style="display:none;background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.35);color:var(--gold)" onclick="abrirCrearActuacion('fallo')">⚖️ Crear fallo</button>
-        <button class="mbtn mbtn-s" id="m-btn-desacato" style="display:none;background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.35);color:#fb923c" onclick="abrirCrearActuacion('incidente')">⚡ Crear desacato</button>
-        <button class="mbtn mbtn-s" id="m-btn-superado" style="display:none;background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#4ade80" onclick="marcarHechoSuperado()">✓ Hecho superado</button>
         <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">⚖️ Gestión Jurídica →</button>
         <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
       </div>
@@ -487,7 +489,7 @@
       <div class="msec" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;color:var(--gold)">⚖️ Gestión Jurídica</div>
       <div class="mf full" style="margin-bottom:12px">
         <label>Estado</label>
-        <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Hecho superado</option><option>Vencido</option></select>
+        <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option><option>Anulado</option></select>
       </div>
       <div class="mf full" id="m-rad-wrap" style="margin-bottom:12px">
         <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
@@ -590,8 +592,8 @@
   <div class="modal" style="max-width:600px">
     <div class="modal-top">
       <div>
-        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)" id="nt-titulo">➕ Nueva tutela manual</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px" id="nt-subtitulo">Para casos que el sistema automático no registró</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)">➕ Nueva tutela manual</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Para casos que el sistema automático no registró</div>
       </div>
       <button class="modal-close" onclick="document.getElementById('overlay-nueva').classList.remove('open')">✕</button>
     </div>
@@ -645,83 +647,9 @@
   </div>
 </div>
 
-<!-- ════════ MODAL: CREAR ACTUACIÓN DESDE EL ADMITE ════════ -->
-<div class="overlay" id="overlay-actuacion" style="z-index:210" onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="modal" style="max-width:620px">
-    <div class="modal-top">
-      <div>
-        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)" id="ac-titulo">⚖️ Crear actuación</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px" id="ac-subtitulo">Hereda los datos del expediente de origen</div>
-      </div>
-      <button class="modal-close" onclick="document.getElementById('overlay-actuacion').classList.remove('open')">✕</button>
-    </div>
-
-    <!-- Banner del expediente de origen -->
-    <div id="ac-origen-banner" style="margin-bottom:16px;padding:12px 14px;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.25);border-radius:10px">
-      <div style="font-size:10px;letter-spacing:.08em;color:var(--gold);font-weight:600;text-transform:uppercase;margin-bottom:6px">📋 Expediente de origen</div>
-      <div style="font-size:13px;color:var(--text);line-height:1.5">
-        <span id="ac-origen-acc">—</span><br>
-        <span style="color:var(--muted);font-size:12px">Radicado: <span id="ac-origen-rad">—</span></span>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <div class="mf full" style="grid-column:1/-1">
-        <label>Tipo de actuación *</label>
-        <select id="ac-tipo" class="nt-inp" onchange="acAlCambiarTipo()">
-          <!-- opciones llenadas dinámicamente según la categoría (fallo / incidente) -->
-        </select>
-        <div style="font-size:11px;color:var(--muted);margin-top:5px" id="ac-cat-hint">→ Se guardará en la pestaña <strong>Fallos</strong></div>
-      </div>
-      <div class="mf full" style="grid-column:1/-1">
-        <label>Accionante *</label>
-        <input id="ac-acc" type="text" class="nt-inp">
-      </div>
-      <div class="mf">
-        <label>CC / NIT</label>
-        <input id="ac-cc" type="text" class="nt-inp">
-      </div>
-      <div class="mf">
-        <label>Radicado *</label>
-        <input id="ac-rad" type="text" class="nt-inp">
-      </div>
-      <div class="mf full" style="grid-column:1/-1">
-        <label>Juzgado</label>
-        <input id="ac-juz" type="text" class="nt-inp">
-      </div>
-      <div class="mf">
-        <label>Fecha inicial (dd/mm/aaaa)</label>
-        <input id="ac-fini" type="text" class="nt-inp" placeholder="15/06/2026">
-      </div>
-      <div class="mf">
-        <label>Fecha límite (dd/mm/aaaa)</label>
-        <input id="ac-flim" type="text" class="nt-inp" placeholder="29/06/2026">
-      </div>
-      <div class="mf full" style="grid-column:1/-1">
-        <label>Abogado responsable <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(heredado del expediente)</span></label>
-        <select id="ac-abo" class="nt-inp"></select>
-      </div>
-    </div>
-
-    <div id="ac-aviso-dup" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);border-radius:8px;font-size:12.5px;color:#fbbf24"></div>
-    <div id="ac-error" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:8px;font-size:13px;color:#f87171"></div>
-    <div style="display:flex;gap:10px">
-      <button onclick="document.getElementById('overlay-actuacion').classList.remove('open')" style="flex:1;padding:11px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">Cancelar</button>
-      <button id="ac-guardar" onclick="guardarActuacion()" style="flex:2;padding:11px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--gold),#f0b840);border:none;color:#0a1f3d;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">⚖️ Crear actuación</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-// ⚠️ FALLBACK DE EMERGENCIA — Google Sheets / Apps Script.
-// Estas constantes y las funciones leerGviz()/camino gviz de guardarEstado()
-// SOLO se usan si USAR_SUPABASE = false. En operación normal (Supabase activo)
-// este código NO se ejecuta. Se conserva como red de seguridad por si Supabase
-// no estuviera disponible. NO es código activo.
-// ════════════════════════════════════════════════════════════
 const SHEET_ID    = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
 const GID_TUT     = "0";
 const GID_FAL     = "995241537";
@@ -729,14 +657,14 @@ const GID_INC     = "528315836";
 const APPS_URL    = "https://script.google.com/macros/s/AKfycby7Jp0dp3GLFMQAKSbGvXuHDKEg6PrInrdZjEIQZq_zpsYcmPP6GRcnwhMAhPJUwU7K/exec";
 
 // ════════════════════════════════════════════════════════════
-// SUPABASE — capa de datos ACTIVA
+// SUPABASE — capa de datos (Paso 3)
 // La llave anon es pública por diseño y está limitada por RLS:
 // solo puede leer/insertar/editar tutelas, nunca borrar.
 // ════════════════════════════════════════════════════════════
 const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
 const SB_TABLA      = "actuaciones_tutela";
-// Interruptor: true = lee/guarda en Supabase (NORMAL). false = vuelve al fallback gviz/Apps Script.
+// Interruptor: true = lee/guarda en Supabase. Si se pone false, vuelve a gviz/Apps Script.
 const USAR_SUPABASE = true;
 
 // ── Cliente de Supabase Auth (para login) ──
@@ -791,10 +719,7 @@ const MAPA_SB_A_SHEET = {
   radicado_pqr:          "PQR",
   respuesta_pqr:         "RESPUESTA PQR",
   radicado_cumplimiento: "RADICADO DE CUMPLIMIENTO",
-  sharepoint:            "SHAREPOINT",
-  radicado_origen:       "RADICADO ORIGEN",
-  id_origen:             "ID ORIGEN",
-  fecha_hecho_superado:  "FECHA HECHO SUPERADO"
+  sharepoint:            "SHAREPOINT"
 };
 // Mapa inverso: nombre del Sheet → columna Supabase (para guardar)
 const MAPA_SHEET_A_SB = Object.fromEntries(Object.entries(MAPA_SB_A_SHEET).map(([k,v])=>[v,k]));
@@ -850,9 +775,8 @@ const Repo = {
   },
 
   // Crea una nueva tutela (ingreso manual). Recibe campos con nombres del Sheet.
-  // categoria por defecto "tutela"; el modal de "crear actuación" pasa "fallo"/"incidente".
-  async crear(camposSheet, categoria){
-    const payload={ categoria: categoria || "tutela" };
+  async crear(camposSheet){
+    const payload={ categoria: "tutela" };
     for(const [colSheet,valor] of Object.entries(camposSheet)){
       const colSB = MAPA_SHEET_A_SB[colSheet];
       if(colSB) payload[colSB]=valor;
@@ -872,20 +796,6 @@ const Repo = {
     }
     const arr = await res.json();
     return arr && arr.length ? arr[0] : null;
-  },
-
-  // ¿Ya existe una actuación (fallo/incidente) generada desde este Admite?
-  // Busca por id_origen para evitar crear duplicados sobre el mismo expediente.
-  async existeActuacionDeOrigen(idOrigen, categoria){
-    if(!idOrigen) return false;
-    const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`
-      + `?id_origen=eq.${encodeURIComponent(idOrigen)}`
-      + `&categoria=eq.${encodeURIComponent(categoria)}`
-      + `&select=id,tipo`;
-    const res = await fetch(url, { headers: await getAuthHeaders() });
-    if(!res.ok) return false;
-    const arr = await res.json();
-    return Array.isArray(arr) && arr.length>0 ? arr : false;
   }
 };
 // Lista COMPLETA — incluye a Deisy para que sus procesos sigan apareciendo en
@@ -896,11 +806,10 @@ const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","D
 const ABOGADOS_RR = ABOGADOS.filter(a => a !== "Deisy Lopez");
 const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"];
 const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
-const EST_HIST    = ["Finalizado","Respondido","Hecho superado"];
+const EST_HIST    = ["Finalizado","Respondido","Anulado"];
 const PER_PAGE    = 50;
 
 let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
-let modoEdicion=null; // null = creando nueva tutela; id de Supabase = editando ese registro
 let pagAdm=1, pagFal=1, pagHis=1, pagInc=1;
 let quickAdm=null, quickFal=null, quickOtr=null; // filtro rápido por urgencia (tarjetas)
 
@@ -916,11 +825,6 @@ function siguienteAbogadoRR(){
   return abo;
 }
 function abrirNuevaTutela(){
-  modoEdicion = null; // modo creación
-  // Título y botón en modo "crear"
-  document.getElementById("nt-titulo").innerHTML = "➕ Nueva tutela manual";
-  document.getElementById("nt-subtitulo").textContent = "Para casos que el sistema automático no registró";
-  document.getElementById("nt-guardar").textContent = "💾 Crear tutela";
   // Llenar el desplegable de abogados
   const sel = document.getElementById("nt-abo");
   sel.innerHTML = ABOGADOS_RR.map(a=>`<option>${a}</option>`).join("");
@@ -934,40 +838,6 @@ function abrirNuevaTutela(){
   const hoy = new Date();
   document.getElementById("nt-fini").value =
     String(hoy.getDate()).padStart(2,"0")+"/"+String(hoy.getMonth()+1).padStart(2,"0")+"/"+hoy.getFullYear();
-  document.getElementById("nt-error").style.display="none";
-  document.getElementById("overlay-nueva").classList.add("open");
-}
-
-// Abre el MISMO modal en modo edición, precargado con el registro 'actual'.
-function abrirEditarTutela(){
-  if(!actual){ toast("⚠️ No hay expediente abierto","err"); return; }
-  if(!actual._id){ toast("⚠️ Este registro no tiene id de Supabase; no se puede editar.","err"); return; }
-  modoEdicion = actual._id; // modo edición: guardamos el id a actualizar
-
-  // Título y botón en modo "editar"
-  document.getElementById("nt-titulo").innerHTML = "✏️ Editar expediente";
-  document.getElementById("nt-subtitulo").textContent = "Corrige o completa los datos del expediente";
-  document.getElementById("nt-guardar").textContent = "💾 Guardar cambios";
-
-  // Abogados: lista completa (no RR) para no forzar reparto al editar
-  const sel = document.getElementById("nt-abo");
-  const resp = (actual["RESPONSABLE"]||"").trim();
-  let opciones = ABOGADOS.slice();
-  if(resp && !opciones.includes(resp)) opciones = [resp, ...opciones];
-  sel.innerHTML = opciones.map(a=>`<option>${a}</option>`).join("");
-  if(resp) sel.value = resp;
-
-  // Precargar campos con los datos actuales
-  document.getElementById("nt-acc").value     = actual["ACCIONANTE"] || "";
-  document.getElementById("nt-cc").value      = actual["CC / NIT"] || "";
-  document.getElementById("nt-rad").value     = actual["RADICADO"] || "";
-  document.getElementById("nt-juz").value     = actual["JUZGADO"] || "";
-  document.getElementById("nt-fini").value    = actual["FECHA INICIAL"] || "";
-  document.getElementById("nt-flim").value    = actual["FECHA LÍMITE"] || actual["FECHA LIMITE"] || "";
-  document.getElementById("nt-derecho").value = actual["DERECHO INVOCADO"] || "";
-  document.getElementById("nt-hechos").value  = actual["HECHOS RESUMIDOS"] || "";
-  document.getElementById("nt-pret").value    = actual["PRETENSIONES"] || "";
-
   document.getElementById("nt-error").style.display="none";
   document.getElementById("overlay-nueva").classList.add("open");
 }
@@ -987,46 +857,15 @@ async function guardarNuevaTutela(){
     "CC / NIT": document.getElementById("nt-cc").value.trim(),
     "RADICADO": rad,
     "JUZGADO": document.getElementById("nt-juz").value.trim(),
+    "TIPO": "Tutela",
     "RESPONSABLE": document.getElementById("nt-abo").value,
+    "ESTADO": "Nuevo",
     "FECHA INICIAL": document.getElementById("nt-fini").value.trim(),
     "FECHA LÍMITE": document.getElementById("nt-flim").value.trim(),
     "DERECHO INVOCADO": document.getElementById("nt-derecho").value.trim(),
     "HECHOS RESUMIDOS": document.getElementById("nt-hechos").value.trim(),
     "PRETENSIONES": document.getElementById("nt-pret").value.trim()
   };
-
-  // ── MODO EDICIÓN: actualizar registro existente (con confirmación) ──
-  if(modoEdicion){
-    const ok = await confirmar(
-      "¿Guardar los cambios?",
-      `Se actualizarán los datos de «${acc}».`
-    );
-    if(!ok) return;
-    btn.textContent="Guardando..."; btn.style.pointerEvents="none";
-    try{
-      const guardado = await Repo.actualizar(modoEdicion, campos);
-      if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
-      toast("✅ Cambios guardados","ok");
-      document.getElementById("overlay-nueva").classList.remove("open");
-      document.getElementById("overlay").classList.remove("open"); // cerrar también el modal de detalle
-      modoEdicion=null;
-      await cargarDatos();
-    }catch(e){
-      if(/JWT expired|401/i.test(e.message)){
-        errBox.textContent="Tu sesión expiró. Vuelve a iniciar sesión para guardar.";
-      } else {
-        errBox.textContent="Error al guardar: "+e.message;
-      }
-      errBox.style.display="block";
-    }finally{
-      btn.textContent="💾 Guardar cambios"; btn.style.pointerEvents="auto";
-    }
-    return;
-  }
-
-  // ── MODO CREACIÓN: nueva tutela ──
-  campos["TIPO"]   = "Tutela";
-  campos["ESTADO"] = "Nuevo";
   btn.textContent="Creando..."; btn.style.pointerEvents="none";
   try{
     const creado = await Repo.crear(campos);
@@ -1043,180 +882,20 @@ async function guardarNuevaTutela(){
   }
 }
 
-// ════════════════════════════════════════════════════════════
-//  CREAR ACTUACIÓN (Fallo / Sentencia / Impugnación / Desacato)
-//  desde un Admite existente, heredando sus datos.
-// ════════════════════════════════════════════════════════════
-
-// Mapeo tipo de actuación → categoría (define en qué pestaña aparece).
-const TIPO_A_CATEGORIA = {
-  "Fallo de tutela":       "fallo",
-  "Sentencia":             "fallo",
-  "Impugnación":           "fallo",
-  "Desacato":              "incidente",
-  "Incidente de desacato": "incidente"
-};
-
-// Calcula fecha límite sumando N días hábiles (igual criterio que el GAS).
-function fechaHabilDesde(fechaBase, dias){
-  const f = new Date(fechaBase);
-  let agregados = 0;
-  while(agregados < dias){
-    f.setDate(f.getDate()+1);
-    const dow = f.getDay();
-    if(dow!==0 && dow!==6) agregados++;
-  }
-  return String(f.getDate()).padStart(2,"0")+"/"+String(f.getMonth()+1).padStart(2,"0")+"/"+f.getFullYear();
-}
-
-// Opciones del selector de tipo, agrupadas por categoría.
-const TIPOS_POR_CATEGORIA = {
-  fallo:     ["Fallo de tutela","Sentencia","Impugnación"],
-  incidente: ["Desacato","Incidente de desacato"]
-};
-
-// Abre el modal de crear actuación heredando datos del registro 'actual' (el Admite abierto).
-// categoria: "fallo" (botón Crear fallo) o "incidente" (botón Crear desacato).
-function abrirCrearActuacion(categoria){
-  if(!actual){ toast("⚠️ No hay expediente abierto","err"); return; }
-  const cat = (categoria==="incidente") ? "incidente" : "fallo";
-  const r = actual;
-
-  // Título y subtítulo según la categoría
-  if(cat==="incidente"){
-    document.getElementById("ac-titulo").innerHTML = "⚡ Crear desacato";
-    document.getElementById("ac-titulo").style.color = "#fb923c";
-    document.getElementById("ac-subtitulo").textContent = "Registra un incidente de desacato heredando los datos del expediente";
-  } else {
-    document.getElementById("ac-titulo").innerHTML = "⚖️ Crear fallo";
-    document.getElementById("ac-titulo").style.color = "var(--gold)";
-    document.getElementById("ac-subtitulo").textContent = "Registra un fallo, sentencia o impugnación heredando los datos del expediente";
-  }
-
-  // Llenar el selector SOLO con los tipos de esta categoría
-  const selTipo = document.getElementById("ac-tipo");
-  selTipo.innerHTML = TIPOS_POR_CATEGORIA[cat].map(t=>`<option value="${t}">${t}</option>`).join("");
-
-  // Banner de origen
-  document.getElementById("ac-origen-acc").textContent = r["ACCIONANTE"] || "—";
-  document.getElementById("ac-origen-rad").textContent = r["RADICADO"] || "—";
-
-  // Heredar datos editables
-  document.getElementById("ac-acc").value = r["ACCIONANTE"] || "";
-  document.getElementById("ac-cc").value  = r["CC / NIT"]   || "";
-  document.getElementById("ac-rad").value = r["RADICADO"]   || "";
-  document.getElementById("ac-juz").value = r["JUZGADO"]    || "";
-
-  // Abogado: heredar el del expediente; si no está en la lista, agregarlo.
-  const sel = document.getElementById("ac-abo");
-  const resp = (r["RESPONSABLE"]||"").trim();
-  let opciones = ABOGADOS.slice();
-  if(resp && !opciones.includes(resp)) opciones = [resp, ...opciones];
-  sel.innerHTML = opciones.map(a=>`<option>${a}</option>`).join("");
-  if(resp) sel.value = resp;
-
-  // Fechas: inicial = hoy, límite = +10 hábiles
-  const hoy = new Date();
-  document.getElementById("ac-fini").value =
-    String(hoy.getDate()).padStart(2,"0")+"/"+String(hoy.getMonth()+1).padStart(2,"0")+"/"+hoy.getFullYear();
-  document.getElementById("ac-flim").value = fechaHabilDesde(hoy, 10);
-
-  // Refrescar hint + chequeo de duplicados para el primer tipo de la lista
-  acAlCambiarTipo();
-
-  document.getElementById("ac-error").style.display="none";
-  document.getElementById("overlay-actuacion").classList.add("open");
-}
-
-// Al cambiar el tipo: actualizar el hint de pestaña y revisar duplicados.
-async function acAlCambiarTipo(){
-  const tipo = document.getElementById("ac-tipo").value;
-  const cat  = TIPO_A_CATEGORIA[tipo] || "fallo";
-  const pestana = cat==="incidente" ? "Incidentes" : "Fallos";
-  document.getElementById("ac-cat-hint").innerHTML = `→ Se guardará en la pestaña <strong>${pestana}</strong>`;
-  // Chequeo de duplicado sobre el mismo origen
-  const aviso = document.getElementById("ac-aviso-dup");
-  aviso.style.display="none";
-  if(actual && actual._id){
-    try{
-      const existe = await Repo.existeActuacionDeOrigen(actual._id, cat);
-      if(existe){
-        const tipos = existe.map(x=>x.tipo).filter(Boolean).join(", ");
-        aviso.innerHTML = `⚠️ Este expediente ya tiene ${existe.length} actuación(es) en <strong>${pestana}</strong>${tipos?` (${tipos})`:""}. Puedes crear otra si lo necesitas, pero verifica que no sea un duplicado.`;
-        aviso.style.display="block";
-      }
-    }catch(e){ /* silencioso: el chequeo es informativo */ }
-  }
-}
-
-async function guardarActuacion(){
-  const errBox = document.getElementById("ac-error");
-  const btn = document.getElementById("ac-guardar");
-  errBox.style.display="none";
-
-  const tipo = document.getElementById("ac-tipo").value;
-  const cat  = TIPO_A_CATEGORIA[tipo] || "fallo";
-  const acc  = document.getElementById("ac-acc").value.trim();
-  const rad  = document.getElementById("ac-rad").value.trim();
-
-  if(!acc || !rad){
-    errBox.textContent="El accionante y el radicado son obligatorios.";
-    errBox.style.display="block"; return;
-  }
-
-  const campos = {
-    "ACCIONANTE":      acc,
-    "CC / NIT":        document.getElementById("ac-cc").value.trim(),
-    "RADICADO":        rad,
-    "JUZGADO":         document.getElementById("ac-juz").value.trim(),
-    "TIPO":            tipo,
-    "RESPONSABLE":     document.getElementById("ac-abo").value,
-    "ESTADO":          "Nuevo",
-    "FECHA INICIAL":   document.getElementById("ac-fini").value.trim(),
-    "FECHA LÍMITE":    document.getElementById("ac-flim").value.trim(),
-    // Heredar el derecho invocado del Admite (si existía)
-    "DERECHO INVOCADO": (actual && actual["DERECHO INVOCADO"]) || "",
-    // Trazabilidad padre→hijo (radicado siempre; id solo si es válido)
-    "RADICADO ORIGEN": (actual && actual["RADICADO"]) || ""
-  };
-  // id_origen es bigint: solo lo enviamos si hay un id numérico real,
-  // para no mandar "" a una columna numérica.
-  if(actual && actual._id !== undefined && actual._id !== null && String(actual._id).trim() !== ""){
-    campos["ID ORIGEN"] = actual._id;
-  }
-
-  btn.textContent="Creando..."; btn.style.pointerEvents="none";
-  try{
-    const creado = await Repo.crear(campos, cat);
-    if(!creado) throw new Error("Supabase no devolvió el registro creado");
-    const pestana = cat==="incidente" ? "Incidentes" : "Fallos";
-    toast(`✅ ${tipo} creado en ${pestana}`,"ok");
-    document.getElementById("overlay-actuacion").classList.remove("open");
-    // Cerrar también el modal del Admite y recargar
-    document.getElementById("overlay").classList.remove("open");
-    await cargarDatos();
-  }catch(e){
-    errBox.textContent="Error al crear: "+e.message;
-    errBox.style.display="block";
-  }finally{
-    btn.textContent="⚖️ Crear actuación"; btn.style.pointerEvents="auto";
-  }
-}
-
 async function cargarDatos() {
   setSS("loading","Actualizando...");
   document.getElementById("btnref").classList.add("spin");
   try {
     if(USAR_SUPABASE){
-      // Las tres categorías ahora viven en Supabase (tabla actuaciones_tutela).
+      // Tutelas desde Supabase; fallos e incidentes siguen en gviz hasta migrarlos.
       const r = await Promise.allSettled([
         Repo.listar("tutela"),
-        Repo.listar("fallo"),
-        Repo.listar("incidente")
+        leerGviz(GID_FAL),
+        leerGviz(GID_INC)
       ]);
       tutelas    = r[0].status==="fulfilled" ? r[0].value : (toast("⚠️ Tutelas (Supabase) no cargó: "+r[0].reason.message,"err"), []);
-      fallos     = r[1].status==="fulfilled" ? r[1].value : (toast("⚠️ Fallos (Supabase) no cargó: "+r[1].reason.message,"err"), []);
-      incidentes = r[2].status==="fulfilled" ? r[2].value : (toast("⚠️ Incidentes (Supabase) no cargó: "+r[2].reason.message,"err"), []);
+      fallos     = r[1].status==="fulfilled" ? r[1].value : [];
+      incidentes = r[2].status==="fulfilled" ? r[2].value : [];
     } else {
       const [t,f,inc] = await Promise.all([leerGviz(GID_TUT),leerGviz(GID_FAL),leerGviz(GID_INC)]);
       tutelas=t; fallos=f; incidentes=inc;
@@ -1399,7 +1078,7 @@ function semaforo(dias,estado){
   return`<span class="sem sem-v"><span class="sem-dot"></span>${dias}d</span>`;
 }
 function badgeTipo(t){const m={"Tutela":"bt-tutela","Admite":"bt-tutela","Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Incidente":"bt-sent","Impugnación":"bt-impug","Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc","Desacato":"bt-inc","Incidente de desacato":"bt-inc"};return`<span class="bt ${m[t]||"bt-otro"}">${esc(t)||"—"}</span>`;}
-function badgeEst(e){const m={"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Hecho superado":"be-super","Vencido":"be-venc"};return`<span class="bt ${m[e]||""}">${esc(e)||"—"}</span>`;}
+function badgeEst(e){const m={"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Vencido":"be-venc","Anulado":"be-anulado"};return`<span class="bt ${m[e]||""}">${esc(e)||"—"}</span>`;}
 function scard(n,label,cls){return`<div class="scard"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}</div></div>`;}
 function clsFila(dias,est){if(EST_HIST.includes(est))return"";if(dias!==null&&dias<=2)return" urgente";if(dias!==null&&dias<=5)return" proximo";return"";}
 
@@ -1454,7 +1133,7 @@ function renderAdmites(){
     scardQuick(nue.length,"Nuevas","c-purple","adm","nuevo")+
     scardQuick(pendTec.length,"⚠️ Pendientes técnicos","c-amber","adm","pendtec");
   document.getElementById("badge-admites").textContent=(venc.length||urg.length)||activos.length;
-  const visiblesAdm=aplicarQuick(filtAdm,quickAdm,'adm');
+  const visiblesAdm=aplicarQuick(filtAdm,quickAdm);
   const pag=renderPag(visiblesAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
   const el=document.getElementById("body-admites");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
@@ -1484,24 +1163,18 @@ function renderFallos(){
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const fal=activos.filter(r=>r["TIPO"]==="Fallo de tutela");
   const sent=activos.filter(r=>r["TIPO"]==="Sentencia");
-  const pendTecF=activos.filter(r=>faltaTecnicoFallo(r));
   document.getElementById("stats-fallos").innerHTML=
     scardQuick(activos.length,"Total activos","c-blue","fal",null)+
     scardQuick(urg.length,"Urgentes ≤3d","c-red","fal","urg3")+
     scardClick(fal.length,"Fallos","c-amber","ff-tp","Fallo de tutela")+
-    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia")+
-    scardQuick(pendTecF.length,"⚠️ Pendientes técnicos","c-amber","fal","pendtec");
+    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia");
   document.getElementById("badge-fallos").textContent=activos.length;
-  const visiblesFal=aplicarQuick(filtFal,quickFal,'fal');
+  const visiblesFal=aplicarQuick(filtFal,quickFal);
   const pag=renderPag(visiblesFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagFallos=pag;
-  el.innerHTML=pag.map((r,i)=>{
-    const falta=faltaTecnicoFallo(r)?queFaltaTecnicoFallo(r):[];
-    const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;
-  }).join("");
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
   window._exportFallos=visiblesFal;
 }
 
@@ -1694,21 +1367,6 @@ function exportarTabla(tab){
   toast(`📥 Exportado: ${regs.length} registros`,"ok");
 }
 
-// Clasifica a qué grupo PQR pertenece un registro.
-// "No registra PQR" se separa de "Sin asignar" para no inflar los pendientes reales.
-// Usa la gestión EFECTIVA: si es un fallo sin encargado propio, hereda el del Admite.
-function grupoPQR(r){
-  const g = gestionTecnicaEfectiva(r);
-  const enc = g.enc;
-  const pqr = g.pqr;
-  // ¿Marcado explícitamente como que no registra PQR? (mismo criterio que el modal)
-  if(enc==="No registra PQR" || pqr.toUpperCase()==="NO REGISTRA") return "No registra PQR";
-  // Si tiene encargado real (propio o heredado), ese es su grupo
-  if(enc) return enc;
-  // Vacío y sin marcar → pendiente real de asignación
-  return "Sin asignar";
-}
-
 function renderPQR(){
   const activos=[...tutelas,...fallos,...incidentes].filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const sinR=activos.filter(r=>!String(r["RESPUESTA PQR"]||"").trim());
@@ -1717,17 +1375,12 @@ function renderPQR(){
   document.getElementById("cnt-con").textContent=conR.length;
   document.getElementById("badge-pqr").textContent=sinR.length;
   const grpSin={};
-  sinR.forEach(r=>{const e=grupoPQR(r);if(!grpSin[e])grpSin[e]=[];grpSin[e].push(r);});
+  sinR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";if(!grpSin[e])grpSin[e]=[];grpSin[e].push(r);});
   const gSin=document.getElementById("grid-sin-pqr");
   if(!sinR.length){gSin.innerHTML=`<div class="empty"><div class="empty-icon">✅</div>¡Todas tienen respuesta!</div>`;}
-  else{window._pqrGruposSin=Object.entries(grpSin).sort((a,b)=>{
-    // "No registra PQR" siempre al final (es neutro, no es pendiente real)
-    const aNR=a[0]==="No registra PQR", bNR=b[0]==="No registra PQR";
-    if(aNR&&!bNR)return 1; if(bNR&&!aNR)return -1;
-    return b[1].length-a[1].length;
-  });gSin.innerHTML=window._pqrGruposSin.map(([enc,regs],gi)=>{const esNoReg=enc==="No registra PQR";const colNum=esNoReg?"var(--muted)":"#f87171";const avBg=esNoReg?"rgba(148,163,184,.18)":"rgba(239,68,68,.2)";const avBd=esNoReg?"rgba(148,163,184,.3)":"rgba(239,68,68,.3)";const avCol=esNoReg?"var(--muted)":"#fca5a5";const urg=esNoReg?[]:regs.filter(r=>r._dias!==null&&r._dias<=2);const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}${(!esNoReg&&r._dias!==null)?`<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>`:""}</div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:${colNum};padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('sin',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av" style="background:${avBg};border-color:${avBd};color:${avCol}">${esNoReg?"—":inic(enc)}</div><div style="font-weight:600;font-size:13px">${esNoReg?"No registra PQR":esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:${colNum}">${regs.length}</div><div style="font-size:10px;color:var(--muted)">${esNoReg?"sin PQR":"sin respuesta"}</div></div></div>${urg.length?`<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} vencen pronto</div>`:""}${lista}${mas}</div>`;}).join("");}
+  else{window._pqrGruposSin=Object.entries(grpSin).sort((a,b)=>b[1].length-a[1].length);gSin.innerHTML=window._pqrGruposSin.map(([enc,regs],gi)=>{const urg=regs.filter(r=>r._dias!==null&&r._dias<=2);const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}${r._dias!==null?`<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>`:""}</div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#f87171;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('sin',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av" style="background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.3);color:#fca5a5">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#f87171">${regs.length}</div><div style="font-size:10px;color:var(--muted)">sin respuesta</div></div></div>${urg.length?`<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} vencen pronto</div>`:""}${lista}${mas}</div>`;}).join("");}
   const grpCon={};
-  conR.forEach(r=>{const e=grupoPQR(r);if(!grpCon[e])grpCon[e]=[];grpCon[e].push(r);});
+  conR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";if(!grpCon[e])grpCon[e]=[];grpCon[e].push(r);});
   const gCon=document.getElementById("grid-con-pqr");
   window._pqrGruposCon=Object.entries(grpCon).sort((a,b)=>b[1].length-a[1].length);gCon.innerHTML=window._pqrGruposCon.map(([enc,regs],gi)=>{const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}<span style="float:right;color:#4ade80">✓</span></div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#4ade80;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('con',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#4ade80">${regs.length}</div><div style="font-size:10px;color:var(--muted)">respondidas</div></div></div>${lista}${mas}</div>`;}).join("");
 }
@@ -1741,10 +1394,10 @@ function renderEstadisticas(){
   const tiposC={};todos.forEach(r=>{tiposC[r["TIPO"]]=(tiposC[r["TIPO"]]||0)+1;});
   const maxTp=Math.max(...Object.values(tiposC),1);
   const tiposH=Object.entries(tiposC).sort((a,b)=>b[1]-a[1]).map(([t,n])=>barra(t,n,maxTp,"#3b82f6")).join("");
-  const ests=["Nuevo","En proceso","Respondido","Finalizado","Hecho superado","Vencido"];
+  const ests=["Nuevo","En proceso","Respondido","Finalizado","Vencido"];
   const estC={};ests.forEach(e=>{estC[e]=todos.filter(r=>r["ESTADO"]===e).length;});
   const maxE=Math.max(...Object.values(estC),1);
-  const estCols={"Nuevo":"#60a5fa","En proceso":"#fbbf24","Respondido":"#4ade80","Finalizado":"#6b7280","Hecho superado":"#34d399","Vencido":"#f87171"};
+  const estCols={"Nuevo":"#60a5fa","En proceso":"#fbbf24","Respondido":"#4ade80","Finalizado":"#6b7280","Vencido":"#f87171"};
   const estH=ests.map(e=>barra(e,estC[e],maxE,estCols[e])).join("");
   const maxA=Math.max(...ABOGADOS.map(a=>activ.filter(r=>matchAbo(r["RESPONSABLE"],a)).length),1);
   const aboH=ABOGADOS.map(a=>barra(pNom(a),activ.filter(r=>matchAbo(r["RESPONSABLE"],a)).length,maxA,"#2d8de8")).join("");
@@ -1757,46 +1410,17 @@ function renderEstadisticas(){
   const estIncH=ests.map(e=>barra(e,estIncC[e],maxEI,estCols[e])).join("");
   const maxI=Math.max(...ABOGADOS.map(a=>incActiv.filter(r=>matchAbo(r["RESPONSABLE"],a)).length),1);
   const incH=ABOGADOS.map(a=>barra(pNom(a),incActiv.filter(r=>matchAbo(r["RESPONSABLE"],a)).length,maxI,"#fb923c")).join("");
-
-  // ── Tarjeta destacada: HECHOS SUPERADOS (tutelas + fallos) ──
-  const supTodos = todos.filter(r=>r["ESTADO"]==="Hecho superado");
-  const totalSup = supTodos.length;
-  // % sobre el total de procesos cerrados (cualquier estado terminal)
-  const cerrados = todos.filter(r=>EST_HIST.includes(r["ESTADO"])).length;
-  const pctSup = cerrados ? Math.round(totalSup/cerrados*100) : 0;
-  // Desglose por mes del año en curso, usando FECHA HECHO SUPERADO (dd/mm/aaaa)
-  const anioActual = new Date().getFullYear();
-  const meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  const porMes=new Array(12).fill(0);
-  supTodos.forEach(r=>{
-    const f=(r["FECHA HECHO SUPERADO"]||"").trim();
-    const m=f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if(m && parseInt(m[3])===anioActual){ porMes[parseInt(m[2])-1]++; }
-  });
-  const maxMes=Math.max(...porMes,1);
-  const mesesH=meses.map((nom,i)=>porMes[i]>0?barra(nom,porMes[i],maxMes,"#34d399"):"").filter(Boolean).join("");
-  const supCard=
-    `<div class="est-card" style="border-color:rgba(52,211,153,.3)">`+
-      `<div class="est-title" style="color:#34d399">✓ Hechos superados</div>`+
-      `<div style="display:flex;align-items:baseline;gap:10px;margin:8px 0 14px">`+
-        `<span style="font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:#34d399">${totalSup}</span>`+
-        `<span style="font-size:12px;color:var(--muted)">${pctSup}% de los cierres</span>`+
-      `</div>`+
-      `<div style="font-size:10px;letter-spacing:.06em;color:var(--soft);text-transform:uppercase;margin-bottom:8px">Por mes — ${anioActual}</div>`+
-      (mesesH||'<div style="color:var(--muted);font-size:12px">Sin hechos superados registrados este año</div>')+
-    `</div>`;
-
   document.getElementById("grid-est").innerHTML=
     `<div class="est-card"><div class="est-title">Por tipo de actuación</div>${tiposH}</div>`+
     `<div class="est-card"><div class="est-title">Por estado (tutelas & fallos)</div>${estH}</div>`+
-    supCard+
     `<div class="est-card"><div class="est-title">Carga activa por abogado</div>${aboH}</div>`+
     `<div class="est-card"><div class="est-title">Fallos activos por abogado</div>${falH}</div>`+
     `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por estado</div>${estIncH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`+
     `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por abogado</div>${incH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`;
 }
 
-function renderAll(){renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();}
+function renderAll(){renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();actualizarBadgeDuplicados();if(document.getElementById("tab-duplicados")?.classList.contains("active"))renderDuplicados();}
+function actualizarBadgeDuplicados(){const b=document.getElementById("badge-duplicados");if(!b)return;const n=contarDuplicados();b.textContent=n;b.style.display=n>0?"":"inline-block";}
 
 function poblarSelects(){
   ["fa-abo","ff-abo","fo-abo","fh-abo"].forEach(id=>{
@@ -1834,13 +1458,7 @@ function abrirModal(da, origen){
   setEl("m-fini",esc(r["FECHA INICIAL"]||"—"));
   setEl("m-flim",esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—"));
   setEl("m-resp",esc(r["RESPONSABLE"]||"—"));
-  // Encargado PQR: si es fallo/incidente sin encargado propio, mostrar el heredado del Admite
-  let encMostrar = String(r["ENCARGADO PQR"]||"").trim();
-  if(!encMostrar && (origenModal==="fallo" || origenModal==="incidente")){
-    const g = gestionTecnicaEfectiva(r);
-    if(g.heredado.enc) encMostrar = g.enc + " (del Admite)";
-  }
-  setEl("m-pqrenc",esc(encMostrar||"—"));
+  setEl("m-pqrenc",esc(r["ENCARGADO PQR"]||"—"));
   setEl("m-est-txt",badgeEst(r["ESTADO"]));
   const dEl=document.getElementById("m-dias");
   if(dias===null){dEl.textContent="—";dEl.style.color="";}
@@ -1867,22 +1485,6 @@ function abrirModal(da, origen){
   document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
   const esFallo = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"].includes(r["TIPO"]);
   const esInc   = incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
-  // Botones "Crear fallo" y "Crear desacato": solo visibles desde un Admite/Tutela
-  // (no desde fallos/incidentes/histórico).
-  const esAdmite = origenModal==="tutela" && !esFallo && !esInc;
-  const btnFallo = document.getElementById("m-btn-fallo");
-  const btnDesac = document.getElementById("m-btn-desacato");
-  const btnEdit  = document.getElementById("m-btn-editar");
-  if(btnFallo) btnFallo.style.display = esAdmite ? "" : "none";
-  if(btnDesac) btnDesac.style.display = esAdmite ? "" : "none";
-  if(btnEdit)  btnEdit.style.display  = esAdmite ? "" : "none";
-  // Botón "Hecho superado": visible en Tutelas y Fallos (no incidentes), si aún no está cerrado.
-  const btnSup = document.getElementById("m-btn-superado");
-  if(btnSup){
-    const yaCerrado = EST_HIST.includes(r["ESTADO"]||"");
-    const aplicaPestana = (origenModal==="tutela" || origenModal==="fallo") && !esInc;
-    btnSup.style.display = (aplicaPestana && !yaCerrado) ? "" : "none";
-  }
   // Siempre mostrar ambos campos, solo cambian las etiquetas
   document.getElementById("m-pqr-wrap").style.display = "block";
   document.getElementById("m-rad-wrap").style.display = "block";
@@ -1919,15 +1521,7 @@ function abrirModal(da, origen){
 function llenarGestionVisible(r){
   const pqr = String(r["RESPUESTA PQR"]||"").trim();
   const rad = String(r["RADICADO DE CUMPLIMIENTO"]||r["RESPUESTA RADICADO TUTELA"]||"").trim();
-
-  // Gestión técnica efectiva: hereda del Admite si es fallo/incidente sin datos propios
-  const esHijo = (origenModal==="fallo" || origenModal==="incidente");
-  let sp = String(r["SHAREPOINT"]||"").trim();
-  let spHeredado = false;
-  if(esHijo){
-    const g = gestionTecnicaEfectiva(r);
-    if(!sp && g.heredado.sp){ sp = g.sp; spHeredado = true; }
-  }
+  const sp  = String(r["SHAREPOINT"]||"").trim();
 
   const setVis=(wid,val,vid)=>{
     const w=document.getElementById(wid);
@@ -1944,11 +1538,6 @@ function llenarGestionVisible(r){
   if(spW){
     if(sp){
       spW.style.display="";
-      // Etiqueta que aclara si el SharePoint viene heredado del Admite
-      const lbl = spW.querySelector("label");
-      if(lbl) lbl.innerHTML = spHeredado
-        ? '📎 Documento SharePoint <span style="color:#fbbf24;font-weight:400;text-transform:none;letter-spacing:0">(heredado del Admite)</span>'
-        : '📎 Documento SharePoint';
       document.getElementById("m-info-sp").textContent=sp;
       if(/^https?:\/\//i.test(sp)){
         spBtn.style.display="block";
@@ -2091,7 +1680,7 @@ function setQuick(tab,key){
   else if(tab==='fal'){ quickFal = (quickFal===key||key===null)?null:key; pagFal=1; renderFallos(); }
   else { quickOtr = (quickOtr===key||key===null)?null:key; pagInc=1; renderOtros(); }
 }
-function aplicarQuick(arr,key,tab){
+function aplicarQuick(arr,key){
   if(!key) return arr;
   const act = r=>!EST_HIST.includes(r["ESTADO"]);
   if(key==='venc')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias<0);
@@ -2100,68 +1689,11 @@ function aplicarQuick(arr,key,tab){
   if(key==='prox')  return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>1&&r._dias<=3);
   if(key==='ok')    return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>3);
   if(key==='nuevo') return arr.filter(r=>r["ESTADO"]==="Nuevo");
-  if(key==='pendtec'){
-    // En Fallos usa la versión que considera SharePoint heredado del Admite
-    const fn = (tab==='fal') ? faltaTecnicoFallo : faltaTecnico;
-    return arr.filter(r=>act(r)&&fn(r));
-  }
+  if(key==='pendtec') return arr.filter(r=>act(r)&&faltaTecnico(r));
   return arr;
 }
 
-// ── Cruce con el Admite de origen ──
-// Coincide por RADICADO + ACCIONANTE (los juzgados a veces reciclan el mismo
-// radicado con distinto accionante, por eso NO basta el radicado solo).
-// Quita tildes/acentos para comparar nombres que los juzgados escriben inconsistentes
-// (ej. "JOSÉ" vs "JOSE"). normalize NFD separa el acento, y se elimina.
-function sinAcentos(s){
-  return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-}
-function clprivate_norm(s){
-  return sinAcentos(s).replace(/[\s\-]/g,"").toLowerCase();
-}
-function normAcc(s){
-  return sinAcentos(s).replace(/\s+/g,"").toLowerCase().substring(0,12);
-}
-// Devuelve el registro Admite (tutela) del que proviene un fallo/incidente,
-// o null si no hay match por radicado + accionante.
-function admiteDeOrigen(reg){
-  const radF = clprivate_norm(reg["RADICADO"]);
-  const accF = normAcc(reg["ACCIONANTE"]);
-  if(!radF) return null;
-  for(const t of tutelas){
-    if(clprivate_norm(t["RADICADO"]) !== radF) continue;
-    if(accF && normAcc(t["ACCIONANTE"]) !== accF) continue;
-    return t;
-  }
-  return null;
-}
-// Gestión técnica EFECTIVA de un registro: usa lo propio y, si está vacío,
-// hereda del Admite de origen. Devuelve {enc, pqr, sp, heredado:{...}}.
-// 'heredado' marca qué campos vienen del Admite (para etiquetarlos en el modal).
-function gestionTecnicaEfectiva(reg){
-  let enc = String(reg["ENCARGADO PQR"]||"").trim();
-  let pqr = String(reg["PQR"]||"").trim();
-  let sp  = String(reg["SHAREPOINT"]||"").trim();
-  const heredado = {enc:false, pqr:false, sp:false};
-  // Solo cruzar si falta algo y el registro NO es un Admite (tutela)
-  if((!enc || !pqr || !sp)){
-    const origen = admiteDeOrigen(reg);
-    if(origen){
-      if(!enc){ const v=String(origen["ENCARGADO PQR"]||"").trim(); if(v){ enc=v; heredado.enc=true; } }
-      if(!pqr){ const v=String(origen["PQR"]||"").trim();           if(v){ pqr=v; heredado.pqr=true; } }
-      if(!sp){  const v=String(origen["SHAREPOINT"]||"").trim();     if(v){ sp=v;  heredado.sp=true; } }
-    }
-  }
-  return {enc, pqr, sp, heredado};
-}
-// Compatibilidad: la función anterior ahora delega en la general.
-function sharePointDeOrigen(reg){
-  const origen = admiteDeOrigen(reg);
-  return origen ? String(origen["SHAREPOINT"]||"").trim() : "";
-}
-
 // ── Gestión técnica de Verónica: ¿le falta SharePoint, Radicado PQR o Encargado PQR? ──
-// (Admites: usa solo lo propio, no hereda — es la fuente)
 function faltaTecnico(r){
   const sp  = String(r["SHAREPOINT"]||"").trim();
   const pqr = String(r["PQR"]||"").trim();           // Radicado PQR
@@ -2174,22 +1706,6 @@ function queFaltaTecnico(r){
   if(!String(r["ENCARGADO PQR"]||"").trim()) f.push("Encargado PQR");
   if(!String(r["PQR"]||"").trim())           f.push("Radicado PQR");
   if(!String(r["SHAREPOINT"]||"").trim())    f.push("SharePoint");
-  return f;
-}
-
-// Pendiente técnico para FALLOS: igual criterio que Admites, pero considera
-// los tres campos HEREDADOS del Admite de origen (encargado, radicado PQR, SharePoint).
-function faltaTecnicoFallo(r){
-  const g = gestionTecnicaEfectiva(r);
-  return !g.sp || !g.pqr || !g.enc;
-}
-// Lista de campos faltantes para el tooltip (considera herencia de los tres)
-function queFaltaTecnicoFallo(r){
-  const g = gestionTecnicaEfectiva(r);
-  const f=[];
-  if(!g.enc) f.push("Encargado PQR");
-  if(!g.pqr) f.push("Radicado PQR");
-  if(!g.sp)  f.push("SharePoint");
   return f;
 }
 
@@ -2238,11 +1754,24 @@ async function guardarEstado(){
         "PQR": radicadoPQR
       });
       if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
+      const idx=arr.findIndex(r=>r._id===actual._id);
+      if(idx>=0){
+        arr[idx]["ESTADO"]=nuevoEst;
+        arr[idx]["RESPUESTA PQR"]=respPQR;
+        arr[idx]["RADICADO DE CUMPLIMIENTO"]=respRad;
+        arr[idx]["ENCARGADO PQR"]=encPQR;
+        arr[idx]["SHAREPOINT"]=sharePoint;
+        arr[idx]["PQR"]=radicadoPQR;
+      }
+      actual["ESTADO"]=nuevoEst;
+      actual["RESPUESTA PQR"]=respPQR;
+      actual["RADICADO DE CUMPLIMIENTO"]=respRad;
+      actual["ENCARGADO PQR"]=encPQR;
+      actual["SHAREPOINT"]=sharePoint;
+      actual["PQR"]=radicadoPQR;
       toast(EST_HIST.includes(nuevoEst)?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado en Supabase","ok");
+      renderAll();
       document.getElementById("overlay").classList.remove("open");
-      // Recargar desde Supabase (fuente de verdad): refresca listados, badges y
-      // estadísticas sin necesidad de F5. Mismo patrón que crear/editar/hecho superado.
-      await cargarDatos();
     }catch(e){
       if(/JWT expired|401/i.test(e.message)){
         toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
@@ -2283,50 +1812,6 @@ async function guardarEstado(){
       toast("❌ Error al guardar: "+(d.error||"Sin detalle")+" — los cambios NO se guardaron","err");
     }
   }catch(e){toast("❌ Error de red: "+e.message,"err");}
-}
-
-// ════════════════════════════════════════════════════════════
-//  HECHO SUPERADO — un clic: marca estado terminal + fecha
-// ════════════════════════════════════════════════════════════
-async function marcarHechoSuperado(){
-  if(!actual){ toast("⚠️ No hay expediente abierto","err"); return; }
-
-  const ok = await confirmar(
-    "¿Marcar como Hecho Superado?",
-    `${actual["ACCIONANTE"]||"este registro"} — pasará al Histórico con la fecha de hoy.`
-  );
-  if(!ok) return;
-
-  // Fecha de hoy en formato dd/mm/aaaa (coherente con el resto del sistema)
-  const hoy = new Date();
-  const fechaHoy = String(hoy.getDate()).padStart(2,"0")+"/"+
-                   String(hoy.getMonth()+1).padStart(2,"0")+"/"+hoy.getFullYear();
-
-  toast("⏳ Marcando hecho superado...","");
-
-  if(USAR_SUPABASE && actual._id){
-    try{
-      const guardado = await Repo.actualizar(actual._id, {
-        "ESTADO": "Hecho superado",
-        "FECHA HECHO SUPERADO": fechaHoy
-      });
-      if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
-      toast("✅ Marcado como Hecho Superado — pasó al Histórico","ok");
-      document.getElementById("overlay").classList.remove("open");
-      // Recargar desde Supabase (fuente de verdad) para que TODO se refresque:
-      // listados, badges y estadísticas — sin necesidad de F5.
-      await cargarDatos();
-    }catch(e){
-      if(/JWT expired|401/i.test(e.message)){
-        toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
-        setTimeout(()=>{ if(confirm("Tu sesión expiró. ¿Iniciar sesión de nuevo?")) location.reload(); }, 500);
-      } else {
-        toast("❌ Error al guardar en Supabase: "+e.message+" — no se guardó","err");
-      }
-    }
-  } else {
-    toast("⚠️ Este registro no tiene id de Supabase; no se puede marcar.","err");
-  }
 }
 
 function irOficio(){
@@ -2419,8 +1904,108 @@ function exportarPQR(){
   toast("📥 Exportado correctamente","ok");
 }
 
+// ════════════════════════════════════════════════════════════
+// DETECTOR DE DUPLICADOS
+// Agrupa por RADICADO normalizado + accionante parecido, DENTRO de
+// la misma categoría (tutela/fallo/incidente). No marca escalados
+// (tutela→fallo→incidente) porque esos están en categorías distintas.
+// ════════════════════════════════════════════════════════════
+
+// Normaliza un radicado para comparar: quita espacios, guiones y puntos,
+// y reduce el formato corto 2026 + 5 dígitos al núcleo numérico.
+function normRad(s){
+  let v=String(s||"").replace(/[\s\-\.]/g,"").toLowerCase();
+  // 2026 seguido de 5 dígitos (corto) vs 2026 + relleno (largo): comparamos
+  // por los últimos dígitos significativos para que "2026-05088" y
+  // "20260000005088" se reconozcan como el mismo.
+  const m=v.match(/^20260*(\d{4,})$/);
+  if(m) return "2026:"+m[1];
+  return v;
+}
+// Clave de accionante: primeras 14 letras sin tildes ni espacios.
+function keyAcc(s){ return normNom(s).replace(/\s+/g,"").substring(0,14); }
+
+// Devuelve un array de grupos duplicados. Cada grupo: {categoria, registros:[...]}
+function detectarDuplicados(){
+  const grupos=[];
+  const fuentes=[
+    {cat:"tutela",    label:"Tutela / Admite",       arr:tutelas,    origen:"tutela"},
+    {cat:"fallo",     label:"Fallo / Sentencia",     arr:fallos,     origen:"fallo"},
+    {cat:"incidente", label:"Incidente / Desacato",  arr:incidentes, origen:"incidente"}
+  ];
+  fuentes.forEach(f=>{
+    const mapa={};
+    f.arr.forEach(r=>{
+      const rad=normRad(r["RADICADO"]);
+      if(!rad || rad==="2026:" ) return;           // sin radicado útil → no se evalúa
+      const acc=keyAcc(r["ACCIONANTE"]);
+      const key=rad+"|"+acc;
+      (mapa[key]=mapa[key]||[]).push(r);
+    });
+    Object.values(mapa).forEach(lista=>{
+      if(lista.length>1) grupos.push({categoria:f.cat, label:f.label, origen:f.origen, registros:lista});
+    });
+  });
+  return grupos;
+}
+
+// Cuenta cuántos registros "sobran" (total duplicados − 1 por grupo), ignorando
+// los ya anulados, para el badge de la pestaña.
+function contarDuplicados(){
+  return detectarDuplicados().reduce((acc,g)=>{
+    const vivos=g.registros.filter(r=>r["ESTADO"]!=="Anulado");
+    return acc + Math.max(vivos.length-1,0);
+  },0);
+}
+
+function renderDuplicados(){
+  const cont=document.getElementById("body-duplicados");
+  if(!cont) return;
+  const q=(document.getElementById("fd-q")?.value||"").toLowerCase().trim();
+  let grupos=detectarDuplicados();
+  // Filtro de texto
+  if(q){
+    grupos=grupos.filter(g=>g.registros.some(r=>
+      [r["ACCIONANTE"],r["RADICADO"]].join(" ").toLowerCase().includes(q)));
+  }
+  // Publicar registros por categoría para poder abrir el modal con el origen correcto
+  window._dupTut=tutelas; window._dupFal=fallos; window._dupInc=incidentes;
+
+  const totalGrupos=grupos.length;
+  const totalSobran=grupos.reduce((a,g)=>a+Math.max(g.registros.filter(r=>r["ESTADO"]!=="Anulado").length-1,0),0);
+  document.getElementById("dup-resumen").innerHTML=
+    totalGrupos===0
+      ? "✅ No se detectaron duplicados con los criterios actuales."
+      : `Se detectaron <strong style="color:#f87171">${totalGrupos}</strong> grupo(s) con posibles duplicados — <strong>${totalSobran}</strong> registro(s) sobrante(s) por revisar.`;
+
+  if(totalGrupos===0){ cont.innerHTML=""; return; }
+
+  cont.innerHTML=grupos.map(g=>{
+    const arrKey=g.origen==="incidente"?"_dupInc":g.origen==="fallo"?"_dupFal":"_dupTut";
+    const sourceArr=g.origen==="incidente"?incidentes:g.origen==="fallo"?fallos:tutelas;
+    const filas=g.registros.map(r=>{
+      const idx=sourceArr.indexOf(r);
+      const anulado=r["ESTADO"]==="Anulado";
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:${anulado?"rgba(120,120,130,.06)":"rgba(255,255,255,.03)"};border:1px solid var(--border);margin-bottom:6px;${anulado?"opacity:.6":""}">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;color:var(--text);font-weight:600;${anulado?"text-decoration:line-through":""}">${esc(abrev(r["ACCIONANTE"]||"—",40))}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">Rad: ${esc(r["RADICADO"]||"—")} · ${esc(abrev(r["JUZGADO"]||"",30))} · ${pNom(r["RESPONSABLE"])}</div>
+        </div>
+        ${badgeEst(r["ESTADO"])}
+        <button onclick="abrirModalIdx('${arrKey}',${idx},'${g.origen}')" style="padding:6px 12px;border-radius:7px;background:rgba(232,160,32,.16);border:1px solid rgba(232,160,32,.35);color:var(--gold);font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">Abrir / Anular</button>
+      </div>`;
+    }).join("");
+    return `<div style="margin-bottom:16px;padding:14px;border-radius:var(--radius-sm);background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:#f87171;font-weight:600">
+        ${badgeTipo(g.registros[0]["TIPO"])} ${esc(g.label)} · ${g.registros.length} registros con radicado ${esc(g.registros[0]["RADICADO"]||"—")}
+      </div>
+      ${filas}
+    </div>`;
+  }).join("");
+}
+
 function goTab(tab){
-  ["admites","fallos","otros","reparto","pqr","historico","estadisticas"].forEach(t=>{
+  ["admites","fallos","otros","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
     document.getElementById("tab-"+t).classList.toggle("active",t===tab);
     document.getElementById("panel-"+t).classList.toggle("active",t===tab);
   });
@@ -2429,6 +2014,7 @@ function goTab(tab){
   else if(tab==="fallos")pagFal=1;
   else if(tab==="otros")pagInc=1;
   else if(tab==="historico")pagHis=1;
+  else if(tab==="duplicados")renderDuplicados();
 }
 
 function setSS(estado,label){
