@@ -320,6 +320,7 @@
     <input class="fi fi-buscar" id="fo-q" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderOtros()"/>
     <select class="fi" id="fo-abo" onchange="renderOtros()"><option value="">Todos los abogados</option></select>
     <select class="fi" id="fo-est" onchange="renderOtros()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
+    <button class="btn-refresh" style="background:rgba(232,160,32,.2);border-color:rgba(232,160,32,.4);color:#e8a020" onclick="abrirNuevoIncidente()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo incidente</button>
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('otros')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
   </div>
   <div class="twrap">
@@ -647,6 +648,51 @@
   </div>
 </div>
 
+<!-- ════════ MODAL: NUEVO INCIDENTE / DESACATO MANUAL ════════ -->
+<div class="overlay" id="overlay-nuevoinc" style="z-index:200" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-top">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)">⚡ Nuevo incidente / desacato</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Para incidentes de tutelas anteriores a Teo o no registrados por el sistema</div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('overlay-nuevoinc').classList.remove('open')">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Accionante *</label>
+        <input id="ni-acc" type="text" class="nt-inp" placeholder="Nombre completo del accionante">
+      </div>
+      <div class="mf">
+        <label>CC / NIT</label>
+        <input id="ni-cc" type="text" class="nt-inp" placeholder="Cédula o NIT">
+      </div>
+      <div class="mf">
+        <label>Radicado *</label>
+        <input id="ni-rad" type="text" class="nt-inp" placeholder="2026-XXXXX">
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Juzgado</label>
+        <input id="ni-juz" type="text" class="nt-inp" placeholder="Nombre del juzgado">
+      </div>
+      <div class="mf">
+        <label>Tipo</label>
+        <select id="ni-tipo" class="nt-inp"><option>Desacato</option><option>Incidente de desacato</option><option>Incidente</option></select>
+      </div>
+      <div class="mf">
+        <label>Abogado asignado *</label>
+        <select id="ni-abo" class="nt-inp"></select>
+      </div>
+    </div>
+    <div id="ni-error" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:8px;font-size:13px;color:#f87171"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('overlay-nuevoinc').classList.remove('open')" style="flex:1;padding:11px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">Cancelar</button>
+      <button id="ni-guardar" onclick="guardarNuevoIncidente()" style="flex:2;padding:11px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--gold),#f0b840);border:none;color:#0a1f3d;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">💾 Crear incidente</button>
+    </div>
+  </div>
+</div>
+
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -774,9 +820,10 @@ const Repo = {
     return arr && arr.length ? arr[0] : null;
   },
 
-  // Crea una nueva tutela (ingreso manual). Recibe campos con nombres del Sheet.
-  async crear(camposSheet){
-    const payload={ categoria: "tutela" };
+  // Crea un registro nuevo (ingreso manual). Recibe campos con nombres del Sheet.
+  // categoria por defecto "tutela"; pasar "incidente" para incidentes/desacatos manuales.
+  async crear(camposSheet, categoria){
+    const payload={ categoria: categoria || "tutela" };
     for(const [colSheet,valor] of Object.entries(camposSheet)){
       const colSB = MAPA_SHEET_A_SB[colSheet];
       if(colSB) payload[colSB]=valor;
@@ -882,20 +929,74 @@ async function guardarNuevaTutela(){
   }
 }
 
+// ════════════════════════════════════════════════════════════
+// NUEVO INCIDENTE / DESACATO MANUAL
+// Para incidentes de tutelas anteriores a Teo. El abogado se elige
+// a mano (lista completa, incluye a quien llevaba el caso original).
+// ════════════════════════════════════════════════════════════
+function abrirNuevoIncidente(){
+  const sel=document.getElementById("ni-abo");
+  // Lista COMPLETA de abogados (incluye casos antiguos de cualquiera)
+  sel.innerHTML=`<option value="">— Selecciona abogado —</option>`+ABOGADOS.map(a=>`<option>${a}</option>`).join("");
+  sel.value="";
+  ["ni-acc","ni-cc","ni-rad","ni-juz"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  document.getElementById("ni-tipo").value="Desacato";
+  document.getElementById("ni-error").style.display="none";
+  document.getElementById("overlay-nuevoinc").classList.add("open");
+}
+async function guardarNuevoIncidente(){
+  const errBox=document.getElementById("ni-error");
+  const btn=document.getElementById("ni-guardar");
+  errBox.style.display="none";
+  const acc=document.getElementById("ni-acc").value.trim();
+  const rad=document.getElementById("ni-rad").value.trim();
+  const abo=document.getElementById("ni-abo").value;
+  if(!acc || !rad){
+    errBox.textContent="El accionante y el radicado son obligatorios.";
+    errBox.style.display="block"; return;
+  }
+  if(!abo){
+    errBox.textContent="Debes seleccionar el abogado responsable.";
+    errBox.style.display="block"; return;
+  }
+  const campos={
+    "ACCIONANTE": acc,
+    "CC / NIT": document.getElementById("ni-cc").value.trim(),
+    "RADICADO": rad,
+    "JUZGADO": document.getElementById("ni-juz").value.trim(),
+    "TIPO": document.getElementById("ni-tipo").value,
+    "RESPONSABLE": abo,
+    "ESTADO": "Nuevo"
+  };
+  btn.textContent="Creando..."; btn.style.pointerEvents="none";
+  try{
+    const creado=await Repo.crear(campos,"incidente");
+    if(!creado) throw new Error("Supabase no devolvió el registro creado");
+    toast("✅ Incidente creado correctamente","ok");
+    document.getElementById("overlay-nuevoinc").classList.remove("open");
+    await cargarDatos();
+  }catch(e){
+    errBox.textContent="Error al crear: "+e.message;
+    errBox.style.display="block";
+  }finally{
+    btn.textContent="💾 Crear incidente"; btn.style.pointerEvents="auto";
+  }
+}
+
 async function cargarDatos() {
   setSS("loading","Actualizando...");
   document.getElementById("btnref").classList.add("spin");
   try {
     if(USAR_SUPABASE){
-      // Tutelas desde Supabase; fallos e incidentes siguen en gviz hasta migrarlos.
+      // Tutelas, fallos e incidentes desde Supabase (ya migrados a actuaciones_tutela).
       const r = await Promise.allSettled([
         Repo.listar("tutela"),
-        leerGviz(GID_FAL),
-        leerGviz(GID_INC)
+        Repo.listar("fallo"),
+        Repo.listar("incidente")
       ]);
       tutelas    = r[0].status==="fulfilled" ? r[0].value : (toast("⚠️ Tutelas (Supabase) no cargó: "+r[0].reason.message,"err"), []);
-      fallos     = r[1].status==="fulfilled" ? r[1].value : [];
-      incidentes = r[2].status==="fulfilled" ? r[2].value : [];
+      fallos     = r[1].status==="fulfilled" ? r[1].value : (toast("⚠️ Fallos (Supabase) no cargó: "+r[1].reason.message,"err"), []);
+      incidentes = r[2].status==="fulfilled" ? r[2].value : (toast("⚠️ Incidentes (Supabase) no cargó: "+r[2].reason.message,"err"), []);
     } else {
       const [t,f,inc] = await Promise.all([leerGviz(GID_TUT),leerGviz(GID_FAL),leerGviz(GID_INC)]);
       tutelas=t; fallos=f; incidentes=inc;
