@@ -20669,7 +20669,6 @@ async function makeDoc(rows, startIdx, onProgress){
       new TableRow({children:[new TableCell({borders:allB,children:[P({children:[R("Proyectó:",{size:18,bold:true})]})]}),ch("Jeison Maya Vanegas"),ch("Jeison Maya"),ch("01/06/2025")]}),
       new TableRow({children:[new TableCell({borders:allB,children:[P({children:[R("Revisó:",{size:18,bold:true})]})]}),ch("Juan Pablo Gomez"),ch("Juan Pablo Gomez"),ch("01/06/2025")]}),
       new TableRow({children:[new TableCell({borders:allB,columnSpan:4,children:[P({alignment:AlignmentType.JUSTIFIED,children:[R("Los arriba firmantes declaramos que hemos revisado el documento y lo encontramos ajustado a las normas y disposiciones legales vigentes, por lo tanto, bajo nuestra responsabilidad lo presentamos para firma",{size:16})]})]})]})]}));
-    o.push(ftNotif());
     return o;
   }
 
@@ -20740,7 +20739,7 @@ async function makeDoc(rows, startIdx, onProgress){
   }
   if(onProgress) onProgress(rows.length,rows.length);
 
-  return new Document({sections:[{properties:{page:{margin:{top:560,bottom:560,left:780,right:780}}},children:body}]});
+  return new Document({sections:[{properties:{page:{margin:{top:560,bottom:560,left:780,right:780}}},footers:{default:new Footer({children:[ftNotif()]})},children:body}]});
 }
 
 async function dlWord(i){
