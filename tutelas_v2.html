@@ -699,6 +699,26 @@
   </div>
 </div>
 
+<!-- ════════ MODAL: REVISIÓN ANTES DE ESCALAR (crear fallo / incidente) ════════ -->
+<div class="overlay" id="overlay-escalar" style="z-index:210" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-top">
+      <div>
+        <div id="esc-titulo" style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold)">⚖️ Crear fallo</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Revisa los datos heredados del admite. Se crearán tal cual; edítalos después si hace falta.</div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('overlay-escalar').classList.remove('open')">✕</button>
+    </div>
+    <div id="esc-cuerpo" style="display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:16px"></div>
+    <div id="esc-error" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:8px;font-size:13px;color:#f87171"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('overlay-escalar').classList.remove('open')" style="flex:1;padding:11px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">Cancelar</button>
+      <button id="esc-confirmar" style="flex:2;padding:11px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--gold),#f0b840);border:none;color:#0a1f3d;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">💾 Confirmar y crear</button>
+    </div>
+  </div>
+</div>
+
+
 
 <div class="toast" id="toast"></div>
 
@@ -991,39 +1011,82 @@ async function guardarNuevoIncidente(){
 }
 
 // ════════════════════════════════════════════════════════════
-// ESCALAR UNA TUTELA → crear fallo o incidente con los mismos datos
+// ESCALAR UNA TUTELA → crear fallo o incidente con TODOS los datos
+// Muestra primero un modal de revisión con la información completa
+// de la persona (heredada del admite) antes de crear.
 // ════════════════════════════════════════════════════════════
-async function escalarCaso(categoria){
+let _escCategoria=null, _escCampos=null;
+
+function escalarCaso(categoria){
   if(!actual) return;
-  const etiqueta = categoria==="fallo" ? "fallo" : "incidente";
+  _escCategoria = categoria;
   const tipoNuevo = categoria==="fallo" ? "Fallo de tutela" : "Desacato";
-  const ok = await confirmar(
-    `¿Crear ${etiqueta}?`,
-    `Se creará un registro de ${etiqueta} para ${actual["ACCIONANTE"]||"este caso"} (radicado ${actual["RADICADO"]||"—"}), heredando sus datos y responsable.`
-  );
-  if(!ok) return;
-  const campos = {
-    "ACCIONANTE": actual["ACCIONANTE"]||"",
-    "CC / NIT":   actual["CC / NIT"]||"",
-    "RADICADO":   actual["RADICADO"]||"",
-    "JUZGADO":    actual["JUZGADO"]||"",
-    "TIPO":       tipoNuevo,
-    "RESPONSABLE":actual["RESPONSABLE"]||"",
-    "ESTADO":     "Nuevo"
+  // Hereda TODOS los campos del admite (no solo los básicos)
+  _escCampos = {
+    "ACCIONANTE":        actual["ACCIONANTE"]||"",
+    "CC / NIT":          actual["CC / NIT"]||"",
+    "RADICADO":          actual["RADICADO"]||"",
+    "JUZGADO":           actual["JUZGADO"]||"",
+    "TIPO":              tipoNuevo,
+    "RESPONSABLE":       actual["RESPONSABLE"]||"",
+    "ESTADO":            "Nuevo",
+    "FECHA INICIAL":     actual["FECHA INICIAL"]||"",
+    "FECHA LÍMITE":      actual["FECHA LÍMITE"]||actual["FECHA LIMITE"]||"",
+    "DERECHO INVOCADO":  actual["DERECHO INVOCADO"]||"",
+    "HECHOS RESUMIDOS":  actual["HECHOS RESUMIDOS"]||"",
+    "PRETENSIONES":      actual["PRETENSIONES"]||"",
+    "OBSERVACIONES":     actual["OBSERVACIONES"]||""
   };
-  toast("⏳ Creando "+etiqueta+"...","");
+  // Título y cuerpo del modal de revisión
+  document.getElementById("esc-titulo").textContent = categoria==="fallo" ? "⚖️ Crear fallo" : "⚡ Crear incidente";
+  document.getElementById("esc-error").style.display="none";
+
+  const campoLargo = ["DERECHO INVOCADO","HECHOS RESUMIDOS","PRETENSIONES","OBSERVACIONES"];
+  const orden = [
+    ["ACCIONANTE","Accionante"],["CC / NIT","CC / NIT"],
+    ["RADICADO","Radicado"],["JUZGADO","Juzgado"],
+    ["RESPONSABLE","Abogado responsable"],["FECHA INICIAL","Fecha inicial"],
+    ["FECHA LÍMITE","Fecha límite"],["TIPO","Tipo a crear"],
+    ["DERECHO INVOCADO","Derecho invocado"],["HECHOS RESUMIDOS","Hechos resumidos"],
+    ["PRETENSIONES","Pretensiones"],["OBSERVACIONES","Observaciones"]
+  ];
+  document.getElementById("esc-cuerpo").innerHTML = orden.map(([col,label])=>{
+    const val = _escCampos[col]||"—";
+    const full = campoLargo.includes(col);
+    return `<div class="mf" style="${full?"grid-column:1/-1":""}">
+      <label style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${label}</label>
+      <div style="font-size:13px;color:var(--text);margin-top:3px;line-height:1.5;${val==="—"?"color:var(--muted)":""}">${esc(val)}</div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("esc-confirmar").onclick = confirmarEscalado;
+  document.getElementById("overlay-escalar").classList.add("open");
+}
+
+async function confirmarEscalado(){
+  if(!_escCategoria || !_escCampos) return;
+  const btn = document.getElementById("esc-confirmar");
+  const errBox = document.getElementById("esc-error");
+  errBox.style.display="none";
+  btn.textContent="Creando..."; btn.style.pointerEvents="none";
+  const etiqueta = _escCategoria==="fallo" ? "Fallo" : "Incidente";
   try{
-    const creado = await Repo.crear(campos, categoria);
+    const creado = await Repo.crear(_escCampos, _escCategoria);
     if(!creado) throw new Error("Supabase no devolvió el registro creado");
-    toast("✅ "+(categoria==="fallo"?"Fallo":"Incidente")+" creado correctamente","ok");
+    toast("✅ "+etiqueta+" creado correctamente","ok");
+    document.getElementById("overlay-escalar").classList.remove("open");
     document.getElementById("overlay").classList.remove("open");
+    _escCategoria=null; _escCampos=null;
     await cargarDatos();
   }catch(e){
     if(/JWT expired|401/i.test(e.message)){
-      toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para crear.","err");
+      errBox.textContent="Tu sesión expiró. Vuelve a iniciar sesión para crear.";
     } else {
-      toast("❌ Error al crear "+etiqueta+": "+e.message,"err");
+      errBox.textContent="Error al crear "+etiqueta.toLowerCase()+": "+e.message;
     }
+    errBox.style.display="block";
+  }finally{
+    btn.textContent="💾 Confirmar y crear"; btn.style.pointerEvents="auto";
   }
 }
 
@@ -1626,13 +1689,26 @@ function abrirModal(da, origen){
   let r;try{r=JSON.parse(decodeURIComponent(da));}catch(e){return;}
   actual=r;
   origenModal=origen||"tutela";
+  // Para fallos/incidentes: hereda la visualización de los datos del admite
+  // original (mismo radicado) cuando el propio registro no los trae, para no
+  // tener que recapturar derecho/hechos/pretensiones/CC/juzgado.
+  let rVista = r;
+  if(origen==="fallo" || origen==="incidente"){
+    const tutOrig = tutelas.find(t => t["RADICADO"] && r["RADICADO"] && normRad(t["RADICADO"])===normRad(r["RADICADO"]));
+    if(tutOrig){
+      rVista = Object.assign({}, r);
+      ["DERECHO INVOCADO","HECHOS RESUMIDOS","PRETENSIONES","OBSERVACIONES","CC / NIT","JUZGADO"].forEach(col=>{
+        if(!String(rVista[col]||"").trim() && String(tutOrig[col]||"").trim()) rVista[col]=tutOrig[col];
+      });
+    }
+  }
   const dias=r._dias;
   const origenLabel={"tutela":"📋 Tutela / Admite","fallo":"⚖️ Fallo / Sentencia","incidente":"⚡ Incidente / Desacato","historico":"🗂️ Histórico"}[origenModal]||"";
   setEl("m-badge",badgeTipo(r["TIPO"]||(origenModal==="incidente"?"Desacato":""))+(origenLabel?`<span style="margin-left:8px;font-size:10px;color:var(--muted);font-weight:400">${origenLabel}</span>`:""));
   setEl("m-acc",esc(r["ACCIONANTE"]||"—"));
   setEl("m-rad",`Radicado: ${esc(r["RADICADO"]||"—")} <button onclick="copiarRadicado()" title="Copiar radicado" style="background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:5px;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 7px;margin-left:6px;font-family:'DM Sans',sans-serif;transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.18)';this.style.color='var(--text)'" onmouseout="this.style.background='rgba(255,255,255,.08)';this.style.color='var(--muted)'">📋 Copiar</button>`);
-  setEl("m-juz",esc(r["JUZGADO"]||"—"));
-  setEl("m-cc",esc(r["CC / NIT"]||"—"));
+  setEl("m-juz",esc(rVista["JUZGADO"]||"—"));
+  setEl("m-cc",esc(rVista["CC / NIT"]||"—"));
   setEl("m-fini",esc(r["FECHA INICIAL"]||"—"));
   setEl("m-flim",esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—"));
   setEl("m-resp",esc(r["RESPONSABLE"]||"—"));
@@ -1645,8 +1721,9 @@ function abrirModal(da, origen){
   else if(dias<=2){dEl.textContent=dias+"d — ¡urgente!";dEl.style.color="#f87171";}
   else if(dias<=5){dEl.textContent=dias+" días";dEl.style.color="#fbbf24";}
   else{dEl.textContent=dias+" días";dEl.style.color="#4ade80";}
+  // Campos largos (usa rVista, ya calculado al inicio con herencia del admite)
   [["DERECHO INVOCADO","m-derecho","m-derecho-w"],["HECHOS RESUMIDOS","m-hechos","m-hechos-w"],["PRETENSIONES","m-pret","m-pret-w"],["OBSERVACIONES","m-obs","m-obs-w"]].forEach(([col,id,wid])=>{
-    const val=r[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
+    const val=rVista[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
   });
   document.getElementById("m-esel").value=r["ESTADO"]||"Nuevo";
   // Aviso histórico si ya está en estado final
@@ -1660,11 +1737,15 @@ function abrirModal(da, origen){
   };
   // Siempre abrir en pestaña Información
   switchMTab('info');
-  // Botones de escalado: solo para TUTELAS (no fallos ni incidentes) que sigan activas
+  // Botones de escalado: para TUTELAS, tanto activas como en histórico
+  // (a un admite cerrado puede llegarle el fallo o el incidente después).
   const escBox=document.getElementById("m-escalado");
   if(escBox){
-    const esTutela = origenModal==="tutela" && !EST_HIST.includes(r["ESTADO"]||"");
-    escBox.style.display = esTutela ? "flex" : "none";
+    const esTutela = (origenModal==="tutela" || origenModal==="historico");
+    // No mostrar si el registro abierto ES un fallo o incidente (ahí no se escala)
+    const tipoR = (r["TIPO"]||"").toLowerCase();
+    const esFalloOInc = /fallo|sentencia|incidente|desacato/.test(tipoR);
+    escBox.style.display = (esTutela && !esFalloOInc) ? "flex" : "none";
   }
   document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
   const esFallo = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"].includes(r["TIPO"]);
