@@ -633,8 +633,11 @@ async function estructurarConIA(texto){
   + "El texto puede venir de un PDF de Word o de un escaneo con OCR (puede tener errores de lectura). "
   + "Lee TODO el texto con cuidado, incluyendo tablas, listados y sellos. "
   + "Devuelve EXCLUSIVAMENTE un JSON válido (sin markdown, sin explicación) con estas claves:\n"
-  + "- nombre: nombre completo del solicitante/peticionario. Suele aparecer tras 'Yo,', 'el señor', 'la señora', "
-  + "o como firmante al final. Puede estar en MAYÚSCULAS. Si no lo hallas, \"\".\n"
+  + "- nombre: nombre completo del SOLICITANTE (la persona que pide, NO el funcionario ni la entidad). "
+  + "Búscalo en estos lugares por orden: (1) un nombre en MAYÚSCULAS seguido de 'identificado con cédula' o 'identificada con cédula'; "
+  + "(2) tras 'Yo,', 'el señor', 'la señora'; (3) como FIRMANTE al final del documento, usualmente sobre o cerca de 'C.C.' y un número de cédula. "
+  + "IGNORA nombres de correo como 'ciacentrosas'. El nombre suele tener 3 o 4 palabras (nombres y apellidos). "
+  + "Si lo hallas en MAYÚSCULAS, devuélvelo tal cual. Si no lo hallas, \"\".\n"
   + "- cedula: número de cédula del solicitante, solo dígitos.\n"
   + "- correo: email del solicitante (tras 'De:'/'Desde:'); si no hay, \"\".\n"
   + "- radicado: número de radicado PQR; si no hay, \"\".\n"
@@ -702,12 +705,14 @@ function extraerConRegex(texto){
   }
 
   // ── NOMBRE ──
-  // Patrón típico de derecho de petición: "Yo, JULIAN DAVID LOPEZ RAMIREZ, identificado..."
-  m = t.match(/\bYo,?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?)\s*,?\s+identificad[oa]/);
-  if(!m){
-    // Variante: "el (la) señor(a) NOMBRE identificado"
-    m = t.match(/se[ñn]or(?:a)?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?)\s*,?\s+identificad[oa]/i);
-  }
+  // Patrón 1: "NOMBRE EN MAYÚSCULAS identificad[o/a] con cédula" (va directo, sin "Yo,")
+  m = t.match(/\b([A-ZÁÉÍÓÚÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){1,4})\s+identificad[oa]\s+con\s+c[ée]dula/);
+  // Patrón 2: "Yo, NOMBRE, identificado..."
+  if(!m) m = t.match(/\bYo,?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?)\s*,?\s+identificad[oa]/);
+  // Patrón 3: "el (la) señor(a) NOMBRE identificado"
+  if(!m) m = t.match(/se[ñn]or(?:a)?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?)\s*,?\s+identificad[oa]/i);
+  // Patrón 4: firmante al final, justo antes de "C.C. NÚMERO"
+  if(!m) m = t.match(/\b([A-ZÁÉÍÓÚÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){1,4})\s+C\.?\s?C\.?\s*N?[°º.]?\s*\d{5,}/);
   if(m){
     out.nombre = m[1].trim().replace(/\s+/g,' ')
       // Pasar de MAYÚSCULAS a Título (María, José…) para que se vea natural
