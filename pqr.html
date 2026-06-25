@@ -637,7 +637,8 @@ async function estructurarConIA(texto){
   + "Búscalo en estos lugares por orden: (1) un nombre en MAYÚSCULAS seguido de 'identificado con cédula' o 'identificada con cédula'; "
   + "(2) tras 'Yo,', 'el señor', 'la señora'; (3) como FIRMANTE al final del documento, usualmente sobre o cerca de 'C.C.' y un número de cédula. "
   + "IGNORA nombres de correo como 'ciacentrosas'. El nombre suele tener 3 o 4 palabras (nombres y apellidos). "
-  + "Si lo hallas en MAYÚSCULAS, devuélvelo tal cual. Si no lo hallas, \"\".\n"
+  + "PUEDE estar en MAYÚSCULAS (ej. 'WILSON OQUENDO') o en formato normal (ej. 'Jaime Andrés Guisao Villa'). "
+  + "Devuélvelo tal como aparece. Si no lo hallas, \"\".\n"
   + "- cedula: número de cédula del solicitante, solo dígitos.\n"
   + "- correo: email del solicitante (tras 'De:'/'Desde:'); si no hay, \"\".\n"
   + "- radicado: número de radicado PQR; si no hay, \"\".\n"
@@ -680,9 +681,9 @@ function extraerConRegex(texto){
   const t = texto.replace(/\s+/g,' ');
 
   // ── CÉDULA ──
-  // Patrón fuerte: "cédula de ciudadanía 71.274.443" / "identificado con cédula NÚMERO"
-  let m = t.match(/c[ée]dula\s+de\s+ciudadan[íi]a\s*(?:n[°º.]*)?\s*([\d.,]{7,15})/i)
-       || t.match(/(?:c[ée]dula|c\.?c\.?|identificaci[óo]n|documento)\s*(?:n[°º.]*)?\s*[:.\-]?\s*([\d.,]{7,15})/i);
+  // Acepta: "cédula de ciudadanía Nro. 1.040.366.331", "cédula 71.274.443", "C.C. No 123"
+  let m = t.match(/c[ée]dula\s+de\s+ciudadan[íi]a\s*(?:nro\.?|n[°º]\.?|no\.?|n[°º.]*)?\s*[:.\-]?\s*([\d][\d.,]{5,16})/i)
+       || t.match(/(?:c[ée]dula|c\.?\s?c\.?|identificaci[óo]n|documento)\s*(?:nro\.?|n[°º]\.?|no\.?|n[°º.]*)?\s*[:.\-]?\s*([\d][\d.,]{5,16})/i);
   if(m) out.cedula = m[1].replace(/\D/g,'');
 
   // ── CORREO ──
@@ -709,23 +710,31 @@ function extraerConRegex(texto){
   }
 
   // ── NOMBRE ──
-  // Patrón 1: "NOMBRE EN MAYÚSCULAS identificad[o/a] con cédula" (va directo, sin "Yo,")
-  m = t.match(/\b([A-ZÁÉÍÓÚÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){1,4})\s+identificad[oa]\s+con\s+c[ée]dula/);
+  // Una "palabra de nombre" = inicial mayúscula + resto (puede ser minúscula o mayúscula).
+  // Cubre "WILSON ANTONIO..." (todo mayúsc.) y "Jaime Andrés Guisao Villa" (formato título).
+  const PAL = '[A-ZÁÉÍÓÚÑ][a-záéíóúñA-ZÁÉÍÓÚÑ]+';
+  const NOM = '('+PAL+'(?:\\s+'+PAL+'){1,4})';
+  // Patrón 1: "NOMBRE identificad[o/a] con cédula" (directo)
+  m = t.match(new RegExp('\\b'+NOM+'\\s*,?\\s+identificad[oa]\\s+con\\s+c[ée]dula', 'i'));
   // Patrón 2: "Yo, NOMBRE, identificado..."
-  if(!m) m = t.match(/\bYo,?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?)\s*,?\s+identificad[oa]/);
+  if(!m) m = t.match(new RegExp('\\bYo,?\\s+'+NOM+'\\s*,?\\s+identificad[oa]', 'i'));
   // Patrón 3: "el (la) señor(a) NOMBRE identificado"
-  if(!m) m = t.match(/se[ñn]or(?:a)?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?)\s*,?\s+identificad[oa]/i);
-  // Patrón 4: firmante al final, justo antes de "C.C. NÚMERO"
-  if(!m) m = t.match(/\b([A-ZÁÉÍÓÚÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){1,4})\s+C\.?\s?C\.?\s*N?[°º.]?\s*\d{5,}/);
+  if(!m) m = t.match(new RegExp('se[ñn]or(?:a)?\\s+'+NOM+'\\s*,?\\s+identificad[oa]', 'i'));
+  // Patrón 4: firmante al final, antes de "C.C. NÚMERO"
+  if(!m) m = t.match(new RegExp('\\b'+NOM+'\\s*,?\\s+C\\.?\\s?C\\.?\\s*N?[°º.]?\\s*\\d{5,}', 'i'));
   if(m){
-    out.nombre = m[1].trim().replace(/\s+/g,' ')
-      // Pasar de MAYÚSCULAS a Título (María, José…) para que se vea natural
-      .toLowerCase().replace(/\b\w/g, c=>c.toUpperCase());
+    out.nombre = m[1].trim().replace(/\s+/g,' ').toLowerCase()
+      // Capitalizar la primera letra de cada palabra, respetando tildes
+      .replace(/(^|\s)([a-záéíóúñ])/g, (s,sp,c)=>sp+c.toUpperCase());
   }
 
   // ── COMPARENDO ──
-  m = t.match(/comparendo\s*(?:n[°º.]*)?\s*[:.\-]?\s*([A-Z0-9]{8,30})/i);
-  if(m) out.comparendo = m[1];
+  // "comparendo Nro. 0508800..." / "comparendo No 123..." / "Orden de Comparendo: 123..."
+  const compMatches = t.match(/comparendo\s*(?:nro\.?|n[°º]\.?|no\.?|n[°º.]*)?\s*[:.\-]?\s*(\d{8,20})/ig);
+  if(compMatches){
+    const nums = compMatches.map(s => (s.match(/\d{8,20}/)||[])[0]).filter(Boolean);
+    if(nums.length) out.comparendo = [...new Set(nums)].join(', ');
+  }
 
   // ── VIGENCIAS (años a prescribir) ──
   // Busca años 19xx/20xx en zonas que mencionen vigencia/vigencias/años.
