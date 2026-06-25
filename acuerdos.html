@@ -6,10 +6,28 @@
 <title>Acuerdos de Pago — Alcaldía de Bello</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="acuerdos.css"/>
 </head>
 <body>
 <div class="bg"></div>
+
+<!-- ════════ PANTALLA DE LOGIN ════════ -->
+<div id="login-screen" style="position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0a1f3d 0%,#0d2748 100%);display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:380px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:36px 30px;backdrop-filter:blur(12px);box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <div style="text-align:center;margin-bottom:26px">
+      <div style="font-size:34px;margin-bottom:8px">🤝</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:24px;color:#fff;line-height:1.2">Acuerdos de Pago</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:6px">Dirección de Ejecuciones Fiscales · Bello</div>
+    </div>
+    <label style="display:block;font-size:13px;color:rgba(255,255,255,.7);margin-bottom:6px">Correo</label>
+    <input id="login-email" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;padding:13px 15px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;margin-bottom:16px" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    <label style="display:block;font-size:13px;color:rgba(255,255,255,.7);margin-bottom:6px">Contraseña</label>
+    <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;padding:13px 15px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box;margin-bottom:20px" onkeydown="if(event.key==='Enter')hacerLogin()">
+    <button id="login-btn" onclick="hacerLogin()" style="width:100%;background:linear-gradient(135deg,#e8a020,#f0b840);color:#0a1f3d;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:transform .1s">Ingresar</button>
+    <div id="login-error" style="display:none;margin-top:16px;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:8px;font-size:13px;color:#f87171;text-align:center"></div>
+  </div>
+</div>
 
 <!-- ═══ NAV ═══ -->
 <nav class="nav">
@@ -22,6 +40,7 @@
     <div class="nav-links">
       <a href="home.html" class="nav-link">🏛️ Inicio</a>
       <a href="desembargos.html" class="nav-link">📄 Oficios</a>
+      <button class="nav-link" onclick="cerrarSesion()" style="cursor:pointer;border:none;background:none;font:inherit;color:inherit">🔒 Salir</button>
     </div>
   </div>
 </nav>
@@ -756,10 +775,69 @@ function limpiarForm(){
   document.getElementById('mesInicio').value=new Date().toISOString().slice(0,7);
 }
 
-// ── INIT ──
-document.getElementById('mesInicio').value=new Date().toISOString().slice(0,7);
-updateBadge();
-renderPend();
+// ════════════════════════════════════════
+// AUTENTICACIÓN — Supabase Auth (replicado de Tutelas)
+// Login unificado: mismo proyecto Supabase y mismo dominio que los demás
+// módulos, así que la sesión se comparte automáticamente.
+// ════════════════════════════════════════
+const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
+
+let sbAuth = null;
+try {
+  if (window.supabase && window.supabase.createClient) {
+    sbAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  } else {
+    console.error("La librería de Supabase no cargó. Revisa la conexión.");
+  }
+} catch(e) {
+  console.error("Error creando cliente Supabase Auth:", e);
+}
+
+async function hacerLogin(){
+  if(!sbAuth){ mostrarLoginError("Error de conexión con el servidor. Recarga la página."); return; }
+  const email = document.getElementById("login-email").value.trim();
+  const pass  = document.getElementById("login-pass").value;
+  const btn   = document.getElementById("login-btn");
+  document.getElementById("login-error").style.display="none";
+  if(!email || !pass){ mostrarLoginError("Ingresa correo y contraseña."); return; }
+  btn.textContent="Ingresando..."; btn.style.pointerEvents="none";
+  try{
+    const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
+    if(error){ mostrarLoginError("Correo o contraseña incorrectos."); btn.textContent="Ingresar"; btn.style.pointerEvents="auto"; return; }
+    entrarAlSistema();
+  }catch(e){
+    mostrarLoginError("Error de conexión. Intenta de nuevo.");
+    btn.textContent="Ingresar"; btn.style.pointerEvents="auto";
+  }
+}
+function mostrarLoginError(msg){
+  const e=document.getElementById("login-error");
+  e.textContent=msg; e.style.display="block";
+}
+function entrarAlSistema(){
+  document.getElementById("login-screen").style.display="none";
+  iniciarApp();
+}
+async function cerrarSesion(){
+  if(sbAuth){ try{ await sbAuth.auth.signOut(); }catch(e){} }
+  location.reload();
+}
+// Al arrancar: si ya hay sesión válida (p.ej. iniciada en otro módulo), entra directo.
+(async function verificarSesionInicial(){
+  if(!sbAuth) return; // sin librería, se queda en login
+  try{
+    const { data } = await sbAuth.auth.getSession();
+    if(data.session){ entrarAlSistema(); }
+  }catch(e){ /* sin sesión, muestra login */ }
+})();
+
+// ── INIT (solo se ejecuta tras sesión válida) ──
+function iniciarApp(){
+  document.getElementById('mesInicio').value=new Date().toISOString().slice(0,7);
+  updateBadge();
+  renderPend();
+}
 </script>
 </body>
 </html>
