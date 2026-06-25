@@ -5,6 +5,11 @@ const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
 const SUPABASE_ANON  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
 const SB_TABLA      = "guias_notificacion";   // para INSERTAR
 const SB_VISTA      = "v_guias";              // para CONSULTAR (trae nombre_resuelto)
+const SB_ACTIVIDAD  = "actividad_buscador";   // auditoría de búsquedas e ingresos
+const SB_RANKING    = "v_ranking_actividad";  // vista consolidada para estadísticas
+
+// Email del usuario autenticado (se llena al entrar al sistema).
+let USUARIO_EMAIL = "";
 
 // ════════════════════════════════════════════════════════════
 // REPO — única capa que sabe de dónde vienen los datos
@@ -43,6 +48,36 @@ const Repo = {
       throw new Error("Supabase HTTP " + res.status + " — " + txt);
     }
     return true;
+  },
+  // Headers autenticados (token de sesión) para escribir auditoría con RLS por email.
+  async _headersAuth(){
+    let token = SUPABASE_ANON;
+    try {
+      if (sbAuth) {
+        const { data } = await sbAuth.auth.getSession();
+        if (data.session && data.session.access_token) token = data.session.access_token;
+      }
+    } catch(e){ /* cae al anon */ }
+    return { apikey: SUPABASE_ANON, Authorization: "Bearer " + token };
+  },
+  // Registra una acción de actividad (búsqueda o ingreso). Nunca rompe el flujo principal.
+  async registrarActividad(reg){
+    if (!USUARIO_EMAIL) return;   // sin email no se audita
+    try {
+      const headers = await this._headersAuth();
+      await fetch(`${SUPABASE_URL}/rest/v1/${SB_ACTIVIDAD}`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ ...reg, usuario: USUARIO_EMAIL })
+      });
+    } catch(e){ console.warn("No se pudo registrar actividad:", e.message); }
+  },
+  // Trae el ranking consolidado por usuario y acción.
+  async ranking(){
+    const url = `${SUPABASE_URL}/rest/v1/${SB_RANKING}?select=*&order=total.desc`;
+    const res = await fetch(url, { headers: await this._headersAuth() });
+    if (!res.ok) throw new Error("Supabase HTTP " + res.status);
+    return res.json();
   }
 };
 
@@ -55,6 +90,7 @@ function irPanel(p){
   document.getElementById("panel-" + p).classList.add("active");
   document.getElementById("tab-" + p).classList.add("active");
   if (p === "consultar") setTimeout(() => document.getElementById("q").focus(), 100);
+  if (p === "estadisticas") cargarEstadisticas();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -94,6 +130,12 @@ async function buscar(){
   setStatus("load","Consultando…", true);
   try{
     const filas = await Repo.buscar(q);
+    // Auditoría: registrar SOLO que hubo una consulta (sin guardar qué cédula/comparendo se buscó)
+    const esCedulaQ = /^\d{4,12}$/.test(q.replace(/[.\-\s]/g, ""));
+    Repo.registrarActividad({
+      accion: "busqueda",
+      tipo: esCedulaQ ? "cedula" : "comparendo"
+    });
     if(!filas.length){
       setStatus("empty","Sin registros para “" + q + "”.");
       document.getElementById("empty-state").style.display = "block";
@@ -328,6 +370,11 @@ async function guardarGuia(){
   btn.disabled = true; btn.textContent = "Guardando…";
   try{
     await Repo.insertar(reg);
+    Repo.registrarActividad({
+      accion: "ingreso",
+      termino: comparendo,
+      tipo: canal
+    });
     if(reg.creado_por) localStorage.setItem("teodoro_usuario", reg.creado_por);
     toast("✓ Guía guardada para el comparendo " + comparendo);
     limpiarForm();
@@ -350,8 +397,121 @@ function limpiarForm(){
 }
 
 // ════════════════════════════════════════════════════════════
-// EVENTOS / ARRANQUE  (solo se ejecuta tras sesión válida)
+// ESTADÍSTICAS — ranking de actividad por usuario
 // ════════════════════════════════════════════════════════════
+let _rankingActual = { busqueda: [], ingreso: [] };
+
+function nombreCorto(email){
+  if(!email) return "—";
+  const base = email.split("@")[0].replace(/[._]/g, " ");
+  return base.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+async function cargarEstadisticas(){
+  const cont = document.getElementById("stats-cont");
+  cont.innerHTML = `<div class="status show load"><div class="spinner"></div><span>Cargando estadísticas…</span></div>`;
+  try{
+    const filas = await Repo.ranking();
+    const busqueda = filas.filter(f => f.accion === "busqueda").sort((a,b)=>b.total-a.total);
+    const ingreso  = filas.filter(f => f.accion === "ingreso").sort((a,b)=>b.total-a.total);
+    _rankingActual = { busqueda, ingreso };
+    renderEstadisticas(busqueda, ingreso);
+  }catch(err){
+    cont.innerHTML = `<div class="status show err"><span>No se pudieron cargar las estadísticas. ${esc(err.message)}</span></div>`;
+  }
+}
+
+function renderTablaRanking(filas, titulo, icono, unidad){
+  if(!filas.length){
+    return `<div class="card">
+      <div class="lbl">${icono} ${titulo}</div>
+      <p style="font-size:13px;color:var(--soft)">Aún no hay ${unidad} registradas.</p>
+    </div>`;
+  }
+  const totalGlobal = filas.reduce((s,f)=>s+f.total,0);
+  const maxTotal = filas[0].total || 1;
+  const medallas = ["🥇","🥈","🥉"];
+  const rows = filas.map((f,i) => {
+    const pct = Math.round((f.total / maxTotal) * 100);
+    const pos = i < 3 ? medallas[i] : `<span class="rank-pos">${i+1}</span>`;
+    return `
+      <div class="rank-row">
+        <div class="rank-medal">${pos}</div>
+        <div class="rank-body">
+          <div class="rank-name">${esc(nombreCorto(f.usuario))}</div>
+          <div class="rank-email">${esc(f.usuario)}</div>
+          <div class="rank-bar"><div class="rank-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="rank-stats">
+          <div class="rank-total">${f.total}</div>
+          <div class="rank-sub">7d: ${f.ultimos_7d} · 30d: ${f.ultimos_30d}</div>
+        </div>
+      </div>`;
+  }).join("");
+  return `
+    <div class="card">
+      <div class="rank-hdr">
+        <div class="lbl" style="margin:0">${icono} ${titulo}</div>
+        <div class="rank-total-global">${totalGlobal} <span>total</span></div>
+      </div>
+      ${rows}
+    </div>`;
+}
+
+function renderEstadisticas(busqueda, ingreso){
+  const cont = document.getElementById("stats-cont");
+  cont.innerHTML = `
+    <div class="perfil-resumen" style="margin-bottom:14px">
+      <button class="btn-print" onclick="cargarEstadisticas()">🔄 Actualizar</button>
+      <button class="btn-print" onclick="abrirModalStats()">🖨️ Imprimir reporte</button>
+    </div>
+    ${renderTablaRanking(busqueda, "Ranking de búsquedas", "🔍", "búsquedas")}
+    ${renderTablaRanking(ingreso, "Ranking de ingresos de guías", "✏️", "ingresos")}
+  `;
+}
+
+function filaDocStats(filas){
+  if(!filas.length) return `<div class="doc-ev">Sin registros.</div>`;
+  return filas.map((f,i) =>
+    `<div class="doc-ev"><span class="canal">${i+1}. ${esc(nombreCorto(f.usuario))}</span> — `+
+    `${f.total} en total · ${f.ultimos_7d} (7d) · ${f.ultimos_30d} (30d) · `+
+    `<span style="color:#64748b">${esc(f.usuario)}</span></div>`
+  ).join("");
+}
+
+function abrirModalStats(){
+  const ahora = new Date();
+  const fechaImp = String(ahora.getDate()).padStart(2,"0") + "/" +
+                   String(ahora.getMonth()+1).padStart(2,"0") + "/" +
+                   ahora.getFullYear() + " " +
+                   String(ahora.getHours()).padStart(2,"0") + ":" +
+                   String(ahora.getMinutes()).padStart(2,"0");
+  const html = `
+    <div class="doc-meta">Generado: ${fechaImp}</div>
+    <div class="doc-hdr">
+      <div class="ent">Alcaldía de Bello</div>
+      <div class="dep">Dirección Administrativa de Ejecuciones Fiscales</div>
+      <div class="dep">Secretaría de Recaudos y Pagos</div>
+    </div>
+    <div class="doc-title">Reporte de actividad — Sistema Teodoro</div>
+    <div class="doc-comp">
+      <h4>🔍 Ranking de búsquedas (consultas)</h4>
+      ${filaDocStats(_rankingActual.busqueda)}
+    </div>
+    <div class="doc-comp">
+      <h4>✏️ Ranking de ingresos de guías</h4>
+      ${filaDocStats(_rankingActual.ingreso)}
+    </div>
+    <div class="doc-foot">
+      Documento informativo de uso interno generado por el Sistema Teodoro a partir
+      del registro de auditoría de actividad. Los conteos reflejan acciones realizadas
+      por los usuarios autenticados del módulo de guías de notificación.
+    </div>`;
+  document.getElementById("doc-content").innerHTML = html;
+  document.getElementById("modal").classList.add("show");
+}
+
+
 function iniciarApp(){
   document.getElementById("q").addEventListener("keydown", e => { if(e.key==="Enter") buscar(); });
   document.getElementById("empty-state").style.display = "block";
@@ -411,7 +571,16 @@ function mostrarLoginError(msg){
   const e=document.getElementById("login-error");
   e.textContent=msg; e.style.display="block";
 }
-function entrarAlSistema(){
+async function entrarAlSistema(){
+  // Capturar el email del usuario autenticado para la auditoría.
+  try {
+    if (sbAuth) {
+      const { data } = await sbAuth.auth.getSession();
+      if (data.session && data.session.user) {
+        USUARIO_EMAIL = data.session.user.email || "";
+      }
+    }
+  } catch(e){ /* sin email, la auditoría simplemente no registra */ }
   document.getElementById("login-screen").style.display="none";
   iniciarApp();
 }
