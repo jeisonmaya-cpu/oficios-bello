@@ -350,23 +350,80 @@ function limpiarForm(){
 }
 
 // ════════════════════════════════════════════════════════════
-// EVENTOS
+// EVENTOS / ARRANQUE  (solo se ejecuta tras sesión válida)
 // ════════════════════════════════════════════════════════════
-document.getElementById("q").addEventListener("keydown", e => { if(e.key==="Enter") buscar(); });
-document.getElementById("empty-state").style.display = "block";
+function iniciarApp(){
+  document.getElementById("q").addEventListener("keydown", e => { if(e.key==="Enter") buscar(); });
+  document.getElementById("empty-state").style.display = "block";
 
-// Autocompletar nombre del operario desde localStorage
-document.getElementById("f-creadopor").value = localStorage.getItem("teodoro_usuario") || "";
+  // Autocompletar nombre del operario desde localStorage
+  document.getElementById("f-creadopor").value = localStorage.getItem("teodoro_usuario") || "";
 
-// Bloquear caracteres no numéricos en tiempo real (cédula y valor multa)
-["f-cedula","f-valor"].forEach(id => {
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.addEventListener("input", () => {
-    const limpio = el.value.replace(/\D/g, "");
-    if(el.value !== limpio) el.value = limpio;
+  // Bloquear caracteres no numéricos en tiempo real (cédula y valor multa)
+  ["f-cedula","f-valor"].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener("input", () => {
+      const limpio = el.value.replace(/\D/g, "");
+      if(el.value !== limpio) el.value = limpio;
+    });
   });
-});
 
-document.getElementById("q").focus();
-document.addEventListener("keydown", e => { if(e.key==="Escape") cerrarModal(); });
+  document.getElementById("q").focus();
+  document.addEventListener("keydown", e => { if(e.key==="Escape") cerrarModal(); });
+}
+
+// ════════════════════════════════════════════════════════════
+// AUTENTICACIÓN — Supabase Auth (replicado de Tutelas / Acuerdos)
+// Login unificado: mismo proyecto Supabase y mismo dominio, así que
+// la sesión se comparte automáticamente con los demás módulos.
+// (SUPABASE_URL y SUPABASE_ANON ya están declaradas arriba.)
+// ════════════════════════════════════════════════════════════
+let sbAuth = null;
+try {
+  if (window.supabase && window.supabase.createClient) {
+    sbAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  } else {
+    console.error("La librería de Supabase no cargó. Revisa la conexión.");
+  }
+} catch(e) {
+  console.error("Error creando cliente Supabase Auth:", e);
+}
+
+async function hacerLogin(){
+  if(!sbAuth){ mostrarLoginError("Error de conexión con el servidor. Recarga la página."); return; }
+  const email = document.getElementById("login-email").value.trim();
+  const pass  = document.getElementById("login-pass").value;
+  const btn   = document.getElementById("login-btn");
+  document.getElementById("login-error").style.display="none";
+  if(!email || !pass){ mostrarLoginError("Ingresa correo y contraseña."); return; }
+  btn.textContent="Ingresando..."; btn.style.pointerEvents="none";
+  try{
+    const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
+    if(error){ mostrarLoginError("Correo o contraseña incorrectos."); btn.textContent="Ingresar"; btn.style.pointerEvents="auto"; return; }
+    entrarAlSistema();
+  }catch(e){
+    mostrarLoginError("Error de conexión. Intenta de nuevo.");
+    btn.textContent="Ingresar"; btn.style.pointerEvents="auto";
+  }
+}
+function mostrarLoginError(msg){
+  const e=document.getElementById("login-error");
+  e.textContent=msg; e.style.display="block";
+}
+function entrarAlSistema(){
+  document.getElementById("login-screen").style.display="none";
+  iniciarApp();
+}
+async function cerrarSesion(){
+  if(sbAuth){ try{ await sbAuth.auth.signOut(); }catch(e){} }
+  location.reload();
+}
+// Al arrancar: si ya hay sesión válida (p.ej. iniciada en otro módulo), entra directo.
+(async function verificarSesionInicial(){
+  if(!sbAuth) return; // sin librería, se queda en login
+  try{
+    const { data } = await sbAuth.auth.getSession();
+    if(data.session){ entrarAlSistema(); }
+  }catch(e){ /* sin sesión, muestra login */ }
+})();

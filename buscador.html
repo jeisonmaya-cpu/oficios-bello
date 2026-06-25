@@ -6,9 +6,27 @@
 <title>Guías de Notificación — Teodoro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="buscador.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="bg"></div>
+
+<!-- ════════ PANTALLA DE LOGIN ════════ -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="login-icon">🏛️</div>
+      <div class="login-title">Teodoro</div>
+      <div class="login-sub">Guías de Notificación · Ejecuciones Fiscales · Bello</div>
+    </div>
+    <label class="login-label">Correo</label>
+    <input id="login-email" class="login-input" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    <label class="login-label">Contraseña</label>
+    <input id="login-pass" class="login-input pass" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')hacerLogin()">
+    <button id="login-btn" class="login-btn" onclick="hacerLogin()">Ingresar</button>
+    <div id="login-error" class="login-error"></div>
+  </div>
+</div>
 
 <nav class="nav">
   <a href="home.html" class="nav-brand">
@@ -22,6 +40,7 @@
     <button class="nav-tab active" id="tab-consultar" onclick="irPanel('consultar')">🔍 Consultar</button>
     <button class="nav-tab" id="tab-ingresar" onclick="irPanel('ingresar')">✏️ Ingresar guía</button>
   </div>
+  <button class="nav-logout" onclick="cerrarSesion()">🔒 Salir</button>
 </nav>
 
 <div class="wrap">
