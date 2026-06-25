@@ -78,6 +78,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 .ocr-status.ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.25)}
 .ocr-status.err{background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.25)}
 .ocr-status.warn{background:rgba(245,192,80,.10);color:var(--gold2);border:1px solid rgba(245,192,80,.25)}
+.btn-diag{margin-top:10px;width:100%;padding:9px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--soft);background:rgba(255,255,255,.04);border:1px dashed var(--border);border-radius:9px;cursor:pointer;transition:all .2s}
+.btn-diag:hover{color:var(--text);background:rgba(255,255,255,.08);border-color:var(--blue2)}
+.diag-block{margin-bottom:14px}
+.diag-block h4{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold2);margin-bottom:6px}
+.diag-pre{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:9px;padding:12px;font-family:ui-monospace,'Courier New',monospace;font-size:11.5px;line-height:1.5;color:#c8d4e0;max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+.diag-meta{font-size:12px;color:var(--soft);margin-bottom:12px}
+.diag-meta b{color:var(--text)}
+.diag-copy{font-size:11px;font-weight:600;color:#93c5fd;background:rgba(45,141,232,.12);border:1px solid rgba(45,141,232,.25);border-radius:7px;padding:3px 10px;cursor:pointer;margin-left:8px;font-family:'DM Sans',sans-serif}
+.diag-copy:hover{background:rgba(45,141,232,.25);color:#fff}
 .spinner{width:16px;height:16px;border:2.5px solid rgba(45,141,232,.25);border-top-color:var(--blue2);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -256,6 +265,7 @@ tbody tr:hover{background:rgba(255,255,255,.03)}
       </div>
       <input type="file" id="fileInput" accept="application/pdf" hidden>
       <div class="ocr-status" id="ocrStatus"></div>
+      <button type="button" id="btnDiag" class="btn-diag" onclick="abrirDiag()" style="display:none">🔍 Ver qué leyó del PDF (diagnóstico)</button>
       <div class="pdf-preview" id="pdfPreview">
         <div class="pdf-preview-bar">
           <div class="pp-name">📄 <b id="ppName">documento.pdf</b></div>
@@ -397,6 +407,33 @@ tbody tr:hover{background:rgba(255,255,255,.03)}
 
 </div>
 
+<!-- ═══════════ MODAL DIAGNÓSTICO ═══════════ -->
+<div class="overlay" id="diagOverlay">
+  <div class="modal wide">
+    <h3>🔍 Diagnóstico de extracción</h3>
+    <div class="m-sub">Esto es lo que el sistema leyó del PDF y lo que la IA respondió. Útil para entender por qué faltó algún dato.</div>
+    <div class="diag-meta" id="diagMeta">—</div>
+
+    <div class="diag-block">
+      <h4>Texto extraído del PDF
+        <button class="diag-copy" onclick="copiarDiag('texto')">Copiar</button>
+      </h4>
+      <div class="diag-pre" id="diagTexto">—</div>
+    </div>
+
+    <div class="diag-block">
+      <h4>Respuesta de la IA
+        <button class="diag-copy" onclick="copiarDiag('ia')">Copiar</button>
+      </h4>
+      <div class="diag-pre" id="diagIA">—</div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarDiag()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ MODAL DETALLE PQR ═══════════ -->
 <div class="overlay" id="detOverlay">
   <div class="modal wide">
@@ -441,6 +478,9 @@ if (window['pdfjsLib']) {
 }
 
 const TIPOS = {1:'Embargo',2:'Desembargo',3:'Prescripción',4:'Devolución de Dineros'};
+
+// Diagnóstico de la última extracción (para el botón "Ver diagnóstico")
+const DIAG = { texto:'', respuestaIA:'', metodo:'', datos:null };
 
 // ════════════════════════════════════════════════════════════
 // SESIÓN / AUTH POR PIN (mismo modelo que los otros módulos)
@@ -570,7 +610,7 @@ async function extraerTextoPDF(file){
 // Nivel 2: OCR con Tesseract sobre páginas renderizadas — gratis
 async function ocrTesseract(pdf){
   let texto = '';
-  const maxPag = Math.min(pdf.numPages, 3); // límite por velocidad
+  const maxPag = Math.min(pdf.numPages, 6); // límite por velocidad
   for(let p=1; p<=maxPag; p++){
     setOcr('load', 'Aplicando OCR a página '+p+' de '+maxPag+' (PDF escaneado)…');
     const page = await pdf.getPage(p);
@@ -589,23 +629,31 @@ async function estructurarConIA(texto){
   // Sin proxy configurado (vacío o marcador sin reemplazar) → se omite IA
   if(!PROXY_IA_URL || PROXY_IA_URL.indexOf('PEGA-AQUI') !== -1) return null;
   const prompt =
-    "Eres un asistente que extrae datos de una PQR de cobro coactivo municipal (Colombia). "
-  + "Del siguiente texto, devuelve EXCLUSIVAMENTE un JSON válido (sin markdown, sin explicación) con estas claves: "
-  + "nombre (nombre completo del solicitante), cedula (solo dígitos), radicado (número de radicado PQR), "
-  + "correo (la dirección de correo electrónico del solicitante o remitente; suele aparecer en el encabezado del correo tras 'De:' o 'Desde:'; si no hay, \"\"), "
-  + "tipo (uno de: Embargo, Desembargo, Prescripción, Devolución de Dineros, o \"\" si no es claro), "
-  + "comparendo (SOLO los números de comparendo/orden de comparendo, que son códigos numéricos largos de 8 a 20 dígitos; "
-  + "si hay varios, sepáralos con coma; NUNCA pongas palabras, solo los números; si no hay, \"\"), "
-  + "vigencias (los AÑOS concretos a prescribir en formato AAAA, ej. \"2018, 2019\"; "
-  + "NO pongas cantidades de años como \"3\"; si el texto solo dice 'más de 3 años' sin años concretos, deja \"\"), "
-  + "resumen (2 o 3 frases en español sintetizando qué solicita el peticionario y por qué). "
-  + "Si un dato no aparece, usa cadena vacía. TEXTO:\n\n" + texto.slice(0, 6000);
+    "Eres un asistente experto que extrae datos de una PQR de cobro coactivo municipal (Colombia). "
+  + "El texto puede venir de un PDF de Word o de un escaneo con OCR (puede tener errores de lectura). "
+  + "Lee TODO el texto con cuidado, incluyendo tablas, listados y sellos. "
+  + "Devuelve EXCLUSIVAMENTE un JSON válido (sin markdown, sin explicación) con estas claves:\n"
+  + "- nombre: nombre completo del solicitante/peticionario. Suele aparecer tras 'Yo,', 'el señor', 'la señora', "
+  + "o como firmante al final. Puede estar en MAYÚSCULAS. Si no lo hallas, \"\".\n"
+  + "- cedula: número de cédula del solicitante, solo dígitos.\n"
+  + "- correo: email del solicitante (tras 'De:'/'Desde:'); si no hay, \"\".\n"
+  + "- radicado: número de radicado PQR; si no hay, \"\".\n"
+  + "- tipo: uno de [Embargo, Desembargo, Prescripción, Devolución de Dineros] o \"\".\n"
+  + "- comparendo: los números de comparendo / orden de comparendo / infracción. Son códigos numéricos largos "
+  + "(usualmente 8 a 20 dígitos). PUEDEN APARECER EN UNA TABLA, en una lista, o dentro del texto. "
+  + "Búscalos también junto a palabras como 'comparendo', 'orden de comparendo', 'No.', 'infracción', 'multa', 'SIMIT'. "
+  + "Si hay VARIOS, inclúyelos TODOS separados por coma. Pon SOLO los números, nunca palabras. Si no hay, \"\".\n"
+  + "- vigencias: los AÑOS concretos a prescribir en formato AAAA (ej. \"2018, 2019\"). "
+  + "Búscalos en fechas de los comparendos o donde diga 'vigencia'/'año'. "
+  + "NO pongas cantidades como '3'. Si solo dice 'más de 3 años' sin años concretos, deja \"\".\n"
+  + "- resumen: 2 o 3 frases en español sintetizando qué solicita el peticionario y por qué.\n"
+  + "Si un dato no aparece, usa cadena vacía. TEXTO:\n\n" + texto.slice(0, 12000);
 
   // GET con URLSearchParams (evita el CORS/302 que da POST a Apps Script).
   const qs = new URLSearchParams({
     token: PROXY_IA_TOKEN,
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: '800',
+    max_tokens: '1500',
     prompt: prompt
   });
   const res = await fetch(PROXY_IA_URL + '?' + qs.toString(), { method: 'GET' });
@@ -614,6 +662,7 @@ async function estructurarConIA(texto){
   if(data.error) throw new Error('Proxy IA: '+data.error);
   // El proxy devuelve {text:"..."}; toleramos otras formas por compatibilidad.
   let salida = data.text || data.respuesta || (data.content && data.content[0] && data.content[0].text) || '';
+  DIAG.respuestaIA = salida; // guardar respuesta cruda para diagnóstico
   salida = String(salida).replace(/```json|```/g,'').trim();
   try{ return JSON.parse(salida); }catch(e){ return null; }
 }
@@ -716,8 +765,15 @@ async function procesarPDF(file){
 
     if(!textoFinal || textoFinal.length < 20){
       setOcr('warn', 'No se pudo extraer texto legible. Diligencie los campos manualmente.');
+      DIAG.texto = textoFinal || '(vacío)';
+      DIAG.metodo = metodo;
+      DIAG.respuestaIA = '(no se llamó: texto insuficiente)';
+      mostrarBotonDiag();
       return;
     }
+
+    // Guardar para diagnóstico
+    DIAG.texto = textoFinal;
 
     // Estructurar: IA si el proxy está configurado; si no o si falla, regex
     setOcr('load', 'Estructurando los datos…');
@@ -727,11 +783,14 @@ async function procesarPDF(file){
       try{
         datos = await estructurarConIA(textoFinal);
         if(datos) metodo += ' + IA';
-      }catch(e){ console.warn('IA falló, uso regex:', e.message); }
+      }catch(e){ console.warn('IA falló, uso regex:', e.message); DIAG.respuestaIA = 'ERROR: '+e.message; }
     }
     if(!datos) { datos = extraerConRegex(textoFinal); metodo += ' + regex'; }
 
+    DIAG.metodo = metodo;
+    DIAG.datos = datos;
     aplicarDatosExtraidos(datos);
+    mostrarBotonDiag();
     setOcr('ok', '✅ Datos prerrellenados por '+metodo+'. Revíselos antes de guardar.');
   }catch(err){
     console.error(err);
@@ -764,6 +823,30 @@ async function renderPreview(pdf, nombre){
 function cerrarPreview(){
   document.getElementById('pdfPreview').classList.remove('show');
   document.getElementById('ppCanvas').innerHTML = '';
+}
+
+// ── DIAGNÓSTICO de extracción ──
+function mostrarBotonDiag(){
+  document.getElementById('btnDiag').style.display = 'block';
+}
+function abrirDiag(){
+  const meta = 'Método: <b>'+esc(DIAG.metodo||'—')+'</b> · '
+    + 'Caracteres leídos: <b>'+(DIAG.texto?DIAG.texto.length:0)+'</b>';
+  document.getElementById('diagMeta').innerHTML = meta;
+  document.getElementById('diagTexto').textContent = DIAG.texto || '(sin texto)';
+  let ia = DIAG.respuestaIA || '(no se usó IA — se usó regex)';
+  if(DIAG.datos){ ia += '\n\n── Interpretado ──\n' + JSON.stringify(DIAG.datos, null, 2); }
+  document.getElementById('diagIA').textContent = ia;
+  document.getElementById('diagOverlay').classList.add('open');
+}
+function cerrarDiag(){ document.getElementById('diagOverlay').classList.remove('open'); }
+function copiarDiag(cual){
+  const txt = cual==='texto' ? DIAG.texto : (DIAG.respuestaIA + (DIAG.datos?'\n'+JSON.stringify(DIAG.datos,null,2):''));
+  navigator.clipboard.writeText(txt || '').then(()=>{
+    // feedback breve
+    event.target.textContent = '✓ Copiado';
+    setTimeout(()=>{ event.target.textContent = 'Copiar'; }, 1200);
+  }).catch(()=>{});
 }
 
 function marcarIA(idTag, wrapId){
@@ -1012,6 +1095,7 @@ function limpiarForm(){
   document.querySelectorAll('.fld.prefilled').forEach(w=>w.classList.remove('prefilled'));
   delete document.getElementById('btnGuardar').dataset.pdfNombre;
   document.getElementById('ocrStatus').className='ocr-status';
+  document.getElementById('btnDiag').style.display='none';
   cerrarPreview();
 }
 
@@ -1224,9 +1308,12 @@ function irPanel(p){
   dz.addEventListener('drop', e=>{ if(e.dataTransfer.files[0]) procesarPDF(e.dataTransfer.files[0]); });
 
   // Cerrar modal de detalle con Escape o clic fuera
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape') cerrarDetalle(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ cerrarDetalle(); cerrarDiag(); } });
   document.getElementById('detOverlay').addEventListener('click', e=>{
     if(e.target.id==='detOverlay') cerrarDetalle();
+  });
+  document.getElementById('diagOverlay').addEventListener('click', e=>{
+    if(e.target.id==='diagOverlay') cerrarDiag();
   });
 
   // Sesión
