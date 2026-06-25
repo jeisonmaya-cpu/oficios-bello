@@ -6,13 +6,18 @@
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
   <style>
-    :root{--ink:#0a0f1e;--ink2:#111827;--surface:#13192e;--panel:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);--blue:#2563eb;--blue2:#3b82f6;--cyan:#06b6d4;--gold:#f59e0b;--gold2:#fbbf24;--red:#ef4444;--amber:#f97316;--green:#22c55e;--text:#f1f5f9;--muted:rgba(241,245,249,.5);--soft:rgba(241,245,249,.3);--radius:14px;--radius-sm:9px}
+    :root{--ink:#0a0f1e;--ink2:#111827;--surface:#13192e;--panel:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);--blue:#2563eb;--blue2:#3b82f6;--cyan:#06b6d4;--gold:#f59e0b;--gold2:#fbbf24;--red:#ef4444;--amber:#f97316;--green:#22c55e;--text:#f1f5f9;--muted:rgba(241,245,249,.5);--soft:rgba(241,245,249,.3);--radius:14px;--radius-sm:9px;
+      --topbar-bg:rgba(10,15,30,.85);--navtabs-bg:rgba(10,15,30,.6);--modal-bg:#111827;--input-bg:rgba(255,255,255,.06);--input-bd:rgba(255,255,255,.14);--hover:rgba(255,255,255,.13)}
+    html[data-theme="light"]{--ink:#f1f4f9;--ink2:#ffffff;--surface:#ffffff;--panel:rgba(15,45,94,.03);--border:rgba(15,45,94,.12);--text:#0f2d5e;--muted:rgba(15,45,94,.55);--soft:rgba(15,45,94,.35);
+      --topbar-bg:rgba(255,255,255,.9);--navtabs-bg:rgba(255,255,255,.75);--modal-bg:#ffffff;--input-bg:rgba(15,45,94,.04);--input-bd:rgba(15,45,94,.18);--hover:rgba(15,45,94,.07)}
+    html[data-theme="light"] .bg-layer{background:radial-gradient(ellipse 70% 50% at 15% -5%,rgba(37,99,235,.06) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 85% 95%,rgba(6,182,212,.05) 0%,transparent 60%),linear-gradient(180deg,#eef2f8 0%,#e7edf5 50%,#eef2f8 100%)!important}
+    html[data-theme="light"] .bg-layer::after{background-image:radial-gradient(rgba(15,45,94,.025) 1px,transparent 1px)}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'DM Sans',sans-serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden;font-size:14px}
     .bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 70% 50% at 15% -5%,rgba(37,99,235,.18) 0%,transparent 65%),radial-gradient(ellipse 50% 40% at 85% 95%,rgba(6,182,212,.10) 0%,transparent 60%),linear-gradient(180deg,#0a0f1e 0%,#0d1426 50%,#090e1c 100%)}
     .bg-layer::after{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.015) 1px,transparent 1px);background-size:28px 28px}
     /* TOPBAR */
-    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;padding:0 28px;height:56px;background:rgba(10,15,30,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;padding:0 28px;height:56px;background:var(--topbar-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
     .logo{display:flex;align-items:center;gap:10px}
     .logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#1d4ed8,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
     .logo h1{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;letter-spacing:-.02em}
@@ -29,9 +34,9 @@
     .sync-dot.error{background:var(--red)}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
     .btn-top{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);cursor:pointer;transition:all .18s;text-decoration:none;font-family:'DM Sans',sans-serif}
-    .btn-top:hover{background:rgba(255,255,255,.13)}
+    .btn-top:hover{background:var(--hover)}
     /* GLOBAL RESULTS */
-    .global-results{position:absolute;top:44px;left:50%;transform:translateX(-50%);width:600px;max-height:380px;overflow-y:auto;background:#111827;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 24px 48px rgba(0,0,0,.6);z-index:200;display:none}
+    .global-results{position:absolute;top:44px;left:50%;transform:translateX(-50%);width:600px;max-height:380px;overflow-y:auto;background:var(--modal-bg);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 24px 48px rgba(0,0,0,.6);z-index:200;display:none}
     .global-results.open{display:block}
     .gr-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .15s}
     .gr-item:hover{background:rgba(255,255,255,.06)}
@@ -42,7 +47,7 @@
     .alerta-banner{position:relative;z-index:5;background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(249,115,22,.12));border-bottom:1px solid rgba(239,68,68,.25);padding:10px 28px;display:flex;align-items:center;gap:10px;font-size:13px}
     .alerta-banner.oculta{display:none}
     /* TABS */
-    .nav-tabs{position:relative;z-index:10;display:flex;align-items:center;padding:0 28px;background:rgba(10,15,30,.6);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);overflow-x:auto}
+    .nav-tabs{position:relative;z-index:10;display:flex;align-items:center;padding:0 28px;background:var(--navtabs-bg);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);overflow-x:auto}
     .nav-tabs::-webkit-scrollbar{height:0}
     .ntab{display:flex;align-items:center;gap:7px;padding:14px 18px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
     .ntab.active{color:var(--text);border-bottom-color:var(--gold)}
@@ -63,9 +68,9 @@
     .c-blue{color:var(--blue2)}.c-red{color:#f87171}.c-amber{color:var(--gold2)}.c-green{color:#4ade80}.c-purple{color:#c084fc}.c-cyan{color:var(--cyan)}
     /* FILTROS */
     .filtros{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-    .fi{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 13px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s}
+    .fi{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 13px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s}
     .fi:focus{border-color:rgba(37,99,235,.5)}
-    .fi option{background:#111827;color:#fff}
+    .fi option{background:var(--modal-bg);color:var(--text)}
     .fi-buscar{flex:1;min-width:220px}
     .btn-refresh{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);background:rgba(37,99,235,.2);border:1px solid rgba(37,99,235,.35);color:#fff;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;margin-left:auto}
     .btn-refresh:hover{background:rgba(37,99,235,.4)}
@@ -152,7 +157,7 @@
     /* MODAL */
     .overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.75);backdrop-filter:blur(6px)}
     .overlay.open{display:flex;align-items:center;justify-content:center;padding:20px}
-    .modal{background:linear-gradient(155deg,#111827 0%,#0d1525 100%);border:1px solid rgba(255,255,255,.1);border-radius:20px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 32px 64px rgba(0,0,0,.7)}
+    .modal{background:var(--modal-bg);border:1px solid rgba(255,255,255,.1);border-radius:20px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 32px 64px rgba(0,0,0,.7)}
     .modal-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px}
     .modal-close{background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
     .modal-close:hover{background:rgba(255,255,255,.18)}
@@ -162,7 +167,7 @@
     .mf label{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.09em;display:block;margin-bottom:3px}
     .mf .v{font-size:13px;font-weight:500;line-height:1.5}
     .mf.full{grid-column:1/-1}
-    .nt-inp{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box}
+    .nt-inp{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box}
     .nt-inp:focus{border-color:var(--gold)}
     .v-copy{display:inline-flex;align-items:center;gap:6px}
     .v-copy .v{flex:1;min-width:0;word-break:break-word}
@@ -178,8 +183,8 @@
     .mbtn-p:hover{opacity:.85}
     .mbtn-s{background:rgba(255,255,255,.09);border:1px solid var(--border);color:var(--text)}
     .mbtn-s:hover{background:rgba(255,255,255,.18)}
-    .esel{background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
-    .esel option{background:#111827}
+    .esel{background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none}
+    .esel option{background:var(--modal-bg);color:var(--text)}
     /* EMPTY / LOADER */
     .empty{text-align:center;padding:60px 20px;color:var(--soft)}
     .empty-icon{font-size:42px;margin-bottom:14px;opacity:.35}
@@ -256,6 +261,7 @@
   </div>
   <div class="topbar-right">
     <div class="sync-pill"><div class="sync-dot" id="sdot"></div><span id="slabel">—</span></div>
+    <button class="btn-top" id="btn-tema" onclick="toggleTema()" style="cursor:pointer;border:none" title="Cambiar tema">🌙 Oscuro</button>
     <a href="home.html" class="btn-top">🏛️ Inicio</a>
     <a href="index.html" class="btn-top">📄 Oficios</a>
     <button class="btn-top" onclick="cerrarSesion()" style="cursor:pointer;border:none">🔒 Salir</button>
@@ -421,7 +427,7 @@
 </div>
 
 <!-- MODAL DETALLE -->
-<div class="overlay" id="overlay" onclick="if(event.target===this)this.classList.remove('open')">
+<div class="overlay" id="overlay" onclick="if(event.target===this)cerrarModalPrincipal()">
   <div class="modal" style="max-width:780px">
     <div class="modal-top">
       <div style="flex:1;min-width:0">
@@ -435,7 +441,7 @@
           <button class="btn-copy" style="width:20px;height:20px" title="Copiar radicado" onclick="copiarCampo('RADICADO',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </div>
       </div>
-      <button class="modal-close" onclick="document.getElementById('overlay').classList.remove('open')">✕</button>
+      <button class="modal-close" onclick="cerrarModalPrincipal()">✕</button>
     </div>
     <div id="m-editar-wrap" style="display:none;margin:-6px 0 14px">
       <button onclick="abrirEditarCaso()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(232,160,32,.14);border:1px solid rgba(232,160,32,.35);color:var(--gold);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(232,160,32,.24)'" onmouseout="this.style.background='rgba(232,160,32,.14)'">✏️ Editar datos del caso</button>
@@ -486,7 +492,7 @@
       <div class="m-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
         <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">⚖️ Gestión Jurídica →</button>
-        <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
+        <button class="mbtn mbtn-s" onclick="cerrarModalPrincipal()">Cerrar</button>
       </div>
       <div id="m-escalado" class="m-actions" style="margin-top:10px;padding-top:14px;border-top:1px dashed var(--border);display:none">
         <div style="width:100%;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Escalar este caso</div>
@@ -515,7 +521,7 @@
       <div class="m-actions" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-s" onclick="switchMTab('info')">← Información</button>
         <button class="mbtn mbtn-s" onclick="switchMTab('tecnica')">🔧 Técnica →</button>
-        <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
+        <button class="mbtn mbtn-s" onclick="cerrarModalPrincipal()">Cerrar</button>
       </div>
     </div>
 
@@ -582,7 +588,7 @@
       <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-bottom:8px">💾 Guardar cambios</button>
       <div class="m-actions" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">← Jurídica</button>
-        <button class="mbtn mbtn-s" onclick="document.getElementById('overlay').classList.remove('open')">Cerrar</button>
+        <button class="mbtn mbtn-s" onclick="cerrarModalPrincipal()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1816,7 +1822,21 @@ function renderEstadisticas(){
   const estIncH=ests.map(e=>barra(e,estIncC[e],maxEI,estCols[e])).join("");
   const maxI=Math.max(...ABOGADOS.map(a=>incActiv.filter(r=>matchAbo(r["RESPONSABLE"],a)).length),1);
   const incH=ABOGADOS.map(a=>barra(pNom(a),incActiv.filter(r=>matchAbo(r["RESPONSABLE"],a)).length,maxI,"#fb923c")).join("");
+  // Casos cerrados por persona (total exacto: tutelas + fallos + incidentes en estado final)
+  const todosConInc=[...tutelas,...fallos,...incidentes];
+  const cerradosPorAbo=ABOGADOS.map(a=>({
+    abo:a,
+    n:todosConInc.filter(r=>EST_HIST.includes(r["ESTADO"]) && matchAbo(r["RESPONSABLE"],a)).length
+  })).sort((x,y)=>y.n-x.n);
+  const maxC=Math.max(...cerradosPorAbo.map(o=>o.n),1);
+  const lider=cerradosPorAbo[0];
+  const cerradosH=cerradosPorAbo.map((o,i)=>{
+    const medalla = o.n>0 ? (i===0?"🥇 ":i===1?"🥈 ":i===2?"🥉 ":"") : "";
+    return `<div class="est-row"><span class="est-label" title="${esc(o.abo)}">${medalla}${esc(abrev(pNom(o.abo),20))}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${Math.round(o.n/maxC*100)}%;background:#22c55e"></div></div><span class="est-val" style="color:#22c55e">${o.n}</span></div>`;
+  }).join("");
+  const totalCerrados=todosConInc.filter(r=>EST_HIST.includes(r["ESTADO"])).length;
   document.getElementById("grid-est").innerHTML=
+    `<div class="est-card" style="border-color:rgba(34,197,94,.3)"><div class="est-title" style="color:#22c55e">🏆 Casos cerrados por persona${lider&&lider.n>0?` · líder: ${esc(pNom(lider.abo))}`:""}</div>${cerradosH}<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Total cerrados por el equipo: <strong style="color:#22c55e">${totalCerrados}</strong> procesos. ¡Gran trabajo! 💪</div></div>`+
     `<div class="est-card"><div class="est-title">Por tipo de actuación</div>${tiposH}</div>`+
     `<div class="est-card"><div class="est-title">Por estado (tutelas & fallos)</div>${estH}</div>`+
     `<div class="est-card"><div class="est-title">Carga activa por abogado</div>${aboH}</div>`+
@@ -1951,6 +1971,25 @@ function abrirModal(da, origen){
   // ── Gestión visible en pestaña Información (para que los abogados la vean sin entrar a Gestión) ──
   llenarGestionVisible(r);
   document.getElementById("overlay").classList.add("open");
+  // Snapshot de los campos editables para detectar cambios sin guardar al cerrar
+  _snapshotModal = leerCamposModal();
+}
+
+// Lee el estado actual de los campos editables del modal principal
+function leerCamposModal(){
+  const v=id=>{const el=document.getElementById(id);return el?el.value:"";};
+  return [v("m-esel"),v("m-resp-pqr"),v("m-resp-rad"),v("m-pqrenc-sel"),v("m-sharepoint"),v("m-radpqr")].join("|§|");
+}
+let _snapshotModal = "";
+
+// Cierre con guardia de cambios sin guardar
+function cerrarModalPrincipal(){
+  const ahora = leerCamposModal();
+  if(_snapshotModal && ahora !== _snapshotModal){
+    if(!window.confirm("Tienes cambios sin guardar. ¿Cerrar de todas formas y perderlos?")) return;
+  }
+  _snapshotModal = "";
+  document.getElementById("overlay").classList.remove("open");
 }
 
 // Rellena la tarjeta "Gestión registrada" de la pestaña Información
@@ -2207,6 +2246,7 @@ async function guardarEstado(){
       actual["PQR"]=radicadoPQR;
       toast(EST_HIST.includes(nuevoEst)?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado en Supabase","ok");
       renderAll();
+      _snapshotModal = "";
       document.getElementById("overlay").classList.remove("open");
     }catch(e){
       if(/JWT expired|401/i.test(e.message)){
@@ -2243,6 +2283,7 @@ async function guardarEstado(){
       actual["ENCARGADO PQR"]=encPQR;
       toast(EST_HIST.includes(nuevoEst)?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado en Sheets","ok");
       renderAll();
+      _snapshotModal = "";
       document.getElementById("overlay").classList.remove("open");
     }else{
       toast("❌ Error al guardar: "+(d.error||"Sin detalle")+" — los cambios NO se guardaron","err");
@@ -2476,10 +2517,42 @@ async function cargarDatosSafe(esAutoRefresh=false) {
   } catch(e){ console.error(e); } finally { cargando = false; }
 }
 // Tecla Escape cierra cualquier modal abierto
+// ════════════════════════════════════════
+// TEMA CLARO / OSCURO  (recuerda la preferencia)
+// ════════════════════════════════════════
+function aplicarTema(t){
+  const html=document.documentElement;
+  const btn=document.getElementById("btn-tema");
+  if(t==="light"){
+    html.setAttribute("data-theme","light");
+    if(btn) btn.textContent="☀️ Claro";
+  } else {
+    html.removeAttribute("data-theme");
+    if(btn) btn.textContent="🌙 Oscuro";
+  }
+}
+function toggleTema(){
+  const actualT = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+  try{ localStorage.setItem("tutelas_tema", actualT); }catch(e){}
+  aplicarTema(actualT);
+}
+// Aplica el tema guardado al arrancar
+(function initTema(){
+  let t="dark";
+  try{ t=localStorage.getItem("tutelas_tema")||"dark"; }catch(e){}
+  aplicarTema(t);
+})();
+
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')['overlay','overlay-pqr','overlay-confirm','overlay-informe','overlay-nueva','overlay-nuevoinc','overlay-escalar','overlay-editar'].forEach(id=>{
-    const o=document.getElementById(id); if(o) o.classList.remove('open');
-  });
+  if(e.key==='Escape'){
+    // Modal principal: con guardia de cambios sin guardar
+    const ovP=document.getElementById('overlay');
+    if(ovP && ovP.classList.contains('open')){ cerrarModalPrincipal(); }
+    // Modales secundarios: cierre directo
+    ['overlay-pqr','overlay-confirm','overlay-informe','overlay-nueva','overlay-nuevoinc','overlay-escalar','overlay-editar'].forEach(id=>{
+      const o=document.getElementById(id); if(o) o.classList.remove('open');
+    });
+  }
   // Ctrl+Enter (o Cmd+Enter) guarda los cambios del caso si el modal principal está abierto
   if((e.ctrlKey||e.metaKey) && e.key==='Enter'){
     const ov=document.getElementById('overlay');
