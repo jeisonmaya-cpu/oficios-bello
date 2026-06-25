@@ -99,6 +99,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 #bloque-prescripcion.show{display:grid}
 #bloque-prescripcion .presc-hdr{grid-column:1 / -1;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold2);display:flex;align-items:center;gap:7px}
 
+/* CHIPS (comparendos / vigencias) */
+.chip-input{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:46px;padding:7px 8px;background:var(--in-bg);border:1.5px solid var(--in-bd);border-radius:10px;transition:all .2s}
+.chip-input:focus-within{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(45,141,232,.15)}
+.chip-zona{display:contents}
+.chip{display:inline-flex;align-items:center;gap:6px;background:rgba(45,141,232,.18);border:1px solid rgba(45,141,232,.3);color:#bfdbff;font-size:12.5px;font-weight:600;padding:4px 6px 4px 11px;border-radius:8px;font-variant-numeric:tabular-nums;animation:chipIn .15s ease}
+@keyframes chipIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.chip .chip-x{background:rgba(255,255,255,.12);border:none;color:#fff;width:18px;height:18px;border-radius:5px;cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.chip .chip-x:hover{background:var(--red);color:#fff}
+.chip-entry{flex:1;min-width:120px;border:none;background:none;outline:none;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;height:32px;padding:0 4px}
+.chip-entry::placeholder{color:rgba(255,255,255,.28)}
+.chip-add{flex-shrink:0;width:30px;height:30px;border:none;border-radius:8px;background:rgba(45,141,232,.2);color:#93c5fd;font-size:18px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.chip-add:hover{background:var(--blue2);color:#fff}
+
 .form-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
 .btn{height:46px;padding:0 22px;border:none;border-radius:11px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .2s}
 .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;box-shadow:0 4px 16px rgba(26,111,196,.35)}
@@ -289,14 +302,31 @@ tbody tr:hover{background:rgba(255,255,255,.03)}
         <!-- BLOQUE CONDICIONAL: solo Prescripción -->
         <div id="bloque-prescripcion">
           <div class="presc-hdr">⚖️ Datos obligatorios para Prescripción</div>
+
           <div class="fld">
-            <label class="lbl">Número de comparendo <span class="fld-ia-tag" id="ia-comparendo" style="display:none">IA</span></label>
-            <input type="text" id="f-comparendo" placeholder="Ej: 05088000000012345678">
+            <label class="lbl">Comparendos <span class="fld-ia-tag" id="ia-comparendo" style="display:none">IA</span></label>
+            <div class="chip-input" id="chips-comparendo">
+              <span class="chip-zona" id="zona-comparendo"></span>
+              <input type="text" class="chip-entry" id="entry-comparendo" inputmode="numeric"
+                     placeholder="Escriba un comparendo y Enter"
+                     onkeydown="chipKey(event,'comparendo')">
+              <button type="button" class="chip-add" onclick="chipAdd('comparendo')" title="Agregar">+</button>
+            </div>
+            <div class="fld-hint">Agregue uno por uno. Enter o el botón + para añadir.</div>
+            <input type="hidden" id="f-comparendo">
           </div>
+
           <div class="fld">
             <label class="lbl">Años (vigencias) a prescribir <span class="fld-ia-tag" id="ia-vigencias" style="display:none">IA</span></label>
-            <input type="text" id="f-vigencias" placeholder="Ej: 2017, 2018, 2019">
-            <div class="fld-hint">Separe los años con comas.</div>
+            <div class="chip-input" id="chips-vigencias">
+              <span class="chip-zona" id="zona-vigencias"></span>
+              <input type="text" class="chip-entry" id="entry-vigencias" inputmode="numeric" maxlength="4"
+                     placeholder="Año y Enter (ej. 2018)"
+                     onkeydown="chipKey(event,'vigencias')">
+              <button type="button" class="chip-add" onclick="chipAdd('vigencias')" title="Agregar">+</button>
+            </div>
+            <div class="fld-hint">Agregue cada año por separado.</div>
+            <input type="hidden" id="f-vigencias">
           </div>
         </div>
 
@@ -761,10 +791,10 @@ function aplicarDatosExtraidos(d){
     if(v){ document.getElementById('f-tipo').value=v; toggleCondicional(); }
   }
   if(d.comparendo){
-    // Solo dejar números de comparendo (8+ dígitos); descartar palabras como "mencionadas"
+    // Solo números de comparendo (8+ dígitos); descartar palabras como "mencionadas"
     const comps = String(d.comparendo).match(/\d{8,20}/g);
     if(comps && comps.length){
-      document.getElementById('f-comparendo').value = comps.join(', ');
+      comps.forEach(c => chipPush('comparendo', c));
       marcarIA('ia-comparendo');
     }
   }
@@ -773,7 +803,7 @@ function aplicarDatosExtraidos(d){
     const anios = (String(d.vigencias).match(/\b(19|20)\d{2}\b/g) || [])
       .filter(a => +a >= 1990 && +a <= 2035);
     if(anios.length){
-      document.getElementById('f-vigencias').value = [...new Set(anios)].join(', ');
+      [...new Set(anios)].forEach(a => chipPush('vigencias', a));
       marcarIA('ia-vigencias');
     }
   }
@@ -786,17 +816,81 @@ function aplicarDatosExtraidos(d){
 function toggleCondicional(){
   const esPresc = document.getElementById('f-tipo').value === '3';
   const bloque = document.getElementById('bloque-prescripcion');
-  const comp = document.getElementById('f-comparendo');
-  const vig  = document.getElementById('f-vigencias');
   if(esPresc){
     bloque.classList.add('show');
-    comp.required = true; vig.required = true;
   }else{
     bloque.classList.remove('show');
-    comp.required = false; vig.required = false;
-    comp.value=''; vig.value='';
+    chipClear('comparendo');
+    chipClear('vigencias');
   }
 }
+
+// ════════════════════════════════════════════════════════════
+// CHIPS — comparendos y vigencias (agregar/quitar con etiquetas)
+// ════════════════════════════════════════════════════════════
+const CHIPS = { comparendo: [], vigencias: [] };
+
+function chipKey(ev, tipo){
+  if(ev.key === 'Enter' || ev.key === ','){
+    ev.preventDefault();
+    chipAdd(tipo);
+  }else if(ev.key === 'Backspace' && !ev.target.value && CHIPS[tipo].length){
+    // Backspace con campo vacío borra el último chip
+    chipRemove(tipo, CHIPS[tipo].length - 1);
+  }
+}
+
+function chipAdd(tipo){
+  const entry = document.getElementById('entry-'+tipo);
+  const val = entry.value.trim();
+  if(!val) return;
+
+  if(tipo === 'comparendo'){
+    const num = val.replace(/\D/g,'');
+    if(num.length < 6){ entry.style.borderColor=''; flashEntry(entry); return; }
+    chipPush('comparendo', num);
+  }else{ // vigencias
+    const año = val.replace(/\D/g,'');
+    if(!/^(19|20)\d{2}$/.test(año) || +año < 1990 || +año > 2035){ flashEntry(entry); return; }
+    chipPush('vigencias', año);
+  }
+  entry.value = '';
+  entry.focus();
+}
+
+// Agrega un chip al modelo (evita duplicados) y re-renderiza
+function chipPush(tipo, val){
+  if(CHIPS[tipo].includes(val)) return;
+  CHIPS[tipo].push(val);
+  chipRender(tipo);
+}
+
+function chipRemove(tipo, idx){
+  CHIPS[tipo].splice(idx, 1);
+  chipRender(tipo);
+}
+
+function chipClear(tipo){
+  CHIPS[tipo] = [];
+  chipRender(tipo);
+}
+
+function chipRender(tipo){
+  const zona = document.getElementById('zona-'+tipo);
+  zona.innerHTML = CHIPS[tipo].map((v,i) =>
+    '<span class="chip">'+esc(v)
+    + '<button type="button" class="chip-x" onclick="chipRemove(\''+tipo+'\','+i+')" title="Quitar">×</button></span>'
+  ).join('');
+  // Sincronizar el input oculto que se guarda en la base (texto con comas)
+  document.getElementById('f-'+tipo).value = CHIPS[tipo].join(', ');
+}
+
+function flashEntry(entry){
+  entry.style.transition = 'background .2s';
+  entry.style.background = 'rgba(220,38,38,.15)';
+  setTimeout(()=>{ entry.style.background=''; }, 350);
+}
+
 
 // ════════════════════════════════════════════════════════════
 // GUARDAR PQR
@@ -842,6 +936,10 @@ function md5(str){
 }
 
 async function guardarPQR(){
+  // Si quedó texto sin confirmar en los entries de chips, agregarlo antes de guardar
+  if(document.getElementById('entry-comparendo').value.trim()) chipAdd('comparendo');
+  if(document.getElementById('entry-vigencias').value.trim()) chipAdd('vigencias');
+
   const nombre   = document.getElementById('f-nombre').value.trim();
   const cedula   = document.getElementById('f-cedula').value.replace(/\D/g,'');
   const radicado = document.getElementById('f-radicado').value.trim();
@@ -901,10 +999,14 @@ async function guardarPQR(){
 }
 
 function limpiarForm(){
-  ['f-nombre','f-cedula','f-radicado','f-correo','f-comparendo','f-vigencias','f-obs','f-resumen'].forEach(id=>{
+  ['f-nombre','f-cedula','f-radicado','f-correo','f-obs','f-resumen'].forEach(id=>{
     document.getElementById(id).value='';
   });
   document.getElementById('f-tipo').value='';
+  chipClear('comparendo');
+  chipClear('vigencias');
+  document.getElementById('entry-comparendo').value='';
+  document.getElementById('entry-vigencias').value='';
   toggleCondicional();
   document.querySelectorAll('.fld-ia-tag').forEach(t=>t.style.display='none');
   document.querySelectorAll('.fld.prefilled').forEach(w=>w.classList.remove('prefilled'));
