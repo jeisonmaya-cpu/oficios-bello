@@ -580,15 +580,52 @@ function extraerConRegex(texto){
   const out = {nombre:'', cedula:'', radicado:'', tipo:'', comparendo:'', vigencias:'', resumen:''};
   const t = texto.replace(/\s+/g,' ');
 
-  let m = t.match(/(?:c[ée]dula|cc|c\.c\.?|identificaci[óo]n|documento)[\s:.\-n°º]*([\d.]{6,15})/i);
+  // ── CÉDULA ──
+  // Patrón fuerte: "cédula de ciudadanía 71.274.443" / "identificado con cédula NÚMERO"
+  let m = t.match(/c[ée]dula\s+de\s+ciudadan[íi]a\s*(?:n[°º.]*)?\s*([\d.,]{7,15})/i)
+       || t.match(/(?:c[ée]dula|c\.?c\.?|identificaci[óo]n|documento)\s*(?:n[°º.]*)?\s*[:.\-]?\s*([\d.,]{7,15})/i);
   if(m) out.cedula = m[1].replace(/\D/g,'');
 
-  m = t.match(/(?:radicado|radicaci[óo]n|n[°º]?\s*pqr)[\s:.\-n°º]*([A-Z0-9\-\/]{4,30})/i);
-  if(m) out.radicado = m[1];
+  // ── RADICADO ──
+  // Prioridad 1: sello de radicación "Radicado 20261071345" (número largo, 8-15 dígitos).
+  //   Este es el formato del sello de la Alcaldía y es el más confiable.
+  m = t.match(/Radicado\s*[:\-]?\s*(\d{8,15})/i);
+  if(m){
+    out.radicado = m[1];
+  } else {
+    // Prioridad 2: "radicado" o "radicación" seguido de un código alfanumérico,
+    //   pero exigimos al menos 6 caracteres con dígitos para evitar capturar años sueltos.
+    m = t.match(/(?:radicado|radicaci[óo]n|n[°º]?\s*pqr)\s*(?:n[°º.]*)?\s*[:.\-]?\s*([A-Z0-9][A-Z0-9\-\/]{5,29})/i);
+    if(m && /\d/.test(m[1])) out.radicado = m[1];
+  }
 
-  m = t.match(/(?:comparendo)[\s:.\-n°º]*([A-Z0-9]{8,30})/i);
+  // ── NOMBRE ──
+  // Patrón típico de derecho de petición: "Yo, JULIAN DAVID LOPEZ RAMIREZ, identificado..."
+  m = t.match(/\bYo,?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?)\s*,?\s+identificad[oa]/);
+  if(!m){
+    // Variante: "el (la) señor(a) NOMBRE identificado"
+    m = t.match(/se[ñn]or(?:a)?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{6,60}?)\s*,?\s+identificad[oa]/i);
+  }
+  if(m){
+    out.nombre = m[1].trim().replace(/\s+/g,' ')
+      // Pasar de MAYÚSCULAS a Título (María, José…) para que se vea natural
+      .toLowerCase().replace(/\b\w/g, c=>c.toUpperCase());
+  }
+
+  // ── COMPARENDO ──
+  m = t.match(/comparendo\s*(?:n[°º.]*)?\s*[:.\-]?\s*([A-Z0-9]{8,30})/i);
   if(m) out.comparendo = m[1];
 
+  // ── VIGENCIAS (años a prescribir) ──
+  // Busca años 19xx/20xx en zonas que mencionen vigencia/vigencias/años.
+  const vigZona = t.match(/vigencia[s]?[^.]{0,120}/i);
+  if(vigZona){
+    const anios = (vigZona[0].match(/\b(19|20)\d{2}\b/g) || [])
+      .filter(a => +a >= 1990 && +a <= 2035);
+    if(anios.length) out.vigencias = [...new Set(anios)].join(', ');
+  }
+
+  // ── TIPO ──
   if(/prescrip/i.test(t)) out.tipo = 'Prescripción';
   else if(/desembargo|levantamiento.{0,20}medida/i.test(t)) out.tipo = 'Desembargo';
   else if(/devoluci[óo]n.{0,20}diner/i.test(t)) out.tipo = 'Devolución de Dineros';
