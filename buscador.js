@@ -31,16 +31,17 @@ const Repo = {
       filtro = `comparendo=eq.${encodeURIComponent(t.toUpperCase())}`;
     }
     const url = `${SUPABASE_URL}/rest/v1/${SB_VISTA}?${filtro}&select=*&order=comparendo.asc`;
-    const res = await fetch(url, { headers: this._headers() });
+    const res = await fetch(url, { headers: await this._headersAuth() });
     if (!res.ok) throw new Error("Supabase HTTP " + res.status);
     return res.json();
   },
   // Inserta una guía nueva (la persona técnica).
   async insertar(reg){
     const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`;
+    const headers = await this._headersAuth();
     const res = await fetch(url, {
       method: "POST",
-      headers: { ...this._headers(), "Content-Type": "application/json", Prefer: "return=minimal" },
+      headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
       body: JSON.stringify(reg)
     });
     if (!res.ok) {
