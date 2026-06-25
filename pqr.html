@@ -270,6 +270,11 @@ tbody tr:hover{background:rgba(255,255,255,.03)}
           <label class="lbl">Número de radicado PQR <span class="fld-ia-tag" id="ia-radicado" style="display:none">IA</span></label>
           <input type="text" id="f-radicado" placeholder="Ej: 2026-EE-0001234">
         </div>
+        <div class="fld" id="wrap-correo">
+          <label class="lbl">Correo del solicitante <span class="fld-ia-tag" id="ia-correo" style="display:none">IA</span></label>
+          <input type="email" id="f-correo" placeholder="Ej: solicitante@gmail.com">
+          <div class="fld-hint">Para notificar al ciudadano. Suele venir en el encabezado del correo.</div>
+        </div>
         <div class="fld" id="wrap-tipo">
           <label class="lbl">Tipo de petición</label>
           <select id="f-tipo" onchange="toggleCondicional()">
@@ -392,7 +397,7 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // ⚠️ PROXY IA — Endpoint de Apps Script que reenvía a la API de Claude (Haiku).
 // La API key vive en el Apps Script, nunca aquí. Se llama por GET (evita CORS/302).
 // Si lo dejas vacío, la cascada usa pdf.js + Tesseract + regex (sin IA).
-const PROXY_IA_URL   = "https://script.google.com/macros/s/AKfycbwkWNsKP9Co9I6vVwm8CkJ1NXcU_ijjIRMOW47WdzPEdfooBX5hqnem4J9dji51DVKW8g/exec"; // ej: "https://script.google.com/macros/s/AKfyc.../exec"
+const PROXY_IA_URL   = "PEGA-AQUI-TU-URL-PROXY"; // ej: "https://script.google.com/macros/s/AKfyc.../exec"
 const PROXY_IA_TOKEN = "teodoro-pqr-2026";       // debe coincidir con TOKEN_SECRETO del Apps Script
 
 const SB_TABLA = "pqr";
@@ -557,8 +562,12 @@ async function estructurarConIA(texto){
     "Eres un asistente que extrae datos de una PQR de cobro coactivo municipal (Colombia). "
   + "Del siguiente texto, devuelve EXCLUSIVAMENTE un JSON válido (sin markdown, sin explicación) con estas claves: "
   + "nombre (nombre completo del solicitante), cedula (solo dígitos), radicado (número de radicado PQR), "
+  + "correo (la dirección de correo electrónico del solicitante o remitente; suele aparecer en el encabezado del correo tras 'De:' o 'Desde:'; si no hay, \"\"), "
   + "tipo (uno de: Embargo, Desembargo, Prescripción, Devolución de Dineros, o \"\" si no es claro), "
-  + "comparendo (solo si es Prescripción, si no \"\"), vigencias (años a prescribir separados por coma, solo si Prescripción, si no \"\"), "
+  + "comparendo (SOLO los números de comparendo/orden de comparendo, que son códigos numéricos largos de 8 a 20 dígitos; "
+  + "si hay varios, sepáralos con coma; NUNCA pongas palabras, solo los números; si no hay, \"\"), "
+  + "vigencias (los AÑOS concretos a prescribir en formato AAAA, ej. \"2018, 2019\"; "
+  + "NO pongas cantidades de años como \"3\"; si el texto solo dice 'más de 3 años' sin años concretos, deja \"\"), "
   + "resumen (2 o 3 frases en español sintetizando qué solicita el peticionario y por qué). "
   + "Si un dato no aparece, usa cadena vacía. TEXTO:\n\n" + texto.slice(0, 6000);
 
@@ -581,7 +590,7 @@ async function estructurarConIA(texto){
 
 // Fallback sin IA: regex básico sobre el texto (cédula, radicado, tipo)
 function extraerConRegex(texto){
-  const out = {nombre:'', cedula:'', radicado:'', tipo:'', comparendo:'', vigencias:'', resumen:''};
+  const out = {nombre:'', cedula:'', radicado:'', correo:'', tipo:'', comparendo:'', vigencias:'', resumen:''};
   const t = texto.replace(/\s+/g,' ');
 
   // ── CÉDULA ──
@@ -589,6 +598,16 @@ function extraerConRegex(texto){
   let m = t.match(/c[ée]dula\s+de\s+ciudadan[íi]a\s*(?:n[°º.]*)?\s*([\d.,]{7,15})/i)
        || t.match(/(?:c[ée]dula|c\.?c\.?|identificaci[óo]n|documento)\s*(?:n[°º.]*)?\s*[:.\-]?\s*([\d.,]{7,15})/i);
   if(m) out.cedula = m[1].replace(/\D/g,'');
+
+  // ── CORREO ──
+  // Prioridad: correo cerca de "De:"/"Desde:" (el remitente del email del ciudadano).
+  let mc = t.match(/(?:de|desde|from)\s*:?\s*[^@\s]*?([a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,})/i);
+  if(!mc) mc = t.match(/([a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,})/i); // cualquier correo
+  if(mc){
+    const correo = mc[1].toLowerCase();
+    // Evitar capturar correos institucionales de la Alcaldía como si fueran del ciudadano
+    if(!/bello\.gov\.co/i.test(correo)) out.correo = correo;
+  }
 
   // ── RADICADO ──
   // Prioridad 1: sello de radicación "Radicado 20261071345" (número largo, 8-15 dígitos).
@@ -642,6 +661,15 @@ function extraerConRegex(texto){
 async function procesarPDF(file){
   if(!file || file.type!=='application/pdf'){ setOcr('err','El archivo debe ser un PDF.'); return; }
   document.getElementById('btnGuardar').dataset.pdfNombre = file.name;
+
+  // El nombre del archivo ES el radicado (ej. "20261071406.pdf" → 20261071406).
+  // Fuente 100% confiable, no depende de IA ni OCR.
+  const radDeNombre = (file.name.replace(/\.pdf$/i,'').match(/\d{6,15}/) || [])[0];
+  if(radDeNombre){
+    document.getElementById('f-radicado').value = radDeNombre;
+    marcarIA('ia-radicado','wrap-radicado');
+  }
+
   try{
     setOcr('load', 'Leyendo el PDF…');
     const {texto, pdf} = await extraerTextoPDF(file);
@@ -719,15 +747,36 @@ function aplicarDatosExtraidos(d){
   if(!d) return;
   if(d.nombre){ document.getElementById('f-nombre').value=d.nombre; marcarIA('ia-nombre','wrap-nombre'); }
   if(d.cedula){ document.getElementById('f-cedula').value=String(d.cedula).replace(/\D/g,''); marcarIA('ia-cedula','wrap-cedula'); }
-  if(d.radicado){ document.getElementById('f-radicado').value=d.radicado; marcarIA('ia-radicado','wrap-radicado'); }
+  if(d.correo){
+    const c = String(d.correo).trim().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/i);
+    if(c){ document.getElementById('f-correo').value=c[0]; marcarIA('ia-correo','wrap-correo'); }
+  }
+  // El radicado del nombre del archivo manda; solo usar el de la IA si quedó vacío.
+  const radEl = document.getElementById('f-radicado');
+  if(d.radicado && !radEl.value){ radEl.value=d.radicado; marcarIA('ia-radicado','wrap-radicado'); }
   // Mapear tipo (texto) → value del select
   if(d.tipo){
     const map = {'embargo':'1','desembargo':'2','prescripción':'3','prescripcion':'3','devolución de dineros':'4','devolucion de dineros':'4'};
     const v = map[String(d.tipo).toLowerCase().trim()];
     if(v){ document.getElementById('f-tipo').value=v; toggleCondicional(); }
   }
-  if(d.comparendo){ document.getElementById('f-comparendo').value=d.comparendo; marcarIA('ia-comparendo'); }
-  if(d.vigencias){ document.getElementById('f-vigencias').value=d.vigencias; marcarIA('ia-vigencias'); }
+  if(d.comparendo){
+    // Solo dejar números de comparendo (8+ dígitos); descartar palabras como "mencionadas"
+    const comps = String(d.comparendo).match(/\d{8,20}/g);
+    if(comps && comps.length){
+      document.getElementById('f-comparendo').value = comps.join(', ');
+      marcarIA('ia-comparendo');
+    }
+  }
+  if(d.vigencias){
+    // Solo años AAAA válidos; descartar cantidades sueltas como "3"
+    const anios = (String(d.vigencias).match(/\b(19|20)\d{2}\b/g) || [])
+      .filter(a => +a >= 1990 && +a <= 2035);
+    if(anios.length){
+      document.getElementById('f-vigencias').value = [...new Set(anios)].join(', ');
+      marcarIA('ia-vigencias');
+    }
+  }
   if(d.resumen){ document.getElementById('f-resumen').value=d.resumen; marcarIA('ia-resumen'); }
 }
 
@@ -796,6 +845,7 @@ async function guardarPQR(){
   const nombre   = document.getElementById('f-nombre').value.trim();
   const cedula   = document.getElementById('f-cedula').value.replace(/\D/g,'');
   const radicado = document.getElementById('f-radicado').value.trim();
+  const correo   = document.getElementById('f-correo').value.trim();
   const tipo     = document.getElementById('f-tipo').value;
   const comp     = document.getElementById('f-comparendo').value.trim();
   const vig      = document.getElementById('f-vigencias').value.trim();
@@ -808,6 +858,8 @@ async function guardarPQR(){
   if(!cedula)   return setStatus('formStatus','err','⚠️ El documento de identidad es obligatorio.');
   if(!radicado) return setStatus('formStatus','err','⚠️ El número de radicado es obligatorio.');
   if(!tipo)     return setStatus('formStatus','err','⚠️ Seleccione el tipo de petición.');
+  if(correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo))
+    return setStatus('formStatus','err','⚠️ El correo no tiene un formato válido.');
   if(tipo==='3' && (!comp || !vig))
     return setStatus('formStatus','err','⚠️ Para Prescripción, comparendo y vigencias son obligatorios.');
 
@@ -819,6 +871,7 @@ async function guardarPQR(){
   const row = {
     radicado, nombre,
     id_contribuyente: cedula,
+    correo: correo || null,
     id_tipo: parseInt(tipo,10),
     comparendo: tipo==='3' ? comp : null,
     vigencias:  tipo==='3' ? vig  : null,
@@ -848,7 +901,7 @@ async function guardarPQR(){
 }
 
 function limpiarForm(){
-  ['f-nombre','f-cedula','f-radicado','f-comparendo','f-vigencias','f-obs','f-resumen'].forEach(id=>{
+  ['f-nombre','f-cedula','f-radicado','f-correo','f-comparendo','f-vigencias','f-obs','f-resumen'].forEach(id=>{
     document.getElementById(id).value='';
   });
   document.getElementById('f-tipo').value='';
@@ -939,6 +992,7 @@ function abrirDetalle(pqrId){
   html += '<div class="det-grid">'
     + item('Solicitante', r.nombre)
     + item('Documento', r.id_contribuyente)
+    + item('Correo', r.correo)
     + item('Radicado', r.radicado)
     + item('Tipo', TIPOS[r.id_tipo])
     + item('Estado', r.estado || 'Registrada')
@@ -1020,6 +1074,7 @@ function exportarExcel(){
     'Radicado': r.radicado,
     'Solicitante': r.nombre,
     'Documento': r.id_contribuyente,
+    'Correo': r.correo||'',
     'Tipo': TIPOS[r.id_tipo]||'',
     'Comparendo': r.comparendo||'',
     'Vigencias': r.vigencias||'',
@@ -1035,7 +1090,7 @@ function exportarExcel(){
   }));
 
   const ws = XLSX.utils.json_to_sheet(filas);
-  ws['!cols'] = [{wch:18},{wch:26},{wch:14},{wch:18},{wch:20},{wch:16},{wch:46},{wch:40},{wch:14},{wch:12},{wch:24},{wch:18},{wch:18},{wch:18},{wch:18}];
+  ws['!cols'] = [{wch:18},{wch:26},{wch:14},{wch:28},{wch:18},{wch:20},{wch:16},{wch:46},{wch:40},{wch:14},{wch:12},{wch:24},{wch:18},{wch:18},{wch:18},{wch:18}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'PQRs');
   const hoy = new Date().toISOString().slice(0,10);
