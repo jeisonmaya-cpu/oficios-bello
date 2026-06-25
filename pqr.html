@@ -389,10 +389,11 @@ tbody tr:hover{background:rgba(255,255,255,.03)}
 const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
 
-// ⚠️ PROXY IA — Pega aquí tu endpoint que reenvía a la API de Claude (Haiku).
-// El MISMO proxy (Apps Script u otro) que ya usas en tutelas para no exponer la API key.
-// Si lo dejas vacío, la cascada usa solo pdf.js + Tesseract (sin estructuración por IA).
-const PROXY_IA_URL = ""; // ej: "https://script.google.com/macros/s/AKfyc.../exec"
+// ⚠️ PROXY IA — Endpoint de Apps Script que reenvía a la API de Claude (Haiku).
+// La API key vive en el Apps Script, nunca aquí. Se llama por GET (evita CORS/302).
+// Si lo dejas vacío, la cascada usa pdf.js + Tesseract + regex (sin IA).
+const PROXY_IA_URL   = "PEGA-AQUI-TU-URL-PROXY"; // ej: "https://script.google.com/macros/s/AKfyc.../exec"
+const PROXY_IA_TOKEN = "teodoro-pqr-2026";       // debe coincidir con TOKEN_SECRETO del Apps Script
 
 const SB_TABLA = "pqr";
 const SB_VISTA = "v_pqr";
@@ -550,7 +551,8 @@ async function ocrTesseract(pdf){
 
 // Nivel 3: estructurar texto crudo → JSON, vía proxy a Claude Haiku (barato: solo texto)
 async function estructurarConIA(texto){
-  if(!PROXY_IA_URL) return null; // sin proxy configurado → se omite IA
+  // Sin proxy configurado (vacío o marcador sin reemplazar) → se omite IA
+  if(!PROXY_IA_URL || PROXY_IA_URL.indexOf('PEGA-AQUI') !== -1) return null;
   const prompt =
     "Eres un asistente que extrae datos de una PQR de cobro coactivo municipal (Colombia). "
   + "Del siguiente texto, devuelve EXCLUSIVAMENTE un JSON válido (sin markdown, sin explicación) con estas claves: "
@@ -560,16 +562,18 @@ async function estructurarConIA(texto){
   + "resumen (2 o 3 frases en español sintetizando qué solicita el peticionario y por qué). "
   + "Si un dato no aparece, usa cadena vacía. TEXTO:\n\n" + texto.slice(0, 6000);
 
-  // El proxy recibe {prompt} y reenvía a api.anthropic.com con la key del lado servidor.
-  // Ajusta el body a lo que tu proxy de tutelas ya espera.
-  const res = await fetch(PROXY_IA_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({prompt, model: 'claude-haiku-4-5-20251001', max_tokens: 800})
+  // GET con URLSearchParams (evita el CORS/302 que da POST a Apps Script).
+  const qs = new URLSearchParams({
+    token: PROXY_IA_TOKEN,
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: '800',
+    prompt: prompt
   });
+  const res = await fetch(PROXY_IA_URL + '?' + qs.toString(), { method: 'GET' });
   if(!res.ok) throw new Error('Proxy IA HTTP '+res.status);
   const data = await res.json();
-  // El proxy debería devolver el texto del modelo. Toleramos varias formas:
+  if(data.error) throw new Error('Proxy IA: '+data.error);
+  // El proxy devuelve {text:"..."}; toleramos otras formas por compatibilidad.
   let salida = data.text || data.respuesta || (data.content && data.content[0] && data.content[0].text) || '';
   salida = String(salida).replace(/```json|```/g,'').trim();
   try{ return JSON.parse(salida); }catch(e){ return null; }
@@ -657,12 +661,15 @@ async function procesarPDF(file){
       return;
     }
 
-    // Estructurar: IA si hay proxy, si no regex
+    // Estructurar: IA si el proxy está configurado; si no o si falla, regex
     setOcr('load', 'Estructurando los datos…');
     let datos = null;
-    if(PROXY_IA_URL){
-      try{ datos = await estructurarConIA(textoFinal); metodo += ' + IA'; }
-      catch(e){ console.warn('IA falló, uso regex:', e.message); }
+    const hayProxy = PROXY_IA_URL && PROXY_IA_URL.indexOf('PEGA-AQUI') === -1;
+    if(hayProxy){
+      try{
+        datos = await estructurarConIA(textoFinal);
+        if(datos) metodo += ' + IA';
+      }catch(e){ console.warn('IA falló, uso regex:', e.message); }
     }
     if(!datos) { datos = extraerConRegex(textoFinal); metodo += ' + regex'; }
 
