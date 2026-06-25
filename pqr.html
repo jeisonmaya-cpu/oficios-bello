@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>PQR · Sistema Teodoro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+<!-- pdf.js (lectura de texto + render a canvas para Tesseract) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Tesseract.js (OCR en navegador para PDFs escaneados) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+<!-- SheetJS (exportar listado a Excel) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --navy:#0a1f3d; --navy2:#0f2d5e; --blue:#1a6fc4; --blue2:#2d8de8;
+  --gold:#e8a020; --gold2:#f5c050; --green:#16a34a; --green2:#22c55e;
+  --red:#dc2626; --amber:#d97706;
+  --surface:rgba(255,255,255,.06); --border:rgba(255,255,255,.10);
+  --text:#fff; --soft:rgba(255,255,255,.55);
+  --in-bg:rgba(255,255,255,.07); --in-bd:rgba(255,255,255,.18);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;background:
+  radial-gradient(ellipse 70% 50% at 10% 0%,rgba(26,111,196,.22) 0%,transparent 55%),
+  radial-gradient(ellipse 50% 40% at 90% 100%,rgba(232,160,32,.10) 0%,transparent 55%),
+  linear-gradient(160deg,#0a1f3d 0%,#0d2550 45%,#09182f 100%)}
+.bg::before{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 80% 70% at center,black 20%,transparent 75%)}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(10,31,61,.92);border-bottom:1px solid rgba(232,160,32,.2);backdrop-filter:blur(16px);display:flex;align-items:stretch}
+.nav-brand{display:flex;align-items:center;gap:10px;padding:0 18px;border-right:1px solid var(--border);text-decoration:none;color:var(--text);min-height:52px}
+.nav-brand-text{font-family:'DM Serif Display',serif;font-size:15px;color:var(--gold2)}
+.nav-brand-sub{font-size:10px;color:var(--soft)}
+.nav-tabs{display:flex;flex:1;overflow-x:auto}
+.nav-tab{color:var(--soft);font-size:12px;font-weight:600;padding:0 16px;border:none;background:none;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:6px;min-height:52px;font-family:'DM Sans',sans-serif}
+.nav-tab:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.nav-tab.active{color:var(--gold2);border-bottom-color:var(--gold);background:rgba(232,160,32,.06)}
+.nav-user{display:flex;align-items:center;gap:8px;padding:0 16px;font-size:12px;color:var(--soft);border-left:1px solid var(--border)}
+.nav-user b{color:var(--gold2)}
+
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:24px 16px 60px}
+.panel{display:none}.panel.active{display:block;animation:fadeUp .4s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* HEADER */
+.page-hdr{margin-bottom:20px}
+.page-hdr-eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold2);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.page-hdr-eyebrow::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(245,192,80,.3),transparent)}
+.page-hdr h2{font-family:'DM Serif Display',serif;font-size:clamp(22px,4vw,32px);font-weight:400}
+.page-hdr h2 em{font-style:italic;color:var(--gold2)}
+.page-hdr p{font-size:13px;color:var(--soft);margin-top:4px;line-height:1.6}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:14px;backdrop-filter:blur(12px)}
+.card-title{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--soft);margin-bottom:18px;line-height:1.5}
+.lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-bottom:8px;display:block}
+
+/* DROPZONE OCR */
+.dropzone{border:2px dashed var(--in-bd);border-radius:14px;padding:26px 20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.03)}
+.dropzone:hover,.dropzone.drag{border-color:var(--blue2);background:rgba(45,141,232,.08)}
+.dropzone .dz-icon{font-size:34px;margin-bottom:8px}
+.dropzone .dz-main{font-size:14px;font-weight:600}
+.dropzone .dz-sub{font-size:11.5px;color:var(--soft);margin-top:4px}
+.ocr-status{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:12.5px;align-items:center;gap:10px;line-height:1.4}
+.ocr-status.show{display:flex}
+.ocr-status.load{background:rgba(45,141,232,.12);color:#93c5fd;border:1px solid rgba(45,141,232,.25)}
+.ocr-status.ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.25)}
+.ocr-status.err{background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.25)}
+.ocr-status.warn{background:rgba(245,192,80,.10);color:var(--gold2);border:1px solid rgba(245,192,80,.25)}
+.spinner{width:16px;height:16px;border:2.5px solid rgba(45,141,232,.25);border-top-color:var(--blue2);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px}
+.fld{display:flex;flex-direction:column}
+.fld.full{grid-column:1 / -1}
+.fld input,.fld select,.fld textarea{width:100%;height:46px;padding:0 14px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--in-bg);border:1.5px solid var(--in-bd);border-radius:10px;outline:none;transition:all .2s}
+.fld textarea{height:auto;min-height:72px;padding:12px 14px;resize:vertical;line-height:1.5}
+.fld select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff88' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(45,141,232,.15);background:rgba(255,255,255,.09)}
+.fld input::placeholder,.fld textarea::placeholder{color:rgba(255,255,255,.28)}
+.fld.prefilled input,.fld.prefilled select{border-color:rgba(245,192,80,.5);background:rgba(232,160,32,.05)}
+.fld-hint{font-size:10.5px;color:var(--soft);margin-top:5px}
+.fld-ia-tag{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold2);margin-left:6px}
+
+/* Bloque condicional Prescripción */
+#bloque-prescripcion{display:none;grid-column:1 / -1;grid-template-columns:1fr 1fr;gap:14px;padding:16px;margin-top:2px;border-radius:12px;background:rgba(232,160,32,.06);border:1px solid rgba(245,192,80,.25)}
+#bloque-prescripcion.show{display:grid}
+#bloque-prescripcion .presc-hdr{grid-column:1 / -1;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold2);display:flex;align-items:center;gap:7px}
+
+.form-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{height:46px;padding:0 22px;border:none;border-radius:11px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;box-shadow:0 4px 16px rgba(26,111,196,.35)}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:rgba(255,255,255,.12)}
+
+.status{display:none;align-items:center;gap:10px;padding:11px 16px;border-radius:10px;font-size:13px;margin:14px 0 0;font-weight:500}
+.status.show{display:flex}
+.status.load{background:rgba(45,141,232,.12);color:#93c5fd;border:1px solid rgba(45,141,232,.25)}
+.status.ok{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.25)}
+.status.err{background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.25)}
+
+/* TABLA REGISTRO */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toolbar input,.toolbar select{height:42px;padding:0 12px;font-size:13px;color:var(--text);background:var(--in-bg);border:1.5px solid var(--in-bd);border-radius:10px;outline:none;font-family:'DM Sans',sans-serif}
+.toolbar input{flex:1;min-width:160px}
+.btn-export{height:42px;padding:0 16px;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.3);color:#86efac;border-radius:10px;font-size:12.5px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .2s;white-space:nowrap}
+.btn-export:hover{background:rgba(34,197,94,.24);color:#fff}
+
+/* PREVIEW PDF */
+.pdf-preview{display:none;margin-top:14px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:rgba(0,0,0,.18)}
+.pdf-preview.show{display:block}
+.pdf-preview-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border)}
+.pdf-preview-bar .pp-name{font-size:11.5px;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdf-preview-bar .pp-name b{color:var(--text)}
+.pdf-preview-bar .pp-close{background:none;border:none;color:var(--soft);font-size:16px;cursor:pointer;flex-shrink:0}
+.pdf-preview-bar .pp-close:hover{color:#fca5a5}
+.pdf-preview-canvas{max-height:340px;overflow-y:auto;text-align:center;padding:10px;background:#1a1a1a}
+.pdf-preview-canvas canvas{max-width:100%;border-radius:4px;margin-bottom:8px;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+
+/* GRID DETALLE (modal) */
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin-bottom:8px}
+.det-grid .det-item.full{grid-column:1 / -1}
+.det-k{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-bottom:3px}
+.det-v{font-size:13.5px;color:var(--text);word-break:break-word;line-height:1.45}
+.det-v.empty{color:var(--soft);font-style:italic}
+.det-resumen{background:rgba(45,141,232,.08);border:1px solid rgba(45,141,232,.2);border-radius:10px;padding:12px 14px;margin:6px 0 14px;font-size:13px;line-height:1.55}
+.det-sep{height:1px;background:var(--border);margin:14px 0}
+.modal-tabs{display:flex;gap:8px;margin:4px 0 14px}
+.modal-tab{flex:1;padding:8px;font-size:12px;font-weight:600;color:var(--soft);background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.modal-tab.active{color:var(--gold2);background:rgba(232,160,32,.1);border-color:rgba(245,192,80,.3)}
+.modal.wide{max-width:600px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{text-align:left;padding:12px 14px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);background:rgba(255,255,255,.04);border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+tbody tr:hover{background:rgba(255,255,255,.03)}
+.t-mono{font-family:'DM Sans',sans-serif;font-variant-numeric:tabular-nums}
+.tipo-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.tb-1{background:rgba(220,38,38,.18);color:#fca5a5}      /* Embargo */
+.tb-2{background:rgba(34,197,94,.18);color:#86efac}      /* Desembargo */
+.tb-3{background:rgba(245,192,80,.18);color:var(--gold2)}/* Prescripción */
+.tb-4{background:rgba(45,141,232,.18);color:#93c5fd}     /* Devolución */
+.est-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;background:rgba(255,255,255,.08);color:var(--soft)}
+.btn-mini{background:rgba(45,141,232,.15);border:1px solid rgba(45,141,232,.25);color:#93c5fd;border-radius:7px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn-mini:hover{background:rgba(45,141,232,.3);color:#fff}
+.empty{text-align:center;padding:34px;color:var(--soft);font-size:13px}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;z-index:200;background:rgba(5,12,26,.72);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:18px}
+.overlay.open{display:flex}
+.modal{background:#0c2244;border:1px solid var(--border);border-radius:18px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:24px}
+.modal h3{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:4px}
+.modal .m-sub{font-size:12px;color:var(--soft);margin-bottom:16px}
+.hist-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
+.hist-ts{color:var(--soft);font-size:10.5px;white-space:nowrap;min-width:120px}
+.hist-body strong{color:var(--gold2)}
+.hist-body .hist-func{color:#93c5fd;font-weight:600}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+
+/* LOGIN PIN */
+.pin-overlay{position:fixed;inset:0;z-index:500;background:linear-gradient(160deg,#0a1f3d,#09182f);display:flex;align-items:center;justify-content:center;padding:20px}
+.pin-overlay.hidden{display:none}
+.pin-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:34px 30px;max-width:380px;width:100%;text-align:center;backdrop-filter:blur(12px)}
+.pin-card h2{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:6px}
+.pin-card p{font-size:13px;color:var(--soft);margin-bottom:20px}
+.pin-inputs{display:flex;gap:10px;justify-content:center;margin-bottom:18px}
+.pin-inputs input{width:50px;height:60px;text-align:center;font-size:26px;font-weight:700;color:var(--text);background:var(--in-bg);border:1.5px solid var(--in-bd);border-radius:12px;outline:none}
+.pin-inputs input:focus{border-color:var(--blue2);box-shadow:0 0 0 3px rgba(45,141,232,.15)}
+.pin-err{color:#fca5a5;font-size:12px;min-height:18px;margin-bottom:10px}
+
+@media(max-width:680px){
+  .form-grid{grid-template-columns:1fr}
+  #bloque-prescripcion{grid-template-columns:1fr}
+  .nav-user{display:none}
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+
+<!-- ═══════════ LOGIN PIN ═══════════ -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-card">
+    <h2>🔐 Acceso PQR</h2>
+    <p>Ingrese su PIN personal de 4 dígitos</p>
+    <div class="pin-inputs" id="pinInputs">
+      <input type="password" inputmode="numeric" maxlength="1" data-i="0">
+      <input type="password" inputmode="numeric" maxlength="1" data-i="1">
+      <input type="password" inputmode="numeric" maxlength="1" data-i="2">
+      <input type="password" inputmode="numeric" maxlength="1" data-i="3">
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="validarPIN()">Entrar</button>
+  </div>
+</div>
+
+<!-- ═══════════ NAV ═══════════ -->
+<nav class="nav">
+  <a class="nav-brand" href="home.html">
+    <div>
+      <div class="nav-brand-text">Teodoro</div>
+      <div class="nav-brand-sub">Ejecuciones Fiscales · Bello</div>
+    </div>
+  </a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-panel="registro" onclick="irPanel('registro')">📝 Registrar PQR</button>
+    <button class="nav-tab" data-panel="listado" onclick="irPanel('listado')">📋 Listado</button>
+  </div>
+  <div class="nav-user">👤 <b id="navUser">—</b></div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ════════ PANEL REGISTRO ════════ -->
+  <section class="panel active" id="panel-registro">
+    <div class="page-hdr">
+      <div class="page-hdr-eyebrow">Gestión documental</div>
+      <h2>Registrar <em>PQR</em></h2>
+      <p>Suba el PDF de la petición para prerrellenar los campos automáticamente, o diligéncielos a mano. Cada registro queda auditado con su usuario y la marca de tiempo.</p>
+    </div>
+
+    <!-- OCR / CARGA PDF -->
+    <div class="card">
+      <span class="lbl">📄 Lectura automática del PDF (opcional)</span>
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">📥</div>
+        <div class="dz-main">Arrastre el PDF aquí o haga clic para seleccionar</div>
+        <div class="dz-sub">El texto se lee en su navegador (gratis). Si es un escaneo, se aplica OCR. Solo el texto se usa para estructurar los campos.</div>
+      </div>
+      <input type="file" id="fileInput" accept="application/pdf" hidden>
+      <div class="ocr-status" id="ocrStatus"></div>
+      <div class="pdf-preview" id="pdfPreview">
+        <div class="pdf-preview-bar">
+          <div class="pp-name">📄 <b id="ppName">documento.pdf</b></div>
+          <button class="pp-close" onclick="cerrarPreview()" title="Quitar previsualización">✕</button>
+        </div>
+        <div class="pdf-preview-canvas" id="ppCanvas"></div>
+      </div>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="card">
+      <div class="card-title">Datos de la petición</div>
+      <div class="card-sub">Los campos resaltados en dorado fueron prerrellenados por lectura del PDF — revíselos antes de guardar.</div>
+
+      <div class="form-grid">
+        <div class="fld" id="wrap-nombre">
+          <label class="lbl">Nombre completo del solicitante <span class="fld-ia-tag" id="ia-nombre" style="display:none">IA</span></label>
+          <input type="text" id="f-nombre" placeholder="Ej: María Fernanda López Restrepo">
+        </div>
+        <div class="fld" id="wrap-cedula">
+          <label class="lbl">Documento de identidad <span class="fld-ia-tag" id="ia-cedula" style="display:none">IA</span></label>
+          <input type="text" id="f-cedula" inputmode="numeric" placeholder="Ej: 1037612345">
+        </div>
+        <div class="fld" id="wrap-radicado">
+          <label class="lbl">Número de radicado PQR <span class="fld-ia-tag" id="ia-radicado" style="display:none">IA</span></label>
+          <input type="text" id="f-radicado" placeholder="Ej: 2026-EE-0001234">
+        </div>
+        <div class="fld" id="wrap-tipo">
+          <label class="lbl">Tipo de petición</label>
+          <select id="f-tipo" onchange="toggleCondicional()">
+            <option value="">— Seleccione —</option>
+            <option value="1">Embargo</option>
+            <option value="2">Desembargo</option>
+            <option value="3">Prescripción</option>
+            <option value="4">Devolución de Dineros</option>
+          </select>
+        </div>
+
+        <!-- BLOQUE CONDICIONAL: solo Prescripción -->
+        <div id="bloque-prescripcion">
+          <div class="presc-hdr">⚖️ Datos obligatorios para Prescripción</div>
+          <div class="fld">
+            <label class="lbl">Número de comparendo <span class="fld-ia-tag" id="ia-comparendo" style="display:none">IA</span></label>
+            <input type="text" id="f-comparendo" placeholder="Ej: 05088000000012345678">
+          </div>
+          <div class="fld">
+            <label class="lbl">Años (vigencias) a prescribir <span class="fld-ia-tag" id="ia-vigencias" style="display:none">IA</span></label>
+            <input type="text" id="f-vigencias" placeholder="Ej: 2017, 2018, 2019">
+            <div class="fld-hint">Separe los años con comas.</div>
+          </div>
+        </div>
+
+        <div class="fld full">
+          <label class="lbl">Resumen de la petición <span class="fld-ia-tag" id="ia-resumen" style="display:none">IA</span></label>
+          <textarea id="f-resumen" placeholder="Síntesis breve de lo que solicita el peticionario. La lectura del PDF intenta generarlo automáticamente."></textarea>
+          <div class="fld-hint">2–3 frases. Si subió un PDF, revise que el resumen sea fiel.</div>
+        </div>
+
+        <div class="fld full">
+          <label class="lbl">Observaciones</label>
+          <textarea id="f-obs" placeholder="Notas internas, contexto de la petición, etc. (opcional)"></textarea>
+        </div>
+      </div>
+
+      <div class="status" id="formStatus"></div>
+
+      <div class="form-foot">
+        <button class="btn btn-ghost" onclick="limpiarForm()">Limpiar</button>
+        <button class="btn btn-primary" id="btnGuardar" onclick="guardarPQR()">💾 Registrar PQR</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ PANEL LISTADO ════════ -->
+  <section class="panel" id="panel-listado">
+    <div class="page-hdr">
+      <div class="page-hdr-eyebrow">Trazabilidad</div>
+      <h2>Listado de <em>PQRs</em></h2>
+      <p>Todas las peticiones registradas. Use “Historial” para ver el registro de auditoría de cada PQR.</p>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="filtroTexto" placeholder="🔍 Buscar por nombre, cédula o radicado…" oninput="renderTabla()">
+      <select id="filtroTipo" onchange="renderTabla()">
+        <option value="">Todos los tipos</option>
+        <option value="1">Embargo</option>
+        <option value="2">Desembargo</option>
+        <option value="3">Prescripción</option>
+        <option value="4">Devolución de Dineros</option>
+      </select>
+      <button class="btn btn-ghost" onclick="cargarPQRs()">🔄 Recargar</button>
+      <button class="btn-export" onclick="exportarExcel()">📊 Exportar Excel</button>
+    </div>
+
+    <div class="status" id="listStatus"></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Radicado</th>
+            <th>Solicitante</th>
+            <th>Cédula</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Creado por</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tablaBody">
+          <tr><td colspan="8" class="empty">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- ═══════════ MODAL DETALLE PQR ═══════════ -->
+<div class="overlay" id="detOverlay">
+  <div class="modal wide">
+    <h3 id="detTitulo">Detalle de la PQR</h3>
+    <div class="m-sub" id="detSub">—</div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-dtab="info" onclick="detTab('info')">📄 Información</button>
+      <button class="modal-tab" data-dtab="hist" onclick="detTab('hist')">📋 Historial</button>
+    </div>
+
+    <div id="detInfo"></div>
+    <div id="detHist" style="display:none"></div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarDetalle()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG — SUPABASE (mismo proyecto compartido por todos los módulos)
+// ════════════════════════════════════════════════════════════
+const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
+
+// ⚠️ PROXY IA — Pega aquí tu endpoint que reenvía a la API de Claude (Haiku).
+// El MISMO proxy (Apps Script u otro) que ya usas en tutelas para no exponer la API key.
+// Si lo dejas vacío, la cascada usa solo pdf.js + Tesseract (sin estructuración por IA).
+const PROXY_IA_URL = ""; // ej: "https://script.google.com/macros/s/AKfyc.../exec"
+
+const SB_TABLA = "pqr";
+const SB_VISTA = "v_pqr";
+const SB_HIST  = "pqr_historial";
+
+// Configuración pdf.js worker
+if (window['pdfjsLib']) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
+
+const TIPOS = {1:'Embargo',2:'Desembargo',3:'Prescripción',4:'Devolución de Dineros'};
+
+// ════════════════════════════════════════════════════════════
+// SESIÓN / AUTH POR PIN (mismo modelo que los otros módulos)
+// ════════════════════════════════════════════════════════════
+const SESION_KEY = 'pqr_sesion_v1';
+let USUARIO = '';
+
+// Catálogo de PINs (hash SHA-256 client-side). Igual que tu patrón:
+// el PIN controla quién entra; los datos los protege RLS, no el PIN.
+// Genera los hashes con sha256(pin) y pégalos aquí. (Ejemplo: PIN "1234")
+const PINS = {
+  // "hashSHA256delPIN": "Nombre del funcionario"
+  "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4": "Jeison Maya" // PIN demo: 1234
+};
+
+async function sha256(txt){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function intentarSesionGuardada(){
+  // 1) Sesión propia de PQR
+  try{
+    const s = JSON.parse(localStorage.getItem(SESION_KEY)||'null');
+    if(s && s.expira>Date.now() && s.usuario){ entrar(s.usuario, false); return true; }
+  }catch(e){}
+  // 2) Sesión compartida de otros módulos (tutelas, buscador, oficios)
+  const claves = ['tutelas_sesion_v2','buscador_session','oficios_session'];
+  for(const k of claves){
+    try{
+      const s = JSON.parse(localStorage.getItem(k)||'null');
+      if(s && (!s.expira || s.expira>Date.now())){
+        const n = s.usuario||s.nombre||'';
+        if(n){ entrar(n, true); return true; }
+      }
+    }catch(e){}
+  }
+  return false;
+}
+
+async function validarPIN(){
+  const pin = [...document.querySelectorAll('#pinInputs input')].map(i=>i.value).join('');
+  const errEl = document.getElementById('pinErr');
+  if(pin.length!==4){ errEl.textContent='Ingrese los 4 dígitos.'; return; }
+  const hash = await sha256(pin);
+  const nombre = PINS[hash];
+  if(!nombre){
+    errEl.textContent='PIN incorrecto.';
+    document.querySelectorAll('#pinInputs input').forEach(i=>i.value='');
+    document.querySelector('#pinInputs input').focus();
+    return;
+  }
+  entrar(nombre, true);
+}
+
+function entrar(nombre, guardar){
+  USUARIO = nombre;
+  if(guardar){
+    try{
+      localStorage.setItem(SESION_KEY, JSON.stringify({
+        usuario: nombre, expira: Date.now() + 8*3600*1000  // 8 horas
+      }));
+    }catch(e){}
+  }
+  document.getElementById('pinOverlay').classList.add('hidden');
+  document.getElementById('navUser').textContent = nombre.split(' ')[0];
+  cargarPQRs();
+}
+
+// Manejo de inputs del PIN (auto-avance)
+document.querySelectorAll('#pinInputs input').forEach((inp,idx,arr)=>{
+  inp.addEventListener('input', ()=>{
+    inp.value = inp.value.replace(/\D/g,'');
+    if(inp.value && idx<arr.length-1) arr[idx+1].focus();
+    if(idx===arr.length-1 && inp.value) validarPIN();
+  });
+  inp.addEventListener('keydown', e=>{
+    if(e.key==='Backspace' && !inp.value && idx>0) arr[idx-1].focus();
+    if(e.key==='Enter') validarPIN();
+  });
+});
+
+// ════════════════════════════════════════════════════════════
+// HELPER SUPABASE REST
+// ════════════════════════════════════════════════════════════
+async function supaFetch(path, opts){
+  opts = opts || {};
+  const headers = Object.assign({
+    'apikey': SUPABASE_ANON,
+    'Authorization': 'Bearer ' + SUPABASE_ANON,
+    'Content-Type': 'application/json'
+  }, opts.headers || {});
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({}, opts, {headers}));
+  if(!res.ok){
+    let msg = 'HTTP ' + res.status;
+    try{ const j = await res.json(); if(j && j.message) msg = j.message; }catch(e){}
+    throw new Error(msg);
+  }
+  if(res.status===204) return [];
+  const txt = await res.text();
+  if(!txt) return [];
+  try{ return JSON.parse(txt); }catch(e){ return []; }
+}
+
+// ════════════════════════════════════════════════════════════
+// CASCADA OCR: pdf.js (texto) → Tesseract (escaneo) → Haiku (estructura)
+// ════════════════════════════════════════════════════════════
+function setOcr(cls, html){
+  const el = document.getElementById('ocrStatus');
+  el.className = 'ocr-status show ' + cls;
+  el.innerHTML = (cls==='load' ? '<div class="spinner"></div>' : '') + '<span>'+html+'</span>';
+}
+
+// Nivel 1: leer texto embebido del PDF (PDFs de Word) — gratis
+async function extraerTextoPDF(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  let texto = '';
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    texto += tc.items.map(it=>it.str).join(' ') + '\n';
+  }
+  return {texto: texto.trim(), pdf, buf};
+}
+
+// Nivel 2: OCR con Tesseract sobre páginas renderizadas — gratis
+async function ocrTesseract(pdf){
+  let texto = '';
+  const maxPag = Math.min(pdf.numPages, 3); // límite por velocidad
+  for(let p=1; p<=maxPag; p++){
+    setOcr('load', 'Aplicando OCR a página '+p+' de '+maxPag+' (PDF escaneado)…');
+    const page = await pdf.getPage(p);
+    const viewport = page.getViewport({scale: 2});
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+    const r = await Tesseract.recognize(canvas, 'spa');
+    texto += r.data.text + '\n';
+  }
+  return texto.trim();
+}
+
+// Nivel 3: estructurar texto crudo → JSON, vía proxy a Claude Haiku (barato: solo texto)
+async function estructurarConIA(texto){
+  if(!PROXY_IA_URL) return null; // sin proxy configurado → se omite IA
+  const prompt =
+    "Eres un asistente que extrae datos de una PQR de cobro coactivo municipal (Colombia). "
+  + "Del siguiente texto, devuelve EXCLUSIVAMENTE un JSON válido (sin markdown, sin explicación) con estas claves: "
+  + "nombre (nombre completo del solicitante), cedula (solo dígitos), radicado (número de radicado PQR), "
+  + "tipo (uno de: Embargo, Desembargo, Prescripción, Devolución de Dineros, o \"\" si no es claro), "
+  + "comparendo (solo si es Prescripción, si no \"\"), vigencias (años a prescribir separados por coma, solo si Prescripción, si no \"\"), "
+  + "resumen (2 o 3 frases en español sintetizando qué solicita el peticionario y por qué). "
+  + "Si un dato no aparece, usa cadena vacía. TEXTO:\n\n" + texto.slice(0, 6000);
+
+  // El proxy recibe {prompt} y reenvía a api.anthropic.com con la key del lado servidor.
+  // Ajusta el body a lo que tu proxy de tutelas ya espera.
+  const res = await fetch(PROXY_IA_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({prompt, model: 'claude-haiku-4-5-20251001', max_tokens: 800})
+  });
+  if(!res.ok) throw new Error('Proxy IA HTTP '+res.status);
+  const data = await res.json();
+  // El proxy debería devolver el texto del modelo. Toleramos varias formas:
+  let salida = data.text || data.respuesta || (data.content && data.content[0] && data.content[0].text) || '';
+  salida = String(salida).replace(/```json|```/g,'').trim();
+  try{ return JSON.parse(salida); }catch(e){ return null; }
+}
+
+// Fallback sin IA: regex básico sobre el texto (cédula, radicado, tipo)
+function extraerConRegex(texto){
+  const out = {nombre:'', cedula:'', radicado:'', tipo:'', comparendo:'', vigencias:'', resumen:''};
+  const t = texto.replace(/\s+/g,' ');
+
+  let m = t.match(/(?:c[ée]dula|cc|c\.c\.?|identificaci[óo]n|documento)[\s:.\-n°º]*([\d.]{6,15})/i);
+  if(m) out.cedula = m[1].replace(/\D/g,'');
+
+  m = t.match(/(?:radicado|radicaci[óo]n|n[°º]?\s*pqr)[\s:.\-n°º]*([A-Z0-9\-\/]{4,30})/i);
+  if(m) out.radicado = m[1];
+
+  m = t.match(/(?:comparendo)[\s:.\-n°º]*([A-Z0-9]{8,30})/i);
+  if(m) out.comparendo = m[1];
+
+  if(/prescrip/i.test(t)) out.tipo = 'Prescripción';
+  else if(/desembargo|levantamiento.{0,20}medida/i.test(t)) out.tipo = 'Desembargo';
+  else if(/devoluci[óo]n.{0,20}diner/i.test(t)) out.tipo = 'Devolución de Dineros';
+  else if(/embargo/i.test(t)) out.tipo = 'Embargo';
+
+  return out;
+}
+
+// Orquestador de la cascada
+async function procesarPDF(file){
+  if(!file || file.type!=='application/pdf'){ setOcr('err','El archivo debe ser un PDF.'); return; }
+  document.getElementById('btnGuardar').dataset.pdfNombre = file.name;
+  try{
+    setOcr('load', 'Leyendo el PDF…');
+    const {texto, pdf} = await extraerTextoPDF(file);
+    renderPreview(pdf, file.name);
+
+    let textoFinal = texto;
+    let metodo = 'texto nativo';
+    if(texto.length < 40){
+      // Probablemente un escaneo → Tesseract
+      setOcr('load', 'El PDF no tiene texto. Aplicando OCR…');
+      textoFinal = await ocrTesseract(pdf);
+      metodo = 'OCR (Tesseract)';
+    }
+
+    if(!textoFinal || textoFinal.length < 20){
+      setOcr('warn', 'No se pudo extraer texto legible. Diligencie los campos manualmente.');
+      return;
+    }
+
+    // Estructurar: IA si hay proxy, si no regex
+    setOcr('load', 'Estructurando los datos…');
+    let datos = null;
+    if(PROXY_IA_URL){
+      try{ datos = await estructurarConIA(textoFinal); metodo += ' + IA'; }
+      catch(e){ console.warn('IA falló, uso regex:', e.message); }
+    }
+    if(!datos) { datos = extraerConRegex(textoFinal); metodo += ' + regex'; }
+
+    aplicarDatosExtraidos(datos);
+    setOcr('ok', '✅ Datos prerrellenados por '+metodo+'. Revíselos antes de guardar.');
+  }catch(err){
+    console.error(err);
+    setOcr('err', 'Error procesando el PDF: '+err.message);
+  }
+}
+
+// Previsualización: renderiza hasta 2 páginas a canvas (todo en el navegador)
+async function renderPreview(pdf, nombre){
+  const cont = document.getElementById('ppCanvas');
+  cont.innerHTML = '';
+  document.getElementById('ppName').textContent = nombre || 'documento.pdf';
+  document.getElementById('pdfPreview').classList.add('show');
+  const maxPag = Math.min(pdf.numPages, 2);
+  for(let p=1; p<=maxPag; p++){
+    const page = await pdf.getPage(p);
+    const viewport = page.getViewport({scale: 1.3});
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+    cont.appendChild(canvas);
+  }
+  if(pdf.numPages > maxPag){
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:11px;color:rgba(255,255,255,.5);padding:6px';
+    note.textContent = 'Mostrando 2 de '+pdf.numPages+' páginas.';
+    cont.appendChild(note);
+  }
+}
+function cerrarPreview(){
+  document.getElementById('pdfPreview').classList.remove('show');
+  document.getElementById('ppCanvas').innerHTML = '';
+}
+
+function marcarIA(idTag, wrapId){
+  const tag = document.getElementById(idTag);
+  if(tag) tag.style.display='inline';
+  const w = document.getElementById(wrapId);
+  if(w) w.classList.add('prefilled');
+}
+
+function aplicarDatosExtraidos(d){
+  if(!d) return;
+  if(d.nombre){ document.getElementById('f-nombre').value=d.nombre; marcarIA('ia-nombre','wrap-nombre'); }
+  if(d.cedula){ document.getElementById('f-cedula').value=String(d.cedula).replace(/\D/g,''); marcarIA('ia-cedula','wrap-cedula'); }
+  if(d.radicado){ document.getElementById('f-radicado').value=d.radicado; marcarIA('ia-radicado','wrap-radicado'); }
+  // Mapear tipo (texto) → value del select
+  if(d.tipo){
+    const map = {'embargo':'1','desembargo':'2','prescripción':'3','prescripcion':'3','devolución de dineros':'4','devolucion de dineros':'4'};
+    const v = map[String(d.tipo).toLowerCase().trim()];
+    if(v){ document.getElementById('f-tipo').value=v; toggleCondicional(); }
+  }
+  if(d.comparendo){ document.getElementById('f-comparendo').value=d.comparendo; marcarIA('ia-comparendo'); }
+  if(d.vigencias){ document.getElementById('f-vigencias').value=d.vigencias; marcarIA('ia-vigencias'); }
+  if(d.resumen){ document.getElementById('f-resumen').value=d.resumen; marcarIA('ia-resumen'); }
+}
+
+// ════════════════════════════════════════════════════════════
+// LÓGICA CONDICIONAL — Prescripción (sin tocar innerHTML; clases CSS)
+// ════════════════════════════════════════════════════════════
+function toggleCondicional(){
+  const esPresc = document.getElementById('f-tipo').value === '3';
+  const bloque = document.getElementById('bloque-prescripcion');
+  const comp = document.getElementById('f-comparendo');
+  const vig  = document.getElementById('f-vigencias');
+  if(esPresc){
+    bloque.classList.add('show');
+    comp.required = true; vig.required = true;
+  }else{
+    bloque.classList.remove('show');
+    comp.required = false; vig.required = false;
+    comp.value=''; vig.value='';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// GUARDAR PQR
+// ════════════════════════════════════════════════════════════
+function setStatus(elId, cls, html){
+  const el = document.getElementById(elId);
+  el.className = 'status show '+cls;
+  el.innerHTML = (cls==='load' ? '<div class="spinner"></div>' : '') + '<span>'+html+'</span>';
+}
+
+// MD5 mínimo para dedup_key (mismo patrón que desembargos)
+function md5(str){
+  function rl(n,c){return(n<<c)|(n>>>(32-c));}
+  function au(x,y){var l=(x&0xFFFF)+(y&0xFFFF),m=(x>>16)+(y>>16)+(l>>16);return(m<<16)|(l&0xFFFF);}
+  function cmn(q,a,b,x,s,t){return au(rl(au(au(a,q),au(x,t)),s),b);}
+  function ff(a,b,c,d,x,s,t){return cmn((b&c)|(~b&d),a,b,x,s,t);}
+  function gg(a,b,c,d,x,s,t){return cmn((b&d)|(c&~d),a,b,x,s,t);}
+  function hh(a,b,c,d,x,s,t){return cmn(b^c^d,a,b,x,s,t);}
+  function ii(a,b,c,d,x,s,t){return cmn(c^(b|~d),a,b,x,s,t);}
+  function sb(s){var n=s.length,o=[];for(var i=0;i<n*8;i+=8)o[i>>5]|=(s.charCodeAt(i/8)&255)<<(i%32);return o;}
+  function h2(n){var s='',j;for(j=0;j<4;j++)s+=((n>>(j*8+4))&15).toString(16)+((n>>(j*8))&15).toString(16);return s;}
+  function core(x,len){x[len>>5]|=128<<(len%32);x[(((len+64)>>>9)<<4)+14]=len;var a=1732584193,b=-271733879,c=-1732584194,d=271733878;
+    for(var i=0;i<x.length;i+=16){var oa=a,ob=b,oc=c,od=d;
+      a=ff(a,b,c,d,x[i],7,-680876936);d=ff(d,a,b,c,x[i+1],12,-389564586);c=ff(c,d,a,b,x[i+2],17,606105819);b=ff(b,c,d,a,x[i+3],22,-1044525330);
+      a=ff(a,b,c,d,x[i+4],7,-176418897);d=ff(d,a,b,c,x[i+5],12,1200080426);c=ff(c,d,a,b,x[i+6],17,-1473231341);b=ff(b,c,d,a,x[i+7],22,-45705983);
+      a=ff(a,b,c,d,x[i+8],7,1770035416);d=ff(d,a,b,c,x[i+9],12,-1958414417);c=ff(c,d,a,b,x[i+10],17,-42063);b=ff(b,c,d,a,x[i+11],22,-1990404162);
+      a=ff(a,b,c,d,x[i+12],7,1804603682);d=ff(d,a,b,c,x[i+13],12,-40341101);c=ff(c,d,a,b,x[i+14],17,-1502002290);b=ff(b,c,d,a,x[i+15],22,1236535329);
+      a=gg(a,b,c,d,x[i+1],5,-165796510);d=gg(d,a,b,c,x[i+6],9,-1069501632);c=gg(c,d,a,b,x[i+11],14,643717713);b=gg(b,c,d,a,x[i],20,-373897302);
+      a=gg(a,b,c,d,x[i+5],5,-701558691);d=gg(d,a,b,c,x[i+10],9,38016083);c=gg(c,d,a,b,x[i+15],14,-660478335);b=gg(b,c,d,a,x[i+4],20,-405537848);
+      a=gg(a,b,c,d,x[i+9],5,568446438);d=gg(d,a,b,c,x[i+14],9,-1019803690);c=gg(c,d,a,b,x[i+3],14,-187363961);b=gg(b,c,d,a,x[i+8],20,1163531501);
+      a=gg(a,b,c,d,x[i+13],5,-1444681467);d=gg(d,a,b,c,x[i+2],9,-51403784);c=gg(c,d,a,b,x[i+7],14,1735328473);b=gg(b,c,d,a,x[i+12],20,-1926607734);
+      a=hh(a,b,c,d,x[i+5],4,-378558);d=hh(d,a,b,c,x[i+8],11,-2022574463);c=hh(c,d,a,b,x[i+11],16,1839030562);b=hh(b,c,d,a,x[i+14],23,-35309556);
+      a=hh(a,b,c,d,x[i+1],4,-1530992060);d=hh(d,a,b,c,x[i+4],11,1272893353);c=hh(c,d,a,b,x[i+7],16,-155497632);b=hh(b,c,d,a,x[i+10],23,-1094730640);
+      a=hh(a,b,c,d,x[i+13],4,681279174);d=hh(d,a,b,c,x[i],11,-358537222);c=hh(c,d,a,b,x[i+3],16,-722521979);b=hh(b,c,d,a,x[i+6],23,76029189);
+      a=hh(a,b,c,d,x[i+9],4,-640364487);d=hh(d,a,b,c,x[i+12],11,-421815835);c=hh(c,d,a,b,x[i+15],16,530742520);b=hh(b,c,d,a,x[i+2],23,-995338651);
+      a=ii(a,b,c,d,x[i],6,-198630844);d=ii(d,a,b,c,x[i+7],10,1126891415);c=ii(c,d,a,b,x[i+14],15,-1416354905);b=ii(b,c,d,a,x[i+5],21,-57434055);
+      a=ii(a,b,c,d,x[i+12],6,1700485571);d=ii(d,a,b,c,x[i+3],10,-1894986606);c=ii(c,d,a,b,x[i+10],15,-1051523);b=ii(b,c,d,a,x[i+1],21,-2054922799);
+      a=ii(a,b,c,d,x[i+8],6,1873313359);d=ii(d,a,b,c,x[i+15],10,-30611744);c=ii(c,d,a,b,x[i+6],15,-1560198380);b=ii(b,c,d,a,x[i+13],21,1309151649);
+      a=ii(a,b,c,d,x[i+4],6,-145523070);d=ii(d,a,b,c,x[i+11],10,-1120210379);c=ii(c,d,a,b,x[i+2],15,718787259);b=ii(b,c,d,a,x[i+9],21,-343485551);
+      a=au(a,oa);b=au(b,ob);c=au(c,oc);d=au(d,od);}
+    return[a,b,c,d];}
+  var r=core(sb(str),str.length*8);return h2(r[0])+h2(r[1])+h2(r[2])+h2(r[3]);
+}
+
+async function guardarPQR(){
+  const nombre   = document.getElementById('f-nombre').value.trim();
+  const cedula   = document.getElementById('f-cedula').value.replace(/\D/g,'');
+  const radicado = document.getElementById('f-radicado').value.trim();
+  const tipo     = document.getElementById('f-tipo').value;
+  const comp     = document.getElementById('f-comparendo').value.trim();
+  const vig      = document.getElementById('f-vigencias').value.trim();
+  const obs      = document.getElementById('f-obs').value.trim();
+  const resumen  = document.getElementById('f-resumen').value.trim();
+  const pdfNombre= document.getElementById('btnGuardar').dataset.pdfNombre || null;
+
+  // Validación (espejo del CHECK de la base)
+  if(!nombre)   return setStatus('formStatus','err','⚠️ El nombre del solicitante es obligatorio.');
+  if(!cedula)   return setStatus('formStatus','err','⚠️ El documento de identidad es obligatorio.');
+  if(!radicado) return setStatus('formStatus','err','⚠️ El número de radicado es obligatorio.');
+  if(!tipo)     return setStatus('formStatus','err','⚠️ Seleccione el tipo de petición.');
+  if(tipo==='3' && (!comp || !vig))
+    return setStatus('formStatus','err','⚠️ Para Prescripción, comparendo y vigencias son obligatorios.');
+
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true;
+  setStatus('formStatus','load','Registrando PQR…');
+
+  const dedup = md5(cedula+'|'+tipo+'|'+radicado);
+  const row = {
+    radicado, nombre,
+    id_contribuyente: cedula,
+    id_tipo: parseInt(tipo,10),
+    comparendo: tipo==='3' ? comp : null,
+    vigencias:  tipo==='3' ? vig  : null,
+    observaciones: obs || null,
+    resumen: resumen || null,
+    pdf_nombre: pdfNombre,
+    extraido_por_ia: document.querySelector('.fld-ia-tag[style*="inline"]') ? true : false,
+    creado_por: USUARIO,
+    dedup_key: dedup
+    // NOTA: el historial NO se inserta aquí. El trigger fn_pqr_auditar lo hace en servidor.
+  };
+
+  try{
+    await supaFetch(SB_TABLA, {
+      method:'POST',
+      headers:{'Prefer':'resolution=ignore-duplicates,return=minimal'},
+      body: JSON.stringify(row)
+    });
+    setStatus('formStatus','ok','✅ PQR registrada correctamente.');
+    limpiarForm();
+    cargarPQRs();
+  }catch(e){
+    setStatus('formStatus','err','❌ Error: '+e.message);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function limpiarForm(){
+  ['f-nombre','f-cedula','f-radicado','f-comparendo','f-vigencias','f-obs','f-resumen'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  document.getElementById('f-tipo').value='';
+  toggleCondicional();
+  document.querySelectorAll('.fld-ia-tag').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.fld.prefilled').forEach(w=>w.classList.remove('prefilled'));
+  delete document.getElementById('btnGuardar').dataset.pdfNombre;
+  document.getElementById('ocrStatus').className='ocr-status';
+  cerrarPreview();
+}
+
+// ════════════════════════════════════════════════════════════
+// LISTADO + HISTORIAL
+// ════════════════════════════════════════════════════════════
+let PQRS = [];
+
+async function cargarPQRs(){
+  setStatus('listStatus','load','Cargando PQRs…');
+  try{
+    PQRS = await supaFetch(SB_VISTA+'?select=*&order=creado_en.desc');
+    document.getElementById('listStatus').className='status';
+    renderTabla();
+  }catch(e){
+    setStatus('listStatus','err','❌ '+e.message);
+  }
+}
+
+function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtFecha(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})
+       + ' ' + d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+}
+
+function renderTabla(){
+  const q = (document.getElementById('filtroTexto').value||'').toLowerCase().trim();
+  const ft = document.getElementById('filtroTipo').value;
+  const body = document.getElementById('tablaBody');
+
+  let datos = PQRS;
+  if(ft) datos = datos.filter(r=>String(r.id_tipo)===ft);
+  if(q) datos = datos.filter(r=>
+    (r.nombre||'').toLowerCase().includes(q) ||
+    (r.id_contribuyente||'').includes(q) ||
+    (r.radicado||'').toLowerCase().includes(q)
+  );
+
+  if(!datos.length){
+    body.innerHTML = '<tr><td colspan="8" class="empty">Sin registros.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = datos.map(r=>{
+    const iaTag = r.extraido_por_ia ? ' <span style="font-size:9px;color:var(--gold2);font-weight:700">IA</span>' : '';
+    return '<tr style="cursor:pointer" onclick="abrirDetalle('+r.id+')">'
+      + '<td class="t-mono">'+esc(r.radicado)+iaTag+'</td>'
+      + '<td>'+esc(r.nombre)+'</td>'
+      + '<td class="t-mono">'+esc(r.id_contribuyente)+'</td>'
+      + '<td><span class="tipo-badge tb-'+r.id_tipo+'">'+esc(TIPOS[r.id_tipo]||'—')+'</span></td>'
+      + '<td><span class="est-badge">'+esc(r.estado||'Registrada')+'</span></td>'
+      + '<td>'+esc(r.creado_por)+'</td>'
+      + '<td class="t-mono" style="color:var(--soft);font-size:11px">'+fmtFecha(r.creado_en)+'</td>'
+      + '<td><button class="btn-mini" onclick="event.stopPropagation();abrirDetalle('+r.id+')">👁️ Abrir</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+// ── MODAL DETALLE: pestañas Info + Historial ──
+let _detPqrId = null;
+
+function abrirDetalle(pqrId){
+  const r = PQRS.find(x=>x.id===pqrId);
+  if(!r) return;
+  _detPqrId = pqrId;
+  document.getElementById('detTitulo').textContent = TIPOS[r.id_tipo] || 'PQR';
+  document.getElementById('detSub').textContent = r.radicado + ' · ' + r.nombre;
+
+  const item = (k,v,full)=>
+    '<div class="det-item'+(full?' full':'')+'"><div class="det-k">'+k+'</div>'
+    + '<div class="det-v'+(v?'':' empty')+'">'+(v?esc(v):'No registra')+'</div></div>';
+
+  let html = '';
+  if(r.resumen){
+    html += '<div class="det-k" style="margin-bottom:4px">📝 Resumen de la petición</div>'
+          + '<div class="det-resumen">'+esc(r.resumen)+'</div>';
+  }
+  html += '<div class="det-grid">'
+    + item('Solicitante', r.nombre)
+    + item('Documento', r.id_contribuyente)
+    + item('Radicado', r.radicado)
+    + item('Tipo', TIPOS[r.id_tipo])
+    + item('Estado', r.estado || 'Registrada')
+    + item('Origen', r.extraido_por_ia ? 'Lectura asistida de PDF' : 'Captura manual');
+  if(String(r.id_tipo)==='3'){
+    html += item('Comparendo', r.comparendo)
+          + item('Vigencias a prescribir', r.vigencias);
+  }
+  html += '</div>';
+  if(r.observaciones){
+    html += '<div class="det-sep"></div>'
+          + '<div class="det-item full"><div class="det-k">Observaciones</div>'
+          + '<div class="det-v">'+esc(r.observaciones)+'</div></div>';
+  }
+  html += '<div class="det-sep"></div>'
+    + '<div class="det-grid">'
+    + item('PDF cargado', r.pdf_nombre)
+    + item('Creado por', r.creado_por)
+    + item('Creado el', fmtFecha(r.creado_en))
+    + item('Última modificación', r.modificado_en ? (fmtFecha(r.modificado_en)+' · '+(r.modificado_por||'')) : '');
+  html += '</div>';
+
+  document.getElementById('detInfo').innerHTML = html;
+  document.getElementById('detHist').innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
+  detTab('info');
+  document.getElementById('detOverlay').classList.add('open');
+}
+
+function detTab(t){
+  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.toggle('active', b.dataset.dtab===t));
+  document.getElementById('detInfo').style.display = t==='info' ? 'block' : 'none';
+  document.getElementById('detHist').style.display = t==='hist' ? 'block' : 'none';
+  if(t==='hist') cargarHistDetalle(_detPqrId);
+}
+
+async function cargarHistDetalle(pqrId){
+  const cont = document.getElementById('detHist');
+  if(cont.dataset.loadedFor === String(pqrId)) return; // ya cargado
+  try{
+    const logs = await supaFetch(SB_HIST+'?pqr_id=eq.'+pqrId+'&select=*&order=ts.asc');
+    cont.dataset.loadedFor = String(pqrId);
+    cont.innerHTML = logs.length ? logs.map(renderLog).join('')
+      : '<div class="empty">Sin movimientos registrados.</div>';
+  }catch(e){
+    cont.innerHTML = '<div class="empty" style="color:#fca5a5">Error: '+esc(e.message)+'</div>';
+  }
+}
+
+function renderLog(l){
+  let desc;
+  if(l.accion==='CREAR') desc = 'Registró la PQR';
+  else if(l.accion==='CAMBIAR_ESTADO') desc = 'Cambió <strong>estado</strong>: '+esc(l.valor_anterior)+' → '+esc(l.valor_nuevo);
+  else desc = 'Modificó <strong>'+esc(l.campo)+'</strong>: '+esc(l.valor_anterior||'—')+' → '+esc(l.valor_nuevo||'—');
+  return '<div class="hist-item">'
+    + '<div class="hist-ts">'+fmtFecha(l.ts)+'</div>'
+    + '<div class="hist-body"><span class="hist-func">'+esc(l.funcionario)+'</span> — '+desc+'</div>'
+    + '</div>';
+}
+
+function cerrarDetalle(){
+  document.getElementById('detOverlay').classList.remove('open');
+  document.getElementById('detHist').dataset.loadedFor = '';
+}
+
+// ── EXPORTAR A EXCEL (respeta filtros activos) ──
+function exportarExcel(){
+  const q = (document.getElementById('filtroTexto').value||'').toLowerCase().trim();
+  const ft = document.getElementById('filtroTipo').value;
+  let datos = PQRS;
+  if(ft) datos = datos.filter(r=>String(r.id_tipo)===ft);
+  if(q) datos = datos.filter(r=>
+    (r.nombre||'').toLowerCase().includes(q) ||
+    (r.id_contribuyente||'').includes(q) ||
+    (r.radicado||'').toLowerCase().includes(q)
+  );
+  if(!datos.length){ alert('No hay registros para exportar.'); return; }
+
+  const filas = datos.map(r=>({
+    'Radicado': r.radicado,
+    'Solicitante': r.nombre,
+    'Documento': r.id_contribuyente,
+    'Tipo': TIPOS[r.id_tipo]||'',
+    'Comparendo': r.comparendo||'',
+    'Vigencias': r.vigencias||'',
+    'Resumen': r.resumen||'',
+    'Observaciones': r.observaciones||'',
+    'Estado': r.estado||'Registrada',
+    'Origen': r.extraido_por_ia ? 'Lectura PDF' : 'Manual',
+    'PDF': r.pdf_nombre||'',
+    'Creado por': r.creado_por||'',
+    'Creado el': fmtFecha(r.creado_en),
+    'Modificado por': r.modificado_por||'',
+    'Modificado el': r.modificado_en ? fmtFecha(r.modificado_en) : ''
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(filas);
+  ws['!cols'] = [{wch:18},{wch:26},{wch:14},{wch:18},{wch:20},{wch:16},{wch:46},{wch:40},{wch:14},{wch:12},{wch:24},{wch:18},{wch:18},{wch:18},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'PQRs');
+  const hoy = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'PQRs_Bello_'+hoy+'.xlsx');
+}
+
+// ════════════════════════════════════════════════════════════
+// NAVEGACIÓN ENTRE PANELES
+// ════════════════════════════════════════════════════════════
+function irPanel(p){
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('panel-'+p).classList.add('active');
+  document.querySelector('.nav-tab[data-panel="'+p+'"]').classList.add('active');
+  if(p==='listado') cargarPQRs();
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+(function init(){
+  // Dropzone
+  const dz = document.getElementById('dropzone');
+  const fi = document.getElementById('fileInput');
+  dz.addEventListener('click', ()=>fi.click());
+  fi.addEventListener('change', e=>{ if(e.target.files[0]) procesarPDF(e.target.files[0]); });
+  ['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.remove('drag');}));
+  dz.addEventListener('drop', e=>{ if(e.dataTransfer.files[0]) procesarPDF(e.dataTransfer.files[0]); });
+
+  // Cerrar modal de detalle con Escape o clic fuera
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') cerrarDetalle(); });
+  document.getElementById('detOverlay').addEventListener('click', e=>{
+    if(e.target.id==='detOverlay') cerrarDetalle();
+  });
+
+  // Sesión
+  if(!intentarSesionGuardada()){
+    document.querySelector('#pinInputs input').focus();
+  }
+})();
+</script>
+</body>
+</html>
