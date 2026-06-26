@@ -187,6 +187,7 @@ function xmlEsc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function fmtL(iso){if(!iso)return'';const[y,m,d]=iso.split('-');const M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];return`${parseInt(d)} de ${M[parseInt(m)-1]} de ${y}`;}
 function fmtC(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;}
 function hoyISO(){return new Date().toISOString().split('T')[0];}
+function hoyDDMMYYYY(){const d=new Date();const p=n=>String(n).padStart(2,'0');return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear();}
 function hoyLocal(){return new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});}
 // Sello de impresión: fecha + hora del momento de generación del Word.
 // Sirve para identificar cada oficio impreso cuando se generan varios a la vez.
@@ -432,6 +433,9 @@ try {
   var _fp = document.getElementById('f_proyf');
   if(_ff) _ff.value = hoyISO();
   if(_fp) _fp.value = hoyISO();
+  // Fecha del auto: autollenar con hoy en formato dd/mm/yyyy, pero editable
+  var _fa = document.getElementById('f_fauto');
+  if(_fa && !_fa.value) _fa.value = hoyDDMMYYYY();
 } catch(e){}
 
 // Entrada con Enter en los campos del wizard la gestiona el HTML (onkeydown).
@@ -460,6 +464,7 @@ try {
 function iniciarApp(){
   actualizarBanner();
   cargarConfigPanel();
+  cargarConceptos();   // conceptos dinámicos desde Supabase (con fallback offline)
   // Mostrar estado inmediato desde cache local si existe
   const lc = JSON.parse(localStorage.getItem('desembargos_local_cache')||'[]');
   if(lc.length){
@@ -652,8 +657,11 @@ function getMotivoReal(){
 
 // ════════════════════════════════════════
 // CONCEPTOS → BANCOS
+// CONCEPTOS se llena desde Supabase al iniciar (cargarConceptos()).
+// CONCEPTOS_FALLBACK es el respaldo offline si Supabase no responde.
 // ════════════════════════════════════════
-const CONCEPTOS = {
+let CONCEPTOS = {};
+const CONCEPTOS_FALLBACK = {
   "EMBARGO ACUERDOS DE PAGO 2023 TRANSITO": {
     "AV VILLAS":"20252034906","BANCOLOMBIA":"20252034907","BANCOOMEVA":"20252034909",
     "BBVA":"20252034911","BOGOTA":"20252034912","CAJA SOCIAL":"20252034913",
@@ -710,6 +718,118 @@ const CONCEPTOS = {
     "TODOS LOS BANCOS":"20252196416"
   }
 };
+
+// ════════════════════════════════════════
+// CONCEPTOS DINÁMICOS — carga desde Supabase + alta con bancos
+// ════════════════════════════════════════
+async function cargarConceptos(){
+  try{
+    // Trae conceptos activos y sus bancos en dos consultas REST
+    const cab = await supaFetch('conceptos_desembargo?select=concepto&activo=eq.true&order=concepto.asc');
+    const det = await supaFetch('conceptos_bancos?select=concepto,banco,radicado&order=banco.asc');
+    if(!Array.isArray(cab) || !cab.length) throw new Error('sin conceptos');
+    // Reconstruir el objeto CONCEPTOS { concepto: { banco: radicado } }
+    const nuevo = {};
+    cab.forEach(c => { nuevo[c.concepto] = {}; });
+    (det||[]).forEach(b => {
+      if(!nuevo[b.concepto]) nuevo[b.concepto] = {};
+      nuevo[b.concepto][b.banco] = String(b.radicado);
+    });
+    CONCEPTOS = nuevo;
+  }catch(e){
+    // Sin conexión o error → usar respaldo offline para no quedar sin conceptos
+    console.warn('No se pudieron cargar conceptos de Supabase, usando respaldo:', e.message);
+    CONCEPTOS = JSON.parse(JSON.stringify(CONCEPTOS_FALLBACK));
+  }
+  renderSelectConceptos();
+}
+
+function renderSelectConceptos(){
+  const sel = document.getElementById('f_concepto');
+  if(!sel) return;
+  const actual = sel.value; // preservar selección si existe
+  const nombres = Object.keys(CONCEPTOS).sort((a,b)=>a.localeCompare(b,'es'));
+  let html = '<option value="">— Seleccione concepto —</option>';
+  html += nombres.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join('');
+  html += '<option value="OTRO">✏️ Otro (digitar manualmente)</option>';
+  sel.innerHTML = html;
+  if(actual && (CONCEPTOS[actual] || actual==='OTRO')) sel.value = actual;
+}
+
+// ── Modal: agregar concepto nuevo con sus bancos ──
+function abrirModalConcepto(){
+  const ov = document.getElementById('conceptoModal');
+  if(ov){ ov.classList.add('visible'); ov.style.display='flex'; }
+  document.getElementById('mc_nombre').value='';
+  const tb = document.getElementById('mc_bancos');
+  tb.innerHTML='';
+  agregarFilaBanco(); // arranca con una fila
+  document.getElementById('mc_alert').className='wiz-alert-box alert-w';
+  document.getElementById('mc_nombre').focus();
+}
+function cerrarModalConcepto(){
+  const ov = document.getElementById('conceptoModal');
+  if(ov){ ov.classList.remove('visible'); ov.style.display='none'; }
+}
+function agregarFilaBanco(){
+  const tb = document.getElementById('mc_bancos');
+  const div = document.createElement('div');
+  div.className = 'mc-fila';
+  div.innerHTML = `
+    <input type="text" class="mc-banco" placeholder="Banco (ej. BANCOLOMBIA)">
+    <input type="text" class="mc-rad" placeholder="Radicado" inputmode="numeric">
+    <button type="button" class="mc-del" onclick="this.parentElement.remove()" title="Quitar">✕</button>`;
+  tb.appendChild(div);
+}
+function mcAlert(tipo,msg){
+  const el = document.getElementById('mc_alert');
+  el.className = 'wiz-alert-box show alert-'+(tipo==='s'?'s':tipo==='e'?'e':'w');
+  const spans = el.querySelectorAll('span');
+  if(spans[0]) spans[0].textContent = tipo==='s'?'✅':tipo==='e'?'❌':'⏳';
+  if(spans[1]) spans[1].textContent = msg;
+}
+async function guardarConceptoNuevo(){
+  const nombre = document.getElementById('mc_nombre').value.trim().toUpperCase();
+  if(!nombre){ mcAlert('e','Escribe el nombre del concepto.'); return; }
+  if(CONCEPTOS[nombre]){ mcAlert('e','Ese concepto ya existe.'); return; }
+  // Recoger bancos
+  const filas = [...document.querySelectorAll('#mc_bancos .mc-fila')];
+  const bancos = [];
+  for(const f of filas){
+    const banco = f.querySelector('.mc-banco').value.trim().toUpperCase();
+    const rad   = f.querySelector('.mc-rad').value.trim();
+    if(!banco && !rad) continue;            // fila vacía: ignorar
+    if(!banco || !rad){ mcAlert('e','Completa banco y radicado, o deja la fila vacía.'); return; }
+    bancos.push({ banco, radicado: rad });
+  }
+  if(!bancos.length){ mcAlert('e','Agrega al menos un banco con su radicado.'); return; }
+  const btn = document.getElementById('mc_guardar');
+  btn.disabled = true; btn.textContent = '⏳ Guardando…';
+  try{
+    // 1) Insertar cabecera
+    await supaFetch('conceptos_desembargo', {
+      method:'POST',
+      headers:{ 'Prefer':'return=minimal' },
+      body: JSON.stringify({ concepto: nombre, creado_por: (cfg && cfg.nombre) || null })
+    });
+    // 2) Insertar bancos
+    await supaFetch('conceptos_bancos', {
+      method:'POST',
+      headers:{ 'Prefer':'return=minimal' },
+      body: JSON.stringify(bancos.map(b => ({ concepto: nombre, banco: b.banco, radicado: b.radicado })))
+    });
+    // 3) Recargar selector y seleccionar el nuevo
+    await cargarConceptos();
+    const sel = document.getElementById('f_concepto');
+    sel.value = nombre;
+    onConceptoChange();
+    cerrarModalConcepto();
+  }catch(e){
+    mcAlert('e','No se pudo guardar: '+(e.message||'error'));
+  }finally{
+    btn.disabled = false; btn.textContent = '💾 Guardar concepto';
+  }
+}
 
 function onConceptoChange(){
   const concepto=document.getElementById('f_concepto').value;
