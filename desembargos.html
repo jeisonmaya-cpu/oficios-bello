@@ -228,7 +228,10 @@
     </div>
     <div class="gcard-body">
       <div class="fg" style="margin-bottom:12px">
-        <label>Concepto <span class="req">*</span></label>
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span>Concepto <span class="req">*</span></span>
+          <button type="button" class="btn-add-concepto" onclick="abrirModalConcepto()">＋ Agregar concepto</button>
+        </label>
         <select id="f_concepto" onchange="onConceptoChange()">
           <option value="">— Seleccione concepto —</option>
           <option value="EMBARGO ACUERDOS DE PAGO 2023 TRANSITO">EMBARGO ACUERDOS DE PAGO 2023 TRÁNSITO</option>
@@ -689,6 +692,30 @@
     <div class="modal-row">
       <button class="btn btn-ghost" onclick="sigMismoContrib()">👤 Mismo contribuyente</button>
       <button class="btn btn-primary" onclick="sigNuevo()">➕ Nuevo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL: AGREGAR CONCEPTO ════════ -->
+<div class="concepto-modal" id="conceptoModal">
+  <div class="concepto-box">
+    <div class="concepto-head">
+      <h3>＋ Nuevo concepto</h3>
+      <button class="concepto-close" onclick="cerrarModalConcepto()">✕</button>
+    </div>
+    <div class="concepto-body">
+      <div class="fg" style="margin-bottom:14px">
+        <label>Nombre del concepto <span class="req">*</span></label>
+        <input id="mc_nombre" type="text" placeholder="Ej. EMBARGO ICA 2025" style="text-transform:uppercase">
+      </div>
+      <label style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);display:block;margin-bottom:8px">Bancos y radicados</label>
+      <div id="mc_bancos"></div>
+      <button type="button" class="btn-add-banco" onclick="agregarFilaBanco()">＋ Agregar otro banco</button>
+      <div class="wiz-alert-box alert-w" id="mc_alert" style="margin-top:14px"><span></span><span></span></div>
+    </div>
+    <div class="concepto-foot">
+      <button class="btn-cancel-concepto" onclick="cerrarModalConcepto()">Cancelar</button>
+      <button class="btn-save-concepto" id="mc_guardar" onclick="guardarConceptoNuevo()">💾 Guardar concepto</button>
     </div>
   </div>
 </div>
