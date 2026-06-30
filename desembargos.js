@@ -121,7 +121,9 @@ function mapSupaRow(row){
     'Proyectó':     row.proyecto || '',
     'Funcionario':  row.funcionario || '',
     'Equipo':       row.equipo || '',
-    'Observación':  row.observacion || ''
+    'Observación':  row.observacion || '',
+    'Celular':      row.celular || '',
+    'Correo':       row.correo || ''
   };
 }
 
@@ -142,6 +144,8 @@ function datosToRow(d, estado){
     funcionario:   d.funcionario || null,
     equipo:        d.equipo || null,
     observacion:   d.obs || null,
+    celular:       d.celular || null,
+    correo:        d.correo || null,
     dedup_key:     dedupKey(d) + '-' + Date.now().toString(36)  // único por envío; ver nota
   };
 }
@@ -528,7 +532,8 @@ async function apiPost(data){
         concepto: data.concepto, radicado: data.radicado,
         fechaAuto: data.fechaAuto, motivo: data.motivo,
         proyNombre: data.proyNombre, funcionario: data.funcionario,
-        equipo: data.equipo, obs: data.observacion || data.obs || null
+        equipo: data.equipo, obs: data.observacion || data.obs || null,
+        celular: data.celular || null, correo: data.correo || null
       };
       const estado = (accion==='encolar') ? 'PENDIENTE' : 'GENERADO';
       const row = datosToRow(d, estado);
@@ -967,6 +972,8 @@ function getDatos(){
     proyNombre: document.getElementById('f_proyn').value.trim()||(cfg.nombre||''),
     proyFecha:  document.getElementById('f_proyf').value,
     obs:        document.getElementById('f_obs').value.trim(),
+    celular:    (document.getElementById('f_celular')||{}).value ? document.getElementById('f_celular').value.trim() : '',
+    correo:     (document.getElementById('f_correo')||{}).value ? document.getElementById('f_correo').value.trim() : '',
     funcionario:cfg.nombre||'',
     equipo:     cfg.equipo||'',
   };
@@ -1400,7 +1407,7 @@ async function generarDesdeForm(){
       const blob=await generarDocxMulti(d,bancosSelec);
       dlBlob(blob,`Oficio_${d.concepto.replace(/[^a-zA-Z0-9]/g,'_')}_${d.nombre.split(' ')[0]}.docx`);
       const todosRad=bancosSelec.map(b=>b.banco+':'+b.radicado).join(' | ');
-      const pd={accion:'guardar',tipoOficio:d.tipoOficio,numOficio:d.numOficio,fechaOficio:d.fecha,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,radicado:todosRad,fechaAuto:d.fechaAuto,motivo:d.motivo,proyNombre:d.proyNombre,funcionario:d.funcionario,equipo:d.equipo};
+      const pd={accion:'guardar',tipoOficio:d.tipoOficio,numOficio:d.numOficio,fechaOficio:d.fecha,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,radicado:todosRad,fechaAuto:d.fechaAuto,motivo:d.motivo,proyNombre:d.proyNombre,funcionario:d.funcionario,equipo:d.equipo,observacion:d.obs||'',celular:d.celular||'',correo:d.correo||''};
       await apiPost(pd); guardarLocalCache(pd);
       showAlert('f_alert','s',`✅ Oficio generado con ${bancosSelec.length} banco(s). Revise Descargas.`);
       incrementarContadorD(); guardarUltimo(d);
@@ -1414,7 +1421,7 @@ async function generarDesdeForm(){
       const blob=await generarDocx(d);
       dlBlob(blob,`${d.tipoOficio.replace(/ /g,'_')}_${d.nombre.split(' ')[0]}.docx`);
       showAlert('f_alert','w','Guardando en Google Sheets…');
-      const res=await apiPost({accion:'guardar',tipoOficio:d.tipoOficio,numOficio:d.numOficio,fechaOficio:d.fecha,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,radicado:d.radicado,fechaAuto:d.fechaAuto,motivo:d.motivo,proyNombre:d.proyNombre,funcionario:d.funcionario,equipo:d.equipo});
+      const res=await apiPost({accion:'guardar',tipoOficio:d.tipoOficio,numOficio:d.numOficio,fechaOficio:d.fecha,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,radicado:d.radicado,fechaAuto:d.fechaAuto,motivo:d.motivo,proyNombre:d.proyNombre,funcionario:d.funcionario,equipo:d.equipo,observacion:d.obs||'',celular:d.celular||'',correo:d.correo||''});
       if(res&&res.ok){
         guardarLocalCache({tipoOficio:d.tipoOficio,nombre:d.nombre,cedula:d.cedula,concepto:d.concepto,radicado:d.radicado,fechaAuto:d.fechaAuto,motivo:d.motivo,proyNombre:d.proyNombre});
         showAlert('f_alert','s','✅ Oficio generado y registrado en Google Sheets.');
@@ -1434,7 +1441,7 @@ async function generarDesdeForm(){
 // LIMPIAR / MODAL SIGUIENTE
 // ════════════════════════════════════════
 function limpiarForm(){
-  ['f_nombre','f_cedula','f_fauto','f_concepto_manual','f_motivo_manual','f_obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f_nombre','f_cedula','f_fauto','f_concepto_manual','f_motivo_manual','f_obs','f_celular','f_correo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f_concepto').selectedIndex=0;
   document.getElementById('grp_bancos_tabla').style.display='none';
   document.getElementById('grp_radicado_manual').style.display='none';
@@ -1472,12 +1479,42 @@ function mostrarModalResumen(d, bancosN){
 }
 
 function sigMismoContrib(){
-  const nom=document.getElementById('f_nombre').value;
-  const ced=document.getElementById('f_cedula').value;
+  // Conserva los datos del CONTRIBUYENTE; limpia solo lo específico del oficio
+  // (el comparendo en Observación lo vuelve a poner la persona si aplica).
+  const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const datos={
+    nombre:   g('f_nombre'),
+    cedula:   g('f_cedula'),
+    concepto: g('f_concepto'),
+    fauto:    g('f_fauto'),
+    celular:  g('f_celular'),
+    correo:   g('f_correo'),
+  };
+  const tipoBtn=document.querySelector('.tipo-btn.active');
+  const tipoVal=tipoBtn?tipoBtn.dataset.tipo:null;
+  const motivoPill=document.querySelector('.motivo-pill.active');
+
   document.getElementById('modalSig').classList.remove('open');
   limpiarForm();
-  document.getElementById('f_nombre').value=nom;
-  document.getElementById('f_cedula').value=ced;
+
+  // Restaurar datos del contribuyente
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
+  set('f_nombre',datos.nombre);
+  set('f_cedula',datos.cedula);
+  set('f_fauto',datos.fauto);
+  set('f_celular',datos.celular);
+  set('f_correo',datos.correo);
+  // Restaurar concepto (dispara el cruce de bancos/radicado)
+  const selC=document.getElementById('f_concepto');
+  if(selC && datos.concepto){ selC.value=datos.concepto; onConceptoChange(); }
+  // Restaurar tipo de oficio
+  if(tipoVal){ const b=document.querySelector(`.tipo-btn[data-tipo="${tipoVal}"]`); if(b) selTipo(b); }
+  // Restaurar motivo (si era una pastilla predefinida)
+  if(motivoPill){ selMotivo(motivoPill, motivoPill.dataset.motivo||motivoPill.textContent.trim()); }
+
+  // Foco en Observación para que ponga el nuevo comparendo (opcional)
+  const obs=document.getElementById('f_obs');
+  if(obs){ obs.value=''; obs.focus(); }
 }
 function sigNuevo(){
   document.getElementById('modalSig').classList.remove('open');
@@ -1589,7 +1626,9 @@ async function reenviarACola(id){
     proyNombre: item['Proyectó']||'',
     funcionario:item['Funcionario']||item['Proyectó']||'',
     equipo:     '',
-    observacion:item['Observación']||''
+    observacion:item['Observación']||'',
+    celular:    item['Celular']||'',
+    correo:     item['Correo']||''
   };
   const res = await apiPost(payload);
   if(res && res.ok){
@@ -1699,6 +1738,8 @@ function limpiarItem(r){
     'Motivo':      r['Motivo']||r.motivo||'',
     'Proyectó':    r['Proyectó']||r.proyNombre||'',
     'Observación': r['Observación']||r.obs||'',
+    'Celular':     r['Celular']||r.celular||'',
+    'Correo':      r['Correo']||r.correo||'',
     _datos:        r._datos||null,
   };
 }
@@ -1739,7 +1780,7 @@ async function encolarDesdeForm(){
     fechaOficio:d.fecha, nombre:d.nombre, cedula:d.cedula,
     concepto:d.concepto, radicado:radicadoEncolar, fechaAuto:d.fechaAuto,
     motivo:d.motivo, proyNombre:d.proyNombre, funcionario:d.funcionario,
-    equipo:d.equipo, observacion:d.obs||'',
+    equipo:d.equipo, observacion:d.obs||'', celular:d.celular||'', correo:d.correo||'',
   };
 
   const res = await apiPost(payload);
@@ -1751,6 +1792,11 @@ async function encolarDesdeForm(){
 
   if(res && res.ok){
     showAlert('f_alert','s','✅ Enviado a la cola de impresión 🖨️');
+    btn.disabled=false; btn.innerHTML='🖨️ Enviar a cola';
+    // Preguntar si desea otro oficio para el mismo contribuyente
+    mostrarModalResumen(d, bancosEncolar?bancosEncolar.length:null);
+    setTimeout(()=>document.getElementById('modalSig').classList.add('open'),300);
+    return;
   } else if(res && res.queued){
     showAlert('f_alert','w','Guardado localmente. Se sincronizará al reconectar.');
   } else {
