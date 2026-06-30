@@ -1536,7 +1536,10 @@ function renderPagina(){
         <td class="mono">${r['Cédula/NIT']||'—'}</td>
         <td class="mono" style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r['Radicado']||'—'}</td>
         <td style="color:var(--soft);font-size:11px">${r['Proyectó']||r['Funcionario']||'—'}</td>
-        <td><button class="bi del" title="Eliminar" onclick="eliminar('${r['ID']||''}')">✕</button></td>
+        <td style="display:flex;gap:3px;align-items:center">
+          <button class="bi" title="Volver a enviar a cola" onclick="reenviarACola('${r['ID']||''}')">↩️</button>
+          <button class="bi del" title="Eliminar" onclick="eliminar('${r['ID']||''}')">✕</button>
+        </td>
       </tr>`;
     }).join('');
   }
@@ -1564,6 +1567,41 @@ async function eliminar(id){
   if(!id||!confirm('¿Eliminar este registro?')) return;
   await apiPost({accion:'eliminar',id});
   cargarRemoto();
+}
+
+// Vuelve a enviar un registro del historial a la cola como PENDIENTE.
+// Reutiliza la acción 'encolar' de apiPost (inserta una fila nueva).
+async function reenviarACola(id){
+  const item = cache.find(r=>(r['ID']||r.id)===id);
+  if(!item){ alert('No se encontró el registro.'); return; }
+  if(!confirm(`¿Volver a enviar a la cola el oficio de "${item['Contribuyente']||'este registro'}"?`)) return;
+  const payload = {
+    accion:     'encolar',
+    tipoOficio: item['Tipo Oficio']||'',
+    numOficio:  item['N° Oficio']||'',
+    fechaOficio:item['Fecha Oficio']||'',
+    nombre:     item['Contribuyente']||'',
+    cedula:     item['Cédula/NIT']||'',
+    concepto:   item['Concepto']||'',
+    radicado:   item['Radicado']||'',
+    fechaAuto:  item['Fecha Auto']||'',
+    motivo:     item['Motivo']||'',
+    proyNombre: item['Proyectó']||'',
+    funcionario:item['Funcionario']||item['Proyectó']||'',
+    equipo:     '',
+    observacion:item['Observación']||''
+  };
+  const res = await apiPost(payload);
+  if(res && res.ok){
+    await cargarCola();
+    actualizarBadgeCola();
+    showAlert('f_alert','s','✅ Reenviado a la cola como pendiente.');
+    goPanel('cola');
+  } else if(res && res.queued){
+    showAlert('f_alert','w','Guardado localmente. Se sincronizará al reconectar.');
+  } else {
+    alert('No se pudo reenviar a la cola: '+((res&&res.error)||'error'));
+  }
 }
 
 // ════════════════════════════════════════
