@@ -1325,7 +1325,16 @@ function itemAColaDatos(item){
   };
   // Si el radicado ya viene como "BANCO:rad | BANCO:rad", el concepto debe
   // incluir esa lista (igual que generarDocxMulti arma dConcepto).
-  const bancos = item._bancos || null;
+  // Si no vienen bancos y el registro no trae radicado (caso cola), se
+  // reconstruyen desde CONCEPTOS según el concepto.
+  let bancos = item._bancos || null;
+  if(!bancos && !d.radicado && d.concepto && CONCEPTOS[d.concepto]){
+    bancos = Object.entries(CONCEPTOS[d.concepto]).map(([banco,radicado])=>({banco,radicado}));
+  }
+  // Banco único (ej. "TODOS LOS BANCOS"): radicado directo en d.radicado.
+  if(!d.radicado && bancos && bancos.length===1){
+    d.radicado = bancos[0].radicado;
+  }
   if(bancos && bancos.length>1){
     const allRad = bancos.map(b=>b.radicado).join(', ');
     return Object.assign({}, d, {
@@ -1887,10 +1896,15 @@ async function generarEImprimir(item){
     proyNombre: item['Proyectó']||'',
     proyFecha:  '',
   };
-  // Detectar multi-banco
+  // Detectar bancos del concepto (cola sin radicado los reconstruye desde CONCEPTOS)
   const bancos=item._bancos||(d.concepto&&CONCEPTOS[d.concepto]
     ?Object.entries(CONCEPTOS[d.concepto]).map(([banco,radicado])=>({banco,radicado}))
     :null);
+  // Si el registro no trae radicado, tomarlo del concepto.
+  // Banco único (ej. "TODOS LOS BANCOS" de TRÁNSITO 2023): radicado directo.
+  if(!d.radicado && bancos && bancos.length===1){
+    d.radicado = bancos[0].radicado;
+  }
   let blob;
   if(bancos&&bancos.length>1) blob=await generarDocxMulti(d,bancos);
   else blob=await generarDocx(d);
