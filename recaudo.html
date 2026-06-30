@@ -268,6 +268,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .rep-kpi.green{border-left-color:#22c55e}
 .rep-kpi.orange{border-left-color:#ea580c}
 .rep-kpi.blue{border-left-color:#3b82f6}
+.rep-kpi.purple{border-left-color:#7c3aed}
 .rep-kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:6px}
 .rep-kpi-val{font-size:20px;font-weight:800;color:var(--text);font-family:'Syne',sans-serif;line-height:1.1}
 .rep-kpi-sub{font-size:11px;color:var(--soft);margin-top:4px}
@@ -625,11 +626,22 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
           <option value="URBANISTICA" disabled>🏗️ Oblig. Urbanística (próximamente)</option>
           <option value="POLICIA" disabled>👮 Policía Nacional (próximamente)</option>
         </select>
+        <span id="rep-anio-wrap" style="display:none;align-items:center;gap:8px">
+          <label style="font-size:11px;color:var(--soft);white-space:nowrap">Año comparendo</label>
+          <input class="finp" type="number" id="rep-anio" value="2023" min="2000" max="2100" style="width:85px" onchange="renderReporte()"/>
+          <label style="font-size:11px;color:var(--soft);display:flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer">
+            <input type="checkbox" id="rep-anio-solo" checked onchange="renderReporte()"/> Solo cédulas 100% de ese año (oficioso)
+          </label>
+        </span>
         <button class="tb-btn" onclick="exportarReportePDF()">📄 PDF</button>
         <button class="tb-btn gold" onclick="exportarReporteExcel()">📊 Excel</button>
       </div>
     </div>
     <div style="padding:20px">
+      <!-- Aviso de filtro oficioso (solo visible en modo Tránsito por año) -->
+      <div id="rep-anio-aviso" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:var(--radius-sm);
+        background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);font-size:12px;color:var(--gold2)"></div>
+
       <!-- Resumen ejecutivo -->
       <div class="rep-kpis" id="rep-kpis"></div>
 
@@ -2149,14 +2161,83 @@ function renderTendencia(){
 // ════════════════════════════════════════════════════════════
 var _repDatos=[];   // depósitos del impuesto seleccionado (para exportar)
 var _repImpuesto='PREDIAL';
+var _cedulasAnioUnicoCache={};   // anio -> Set(cédulas) cuyos comparendos son 100% de ese año
+
+// Etiqueta legible para mostrar en pantalla/PDF (el filename usa _repImpuesto tal cual)
+function etiquetaImpuesto(){
+  return String(_repImpuesto||'').replace(/_/g,' ');
+}
 
 function depositosDeImpuesto(tipo){
   return dataBanco.filter(r=>impuestoDe(r).toUpperCase()===tipo.toUpperCase());
 }
 
+// ── Trae (y cachea) el set de cédulas cuyos comparendos de tránsito son TODOS del año dado ──
+// Usa la vista v_transito_anios_por_cedula, que ya agrupa por documento en el servidor
+// (no descarga los 130k+ comparendos individuales, solo el resumen por cédula).
+async function obtenerCedulasAnioUnico(anio){
+  if(_cedulasAnioUnicoCache[anio]) return _cedulasAnioUnicoCache[anio];
+  var filas = await sbFetchAll('v_transito_anios_por_cedula', 'documento',
+    'anios_distintos=eq.1&anio_min=eq.'+encodeURIComponent(anio));
+  var set=new Set();
+  filas.forEach(function(f){ var d=String(f.documento||'').trim(); if(d) set.add(d); });
+  _cedulasAnioUnicoCache[anio]=set;
+  return set;
+}
+
 function renderReporte(){
-  _repImpuesto=(document.getElementById('rep-impuesto')||{value:'PREDIAL'}).value||'PREDIAL';
-  _repDatos=depositosDeImpuesto(_repImpuesto);
+  var tipo=(document.getElementById('rep-impuesto')||{value:'PREDIAL'}).value||'PREDIAL';
+
+  // Mostrar/ocultar el filtro de año (solo aplica a Tránsito)
+  var wrapAnio=document.getElementById('rep-anio-wrap');
+  if(wrapAnio) wrapAnio.style.display = (tipo==='TRANSITO') ? 'flex' : 'none';
+
+  if(tipo==='TRANSITO'){
+    var soloAnio=!!(document.getElementById('rep-anio-solo')||{}).checked;
+    var anio=parseInt((document.getElementById('rep-anio')||{}).value,10)||null;
+    if(soloAnio && anio){
+      renderReporteTransitoAnio(anio);
+      return;
+    }
+  }
+
+  var aviso=document.getElementById('rep-anio-aviso');
+  if(aviso) aviso.style.display='none';
+
+  _repImpuesto=tipo;
+  _repDatos=depositosDeImpuesto(tipo);
+  pintarReporte();
+}
+
+// ── Modo oficioso: cruza depósitos de Tránsito con cédulas 100% del año seleccionado ──
+async function renderReporteTransitoAnio(anio){
+  var kpis=document.getElementById('rep-kpis');
+  if(kpis) kpis.innerHTML='<div style="padding:20px;color:var(--soft);font-size:12px">🔄 Cruzando comparendos del '+anio+'...</div>';
+
+  var cedulas;
+  try{
+    cedulas = await obtenerCedulasAnioUnico(anio);
+  }catch(e){
+    if(kpis) kpis.innerHTML='<div style="padding:20px;color:#fdba74;font-size:12px">No se pudo cruzar con comparendos de tránsito. Revise conexión con Supabase.</div>';
+    return;
+  }
+
+  _repImpuesto='TRANSITO_'+anio+'_OFICIOSO';
+  _repDatos = depositosDeImpuesto('TRANSITO').filter(function(r){
+    var cid=String(r['Identificación Demandado']||'').trim();
+    return cid && cedulas.has(cid);
+  });
+
+  var aviso=document.getElementById('rep-anio-aviso');
+  if(aviso){
+    aviso.style.display='block';
+    aviso.innerHTML='⚠️ Filtro oficioso activo: se muestran solo depósitos de personas cuyos comparendos de tránsito son <b>100% del año '+anio+'</b> ('+cedulas.size.toLocaleString('es-CO')+' cédulas detectadas en total, tengan o no depósito retenido). Si una persona tiene comparendos de varios años, queda excluida para evitar mezclar años en el mismo oficio.';
+  }
+
+  pintarReporte();
+}
+
+function pintarReporte(){
   var datos=_repDatos;
 
   // Resumen ejecutivo
@@ -2168,8 +2249,10 @@ function renderReporte(){
     if(normEst(r['ESTADO DEVOLUCION'])==='FINALIZADO'){ devFin++; devFinVal+=v; }
     if(normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO'){ aplFin++; aplFinVal+=v; }
   });
+  var personasDistintas=new Set(datos.map(r=>String(r['Identificación Demandado']||'').trim()).filter(Boolean)).size;
   document.getElementById('rep-kpis').innerHTML=
     repKpi('','Total depósitos', total.toLocaleString('es-CO'), fmt$(valorTotal))+
+    repKpi('purple','Personas (cédulas)', personasDistintas.toLocaleString('es-CO'), 'oficios a generar')+
     repKpi('green','Devuelto (finalizado)', devFin.toLocaleString('es-CO'), fmt$(devFinVal))+
     repKpi('orange','Pendiente devolución', (total-devFin).toLocaleString('es-CO'), fmt$(valorTotal-devFinVal))+
     repKpi('blue','Aplicado (finalizado)', aplFin.toLocaleString('es-CO'), fmt$(aplFinVal))+
@@ -2222,7 +2305,7 @@ function renderReporteDetalle(){
   }
   document.getElementById('rep-count').textContent=datos.length.toLocaleString('es-CO');
   var body=document.getElementById('rep-detalle-body');
-  if(!datos.length){ body.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:24px">No hay depósitos de '+eh(_repImpuesto)+'.</td></tr>'; return; }
+  if(!datos.length){ body.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:24px">No hay depósitos de '+eh(etiquetaImpuesto())+'.</td></tr>'; return; }
   // Mostrar hasta 500 en pantalla (el export lleva todos)
   var muestra=datos.slice(0,500);
   body.innerHTML=muestra.map(r=>{
@@ -2259,7 +2342,7 @@ function exportarReporteExcel(){
     if(normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO'){aplFin++;aplFinVal+=v;}
   });
   var resumen=[
-    {Concepto:'Impuesto',Valor:_repImpuesto},
+    {Concepto:'Impuesto',Valor:etiquetaImpuesto()},
     {Concepto:'Fecha de generación',Valor:new Date().toLocaleString('es-CO')},
     {Concepto:'Total depósitos',Valor:_repDatos.length},
     {Concepto:'Valor total',Valor:valorTotal},
@@ -2281,6 +2364,8 @@ function exportarReporteExcel(){
     'Proceso':r['Proceso']||'',
     'Estado Devolución':normEst(r['ESTADO DEVOLUCION'])||'Sin gestionar',
     'Estado Aplicación':normEst(r['ESTADO APLICACIÓN'])||'Sin gestionar',
+    'Comparendos Tránsito':(transitoPorCedula[String(r['Identificación Demandado']||'').trim()]||{}).comparendos||'',
+    'Valor Total Comparendos':(transitoPorCedula[String(r['Identificación Demandado']||'').trim()]||{}).valorTotal||'',
     'Responsable':normResp(r['RESPONSABLE'])||'',
     'Comprobante Egreso':r['COMPROBANTE DE EGRESO']||'',
     'Radicado Respuesta':r['RADICADO DE RESPUESTA']||'',
@@ -2315,7 +2400,7 @@ function exportarReportePDF(){
   // Encabezado simple pero bonito
   doc.setFillColor(10,31,61); doc.rect(0,0,W,60,'F');
   doc.setTextColor(232,160,32); doc.setFontSize(16); doc.setFont('helvetica','bold');
-  doc.text('Reporte de '+_repImpuesto, 40, 30);
+  doc.text('Reporte de '+etiquetaImpuesto(), 40, 30);
   doc.setTextColor(200,210,225); doc.setFontSize(9); doc.setFont('helvetica','normal');
   doc.text('Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello', 40, 46);
   doc.setTextColor(150,160,175);
