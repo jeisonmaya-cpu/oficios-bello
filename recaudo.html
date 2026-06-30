@@ -645,16 +645,11 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
       <!-- Resumen ejecutivo -->
       <div class="rep-kpis" id="rep-kpis"></div>
 
-      <!-- Desglose por estado -->
-      <div class="dash-grid" style="margin-top:18px">
-        <div>
-          <div class="rep-sec-title">📊 Estado de Devolución</div>
-          <div id="rep-dev"></div>
-        </div>
-        <div>
-          <div class="rep-sec-title">📊 Estado de Aplicación</div>
-          <div id="rep-apl"></div>
-        </div>
+      <!-- Clasificación efectiva del depósito (unificada: cada depósito cuenta UNA sola vez) -->
+      <div style="margin-top:18px">
+        <div class="rep-sec-title">📊 Clasificación efectiva del depósito</div>
+        <div style="font-size:11px;color:var(--soft);margin:-4px 0 10px">Cada depósito cuenta una sola vez. Prioridad: Devuelto › Aplicado › En gestión › Sin gestionar.</div>
+        <div id="rep-clasif"></div>
       </div>
     </div>
   </div>
@@ -669,7 +664,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
       <table>
         <thead><tr>
           <th>#Depósito</th><th>Fecha</th><th>Cédula</th><th>Demandado</th>
-          <th style="text-align:right">Valor</th><th>Proceso</th>
+          <th style="text-align:right">Valor</th><th>Comparendos</th><th>Proceso</th>
           <th>Est. Devolución</th><th>Est. Aplicación</th><th>Responsable</th>
           <th>Comp. Egreso</th><th>Radicado Resp.</th><th>Observación</th>
         </tr></thead>
@@ -2162,10 +2157,45 @@ function renderTendencia(){
 var _repDatos=[];   // depósitos del impuesto seleccionado (para exportar)
 var _repImpuesto='PREDIAL';
 var _cedulasAnioUnicoCache={};   // anio -> Set(cédulas) cuyos comparendos son 100% de ese año
+var _comparendosCache={};        // anio -> { cedula -> [{nro, valor, fecha}, ...] }
+var _repAnioActivo=null;         // año activo cuando está el modo oficioso de tránsito (null si no)
 
 // Etiqueta legible para mostrar en pantalla/PDF (el filename usa _repImpuesto tal cual)
 function etiquetaImpuesto(){
   return String(_repImpuesto||'').replace(/_/g,' ');
+}
+
+// ── Trae los comparendos de un año específico para una lista de cédulas,
+// en chunks (evita URLs gigantes con in.(...)). Cachea por año.
+async function cargarComparendosPorCedulas(anio, cedulas){
+  if(!_comparendosCache[anio]) _comparendosCache[anio]={};
+  var cache=_comparendosCache[anio];
+  // Solo pedir las cédulas que aún no están en cache
+  var pendientes=cedulas.filter(function(c){ return c && !(c in cache); });
+  if(!pendientes.length) return cache;
+  // Inicializar a [] para no re-pedir las que no devuelven nada
+  pendientes.forEach(function(c){ cache[c]=[]; });
+  var CHUNK=120;
+  for(var i=0;i<pendientes.length;i+=CHUNK){
+    var grupo=pendientes.slice(i,i+CHUNK);
+    var listaIn=grupo.map(function(c){ return encodeURIComponent(c); }).join(',');
+    var url=SUPABASE_URL+'/rest/v1/expedientes_transito'+
+            '?select=documento,nro_comparendo,valor_total,fecha_comparendo'+
+            '&anio=eq.'+encodeURIComponent(anio)+
+            '&documento=in.('+listaIn+')';
+    try{
+      var res=await fetch(url,{ headers: sbHeaders() });
+      if(!res.ok) continue;
+      var rows=await res.json();
+      rows.forEach(function(r){
+        var d=String(r.documento||'').trim();
+        if(!d) return;
+        if(!cache[d]) cache[d]=[];
+        cache[d].push({ nro:r.nro_comparendo||'', valor:Number(r.valor_total||0), fecha:r.fecha_comparendo||'' });
+      });
+    }catch(e){ /* sigue con el siguiente chunk */ }
+  }
+  return cache;
 }
 
 function depositosDeImpuesto(tipo){
@@ -2205,6 +2235,7 @@ function renderReporte(){
   if(aviso) aviso.style.display='none';
 
   _repImpuesto=tipo;
+  _repAnioActivo=null;
   _repDatos=depositosDeImpuesto(tipo);
   pintarReporte();
 }
@@ -2223,6 +2254,7 @@ async function renderReporteTransitoAnio(anio){
   }
 
   _repImpuesto='TRANSITO_'+anio+'_OFICIOSO';
+  _repAnioActivo=anio;
   _repDatos = depositosDeImpuesto('TRANSITO').filter(function(r){
     var cid=String(r['Identificación Demandado']||'').trim();
     return cid && cedulas.has(cid);
@@ -2235,35 +2267,75 @@ async function renderReporteTransitoAnio(anio){
   }
 
   pintarReporte();
+
+  // Cargar los números de comparendo del año para las cédulas del reporte (no bloqueante)
+  var cedulasReporte=Array.from(new Set(_repDatos.map(function(r){ return String(r['Identificación Demandado']||'').trim(); }).filter(Boolean)));
+  if(aviso) aviso.innerHTML += ' <span id="rep-comp-load" style="color:var(--soft);font-size:11px">· 🔄 cargando números de comparendo...</span>';
+  cargarComparendosPorCedulas(anio, cedulasReporte).then(function(){
+    var marca=document.getElementById('rep-comp-load');
+    if(marca) marca.innerHTML='· ✅ <span style="color:#86efac">comparendos cargados</span>';
+    renderReporteDetalle();   // re-pintar con los números ya disponibles
+  });
 }
 
 function pintarReporte(){
   var datos=_repDatos;
 
-  // Resumen ejecutivo
+  // Resumen ejecutivo + clasificación efectiva (cada depósito UNA sola vez)
   var total=datos.length, valorTotal=0;
-  var devFin=0,devFinVal=0, aplFin=0,aplFinVal=0;
+  var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   datos.forEach(r=>{
     var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     valorTotal+=v;
-    if(normEst(r['ESTADO DEVOLUCION'])==='FINALIZADO'){ devFin++; devFinVal+=v; }
-    if(normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO'){ aplFin++; aplFinVal+=v; }
+    var cls=estadoEfectivo(r);
+    conteoCls[cls]++; valorCls[cls]+=v;
   });
   var personasDistintas=new Set(datos.map(r=>String(r['Identificación Demandado']||'').trim()).filter(Boolean)).size;
   document.getElementById('rep-kpis').innerHTML=
     repKpi('','Total depósitos', total.toLocaleString('es-CO'), fmt$(valorTotal))+
     repKpi('purple','Personas (cédulas)', personasDistintas.toLocaleString('es-CO'), 'oficios a generar')+
-    repKpi('green','Devuelto (finalizado)', devFin.toLocaleString('es-CO'), fmt$(devFinVal))+
-    repKpi('orange','Pendiente devolución', (total-devFin).toLocaleString('es-CO'), fmt$(valorTotal-devFinVal))+
-    repKpi('blue','Aplicado (finalizado)', aplFin.toLocaleString('es-CO'), fmt$(aplFinVal))+
-    repKpi('orange','Pendiente aplicación', (total-aplFin).toLocaleString('es-CO'), fmt$(valorTotal-aplFinVal));
+    repKpi('green','Devuelto', conteoCls.DEVUELTO.toLocaleString('es-CO'), fmt$(valorCls.DEVUELTO))+
+    repKpi('blue','Aplicado', conteoCls.APLICADO.toLocaleString('es-CO'), fmt$(valorCls.APLICADO))+
+    repKpi('orange','En gestión', conteoCls['EN GESTION'].toLocaleString('es-CO'), fmt$(valorCls['EN GESTION']))+
+    repKpi('orange','Sin gestionar', conteoCls['SIN GESTIONAR'].toLocaleString('es-CO'), fmt$(valorCls['SIN GESTIONAR']));
 
-  // Desglose por estado
-  renderRepEstado('rep-dev','ESTADO DEVOLUCION',datos,valorTotal);
-  renderRepEstado('rep-apl','ESTADO APLICACIÓN',datos,valorTotal);
+  // Desglose unificado: cada depósito clasificado UNA sola vez
+  renderRepClasif('rep-clasif', conteoCls, valorCls, valorTotal);
 
   // Detalle
   renderReporteDetalle();
+}
+
+// Clasifica cada depósito en UNA sola categoría (sin doble conteo)
+// Prioridad: DEVUELTO > APLICADO > EN GESTION > SIN GESTIONAR
+function estadoEfectivo(r){
+  var dev=normEst(r['ESTADO DEVOLUCION']);
+  var apl=normEst(r['ESTADO APLICACIÓN']);
+  if(dev==='FINALIZADO') return 'DEVUELTO';
+  if(apl==='FINALIZADO') return 'APLICADO';
+  if(dev || apl) return 'EN GESTION';
+  return 'SIN GESTIONAR';
+}
+
+function renderRepClasif(contId, conteo, valor, valorTotal){
+  var orden=['DEVUELTO','APLICADO','EN GESTION','SIN GESTIONAR'];
+  var labels={'DEVUELTO':'✅ Devuelto al contribuyente','APLICADO':'💰 Aplicado a la deuda','EN GESTION':'⏳ En gestión','SIN GESTIONAR':'⚠️ Sin gestionar (cartera bruta)'};
+  var colores={'DEVUELTO':'#22c55e','APLICADO':'#3b82f6','EN GESTION':'#ea580c','SIN GESTIONAR':'#dc2626'};
+  var maxVal=Math.max(1,...orden.map(k=>valor[k]));
+  var html='';
+  orden.forEach(k=>{
+    if(conteo[k]===0) return;
+    var w=Math.round(valor[k]/maxVal*100);
+    var pct=valorTotal?Math.round(valor[k]/valorTotal*100):0;
+    html+=`<div class="rep-erow">
+      <div class="rep-edot" style="background:${colores[k]}"></div>
+      <div class="rep-elbl">${eh(labels[k])}</div>
+      <div class="rep-ebar"><div class="rep-ebar-fill" style="width:${w}%;background:${colores[k]}"></div></div>
+      <div class="rep-evals"><div class="rep-eval">${fmt$(valor[k])} <span style="color:var(--gold2)">(${pct}%)</span></div><div class="rep-ecount">${conteo[k].toLocaleString('es-CO')} dep.</div></div>
+    </div>`;
+  });
+  document.getElementById(contId).innerHTML=html;
 }
 
 function repKpi(cls,lbl,val,sub){
@@ -2305,18 +2377,35 @@ function renderReporteDetalle(){
   }
   document.getElementById('rep-count').textContent=datos.length.toLocaleString('es-CO');
   var body=document.getElementById('rep-detalle-body');
-  if(!datos.length){ body.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:24px">No hay depósitos de '+eh(etiquetaImpuesto())+'.</td></tr>'; return; }
+  if(!datos.length){ body.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:24px">No hay depósitos de '+eh(etiquetaImpuesto())+'.</td></tr>'; return; }
+  // Cache de comparendos del año activo (si aplica)
+  var compsAnio=(_repAnioActivo && _comparendosCache[_repAnioActivo]) ? _comparendosCache[_repAnioActivo] : null;
   // Mostrar hasta 500 en pantalla (el export lleva todos)
   var muestra=datos.slice(0,500);
   body.innerHTML=muestra.map(r=>{
     var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    var proc=String(r['Proceso']||'').trim() || (expedientesPorCedula[String(r['Identificación Demandado']||'')]?'📁 '+(expedientesPorCedula[String(r['Identificación Demandado']||'')][0].radicado||''):'—');
+    var cid=String(r['Identificación Demandado']||'').trim();
+    var proc=String(r['Proceso']||'').trim() || (expedientesPorCedula[cid]?'📁 '+(expedientesPorCedula[cid][0].radicado||''):'—');
+    // Celda de comparendos: usa el cache del año si está; si no, cae al resumen general
+    var compCell='—';
+    if(compsAnio && compsAnio[cid] && compsAnio[cid].length){
+      var lista=compsAnio[cid];
+      var primeros=lista.slice(0,2).map(function(c){ return eh(c.nro||'?'); }).join(', ');
+      var resto=lista.length>2 ? ' <span style="color:var(--gold2)">+'+(lista.length-2)+'</span>' : '';
+      var titleAttr=lista.map(function(c){ return c.nro; }).join(', ');
+      compCell='<span class="mono" style="font-size:10px" title="'+eh(titleAttr)+'">'+primeros+resto+'</span>';
+    } else if(transitoPorCedula[cid]){
+      // Si no hay cache aún, mostrar la cantidad del resumen general
+      var n=transitoPorCedula[cid].comparendos;
+      compCell='<span style="color:var(--soft);font-size:10px">🚗 '+n+'</span>';
+    }
     return `<tr>
       <td class="mono" style="font-size:11px">${eh(r['deposito judicial'])}</td>
       <td class="mono" style="font-size:11px;color:var(--soft)">${eh(String(r['Fecha Emisión']||'').substring(0,10))}</td>
       <td class="mono" style="font-size:11px">${eh(r['Identificación Demandado']||'—')}</td>
       <td style="font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eh(r['Nombre Demandante.1']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:12px">${fmt$(v)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${compCell}</td>
       <td style="font-size:11px;color:var(--soft)">${eh(proc)}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
@@ -2327,45 +2416,59 @@ function renderReporteDetalle(){
     </tr>`;
   }).join('');
   if(datos.length>500){
-    body.innerHTML+='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:12px;font-style:italic">Mostrando 500 de '+datos.length.toLocaleString('es-CO')+' en pantalla. El archivo exportado incluye todos.</td></tr>';
+    body.innerHTML+='<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:12px;font-style:italic">Mostrando 500 de '+datos.length.toLocaleString('es-CO')+' en pantalla. El archivo exportado incluye todos.</td></tr>';
   }
 }
 
 // ── EXPORTAR EXCEL (2 hojas: Resumen + Detalle) ──
 function exportarReporteExcel(){
   if(!_repDatos.length){ alert('No hay datos para exportar.'); return; }
-  var valorTotal=0,devFin=0,devFinVal=0,aplFin=0,aplFinVal=0;
+  var valorTotal=0;
+  var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   _repDatos.forEach(r=>{
     var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     valorTotal+=v;
-    if(normEst(r['ESTADO DEVOLUCION'])==='FINALIZADO'){devFin++;devFinVal+=v;}
-    if(normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO'){aplFin++;aplFinVal+=v;}
+    var c=estadoEfectivo(r);
+    conteoCls[c]++; valorCls[c]+=v;
   });
+  var personasDistintas=new Set(_repDatos.map(r=>String(r['Identificación Demandado']||'').trim()).filter(Boolean)).size;
   var resumen=[
     {Concepto:'Impuesto',Valor:etiquetaImpuesto()},
     {Concepto:'Fecha de generación',Valor:new Date().toLocaleString('es-CO')},
     {Concepto:'Total depósitos',Valor:_repDatos.length},
+    {Concepto:'Personas distintas (cédulas)',Valor:personasDistintas},
     {Concepto:'Valor total',Valor:valorTotal},
-    {Concepto:'Devuelto (finalizado) - cantidad',Valor:devFin},
-    {Concepto:'Devuelto (finalizado) - valor',Valor:devFinVal},
-    {Concepto:'Pendiente devolución - cantidad',Valor:_repDatos.length-devFin},
-    {Concepto:'Pendiente devolución - valor',Valor:valorTotal-devFinVal},
-    {Concepto:'Aplicado (finalizado) - cantidad',Valor:aplFin},
-    {Concepto:'Aplicado (finalizado) - valor',Valor:aplFinVal},
-    {Concepto:'Pendiente aplicación - cantidad',Valor:_repDatos.length-aplFin},
-    {Concepto:'Pendiente aplicación - valor',Valor:valorTotal-aplFinVal}
+    {Concepto:'— Clasificación efectiva (sin doble conteo) —',Valor:''},
+    {Concepto:'Devuelto - cantidad',Valor:conteoCls.DEVUELTO},
+    {Concepto:'Devuelto - valor',Valor:valorCls.DEVUELTO},
+    {Concepto:'Aplicado - cantidad',Valor:conteoCls.APLICADO},
+    {Concepto:'Aplicado - valor',Valor:valorCls.APLICADO},
+    {Concepto:'En gestión - cantidad',Valor:conteoCls['EN GESTION']},
+    {Concepto:'En gestión - valor',Valor:valorCls['EN GESTION']},
+    {Concepto:'Sin gestionar - cantidad',Valor:conteoCls['SIN GESTIONAR']},
+    {Concepto:'Sin gestionar - valor',Valor:valorCls['SIN GESTIONAR']}
   ];
-  var detalle=_repDatos.map(r=>({
+  var compsAnioExcel=(_repAnioActivo && _comparendosCache[_repAnioActivo]) ? _comparendosCache[_repAnioActivo] : null;
+  var detalle=_repDatos.map(r=>{
+    var cidExc=String(r['Identificación Demandado']||'').trim();
+    var nrosComp='';
+    if(compsAnioExcel && compsAnioExcel[cidExc]){
+      nrosComp=compsAnioExcel[cidExc].map(function(c){ return c.nro; }).filter(Boolean).join(', ');
+    }
+    return {
     'Depósito':r['deposito judicial'],
     'Fecha Emisión':String(r['Fecha Emisión']||'').substring(0,10),
     'Cédula/NIT':r['Identificación Demandado'],
     'Demandado':r['Nombre Demandante.1'],
     'Valor':parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0,
     'Proceso':r['Proceso']||'',
+    'Clasificación':estadoEfectivo(r),
     'Estado Devolución':normEst(r['ESTADO DEVOLUCION'])||'Sin gestionar',
     'Estado Aplicación':normEst(r['ESTADO APLICACIÓN'])||'Sin gestionar',
-    'Comparendos Tránsito':(transitoPorCedula[String(r['Identificación Demandado']||'').trim()]||{}).comparendos||'',
-    'Valor Total Comparendos':(transitoPorCedula[String(r['Identificación Demandado']||'').trim()]||{}).valorTotal||'',
+    'Comparendos Tránsito':(transitoPorCedula[cidExc]||{}).comparendos||'',
+    'Valor Total Comparendos':(transitoPorCedula[cidExc]||{}).valorTotal||'',
+    ['Nros Comparendo'+(_repAnioActivo?' '+_repAnioActivo:'')]: nrosComp,
     'Responsable':normResp(r['RESPONSABLE'])||'',
     'Comprobante Egreso':r['COMPROBANTE DE EGRESO']||'',
     'Radicado Respuesta':r['RADICADO DE RESPUESTA']||'',
@@ -2374,7 +2477,8 @@ function exportarReporteExcel(){
     'Correo':r['CORREO ELECTRONICO']||'',
     'Dirección':r['DIRECCION']||'',
     'Observación':r['Observacion']||''
-  }));
+    };
+  });
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(resumen),'Resumen');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(detalle),'Detalle');
@@ -2389,13 +2493,16 @@ function exportarReportePDF(){
   var doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
   var W=doc.internal.pageSize.getWidth();
 
-  var valorTotal=0,devFin=0,devFinVal=0,aplFin=0,aplFinVal=0;
+  var valorTotal=0;
+  var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   _repDatos.forEach(r=>{
     var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     valorTotal+=v;
-    if(normEst(r['ESTADO DEVOLUCION'])==='FINALIZADO'){devFin++;devFinVal+=v;}
-    if(normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO'){aplFin++;aplFinVal+=v;}
+    var c=estadoEfectivo(r);
+    conteoCls[c]++; valorCls[c]+=v;
   });
+  var personasDistintas=new Set(_repDatos.map(r=>String(r['Identificación Demandado']||'').trim()).filter(Boolean)).size;
 
   // Encabezado simple pero bonito
   doc.setFillColor(10,31,61); doc.rect(0,0,W,60,'F');
@@ -2409,14 +2516,15 @@ function exportarReportePDF(){
   // Resumen en cajas
   var y=80;
   doc.setTextColor(40,40,40); doc.setFontSize(11); doc.setFont('helvetica','bold');
-  doc.text('Resumen ejecutivo', 40, y);
+  doc.text('Resumen ejecutivo · clasificación efectiva (cada depósito una sola vez)', 40, y);
   y+=8;
   var resumenRows=[
     ['Total depósitos', _repDatos.length.toLocaleString('es-CO'), fmt$(valorTotal)],
-    ['Devuelto (finalizado)', devFin.toLocaleString('es-CO'), fmt$(devFinVal)],
-    ['Pendiente devolución', (_repDatos.length-devFin).toLocaleString('es-CO'), fmt$(valorTotal-devFinVal)],
-    ['Aplicado (finalizado)', aplFin.toLocaleString('es-CO'), fmt$(aplFinVal)],
-    ['Pendiente aplicación', (_repDatos.length-aplFin).toLocaleString('es-CO'), fmt$(valorTotal-aplFinVal)]
+    ['Personas distintas (cédulas)', personasDistintas.toLocaleString('es-CO'), ''],
+    ['Devuelto al contribuyente', conteoCls.DEVUELTO.toLocaleString('es-CO'), fmt$(valorCls.DEVUELTO)],
+    ['Aplicado a la deuda', conteoCls.APLICADO.toLocaleString('es-CO'), fmt$(valorCls.APLICADO)],
+    ['En gestión', conteoCls['EN GESTION'].toLocaleString('es-CO'), fmt$(valorCls['EN GESTION'])],
+    ['Sin gestionar (cartera bruta)', conteoCls['SIN GESTIONAR'].toLocaleString('es-CO'), fmt$(valorCls['SIN GESTIONAR'])]
   ];
   doc.autoTable({
     startY:y+6,
