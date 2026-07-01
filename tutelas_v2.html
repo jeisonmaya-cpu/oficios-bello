@@ -318,7 +318,7 @@
   <div class="stats-row" id="stats-fallos"></div>
   <div class="filtros">
     <input class="fi fi-buscar" id="ff-q" placeholder="🔍 Buscar..." oninput="renderFallos()"/>
-    <select class="fi" id="ff-tp" onchange="renderFallos()"><option value="">Fallo y sentencia</option><option>Fallo de tutela</option><option>Sentencia</option></select>
+    <select class="fi" id="ff-tp" onchange="renderFallos()"><option value="">Fallo y sentencia</option><option>Fallo de tutela</option><option>Sentencia</option><option>Impugnación</option></select>
     <select class="fi" id="ff-abo" onchange="renderFallos()"><option value="">Todos los abogados</option></select>
     <select class="fi" id="ff-est" onchange="renderFallos()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option></select>
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('fallos')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
@@ -509,6 +509,10 @@
         <button class="mbtn mbtn-s" style="border-color:rgba(239,68,68,.3);color:#fca5a5" onclick="escalarCaso('fallo')">⚖️ Crear fallo</button>
         <button class="mbtn mbtn-s" style="border-color:rgba(251,146,60,.3);color:#fdba74" onclick="escalarCaso('incidente')">⚡ Crear incidente</button>
         <button class="mbtn mbtn-s" style="border-color:rgba(34,197,94,.3);color:#86efac" onclick="marcarHechoSuperado()">✅ Hecho superado</button>
+      </div>
+      <div id="m-escalado-fallo" class="m-actions" style="margin-top:10px;padding-top:14px;border-top:1px dashed var(--border);display:none">
+        <div style="width:100%;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Este fallo se puede impugnar</div>
+        <button class="mbtn mbtn-s" style="border-color:rgba(245,158,11,.35);color:#fcd34d" onclick="escalarCaso('fallo','Impugnación')">📝 Crear impugnación</button>
       </div>
       <div id="m-acciones-inc" class="m-actions" style="margin-top:10px;padding-top:14px;border-top:1px dashed var(--border);display:none">
         <div style="width:100%;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cerrar este incidente</div>
@@ -1123,12 +1127,13 @@ async function guardarNuevoIncidente(){
 // Muestra primero un modal de revisión con la información completa
 // de la persona (heredada del admite) antes de crear.
 // ════════════════════════════════════════════════════════════
-let _escCategoria=null, _escCampos=null;
+let _escCategoria=null, _escCampos=null, _escEtiqueta=null;
 
-function escalarCaso(categoria){
+function escalarCaso(categoria, tipoForzado){
   if(!actual) return;
   _escCategoria = categoria;
-  const tipoNuevo = categoria==="fallo" ? "Fallo de tutela" : "Desacato";
+  const tipoNuevo = tipoForzado || (categoria==="fallo" ? "Fallo de tutela" : "Desacato");
+  _escEtiqueta = tipoForzado || (categoria==="fallo" ? "Fallo" : "Incidente");
   // Hereda TODOS los campos del admite (no solo los básicos)
   _escCampos = {
     "ACCIONANTE":        actual["ACCIONANTE"]||"",
@@ -1146,7 +1151,7 @@ function escalarCaso(categoria){
     "OBSERVACIONES":     actual["OBSERVACIONES"]||""
   };
   // Título y cuerpo del modal de revisión
-  document.getElementById("esc-titulo").textContent = categoria==="fallo" ? "⚖️ Crear fallo" : "⚡ Crear incidente";
+  document.getElementById("esc-titulo").textContent = tipoForzado ? ("📝 Crear "+tipoForzado.toLowerCase()) : (categoria==="fallo" ? "⚖️ Crear fallo" : "⚡ Crear incidente");
   document.getElementById("esc-error").style.display="none";
 
   const campoLargo = ["DERECHO INVOCADO","HECHOS RESUMIDOS","PRETENSIONES","OBSERVACIONES"];
@@ -1177,14 +1182,14 @@ async function confirmarEscalado(){
   const errBox = document.getElementById("esc-error");
   errBox.style.display="none";
   btn.textContent="Creando..."; btn.style.pointerEvents="none";
-  const etiqueta = _escCategoria==="fallo" ? "Fallo" : "Incidente";
+  const etiqueta = _escEtiqueta || (_escCategoria==="fallo" ? "Fallo" : "Incidente");
   try{
     const creado = await Repo.crear(_escCampos, _escCategoria);
     if(!creado) throw new Error("Supabase no devolvió el registro creado");
     toast("✅ "+etiqueta+" creado correctamente","ok");
     document.getElementById("overlay-escalar").classList.remove("open");
     document.getElementById("overlay").classList.remove("open");
-    _escCategoria=null; _escCampos=null;
+    _escCategoria=null; _escCampos=null; _escEtiqueta=null;
     await cargarDatos();
   }catch(e){
     if(/JWT expired|401/i.test(e.message)){
@@ -1699,11 +1704,13 @@ function renderFallos(){
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const fal=activos.filter(r=>r["TIPO"]==="Fallo de tutela");
   const sent=activos.filter(r=>r["TIPO"]==="Sentencia");
+  const impug=activos.filter(r=>r["TIPO"]==="Impugnación");
   document.getElementById("stats-fallos").innerHTML=
     scardQuick(activos.length,"Total activos","c-blue","fal",null)+
     scardQuick(urg.length,"Urgentes ≤3d","c-red","fal","urg3")+
     scardClick(fal.length,"Fallos","c-amber","ff-tp","Fallo de tutela")+
-    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia");
+    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia")+
+    scardClick(impug.length,"Impugnaciones","c-cyan","ff-tp","Impugnación");
   document.getElementById("badge-fallos").textContent=activos.length;
   const visiblesFal=aplicarQuick(filtFal,quickFal);
   const pag=renderPag(visiblesFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
@@ -1776,7 +1783,7 @@ function renderHistorico(){
   window._pagHistorico=pag;
   el.innerHTML=pag.map((r,i)=>{
     const esI=incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
-    const origen=esI?"incidente":TIPOS_FALLO.includes(r["TIPO"])?"fallo":"tutela";
+    const origen=esI?"incidente":TIPOS_FALLO.concat(TIPOS_OTROS).includes(r["TIPO"])?"fallo":"tutela";
     return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;
   }).join("");
   window._exportHistorico=filtHis;
@@ -1790,8 +1797,8 @@ function renderReparto(){
   document.getElementById("grid-reparto").innerHTML=ABOGADOS.map(a=>{
     const mine=activos.filter(r=>matchAbo(r["RESPONSABLE"],a));
     const mineCerrados=cerrados.filter(r=>matchAbo(r["RESPONSABLE"],a));
-    const tuts=mine.filter(r=>!TIPOS_FALLO.includes(r["TIPO"])&&!incidentes.some(x=>x["RADICADO"]===r["RADICADO"]));
-    const fals=mine.filter(r=>TIPOS_FALLO.includes(r["TIPO"]));
+    const tuts=mine.filter(r=>!TIPOS_FALLO.concat(TIPOS_OTROS).includes(r["TIPO"])&&!incidentes.some(x=>x["RADICADO"]===r["RADICADO"]));
+    const fals=mine.filter(r=>TIPOS_FALLO.concat(TIPOS_OTROS).includes(r["TIPO"]));
     const incs=incidentes.filter(r=>matchAbo(r["RESPONSABLE"],a)&&!EST_HIST.includes(r["ESTADO"]));
     const urg=mine.filter(r=>r._dias!==null&&r._dias<=2);
     const nue=mine.filter(r=>r["ESTADO"]==="Nuevo");
@@ -2014,7 +2021,7 @@ function abrirModal(da, origen){
     const tutOrig = tutelas.find(t => t["RADICADO"] && r["RADICADO"] && normRad(t["RADICADO"])===normRad(r["RADICADO"]));
     if(tutOrig){
       rVista = Object.assign({}, r);
-      ["DERECHO INVOCADO","HECHOS RESUMIDOS","PRETENSIONES","OBSERVACIONES","CC / NIT","JUZGADO"].forEach(col=>{
+      ["DERECHO INVOCADO","HECHOS RESUMIDOS","PRETENSIONES","OBSERVACIONES","CC / NIT","JUZGADO","SHAREPOINT","ENCARGADO PQR"].forEach(col=>{
         if(!String(rVista[col]||"").trim() && String(tutOrig[col]||"").trim()) rVista[col]=tutOrig[col];
       });
     }
@@ -2067,6 +2074,11 @@ function abrirModal(da, origen){
     const esFalloOInc = /fallo|sentencia|incidente|desacato/.test(tipoR);
     escBox.style.display = (esTutela && !esFalloOInc) ? "flex" : "none";
   }
+  // Impugnación: disponible al abrir un Fallo/Sentencia que aún no sea una Impugnación
+  const escFalloBox=document.getElementById("m-escalado-fallo");
+  if(escFalloBox){
+    escFalloBox.style.display = (origenModal==="fallo" && (r["TIPO"]||"")!=="Impugnación") ? "flex" : "none";
+  }
   // Acciones rápidas de cierre para Incidentes/Desacatos (Improcedente / Archivado)
   const accIncBox=document.getElementById("m-acciones-inc");
   if(accIncBox){
@@ -2082,8 +2094,8 @@ function abrirModal(da, origen){
   // Botón Editar: disponible para cualquier registro que venga de Supabase (_id)
   const edWrap=document.getElementById("m-editar-wrap");
   if(edWrap) edWrap.style.display = (USAR_SUPABASE && r._id) ? "block" : "none";
-  document.getElementById("m-pqrenc-sel").value=r["ENCARGADO PQR"]||"";
-  const esFallo = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"].includes(r["TIPO"]);
+  document.getElementById("m-pqrenc-sel").value=rVista["ENCARGADO PQR"]||"";
+  const esFallo = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato","Impugnación"].includes(r["TIPO"]);
   const esInc   = incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
   // Siempre mostrar ambos campos, solo cambian las etiquetas
   document.getElementById("m-pqr-wrap").style.display = "block";
@@ -2109,11 +2121,11 @@ function abrirModal(da, origen){
   // SharePoint — editable y obligatorio. Acepta link o texto de referencia.
   const spInput = document.getElementById("m-sharepoint");
   if(spInput){
-    spInput.value = r["SHAREPOINT"]||"";
+    spInput.value = rVista["SHAREPOINT"]||"";
     actualizarBtnSP();
   }
   // ── Gestión visible en pestaña Información (para que los abogados la vean sin entrar a Gestión) ──
-  llenarGestionVisible(r);
+  llenarGestionVisible(rVista);
   document.getElementById("overlay").classList.add("open");
   // Snapshot de los campos editables para detectar cambios sin guardar al cerrar
   _snapshotModal = leerCamposModal();
