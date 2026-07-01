@@ -268,6 +268,11 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .dona-total strong{color:var(--gold2);font-size:15px}
 /* ── REPORTES ── */
 .rep-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.subtab-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.subtab-btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:rgba(255,255,255,.03);
+  color:var(--soft);font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
+.subtab-btn:hover{background:rgba(255,255,255,.07);color:#fff}
+.subtab-btn.on{background:var(--gold);border-color:var(--gold);color:#0a1f3d}
 .rep-kpi{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:15px 16px;border-left:3px solid var(--gold)}
 .rep-kpi.green{border-left-color:#22c55e}
 .rep-kpi.orange{border-left-color:#ea580c}
@@ -433,6 +438,8 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 </div>
 
 <main>
+
+<div id="banner-datos-incompletos" style="display:none;margin-bottom:16px"></div>
 
 <!-- ══ PANEL REGISTROS ══ -->
 <div id="panel-registros">
@@ -640,6 +647,12 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 
 <!-- ══ PANEL REPORTES ══ -->
 <div id="panel-reportes" style="display:none">
+  <div class="subtab-bar">
+    <button class="subtab-btn on" id="subtab-impuesto" onclick="cambiarVistaReporte('impuesto')">📑 Por impuesto</button>
+    <button class="subtab-btn" id="subtab-deudores" onclick="cambiarVistaReporte('deudores')">🏆 Mayores deudores</button>
+  </div>
+
+  <div id="repview-impuesto">
   <div class="card">
     <div class="card-hdr">
       <div class="card-hdr-title">📑 Reporte por impuesto</div>
@@ -697,6 +710,52 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
       </table>
     </div>
   </div>
+  </div>
+  <!-- ══ FIN repview-impuesto ══ -->
+
+  <!-- ══ VISTA: MAYORES DEUDORES ══ -->
+  <div id="repview-deudores" style="display:none">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-hdr-title">🏆 Mayores deudores</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label style="font-size:11px;color:var(--soft);white-space:nowrap">Top</label>
+          <input class="finp" type="number" id="deud-top-n" value="50" min="5" max="1000" step="5" style="width:75px" onchange="renderMayoresDeudores()"/>
+          <select class="finp" id="deud-estado" onchange="renderMayoresDeudores()" style="min-width:210px">
+            <option value="todos">Todos los deudores</option>
+            <option value="pendientes">Solo pendientes / sin gestionar</option>
+          </select>
+          <input class="finp" id="deud-buscar" placeholder="🔍 Buscar nombre o cédula..." oninput="renderMayoresDeudoresDebounced()" style="min-width:200px"/>
+          <button class="tb-btn" onclick="exportarDeudoresPDF()">📄 PDF</button>
+          <button class="tb-btn gold" onclick="exportarDeudoresExcel()">📊 Excel</button>
+        </div>
+      </div>
+      <div style="padding:20px">
+        <div style="font-size:11px;color:var(--soft);margin-bottom:12px">
+          Se agrupan <b>todos los depósitos de cada cédula</b> y se suman. El estado "Pendiente" indica que la persona tiene al menos un depósito sin gestionar; "Resuelto" indica que todos sus depósitos ya fueron devueltos o aplicados.
+        </div>
+        <div class="rep-kpis" id="deud-kpis"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="card-hdr">
+        <div class="card-hdr-title">📋 Ranking de deudores <span class="nbadge nb-blue" id="deud-count">0</span></div>
+      </div>
+      <div class="tw" style="max-height:65vh">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Demandado</th><th>Cédula</th>
+            <th style="text-align:right">Depósitos</th>
+            <th style="text-align:right">Valor total</th>
+            <th>¿Tiene proceso?</th><th>Estado</th><th>Responsable(s)</th>
+          </tr></thead>
+          <tbody id="deud-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- ══ FIN repview-deudores ══ -->
 </div>
 
 <!-- ══ PANEL IMPORTAR ══ -->
@@ -983,7 +1042,9 @@ async function sbFetchAll(tabla, select, extraQuery){
 
     // Lanzar las páginas en tandas (no las ~48+ de una sola vez) para no saturar
     // al servidor ni chocar con límites de conexiones simultáneas del navegador.
-    var TANDA = 6;
+    // (Se bajó de 6 a 4 porque ahora las 3 tablas de cargarTodo() se piden en
+    // paralelo entre sí, así que la carga simultánea real es más alta que antes.)
+    var TANDA = 4;
     for(var i=0;i<paginas.length;i+=TANDA){
       var grupo = paginas.slice(i, i+TANDA);
       var resultados = await Promise.all(grupo.map(pedirPagina));
@@ -1189,6 +1250,25 @@ async function cargarTodo(){
       });
     }
 
+    // Antes, si expedientes_predial o v_transito_por_cedula fallaban, la app seguía
+    // como si nada — sin cruce de datos y SIN AVISAR. Eso hacía que Reportes/Tránsito
+    // (o el ⚠️ Revisar de Predial+Tránsito) diera resultados incompletos "al azar",
+    // dependiendo de si esa carga puntual falló o no. Ahora se muestra un aviso claro.
+    var fallos=[];
+    if(resultados[1].status!=='fulfilled') fallos.push('expedientes prediales');
+    if(resultados[2].status!=='fulfilled') fallos.push('tránsito');
+    var bannerEl=document.getElementById('banner-datos-incompletos');
+    if(bannerEl){
+      if(fallos.length){
+        bannerEl.style.display='block';
+        bannerEl.innerHTML='<div class="alerta al-warn" style="display:flex">⚠️ No se pudo cargar <strong>'+fallos.join(' y ')+'</strong> esta vez — el cruce con depósitos puede salir incompleto (ej. Reportes por Tránsito, o el aviso ⚠️ Revisar). '
+          +'<button class="tb-btn" style="margin-left:auto;flex-shrink:0" onclick="recargarTodo()">🔄 Reintentar</button></div>';
+      } else {
+        bannerEl.style.display='none';
+        bannerEl.innerHTML='';
+      }
+    }
+
     var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     setSS('ok','Sincronizado '+ts);
     renderKpis(); filtrar(); llenarSelectResponsables(); actualizarCfgPanel();
@@ -1294,7 +1374,7 @@ function goTab(t){
   });
   if(t==='pendientes') filtrarPend();
   if(t==='dashboard') renderDashboard();
-  if(t==='reportes') renderReporte();
+  if(t==='reportes'){ if(_vistaReporteActual==='deudores'){ renderMayoresDeudores(); } else { renderReporte(); } }
   if(t==='config') actualizarCfgPanel();
 }
 
@@ -2836,6 +2916,218 @@ function exportarReportePDF(){
   });
 
   doc.save('Reporte_'+_repImpuesto+'_'+new Date().toISOString().slice(0,10)+'.pdf');
+}
+
+// ════════════════════════════════════════════════════════════
+// REPORTE: MAYORES DEUDORES (agrupado por cédula, suma total)
+// ════════════════════════════════════════════════════════════
+var _vistaReporteActual='impuesto';
+var _deudDatos=[];
+var _debDeud;
+
+function cambiarVistaReporte(vista){
+  _vistaReporteActual=vista;
+  var elImp=document.getElementById('repview-impuesto');
+  var elDeu=document.getElementById('repview-deudores');
+  if(elImp) elImp.style.display = (vista==='impuesto') ? 'block' : 'none';
+  if(elDeu) elDeu.style.display = (vista==='deudores') ? 'block' : 'none';
+  var btnImp=document.getElementById('subtab-impuesto');
+  var btnDeu=document.getElementById('subtab-deudores');
+  if(btnImp) btnImp.classList.toggle('on', vista==='impuesto');
+  if(btnDeu) btnDeu.classList.toggle('on', vista==='deudores');
+  if(vista==='deudores') renderMayoresDeudores();
+}
+
+function renderMayoresDeudoresDebounced(){ clearTimeout(_debDeud); _debDeud=setTimeout(renderMayoresDeudores, 300); }
+
+// Agrupa TODOS los depósitos (de cualquier impuesto) por cédula del demandado
+function calcularMayoresDeudores(){
+  var mapa={};
+  dataBanco.forEach(function(r){
+    var cid=String(r['Identificación Demandado']||'').trim();
+    if(!cid) return;
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    if(!mapa[cid]){
+      mapa[cid]={
+        cedula:cid,
+        nombre:r['Nombre Demandante.1']||'—',
+        depositos:0,
+        valorTotal:0,
+        pendiente:false,
+        responsables:new Set(),
+        depositoTop:r['deposito judicial']||''
+      };
+    }
+    var g=mapa[cid];
+    g.depositos++;
+    g.valorTotal+=v;
+    if(v>0 && !g.nombre) g.nombre=r['Nombre Demandante.1']||'—';
+    var cls=estadoEfectivo(r);
+    if(cls==='EN GESTION' || cls==='SIN GESTIONAR') g.pendiente=true;
+    var resp=normResp(r['RESPONSABLE']);
+    if(resp) g.responsables.add(resp);
+    // guarda el depósito de mayor valor de esta persona para poder abrir el modal
+    if(!g._maxValor || v>g._maxValor){ g._maxValor=v; g.depositoTop=r['deposito judicial']||''; }
+  });
+  var lista=Object.keys(mapa).map(function(cid){
+    var g=mapa[cid];
+    var tieneProceso=!!(expedientesPorCedula[cid] || transitoPorCedula[cid]);
+    return {
+      cedula:g.cedula,
+      nombre:g.nombre||'—',
+      depositos:g.depositos,
+      valorTotal:g.valorTotal,
+      pendiente:g.pendiente,
+      tieneProceso:tieneProceso,
+      responsables:Array.from(g.responsables),
+      depositoTop:g.depositoTop
+    };
+  });
+  lista.sort(function(a,b){ return b.valorTotal-a.valorTotal; });
+  return lista;
+}
+
+function renderMayoresDeudores(){
+  var todos=calcularMayoresDeudores();
+
+  var estadoFiltro=(document.getElementById('deud-estado')||{value:'todos'}).value;
+  var buscar=(document.getElementById('deud-buscar')||{value:''}).value.toLowerCase().trim();
+  var topN=parseInt((document.getElementById('deud-top-n')||{}).value,10)||50;
+
+  var filtrados=todos;
+  if(estadoFiltro==='pendientes') filtrados=filtrados.filter(function(d){ return d.pendiente; });
+  if(buscar){
+    filtrados=filtrados.filter(function(d){
+      return (d.nombre||'').toLowerCase().indexOf(buscar)>=0 || (d.cedula||'').indexOf(buscar)>=0;
+    });
+  }
+
+  _deudDatos=filtrados.slice(0,topN);
+
+  // KPIs (sobre el universo filtrado por estado/búsqueda, no solo el top N mostrado)
+  var valorTotalUniverso=filtrados.reduce(function(s,d){ return s+d.valorTotal; },0);
+  var conProceso=filtrados.filter(function(d){ return d.tieneProceso; }).length;
+  var pendientesN=filtrados.filter(function(d){ return d.pendiente; }).length;
+  document.getElementById('deud-kpis').innerHTML=
+    repKpi('','Deudores (cédulas)', filtrados.length.toLocaleString('es-CO'), fmt$(valorTotalUniverso))+
+    repKpi('purple','Mostrando (top)', _deudDatos.length.toLocaleString('es-CO'), 'de '+filtrados.length.toLocaleString('es-CO'))+
+    repKpi('orange','Con estado pendiente', pendientesN.toLocaleString('es-CO'), 'al menos 1 depósito sin resolver')+
+    repKpi('blue','Con proceso asociado', conProceso.toLocaleString('es-CO'), 'predial/tránsito cruzado');
+
+  document.getElementById('deud-count').textContent=_deudDatos.length.toLocaleString('es-CO');
+  var body=document.getElementById('deud-body');
+  if(!_deudDatos.length){
+    body.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No hay deudores que coincidan con el filtro.</td></tr>';
+    return;
+  }
+  body.innerHTML=_deudDatos.map(function(d,i){
+    var procCell=d.tieneProceso
+      ? '<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:#93c5fd"></span> Sí'
+      : '<span style="color:var(--muted)">—</span>';
+    var estCell=d.pendiente
+      ? '<span class="badge b-pen">⏳ PENDIENTE</span>'
+      : '<span class="badge b-fin">✅ RESUELTO</span>';
+    var depSeguro=String(d.depositoTop||'').replace(/'/g,"\\'");
+    return '<tr onclick="irADepositoGlobal(\''+depSeguro+'\')" style="cursor:pointer" tabindex="0">'
+      +'<td class="mono" style="color:var(--soft)">'+(i+1)+'</td>'
+      +'<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(d.nombre)+'</td>'
+      +'<td class="mono" style="font-size:11px">'+eh(d.cedula)+'</td>'
+      +'<td class="mono" style="text-align:right;font-size:12px">'+d.depositos.toLocaleString('es-CO')+'</td>'
+      +'<td class="mono" style="text-align:right;font-weight:700;font-size:12px;color:#86efac">'+fmt$(d.valorTotal)+'</td>'
+      +'<td>'+procCell+'</td>'
+      +'<td>'+estCell+'</td>'
+      +'<td style="font-size:11px;color:var(--soft);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+eh(d.responsables.join(', '))+'">'+eh(d.responsables.join(', ')||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function exportarDeudoresExcel(){
+  if(!_deudDatos.length){ alert('No hay datos para exportar.'); return; }
+  var filas=_deudDatos.map(function(d,i){
+    return {
+      '#':i+1,
+      'Demandado':d.nombre,
+      'Cédula':d.cedula,
+      'Depósitos':d.depositos,
+      'Valor Total':d.valorTotal,
+      'Tiene Proceso':d.tieneProceso?'Sí':'No',
+      'Estado':d.pendiente?'PENDIENTE':'RESUELTO',
+      'Responsable(s)':d.responsables.join(', ')
+    };
+  });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filas),'Mayores Deudores');
+  XLSX.writeFile(wb,'Mayores_Deudores_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function exportarDeudoresPDF(){
+  if(!_deudDatos.length){ alert('No hay datos para exportar.'); return; }
+  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  var W=doc.internal.pageSize.getWidth();
+
+  var valorTotal=_deudDatos.reduce(function(s,d){ return s+d.valorTotal; },0);
+  var conProceso=_deudDatos.filter(function(d){ return d.tieneProceso; }).length;
+  var pendientesN=_deudDatos.filter(function(d){ return d.pendiente; }).length;
+
+  doc.setFillColor(10,31,61); doc.rect(0,0,W,60,'F');
+  doc.setTextColor(232,160,32); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('Reporte de Mayores Deudores', 40, 30);
+  doc.setTextColor(200,210,225); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello', 40, 46);
+  doc.setTextColor(150,160,175);
+  doc.text('Generado: '+new Date().toLocaleString('es-CO'), W-40, 46, {align:'right'});
+
+  var y=80;
+  doc.setTextColor(40,40,40); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Resumen ejecutivo · top '+_deudDatos.length+' deudores por suma total de depósitos', 40, y);
+  y+=8;
+  var resumenRows=[
+    ['Deudores en este reporte', _deudDatos.length.toLocaleString('es-CO'), fmt$(valorTotal)],
+    ['Con proceso asociado', conProceso.toLocaleString('es-CO'), ''],
+    ['Con estado pendiente', pendientesN.toLocaleString('es-CO'), '']
+  ];
+  doc.autoTable({
+    startY:y+6,
+    head:[['Concepto','Cantidad','Valor']],
+    body:resumenRows,
+    theme:'grid',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:9},
+    bodyStyles:{fontSize:9,textColor:[40,40,40]},
+    margin:{left:40,right:40},
+    columnStyles:{1:{halign:'right'},2:{halign:'right'}}
+  });
+
+  var detalleRows=_deudDatos.map(function(d,i){
+    return [
+      i+1,
+      (d.nombre||'').substring(0,32),
+      d.cedula||'',
+      d.depositos.toLocaleString('es-CO'),
+      fmt$(d.valorTotal),
+      d.tieneProceso?'Sí':'No',
+      d.pendiente?'PENDIENTE':'RESUELTO',
+      (d.responsables.join(', ')||'—').substring(0,24)
+    ];
+  });
+  doc.autoTable({
+    startY:doc.lastAutoTable.finalY+20,
+    head:[['#','Demandado','Cédula','Depósitos','Valor total','¿Proceso?','Estado','Responsable(s)']],
+    body:detalleRows,
+    theme:'striped',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:8},
+    bodyStyles:{fontSize:7,textColor:[50,50,50]},
+    alternateRowStyles:{fillColor:[245,247,250]},
+    margin:{left:40,right:40},
+    columnStyles:{4:{halign:'right'}},
+    didDrawPage:function(data){
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Página '+doc.internal.getCurrentPageInfo().pageNumber, W-40, doc.internal.pageSize.getHeight()-15, {align:'right'});
+    }
+  });
+
+  doc.save('Mayores_Deudores_'+new Date().toISOString().slice(0,10)+'.pdf');
 }
 
 function eh(v){if(v===null||v===undefined)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
