@@ -965,11 +965,36 @@ async function sbFetchAll(tabla, select, extraQuery){
   if(total && !isNaN(total)){
     var paginas = [];
     for(var desde = bloque; desde < total && desde <= 200000; desde += bloque) paginas.push(desde);
-    var resultados = await Promise.all(paginas.map(function(d){
-      return fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items" }) })
-        .then(function(res){ return res.ok ? res.json() : []; });
-    }));
-    resultados.forEach(function(chunk){ todos = todos.concat(chunk); });
+
+    // Pide una página con reintentos (evita perder filas EN SILENCIO si Supabase
+    // rechaza alguna petición por ráfaga de tráfico — antes, una página fallida
+    // se convertía en un arreglo vacío sin avisar, y el total quedaba mal contado).
+    async function pedirPagina(d){
+      var intentos=3, ultimoError=null;
+      for(var i=0;i<intentos;i++){
+        try{
+          var res = await fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items" }) });
+          if(res.ok) return await res.json();
+          ultimoError = new Error("Supabase HTTP " + res.status);
+        }catch(e){ ultimoError = e; }
+      }
+      throw ultimoError || new Error("No se pudo traer el bloque " + d + "-" + (d + bloque - 1) + " de " + tabla);
+    }
+
+    // Lanzar las páginas en tandas (no las ~48+ de una sola vez) para no saturar
+    // al servidor ni chocar con límites de conexiones simultáneas del navegador.
+    var TANDA = 6;
+    for(var i=0;i<paginas.length;i+=TANDA){
+      var grupo = paginas.slice(i, i+TANDA);
+      var resultados = await Promise.all(grupo.map(pedirPagina));
+      resultados.forEach(function(chunk){ todos = todos.concat(chunk); });
+    }
+
+    // Verificación final: si por cualquier motivo no llegaron todas las filas
+    // esperadas, es mejor fallar con un error visible que mostrar datos incompletos.
+    if(todos.length !== total){
+      throw new Error("Se esperaban " + total + " filas de " + tabla + " pero llegaron " + todos.length + ". Vuelve a intentar recargar.");
+    }
     return todos;
   }
 
