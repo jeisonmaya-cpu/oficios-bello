@@ -1,0 +1,2886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Recaudo Histórico — Alcaldía de Bello</title>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --navy:#0a1f3d;--navy2:#0f2d5e;--navy3:#132444;
+  --blue:#1a6fc4;--blue2:#2d8de8;
+  --gold:#e8a020;--gold2:#f5c050;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--purple:#7c3aed;
+  --surface:rgba(255,255,255,.06);--surface2:rgba(255,255,255,.04);
+  --border:rgba(255,255,255,.10);--border2:rgba(255,255,255,.06);
+  --text:#f1f5f9;--soft:rgba(241,245,249,.55);--muted:rgba(241,245,249,.35);
+  --radius:14px;--radius-sm:9px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% 0%,rgba(26,111,196,.2) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 100%,rgba(232,160,32,.09) 0%,transparent 55%),
+    linear-gradient(160deg,#0a1f3d 0%,#0d2550 50%,#09182f 100%);
+}
+
+/* ── TOPBAR ── */
+.topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;
+  padding:0 28px;height:56px;background:rgba(10,31,61,.9);
+  backdrop-filter:blur(20px);border-bottom:1px solid rgba(232,160,32,.18)}
+.tb-brand{display:flex;align-items:center;gap:10px}
+.tb-icon{width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,#1a6fc4,#e8a020);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tb-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:-.01em}
+.tb-sub{font-size:10px;color:var(--soft);margin-top:1px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-btn{display:flex;align-items:center;gap:6px;padding:6px 13px;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);cursor:pointer;text-decoration:none;font-family:'DM Sans',sans-serif;transition:all .18s}
+.tb-btn:hover{background:rgba(255,255,255,.12)}
+.tb-btn.gold{background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.35);color:var(--gold2)}
+
+/* ── TABS ── */
+.tabs{position:sticky;top:56px;z-index:99;display:flex;align-items:center;
+  padding:0 28px;background:rgba(10,31,61,.7);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);overflow-x:auto}
+.tabs::-webkit-scrollbar{height:0}
+.ntab{display:flex;align-items:center;gap:7px;padding:13px 16px;font-size:12px;font-weight:600;
+  color:var(--soft);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;
+  background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif}
+.ntab.on{color:var(--text);border-bottom-color:var(--gold)}
+.ntab:hover:not(.on){color:rgba(255,255,255,.8)}
+.nbadge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:18px;text-align:center}
+.nb-blue{background:rgba(45,141,232,.3);color:#93c5fd}
+.nb-gold{background:rgba(232,160,32,.35);color:var(--gold2)}
+
+/* ── MAIN ── */
+main{max-width:1300px;margin:0 auto;padding:24px 28px 80px}
+
+/* ── KPIs ── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:22px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:rgba(255,255,255,.2)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.blue::before{background:linear-gradient(90deg,var(--blue),var(--blue2))}
+.kpi.gold::before{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.kpi.green::before{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.kpi.orange::before{background:linear-gradient(90deg,#ea580c,#f97316)}
+.kpi.purple::before{background:linear-gradient(90deg,#7c3aed,#a855f7)}
+.kpi.red::before{background:linear-gradient(90deg,var(--red),#ef4444)}
+.kpi-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);margin-bottom:8px}
+.kpi-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--text);line-height:1}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:4px}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:16px;overflow:hidden}
+.card-hdr{padding:12px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card-hdr-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+  color:var(--gold2);display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── FILTROS ── */
+.filtros{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;
+  background:var(--surface2);border-bottom:1px solid var(--border2)}
+.finp{padding:7px 11px;font-size:12px;font-family:inherit;
+  border:1.5px solid rgba(255,255,255,.14);border-radius:var(--radius-sm);
+  outline:none;background:rgba(255,255,255,.07);color:var(--text);transition:all .2s;min-width:0}
+.finp:focus{border-color:rgba(45,141,232,.5);background:rgba(45,141,232,.1)}
+.finp option{background:#0f2d5e;color:#f1f5f9}
+.finp.search{flex:1;min-width:200px}
+.fbtn{padding:7px 13px;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .18s}
+.fbtn-primary{background:var(--blue);color:#fff}.fbtn-primary:hover{background:var(--blue2)}
+.fbtn-outline{background:transparent;border:1.5px solid rgba(255,255,255,.18);color:var(--soft)}
+.fbtn-outline:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.fbtn-gold{background:linear-gradient(135deg,var(--gold),#d4891a);color:#0a1f3d;font-weight:700}
+.fbtn-gold:hover{opacity:.9}
+.fbtn-green{background:rgba(22,163,74,.25);border:1px solid rgba(34,197,94,.3);color:#86efac}
+
+/* ── TABLA ── */
+.tw{overflow:auto;max-height:calc(100vh - 230px);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#0d2547}
+thead th{padding:11px 12px;text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--gold2);white-space:nowrap;
+  border-bottom:2px solid var(--border);cursor:pointer;user-select:none;background:#0d2547}
+.tw thead th{position:sticky;top:0;z-index:10}
+thead th:hover{background:#103060}
+thead th.sorted-asc::after{content:' ↑';color:var(--gold);font-weight:900}
+thead th.sorted-desc::after{content:' ↓';color:var(--gold);font-weight:900}
+tbody tr{border-bottom:1px solid var(--border2);transition:background .12s;cursor:pointer}
+tbody tr:hover{background:rgba(255,255,255,.06)}
+tbody tr:focus{outline:2px solid var(--blue2);outline-offset:-2px;background:rgba(45,141,232,.08)}
+tbody tr.gestionado{border-left:2px solid rgba(22,163,74,.5)}
+tbody td{padding:10px 12px;vertical-align:middle;color:var(--text);font-size:13px}
+td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;gap:3px}
+.b-fin{background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)}
+.b-tram{background:rgba(45,141,232,.15);color:#93c5fd;border:1px solid rgba(45,141,232,.3)}
+.b-pen{background:rgba(232,160,32,.15);color:var(--gold2);border:1px solid rgba(232,160,32,.3)}
+.b-rev{background:rgba(124,58,237,.15);color:#c4b5fd;border:1px solid rgba(124,58,237,.3)}
+.b-vacio{background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border2)}
+.b-imp{background:rgba(234,88,12,.15);color:#fdba74;border:1px solid rgba(234,88,12,.3)}
+.chip-nuevo{background:rgba(45,141,232,.25);color:#93c5fd;border:1px solid rgba(45,141,232,.4);
+  font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
+
+/* ── PAGINACIÓN ── */
+.pag{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
+  background:var(--surface2);border-top:1px solid var(--border2);flex-wrap:wrap;gap:8px}
+.pag-info{font-size:11px;color:var(--soft)}
+.pag-btns{display:flex;gap:3px}
+.pb{width:28px;height:28px;border:1px solid var(--border);background:var(--surface);
+  border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;
+  font-family:inherit;color:var(--text)}
+.pb:hover:not(:disabled){background:rgba(255,255,255,.12)}
+.pb:disabled{opacity:.35;cursor:not-allowed}
+.pb.cur{background:var(--gold);color:#0a1f3d;border-color:var(--gold);font-weight:700}
+
+/* ── MODAL ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;
+  align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.ov.open{display:flex}
+.mbox{background:linear-gradient(155deg,#111827 0%,#0d1525 100%);
+  border:1px solid rgba(255,255,255,.1);border-radius:20px;
+  box-shadow:0 32px 64px rgba(0,0,0,.7);width:100%;max-width:720px;
+  max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.mhdr{background:linear-gradient(135deg,var(--navy2),#1a4a8a);
+  padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,.1)}
+.mhdr-info h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;margin-bottom:3px}
+.mhdr-info p{font-size:11px;color:rgba(255,255,255,.6)}
+.mclose{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.mclose:hover{background:rgba(255,255,255,.2)}
+.mbody{padding:20px;overflow-y:auto;flex:1}
+.mfoot{padding:12px 20px;border-top:1px solid rgba(255,255,255,.08);
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+
+.banco-info{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;padding:14px;margin-bottom:18px}
+.banco-info-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--gold2);margin-bottom:10px;display:flex;align-items:center;gap:5px}
+.banco-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.banco-item{font-size:11px}
+.banco-lbl{color:var(--soft);font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.banco-val{color:var(--text);font-weight:600;word-break:break-word}
+.banco-val.money{color:#86efac;font-size:15px}
+
+.msec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--gold2);margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.cg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.campo{margin-bottom:10px}
+.campo label{display:block;font-size:10px;font-weight:600;color:var(--soft);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.campo input,.campo select,.campo textarea{width:100%;padding:8px 11px;font-size:12px;
+  font-family:inherit;border:1.5px solid rgba(255,255,255,.14);border-radius:8px;
+  outline:none;color:var(--text);background:rgba(255,255,255,.07);transition:all .2s}
+.campo input:focus,.campo select:focus,.campo textarea:focus{
+  border-color:rgba(45,141,232,.5);background:rgba(45,141,232,.1)}
+/* Validación ligera (ej. teléfono): un campo vacío con "pattern" no cuenta como inválido,
+   solo se marca en rojo si el usuario escribió algo que no coincide con el formato esperado. */
+.campo input:invalid{border-color:rgba(220,38,38,.5)}
+.campo textarea{resize:vertical;min-height:64px}
+.campo select option{background:#0f2d5e}
+
+.log-wrap{background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;margin-top:12px;
+  border:1px solid var(--border2)}
+.log-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--soft);margin-bottom:8px}
+.log-item{font-size:11px;padding:5px 0;border-bottom:1px solid var(--border2);display:flex;gap:8px}
+.log-item:last-child{border-bottom:none}
+.log-ts{color:var(--muted);white-space:nowrap;flex-shrink:0}
+.log-txt{color:var(--soft)}
+
+/* ── ALERTAS ── */
+.alerta{padding:9px 13px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;
+  display:flex;align-items:center;gap:7px}
+.al-ok{background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)}
+.al-err{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.al-load{background:rgba(45,141,232,.15);color:#93c5fd;border:1px solid rgba(45,141,232,.3)}
+.al-warn{background:rgba(232,160,32,.15);color:var(--gold2);border:1px solid rgba(232,160,32,.3)}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.15);
+  border-top-color:var(--blue2);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── IMPORT ── */
+.import-banner{background:rgba(234,88,12,.08);border:1.5px dashed rgba(234,88,12,.3);
+  border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;
+  justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.import-banner-txt h4{font-size:13px;font-weight:700;color:#fdba74;margin-bottom:3px}
+.import-banner-txt p{font-size:12px;color:var(--soft)}
+.import-drop{border:2px dashed rgba(255,255,255,.18);border-radius:var(--radius);
+  padding:36px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.import-drop:hover,.import-drop.drag{border-color:var(--blue2);background:rgba(45,141,232,.08)}
+.import-drop p{font-size:12px;color:var(--soft);margin-top:6px}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:52px 20px;color:var(--muted)}
+.empty-ico{font-size:40px;margin-bottom:10px;opacity:.5}
+
+/* ── BOTÓN GESTIONAR EN TABLA ── */
+.btn-gest{background:rgba(45,141,232,.2);color:#93c5fd;border:1px solid rgba(45,141,232,.35);
+  border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:all .15s}
+.btn-gest:hover{background:rgba(45,141,232,.4);color:#fff}
+
+/* ── DASHBOARD ── */
+.dash-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.dash-kpi{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px}
+.dash-kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:6px}
+.dash-kpi-val{font-size:26px;font-weight:800;color:var(--gold2);font-family:'Syne',sans-serif;line-height:1}
+.dash-kpi-sub{font-size:11px;color:var(--soft);margin-top:4px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+@media(max-width:760px){.dash-grid{grid-template-columns:1fr}}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px}
+.dash-table th{text-align:left;padding:9px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:2px solid var(--border);font-weight:700;white-space:nowrap;position:static;cursor:default;background:transparent}
+.dash-table td{padding:11px 12px;border-bottom:1px solid var(--border)}
+.dash-table tr:hover td{background:rgba(255,255,255,.02)}
+.dash-resp-name{font-weight:700;color:var(--text)}
+.dash-bar{height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;min-width:80px}
+.dash-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;transition:width .5s}
+.dash-pct{font-size:11px;color:var(--soft);margin-top:3px;text-align:center}
+.dash-erow{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.dash-erow:last-child{margin-bottom:0}
+.dash-elbl{font-size:12px;min-width:120px;color:var(--soft)}
+.dash-ebar{flex:1;height:22px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden;position:relative}
+.dash-ebar-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:700;color:#fff;min-width:2px}
+.dash-enum{font-size:12px;font-weight:700;color:var(--text);min-width:48px;text-align:right}
+.dash-estats{min-width:72px;text-align:right;display:flex;flex-direction:column;gap:1px}
+.dash-estats-pct{font-size:14px;font-weight:800;color:var(--gold2);line-height:1}
+.dash-estats-n{font-size:10px;color:var(--muted)}
+.dash-etotal{margin-top:12px;padding-top:11px;border-top:1px solid var(--border);font-size:12px;color:var(--soft);text-align:right}
+.dash-etotal strong{color:var(--gold2);font-size:14px}
+.dona-total{text-align:center;margin-top:12px;padding-top:11px;border-top:1px solid var(--border);font-size:12px;color:var(--soft)}
+.dona-total strong{color:var(--gold2);font-size:15px}
+/* ── REPORTES ── */
+.rep-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.rep-kpi{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:15px 16px;border-left:3px solid var(--gold)}
+.rep-kpi.green{border-left-color:#22c55e}
+.rep-kpi.orange{border-left-color:#ea580c}
+.rep-kpi.blue{border-left-color:#3b82f6}
+.rep-kpi.purple{border-left-color:#7c3aed}
+.rep-kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:6px}
+.rep-kpi-val{font-size:20px;font-weight:800;color:var(--text);font-family:'Syne',sans-serif;line-height:1.1}
+.rep-kpi-sub{font-size:11px;color:var(--soft);margin-top:4px}
+.rep-sec-title{font-size:12px;font-weight:700;color:var(--gold2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px}
+.rep-erow{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12px}
+.rep-edot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.rep-elbl{min-width:110px;color:var(--soft)}
+.rep-ebar{flex:1;height:20px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden}
+.rep-ebar-fill{height:100%;border-radius:5px}
+.rep-evals{text-align:right;min-width:140px}
+.rep-eval{font-weight:700;color:var(--text)}
+.rep-ecount{font-size:10px;color:var(--muted)}
+/* ── OVERLAY USUARIO ── */
+.user-card{background:linear-gradient(160deg,#11294d,#0a1f3d);border:1px solid rgba(232,160,32,.25);border-radius:18px;padding:34px 30px;max-width:440px;width:90%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.user-card-ico{font-size:42px;margin-bottom:10px}
+.user-card-title{font-family:'DM Serif Display',serif;font-size:24px;color:#fff;margin:0 0 8px}
+.user-card-sub{font-size:13px;color:var(--soft);margin:0 0 22px;line-height:1.5}
+.user-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.user-opt{padding:13px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.user-opt:hover{background:rgba(232,160,32,.18);border-color:var(--gold);transform:translateY(-1px)}
+.sync-pendientes{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#fdba74;background:rgba(234,88,12,.18);border:1px solid rgba(234,88,12,.4);border-radius:20px;padding:4px 11px;cursor:pointer;white-space:nowrap}
+.sync-pendientes:hover{background:rgba(234,88,12,.3)}
+/* ── BITÁCORA / HISTORIAL ── */
+.log-item{padding:9px 11px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;margin-bottom:7px}
+.log-item:last-child{margin-bottom:0}
+.log-item-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.log-user{font-size:11px;font-weight:700;color:var(--gold2)}
+.log-fecha{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
+.log-cambios{font-size:11px;color:var(--soft);line-height:1.5;word-break:break-word}
+@media(max-width:480px){.user-options{grid-template-columns:1fr}}
+.user-skip{margin-top:16px;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif}
+.user-skip:hover{color:var(--soft)}
+
+/* ── CABECERA MODAL REDISEÑADA ── */
+.mhdr-dep{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace;margin-bottom:6px}
+.mhdr-nombre{display:flex;align-items:center;gap:8px;font-family:'DM Serif Display',serif;font-size:22px;color:#fff;line-height:1.2;margin-bottom:4px}
+.mhdr-cedula{display:flex;align-items:center;gap:7px;font-size:15px;color:var(--gold2);font-weight:600;font-family:monospace}
+.mhdr-ced-lbl{font-size:10px;color:rgba(255,255,255,.45);font-family:'DM Sans',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.copy-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:6px;cursor:pointer;font-size:11px;padding:2px 6px;opacity:.8;transition:all .15s;line-height:1;flex-shrink:0}
+.copy-btn:hover{opacity:1;background:rgba(232,160,32,.25);border-color:var(--gold)}
+.copy-btn.ok{background:rgba(34,197,94,.3);border-color:#22c55e}
+
+/* ── VISTA 360 (depósitos + expedientes en modal) ── */
+.vista360{margin-top:18px;padding:14px;background:rgba(26,111,196,.06);border:1px solid rgba(45,141,232,.18);border-radius:var(--radius-sm)}
+.v360-title{font-size:11px;font-weight:700;color:var(--gold2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+.v360-toggle{justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:0;padding:2px 0}
+.v360-toggle:hover{opacity:.85}
+.v360-chevron{font-size:9px;transition:transform .25s;color:var(--soft)}
+.vista360.colapsado .v360-chevron{transform:rotate(-90deg)}
+.v360-body{max-height:600px;overflow:hidden;transition:max-height .3s ease,margin .3s,opacity .2s;margin-top:10px;opacity:1}
+.vista360.colapsado .v360-body{max-height:0;margin-top:0;opacity:0}
+.v360-count{background:rgba(232,160,32,.2);color:var(--gold2);font-size:10px;padding:1px 8px;border-radius:10px;font-weight:700}
+.v360-list{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto}
+.v360-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;font-size:12px}
+.v360-row.actual{border-color:rgba(232,160,32,.5);background:rgba(232,160,32,.07)}
+.v360-row-main{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.v360-row-top{font-family:monospace;font-size:11px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v360-row-sub{font-size:10px;color:var(--muted)}
+.v360-row-right{text-align:right;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.v360-val{font-weight:700;color:#86efac}
+.v360-badge{font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(45,141,232,.18);color:#93c5fd;font-weight:600}
+.v360-aqui{font-size:9px;color:var(--gold2);font-weight:700}
+.v360-empty{font-size:11px;color:var(--muted);font-style:italic;padding:4px 2px}
+.v360-total{display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:8px;background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);border-radius:8px;font-size:12px;color:var(--soft)}
+.v360-total-val{font-weight:800;color:var(--gold2);font-size:15px;margin-left:auto}
+.copy-todos{font-size:10px !important;padding:3px 9px !important;white-space:nowrap;font-family:'DM Sans',sans-serif;font-weight:600}
+
+/* ── BUSCADOR GLOBAL (topbar) ── */
+.global-results{position:absolute;top:38px;left:0;width:100%;max-height:360px;overflow-y:auto;
+  background:#0d1a30;border:1px solid var(--border);border-radius:var(--radius-sm);
+  box-shadow:0 20px 40px rgba(0,0,0,.55);z-index:200;display:none}
+.global-results.open{display:block}
+.gr-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;
+  border-bottom:1px solid var(--border2);cursor:pointer;transition:background .15s}
+.gr-item:hover{background:rgba(255,255,255,.06)}
+.gr-item:last-child{border-bottom:none}
+.gr-acc{font-size:13px;font-weight:600;color:var(--text)}
+.gr-sub{font-size:11px;color:var(--soft);margin-top:2px}
+
+/* ── SYNC PILL ── */
+.sync-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+  font-size:11px;font-weight:500;background:var(--surface);border:1px solid var(--border);color:var(--soft)}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#6b7280;flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)}
+.sync-dot.loading{background:var(--gold);animation:blink 1s infinite}
+.sync-dot.error{background:#ef4444}
+.sync-reload{background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px;margin-left:2px;opacity:.7;transition:opacity .2s,transform .3s;line-height:1}
+.sync-reload:hover{opacity:1;transform:rotate(180deg)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── STATS PENDIENTES ── */
+.pend-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.pend-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;text-align:center}
+.pend-stat-num{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--text);line-height:1}
+.pend-stat-lbl{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.pend-stat.warn .pend-stat-num{color:var(--gold2)}
+.pend-stat.err .pend-stat-num{color:#f87171}
+.pend-stat.ok .pend-stat-num{color:#86efac}
+
+/* ── SKELETON DE CARGA INICIAL ── */
+@keyframes skel-pulse{0%,100%{opacity:.35}50%{opacity:.75}}
+.skel-cell{display:inline-block;height:11px;border-radius:4px;background:rgba(255,255,255,.14);animation:skel-pulse 1.1s ease-in-out infinite}
+
+/* ── INDICADOR NOTAS EN FILA ── */
+.nota-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--gold);margin-left:5px;vertical-align:middle;flex-shrink:0}
+
+@media(max-width:768px){
+  .topbar{padding:0 16px}.tabs{padding:0 12px}
+  main{padding:16px 12px 80px}
+  .cg2,.cg3{grid-template-columns:1fr}
+  .banco-grid{grid-template-columns:1fr}
+  .tb-mid{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="tb-brand">
+    <div class="tb-icon">🏦</div>
+    <div>
+      <div class="tb-title">Recaudo Histórico</div>
+      <div class="tb-sub">Depósitos judiciales · Alcaldía de Bello</div>
+    </div>
+  </div>
+  <div class="tb-mid" style="flex:1;display:flex;justify-content:center;position:relative;max-width:420px;margin:0 auto">
+    <input id="global-buscar" class="finp" style="width:100%" placeholder="🔍 Buscar depósito, cédula o nombre..." oninput="buscarGlobalDebounced()" onkeydown="if(event.key==='Escape'){this.value='';cerrarBusquedaGlobal();}"/>
+    <div id="global-resultados" class="global-results"></div>
+  </div>
+  <div class="tb-right">
+    <div class="sync-pill" id="sync-pill">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-lbl">Sin conexión</span>
+      <button class="sync-reload" id="sync-reload" onclick="recargarTodo()" title="Traer los últimos cambios del equipo">🔄</button>
+    </div>
+    <span class="sync-pendientes" id="sync-pendientes" onclick="procesarCola()" title="Reintentar sincronización" style="display:none"></span>
+    <button class="tb-btn" id="usuario-activo" onclick="cambiarUsuario()" title="Cambiar usuario">👤 Sin identificar</button>
+    <button class="tb-btn gold" onclick="exportarExcel()">⬇️ Exportar Excel</button>
+    <a href="home.html" class="tb-btn">🏛️ Inicio</a>
+  </div>
+</div>
+
+<!-- ── TABS ── -->
+<div class="tabs">
+  <button class="ntab on" id="tab-registros" onclick="goTab('registros')">
+    📋 Registros <span class="nbadge nb-blue" id="badge-total">0</span>
+  </button>
+  <button class="ntab" id="tab-pendientes" onclick="goTab('pendientes')">
+    ⏳ Pendientes <span class="nbadge nb-gold" id="badge-pen">0</span>
+  </button>
+  <button class="ntab" id="tab-dashboard" onclick="goTab('dashboard')">📊 Dashboard</button>
+  <button class="ntab" id="tab-reportes" onclick="goTab('reportes')">📑 Reportes</button>
+  <button class="ntab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
+  <button class="ntab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
+</div>
+
+<main>
+
+<div id="banner-datos-incompletos" style="display:none;margin-bottom:16px"></div>
+
+<!-- ══ PANEL REGISTROS ══ -->
+<div id="panel-registros">
+  <div class="kpis" id="kpis">
+    <div class="kpi blue">
+      <div class="kpi-lbl">Total registros</div>
+      <div class="kpi-val" id="k-total">—</div>
+      <div class="kpi-sub">cargados en sistema</div>
+    </div>
+    <div class="kpi gold">
+      <div class="kpi-lbl">Pendientes</div>
+      <div class="kpi-val" id="k-pen">—</div>
+      <div class="kpi-sub">sin gestionar</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-lbl">Finalizados</div>
+      <div class="kpi-val" id="k-fin">—</div>
+      <div class="kpi-sub">completados</div>
+    </div>
+    <div class="kpi orange">
+      <div class="kpi-lbl">En trámite</div>
+      <div class="kpi-val" id="k-tram">—</div>
+      <div class="kpi-sub">en proceso</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-lbl">Valor total</div>
+      <div class="kpi-val" id="k-valor" style="font-size:18px">—</div>
+      <div class="kpi-sub">depósitos</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-lbl">Nuevos · último lote</div>
+      <div class="kpi-val" id="k-nuevos">—</div>
+      <div class="kpi-sub" id="k-import-fecha">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-hdr-title">📋 Registros del banco</div>
+      <button class="tb-btn" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74">📥 Importar</button>
+    </div>
+    <div class="filtros">
+      <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrarDebounced()"/>
+      <select class="finp" id="f-estado-dev" onchange="filtrar()">
+        <option value="">Devolución (todos)</option>
+        <option value="PENDIENTE">⏳ Pendiente</option>
+        <option value="EN TRAMITE">🔄 En trámite</option>
+        <option value="FINALIZADO">✅ Finalizado</option>
+        <option value="EN REVISION">👁 En revisión</option>
+        <option value="SIN GESTIONAR">— Sin gestionar</option>
+      </select>
+      <select class="finp" id="f-estado-apl" onchange="filtrar()">
+        <option value="">Aplicación (todos)</option>
+        <option value="PENDIENTE">⏳ Pendiente</option>
+        <option value="EN TRAMITE">🔄 En trámite</option>
+        <option value="FINALIZADO">✅ Finalizado</option>
+        <option value="EN REVISION">👁 En revisión</option>
+        <option value="SIN GESTIONAR">— Sin gestionar</option>
+      </select>
+      <select class="finp" id="f-impuesto" onchange="filtrar()">
+        <option value="">Impuesto (todos)</option>
+        <option value="PREDIAL">Predial</option>
+        <option value="ICO">ICO / ICA</option>
+        <option value="TRANSITO">Tránsito</option>
+        <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+      </select>
+      <select class="finp" id="f-responsable" onchange="filtrar()">
+        <option value="">Responsable (todos)</option>
+      </select>
+      <select class="finp" id="f-monto" onchange="filtrar()">
+        <option value="">💰 Monto (todos)</option>
+        <option value="1000000">≥ $1.000.000</option>
+        <option value="5000000">≥ $5.000.000</option>
+        <option value="10000000">≥ $10.000.000</option>
+        <option value="50000000">≥ $50.000.000</option>
+      </select>
+      <select class="finp" id="f-expediente" onchange="filtrar()">
+        <option value="">📁 Expediente (todos)</option>
+        <option value="con">✅ Con expediente</option>
+        <option value="sin">— Sin expediente</option>
+      </select>
+      <button class="fbtn fbtn-outline" onclick="limpiarFiltros()" style="font-size:11px">✕ Limpiar</button>
+    </div>
+    <div class="tw">
+      <table id="tabla">
+        <thead><tr>
+          <th onclick="sortBy('deposito judicial', this)">#Depósito</th>
+          <th onclick="sortBy('Fecha Emisión', this)">Fecha</th>
+          <th onclick="sortBy('Nombre Demandante.1', this)">Demandado</th>
+          <th onclick="sortBy('Identificación Demandado', this)">Cédula</th>
+          <th onclick="sortBy('Valor del Depóstio', this)" style="text-align:right">Valor</th>
+          <th onclick="sortBy('Proceso', this)">Proceso</th>
+          <th onclick="sortBy('Impuesto', this)">Impuesto</th>
+          <th onclick="sortBy('ESTADO DEVOLUCION', this)">Devolución</th>
+          <th onclick="sortBy('ESTADO APLICACIÓN', this)">Aplicación</th>
+          <th onclick="sortBy('RESPONSABLE', this)">Responsable</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pag">
+      <div class="pag-info" id="pag-info">Cargando...</div>
+      <div class="pag-btns" id="pag-btns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL PENDIENTES ══ -->
+<div id="panel-pendientes" style="display:none">
+  <div class="pend-stats" id="pend-stats">
+    <div class="pend-stat err"><div class="pend-stat-num" id="ps-sin">—</div><div class="pend-stat-lbl">Sin gestionar</div></div>
+    <div class="pend-stat warn"><div class="pend-stat-num" id="ps-tram">—</div><div class="pend-stat-lbl">En trámite</div></div>
+    <div class="pend-stat warn"><div class="pend-stat-num" id="ps-rev">—</div><div class="pend-stat-lbl">En revisión</div></div>
+    <div class="pend-stat"><div class="pend-stat-num" id="ps-valor">—</div><div class="pend-stat-lbl">Valor total pendiente</div></div>
+    <div class="pend-stat"><div class="pend-stat-num" id="ps-resp">—</div><div class="pend-stat-lbl">Responsables activos</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-hdr-title">⏳ Sin finalizar</div></div>
+    <div class="filtros">
+      <input class="finp search" id="fp-buscar" placeholder="🔍 Buscar..." oninput="filtrarPendDebounced()"/>
+      <select class="finp" id="fp-responsable" onchange="filtrarPend()"><option value="">Responsable (todos)</option></select>
+      <select class="finp" id="fp-impuesto" onchange="filtrarPend()">
+        <option value="">Impuesto (todos)</option>
+        <option value="PREDIAL">Predial</option>
+        <option value="ICO">ICO / ICA</option>
+        <option value="TRANSITO">Tránsito</option>
+        <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+      </select>
+      <select class="finp" id="fp-monto" onchange="filtrarPend()">
+        <option value="">💰 Monto (todos)</option>
+        <option value="1000000">≥ $1.000.000</option>
+        <option value="5000000">≥ $5.000.000</option>
+        <option value="10000000">≥ $10.000.000</option>
+        <option value="50000000">≥ $50.000.000</option>
+      </select>
+      <select class="finp" id="fp-expediente" onchange="filtrarPend()">
+        <option value="">📁 Expediente (todos)</option>
+        <option value="con">✅ Con expediente</option>
+        <option value="sin">— Sin expediente</option>
+      </select>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#Depósito</th><th>Fecha</th><th>Demandado</th><th>Cédula</th>
+          <th style="text-align:right">Valor</th><th>Impuesto</th>
+          <th>Devolución</th><th>Aplicación</th><th>Responsable</th><th></th>
+        </tr></thead>
+        <tbody id="tbody-pend"></tbody>
+      </table>
+    </div>
+    <div class="pag">
+      <div class="pag-info" id="pag-info-pend">—</div>
+      <div class="pag-btns" id="pag-btns-pend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL DASHBOARD ══ -->
+<div id="panel-dashboard" style="display:none">
+  <!-- Resumen general -->
+  <div class="dash-kpis" id="dash-kpis"></div>
+
+  <!-- Tendencia en el tiempo -->
+  <div class="card" style="margin-top:18px">
+    <div class="card-hdr">
+      <div class="card-hdr-title">📈 Tendencia mensual — emitido vs gestionado</div>
+      <div style="font-size:11px;color:var(--soft)">Valor por mes de emisión</div>
+    </div>
+    <div style="padding:18px 18px 22px"><div style="position:relative;height:300px"><canvas id="chart-tendencia"></canvas></div></div>
+  </div>
+
+  <!-- Por responsable -->
+  <div class="card" style="margin-top:18px">
+    <div class="card-hdr"><div class="card-hdr-title">👥 Gestión por responsable</div></div>
+    <div style="padding:18px;overflow-x:auto">
+      <table class="dash-table">
+        <thead><tr>
+          <th>Responsable</th>
+          <th style="text-align:right">Asignados</th>
+          <th style="text-align:right">Finalizados</th>
+          <th style="text-align:right">En trámite</th>
+          <th style="text-align:right">Pendientes</th>
+          <th style="text-align:right">Valor gestionado</th>
+          <th style="text-align:center">Avance</th>
+        </tr></thead>
+        <tbody id="dash-resp-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Por estado (donas) -->
+  <div class="dash-grid">
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">🍩 Estado de devolución</div><div style="font-size:11px;color:var(--soft)">por valor</div></div>
+      <div style="padding:18px"><div style="position:relative;height:260px"><canvas id="chart-dev"></canvas></div><div class="dona-total" id="dona-dev-total"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-hdr-title">🍩 Estado de aplicación</div><div style="font-size:11px;color:var(--soft)">por valor</div></div>
+      <div style="padding:18px"><div style="position:relative;height:260px"><canvas id="chart-apl"></canvas></div><div class="dona-total" id="dona-apl-total"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL REPORTES ══ -->
+<div id="panel-reportes" style="display:none">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-hdr-title">📑 Reporte por impuesto</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <select class="finp" id="rep-impuesto" onchange="renderReporte()" style="min-width:160px">
+          <option value="PREDIAL">🏠 Predial</option>
+          <option value="ICA" disabled>🏢 ICA (próximamente)</option>
+          <option value="TRANSITO">🚗 Tránsito</option>
+          <option value="URBANISTICA" disabled>🏗️ Oblig. Urbanística (próximamente)</option>
+          <option value="POLICIA" disabled>👮 Policía Nacional (próximamente)</option>
+        </select>
+        <span id="rep-anio-wrap" style="display:none;align-items:center;gap:8px">
+          <label style="font-size:11px;color:var(--soft);white-space:nowrap">Año comparendo</label>
+          <input class="finp" type="number" id="rep-anio" value="2023" min="2000" max="2100" style="width:85px" onchange="renderReporte()"/>
+          <label style="font-size:11px;color:var(--soft);display:flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer">
+            <input type="checkbox" id="rep-anio-solo" checked onchange="renderReporte()"/> Solo cédulas 100% de ese año (oficioso)
+          </label>
+        </span>
+        <button class="tb-btn" onclick="exportarReportePDF()">📄 PDF</button>
+        <button class="tb-btn gold" onclick="exportarReporteExcel()">📊 Excel</button>
+      </div>
+    </div>
+    <div style="padding:20px">
+      <!-- Aviso de filtro oficioso (solo visible en modo Tránsito por año) -->
+      <div id="rep-anio-aviso" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:var(--radius-sm);
+        background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);font-size:12px;color:var(--gold2)"></div>
+
+      <!-- Resumen ejecutivo -->
+      <div class="rep-kpis" id="rep-kpis"></div>
+
+      <!-- Clasificación efectiva del depósito (unificada: cada depósito cuenta UNA sola vez) -->
+      <div style="margin-top:18px">
+        <div class="rep-sec-title">📊 Clasificación efectiva del depósito</div>
+        <div style="font-size:11px;color:var(--soft);margin:-4px 0 10px">Cada depósito cuenta una sola vez. Prioridad: Devuelto › Aplicado › En gestión › Sin gestionar.</div>
+        <div id="rep-clasif"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalle -->
+  <div class="card" style="margin-top:18px">
+    <div class="card-hdr">
+      <div class="card-hdr-title">📋 Detalle de depósitos <span class="nbadge nb-blue" id="rep-count">0</span></div>
+      <input class="finp" id="rep-buscar" placeholder="🔍 Filtrar en el detalle..." oninput="renderReporteDetalleDebounced()" style="min-width:220px"/>
+    </div>
+    <div class="tw" style="max-height:60vh">
+      <table>
+        <thead><tr>
+          <th>#Depósito</th><th>Fecha</th><th>Cédula</th><th>Demandado</th>
+          <th style="text-align:right">Valor</th><th>Comparendos</th><th>Proceso</th>
+          <th>Est. Devolución</th><th>Est. Aplicación</th><th>Responsable</th>
+          <th>Comp. Egreso</th><th>Radicado Resp.</th><th>Observación</th>
+        </tr></thead>
+        <tbody id="rep-detalle-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL IMPORTAR ══ -->
+<div id="panel-importar" style="display:none">
+  <div class="import-banner">
+    <div class="import-banner-txt">
+      <h4>📥 Importar nuevo lote del banco</h4>
+      <p>Suba el Excel que envía el banco. El sistema detecta registros nuevos y evita duplicados.</p>
+    </div>
+    <button class="fbtn fbtn-gold" onclick="document.getElementById('fileImport').click()">📂 Seleccionar archivo</button>
+    <input type="file" id="fileImport" accept=".xlsx,.xls" style="display:none" onchange="procesarImport(this)"/>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><div class="card-hdr-title">📂 Zona de importación</div></div>
+    <div class="import-drop" id="importDrop"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="onDrop(event)"
+      onclick="document.getElementById('fileImport').click()">
+      <div style="font-size:40px;margin-bottom:8px;opacity:.6">📊</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text)">Arrastre el Excel aquí o haga clic para seleccionar</div>
+      <p>Formatos: .xlsx · .xls — mismo formato que envía Bancolombia</p>
+    </div>
+    <div id="import-resultado" style="padding:16px;display:none"></div>
+  </div>
+</div>
+
+<!-- ══ PANEL CONFIG ══ -->
+<div id="panel-config" style="display:none">
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-hdr-title">⚙️ Estado de la conexión</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--soft)">
+        <div id="cfg-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
+        <span id="cfg-txt">Conectado a Supabase</span>
+      </div>
+    </div>
+    <div style="padding:20px">
+      <div style="padding:16px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius-sm);margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:#86efac;margin-bottom:6px">✅ Base de datos Supabase (PostgreSQL)</div>
+        <div style="font-size:12px;color:var(--soft);line-height:1.6">Los depósitos y las gestiones se guardan directamente en la base de datos central. Los cambios que hagan los contadores se ven al instante para todo el equipo. Ya no se requiere configurar URL de Google Sheets.</div>
+      </div>
+      <div class="cg3" style="gap:12px">
+        <div class="campo"><label>Total depósitos</label><input type="text" id="cfg-info-total" readonly value="—" style="font-weight:700;color:var(--gold2)"/></div>
+        <div class="campo"><label>Gestionados</label><input type="text" id="cfg-info-gest" readonly value="—" style="font-weight:700;color:#86efac"/></div>
+        <div class="campo"><label>Última carga</label><input type="text" id="cfg-info-sync" readonly value="—"/></div>
+      </div>
+      <div id="cfg-alert" style="display:none;margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer style="text-align:center;padding:14px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
+  Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello · Antioquia
+</footer>
+
+<!-- ══ MODAL GESTIÓN ══ -->
+<!-- ══ OVERLAY IDENTIFICACIÓN ══ -->
+<div class="ov" id="user-overlay">
+  <div class="user-card">
+    <div class="user-card-ico">👤</div>
+    <h3 class="user-card-title">¿Quién está gestionando?</h3>
+    <p class="user-card-sub">Selecciona tu nombre para registrar tus gestiones. Quedará firmado quién hace cada cambio.</p>
+    <div class="user-options" id="user-options"></div>
+    <button class="user-skip" onclick="document.getElementById('user-overlay').classList.remove('open')">Continuar sin identificar por ahora</button>
+  </div>
+</div>
+
+<div class="ov" id="modal" onclick="if(event.target===this)cerrarModal()">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mhdr-info">
+        <div class="mhdr-dep">
+          <span id="m-titulo">Depósito</span>
+          <button class="copy-btn" onclick="copiar(this, document.getElementById('m-dep-num').textContent)" title="Copiar número de depósito">📋</button>
+          <span id="m-dep-num" style="display:none"></span>
+        </div>
+        <div class="mhdr-nombre">
+          <span id="m-nombre">—</span>
+          <button class="copy-btn" onclick="copiar(this, document.getElementById('m-nombre').textContent)" title="Copiar nombre">📋</button>
+        </div>
+        <div class="mhdr-cedula">
+          <span class="mhdr-ced-lbl">C.C./NIT</span>
+          <span id="m-cedula">—</span>
+          <button class="copy-btn" onclick="copiar(this, document.getElementById('m-cedula').textContent)" title="Copiar cédula">📋</button>
+        </div>
+        <p id="m-sub" style="display:none"></p>
+      </div>
+      <button class="mclose" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="banco-info">
+        <div class="banco-info-title">🏦 Datos del banco — solo lectura</div>
+        <div class="banco-grid" id="m-banco-datos"></div>
+      </div>
+
+      <div class="msec">✏️ Gestión del equipo</div>
+
+      <div class="cg3" style="margin-bottom:10px">
+        <div class="campo"><label>Estado devolución</label>
+          <select id="m-est-dev">
+            <option value="">— Sin gestionar</option>
+            <option value="PENDIENTE">⏳ Pendiente</option>
+            <option value="EN TRAMITE">🔄 En trámite</option>
+            <option value="EN REVISION">👁 En revisión</option>
+            <option value="FINALIZADO">✅ Finalizado</option>
+          </select>
+        </div>
+        <div class="campo"><label>Estado aplicación</label>
+          <select id="m-est-apl">
+            <option value="">— Sin gestionar</option>
+            <option value="PENDIENTE">⏳ Pendiente</option>
+            <option value="EN TRAMITE">🔄 En trámite</option>
+            <option value="EN REVISION">👁 En revisión</option>
+            <option value="FINALIZADO">✅ Finalizado</option>
+          </select>
+        </div>
+        <div class="campo"><label>Responsable</label>
+          <select id="m-responsable">
+            <option value="">— Sin asignar —</option>
+            <option>Gloria Marcela Duque</option>
+            <option>Jose Francineth</option>
+            <option>Jose Fernando Zapata</option>
+            <option>Julieth Duque</option>
+            <option>Jhon Fredy Perez</option>
+            <option>Nadya Catalina Tamayo</option>
+            <option>Juan Pablo Gómez Londoño</option>
+          </select>
+        </div>
+      </div>
+      <div class="cg3" style="margin-bottom:10px">
+        <div class="campo"><label>Proceso / Expediente</label>
+          <input type="text" id="m-proceso" placeholder="Ej: FP-11465"/>
+        </div>
+        <div class="campo"><label>Impuesto</label>
+          <select id="m-impuesto">
+            <option value="">— Seleccione</option>
+            <option value="PREDIAL">Predial</option>
+            <option value="ICO">ICO</option>
+            <option value="ICA">ICA</option>
+            <option value="TRANSITO">Tránsito</option>
+            <option value="MULTA DE TRANSITO">Multa de tránsito</option>
+            <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+            <option value="SANCIÓN DE POLICIA">Sanción de policía</option>
+          </select>
+        </div>
+        <div class="campo"><label>¿Acuerdo de pago?</label>
+          <select id="m-convenio">
+            <option value="">— Sin definir</option>
+            <option value="SI">✅ Sí tiene convenio</option>
+            <option value="NO">❌ No</option>
+            <option value="Tiene convenio">🤝 Tiene convenio</option>
+          </select>
+        </div>
+      </div>
+      <div class="cg3" style="margin-bottom:10px">
+        <div class="campo"><label>CI Inicial</label>
+          <input type="text" id="m-ci-inicial" placeholder="Número CI inicial"/>
+        </div>
+        <div class="campo"><label>Comprobante de egreso</label>
+          <input type="text" id="m-comp-egreso" placeholder="Número comprobante"/>
+        </div>
+        <div class="campo"><label>Radicado de respuesta</label>
+          <input type="text" id="m-radicado-resp" placeholder="Radicado"/>
+        </div>
+      </div>
+      <div class="cg2" style="margin-bottom:10px">
+        <div class="campo"><label>Gestión Tesorería</label>
+          <input type="text" id="m-gest-tes" placeholder="Funcionario tesorería"/>
+        </div>
+        <div class="campo"><label>Teléfono de contacto</label>
+          <input type="tel" id="m-telefono" placeholder="Teléfono contribuyente" pattern="[0-9+()\s.-]{7,20}" title="Solo números, espacios, +, -, ( ) y puntos. Entre 7 y 20 caracteres."/>
+        </div>
+      </div>
+      <div class="cg2" style="margin-bottom:10px">
+        <div class="campo"><label>Correo electrónico</label>
+          <input type="email" id="m-correo" placeholder="correo@ejemplo.com"/>
+        </div>
+        <div class="campo"><label>Ciudad</label>
+          <input type="text" id="m-ciudad" placeholder="Ciudad"/>
+        </div>
+      </div>
+      <div class="campo" style="margin-bottom:10px">
+        <label>Dirección</label>
+        <input type="text" id="m-direccion" placeholder="Dirección del contribuyente"/>
+      </div>
+      <div class="campo">
+        <label>Observación</label>
+        <textarea id="m-observacion" placeholder="Detalles de la gestión, soportes, actuaciones..."></textarea>
+      </div>
+      <!-- 🆕 OTROS DEPÓSITOS DE ESTA PERSONA (colapsable) -->
+      <div class="vista360" id="m-otros-dep-wrap" style="display:none">
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>💰 Otros depósitos de esta persona <span class="v360-count" id="m-otros-dep-count"></span></span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body"><div class="v360-list" id="m-otros-dep"></div></div>
+      </div>
+
+      <!-- 🆕 EXPEDIENTES PREDIALES DE ESTA PERSONA (colapsable) -->
+      <div class="vista360" id="m-expedientes-wrap" style="display:none">
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>📁 Expedientes con la Alcaldía <span class="v360-count" id="m-expedientes-count"></span></span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body"><div class="v360-list" id="m-expedientes"></div></div>
+      </div>
+
+      <!-- 🚗 COMPARENDOS DE TRÁNSITO DE ESTA PERSONA (colapsable, carga bajo demanda) -->
+      <div class="vista360" id="m-transito-wrap" style="display:none">
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>🚗 Comparendos de Tránsito <span class="v360-count" id="m-transito-count"></span></span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body"><div class="v360-list" id="m-transito"></div></div>
+      </div>
+
+      <div class="vista360" id="m-log-wrap" style="display:none">
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>📝 Historial de cambios</span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body"><div id="m-log"></div></div>
+      </div>
+      <div id="m-alert" style="display:none;margin-top:12px"></div>
+    </div>
+    <div class="mfoot">
+      <div style="font-size:11px;color:var(--soft)" id="m-editado-por">—</div>
+      <div style="display:flex;gap:8px">
+        <button class="fbtn fbtn-outline" onclick="cerrarModal()">Cancelar</button>
+        <button class="fbtn fbtn-primary" onclick="guardarGestion()">💾 Guardar gestión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// RECAUDO HISTÓRICO — Capa de datos Supabase (reemplaza Apps Script/Sheets)
+// ════════════════════════════════════════════════════════════
+const SUPABASE_URL  = "https://bmurdtfztsltcgwsfbgf.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
+
+function sbHeaders(extra){
+  return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer " + SUPABASE_ANON }, extra || {});
+}
+
+// ── Trae TODAS las filas de una tabla/vista, paginando de a 1000 (límite REST de Supabase) ──
+// Pide la primera página con "Prefer: count=exact" para conocer el total de una vez,
+// y si el servidor lo entrega, pide TODAS las páginas restantes EN PARALELO (antes se
+// pedían una por una, esperando cada respuesta antes de pedir la siguiente).
+async function sbFetchAll(tabla, select, extraQuery){
+  var bloque = 1000;
+  var url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (extraQuery ? "&" + extraQuery : "");
+
+  var primera = await fetch(url, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact" }) });
+  if(!primera.ok) throw new Error("Supabase HTTP " + primera.status);
+  var todos = await primera.json();
+  if(todos.length < bloque) return todos; // ya vino todo en la primera página
+
+  var cr = primera.headers.get("content-range"); // ej. "0-999/48321"
+  var total = (cr && cr.indexOf("/") >= 0) ? parseInt(cr.split("/")[1], 10) : NaN;
+
+  if(total && !isNaN(total)){
+    var paginas = [];
+    for(var desde = bloque; desde < total && desde <= 200000; desde += bloque) paginas.push(desde);
+
+    // Pide una página con reintentos (evita perder filas EN SILENCIO si Supabase
+    // rechaza alguna petición por ráfaga de tráfico — antes, una página fallida
+    // se convertía en un arreglo vacío sin avisar, y el total quedaba mal contado).
+    async function pedirPagina(d){
+      var intentos=3, ultimoError=null;
+      for(var i=0;i<intentos;i++){
+        try{
+          var res = await fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items" }) });
+          if(res.ok) return await res.json();
+          ultimoError = new Error("Supabase HTTP " + res.status);
+        }catch(e){ ultimoError = e; }
+      }
+      throw ultimoError || new Error("No se pudo traer el bloque " + d + "-" + (d + bloque - 1) + " de " + tabla);
+    }
+
+    // Lanzar las páginas en tandas (no las ~48+ de una sola vez) para no saturar
+    // al servidor ni chocar con límites de conexiones simultáneas del navegador.
+    // (Se bajó de 6 a 4 porque ahora las 3 tablas de cargarTodo() se piden en
+    // paralelo entre sí, así que la carga simultánea real es más alta que antes.)
+    var TANDA = 4;
+    for(var i=0;i<paginas.length;i+=TANDA){
+      var grupo = paginas.slice(i, i+TANDA);
+      var resultados = await Promise.all(grupo.map(pedirPagina));
+      resultados.forEach(function(chunk){ todos = todos.concat(chunk); });
+    }
+
+    // Verificación final: si por cualquier motivo no llegaron todas las filas
+    // esperadas, es mejor fallar con un error visible que mostrar datos incompletos.
+    if(todos.length !== total){
+      throw new Error("Se esperaban " + total + " filas de " + tabla + " pero llegaron " + todos.length + ". Vuelve a intentar recargar.");
+    }
+    return todos;
+  }
+
+  // Respaldo: si el servidor no devolvió el conteo exacto (poco común), seguir en serie como antes.
+  var desde2 = bloque;
+  while(true){
+    var res = await fetch(url, { headers: sbHeaders({ Range: desde2 + "-" + (desde2 + bloque - 1), "Range-Unit": "items" }) });
+    if(!res.ok) throw new Error("Supabase HTTP " + res.status);
+    var chunk = await res.json();
+    todos = todos.concat(chunk);
+    if(chunk.length < bloque) break;
+    desde2 += bloque;
+    if(desde2 > 200000) break;
+  }
+  return todos;
+}
+
+// ════════════════════════════════════════════════════════════
+// ESTADO EN MEMORIA (sin localStorage — el navegador aguanta, localStorage no)
+// ════════════════════════════════════════════════════════════
+var dataBanco  = [];   // depósitos (filas de la tabla recaudo, con nombres de columna originales remapeados)
+var filtrados  = [];
+var pendFiltrados = [];
+var pagActual  = 1;
+var pagPend    = 1;
+const PS       = 50;
+var sortCol    = 'Fecha Emisión';
+var sortDir    = -1;
+var registroActivo = null;   // guarda el id técnico de Supabase de la fila abierta
+var ultimaSync = null;
+
+// Índice de expedientes prediales por cédula (se llena al cargar)
+var expedientesPorCedula = {};
+// Índice resumen de tránsito por cédula (liviano: resumen, no comparendos individuales)
+var transitoPorCedula = {};
+// Texto plano de todos los depósitos de la persona abierta (para "copiar todos")
+var _textoDepositos = '';
+// Huella de campos del modal al abrir (para detectar cambios sin guardar)
+var _huellaModal = null;
+// Marca de tiempo de última edición del registro al momento de abrir el modal
+// (para detectar si otra persona lo editó mientras lo teníamos abierto)
+var _ultimaEdicionAlAbrir = null;
+
+// ── DEBOUNCE de buscadores: espera 300ms a que el usuario deje de teclear ──
+// Evita recalcular los 48 mil registros en cada tecla (mejora rendimiento en máquinas modestas)
+var _debReg, _debPend, _debRep;
+function filtrarDebounced(){ clearTimeout(_debReg); _debReg=setTimeout(filtrar, 300); }
+function filtrarPendDebounced(){ clearTimeout(_debPend); _debPend=setTimeout(filtrarPend, 300); }
+function renderReporteDetalleDebounced(){ clearTimeout(_debRep); _debRep=setTimeout(renderReporteDetalle, 300); }
+
+// ── Mapeo: columna Supabase (snake) -> clave interna que usa la UI (igual que antes) ──
+// La UI existente usa nombres como 'deposito judicial', 'ESTADO DEVOLUCION', etc.
+// Convertimos cada fila de Supabase a ese formato para no tocar la lógica de render.
+// Campos que alimentan la búsqueda de texto libre en Registros/Pendientes/Reportes.
+// Se concatenan UNA sola vez por fila (al cargar o al editar), en vez de volver a
+// concatenar y pasar a minúsculas las ~48.000 filas en cada tecla que se escribe.
+function construirBuscable(fila){
+  return ((fila['deposito judicial']||'')+' '+(fila['Nombre Demandante.1']||'')+' '+(fila['Identificación Demandado']||'')+' '+(fila['Proceso']||'')+' '+(fila['Número del Proceso']||'')+' '+(fila['RESPONSABLE']||'')).toLowerCase();
+}
+
+function filaSupaAUI(r){
+  var fila = {
+    _id: r.id,                                   // id técnico (para UPDATE)
+    'deposito judicial':        r.deposito_judicial || '',
+    'Fecha Emisión':            r.fecha_emision || '',
+    'Estado del Depósito':      r.estado_deposito || '',
+    'Identificación Demandante':r.identificacion_demandante || '',
+    'Nombre Demandante':        r.nombre_demandante || '',
+    'Identificación Demandado': r.identificacion_demandado || '',
+    'Nombre Demandante.1':      r.nombre_demandado || '',   // la UI muestra el demandado con esta clave
+    'Identificación Consignante':r.identificacion_consignante || '',
+    'Nombre Consignante':       r.nombre_consignante || '',
+    'Concepto del Depósito':    r.concepto_deposito || '',
+    'Número del Proceso':       r.numero_proceso || '',
+    'Valor del Depóstio':       r.valor_deposito || 0,
+    'Título Padre':             r.titulo_padre || '',
+    'Tipo de TX origen':        r.tipo_tx_origen || '',
+    // campos de gestión
+    'Observacion':              r.observacion || '',
+    'TELEFONO DE CONTACTO':     r.telefono_contacto || '',
+    'CORREO ELECTRONICO':       r.correo_electronico || '',
+    'DIRECCION':                r.direccion || '',
+    'CIUDAD':                   r.ciudad || '',
+    'ANO DE GESTION':           r.ano_gestion || '',
+    'RESPONSABLE':              r.responsable || '',
+    'GESTION TESORERIA':        r.gestion_tesoreria || '',
+    'COMPROBANTE DE EGRESO':    r.comprobante_egreso || '',
+    'RADICADO DE RESPUESTA':    r.radicado_respuesta || '',
+    'ESTADO DEVOLUCION':        r.estado_devolucion || '',
+    'ESTADO APLICACIÓN':        r.estado_aplicacion || '',
+    'Proceso':                  r.numero_proceso_manual || '',   // proceso/expediente que asigna el contador (NO el del banco)
+    'Impuesto':                 r.tipo_impuesto || '',   // tipo de impuesto (manual); si vacío, se deduce del expediente al mostrar
+    'Pendiente convenio':       '',
+    'CI INICIAL':               '',
+    _editadoPor:                r.editado_por || '',
+    _editadoFecha:              r.ultima_edicion ? new Date(r.ultima_edicion).toLocaleString('es-CO') : '',
+    _ultimaEdicionISO:          r.ultima_edicion || null   // valor crudo, para detectar ediciones concurrentes
+  };
+  fila._buscable = construirBuscable(fila);
+  return fila;
+}
+
+// ── Mapeo inverso: claves UI -> columnas Supabase (solo campos de gestión editables) ──
+function gestionUIASupa(g){
+  return {
+    observacion:        g['Observacion'] || null,
+    telefono_contacto:  g['TELEFONO DE CONTACTO'] || null,
+    correo_electronico: g['CORREO ELECTRONICO'] || null,
+    direccion:          g['DIRECCION'] || null,
+    ciudad:             g['CIUDAD'] || null,
+    responsable:        g['RESPONSABLE'] || null,
+    gestion_tesoreria:  g['GESTION TESORERIA'] || null,
+    comprobante_egreso: g['COMPROBANTE DE EGRESO'] || null,
+    radicado_respuesta: g['RADICADO DE RESPUESTA'] || null,
+    estado_devolucion:  g['ESTADO DEVOLUCION'] || null,
+    estado_aplicacion:  g['ESTADO APLICACIÓN'] || null,
+    numero_proceso_manual: g['Proceso'] || null,
+    tipo_impuesto: g['Impuesto'] || null,
+    ultima_edicion:     new Date().toISOString(),
+    editado_por:        g._editadoPor || 'Sistema'
+  };
+}
+
+// ── SYNC PILL ──
+function setSS(estado, lbl){
+  var d=document.getElementById('sync-dot');
+  var l=document.getElementById('sync-lbl');
+  if(d) d.className='sync-dot'+(estado==='ok'?' ok':estado==='loading'?' loading':estado==='error'?' error':'');
+  if(l) l.textContent=lbl;
+}
+
+// ════════════════════════════════════════════════════════════
+// CARGA INICIAL
+// ════════════════════════════════════════════════════════════
+// Esqueleto de carga: mientras cargarTodo() trae los datos, la tabla ya no
+// se queda en blanco varios segundos — se ven filas "pulsando" y un aviso claro.
+function mostrarCargaInicial(){
+  if(dataBanco.length) return; // ya hay datos (ej. un recargarTodo posterior); no tapar la tabla real
+  var tb=document.getElementById('tbody');
+  if(tb){
+    var fila='<tr>'+Array.from({length:11}).map(function(){
+      var w=40+Math.floor(Math.random()*70);
+      return '<td><span class="skel-cell" style="width:'+w+'px"></span></td>';
+    }).join('')+'</tr>';
+    tb.innerHTML=Array.from({length:8}).map(function(){return fila;}).join('');
+  }
+  var pi=document.getElementById('pag-info');
+  if(pi) pi.textContent='Cargando depósitos… esto puede tardar unos segundos con muchos registros.';
+}
+async function cargarTodo(){
+  setSS('loading','Cargando desde Supabase...');
+  mostrarCargaInicial();
+  try{
+    // Las 3 consultas son independientes entre sí -> se piden en paralelo.
+    // Antes se esperaba una, luego la otra, luego la otra (tiempo total = suma de las 3).
+    // Ahora el tiempo total es aprox. el de la más lenta de las 3.
+    var resultados = await Promise.allSettled([
+      sbFetchAll('recaudo', '*', 'order=fecha_emision.desc.nullslast'),
+      sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion'),
+      sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total')
+    ]);
+
+    // 1) Depósitos — es la fuente principal; si falla, no hay nada que mostrar.
+    if(resultados[0].status!=='fulfilled') throw resultados[0].reason;
+    dataBanco = resultados[0].value.map(filaSupaAUI);
+    ultimaSync = new Date();
+
+    // 2) Expedientes prediales -> índice por cédula (para el modal 360). Si falla, el modal simplemente no los muestra.
+    expedientesPorCedula = {};
+    if(resultados[1].status==='fulfilled'){
+      resultados[1].value.forEach(function(e){
+        var cid = String(e.id_contribuyente || '').trim();
+        if(!cid) return;
+        if(!expedientesPorCedula[cid]) expedientesPorCedula[cid] = [];
+        expedientesPorCedula[cid].push(e);
+      });
+    }
+
+    // 3) Tránsito -> índice RESUMEN por cédula (liviano, desde la vista v_transito_por_cedula). Si falla, no se cruza tránsito.
+    transitoPorCedula = {};
+    if(resultados[2].status==='fulfilled'){
+      resultados[2].value.forEach(function(t){
+        var cid = String(t.documento || '').trim();
+        if(!cid) return;
+        transitoPorCedula[cid] = {
+          comparendos: Number(t.comparendos || 0),
+          valorMulta:  Number(t.valor_multa || 0),
+          valorInteres:Number(t.valor_interes || 0),
+          valorTotal:  Number(t.valor_total || 0),
+          nombre:      t.nombre || ''
+        };
+      });
+    }
+
+    // Antes, si expedientes_predial o v_transito_por_cedula fallaban, la app seguía
+    // como si nada — sin cruce de datos y SIN AVISAR. Eso hacía que Reportes/Tránsito
+    // (o el ⚠️ Revisar de Predial+Tránsito) diera resultados incompletos "al azar",
+    // dependiendo de si esa carga puntual falló o no. Ahora se muestra un aviso claro.
+    var fallos=[];
+    if(resultados[1].status!=='fulfilled') fallos.push('expedientes prediales');
+    if(resultados[2].status!=='fulfilled') fallos.push('tránsito');
+    var bannerEl=document.getElementById('banner-datos-incompletos');
+    if(bannerEl){
+      if(fallos.length){
+        bannerEl.style.display='block';
+        bannerEl.innerHTML='<div class="alerta al-warn" style="display:flex">⚠️ No se pudo cargar <strong>'+fallos.join(' y ')+'</strong> esta vez — el cruce con depósitos puede salir incompleto (ej. Reportes por Tránsito, o el aviso ⚠️ Revisar). '
+          +'<button class="tb-btn" style="margin-left:auto;flex-shrink:0" onclick="recargarTodo()">🔄 Reintentar</button></div>';
+      } else {
+        bannerEl.style.display='none';
+        bannerEl.innerHTML='';
+      }
+    }
+
+    var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    setSS('ok','Sincronizado '+ts);
+    renderKpis(); filtrar(); llenarSelectResponsables(); actualizarCfgPanel();
+    actualizarPendientesPill(); procesarCola();
+  }catch(err){
+    setSS('error','Error al cargar');
+    var tb=document.getElementById('tbody');
+    if(tb) tb.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la base de datos. Revise su conexión e intente recargar.</p></div></td></tr>';
+  }
+}
+
+async function recargarTodo(){
+  var alEl=document.getElementById('cfg-alert');
+  if(alEl) showAl(alEl,'al-load','<div class="spin"></div> Recargando...');
+  await cargarTodo();
+  if(alEl) showAl(alEl,'al-ok','✅ Datos recargados.');
+  // feedback breve en la sync pill
+  var l=document.getElementById('sync-lbl');
+  if(l){ var prev=l.textContent; l.textContent='✅ Actualizado'; setTimeout(()=>{ if(ultimaSync) l.textContent='Sincronizado '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); },1500); }
+}
+
+// ════════════════════════════════════════════════════════════
+// USUARIO ACTIVO — integra con la sesión del sistema; si no hay, pregunta
+// ════════════════════════════════════════════════════════════
+// Lista de responsables (definida aquí, ANTES del init que la usa)
+const RESPONSABLES = ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo','Juan Pablo Gómez Londoño'];
+var USUARIO_ACTIVO = '';
+
+function detectarUsuario(){
+  // 1) Intentar leer la sesión compartida de otros módulos
+  var claves=['tutelas_sesion_v2','buscador_session','oficios_session'];
+  for(var i=0;i<claves.length;i++){
+    try{
+      var s=JSON.parse(localStorage.getItem(claves[i])||'null');
+      if(s && (!s.expira || s.expira>Date.now())){
+        var n=s.usuario||s.nombre||'';
+        if(n){ return n; }
+      }
+    }catch(e){}
+  }
+  // 2) Usuario propio de recaudo (si ya lo eligió antes)
+  try{ var r=localStorage.getItem('teodoro_usuario'); if(r) return r; }catch(e){}
+  return '';
+}
+
+function llenarBotonesUsuario(){
+  var cont=document.getElementById('user-options');
+  if(!cont) return;
+  cont.innerHTML=RESPONSABLES.map(function(n){
+    var safe=n.replace(/'/g,"\\'");
+    return '<button class="user-opt" onclick="setUsuario(\''+safe+'\')">'+eh(n)+'</button>';
+  }).join('');
+}
+
+function pedirUsuario(){
+  // Llenar botones SIEMPRE al mostrar (por si init corrió antes de tiempo)
+  llenarBotonesUsuario();
+  var ov=document.getElementById('user-overlay');
+  if(ov) ov.classList.add('open');
+}
+
+function setUsuario(nombre){
+  USUARIO_ACTIVO=nombre;
+  try{ localStorage.setItem('teodoro_usuario', nombre); }catch(e){}
+  var ov=document.getElementById('user-overlay');
+  if(ov) ov.classList.remove('open');
+  pintarUsuarioActivo();
+}
+
+function pintarUsuarioActivo(){
+  var el=document.getElementById('usuario-activo');
+  if(el) el.textContent = USUARIO_ACTIVO ? '👤 '+USUARIO_ACTIVO.split(' ').slice(0,2).join(' ') : '👤 Sin identificar';
+}
+
+function cambiarUsuario(){ pedirUsuario(); }
+
+function initUsuario(){
+  llenarBotonesUsuario();
+  var u=detectarUsuario();
+  if(u){ USUARIO_ACTIVO=u; pintarUsuarioActivo(); }
+  else { pedirUsuario(); }
+}
+
+// ── INIT ──
+function arrancar(){
+  actualizarCfgPanel();
+  initUsuario();
+  cargarTodo();
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', arrancar);
+}else{
+  arrancar();
+}
+
+// TABS
+function goTab(t){
+  ['registros','pendientes','dashboard','reportes','importar','config'].forEach(p=>{
+    var el=document.getElementById('panel-'+p);
+    var tb=document.getElementById('tab-'+p);
+    if(el) el.style.display= p===t?'block':'none';
+    if(tb) tb.classList.toggle('on', p===t);
+  });
+  if(t==='pendientes') filtrarPend();
+  if(t==='dashboard') renderDashboard();
+  if(t==='reportes') renderReporte();
+  if(t==='config') actualizarCfgPanel();
+}
+
+// ════════════════════════════════════════════════════════════
+// BUSCADOR GLOBAL (topbar) — encuentra un depósito desde cualquier pestaña
+// y abre el modal directo, sin tener que estar primero en "Registros".
+// ════════════════════════════════════════════════════════════
+var _debGlobal;
+function buscarGlobalDebounced(){ clearTimeout(_debGlobal); _debGlobal=setTimeout(buscarGlobal, 250); }
+
+function buscarGlobal(){
+  var input=document.getElementById('global-buscar');
+  var cont=document.getElementById('global-resultados');
+  if(!input||!cont) return;
+  var q=(input.value||'').toLowerCase().trim();
+  if(q.length<2){ cerrarBusquedaGlobal(); return; }
+  var encontrados=dataBanco.filter(r=>(r._buscable!==undefined?r._buscable:construirBuscable(r)).indexOf(q)>=0).slice(0,15);
+  if(!encontrados.length){
+    cont.innerHTML='<div class="gr-item" style="cursor:default;color:var(--muted)">Sin resultados</div>';
+    cont.classList.add('open');
+    return;
+  }
+  cont.innerHTML=encontrados.map(function(r){
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var depSeguro=String(r['deposito judicial']).replace(/'/g,"\\'");
+    return '<div class="gr-item" onclick="irADepositoGlobal(\''+depSeguro+'\')">'
+      +'<div><div class="gr-acc">'+eh(r['Nombre Demandante.1']||'—')+'</div>'
+      +'<div class="gr-sub">Depósito '+eh(r['deposito judicial'])+' · CC '+eh(r['Identificación Demandado']||'—')+'</div></div>'
+      +'<div style="font-weight:700;color:#86efac;white-space:nowrap">'+fmt$(v)+'</div>'
+      +'</div>';
+  }).join('');
+  cont.classList.add('open');
+}
+
+function irADepositoGlobal(dep){
+  cerrarBusquedaGlobal();
+  var input=document.getElementById('global-buscar');
+  if(input) input.value='';
+  goTab('registros');
+  abrirModal(dep);
+}
+
+function cerrarBusquedaGlobal(){
+  var cont=document.getElementById('global-resultados');
+  if(cont){ cont.classList.remove('open'); }
+}
+
+// Cerrar el desplegable si se hace clic afuera del buscador
+document.addEventListener('click', function(e){
+  var input=document.getElementById('global-buscar');
+  var cont=document.getElementById('global-resultados');
+  if(!input||!cont) return;
+  if(e.target!==input && !cont.contains(e.target)) cerrarBusquedaGlobal();
+});
+
+// NORMALIZAR ESTADO
+// Deduce el tipo de impuesto: 1) el manual guardado  2) del radicado del expediente (FP=Predial)  3) vacío
+function impuestoDe(r){
+  var manual=String(r['Impuesto']||'').trim();
+  if(manual) return manual;
+  var cid=String(r['Identificación Demandado']||'');
+  var exps=cid?expedientesPorCedula[cid]:null;
+  if(exps && exps.length){
+    // buscar un radicado reconocible
+    for(var i=0;i<exps.length;i++){
+      var rad=String(exps[i].radicado||'').toUpperCase();
+      var mod=String(exps[i].modulo||'').toUpperCase();
+      if(rad.indexOf('FP')===0 || mod.indexOf('PREDIAL')>=0) return 'PREDIAL';
+      if(rad.indexOf('ICA')>=0 || mod.indexOf('ICA')>=0 || mod.indexOf('INDUSTRIA')>=0) return 'ICA';
+      if(mod.indexOf('URBAN')>=0) return 'URBANISTICA';
+    }
+    // si tiene expediente predial pero radicado no reconocido, asumir Predial (la tabla es expedientes_predial)
+    return 'PREDIAL';
+  }
+  // Si no tiene expediente predial pero sí comparendos de tránsito -> TRANSITO
+  if(cid && transitoPorCedula[cid]) return 'TRANSITO';
+  return '';
+}
+
+// Detecta si la persona tiene MÁS DE UN tipo de obligación (predial/ICA/urbanística + tránsito)
+// y el contador AÚN no ha asignado manualmente el impuesto -> hay que revisar a cuál aplica el depósito.
+function tieneConflictoImpuesto(r){
+  var manual=String(r['Impuesto']||'').trim();
+  if(manual) return false; // ya lo asignó el contador, no hay conflicto
+  var cid=String(r['Identificación Demandado']||'');
+  if(!cid) return false;
+  var tienePredial = !!(expedientesPorCedula[cid] && expedientesPorCedula[cid].length);
+  var tieneTransito = !!transitoPorCedula[cid];
+  return tienePredial && tieneTransito;
+}
+
+function normEst(v){
+  if(!v||!String(v).trim()) return '';
+  var s=String(v).trim().toUpperCase()
+    .replace('FINALIZADOO','FINALIZADO').replace('APROBADO','FINALIZADO')
+    .replace('NO INICIADO','PENDIENTE').replace('OK','FINALIZADO');
+  if(s.startsWith('FINALIZ')) return 'FINALIZADO';
+  if(s.includes('TRAM')) return 'EN TRAMITE';
+  if(s.includes('REVIS')) return 'EN REVISION';
+  if(s.includes('PEND')) return 'PENDIENTE';
+  return s||'';
+}
+
+function badgeEst(v){
+  var n=normEst(v);
+  if(!n) return '<span class="badge b-vacio">—</span>';
+  if(n==='FINALIZADO') return '<span class="badge b-fin">✅ '+n+'</span>';
+  if(n==='EN TRAMITE') return '<span class="badge b-tram">🔄 '+n+'</span>';
+  if(n==='EN REVISION') return '<span class="badge b-rev">👁 '+n+'</span>';
+  if(n==='PENDIENTE') return '<span class="badge b-pen">⏳ '+n+'</span>';
+  return '<span class="badge b-vacio">'+eh(n)+'</span>';
+}
+
+// En el modelo Supabase la gestión vive en la misma fila -> getRow devuelve la fila tal cual
+function getRow(r){ return r; }
+
+// KPIs
+function renderKpis(){
+  var total=dataBanco.length,fin=0,tram=0,pen=0,valor=0;
+  dataBanco.forEach(r=>{
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
+    // Un depósito cuenta como EN TRÁMITE/REVISIÓN si alguno de sus estados lo está (trabajo en curso).
+    // Como FINALIZADO solo si ambos lados están finalizados o uno finalizado y el otro vacío.
+    var enCurso = ed==='EN TRAMITE'||ea==='EN TRAMITE'||ed==='EN REVISION'||ea==='EN REVISION';
+    var algunFin = ed==='FINALIZADO'||ea==='FINALIZADO';
+    if(enCurso) tram++;
+    else if(algunFin) fin++;
+    else pen++;
+    valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+  });
+  document.getElementById('k-total').textContent=total.toLocaleString('es-CO');
+  document.getElementById('k-pen').textContent=pen.toLocaleString('es-CO');
+  document.getElementById('k-fin').textContent=fin.toLocaleString('es-CO');
+  document.getElementById('k-tram').textContent=tram.toLocaleString('es-CO');
+  document.getElementById('k-valor').textContent=fmtM(valor);
+  var kn=document.getElementById('k-nuevos'); if(kn) kn.textContent='—';
+  var ki=document.getElementById('k-import-fecha');
+  if(ki) ki.textContent=ultimaSync?('Sync: '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})):'—';
+  var bt=document.getElementById('badge-total'); if(bt) bt.textContent=total.toLocaleString('es-CO');
+  var bp=document.getElementById('badge-pen'); if(bp) bp.textContent=(pen+tram).toLocaleString('es-CO');
+}
+
+function fmtM(n){
+  if(n>=1e9) return '$'+(n/1e9).toFixed(1)+'B';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return '$'+(n/1e3).toFixed(0)+'k';
+  return '$'+Math.round(n).toLocaleString('es-CO');
+}
+function fmt$(n){
+  var v=parseFloat(n);
+  if(isNaN(v)) v=0;
+  // Si tiene centavos, mostrarlos (2 decimales). Si es entero, sin decimales.
+  var tieneCentavos = Math.abs(v - Math.round(v)) > 0.0001;
+  return '$'+v.toLocaleString('es-CO',{minimumFractionDigits: tieneCentavos?2:0, maximumFractionDigits:2});
+}
+
+// FILTRAR
+function filtrar(){
+  var buscar=(document.getElementById('f-buscar').value||'').toLowerCase().trim();
+  var fEDev=document.getElementById('f-estado-dev').value;
+  var fEApl=document.getElementById('f-estado-apl').value;
+  var fImp=(document.getElementById('f-impuesto').value||'').toUpperCase();
+  var fResp=(document.getElementById('f-responsable').value||'').toLowerCase();
+  var fMonto=parseFloat(document.getElementById('f-monto').value)||0;
+  var fExp=document.getElementById('f-expediente').value;
+  filtrados=dataBanco.filter(r=>{
+    if(buscar){
+      var hay=r._buscable!==undefined?r._buscable:construirBuscable(r);
+      if(hay.indexOf(buscar)<0) return false;
+    }
+    if(fEDev){ var ed=normEst(r['ESTADO DEVOLUCION']); if(fEDev==='SIN GESTIONAR'&&ed) return false; if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false; }
+    if(fEApl){ var ea=normEst(r['ESTADO APLICACIÓN']); if(fEApl==='SIN GESTIONAR'&&ea) return false; if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false; }
+    if(fImp){ var imp=impuestoDe(r).toUpperCase(); if(!imp.includes(fImp)) return false; }
+    if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
+    if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
+    if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
+    return true;
+  });
+  // Si hay filtro de monto activo, ordenar de mayor a menor para priorizar los grandes
+  if(fMonto){
+    filtrados.sort((a,b)=>(parseFloat(String(b['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0)-(parseFloat(String(a['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0));
+  } else {
+    ordenarPor(filtrados, sortCol, sortDir);
+  }
+  pagActual=1; renderTabla();
+}
+
+// Columnas cuyo valor real es numérico (no deben ordenarse como texto).
+// 'Fecha Emisión' viene en formato ISO (YYYY-MM-DD): ordenar como texto ya da
+// el orden cronológico correcto, así que se deja fuera de esta lista a propósito.
+var COLS_NUMERICAS = ['Valor del Depóstio'];
+function ordenarPor(arr, col, dir){
+  if(COLS_NUMERICAS.indexOf(col)>=0){
+    arr.sort((a,b)=>((parseFloat(String(a[col]||0).replace(/[^\d.-]/g,''))||0)-(parseFloat(String(b[col]||0).replace(/[^\d.-]/g,''))||0))*dir);
+  } else {
+    arr.sort((a,b)=>String(a[col]||'').localeCompare(String(b[col]||''),'es')*dir);
+  }
+}
+
+function sortBy(col, th){
+  if(sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  // Limpiar indicadores solo en la tabla de esta cabecera (no en dashboard/reportes)
+  if(th){
+    var thead=th.closest('thead');
+    if(thead) thead.querySelectorAll('th').forEach(function(h){ h.classList.remove('sorted-asc','sorted-desc'); });
+    th.classList.add(sortDir===1?'sorted-asc':'sorted-desc');
+  }
+  filtrar();
+}
+function limpiarFiltros(){
+  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable','f-monto','f-expediente'].forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
+  filtrar();
+}
+
+function renderTabla(){
+  var data=filtrados;
+  var totalPags=Math.ceil(data.length/PS)||1;
+  var ini=(pagActual-1)*PS,fin=Math.min(ini+PS,data.length),pag=data.slice(ini,fin);
+  if(!pag.length){
+    document.getElementById('tbody').innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
+    document.getElementById('pag-info').textContent='0 registros';
+    document.getElementById('pag-btns').innerHTML='';
+    return;
+  }
+  document.getElementById('tbody').innerHTML=pag.map(r=>{
+    var dep=r['deposito judicial'];
+    var gestionado=r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN'];
+    var tieneNotas=r['Observacion'];
+    var fecha=String(r['Fecha Emisión']||'');if(fecha.length>10)fecha=fecha.substring(0,10);
+    var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var cid=String(r['Identificación Demandado']||'');
+    var tieneExp=(expedientesPorCedula[cid]||transitoPorCedula[cid])?'<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:#93c5fd"></span>':'';
+    // Columna Proceso: 1) lo que el contador escribió a mano  2) radicado del expediente predial  3) comparendos de tránsito  4) vacío
+    var procManual=String(r['Proceso']||'').trim();
+    var procCell='—';
+    if(procManual){ procCell=eh(procManual); }
+    else if(expedientesPorCedula[cid] && expedientesPorCedula[cid][0] && expedientesPorCedula[cid][0].radicado){
+      procCell='📁 '+eh(expedientesPorCedula[cid][0].radicado);
+    }
+    else if(transitoPorCedula[cid]){
+      var nc=transitoPorCedula[cid].comparendos;
+      procCell='🚗 '+nc+(nc===1?' comparendo':' comparendos');
+    }
+    return `<tr class="${gestionado?'gestionado':''}" tabindex="0" role="button" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${String(dep).replace(/'/g,"\\'")}')}">
+      <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
+      <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
+      <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
+      <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
+      <td class="mono" style="font-size:12px;color:var(--soft)">${procCell}</td>
+      <td>${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
+      <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
+      <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+      <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
+      <td onclick="event.stopPropagation()"><button class="btn-gest" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros`;
+  renderPag(data.length,'pag-btns',pagActual,(n)=>{pagActual=n;renderTabla();});
+}
+
+// PENDIENTES
+function renderPendientesStats(){
+  var sin=0,tram=0,rev=0,valor=0,resps=new Set();
+  pendFiltrados.forEach(r=>{
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
+    var estado=ed||ea||'';
+    if(!estado||estado==='PENDIENTE') sin++;
+    else if(estado==='EN TRAMITE') tram++;
+    else if(estado==='EN REVISION') rev++;
+    valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var resp=r['RESPONSABLE']||'';if(resp.trim())resps.add(resp.trim());
+  });
+  var s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  s('ps-sin',sin.toLocaleString('es-CO'));
+  s('ps-tram',tram.toLocaleString('es-CO'));
+  s('ps-rev',rev.toLocaleString('es-CO'));
+  s('ps-valor',fmtM(valor));
+  s('ps-resp',resps.size);
+}
+
+function filtrarPend(){
+  var buscar=(document.getElementById('fp-buscar').value||'').toLowerCase();
+  var fResp=(document.getElementById('fp-responsable').value||'').toLowerCase();
+  var fImp=(document.getElementById('fp-impuesto').value||'').toUpperCase();
+  var fMonto=parseFloat((document.getElementById('fp-monto')||{}).value)||0;
+  var fExp=(document.getElementById('fp-expediente')||{}).value||'';
+  pendFiltrados=dataBanco.filter(r=>{
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
+    if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
+    if(buscar){ var hay=r._buscable!==undefined?r._buscable:construirBuscable(r); if(hay.indexOf(buscar)<0) return false; }
+    if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
+    if(fImp){ if(!impuestoDe(r).toUpperCase().includes(fImp)) return false; }
+    if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
+    if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
+    return true;
+  });
+  if(fMonto){
+    pendFiltrados.sort((a,b)=>(parseFloat(String(b['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0)-(parseFloat(String(a['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0));
+  }
+  pagPend=1; renderPendientes();
+}
+
+function renderPendientes(){
+  var ini=(pagPend-1)*PS,fin=Math.min(ini+PS,pendFiltrados.length),pag=pendFiltrados.slice(ini,fin);
+  if(!pag.length){
+    document.getElementById('tbody-pend').innerHTML='<tr><td colspan="10"><div class="empty"><div class="empty-ico">🎉</div><p>No hay registros pendientes.</p></div></td></tr>';
+    document.getElementById('pag-info-pend').textContent='0 registros';
+    document.getElementById('pag-btns-pend').innerHTML='';
+    return;
+  }
+  document.getElementById('tbody-pend').innerHTML=pag.map(r=>{
+    var dep=r['deposito judicial'];
+    var fecha=String(r['Fecha Emisión']||'').substring(0,10);
+    var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    return `<tr tabindex="0" role="button" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${String(dep).replace(/'/g,"\\'")}')}">
+      <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}</td>
+      <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
+      <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
+      <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
+      <td class="mono" style="text-align:right;font-weight:700;font-size:14px">${fmt$(valor)}</td>
+      <td>${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
+      <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
+      <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+      <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
+      <td onclick="event.stopPropagation()"><button class="btn-gest" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('pag-info-pend').textContent=`Mostrando ${ini+1}–${fin} de ${pendFiltrados.length.toLocaleString('es-CO')} pendientes`;
+  renderPag(pendFiltrados.length,'pag-btns-pend',pagPend,(n)=>{pagPend=n;renderPendientes();});
+  renderPendientesStats();
+}
+
+// PAGINACIÓN
+// Antes cada botón serializaba la función callback dentro del atributo onclick
+// (cb.toString()) y el navegador la reinterpretaba al hacer clic — funcionaba,
+// pero era frágil. Ahora los botones solo llevan data-page, y UN listener
+// delegado (registrado una sola vez) decide qué callback llamar según el
+// contenedor donde ocurrió el clic.
+var _pagCallbacks = {};
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.pb[data-page]');
+  if(!btn) return;
+  var cont = btn.closest('[id^="pag-btns"]');
+  if(!cont) return;
+  var cb = _pagCallbacks[cont.id];
+  if(cb) cb(parseInt(btn.getAttribute('data-page'), 10));
+});
+function renderPag(total,btnId,pag,cb){
+  _pagCallbacks[btnId]=cb;
+  var tP=Math.ceil(total/PS)||1,h='';
+  h+=`<button class="pb" data-page="${pag-1}" ${pag===1?'disabled':''}>‹</button>`;
+  for(var p=1;p<=tP;p++){
+    if(p===1||p===tP||Math.abs(p-pag)<=1) h+=`<button class="pb${p===pag?' cur':''}" data-page="${p}">${p}</button>`;
+    else if(Math.abs(p-pag)===2) h+=`<button class="pb" disabled style="border:none;background:none;color:var(--muted)">…</button>`;
+  }
+  h+=`<button class="pb" data-page="${pag+1}" ${pag===tP?'disabled':''}>›</button>`;
+  document.getElementById(btnId).innerHTML=h;
+}
+
+// ════════════════════════════════════════════════════════════
+// MODAL (con vista 360: otros depósitos + expedientes)
+// ════════════════════════════════════════════════════════════
+function abrirModal(dep){
+  var r=dataBanco.find(x=>String(x['deposito judicial'])===String(dep));
+  if(!r) return;
+  registroActivo=r._id;   // id técnico de Supabase
+  _ultimaEdicionAlAbrir=r._ultimaEdicionISO||null;   // para detectar si alguien más edita mientras el modal está abierto
+  var cid=String(r['Identificación Demandado']||'');
+  var nombre=r['Nombre Demandante.1']||'—';
+  document.getElementById('m-titulo').textContent='Depósito '+dep;
+  document.getElementById('m-dep-num').textContent=dep;
+  document.getElementById('m-nombre').textContent=nombre;
+  document.getElementById('m-cedula').textContent=cid||'—';
+  var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+  document.getElementById('m-banco-datos').innerHTML=`
+    <div class="banco-item"><div class="banco-lbl">Valor depósito</div><div class="banco-val money">${fmt$(valor)}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Fecha emisión</div><div class="banco-val">${eh(String(r['Fecha Emisión']||'').substring(0,10))}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Estado depósito</div><div class="banco-val">${eh(r['Estado del Depósito']||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Tipo TX</div><div class="banco-val">${eh(r['Tipo de TX origen']||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">N° Proceso banco</div><div class="banco-val" style="font-family:monospace">${eh(String(r['Número del Proceso']||'—').replace(/^0+/,'')||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Nombre Consignante</div><div class="banco-val">${eh(r['Nombre Consignante']||'—')}</div></div>`;
+
+  var campos={'m-est-dev':'ESTADO DEVOLUCION','m-est-apl':'ESTADO APLICACIÓN','m-responsable':'RESPONSABLE','m-proceso':'Proceso','m-impuesto':'Impuesto','m-convenio':'Pendiente convenio','m-ci-inicial':'CI INICIAL','m-comp-egreso':'COMPROBANTE DE EGRESO','m-radicado-resp':'RADICADO DE RESPUESTA','m-gest-tes':'GESTION TESORERIA','m-telefono':'TELEFONO DE CONTACTO','m-correo':'CORREO ELECTRONICO','m-direccion':'DIRECCION','m-ciudad':'CIUDAD','m-observacion':'Observacion'};
+  Object.keys(campos).forEach(id=>{ var el=document.getElementById(id);if(!el)return; var val=r[campos[id]]||''; if(id.includes('est-'))val=normEst(val); el.value=String(val||'').trim(); });
+  // Si el impuesto está vacío pero se puede deducir, pre-seleccionarlo — SALVO que haya conflicto (ahí decide el contador)
+  var mImp=document.getElementById('m-impuesto');
+  if(mImp && !mImp.value && !tieneConflictoImpuesto(r)){ var ded=impuestoDe(r); if(ded){ var existe=Array.from(mImp.options).some(o=>o.value===ded); if(existe) mImp.value=ded; } }
+  // Aviso de conflicto: la persona tiene Predial Y Tránsito, el contador debe decidir a cuál aplica este depósito
+  if(mImp){
+    var prev=document.getElementById('m-impuesto-aviso'); if(prev) prev.remove();
+    if(tieneConflictoImpuesto(r)){
+      var av=document.createElement('div');
+      av.id='m-impuesto-aviso';
+      av.style.cssText='margin-top:6px;font-size:11px;color:#fdba74;background:rgba(234,88,12,.12);border:1px solid rgba(234,88,12,.3);border-radius:6px;padding:6px 9px;line-height:1.4';
+      av.innerHTML='⚠️ Esta persona tiene <strong>Predial</strong> y <strong>Tránsito</strong>. Selecciona a cuál corresponde este depósito antes de guardar.';
+      mImp.parentNode.appendChild(av);
+    }
+  }
+
+  // ── 360: otros depósitos de la misma persona ──
+  renderOtrosDepositos(cid, dep);
+  // ── 360: expedientes prediales de la persona ──
+  renderExpedientes(cid);
+  // ── 360: comparendos de tránsito de la persona (bajo demanda) ──
+  renderTransitoModal(cid);
+
+  var ep=document.getElementById('m-editado-por');
+  ep.textContent=r._editadoFecha?('Último cambio: '+(r._editadoPor||'—')+' · '+r._editadoFecha):'Sin cambios registrados';
+  document.getElementById('m-alert').style.display='none';
+  cargarBitacora(dep);
+  // Restablecer secciones colapsables a estado expandido
+  document.querySelectorAll('#modal .vista360').forEach(v=>v.classList.remove('colapsado'));
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow='hidden';
+  // Guardar huella de los campos editables para detectar cambios sin guardar
+  _huellaModal=huellaCampos();
+}
+
+// Devuelve una "firma" de todos los campos editables del modal
+function huellaCampos(){
+  var ids=['m-est-dev','m-est-apl','m-responsable','m-proceso','m-impuesto','m-convenio','m-ci-inicial','m-comp-egreso','m-radicado-resp','m-gest-tes','m-telefono','m-correo','m-direccion','m-ciudad','m-observacion'];
+  return ids.map(id=>{ var el=document.getElementById(id); return el?String(el.value):''; }).join('|‖|');
+}
+
+function renderOtrosDepositos(cid, depActual){
+  var wrap=document.getElementById('m-otros-dep-wrap');
+  var cont=document.getElementById('m-otros-dep');
+  var cnt=document.getElementById('m-otros-dep-count');
+  if(!cid){ wrap.style.display='none'; return; }
+  var todos=dataBanco.filter(x=>String(x['Identificación Demandado'])===cid);
+  if(!todos.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  // Total sumado de todos los depósitos de la persona
+  var total=todos.reduce((s,d)=>s+(parseFloat(String(d['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),0);
+  cnt.textContent=todos.length+(todos.length===1?' depósito':' depósitos');
+
+  // ── Armar texto plano con TODOS los depósitos (para copiar de un tirón) ──
+  var nombre=(todos[0]['Nombre Demandante.1']||'—');
+  var lineas=[];
+  lineas.push(nombre+' — C.C./NIT '+cid);
+  lineas.push('');
+  todos.forEach(function(d){
+    var v=parseFloat(String(d['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var fecha=String(d['Fecha Emisión']||'').substring(0,10);
+    lineas.push(d['deposito judicial']+'\t'+fecha+'\t'+fmt$(v));
+  });
+  lineas.push('');
+  lineas.push('TOTAL ('+todos.length+' depósitos): '+fmt$(total));
+  _textoDepositos=lineas.join('\n');   // se guarda para el botón
+
+  // Encabezado: total + botón copiar total + botón copiar TODOS
+  var totalPlano=total.toFixed(2);
+  var html='<div class="v360-total"><span>Total de esta persona:</span> '
+    +'<span class="v360-total-val">'+fmt$(total)+'</span>'
+    +'<button class="copy-btn" onclick="copiar(this, \''+totalPlano+'\')" title="Copiar solo el total (número)">📋</button>'
+    +'<button class="copy-btn copy-todos" onclick="copiar(this, _textoDepositos)" title="Copiar la lista completa de depósitos con su valor">📋 Copiar todos</button></div>';
+
+  // Lista de depósitos solo si hay más de uno
+  if(todos.length>1){
+    html+=todos.map(d=>{
+      var esActual=String(d['deposito judicial'])===String(depActual);
+      var valor=parseFloat(String(d['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+      var fecha=String(d['Fecha Emisión']||'').substring(0,10);
+      return `<div class="v360-row ${esActual?'actual':''}" ${esActual?'':`onclick="abrirModal('${String(d['deposito judicial']).replace(/'/g,"\\'")}')" style="cursor:pointer"`}>
+        <div class="v360-row-main">
+          <div class="v360-row-top">📄 ${eh(d['deposito judicial'])}${esActual?' <span class="v360-aqui">● AQUÍ</span>':''}</div>
+          <div class="v360-row-sub">${eh(fecha||'sin fecha')} · ${badgeEst(d['ESTADO DEVOLUCION'])}</div>
+        </div>
+        <div class="v360-row-right"><span class="v360-val">${fmt$(valor)}</span></div>
+      </div>`;
+    }).join('');
+  }
+  cont.innerHTML=html;
+}
+
+function renderExpedientes(cid){
+  var wrap=document.getElementById('m-expedientes-wrap');
+  var cont=document.getElementById('m-expedientes');
+  var cnt=document.getElementById('m-expedientes-count');
+  var exps=cid?expedientesPorCedula[cid]:null;
+  if(!exps||!exps.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  cnt.textContent=exps.length+(exps.length===1?' expediente':' expedientes');
+  cont.innerHTML=exps.map(e=>{
+    var valor=parseFloat(String(e.valor_total||0))||0;
+    var detalle=[];
+    if(e.matricula) detalle.push('Mat: '+e.matricula);
+    if(e.numero_factura) detalle.push('Fact: '+e.numero_factura);
+    if(e.direccion) detalle.push(e.direccion);
+    return `<div class="v360-row">
+      <div class="v360-row-main">
+        <div class="v360-row-top">📁 ${eh(e.radicado||'sin radicado')}${e.modulo?' <span class="v360-badge">'+eh(e.modulo)+'</span>':''}</div>
+        <div class="v360-row-sub">${eh(detalle.join(' · ')||'—')}</div>
+      </div>
+      <div class="v360-row-right">
+        ${valor?'<span class="v360-val">'+fmt$(valor)+'</span>':''}
+        ${e.estado?'<span class="v360-badge">'+eh(e.estado)+'</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleV360(el){ el.closest('.vista360').classList.toggle('colapsado'); }
+
+// Muestra los comparendos de tránsito de la persona (carga bajo demanda por cédula)
+async function renderTransitoModal(cid){
+  var wrap=document.getElementById('m-transito-wrap');
+  var cont=document.getElementById('m-transito');
+  var cnt=document.getElementById('m-transito-count');
+  // Si la persona no tiene tránsito en el índice resumen, ni mostramos el bloque
+  if(!cid || !transitoPorCedula[cid]){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  var resumen=transitoPorCedula[cid];
+  cnt.textContent=resumen.comparendos+(resumen.comparendos===1?' comparendo':' comparendos');
+  cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">🔄 Cargando comparendos…</div>';
+  try{
+    var comps=await sbFetchAll('expedientes_transito',
+      'nro_comparendo,fecha_comparendo,anio,cod_infraccion,numero_placa,estado_moroso,cobro_coactivo,valor_multa,valor_interes,valor_total',
+      'documento=eq.'+encodeURIComponent(cid));
+    if(!comps.length){ cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">Sin comparendos.</div>'; return; }
+    // ordenar por fecha desc en el cliente (más seguro que el order del servidor)
+    comps.sort(function(a,b){ return String(b.fecha_comparendo||'').localeCompare(String(a.fecha_comparendo||'')); });
+    cont.innerHTML=comps.map(function(c){
+      var valor=Number(c.valor_total || c.valor_multa || 0)||0;
+      var detalle=[];
+      if(c.anio) detalle.push('Año '+c.anio);
+      if(c.cod_infraccion) detalle.push('Cód: '+c.cod_infraccion);
+      if(c.numero_placa) detalle.push('Placa: '+c.numero_placa);
+      if(c.fecha_comparendo) detalle.push(String(c.fecha_comparendo).substring(0,10));
+      var badges='';
+      if(c.cobro_coactivo==='S') badges+='<span class="v360-badge">⚖️ Coactivo</span>';
+      if(c.estado_moroso) badges+='<span class="v360-badge">'+eh(c.estado_moroso)+'</span>';
+      return `<div class="v360-row">
+        <div class="v360-row-main">
+          <div class="v360-row-top">🚗 ${eh(c.nro_comparendo||'—')}</div>
+          <div class="v360-row-sub">${eh(detalle.join(' · ')||'—')}</div>
+        </div>
+        <div class="v360-row-right">
+          ${valor?'<span class="v360-val">'+fmt$(valor)+'</span>':''}
+          ${badges}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    cont.innerHTML='<div style="padding:14px;text-align:center;color:#fdba74;font-size:12px">No se pudieron cargar los comparendos.</div>';
+  }
+}
+
+function cerrarModal(forzar){
+  // Si hay cambios sin guardar, pedir confirmación (salvo que se fuerce, ej. tras guardar)
+  if(!forzar && registroActivo && _huellaModal!==null && huellaCampos()!==_huellaModal){
+    if(!confirm('Tienes cambios sin guardar. ¿Seguro que deseas salir sin guardar?')) return;
+  }
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow='';
+  registroActivo=null;
+  _huellaModal=null;
+  _ultimaEdicionAlAbrir=null;
+}
+
+// Cerrar el modal de gestión con la tecla Esc (atajo esperado en cualquier modal)
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){
+    var m=document.getElementById('modal');
+    if(m && m.classList.contains('open')) cerrarModal();
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// GUARDAR GESTIÓN — PATCH REST real a Supabase (sabe si guardó)
+// ════════════════════════════════════════════════════════════
+async function guardarGestion(){
+  if(!registroActivo) return;
+  // ── CRÍTICO #1: usuario real ──
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
+  var idTec=registroActivo;
+  var ahora=new Date();
+  var ts=ahora.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+ahora.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  var user=USUARIO_ACTIVO;
+  var g={
+    'ESTADO DEVOLUCION':document.getElementById('m-est-dev').value,
+    'ESTADO APLICACIÓN':document.getElementById('m-est-apl').value,
+    'RESPONSABLE':document.getElementById('m-responsable').value.trim(),
+    'Proceso':document.getElementById('m-proceso').value.trim(),
+    'Impuesto':document.getElementById('m-impuesto').value.trim(),
+    'COMPROBANTE DE EGRESO':document.getElementById('m-comp-egreso').value.trim(),
+    'RADICADO DE RESPUESTA':document.getElementById('m-radicado-resp').value.trim(),
+    'GESTION TESORERIA':document.getElementById('m-gest-tes').value.trim(),
+    'TELEFONO DE CONTACTO':document.getElementById('m-telefono').value.trim(),
+    'CORREO ELECTRONICO':document.getElementById('m-correo').value.trim(),
+    'DIRECCION':document.getElementById('m-direccion').value.trim(),
+    'CIUDAD':document.getElementById('m-ciudad').value.trim(),
+    'Observacion':document.getElementById('m-observacion').value.trim(),
+    _editadoPor:user
+  };
+  var alEl=document.getElementById('m-alert');
+
+  // ── CRÍTICO #4: detectar edición concurrente ──
+  // Alguien más pudo haber guardado este mismo depósito mientras lo teníamos
+  // abierto (varias personas gestionan al tiempo). Antes esto se sobrescribía
+  // en silencio; ahora se avisa y se pide confirmar antes de pisar el cambio ajeno.
+  try{
+    var chk=await fetch(SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec)+'&select=ultima_edicion,editado_por',{headers:sbHeaders()});
+    if(chk.ok){
+      var filaServ=await chk.json();
+      var edServ=(filaServ&&filaServ[0])?(filaServ[0].ultima_edicion||null):null;
+      var cambioAjeno = _ultimaEdicionAlAbrir && edServ && (new Date(edServ).getTime()!==new Date(_ultimaEdicionAlAbrir).getTime());
+      if(cambioAjeno){
+        var quienServ=(filaServ[0]&&filaServ[0].editado_por)||'otra persona';
+        var seguir=confirm('⚠️ Este depósito fue editado por '+quienServ+' mientras lo tenías abierto.\n\nSi guardas ahora, tus cambios reemplazarán esa edición reciente.\n\n¿Guardar de todos modos?');
+        if(!seguir){
+          showAl(alEl,'al-warn','Guardado cancelado. Cierra y vuelve a abrir el depósito para ver los cambios más recientes.');
+          return;
+        }
+      }
+    }
+  }catch(e){ /* si el chequeo falla, seguimos con el guardado normal — no bloqueamos por esto */ }
+
+  // ── CRÍTICO #2: validación al marcar FINALIZADO ──
+  var devFin=normEst(g['ESTADO DEVOLUCION'])==='FINALIZADO';
+  var aplFin=normEst(g['ESTADO APLICACIÓN'])==='FINALIZADO';
+  if(devFin || aplFin){
+    var faltan=[];
+    if(!g['RESPONSABLE']) faltan.push('Responsable');
+    if(!g['COMPROBANTE DE EGRESO'] && !g['RADICADO DE RESPUESTA']) faltan.push('Comprobante de egreso o Radicado de respuesta');
+    if(faltan.length){
+      showAl(alEl,'al-err','⚠️ Para marcar como FINALIZADO falta: '+faltan.join(', ')+'. Complete o cambie el estado.');
+      return;
+    }
+  }
+
+  showAl(alEl,'al-load','<div class="spin"></div> Guardando...');
+  // Capturar valores ANTES de cambiar, para la bitácora
+  var filaPrev=dataBanco.find(x=>x._id===idTec);
+  var camposBitacora=['ESTADO DEVOLUCION','ESTADO APLICACIÓN','RESPONSABLE','Proceso','Impuesto','COMPROBANTE DE EGRESO','RADICADO DE RESPUESTA','GESTION TESORERIA','TELEFONO DE CONTACTO','CORREO ELECTRONICO','DIRECCION','CIUDAD','Observacion'];
+  var cambios=[];
+  if(filaPrev){
+    camposBitacora.forEach(function(k){
+      var antes=String(filaPrev[k]||'').trim();
+      var despues=String(g[k]||'').trim();
+      if(antes!==despues){
+        cambios.push(k+': "'+(antes||'(vacío)')+'" → "'+(despues||'(vacío)')+'"');
+      }
+    });
+  }
+  var payload=gestionUIASupa(g);
+  var ok=await patchRecaudo(idTec, payload);
+  if(ok){
+    // Actualizar la fila en memoria
+    var fila=dataBanco.find(x=>x._id===idTec);
+    if(fila){
+      Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; });
+      fila._editadoPor=user; fila._editadoFecha=ts;
+      fila._ultimaEdicionISO=payload.ultima_edicion;   // evita un falso "editado por otra persona" si se reabre este mismo depósito
+      fila._buscable=construirBuscable(fila);          // Proceso/Responsable pudieron cambiar — refrescar el índice de búsqueda
+    }
+    // Registrar en bitácora (solo si hubo cambios reales)
+    if(cambios.length){
+      registrarBitacora(document.getElementById('m-dep-num').textContent, user, cambios.join(' · '));
+    }
+    showAl(alEl,'al-ok','✅ Guardado por '+user.split(' ')[0]+'.');
+    renderKpis(); filtrar();
+    _huellaModal=null;
+    setTimeout(function(){ cerrarModal(true); },800);
+  }else{
+    // ── CRÍTICO #3: encolar para reintentar ──
+    encolarPendiente(idTec, payload, g, user, ts);
+    var fila=dataBanco.find(x=>x._id===idTec);
+    if(fila){ Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; }); fila._editadoPor=user; fila._editadoFecha=ts; fila._ultimaEdicionISO=payload.ultima_edicion; fila._buscable=construirBuscable(fila); }
+    showAl(alEl,'al-warn','⚠️ Sin conexión. El cambio quedó <strong>guardado localmente</strong> y se sincronizará automáticamente. No lo pierdes.');
+    renderKpis(); filtrar();
+    _huellaModal=null;
+    actualizarPendientesPill();
+    setTimeout(function(){ cerrarModal(true); },1600);
+  }
+}
+
+// PATCH con manejo de error (devuelve true/false)
+async function patchRecaudo(idTec, payload){
+  try{
+    var url=SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec);
+    var res=await fetch(url,{ method:'PATCH', headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}), body:JSON.stringify(payload) });
+    return res.ok;
+  }catch(e){ return false; }
+}
+
+// ── BITÁCORA: registra cada cambio (trazabilidad) ──
+async function registrarBitacora(deposito, usuario, cambios){
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/recaudo_bitacora',{
+      method:'POST',
+      headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+      body:JSON.stringify({ deposito_judicial:String(deposito), usuario:usuario, cambios:cambios })
+    });
+  }catch(e){ /* si falla, no bloquea el guardado principal */ }
+}
+
+// Carga y muestra el historial de un depósito en el modal
+async function cargarBitacora(deposito){
+  var wrap=document.getElementById('m-log-wrap');
+  var cont=document.getElementById('m-log');
+  if(!wrap||!cont) return;
+  cont.innerHTML='<div style="font-size:11px;color:var(--muted);padding:6px 0">Cargando historial...</div>';
+  wrap.style.display='block';
+  try{
+    var url=SUPABASE_URL+'/rest/v1/recaudo_bitacora?deposito_judicial=eq.'+encodeURIComponent(deposito)+'&order=fecha.desc&select=usuario,cambios,fecha';
+    var res=await fetch(url,{ headers:sbHeaders() });
+    if(!res.ok) throw new Error();
+    var rows=await res.json();
+    if(!rows.length){ cont.innerHTML='<div style="font-size:11px;color:var(--muted);padding:6px 0;font-style:italic">Sin cambios registrados todavía.</div>'; return; }
+    cont.innerHTML=rows.map(function(r){
+      var f=r.fecha?new Date(r.fecha).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+      return '<div class="log-item">'
+        +'<div class="log-item-top"><span class="log-user">👤 '+eh(r.usuario||'—')+'</span><span class="log-fecha">'+eh(f)+'</span></div>'
+        +'<div class="log-cambios">'+eh(r.cambios||'')+'</div></div>';
+    }).join('');
+  }catch(e){
+    cont.innerHTML='<div style="font-size:11px;color:var(--muted);padding:6px 0;font-style:italic">No se pudo cargar el historial.</div>';
+  }
+}
+
+// ── CRÍTICO #3: COLA DE REINTENTOS ──
+var COLA_KEY='recaudo_cola_sync_v1';
+function leerCola(){ try{ return JSON.parse(localStorage.getItem(COLA_KEY)||'[]'); }catch(e){ return []; } }
+function escribirCola(c){ try{ localStorage.setItem(COLA_KEY, JSON.stringify(c)); }catch(e){} }
+function encolarPendiente(idTec, payload, g, user, ts){
+  var c=leerCola();
+  // si ya hay uno para este id, reemplazar
+  c=c.filter(x=>x.idTec!==idTec);
+  c.push({idTec:idTec, payload:payload, ts:Date.now()});
+  escribirCola(c);
+}
+async function procesarCola(){
+  var c=leerCola();
+  if(!c.length) return;
+  var quedan=[];
+  for(var i=0;i<c.length;i++){
+    var ok=await patchRecaudo(c[i].idTec, c[i].payload);
+    if(!ok) quedan.push(c[i]);
+  }
+  escribirCola(quedan);
+  actualizarPendientesPill();
+  if(quedan.length===0 && c.length>0){
+    // todo sincronizado
+    var l=document.getElementById('sync-lbl');
+    if(l){ l.textContent='✅ Todo sincronizado'; setTimeout(()=>{ if(ultimaSync) l.textContent='Sincronizado '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); },2500); }
+  }
+}
+function actualizarPendientesPill(){
+  var n=leerCola().length;
+  var el=document.getElementById('sync-pendientes');
+  if(!el) return;
+  if(n>0){ el.style.display='inline-flex'; el.textContent='⏳ '+n+' sin sincronizar'; }
+  else { el.style.display='none'; }
+}
+// Reintentar cada 30s y cuando vuelve la conexión
+setInterval(procesarCola, 30000);
+window.addEventListener('online', procesarCola);
+
+// ════════════════════════════════════════════════════════════
+// IMPORTAR LOTE — inserta depósitos nuevos en Supabase
+// ════════════════════════════════════════════════════════════
+function onDrop(e){e.preventDefault();document.getElementById('importDrop').classList.remove('drag');var f=e.dataTransfer.files[0];if(f)procesarImport({files:[f]});}
+function procesarImport(inp){
+  var f=inp.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=async function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var json=XLSX.utils.sheet_to_json(ws,{raw:false,defval:''});
+      if(!json.length){ showImportResult('warn','El archivo está vacío.'); return; }
+      var keys=Object.keys(json[0]);
+      // ── VALIDACIÓN: el archivo debe tener columna de depósito reconocible ──
+      var depCol=keys.find(k=>k.toLowerCase().includes('deposito')||k.toLowerCase().includes('depósito'));
+      if(!depCol){
+        showImportResult('err','❌ El archivo no tiene una columna de <strong>depósito judicial</strong> reconocible.<br>Columnas encontradas: '+keys.slice(0,8).map(k=>eh(k)).join(', ')+(keys.length>8?'...':'')+'<br>Verifica que sea el archivo correcto de Bancolombia.');
+        inp.value=''; return;
+      }
+      // Verificar que al menos algunas filas tengan número de depósito válido
+      var conDep=json.filter(row=>String(row[depCol]||'').trim().length>5).length;
+      if(conDep===0){
+        showImportResult('err','❌ La columna de depósito existe pero no tiene números válidos. Revisa el archivo.');
+        inp.value=''; return;
+      }
+      if(conDep < json.length*0.5){
+        if(!confirm('Atención: solo '+conDep+' de '+json.length+' filas tienen número de depósito válido. ¿Deseas continuar de todos modos?')){ inp.value=''; return; }
+      }
+      var existentes=new Set(dataBanco.map(r=>String(r['deposito judicial']||'')));
+      var nuevos=[];
+      json.forEach(row=>{
+        var dep=String(row[depCol]||'').trim();
+        if(dep && !existentes.has(dep)){
+          nuevos.push({
+            deposito_judicial: dep,
+            fecha_emision: parseFechaImport(row['Fecha Emisión']||row['Fecha Emision']||''),
+            estado_deposito: String(row['Estado del Depósito']||row['Estado del Deposito']||'').trim()||null,
+            identificacion_demandado: limpiarCedula(row['Identificación Demandado']||row['Identificacion Demandado']||''),
+            nombre_demandado: String(row['Nombre Demandado']||row['Nombre Demandante']||'').trim()||null,
+            valor_deposito: parseValorImport(row['Valor del Depóstio']||row['Valor del Deposito']||row['Valor']||0),
+            concepto_deposito: String(row['Concepto del Depósito']||'').trim()||null,
+            numero_proceso: String(row['Número del Proceso']||row['Numero del Proceso']||'').trim()||null,
+            nombre_consignante: String(row['Nombre Consignante']||'').trim()||null,
+            tipo_tx_origen: String(row['Tipo de TX origen']||'').trim()||null
+          });
+          existentes.add(dep);
+        }
+      });
+      if(!nuevos.length){ showImportResult('warn','ℹ️ No se encontraron registros nuevos. Todos los depósitos ya existen.'); inp.value=''; return; }
+      // Antes de aquí se insertaba directo; ahora se muestra una vista previa
+      // y se espera confirmación explicita antes de tocar la base de datos.
+      _importPendiente = nuevos;
+      mostrarPreviewImportacion(nuevos);
+    }catch(err){ showImportResult('err','❌ Error: '+err.message); }
+  };
+  rd.readAsArrayBuffer(f);
+  inp.value='';
+}
+
+// ── Vista previa de importación: el usuario ve una muestra de lo que se va a
+// insertar y confirma explicitamente, en vez de que el archivo se guarde directo. ──
+var _importPendiente = [];
+
+function mostrarPreviewImportacion(nuevos){
+  var muestra=nuevos.slice(0,15);
+  var filasHtml=muestra.map(function(n){
+    return '<tr>'
+      +'<td class="mono" style="font-size:11px">'+eh(n.deposito_judicial||'—')+'</td>'
+      +'<td class="mono" style="font-size:11px;color:var(--soft)">'+eh(n.fecha_emision||'—')+'</td>'
+      +'<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(n.nombre_demandado||'—')+'</td>'
+      +'<td class="mono" style="font-size:11px">'+eh(n.identificacion_demandado||'—')+'</td>'
+      +'<td class="mono" style="text-align:right;font-size:12px;font-weight:700">'+fmt$(Number(n.valor_deposito||0))+'</td>'
+    +'</tr>';
+  }).join('');
+  var extra = nuevos.length>15 ? ('<div style="font-size:11px;color:var(--soft);margin-top:8px;font-style:italic">Mostrando 15 de '+nuevos.length.toLocaleString('es-CO')+' registros nuevos. Todos se guardarán al confirmar.</div>') : '';
+  var html = '<div class="alerta al-warn" style="display:flex">⚠️ Se detectaron <strong>&nbsp;'+nuevos.length.toLocaleString('es-CO')+'&nbsp;</strong> registros nuevos. Revisa la muestra antes de guardar:</div>'
+    +'<div class="tw" style="margin-top:10px;max-height:320px">'
+    +'<table><thead><tr><th>#Depósito</th><th>Fecha</th><th>Demandado</th><th>Cédula</th><th style="text-align:right">Valor</th></tr></thead>'
+    +'<tbody>'+filasHtml+'</tbody></table></div>'
+    +extra
+    +'<div style="display:flex;gap:8px;margin-top:14px">'
+    +'<button class="fbtn fbtn-outline" onclick="cancelarImportacion()">✕ Cancelar</button>'
+    +'<button class="fbtn fbtn-gold" onclick="confirmarImportacion()">✅ Confirmar e importar '+nuevos.length.toLocaleString('es-CO')+' registros</button>'
+    +'</div>';
+  var el=document.getElementById('import-resultado');
+  el.style.display='block';
+  el.innerHTML=html;
+}
+
+function cancelarImportacion(){
+  _importPendiente=[];
+  document.getElementById('import-resultado').style.display='none';
+}
+
+async function confirmarImportacion(){
+  var nuevos=_importPendiente;
+  if(!nuevos.length) return;
+  showImportResult('warn','<div class="spin"></div> Guardando '+nuevos.length+' registros nuevos en la base de datos...');
+  try{
+    var insertados=0;
+    for(var i=0;i<nuevos.length;i+=500){
+      var bloque=nuevos.slice(i,i+500);
+      var res=await fetch(SUPABASE_URL+'/rest/v1/recaudo',{
+        method:'POST',
+        headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+        body:JSON.stringify(bloque)
+      });
+      if(!res.ok){ var t=await res.text(); throw new Error('HTTP '+res.status+' '+t); }
+      insertados+=bloque.length;
+    }
+    _importPendiente=[];
+    showImportResult('ok',`✅ <strong>${insertados} registros nuevos</strong> guardados. Recargando...`);
+    await cargarTodo();
+  }catch(err){ showImportResult('err','❌ Error: '+err.message); }
+}
+function parseFechaImport(v){
+  v=String(v||'').trim();
+  var m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){ var y=+m[3]; if(y<1990) return null; return y+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2); }
+  if(/^\d{4}-\d{2}-\d{2}/.test(v)) return v.substring(0,10);
+  return null;
+}
+function parseValorImport(v){
+  v=String(v||'').replace(/\./g,'').replace(/,/g,'.').replace(/[^\d.]/g,'');
+  var n=parseFloat(v); return isNaN(n)?null:Math.round(n*100)/100;
+}
+function limpiarCedula(v){
+  var nums=String(v||'').match(/\d+/g);
+  if(!nums) return null;
+  var c=nums.sort((a,b)=>b.length-a.length)[0];
+  return (c.length>=4&&c.length<=20)?c:null;
+}
+function showImportResult(tipo,msg){
+  var el=document.getElementById('import-resultado');el.style.display='block';
+  var cls={'ok':'al-ok','err':'al-err','warn':'al-warn'}[tipo]||'al-warn';
+  el.innerHTML=`<div class="alerta ${cls}">${msg}</div>`;
+}
+
+// EXPORTAR
+function exportarExcel(){
+  var data=filtrados.length?filtrados:dataBanco;
+  if(!data.length){alert('No hay datos para exportar.');return;}
+  // Tope de seguridad para no congelar el navegador con archivos gigantes — muy por
+  // encima del volumen actual. Si se llega a superar, se AVISA (antes se cortaba en
+  // silencio a 10.000 filas sin que el usuario se enterara).
+  var TOPE=50000;
+  var recortado=data.length>TOPE;
+  if(recortado){
+    var seguir=confirm('Hay '+data.length.toLocaleString('es-CO')+' registros para exportar.\n\nPor rendimiento del navegador se exportarán los primeros '+TOPE.toLocaleString('es-CO')+'. Aplica un filtro para exportar un subconjunto más chico, o contacta a soporte si necesitas el archivo completo de una vez.\n\n¿Continuar de todos modos?');
+    if(!seguir) return;
+  }
+  var usar=recortado?data.slice(0,TOPE):data;
+  var filas=usar.map(r=>({'Depósito':r['deposito judicial'],'Fecha':r['Fecha Emisión'],'Demandado':r['Nombre Demandante.1'],'Cédula':r['Identificación Demandado'],'Valor':r['Valor del Depóstio'],'Proceso':r['Proceso'],'Est. Devolución':r['ESTADO DEVOLUCION'],'Est. Aplicación':r['ESTADO APLICACIÓN'],'Responsable':r['RESPONSABLE'],'Comp. Egreso':r['COMPROBANTE DE EGRESO'],'Radicado':r['RADICADO DE RESPUESTA'],'Observación':r['Observacion']}));
+  var ws=XLSX.utils.json_to_sheet(filas);
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Recaudo');
+  var sufijo=recortado?('_primeros_'+TOPE):'';
+  XLSX.writeFile(wb,'Recaudo_'+new Date().toISOString().slice(0,10)+sufijo+'.xlsx');
+}
+
+// CONFIG (informativo)
+function actualizarCfgPanel(){
+  var dot=document.getElementById('cfg-dot'),txt=document.getElementById('cfg-txt');
+  if(dot&&txt){ dot.style.background='#22c55e'; txt.textContent='Conectado a Supabase'; }
+  var t=document.getElementById('cfg-info-total'); if(t) t.value=dataBanco.length.toLocaleString('es-CO');
+  var gestN=dataBanco.filter(r=>r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN']||r['RESPONSABLE']).length;
+  var gv=document.getElementById('cfg-info-gest'); if(gv) gv.value=gestN.toLocaleString('es-CO');
+  var sv=document.getElementById('cfg-info-sync'); if(sv) sv.value=ultimaSync?ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}):'—';
+}
+
+// UTILS
+
+// ── Mapa de alias: nombres escritos distinto que son la MISMA persona ──
+// Clave = como aparece en los datos (en minúscula y sin tildes); Valor = nombre correcto unificado.
+// Editar aquí para agrupar más variantes. Lo que no esté en el mapa se respeta tal cual (solo se corrige mayús/tildes).
+const ALIAS_RESPONSABLES = {
+  'juliet duque':'Julieth Duque',
+  'julieth duque':'Julieth Duque',
+  'marcela duque':'Gloria Marcela Duque',
+  'gloria marcela duque':'Gloria Marcela Duque',
+  'jose zapata':'Jose Fernando Zapata',
+  'jose fernando zapata':'Jose Fernando Zapata',
+  'john fredy perez':'Jhon Fredy Perez',
+  'jhon fredy perez':'Jhon Fredy Perez',
+  'catalina tamayo':'Nadya Catalina Tamayo',
+  'nadya catalina tamayo':'Nadya Catalina Tamayo'
+};
+
+// Normaliza un nombre de responsable a su forma unificada
+function normResp(raw){
+  var s=String(raw||'').trim();
+  if(!s) return '';
+  // quitar tildes y pasar a minúscula para comparar
+  var key=s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  if(ALIAS_RESPONSABLES[key]) return ALIAS_RESPONSABLES[key];
+  // si no está en el mapa, devolver con Capitalización Por Palabra (para unir mayús/minús)
+  return s.replace(/\s+/g,' ').trim().split(' ').map(p=>p?p.charAt(0).toUpperCase()+p.slice(1).toLowerCase():p).join(' ');
+}
+
+function llenarSelectResponsables(){
+  var resps=new Set(RESPONSABLES);
+  dataBanco.forEach(r=>{var resp=r['RESPONSABLE']||'';if(resp&&resp.trim())resps.add(resp.trim());});
+  var html='<option value="">Responsable (todos)</option>';
+  [...resps].sort().forEach(r=>{html+=`<option value="${eh(r)}">${eh(r)}</option>`;});
+  ['f-responsable','fp-responsable'].forEach(id=>{var el=document.getElementById(id);if(el)el.innerHTML=html;});
+}
+function showAl(el,cls,msg){if(!el)return;el.style.display='flex';el.className='alerta '+cls;el.innerHTML=msg;}
+// ════════════════════════════════════════════════════════════
+// DASHBOARD — estadísticas por responsable y por estado
+// ════════════════════════════════════════════════════════════
+function renderDashboard(){
+  // ── Una sola pasada sobre dataBanco para TODOS los acumuladores del dashboard ──
+  // (antes: 5 recorridos independientes de ~48.000 filas cada uno — total/gestión,
+  // por responsable, por mes, y dos veces por estado — cada vez que se entraba a esta pestaña).
+  var total=dataBanco.length;
+  var gestionados=0, valorTotal=0, sinAsignar=0;
+  var porResp={};
+  RESPONSABLES.forEach(n=>porResp[n]={asignados:0,fin:0,tram:0,pen:0,valor:0});
+  var porMes={};
+  var estadosBase=['FINALIZADO','EN TRAMITE','EN REVISION','PENDIENTE','Sin gestionar'];
+  var valorDev={},conteoDev={},valorApl={},conteoApl={};
+  estadosBase.forEach(k=>{ valorDev[k]=0; conteoDev[k]=0; valorApl[k]=0; conteoApl[k]=0; });
+
+  dataBanco.forEach(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valorTotal+=v;
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
+    var tieneGestion=r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN']||r['RESPONSABLE']||r['Observacion'];
+    if(tieneGestion) gestionados++;
+    if(!(r['RESPONSABLE']||'').trim()) sinAsignar++;
+
+    var resp=normResp(r['RESPONSABLE']);
+    if(resp){
+      if(!porResp[resp]) porResp[resp]={asignados:0,fin:0,tram:0,pen:0,valor:0};
+      var o=porResp[resp];
+      o.asignados++; o.valor+=v;
+      var enCurso=ed==='EN TRAMITE'||ea==='EN TRAMITE'||ed==='EN REVISION'||ea==='EN REVISION';
+      var algunFin=ed==='FINALIZADO'||ea==='FINALIZADO';
+      if(enCurso) o.tram++; else if(algunFin) o.fin++; else o.pen++;
+    }
+
+    var f=String(r['Fecha Emisión']||'').substring(0,7);
+    if(/^\d{4}-\d{2}$/.test(f)){
+      if(!porMes[f]) porMes[f]={emitido:0,gestionado:0};
+      porMes[f].emitido+=v;
+      if(ed==='FINALIZADO'||ea==='FINALIZADO') porMes[f].gestionado+=v;
+    }
+
+    var kd=ed||'Sin gestionar';
+    valorDev[kd]=(valorDev[kd]||0)+v; conteoDev[kd]=(conteoDev[kd]||0)+1;
+    var ka=ea||'Sin gestionar';
+    valorApl[ka]=(valorApl[ka]||0)+v; conteoApl[ka]=(conteoApl[ka]||0)+1;
+  });
+
+  var pctGest=total?Math.round(gestionados/total*100):0;
+  document.getElementById('dash-kpis').innerHTML=
+    kpiCard('Total depósitos', total.toLocaleString('es-CO'), 'en el sistema')+
+    kpiCard('Gestionados', gestionados.toLocaleString('es-CO'), pctGest+'% del total')+
+    kpiCard('Sin gestionar', (total-gestionados).toLocaleString('es-CO'), 'por atender')+
+    kpiCard('Sin responsable', sinAsignar.toLocaleString('es-CO'), 'sin asignar')+
+    kpiCard('Valor total', fmtM(valorTotal), 'suma de depósitos');
+
+  var filas=Object.keys(porResp).filter(n=>porResp[n].asignados>0||RESPONSABLES.indexOf(n)>=0)
+    .sort((a,b)=>porResp[b].asignados-porResp[a].asignados);
+  var body=document.getElementById('dash-resp-body');
+  if(!filas.length){ body.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Aún no hay gestiones asignadas.</td></tr>'; }
+  else{
+    body.innerHTML=filas.map(n=>{
+      var o=porResp[n];
+      var avance=o.asignados?Math.round(o.fin/o.asignados*100):0;
+      return `<tr>
+        <td class="dash-resp-name">${eh(n)}</td>
+        <td style="text-align:right;font-weight:700">${o.asignados.toLocaleString('es-CO')}</td>
+        <td style="text-align:right;color:#86efac">${o.fin.toLocaleString('es-CO')}</td>
+        <td style="text-align:right;color:#93c5fd">${o.tram.toLocaleString('es-CO')}</td>
+        <td style="text-align:right;color:#fdba74">${o.pen.toLocaleString('es-CO')}</td>
+        <td style="text-align:right;font-weight:600">${fmt$(o.valor)}</td>
+        <td style="text-align:center;min-width:110px">
+          <div class="dash-bar"><div class="dash-bar-fill" style="width:${avance}%"></div></div>
+          <div class="dash-pct">${avance}%</div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Gráficos Chart.js — ya no vuelven a recorrer dataBanco, usan lo calculado arriba
+  renderTendencia(porMes);
+  renderDonaEstado('chart-dev','dona-dev-total',valorDev,conteoDev,valorTotal);
+  renderDonaEstado('chart-apl','dona-apl-total',valorApl,conteoApl,valorTotal);
+}
+
+function kpiCard(lbl,val,sub){
+  return '<div class="dash-kpi"><div class="dash-kpi-lbl">'+lbl+'</div><div class="dash-kpi-val">'+val+'</div><div class="dash-kpi-sub">'+sub+'</div></div>';
+}
+
+// Instancias de gráficos (para destruirlas antes de redibujar)
+var _charts = { tendencia:null, dev:null, apl:null };
+
+var ESTADO_COLORES={'FINALIZADO':'#22c55e','EN TRAMITE':'#3b82f6','EN REVISION':'#a855f7','PENDIENTE':'#ea580c','Sin gestionar':'#64748b'};
+
+// ── DONA de estado por VALOR — recibe los acumulados ya calculados por renderDashboard ──
+function renderDonaEstado(canvasId, totalId, valorPorEstado, conteo, valorTotal){
+  if(typeof Chart==='undefined') return;
+  var labels=[],valores=[],colores=[],conteos=[];
+  Object.keys(valorPorEstado).forEach(k=>{
+    if(valorPorEstado[k]>0 || conteo[k]>0){
+      labels.push(k); valores.push(Math.round(valorPorEstado[k]));
+      colores.push(ESTADO_COLORES[k]||'#64748b'); conteos.push(conteo[k]);
+    }
+  });
+  var key = canvasId==='chart-dev'?'dev':'apl';
+  if(_charts[key]){ _charts[key].destroy(); _charts[key]=null; }
+  var ctx=document.getElementById(canvasId);
+  if(!ctx) return;
+  _charts[key]=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels:labels,datasets:[{data:valores,backgroundColor:colores,borderColor:'#0a1f3d',borderWidth:2,_conteos:conteos}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{
+        legend:{position:'right',labels:{color:'#cbd5e1',font:{size:12,family:'DM Sans'},padding:12,boxWidth:14,boxHeight:14}},
+        tooltip:{callbacks:{label:function(c){
+          var pct=valorTotal?Math.round(c.parsed/valorTotal*100):0;
+          var n=c.dataset._conteos[c.dataIndex]||0;
+          return ' '+fmt$(c.parsed)+' ('+pct+'%) · '+n.toLocaleString('es-CO')+' dep.';
+        }}}
+      }
+    }
+  });
+  var te=document.getElementById(totalId);
+  if(te) te.innerHTML='Valor total: <strong>'+fmt$(valorTotal)+'</strong>';
+}
+
+// ── TENDENCIA mensual: emitido vs gestionado — recibe porMes ya calculado por renderDashboard ──
+function renderTendencia(porMes){
+  if(typeof Chart==='undefined') return;
+  var meses=Object.keys(porMes).sort();
+  if(meses.length>24) meses=meses.slice(-24);
+  var emit=meses.map(m=>Math.round(porMes[m].emitido));
+  var gest=meses.map(m=>Math.round(porMes[m].gestionado));
+  var labels=meses.map(m=>{ var p=m.split('-'); var mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return mn[parseInt(p[1])-1]+' '+p[0].substring(2); });
+
+  if(_charts.tendencia){ _charts.tendencia.destroy(); _charts.tendencia=null; }
+  var ctx=document.getElementById('chart-tendencia');
+  if(!ctx) return;
+  _charts.tendencia=new Chart(ctx,{
+    type:'line',
+    data:{labels:labels,datasets:[
+      {label:'Emitido',data:emit,borderColor:'#e8a020',backgroundColor:'rgba(232,160,32,.12)',fill:true,tension:.3,borderWidth:2,pointRadius:2,pointHoverRadius:5},
+      {label:'Gestionado',data:gest,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.10)',fill:true,tension:.3,borderWidth:2,pointRadius:2,pointHoverRadius:5}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{color:'#cbd5e1',font:{size:12,family:'DM Sans'},padding:14,boxWidth:14,usePointStyle:true,pointStyle:'circle'}},
+        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmt$(c.parsed.y); }}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',font:{size:11,family:'DM Sans'},maxRotation:45,minRotation:0}},
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',font:{size:11,family:'DM Sans'},callback:function(v){ return fmtM(v); }}}
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// REPORTES por impuesto (hoy Predial; escalable a Tránsito/ICA/OU/Policía)
+// ════════════════════════════════════════════════════════════
+var _repDatos=[];   // depósitos del impuesto seleccionado (para exportar)
+var _repImpuesto='PREDIAL';
+var _cedulasAnioUnicoCache={};   // anio -> Set(cédulas) cuyos comparendos son 100% de ese año
+var _comparendosCache={};        // anio -> { cedula -> [{nro, valor, fecha}, ...] }
+var _repAnioActivo=null;         // año activo cuando está el modo oficioso de tránsito (null si no)
+
+// Etiqueta legible para mostrar en pantalla/PDF (el filename usa _repImpuesto tal cual)
+function etiquetaImpuesto(){
+  return String(_repImpuesto||'').replace(/_/g,' ');
+}
+
+// ── Trae los comparendos de un año específico para una lista de cédulas,
+// en chunks (evita URLs gigantes con in.(...)). Cachea por año.
+async function cargarComparendosPorCedulas(anio, cedulas){
+  if(!_comparendosCache[anio]) _comparendosCache[anio]={};
+  var cache=_comparendosCache[anio];
+  // Solo pedir las cédulas que aún no están en cache
+  var pendientes=cedulas.filter(function(c){ return c && !(c in cache); });
+  if(!pendientes.length) return cache;
+  // Inicializar a [] para no re-pedir las que no devuelven nada
+  pendientes.forEach(function(c){ cache[c]=[]; });
+  var CHUNK=120;
+  for(var i=0;i<pendientes.length;i+=CHUNK){
+    var grupo=pendientes.slice(i,i+CHUNK);
+    var listaIn=grupo.map(function(c){ return encodeURIComponent(c); }).join(',');
+    var url=SUPABASE_URL+'/rest/v1/expedientes_transito'+
+            '?select=documento,nro_comparendo,valor_total,fecha_comparendo'+
+            '&anio=eq.'+encodeURIComponent(anio)+
+            '&documento=in.('+listaIn+')';
+    try{
+      var res=await fetch(url,{ headers: sbHeaders() });
+      if(!res.ok) continue;
+      var rows=await res.json();
+      rows.forEach(function(r){
+        var d=String(r.documento||'').trim();
+        if(!d) return;
+        if(!cache[d]) cache[d]=[];
+        cache[d].push({ nro:r.nro_comparendo||'', valor:Number(r.valor_total||0), fecha:r.fecha_comparendo||'' });
+      });
+    }catch(e){ /* sigue con el siguiente chunk */ }
+  }
+  return cache;
+}
+
+function depositosDeImpuesto(tipo){
+  return dataBanco.filter(r=>impuestoDe(r).toUpperCase()===tipo.toUpperCase());
+}
+
+// ── Trae (y cachea) el set de cédulas cuyos comparendos de tránsito son TODOS del año dado ──
+// Usa la vista v_transito_anios_por_cedula, que ya agrupa por documento en el servidor
+// (no descarga los 130k+ comparendos individuales, solo el resumen por cédula).
+async function obtenerCedulasAnioUnico(anio){
+  if(_cedulasAnioUnicoCache[anio]) return _cedulasAnioUnicoCache[anio];
+  var filas = await sbFetchAll('v_transito_anios_por_cedula', 'documento',
+    'anios_distintos=eq.1&anio_min=eq.'+encodeURIComponent(anio));
+  var set=new Set();
+  filas.forEach(function(f){ var d=String(f.documento||'').trim(); if(d) set.add(d); });
+  _cedulasAnioUnicoCache[anio]=set;
+  return set;
+}
+
+function renderReporte(){
+  var tipo=(document.getElementById('rep-impuesto')||{value:'PREDIAL'}).value||'PREDIAL';
+
+  // Mostrar/ocultar el filtro de año (solo aplica a Tránsito)
+  var wrapAnio=document.getElementById('rep-anio-wrap');
+  if(wrapAnio) wrapAnio.style.display = (tipo==='TRANSITO') ? 'flex' : 'none';
+
+  if(tipo==='TRANSITO'){
+    var soloAnio=!!(document.getElementById('rep-anio-solo')||{}).checked;
+    var anio=parseInt((document.getElementById('rep-anio')||{}).value,10)||null;
+    if(soloAnio && anio){
+      renderReporteTransitoAnio(anio);
+      return;
+    }
+  }
+
+  var aviso=document.getElementById('rep-anio-aviso');
+  if(aviso) aviso.style.display='none';
+
+  _repImpuesto=tipo;
+  _repAnioActivo=null;
+  _repDatos=depositosDeImpuesto(tipo);
+  pintarReporte();
+}
+
+// ── Modo oficioso: cruza depósitos de Tránsito con cédulas 100% del año seleccionado ──
+async function renderReporteTransitoAnio(anio){
+  var kpis=document.getElementById('rep-kpis');
+  if(kpis) kpis.innerHTML='<div style="padding:20px;color:var(--soft);font-size:12px">🔄 Cruzando comparendos del '+anio+'...</div>';
+
+  var cedulas;
+  try{
+    cedulas = await obtenerCedulasAnioUnico(anio);
+  }catch(e){
+    if(kpis) kpis.innerHTML='<div style="padding:20px;color:#fdba74;font-size:12px">No se pudo cruzar con comparendos de tránsito. Revise conexión con Supabase.</div>';
+    return;
+  }
+
+  _repImpuesto='TRANSITO_'+anio+'_OFICIOSO';
+  _repAnioActivo=anio;
+  _repDatos = depositosDeImpuesto('TRANSITO').filter(function(r){
+    var cid=String(r['Identificación Demandado']||'').trim();
+    return cid && cedulas.has(cid);
+  });
+
+  var aviso=document.getElementById('rep-anio-aviso');
+  if(aviso){
+    aviso.style.display='block';
+    aviso.innerHTML='⚠️ Filtro oficioso activo: se muestran solo depósitos de personas cuyos comparendos de tránsito son <b>100% del año '+anio+'</b> ('+cedulas.size.toLocaleString('es-CO')+' cédulas detectadas en total, tengan o no depósito retenido). Si una persona tiene comparendos de varios años, queda excluida para evitar mezclar años en el mismo oficio.';
+  }
+
+  pintarReporte();
+
+  // Cargar los números de comparendo del año para las cédulas del reporte (no bloqueante)
+  var cedulasReporte=Array.from(new Set(_repDatos.map(function(r){ return String(r['Identificación Demandado']||'').trim(); }).filter(Boolean)));
+  if(aviso) aviso.innerHTML += ' <span id="rep-comp-load" style="color:var(--soft);font-size:11px">· 🔄 cargando números de comparendo...</span>';
+  cargarComparendosPorCedulas(anio, cedulasReporte).then(function(){
+    var marca=document.getElementById('rep-comp-load');
+    if(marca) marca.innerHTML='· ✅ <span style="color:#86efac">comparendos cargados</span>';
+    renderReporteDetalle();   // re-pintar con los números ya disponibles
+  });
+}
+
+function pintarReporte(){
+  var datos=_repDatos;
+
+  // Resumen ejecutivo + clasificación efectiva (cada depósito UNA sola vez)
+  var total=datos.length, valorTotal=0;
+  var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  datos.forEach(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valorTotal+=v;
+    var cls=estadoEfectivo(r);
+    conteoCls[cls]++; valorCls[cls]+=v;
+  });
+  var personasDistintas=new Set(datos.map(r=>String(r['Identificación Demandado']||'').trim()).filter(Boolean)).size;
+  document.getElementById('rep-kpis').innerHTML=
+    repKpi('','Total depósitos', total.toLocaleString('es-CO'), fmt$(valorTotal))+
+    repKpi('purple','Personas (cédulas)', personasDistintas.toLocaleString('es-CO'), 'oficios a generar')+
+    repKpi('green','Devuelto', conteoCls.DEVUELTO.toLocaleString('es-CO'), fmt$(valorCls.DEVUELTO))+
+    repKpi('blue','Aplicado', conteoCls.APLICADO.toLocaleString('es-CO'), fmt$(valorCls.APLICADO))+
+    repKpi('orange','En gestión', conteoCls['EN GESTION'].toLocaleString('es-CO'), fmt$(valorCls['EN GESTION']))+
+    repKpi('orange','Sin gestionar', conteoCls['SIN GESTIONAR'].toLocaleString('es-CO'), fmt$(valorCls['SIN GESTIONAR']));
+
+  // Desglose unificado: cada depósito clasificado UNA sola vez
+  renderRepClasif('rep-clasif', conteoCls, valorCls, valorTotal);
+
+  // Detalle
+  renderReporteDetalle();
+}
+
+// Clasifica cada depósito en UNA sola categoría (sin doble conteo)
+// Prioridad: DEVUELTO > APLICADO > EN GESTION > SIN GESTIONAR
+function estadoEfectivo(r){
+  var dev=normEst(r['ESTADO DEVOLUCION']);
+  var apl=normEst(r['ESTADO APLICACIÓN']);
+  if(dev==='FINALIZADO') return 'DEVUELTO';
+  if(apl==='FINALIZADO') return 'APLICADO';
+  if(dev || apl) return 'EN GESTION';
+  return 'SIN GESTIONAR';
+}
+
+function renderRepClasif(contId, conteo, valor, valorTotal){
+  var orden=['DEVUELTO','APLICADO','EN GESTION','SIN GESTIONAR'];
+  var labels={'DEVUELTO':'✅ Devuelto al contribuyente','APLICADO':'💰 Aplicado a la deuda','EN GESTION':'⏳ En gestión','SIN GESTIONAR':'⚠️ Sin gestionar (cartera bruta)'};
+  var colores={'DEVUELTO':'#22c55e','APLICADO':'#3b82f6','EN GESTION':'#ea580c','SIN GESTIONAR':'#dc2626'};
+  var maxVal=Math.max(1,...orden.map(k=>valor[k]));
+  var html='';
+  orden.forEach(k=>{
+    if(conteo[k]===0) return;
+    var w=Math.round(valor[k]/maxVal*100);
+    var pct=valorTotal?Math.round(valor[k]/valorTotal*100):0;
+    html+=`<div class="rep-erow">
+      <div class="rep-edot" style="background:${colores[k]}"></div>
+      <div class="rep-elbl">${eh(labels[k])}</div>
+      <div class="rep-ebar"><div class="rep-ebar-fill" style="width:${w}%;background:${colores[k]}"></div></div>
+      <div class="rep-evals"><div class="rep-eval">${fmt$(valor[k])} <span style="color:var(--gold2)">(${pct}%)</span></div><div class="rep-ecount">${conteo[k].toLocaleString('es-CO')} dep.</div></div>
+    </div>`;
+  });
+  document.getElementById(contId).innerHTML=html;
+}
+
+function repKpi(cls,lbl,val,sub){
+  return '<div class="rep-kpi '+cls+'"><div class="rep-kpi-lbl">'+lbl+'</div><div class="rep-kpi-val">'+val+'</div><div class="rep-kpi-sub">'+sub+'</div></div>';
+}
+
+function renderRepEstado(contId,campo,datos,valorTotal){
+  var orden=['FINALIZADO','EN TRAMITE','EN REVISION','PENDIENTE','Sin gestionar'];
+  var colores={'FINALIZADO':'#22c55e','EN TRAMITE':'#3b82f6','EN REVISION':'#a855f7','PENDIENTE':'#ea580c','Sin gestionar':'#64748b'};
+  var conteo={},valor={};
+  orden.forEach(k=>{conteo[k]=0;valor[k]=0;});
+  datos.forEach(r=>{
+    var e=normEst(r[campo])||'Sin gestionar';
+    if(conteo[e]===undefined){conteo[e]=0;valor[e]=0;}
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    conteo[e]++; valor[e]+=v;
+  });
+  var maxVal=Math.max(1,...Object.values(valor));
+  var html='';
+  orden.forEach(k=>{
+    if(conteo[k]===0 && k!=='Sin gestionar') return;
+    var w=Math.round(valor[k]/maxVal*100);
+    var pct=valorTotal?Math.round(valor[k]/valorTotal*100):0;
+    html+=`<div class="rep-erow">
+      <div class="rep-edot" style="background:${colores[k]}"></div>
+      <div class="rep-elbl">${eh(k)}</div>
+      <div class="rep-ebar"><div class="rep-ebar-fill" style="width:${w}%;background:${colores[k]}"></div></div>
+      <div class="rep-evals"><div class="rep-eval">${fmt$(valor[k])} <span style="color:var(--gold2)">(${pct}%)</span></div><div class="rep-ecount">${conteo[k].toLocaleString('es-CO')} dep.</div></div>
+    </div>`;
+  });
+  document.getElementById(contId).innerHTML=html;
+}
+
+function renderReporteDetalle(){
+  var buscar=(document.getElementById('rep-buscar')||{value:''}).value.toLowerCase().trim();
+  var datos=_repDatos;
+  if(buscar){
+    datos=datos.filter(r=>(r._buscable!==undefined?r._buscable:construirBuscable(r)).indexOf(buscar)>=0);
+  }
+  document.getElementById('rep-count').textContent=datos.length.toLocaleString('es-CO');
+  var body=document.getElementById('rep-detalle-body');
+  if(!datos.length){ body.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:24px">No hay depósitos de '+eh(etiquetaImpuesto())+'.</td></tr>'; return; }
+  // Cache de comparendos del año activo (si aplica)
+  var compsAnio=(_repAnioActivo && _comparendosCache[_repAnioActivo]) ? _comparendosCache[_repAnioActivo] : null;
+  // Mostrar hasta 500 en pantalla (el export lleva todos)
+  var muestra=datos.slice(0,500);
+  body.innerHTML=muestra.map(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var cid=String(r['Identificación Demandado']||'').trim();
+    var proc=String(r['Proceso']||'').trim() || (expedientesPorCedula[cid]?'📁 '+(expedientesPorCedula[cid][0].radicado||''):'—');
+    // Celda de comparendos: usa el cache del año si está; si no, cae al resumen general
+    var compCell='—';
+    if(compsAnio && compsAnio[cid] && compsAnio[cid].length){
+      var lista=compsAnio[cid];
+      var primeros=lista.slice(0,2).map(function(c){ return eh(c.nro||'?'); }).join(', ');
+      var resto=lista.length>2 ? ' <span style="color:var(--gold2)">+'+(lista.length-2)+'</span>' : '';
+      var titleAttr=lista.map(function(c){ return c.nro; }).join(', ');
+      compCell='<span class="mono" style="font-size:10px" title="'+eh(titleAttr)+'">'+primeros+resto+'</span>';
+    } else if(transitoPorCedula[cid]){
+      // Si no hay cache aún, mostrar la cantidad del resumen general
+      var n=transitoPorCedula[cid].comparendos;
+      compCell='<span style="color:var(--soft);font-size:10px">🚗 '+n+'</span>';
+    }
+    return `<tr>
+      <td class="mono" style="font-size:11px">${eh(r['deposito judicial'])}</td>
+      <td class="mono" style="font-size:11px;color:var(--soft)">${eh(String(r['Fecha Emisión']||'').substring(0,10))}</td>
+      <td class="mono" style="font-size:11px">${eh(r['Identificación Demandado']||'—')}</td>
+      <td style="font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eh(r['Nombre Demandante.1']||'—')}</td>
+      <td class="mono" style="text-align:right;font-weight:700;font-size:12px">${fmt$(v)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${compCell}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(proc)}</td>
+      <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
+      <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(normResp(r['RESPONSABLE'])||'—')}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(r['COMPROBANTE DE EGRESO']||'—')}</td>
+      <td style="font-size:11px;color:var(--soft)">${eh(r['RADICADO DE RESPUESTA']||'—')}</td>
+      <td style="font-size:11px;color:var(--soft);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${eh(r['Observacion']||'')}">${eh(r['Observacion']||'—')}</td>
+    </tr>`;
+  }).join('');
+  if(datos.length>500){
+    body.innerHTML+='<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:12px;font-style:italic">Mostrando 500 de '+datos.length.toLocaleString('es-CO')+' en pantalla. El archivo exportado incluye todos.</td></tr>';
+  }
+}
+
+// ── EXPORTAR EXCEL (2 hojas: Resumen + Detalle) ──
+function exportarReporteExcel(){
+  if(!_repDatos.length){ alert('No hay datos para exportar.'); return; }
+  var valorTotal=0;
+  var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  _repDatos.forEach(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valorTotal+=v;
+    var c=estadoEfectivo(r);
+    conteoCls[c]++; valorCls[c]+=v;
+  });
+  var personasDistintas=new Set(_repDatos.map(r=>String(r['Identificación Demandado']||'').trim()).filter(Boolean)).size;
+  var resumen=[
+    {Concepto:'Impuesto',Valor:etiquetaImpuesto()},
+    {Concepto:'Fecha de generación',Valor:new Date().toLocaleString('es-CO')},
+    {Concepto:'Total depósitos',Valor:_repDatos.length},
+    {Concepto:'Personas distintas (cédulas)',Valor:personasDistintas},
+    {Concepto:'Valor total',Valor:valorTotal},
+    {Concepto:'— Clasificación efectiva (sin doble conteo) —',Valor:''},
+    {Concepto:'Devuelto - cantidad',Valor:conteoCls.DEVUELTO},
+    {Concepto:'Devuelto - valor',Valor:valorCls.DEVUELTO},
+    {Concepto:'Aplicado - cantidad',Valor:conteoCls.APLICADO},
+    {Concepto:'Aplicado - valor',Valor:valorCls.APLICADO},
+    {Concepto:'En gestión - cantidad',Valor:conteoCls['EN GESTION']},
+    {Concepto:'En gestión - valor',Valor:valorCls['EN GESTION']},
+    {Concepto:'Sin gestionar - cantidad',Valor:conteoCls['SIN GESTIONAR']},
+    {Concepto:'Sin gestionar - valor',Valor:valorCls['SIN GESTIONAR']}
+  ];
+  var compsAnioExcel=(_repAnioActivo && _comparendosCache[_repAnioActivo]) ? _comparendosCache[_repAnioActivo] : null;
+  var detalle=_repDatos.map(r=>{
+    var cidExc=String(r['Identificación Demandado']||'').trim();
+    var nrosComp='';
+    if(compsAnioExcel && compsAnioExcel[cidExc]){
+      nrosComp=compsAnioExcel[cidExc].map(function(c){ return c.nro; }).filter(Boolean).join(', ');
+    }
+    return {
+    'Depósito':r['deposito judicial'],
+    'Fecha Emisión':String(r['Fecha Emisión']||'').substring(0,10),
+    'Cédula/NIT':r['Identificación Demandado'],
+    'Demandado':r['Nombre Demandante.1'],
+    'Valor':parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0,
+    'Proceso':r['Proceso']||'',
+    'Clasificación':estadoEfectivo(r),
+    'Estado Devolución':normEst(r['ESTADO DEVOLUCION'])||'Sin gestionar',
+    'Estado Aplicación':normEst(r['ESTADO APLICACIÓN'])||'Sin gestionar',
+    'Comparendos Tránsito':(transitoPorCedula[cidExc]||{}).comparendos||'',
+    'Valor Total Comparendos':(transitoPorCedula[cidExc]||{}).valorTotal||'',
+    ['Nros Comparendo'+(_repAnioActivo?' '+_repAnioActivo:'')]: nrosComp,
+    'Responsable':normResp(r['RESPONSABLE'])||'',
+    'Comprobante Egreso':r['COMPROBANTE DE EGRESO']||'',
+    'Radicado Respuesta':r['RADICADO DE RESPUESTA']||'',
+    'Gestión Tesorería':r['GESTION TESORERIA']||'',
+    'Teléfono':r['TELEFONO DE CONTACTO']||'',
+    'Correo':r['CORREO ELECTRONICO']||'',
+    'Dirección':r['DIRECCION']||'',
+    'Observación':r['Observacion']||''
+    };
+  });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(resumen),'Resumen');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(detalle),'Detalle');
+  XLSX.writeFile(wb,'Reporte_'+_repImpuesto+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ── EXPORTAR PDF (resumen + tabla) ──
+function exportarReportePDF(){
+  if(!_repDatos.length){ alert('No hay datos para exportar.'); return; }
+  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  var W=doc.internal.pageSize.getWidth();
+
+  var valorTotal=0;
+  var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
+  _repDatos.forEach(r=>{
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valorTotal+=v;
+    var c=estadoEfectivo(r);
+    conteoCls[c]++; valorCls[c]+=v;
+  });
+  var personasDistintas=new Set(_repDatos.map(r=>String(r['Identificación Demandado']||'').trim()).filter(Boolean)).size;
+
+  // Encabezado simple pero bonito
+  doc.setFillColor(10,31,61); doc.rect(0,0,W,60,'F');
+  doc.setTextColor(232,160,32); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('Reporte de '+etiquetaImpuesto(), 40, 30);
+  doc.setTextColor(200,210,225); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello', 40, 46);
+  doc.setTextColor(150,160,175);
+  doc.text('Generado: '+new Date().toLocaleString('es-CO'), W-40, 46, {align:'right'});
+
+  // Resumen en cajas
+  var y=80;
+  doc.setTextColor(40,40,40); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Resumen ejecutivo · clasificación efectiva (cada depósito una sola vez)', 40, y);
+  y+=8;
+  var resumenRows=[
+    ['Total depósitos', _repDatos.length.toLocaleString('es-CO'), fmt$(valorTotal)],
+    ['Personas distintas (cédulas)', personasDistintas.toLocaleString('es-CO'), ''],
+    ['Devuelto al contribuyente', conteoCls.DEVUELTO.toLocaleString('es-CO'), fmt$(valorCls.DEVUELTO)],
+    ['Aplicado a la deuda', conteoCls.APLICADO.toLocaleString('es-CO'), fmt$(valorCls.APLICADO)],
+    ['En gestión', conteoCls['EN GESTION'].toLocaleString('es-CO'), fmt$(valorCls['EN GESTION'])],
+    ['Sin gestionar (cartera bruta)', conteoCls['SIN GESTIONAR'].toLocaleString('es-CO'), fmt$(valorCls['SIN GESTIONAR'])]
+  ];
+  doc.autoTable({
+    startY:y+6,
+    head:[['Concepto','Cantidad','Valor']],
+    body:resumenRows,
+    theme:'grid',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:9},
+    bodyStyles:{fontSize:9,textColor:[40,40,40]},
+    margin:{left:40,right:40},
+    columnStyles:{1:{halign:'right'},2:{halign:'right'}}
+  });
+
+  // Tabla de detalle
+  var detalleRows=_repDatos.map(r=>[
+    r['deposito judicial']||'',
+    String(r['Fecha Emisión']||'').substring(0,10),
+    r['Identificación Demandado']||'',
+    (r['Nombre Demandante.1']||'').substring(0,28),
+    fmt$(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),
+    (normEst(r['ESTADO DEVOLUCION'])||'—'),
+    (normEst(r['ESTADO APLICACIÓN'])||'—'),
+    (normResp(r['RESPONSABLE'])||'—').substring(0,20)
+  ]);
+  doc.autoTable({
+    startY:doc.lastAutoTable.finalY+20,
+    head:[['Depósito','Fecha','Cédula','Demandado','Valor','Devolución','Aplicación','Responsable']],
+    body:detalleRows,
+    theme:'striped',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:8},
+    bodyStyles:{fontSize:7,textColor:[50,50,50]},
+    alternateRowStyles:{fillColor:[245,247,250]},
+    margin:{left:40,right:40},
+    columnStyles:{4:{halign:'right'}},
+    didDrawPage:function(data){
+      var page=doc.internal.getNumberOfPages();
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Página '+doc.internal.getCurrentPageInfo().pageNumber, W-40, doc.internal.pageSize.getHeight()-15, {align:'right'});
+    }
+  });
+
+  doc.save('Reporte_'+_repImpuesto+'_'+new Date().toISOString().slice(0,10)+'.pdf');
+}
+
+function eh(v){if(v===null||v===undefined)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Copiar texto al portapapeles con feedback visual breve
+function copiar(btn, texto){
+  texto=String(texto||'').trim();
+  function feedback(){ var prev=btn.textContent; btn.textContent='✓'; btn.classList.add('ok'); setTimeout(()=>{btn.textContent=prev;btn.classList.remove('ok');},1200); }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texto).then(feedback).catch(()=>fallbackCopiar(texto,feedback));
+  } else { fallbackCopiar(texto,feedback); }
+}
+function fallbackCopiar(texto,cb){
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=texto; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    if(cb) cb();
+  }catch(e){}
+}
+
+</script>
+</body>
+</html>
