@@ -80,7 +80,7 @@
     .twrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .tcols-adm{display:grid;grid-template-columns:100px 110px 1fr 180px 105px 155px 130px}
     .tcols-fal{display:grid;grid-template-columns:100px 100px 110px 1fr 155px 105px 130px}
-    .tcols-otr{display:grid;grid-template-columns:100px 120px 1fr 170px 105px 155px 130px}
+    .tcols-otr{display:grid;grid-template-columns:100px 120px 1fr 170px 105px 155px 130px 120px}
     .tcols-his{display:grid;grid-template-columns:100px 120px 1fr 155px 105px 130px 110px}
     .thead{padding:10px 14px;background:rgba(255,255,255,.05);border-bottom:1px solid var(--border)}
     .thead .cel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--soft)}
@@ -118,6 +118,15 @@
     .be-venc{background:rgba(239,68,68,.12);color:#f87171}
     .be-anulado{background:rgba(120,120,130,.15);color:#9ca3af;text-decoration:line-through}
     .be-superado{background:rgba(34,197,94,.12);color:#4ade80}
+    .be-improcedente{background:rgba(239,68,68,.12);color:#f87171}
+    .be-archivado{background:rgba(120,120,130,.15);color:#9ca3af}
+    /* NOTIFICADO */
+    .notif-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+    .notif-pend{background:rgba(249,115,22,.15);color:#fb923c;border-color:rgba(249,115,22,.3)}
+    .notif-pend:hover{background:rgba(249,115,22,.28)}
+    .notif-ok{background:rgba(34,197,94,.12);color:#4ade80;border-color:rgba(34,197,94,.25)}
+    .notif-ok:hover{background:rgba(34,197,94,.22)}
+    .fila.sin-notif{background:rgba(249,115,22,.05)}
     /* PAGINACIÓN */
     .pag{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
     .pag-btns{display:flex;gap:4px}
@@ -195,7 +204,7 @@
     .toast.show{transform:translateY(0);opacity:1}
     .toast.ok{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.12)}
     .toast.err{border-color:rgba(239,68,68,.4)}
-    @media(max-width:900px){.tcols-adm,.tcols-fal,.tcols-otr,.tcols-his{grid-template-columns:90px 1fr 90px}.col-hide{display:none}.main{padding:16px}.topbar{padding:0 16px}.topbar-mid{display:none}.nav-tabs{padding:0 16px}.m-grid{grid-template-columns:1fr}}
+    @media(max-width:900px){.tcols-adm,.tcols-fal,.tcols-his{grid-template-columns:90px 1fr 90px}.tcols-otr{grid-template-columns:90px 1fr 90px 84px}.col-hide{display:none}.main{padding:16px}.topbar{padding:0 16px}.topbar-mid{display:none}.nav-tabs{padding:0 16px}.m-grid{grid-template-columns:1fr}}
     /* ── INFORME EJECUTIVO ── */
     .informe-doc{background:#fff;color:#111827;max-width:840px;width:94vw;max-height:88vh;overflow:auto;border-radius:14px;padding:30px 38px;font-size:12.5px;line-height:1.55}
     .inf-h{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:3px solid #0f2d5e;padding-bottom:12px;margin-bottom:16px;flex-wrap:wrap}
@@ -326,12 +335,13 @@
   <div class="filtros">
     <input class="fi fi-buscar" id="fo-q" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderOtros()"/>
     <select class="fi" id="fo-abo" onchange="renderOtros()"><option value="">Todos los abogados</option></select>
-    <select class="fi" id="fo-est" onchange="renderOtros()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
+    <select class="fi" id="fo-est" onchange="renderOtros()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option><option>Improcedente</option><option>Archivado</option></select>
+    <select class="fi" id="fo-notif" onchange="renderOtros()"><option value="">Notificado: todos</option><option value="no">🔔 Pendientes de notificar</option><option value="si">✅ Ya notificados</option></select>
     <button class="btn-refresh" style="background:rgba(232,160,32,.2);border-color:rgba(232,160,32,.4);color:#e8a020" onclick="abrirNuevoIncidente()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo incidente</button>
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('otros')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
   </div>
   <div class="twrap">
-    <div class="thead tcols-otr"><div class="cel">Urgencia</div><div class="cel">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div></div>
+    <div class="thead tcols-otr"><div class="cel">Urgencia</div><div class="cel">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div><div class="cel">Notif.</div></div>
     <div id="body-otros"><div class="loader"><div class="spinner"></div></div></div>
   </div>
   <div class="pag" id="pag-otros" style="display:none"><span id="pag-inc-info"></span><div class="pag-btns" id="pag-inc-btns"></div></div>
@@ -500,6 +510,11 @@
         <button class="mbtn mbtn-s" style="border-color:rgba(251,146,60,.3);color:#fdba74" onclick="escalarCaso('incidente')">⚡ Crear incidente</button>
         <button class="mbtn mbtn-s" style="border-color:rgba(34,197,94,.3);color:#86efac" onclick="marcarHechoSuperado()">✅ Hecho superado</button>
       </div>
+      <div id="m-acciones-inc" class="m-actions" style="margin-top:10px;padding-top:14px;border-top:1px dashed var(--border);display:none">
+        <div style="width:100%;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cerrar este incidente</div>
+        <button class="mbtn mbtn-s" style="border-color:rgba(239,68,68,.3);color:#fca5a5" onclick="marcarEstadoIncidente('Improcedente')">🚫 Improcedente</button>
+        <button class="mbtn mbtn-s" style="border-color:rgba(120,120,130,.35);color:#9ca3af" onclick="marcarEstadoIncidente('Archivado')">🗄️ Archivado</button>
+      </div>
     </div>
 
     <!-- PESTAÑA GESTIÓN JURÍDICA -->
@@ -508,7 +523,7 @@
       <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Para abogados — estado del proceso y radicado de respuesta</div>
       <div class="mf full" style="margin-bottom:12px">
         <label>Estado</label>
-        <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option><option>Hecho superado</option><option>Anulado</option></select>
+        <select class="esel" id="m-esel" style="width:100%"><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option><option>Hecho superado</option><option>Anulado</option><option>Improcedente</option><option>Archivado</option></select>
       </div>
       <div class="mf full" id="m-rad-wrap" style="margin-bottom:12px">
         <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
@@ -561,6 +576,12 @@
           <option>Yoban Jimenez</option>
         </select>
       </div>
+
+      <!-- Toggle: incidente ya notificado (solo para incidentes/desacatos) -->
+      <label id="m-notif-wrap" style="display:none;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:8px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="m-notificado" onchange="toggleNotificadoModal()" style="width:16px;height:16px;cursor:pointer;accent-color:#22c55e">
+        <span style="font-size:13px;color:var(--text)">✅ Este incidente ya fue <strong>notificado</strong></span>
+      </label>
 
       <!-- Toggle: esta tutela no registra PQR -->
       <label id="m-nopqr-wrap" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;cursor:pointer;user-select:none">
@@ -865,7 +886,8 @@ const MAPA_SB_A_SHEET = {
   radicado_pqr:          "PQR",
   respuesta_pqr:         "RESPUESTA PQR",
   radicado_cumplimiento: "RADICADO DE CUMPLIMIENTO",
-  sharepoint:            "SHAREPOINT"
+  sharepoint:            "SHAREPOINT",
+  notificado:            "NOTIFICADO"
 };
 // Mapa inverso: nombre del Sheet → columna Supabase (para guardar)
 const MAPA_SHEET_A_SB = Object.fromEntries(Object.entries(MAPA_SB_A_SHEET).map(([k,v])=>[v,k]));
@@ -966,7 +988,7 @@ function pestanaPorRol(){
 }
 const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"];
 const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
-const EST_HIST    = ["Finalizado","Respondido","Anulado","Hecho superado"];
+const EST_HIST    = ["Finalizado","Respondido","Anulado","Hecho superado","Improcedente","Archivado"];
 const PER_PAGE    = 50;
 
 let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
@@ -1207,6 +1229,108 @@ async function marcarHechoSuperado(){
       toast("❌ Error al guardar: "+e.message,"err");
     }
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// IMPROCEDENTE / ARCHIVADO → cierra un incidente/desacato con estado especial
+// (mismo patrón que Hecho superado, pero solo para la pestaña Incidentes)
+// ════════════════════════════════════════════════════════════
+async function marcarEstadoIncidente(estado){
+  if(!actual) return;
+  const ok = await confirmar(
+    `¿Marcar como ${estado}?`,
+    `${actual["ACCIONANTE"]||"Este incidente"} pasará a estado «${estado}» y saldrá de la lista activa hacia el histórico.`
+  );
+  if(!ok) return;
+  toast("⏳ Guardando...","");
+  try{
+    if(USAR_SUPABASE && actual._id){
+      const guardado = await Repo.actualizar(actual._id, { "ESTADO": estado });
+      if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
+      const idx=incidentes.findIndex(r=>r._id===actual._id);
+      if(idx>=0) incidentes[idx]["ESTADO"]=estado;
+      actual["ESTADO"]=estado;
+      toast(`✅ Marcado como ${estado}`,"ok");
+      renderAll();
+      document.getElementById("overlay").classList.remove("open");
+    } else {
+      throw new Error("No se encontró el id del registro");
+    }
+  }catch(e){
+    if(/JWT expired|401/i.test(e.message)){
+      toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
+    } else {
+      toast("❌ Error al guardar: "+e.message,"err");
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// NOTIFICADO (Incidentes/Desacatos) — Verónica notifica todos los días;
+// este flag distingue los que YA se notificaron alguna vez de los que
+// siguen pendientes (nuevos o aún no gestionados).
+// ════════════════════════════════════════════════════════════
+async function toggleNotifRow(i, ev){
+  if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+  const r = window._pagOtros && window._pagOtros[i];
+  if(!r) return;
+  if(!(USAR_SUPABASE && r._id)){ toast("⚠️ No se encontró el id del registro","err"); return; }
+  const nuevoValor = r["NOTIFICADO"]==="true" ? "false" : "true";
+  try{
+    const guardado = await Repo.actualizar(r._id, { "NOTIFICADO": nuevoValor });
+    if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
+    r["NOTIFICADO"]=nuevoValor;
+    const idxG = incidentes.findIndex(x=>x._id===r._id);
+    if(idxG>=0) incidentes[idxG]["NOTIFICADO"]=nuevoValor;
+    if(actual && actual._id===r._id){
+      actual["NOTIFICADO"]=nuevoValor;
+      const chk=document.getElementById("m-notificado");
+      if(chk) chk.checked = nuevoValor==="true";
+    }
+    toast(nuevoValor==="true" ? "✅ Marcado como notificado" : "↩️ Marcado como pendiente de notificar","ok");
+    renderOtros();
+  }catch(e){
+    if(/JWT expired|401/i.test(e.message)){
+      toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
+    } else {
+      toast("❌ Error al guardar: "+e.message,"err");
+    }
+  }
+}
+
+// Toggle de "Notificado" desde dentro del modal (pestaña Técnica)
+async function toggleNotificadoModal(){
+  if(!actual) return;
+  const chk=document.getElementById("m-notificado");
+  const checked = chk.checked;
+  if(!(USAR_SUPABASE && actual._id)){
+    chk.checked=!checked;
+    toast("⚠️ No se encontró el id del registro","err");
+    return;
+  }
+  const nuevoValor = checked ? "true" : "false";
+  try{
+    const guardado = await Repo.actualizar(actual._id, { "NOTIFICADO": nuevoValor });
+    if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
+    actual["NOTIFICADO"]=nuevoValor;
+    const idx=incidentes.findIndex(r=>r._id===actual._id);
+    if(idx>=0) incidentes[idx]["NOTIFICADO"]=nuevoValor;
+    toast(checked ? "✅ Marcado como notificado" : "↩️ Marcado como pendiente de notificar","ok");
+    renderOtros();
+  }catch(e){
+    chk.checked=!checked;
+    if(/JWT expired|401/i.test(e.message)){
+      toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
+    } else {
+      toast("❌ Error al guardar: "+e.message,"err");
+    }
+  }
+}
+
+// Botón/badge de la celda "Notif." en la tabla de incidentes
+function notifCellBtn(r,i){
+  const on = r["NOTIFICADO"]==="true";
+  return `<button type="button" class="notif-btn ${on?"notif-ok":"notif-pend"}" onclick="toggleNotifRow(${i},event)" title="${on?"Ya notificado — clic para desmarcar":"Pendiente de notificar — clic para marcar"}">${on?"✅ Notif.":"🔔 Pendiente"}</button>`;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1480,7 +1604,7 @@ const normNom=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\
 const matchAbo=(campo,abo)=>{const nc=normNom(campo),na=normNom(abo);if(nc===na)return true;const partes=na.split(" ");return partes.length>=2&&nc.includes(partes[0])&&nc.includes(partes[partes.length-1]);};
 
 function semaforo(dias,estado){
-  if (EST_HIST.includes(estado)) return`<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":estado==="Hecho superado"?"Superado":estado==="Anulado"?"Anulado":"Fin"}</span>`;
+  if (EST_HIST.includes(estado)) return`<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":estado==="Hecho superado"?"Superado":estado==="Anulado"?"Anulado":estado==="Improcedente"?"Improcedente":estado==="Archivado"?"Archivado":"Fin"}</span>`;
   if (dias===null) return`<span class="sem sem-g"><span class="sem-dot"></span>Sin fecha</span>`;
   if (dias<0)  return`<span class="sem sem-r"><span class="sem-dot"></span>Vencido</span>`;
   if (dias===0)return`<span class="sem sem-r"><span class="sem-dot"></span>¡Hoy!</span>`;
@@ -1490,7 +1614,7 @@ function semaforo(dias,estado){
   return`<span class="sem sem-v"><span class="sem-dot"></span>${dias}d</span>`;
 }
 function badgeTipo(t){const m={"Tutela":"bt-tutela","Admite":"bt-tutela","Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Incidente":"bt-sent","Impugnación":"bt-impug","Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc","Desacato":"bt-inc","Incidente de desacato":"bt-inc"};return`<span class="bt ${m[t]||"bt-otro"}">${esc(t)||"—"}</span>`;}
-function badgeEst(e){const m={"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Vencido":"be-venc","Anulado":"be-anulado","Hecho superado":"be-superado"};return`<span class="bt ${m[e]||""}">${esc(e)||"—"}</span>`;}
+function badgeEst(e){const m={"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Vencido":"be-venc","Anulado":"be-anulado","Hecho superado":"be-superado","Improcedente":"be-improcedente","Archivado":"be-archivado"};return`<span class="bt ${m[e]||""}">${esc(e)||"—"}</span>`;}
 function scard(n,label,cls){return`<div class="scard"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}</div></div>`;}
 function clsFila(dias,est){if(EST_HIST.includes(est))return"";if(dias!==null&&dias<=2)return" urgente";if(dias!==null&&dias<=5)return" proximo";return"";}
 
@@ -1594,26 +1718,34 @@ function renderOtros(){
   const q=document.getElementById("fo-q").value;
   const abo=document.getElementById("fo-abo").value;
   const est=document.getElementById("fo-est").value;
+  const notif=document.getElementById("fo-notif").value;
   const datos=byUrg(incidentes.filter(r=>{
     if(!est&&EST_HIST.includes(r["ESTADO"]))return false;
     if(abo&&!matchAbo(r["RESPONSABLE"],abo))return false;
     if(est&&r["ESTADO"]!==est)return false;
+    if(notif==="no"&&r["NOTIFICADO"]==="true")return false;
+    if(notif==="si"&&r["NOTIFICADO"]!=="true")return false;
     return fBusc(r,q);
   }));
   const activos=datos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const nuevos=activos.filter(r=>r["ESTADO"]==="Nuevo");
+  const pendNotif=activos.filter(r=>r["NOTIFICADO"]!=="true");
   document.getElementById("stats-inc").innerHTML=
     scardQuick(activos.length,"Total activos","c-amber","otr",null)+
     scardQuick(urg.length,"Urgentes ≤3d","c-red","otr","urg3")+
-    scardClick(nuevos.length,"Nuevos","c-purple","fo-est","Nuevo");
+    scardClick(nuevos.length,"Nuevos","c-purple","fo-est","Nuevo")+
+    scardClick(pendNotif.length,"🔔 Pendientes notificar","c-red","fo-notif","no");
   document.getElementById("badge-otros").textContent=activos.length;
   const visiblesOtr=aplicarQuick(datos,quickOtr);
   const pag=renderPag(visiblesOtr,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
   const el=document.getElementById("body-otros");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagOtros=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
+  el.innerHTML=pag.map((r,i)=>{
+    const sinNotif = r["NOTIFICADO"]!=="true" && !EST_HIST.includes(r["ESTADO"]);
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])}${sinNotif?" sin-notif":""} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel">${notifCellBtn(r,i)}</div></div>`;
+  }).join("");
   window._exportOtros=visiblesOtr;
 }
 
@@ -1756,7 +1888,7 @@ function exportarTabla(tab){
   const mapas={
     admites:{datos:()=>window._exportAdmites||[],nombre:"Admites",cols:["ACCIONANTE","CC / NIT","RADICADO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL","RESPUESTA PQR","ENCARGADO PQR"]},
     fallos: {datos:()=>window._exportFallos||[], nombre:"Fallos_Sentencias",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL"]},
-    otros:  {datos:()=>window._exportOtros||[], nombre:"Incidentes_Desacatos",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","RESPUESTA PQR","ENCARGADO PQR"]},
+    otros:  {datos:()=>window._exportOtros||[], nombre:"Incidentes_Desacatos",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","NOTIFICADO","RESPUESTA PQR","ENCARGADO PQR"]},
     historico:{datos:()=>window._exportHistorico||[],nombre:"Historico",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL","RESPUESTA PQR","ENCARGADO PQR"]}
   };
   const m=mapas[tab];if(!m)return;
@@ -1934,6 +2066,18 @@ function abrirModal(da, origen){
     const tipoR = (r["TIPO"]||"").toLowerCase();
     const esFalloOInc = /fallo|sentencia|incidente|desacato/.test(tipoR);
     escBox.style.display = (esTutela && !esFalloOInc) ? "flex" : "none";
+  }
+  // Acciones rápidas de cierre para Incidentes/Desacatos (Improcedente / Archivado)
+  const accIncBox=document.getElementById("m-acciones-inc");
+  if(accIncBox){
+    accIncBox.style.display = (origenModal==="incidente" && !enHistorico) ? "flex" : "none";
+  }
+  // Toggle "Notificado" (solo Incidentes/Desacatos) — pestaña Técnica
+  const notifWrap=document.getElementById("m-notif-wrap");
+  if(notifWrap){
+    const esIncNotif = origenModal==="incidente";
+    notifWrap.style.display = esIncNotif ? "flex" : "none";
+    if(esIncNotif) document.getElementById("m-notificado").checked = (r["NOTIFICADO"]==="true");
   }
   // Botón Editar: disponible para cualquier registro que venga de Supabase (_id)
   const edWrap=document.getElementById("m-editar-wrap");
@@ -2727,5 +2871,4 @@ function generarInformeTutelas(){
 <div class="overlay" id="overlay-informe" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="informe-doc" id="informe-doc"></div>
 </div>
-</body>
-</html>
+</b
