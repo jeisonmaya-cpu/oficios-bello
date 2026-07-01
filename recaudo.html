@@ -119,6 +119,7 @@ thead th.sorted-asc::after{content:' ↑';color:var(--gold);font-weight:900}
 thead th.sorted-desc::after{content:' ↓';color:var(--gold);font-weight:900}
 tbody tr{border-bottom:1px solid var(--border2);transition:background .12s;cursor:pointer}
 tbody tr:hover{background:rgba(255,255,255,.06)}
+tbody tr:focus{outline:2px solid var(--blue2);outline-offset:-2px;background:rgba(45,141,232,.08)}
 tbody tr.gestionado{border-left:2px solid rgba(22,163,74,.5)}
 tbody td{padding:10px 12px;vertical-align:middle;color:var(--text);font-size:13px}
 td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
@@ -189,6 +190,9 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   outline:none;color:var(--text);background:rgba(255,255,255,.07);transition:all .2s}
 .campo input:focus,.campo select:focus,.campo textarea:focus{
   border-color:rgba(45,141,232,.5);background:rgba(45,141,232,.1)}
+/* Validación ligera (ej. teléfono): un campo vacío con "pattern" no cuenta como inválido,
+   solo se marca en rojo si el usuario escribió algo que no coincide con el formato esperado. */
+.campo input:invalid{border-color:rgba(220,38,38,.5)}
 .campo textarea{resize:vertical;min-height:64px}
 .campo select option{background:#0f2d5e}
 
@@ -336,6 +340,18 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .v360-total-val{font-weight:800;color:var(--gold2);font-size:15px;margin-left:auto}
 .copy-todos{font-size:10px !important;padding:3px 9px !important;white-space:nowrap;font-family:'DM Sans',sans-serif;font-weight:600}
 
+/* ── BUSCADOR GLOBAL (topbar) ── */
+.global-results{position:absolute;top:38px;left:0;width:100%;max-height:360px;overflow-y:auto;
+  background:#0d1a30;border:1px solid var(--border);border-radius:var(--radius-sm);
+  box-shadow:0 20px 40px rgba(0,0,0,.55);z-index:200;display:none}
+.global-results.open{display:block}
+.gr-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;
+  border-bottom:1px solid var(--border2);cursor:pointer;transition:background .15s}
+.gr-item:hover{background:rgba(255,255,255,.06)}
+.gr-item:last-child{border-bottom:none}
+.gr-acc{font-size:13px;font-weight:600;color:var(--text)}
+.gr-sub{font-size:11px;color:var(--soft);margin-top:2px}
+
 /* ── SYNC PILL ── */
 .sync-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
   font-size:11px;font-weight:500;background:var(--surface);border:1px solid var(--border);color:var(--soft)}
@@ -357,6 +373,10 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .pend-stat.err .pend-stat-num{color:#f87171}
 .pend-stat.ok .pend-stat-num{color:#86efac}
 
+/* ── SKELETON DE CARGA INICIAL ── */
+@keyframes skel-pulse{0%,100%{opacity:.35}50%{opacity:.75}}
+.skel-cell{display:inline-block;height:11px;border-radius:4px;background:rgba(255,255,255,.14);animation:skel-pulse 1.1s ease-in-out infinite}
+
 /* ── INDICADOR NOTAS EN FILA ── */
 .nota-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
   background:var(--gold);margin-left:5px;vertical-align:middle;flex-shrink:0}
@@ -366,6 +386,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   main{padding:16px 12px 80px}
   .cg2,.cg3{grid-template-columns:1fr}
   .banco-grid{grid-template-columns:1fr}
+  .tb-mid{display:none}
 }
 </style>
 </head>
@@ -379,6 +400,10 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
       <div class="tb-title">Recaudo Histórico</div>
       <div class="tb-sub">Depósitos judiciales · Alcaldía de Bello</div>
     </div>
+  </div>
+  <div class="tb-mid" style="flex:1;display:flex;justify-content:center;position:relative;max-width:420px;margin:0 auto">
+    <input id="global-buscar" class="finp" style="width:100%" placeholder="🔍 Buscar depósito, cédula o nombre..." oninput="buscarGlobalDebounced()" onkeydown="if(event.key==='Escape'){this.value='';cerrarBusquedaGlobal();}"/>
+    <div id="global-resultados" class="global-results"></div>
   </div>
   <div class="tb-right">
     <div class="sync-pill" id="sync-pill">
@@ -845,7 +870,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
           <input type="text" id="m-gest-tes" placeholder="Funcionario tesorería"/>
         </div>
         <div class="campo"><label>Teléfono de contacto</label>
-          <input type="text" id="m-telefono" placeholder="Teléfono contribuyente"/>
+          <input type="tel" id="m-telefono" placeholder="Teléfono contribuyente" pattern="[0-9+()\s.-]{7,20}" title="Solo números, espacios, +, -, ( ) y puntos. Entre 7 y 20 caracteres."/>
         </div>
       </div>
       <div class="cg2" style="margin-bottom:10px">
@@ -921,20 +946,43 @@ function sbHeaders(extra){
   return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer " + SUPABASE_ANON }, extra || {});
 }
 
-// ── Trae TODAS las filas de una tabla/vista paginando de a 1000 (límite REST de Supabase) ──
+// ── Trae TODAS las filas de una tabla/vista, paginando de a 1000 (límite REST de Supabase) ──
+// Pide la primera página con "Prefer: count=exact" para conocer el total de una vez,
+// y si el servidor lo entrega, pide TODAS las páginas restantes EN PARALELO (antes se
+// pedían una por una, esperando cada respuesta antes de pedir la siguiente).
 async function sbFetchAll(tabla, select, extraQuery){
-  var todos = [];
-  var desde = 0;
   var bloque = 1000;
+  var url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (extraQuery ? "&" + extraQuery : "");
+
+  var primera = await fetch(url, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact" }) });
+  if(!primera.ok) throw new Error("Supabase HTTP " + primera.status);
+  var todos = await primera.json();
+  if(todos.length < bloque) return todos; // ya vino todo en la primera página
+
+  var cr = primera.headers.get("content-range"); // ej. "0-999/48321"
+  var total = (cr && cr.indexOf("/") >= 0) ? parseInt(cr.split("/")[1], 10) : NaN;
+
+  if(total && !isNaN(total)){
+    var paginas = [];
+    for(var desde = bloque; desde < total && desde <= 200000; desde += bloque) paginas.push(desde);
+    var resultados = await Promise.all(paginas.map(function(d){
+      return fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items" }) })
+        .then(function(res){ return res.ok ? res.json() : []; });
+    }));
+    resultados.forEach(function(chunk){ todos = todos.concat(chunk); });
+    return todos;
+  }
+
+  // Respaldo: si el servidor no devolvió el conteo exacto (poco común), seguir en serie como antes.
+  var desde2 = bloque;
   while(true){
-    var url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (extraQuery ? "&" + extraQuery : "");
-    var res = await fetch(url, { headers: sbHeaders({ Range: desde + "-" + (desde + bloque - 1), "Range-Unit": "items" }) });
+    var res = await fetch(url, { headers: sbHeaders({ Range: desde2 + "-" + (desde2 + bloque - 1), "Range-Unit": "items" }) });
     if(!res.ok) throw new Error("Supabase HTTP " + res.status);
     var chunk = await res.json();
     todos = todos.concat(chunk);
     if(chunk.length < bloque) break;
-    desde += bloque;
-    if(desde > 200000) break; // tope de seguridad
+    desde2 += bloque;
+    if(desde2 > 200000) break;
   }
   return todos;
 }
@@ -961,6 +1009,9 @@ var transitoPorCedula = {};
 var _textoDepositos = '';
 // Huella de campos del modal al abrir (para detectar cambios sin guardar)
 var _huellaModal = null;
+// Marca de tiempo de última edición del registro al momento de abrir el modal
+// (para detectar si otra persona lo editó mientras lo teníamos abierto)
+var _ultimaEdicionAlAbrir = null;
 
 // ── DEBOUNCE de buscadores: espera 300ms a que el usuario deje de teclear ──
 // Evita recalcular los 48 mil registros en cada tecla (mejora rendimiento en máquinas modestas)
@@ -972,8 +1023,15 @@ function renderReporteDetalleDebounced(){ clearTimeout(_debRep); _debRep=setTime
 // ── Mapeo: columna Supabase (snake) -> clave interna que usa la UI (igual que antes) ──
 // La UI existente usa nombres como 'deposito judicial', 'ESTADO DEVOLUCION', etc.
 // Convertimos cada fila de Supabase a ese formato para no tocar la lógica de render.
+// Campos que alimentan la búsqueda de texto libre en Registros/Pendientes/Reportes.
+// Se concatenan UNA sola vez por fila (al cargar o al editar), en vez de volver a
+// concatenar y pasar a minúsculas las ~48.000 filas en cada tecla que se escribe.
+function construirBuscable(fila){
+  return ((fila['deposito judicial']||'')+' '+(fila['Nombre Demandante.1']||'')+' '+(fila['Identificación Demandado']||'')+' '+(fila['Proceso']||'')+' '+(fila['Número del Proceso']||'')+' '+(fila['RESPONSABLE']||'')).toLowerCase();
+}
+
 function filaSupaAUI(r){
-  return {
+  var fila = {
     _id: r.id,                                   // id técnico (para UPDATE)
     'deposito judicial':        r.deposito_judicial || '',
     'Fecha Emisión':            r.fecha_emision || '',
@@ -1007,8 +1065,11 @@ function filaSupaAUI(r){
     'Pendiente convenio':       '',
     'CI INICIAL':               '',
     _editadoPor:                r.editado_por || '',
-    _editadoFecha:              r.ultima_edicion ? new Date(r.ultima_edicion).toLocaleString('es-CO') : ''
+    _editadoFecha:              r.ultima_edicion ? new Date(r.ultima_edicion).toLocaleString('es-CO') : '',
+    _ultimaEdicionISO:          r.ultima_edicion || null   // valor crudo, para detectar ediciones concurrentes
   };
+  fila._buscable = construirBuscable(fila);
+  return fila;
 }
 
 // ── Mapeo inverso: claves UI -> columnas Supabase (solo campos de gestión editables) ──
@@ -1043,33 +1104,54 @@ function setSS(estado, lbl){
 // ════════════════════════════════════════════════════════════
 // CARGA INICIAL
 // ════════════════════════════════════════════════════════════
+// Esqueleto de carga: mientras cargarTodo() trae los datos, la tabla ya no
+// se queda en blanco varios segundos — se ven filas "pulsando" y un aviso claro.
+function mostrarCargaInicial(){
+  if(dataBanco.length) return; // ya hay datos (ej. un recargarTodo posterior); no tapar la tabla real
+  var tb=document.getElementById('tbody');
+  if(tb){
+    var fila='<tr>'+Array.from({length:11}).map(function(){
+      var w=40+Math.floor(Math.random()*70);
+      return '<td><span class="skel-cell" style="width:'+w+'px"></span></td>';
+    }).join('')+'</tr>';
+    tb.innerHTML=Array.from({length:8}).map(function(){return fila;}).join('');
+  }
+  var pi=document.getElementById('pag-info');
+  if(pi) pi.textContent='Cargando depósitos… esto puede tardar unos segundos con muchos registros.';
+}
 async function cargarTodo(){
   setSS('loading','Cargando desde Supabase...');
+  mostrarCargaInicial();
   try{
-    // 1) Depósitos
-    var filas = await sbFetchAll('recaudo', '*', 'order=fecha_emision.desc.nullslast');
-    dataBanco = filas.map(filaSupaAUI);
+    // Las 3 consultas son independientes entre sí -> se piden en paralelo.
+    // Antes se esperaba una, luego la otra, luego la otra (tiempo total = suma de las 3).
+    // Ahora el tiempo total es aprox. el de la más lenta de las 3.
+    var resultados = await Promise.allSettled([
+      sbFetchAll('recaudo', '*', 'order=fecha_emision.desc.nullslast'),
+      sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion'),
+      sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total')
+    ]);
+
+    // 1) Depósitos — es la fuente principal; si falla, no hay nada que mostrar.
+    if(resultados[0].status!=='fulfilled') throw resultados[0].reason;
+    dataBanco = resultados[0].value.map(filaSupaAUI);
     ultimaSync = new Date();
 
-    // 2) Expedientes prediales -> índice por cédula (para el modal 360)
+    // 2) Expedientes prediales -> índice por cédula (para el modal 360). Si falla, el modal simplemente no los muestra.
     expedientesPorCedula = {};
-    try{
-      var exps = await sbFetchAll('expedientes_predial',
-        'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion');
-      exps.forEach(function(e){
+    if(resultados[1].status==='fulfilled'){
+      resultados[1].value.forEach(function(e){
         var cid = String(e.id_contribuyente || '').trim();
         if(!cid) return;
         if(!expedientesPorCedula[cid]) expedientesPorCedula[cid] = [];
         expedientesPorCedula[cid].push(e);
       });
-    }catch(e){ /* si falla, el modal simplemente no muestra expedientes */ }
+    }
 
-    // 3) Tránsito -> índice RESUMEN por cédula (liviano, desde la vista v_transito_por_cedula)
+    // 3) Tránsito -> índice RESUMEN por cédula (liviano, desde la vista v_transito_por_cedula). Si falla, no se cruza tránsito.
     transitoPorCedula = {};
-    try{
-      var trans = await sbFetchAll('v_transito_por_cedula',
-        'documento,nombre,comparendos,valor_multa,valor_interes,valor_total');
-      trans.forEach(function(t){
+    if(resultados[2].status==='fulfilled'){
+      resultados[2].value.forEach(function(t){
         var cid = String(t.documento || '').trim();
         if(!cid) return;
         transitoPorCedula[cid] = {
@@ -1080,7 +1162,7 @@ async function cargarTodo(){
           nombre:      t.nombre || ''
         };
       });
-    }catch(e){ /* si falla, simplemente no se cruza tránsito */ }
+    }
 
     var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     setSS('ok','Sincronizado '+ts);
@@ -1190,6 +1272,58 @@ function goTab(t){
   if(t==='reportes') renderReporte();
   if(t==='config') actualizarCfgPanel();
 }
+
+// ════════════════════════════════════════════════════════════
+// BUSCADOR GLOBAL (topbar) — encuentra un depósito desde cualquier pestaña
+// y abre el modal directo, sin tener que estar primero en "Registros".
+// ════════════════════════════════════════════════════════════
+var _debGlobal;
+function buscarGlobalDebounced(){ clearTimeout(_debGlobal); _debGlobal=setTimeout(buscarGlobal, 250); }
+
+function buscarGlobal(){
+  var input=document.getElementById('global-buscar');
+  var cont=document.getElementById('global-resultados');
+  if(!input||!cont) return;
+  var q=(input.value||'').toLowerCase().trim();
+  if(q.length<2){ cerrarBusquedaGlobal(); return; }
+  var encontrados=dataBanco.filter(r=>(r._buscable!==undefined?r._buscable:construirBuscable(r)).indexOf(q)>=0).slice(0,15);
+  if(!encontrados.length){
+    cont.innerHTML='<div class="gr-item" style="cursor:default;color:var(--muted)">Sin resultados</div>';
+    cont.classList.add('open');
+    return;
+  }
+  cont.innerHTML=encontrados.map(function(r){
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var depSeguro=String(r['deposito judicial']).replace(/'/g,"\\'");
+    return '<div class="gr-item" onclick="irADepositoGlobal(\''+depSeguro+'\')">'
+      +'<div><div class="gr-acc">'+eh(r['Nombre Demandante.1']||'—')+'</div>'
+      +'<div class="gr-sub">Depósito '+eh(r['deposito judicial'])+' · CC '+eh(r['Identificación Demandado']||'—')+'</div></div>'
+      +'<div style="font-weight:700;color:#86efac;white-space:nowrap">'+fmt$(v)+'</div>'
+      +'</div>';
+  }).join('');
+  cont.classList.add('open');
+}
+
+function irADepositoGlobal(dep){
+  cerrarBusquedaGlobal();
+  var input=document.getElementById('global-buscar');
+  if(input) input.value='';
+  goTab('registros');
+  abrirModal(dep);
+}
+
+function cerrarBusquedaGlobal(){
+  var cont=document.getElementById('global-resultados');
+  if(cont){ cont.classList.remove('open'); }
+}
+
+// Cerrar el desplegable si se hace clic afuera del buscador
+document.addEventListener('click', function(e){
+  var input=document.getElementById('global-buscar');
+  var cont=document.getElementById('global-resultados');
+  if(!input||!cont) return;
+  if(e.target!==input && !cont.contains(e.target)) cerrarBusquedaGlobal();
+});
 
 // NORMALIZAR ESTADO
 // Deduce el tipo de impuesto: 1) el manual guardado  2) del radicado del expediente (FP=Predial)  3) vacío
@@ -1303,7 +1437,7 @@ function filtrar(){
   var fExp=document.getElementById('f-expediente').value;
   filtrados=dataBanco.filter(r=>{
     if(buscar){
-      var hay=((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')+(r['Proceso']||'')+(r['Número del Proceso']||'')).toLowerCase();
+      var hay=r._buscable!==undefined?r._buscable:construirBuscable(r);
       if(hay.indexOf(buscar)<0) return false;
     }
     if(fEDev){ var ed=normEst(r['ESTADO DEVOLUCION']); if(fEDev==='SIN GESTIONAR'&&ed) return false; if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false; }
@@ -1318,9 +1452,21 @@ function filtrar(){
   if(fMonto){
     filtrados.sort((a,b)=>(parseFloat(String(b['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0)-(parseFloat(String(a['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0));
   } else {
-    filtrados.sort((a,b)=>String(a[sortCol]||'').localeCompare(String(b[sortCol]||''),'es')*sortDir);
+    ordenarPor(filtrados, sortCol, sortDir);
   }
   pagActual=1; renderTabla();
+}
+
+// Columnas cuyo valor real es numérico (no deben ordenarse como texto).
+// 'Fecha Emisión' viene en formato ISO (YYYY-MM-DD): ordenar como texto ya da
+// el orden cronológico correcto, así que se deja fuera de esta lista a propósito.
+var COLS_NUMERICAS = ['Valor del Depóstio'];
+function ordenarPor(arr, col, dir){
+  if(COLS_NUMERICAS.indexOf(col)>=0){
+    arr.sort((a,b)=>((parseFloat(String(a[col]||0).replace(/[^\d.-]/g,''))||0)-(parseFloat(String(b[col]||0).replace(/[^\d.-]/g,''))||0))*dir);
+  } else {
+    arr.sort((a,b)=>String(a[col]||'').localeCompare(String(b[col]||''),'es')*dir);
+  }
 }
 
 function sortBy(col, th){
@@ -1367,7 +1513,7 @@ function renderTabla(){
       var nc=transitoPorCedula[cid].comparendos;
       procCell='🚗 '+nc+(nc===1?' comparendo':' comparendos');
     }
-    return `<tr class="${gestionado?'gestionado':''}" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')">
+    return `<tr class="${gestionado?'gestionado':''}" tabindex="0" role="button" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${String(dep).replace(/'/g,"\\'")}')}">
       <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
       <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
@@ -1414,7 +1560,7 @@ function filtrarPend(){
   pendFiltrados=dataBanco.filter(r=>{
     var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
-    if(buscar){ var hay=((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')).toLowerCase(); if(hay.indexOf(buscar)<0) return false; }
+    if(buscar){ var hay=r._buscable!==undefined?r._buscable:construirBuscable(r); if(hay.indexOf(buscar)<0) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fImp){ if(!impuestoDe(r).toUpperCase().includes(fImp)) return false; }
     if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
@@ -1439,7 +1585,7 @@ function renderPendientes(){
     var dep=r['deposito judicial'];
     var fecha=String(r['Fecha Emisión']||'').substring(0,10);
     var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    return `<tr onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')">
+    return `<tr tabindex="0" role="button" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${String(dep).replace(/'/g,"\\'")}')}">
       <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}</td>
       <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
       <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
@@ -1458,14 +1604,29 @@ function renderPendientes(){
 }
 
 // PAGINACIÓN
+// Antes cada botón serializaba la función callback dentro del atributo onclick
+// (cb.toString()) y el navegador la reinterpretaba al hacer clic — funcionaba,
+// pero era frágil. Ahora los botones solo llevan data-page, y UN listener
+// delegado (registrado una sola vez) decide qué callback llamar según el
+// contenedor donde ocurrió el clic.
+var _pagCallbacks = {};
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.pb[data-page]');
+  if(!btn) return;
+  var cont = btn.closest('[id^="pag-btns"]');
+  if(!cont) return;
+  var cb = _pagCallbacks[cont.id];
+  if(cb) cb(parseInt(btn.getAttribute('data-page'), 10));
+});
 function renderPag(total,btnId,pag,cb){
+  _pagCallbacks[btnId]=cb;
   var tP=Math.ceil(total/PS)||1,h='';
-  h+=`<button class="pb" onclick="(${cb.toString()})(${pag-1})" ${pag===1?'disabled':''}>‹</button>`;
+  h+=`<button class="pb" data-page="${pag-1}" ${pag===1?'disabled':''}>‹</button>`;
   for(var p=1;p<=tP;p++){
-    if(p===1||p===tP||Math.abs(p-pag)<=1) h+=`<button class="pb${p===pag?' cur':''}" onclick="(${cb.toString()})(${p})">${p}</button>`;
+    if(p===1||p===tP||Math.abs(p-pag)<=1) h+=`<button class="pb${p===pag?' cur':''}" data-page="${p}">${p}</button>`;
     else if(Math.abs(p-pag)===2) h+=`<button class="pb" disabled style="border:none;background:none;color:var(--muted)">…</button>`;
   }
-  h+=`<button class="pb" onclick="(${cb.toString()})(${pag+1})" ${pag===tP?'disabled':''}>›</button>`;
+  h+=`<button class="pb" data-page="${pag+1}" ${pag===tP?'disabled':''}>›</button>`;
   document.getElementById(btnId).innerHTML=h;
 }
 
@@ -1476,6 +1637,7 @@ function abrirModal(dep){
   var r=dataBanco.find(x=>String(x['deposito judicial'])===String(dep));
   if(!r) return;
   registroActivo=r._id;   // id técnico de Supabase
+  _ultimaEdicionAlAbrir=r._ultimaEdicionISO||null;   // para detectar si alguien más edita mientras el modal está abierto
   var cid=String(r['Identificación Demandado']||'');
   var nombre=r['Nombre Demandante.1']||'—';
   document.getElementById('m-titulo').textContent='Depósito '+dep;
@@ -1666,7 +1828,16 @@ function cerrarModal(forzar){
   document.body.style.overflow='';
   registroActivo=null;
   _huellaModal=null;
+  _ultimaEdicionAlAbrir=null;
 }
+
+// Cerrar el modal de gestión con la tecla Esc (atajo esperado en cualquier modal)
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){
+    var m=document.getElementById('modal');
+    if(m && m.classList.contains('open')) cerrarModal();
+  }
+});
 
 // ════════════════════════════════════════════════════════════
 // GUARDAR GESTIÓN — PATCH REST real a Supabase (sabe si guardó)
@@ -1696,6 +1867,27 @@ async function guardarGestion(){
     _editadoPor:user
   };
   var alEl=document.getElementById('m-alert');
+
+  // ── CRÍTICO #4: detectar edición concurrente ──
+  // Alguien más pudo haber guardado este mismo depósito mientras lo teníamos
+  // abierto (varias personas gestionan al tiempo). Antes esto se sobrescribía
+  // en silencio; ahora se avisa y se pide confirmar antes de pisar el cambio ajeno.
+  try{
+    var chk=await fetch(SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec)+'&select=ultima_edicion,editado_por',{headers:sbHeaders()});
+    if(chk.ok){
+      var filaServ=await chk.json();
+      var edServ=(filaServ&&filaServ[0])?(filaServ[0].ultima_edicion||null):null;
+      var cambioAjeno = _ultimaEdicionAlAbrir && edServ && (new Date(edServ).getTime()!==new Date(_ultimaEdicionAlAbrir).getTime());
+      if(cambioAjeno){
+        var quienServ=(filaServ[0]&&filaServ[0].editado_por)||'otra persona';
+        var seguir=confirm('⚠️ Este depósito fue editado por '+quienServ+' mientras lo tenías abierto.\n\nSi guardas ahora, tus cambios reemplazarán esa edición reciente.\n\n¿Guardar de todos modos?');
+        if(!seguir){
+          showAl(alEl,'al-warn','Guardado cancelado. Cierra y vuelve a abrir el depósito para ver los cambios más recientes.');
+          return;
+        }
+      }
+    }
+  }catch(e){ /* si el chequeo falla, seguimos con el guardado normal — no bloqueamos por esto */ }
 
   // ── CRÍTICO #2: validación al marcar FINALIZADO ──
   var devFin=normEst(g['ESTADO DEVOLUCION'])==='FINALIZADO';
@@ -1732,6 +1924,8 @@ async function guardarGestion(){
     if(fila){
       Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; });
       fila._editadoPor=user; fila._editadoFecha=ts;
+      fila._ultimaEdicionISO=payload.ultima_edicion;   // evita un falso "editado por otra persona" si se reabre este mismo depósito
+      fila._buscable=construirBuscable(fila);          // Proceso/Responsable pudieron cambiar — refrescar el índice de búsqueda
     }
     // Registrar en bitácora (solo si hubo cambios reales)
     if(cambios.length){
@@ -1745,7 +1939,7 @@ async function guardarGestion(){
     // ── CRÍTICO #3: encolar para reintentar ──
     encolarPendiente(idTec, payload, g, user, ts);
     var fila=dataBanco.find(x=>x._id===idTec);
-    if(fila){ Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; }); fila._editadoPor=user; fila._editadoFecha=ts; }
+    if(fila){ Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; }); fila._editadoPor=user; fila._editadoFecha=ts; fila._ultimaEdicionISO=payload.ultima_edicion; fila._buscable=construirBuscable(fila); }
     showAl(alEl,'al-warn','⚠️ Sin conexión. El cambio quedó <strong>guardado localmente</strong> y se sincronizará automáticamente. No lo pierdes.');
     renderKpis(); filtrar();
     _huellaModal=null;
@@ -1886,25 +2080,71 @@ function procesarImport(inp){
         }
       });
       if(!nuevos.length){ showImportResult('warn','ℹ️ No se encontraron registros nuevos. Todos los depósitos ya existen.'); inp.value=''; return; }
-      showImportResult('warn','<div class="spin"></div> Guardando '+nuevos.length+' registros nuevos en la base de datos...');
-      // Insertar en bloques de 500
-      var insertados=0;
-      for(var i=0;i<nuevos.length;i+=500){
-        var bloque=nuevos.slice(i,i+500);
-        var res=await fetch(SUPABASE_URL+'/rest/v1/recaudo',{
-          method:'POST',
-          headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
-          body:JSON.stringify(bloque)
-        });
-        if(!res.ok){ var t=await res.text(); throw new Error('HTTP '+res.status+' '+t); }
-        insertados+=bloque.length;
-      }
-      showImportResult('ok',`✅ <strong>${insertados} registros nuevos</strong> guardados. Recargando...`);
-      await cargarTodo();
+      // Antes de aquí se insertaba directo; ahora se muestra una vista previa
+      // y se espera confirmación explicita antes de tocar la base de datos.
+      _importPendiente = nuevos;
+      mostrarPreviewImportacion(nuevos);
     }catch(err){ showImportResult('err','❌ Error: '+err.message); }
   };
   rd.readAsArrayBuffer(f);
   inp.value='';
+}
+
+// ── Vista previa de importación: el usuario ve una muestra de lo que se va a
+// insertar y confirma explicitamente, en vez de que el archivo se guarde directo. ──
+var _importPendiente = [];
+
+function mostrarPreviewImportacion(nuevos){
+  var muestra=nuevos.slice(0,15);
+  var filasHtml=muestra.map(function(n){
+    return '<tr>'
+      +'<td class="mono" style="font-size:11px">'+eh(n.deposito_judicial||'—')+'</td>'
+      +'<td class="mono" style="font-size:11px;color:var(--soft)">'+eh(n.fecha_emision||'—')+'</td>'
+      +'<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(n.nombre_demandado||'—')+'</td>'
+      +'<td class="mono" style="font-size:11px">'+eh(n.identificacion_demandado||'—')+'</td>'
+      +'<td class="mono" style="text-align:right;font-size:12px;font-weight:700">'+fmt$(Number(n.valor_deposito||0))+'</td>'
+    +'</tr>';
+  }).join('');
+  var extra = nuevos.length>15 ? ('<div style="font-size:11px;color:var(--soft);margin-top:8px;font-style:italic">Mostrando 15 de '+nuevos.length.toLocaleString('es-CO')+' registros nuevos. Todos se guardarán al confirmar.</div>') : '';
+  var html = '<div class="alerta al-warn" style="display:flex">⚠️ Se detectaron <strong>&nbsp;'+nuevos.length.toLocaleString('es-CO')+'&nbsp;</strong> registros nuevos. Revisa la muestra antes de guardar:</div>'
+    +'<div class="tw" style="margin-top:10px;max-height:320px">'
+    +'<table><thead><tr><th>#Depósito</th><th>Fecha</th><th>Demandado</th><th>Cédula</th><th style="text-align:right">Valor</th></tr></thead>'
+    +'<tbody>'+filasHtml+'</tbody></table></div>'
+    +extra
+    +'<div style="display:flex;gap:8px;margin-top:14px">'
+    +'<button class="fbtn fbtn-outline" onclick="cancelarImportacion()">✕ Cancelar</button>'
+    +'<button class="fbtn fbtn-gold" onclick="confirmarImportacion()">✅ Confirmar e importar '+nuevos.length.toLocaleString('es-CO')+' registros</button>'
+    +'</div>';
+  var el=document.getElementById('import-resultado');
+  el.style.display='block';
+  el.innerHTML=html;
+}
+
+function cancelarImportacion(){
+  _importPendiente=[];
+  document.getElementById('import-resultado').style.display='none';
+}
+
+async function confirmarImportacion(){
+  var nuevos=_importPendiente;
+  if(!nuevos.length) return;
+  showImportResult('warn','<div class="spin"></div> Guardando '+nuevos.length+' registros nuevos en la base de datos...');
+  try{
+    var insertados=0;
+    for(var i=0;i<nuevos.length;i+=500){
+      var bloque=nuevos.slice(i,i+500);
+      var res=await fetch(SUPABASE_URL+'/rest/v1/recaudo',{
+        method:'POST',
+        headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+        body:JSON.stringify(bloque)
+      });
+      if(!res.ok){ var t=await res.text(); throw new Error('HTTP '+res.status+' '+t); }
+      insertados+=bloque.length;
+    }
+    _importPendiente=[];
+    showImportResult('ok',`✅ <strong>${insertados} registros nuevos</strong> guardados. Recargando...`);
+    await cargarTodo();
+  }catch(err){ showImportResult('err','❌ Error: '+err.message); }
 }
 function parseFechaImport(v){
   v=String(v||'').trim();
@@ -1933,10 +2173,21 @@ function showImportResult(tipo,msg){
 function exportarExcel(){
   var data=filtrados.length?filtrados:dataBanco;
   if(!data.length){alert('No hay datos para exportar.');return;}
-  var filas=data.slice(0,10000).map(r=>({'Depósito':r['deposito judicial'],'Fecha':r['Fecha Emisión'],'Demandado':r['Nombre Demandante.1'],'Cédula':r['Identificación Demandado'],'Valor':r['Valor del Depóstio'],'Proceso':r['Proceso'],'Est. Devolución':r['ESTADO DEVOLUCION'],'Est. Aplicación':r['ESTADO APLICACIÓN'],'Responsable':r['RESPONSABLE'],'Comp. Egreso':r['COMPROBANTE DE EGRESO'],'Radicado':r['RADICADO DE RESPUESTA'],'Observación':r['Observacion']}));
+  // Tope de seguridad para no congelar el navegador con archivos gigantes — muy por
+  // encima del volumen actual. Si se llega a superar, se AVISA (antes se cortaba en
+  // silencio a 10.000 filas sin que el usuario se enterara).
+  var TOPE=50000;
+  var recortado=data.length>TOPE;
+  if(recortado){
+    var seguir=confirm('Hay '+data.length.toLocaleString('es-CO')+' registros para exportar.\n\nPor rendimiento del navegador se exportarán los primeros '+TOPE.toLocaleString('es-CO')+'. Aplica un filtro para exportar un subconjunto más chico, o contacta a soporte si necesitas el archivo completo de una vez.\n\n¿Continuar de todos modos?');
+    if(!seguir) return;
+  }
+  var usar=recortado?data.slice(0,TOPE):data;
+  var filas=usar.map(r=>({'Depósito':r['deposito judicial'],'Fecha':r['Fecha Emisión'],'Demandado':r['Nombre Demandante.1'],'Cédula':r['Identificación Demandado'],'Valor':r['Valor del Depóstio'],'Proceso':r['Proceso'],'Est. Devolución':r['ESTADO DEVOLUCION'],'Est. Aplicación':r['ESTADO APLICACIÓN'],'Responsable':r['RESPONSABLE'],'Comp. Egreso':r['COMPROBANTE DE EGRESO'],'Radicado':r['RADICADO DE RESPUESTA'],'Observación':r['Observacion']}));
   var ws=XLSX.utils.json_to_sheet(filas);
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Recaudo');
-  XLSX.writeFile(wb,'Recaudo_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  var sufijo=recortado?('_primeros_'+TOPE):'';
+  XLSX.writeFile(wb,'Recaudo_'+new Date().toISOString().slice(0,10)+sufijo+'.xlsx');
 }
 
 // CONFIG (informativo)
@@ -1990,18 +2241,50 @@ function showAl(el,cls,msg){if(!el)return;el.style.display='flex';el.className='
 // DASHBOARD — estadísticas por responsable y por estado
 // ════════════════════════════════════════════════════════════
 function renderDashboard(){
+  // ── Una sola pasada sobre dataBanco para TODOS los acumuladores del dashboard ──
+  // (antes: 5 recorridos independientes de ~48.000 filas cada uno — total/gestión,
+  // por responsable, por mes, y dos veces por estado — cada vez que se entraba a esta pestaña).
   var total=dataBanco.length;
-  var gestionados=0, valorTotal=0, valorGestionado=0, sinAsignar=0;
+  var gestionados=0, valorTotal=0, sinAsignar=0;
+  var porResp={};
+  RESPONSABLES.forEach(n=>porResp[n]={asignados:0,fin:0,tram:0,pen:0,valor:0});
+  var porMes={};
+  var estadosBase=['FINALIZADO','EN TRAMITE','EN REVISION','PENDIENTE','Sin gestionar'];
+  var valorDev={},conteoDev={},valorApl={},conteoApl={};
+  estadosBase.forEach(k=>{ valorDev[k]=0; conteoDev[k]=0; valorApl[k]=0; conteoApl[k]=0; });
+
   dataBanco.forEach(r=>{
     var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     valorTotal+=v;
+    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     var tieneGestion=r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN']||r['RESPONSABLE']||r['Observacion'];
-    if(tieneGestion){ gestionados++; valorGestionado+=v; }
+    if(tieneGestion) gestionados++;
     if(!(r['RESPONSABLE']||'').trim()) sinAsignar++;
-  });
-  var pctGest=total?Math.round(gestionados/total*100):0;
 
-  // KPIs generales
+    var resp=normResp(r['RESPONSABLE']);
+    if(resp){
+      if(!porResp[resp]) porResp[resp]={asignados:0,fin:0,tram:0,pen:0,valor:0};
+      var o=porResp[resp];
+      o.asignados++; o.valor+=v;
+      var enCurso=ed==='EN TRAMITE'||ea==='EN TRAMITE'||ed==='EN REVISION'||ea==='EN REVISION';
+      var algunFin=ed==='FINALIZADO'||ea==='FINALIZADO';
+      if(enCurso) o.tram++; else if(algunFin) o.fin++; else o.pen++;
+    }
+
+    var f=String(r['Fecha Emisión']||'').substring(0,7);
+    if(/^\d{4}-\d{2}$/.test(f)){
+      if(!porMes[f]) porMes[f]={emitido:0,gestionado:0};
+      porMes[f].emitido+=v;
+      if(ed==='FINALIZADO'||ea==='FINALIZADO') porMes[f].gestionado+=v;
+    }
+
+    var kd=ed||'Sin gestionar';
+    valorDev[kd]=(valorDev[kd]||0)+v; conteoDev[kd]=(conteoDev[kd]||0)+1;
+    var ka=ea||'Sin gestionar';
+    valorApl[ka]=(valorApl[ka]||0)+v; conteoApl[ka]=(conteoApl[ka]||0)+1;
+  });
+
+  var pctGest=total?Math.round(gestionados/total*100):0;
   document.getElementById('dash-kpis').innerHTML=
     kpiCard('Total depósitos', total.toLocaleString('es-CO'), 'en el sistema')+
     kpiCard('Gestionados', gestionados.toLocaleString('es-CO'), pctGest+'% del total')+
@@ -2009,21 +2292,6 @@ function renderDashboard(){
     kpiCard('Sin responsable', sinAsignar.toLocaleString('es-CO'), 'sin asignar')+
     kpiCard('Valor total', fmtM(valorTotal), 'suma de depósitos');
 
-  // Por responsable
-  var porResp={};
-  RESPONSABLES.forEach(n=>porResp[n]={asignados:0,fin:0,tram:0,pen:0,valor:0});
-  dataBanco.forEach(r=>{
-    var resp=normResp(r['RESPONSABLE']);
-    if(!resp) return;
-    if(!porResp[resp]) porResp[resp]={asignados:0,fin:0,tram:0,pen:0,valor:0};
-    var o=porResp[resp];
-    o.asignados++;
-    o.valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
-    var enCurso=ed==='EN TRAMITE'||ea==='EN TRAMITE'||ed==='EN REVISION'||ea==='EN REVISION';
-    var algunFin=ed==='FINALIZADO'||ea==='FINALIZADO';
-    if(enCurso) o.tram++; else if(algunFin) o.fin++; else o.pen++;
-  });
   var filas=Object.keys(porResp).filter(n=>porResp[n].asignados>0||RESPONSABLES.indexOf(n)>=0)
     .sort((a,b)=>porResp[b].asignados-porResp[a].asignados);
   var body=document.getElementById('dash-resp-body');
@@ -2047,11 +2315,10 @@ function renderDashboard(){
     }).join('');
   }
 
-  // Por estado (devolución y aplicación)
-  // Gráficos Chart.js
-  renderTendencia();
-  renderDonaEstado('chart-dev','dona-dev-total','ESTADO DEVOLUCION');
-  renderDonaEstado('chart-apl','dona-apl-total','ESTADO APLICACIÓN');
+  // Gráficos Chart.js — ya no vuelven a recorrer dataBanco, usan lo calculado arriba
+  renderTendencia(porMes);
+  renderDonaEstado('chart-dev','dona-dev-total',valorDev,conteoDev,valorTotal);
+  renderDonaEstado('chart-apl','dona-apl-total',valorApl,conteoApl,valorTotal);
 }
 
 function kpiCard(lbl,val,sub){
@@ -2063,20 +2330,9 @@ var _charts = { tendencia:null, dev:null, apl:null };
 
 var ESTADO_COLORES={'FINALIZADO':'#22c55e','EN TRAMITE':'#3b82f6','EN REVISION':'#a855f7','PENDIENTE':'#ea580c','Sin gestionar':'#64748b'};
 
-// ── DONA de estado por VALOR ──
-function renderDonaEstado(canvasId, totalId, campo){
+// ── DONA de estado por VALOR — recibe los acumulados ya calculados por renderDashboard ──
+function renderDonaEstado(canvasId, totalId, valorPorEstado, conteo, valorTotal){
   if(typeof Chart==='undefined') return;
-  var valorPorEstado={'FINALIZADO':0,'EN TRAMITE':0,'EN REVISION':0,'PENDIENTE':0,'Sin gestionar':0};
-  var conteo={'FINALIZADO':0,'EN TRAMITE':0,'EN REVISION':0,'PENDIENTE':0,'Sin gestionar':0};
-  var valorTotal=0;
-  dataBanco.forEach(r=>{
-    var e=normEst(r[campo]);
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    valorTotal+=v;
-    var key=!e?'Sin gestionar':(valorPorEstado[e]!==undefined?e:e);
-    valorPorEstado[key]=(valorPorEstado[key]||0)+v;
-    conteo[key]=(conteo[key]||0)+1;
-  });
   var labels=[],valores=[],colores=[],conteos=[];
   Object.keys(valorPorEstado).forEach(k=>{
     if(valorPorEstado[k]>0 || conteo[k]>0){
@@ -2107,21 +2363,10 @@ function renderDonaEstado(canvasId, totalId, campo){
   if(te) te.innerHTML='Valor total: <strong>'+fmt$(valorTotal)+'</strong>';
 }
 
-// ── TENDENCIA mensual: emitido vs gestionado ──
-function renderTendencia(){
+// ── TENDENCIA mensual: emitido vs gestionado — recibe porMes ya calculado por renderDashboard ──
+function renderTendencia(porMes){
   if(typeof Chart==='undefined') return;
-  var porMes={};   // 'YYYY-MM' -> {emitido, gestionado}
-  dataBanco.forEach(r=>{
-    var f=String(r['Fecha Emisión']||'').substring(0,7);  // YYYY-MM
-    if(!/^\d{4}-\d{2}$/.test(f)) return;
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-    if(!porMes[f]) porMes[f]={emitido:0,gestionado:0};
-    porMes[f].emitido+=v;
-    var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
-    if(ed==='FINALIZADO'||ea==='FINALIZADO') porMes[f].gestionado+=v;
-  });
   var meses=Object.keys(porMes).sort();
-  // Limitar a los últimos 24 meses para legibilidad
   if(meses.length>24) meses=meses.slice(-24);
   var emit=meses.map(m=>Math.round(porMes[m].emitido));
   var gest=meses.map(m=>Math.round(porMes[m].gestionado));
@@ -2373,7 +2618,7 @@ function renderReporteDetalle(){
   var buscar=(document.getElementById('rep-buscar')||{value:''}).value.toLowerCase().trim();
   var datos=_repDatos;
   if(buscar){
-    datos=datos.filter(r=>((r['deposito judicial']||'')+(r['Nombre Demandante.1']||'')+(r['Identificación Demandado']||'')+(r['Proceso']||'')+(r['RESPONSABLE']||'')).toLowerCase().indexOf(buscar)>=0);
+    datos=datos.filter(r=>(r._buscable!==undefined?r._buscable:construirBuscable(r)).indexOf(buscar)>=0);
   }
   document.getElementById('rep-count').textContent=datos.length.toLocaleString('es-CO');
   var body=document.getElementById('rep-detalle-body');
