@@ -3,9 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Sistema integrado de gestión documental, oficios y atención al ciudadano — Dirección de Ejecuciones Fiscales, Alcaldía de Bello" />
+<meta name="theme-color" content="#0a1f3d" />
 <title>Ejecuciones Fiscales — Alcaldía de Bello</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="home.css" />
 </head>
@@ -22,7 +26,16 @@
               fill="url(#shieldGrad)" stroke="rgba(232,160,32,0.5)" stroke-width="1.5"/>
         <path d="M36 10L60 20V40C60 53 49 63 36 70C23 63 12 53 12 40V20L36 10Z"
               fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-        <text x="36" y="50" text-anchor="middle" font-size="26" fill="white" opacity="0.9">🏛️</text>
+        <!-- Edificio institucional vectorial (reemplaza al emoji: se ve igual en todos los sistemas) -->
+        <g stroke="rgba(255,255,255,0.88)" stroke-width="2" stroke-linecap="round" fill="none">
+          <path d="M25 31 L36 24 L47 31"/>
+          <line x1="26" y1="34.5" x2="46" y2="34.5"/>
+          <line x1="28.5" y1="39" x2="28.5" y2="50"/>
+          <line x1="36"   y1="39" x2="36"   y2="50"/>
+          <line x1="43.5" y1="39" x2="43.5" y2="50"/>
+          <line x1="25" y1="54" x2="47" y2="54"/>
+        </g>
+        <circle cx="36" cy="27.5" r="1.4" fill="rgba(245,192,80,0.9)"/>
         <defs>
           <linearGradient id="shieldGrad" x1="36" y1="2" x2="36" y2="78" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stop-color="#1a6fc4" stop-opacity="0.7"/>
@@ -36,7 +49,7 @@
     <p class="header-sub">Sistema integrado de gestión documental, oficios y atención al ciudadano</p>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px">
       <div class="sys-status" id="sys-status">
-        <span class="sys-dot ok" id="sys-dot"></span>
+        <span class="sys-dot wait" id="sys-dot"></span>
         <span id="sys-txt">Verificando sistema...</span>
       </div>
     </div>
@@ -193,19 +206,22 @@
   </div>
 
 <!-- ══════════════════════════════
-     MÓDULOS — 3 columnas
+     MÓDULOS — grilla unificada con favoritos
 ══════════════════════════════ -->
   <div class="section-label">
     <span class="section-label-icon">⚙️</span>
     Módulos del sistema
+    <span class="sl-line"></span>
+    <span class="kbd-hint" title="Búsqueda rápida de módulos"><kbd>Ctrl</kbd>+<kbd>K</kbd> buscar</span>
   </div>
 
-  <!-- Fila 1: Desembargos · Buscador · Tutelas -->
-  <div class="grid-3x1">
-    <a href="desembargos.html" class="app-card card-blue">
+  <div class="grid-modulos" id="grid-modulos">
+
+    <a href="desembargos.html" class="app-card card-blue" data-mod="desembargos" data-orden="1">
       <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
       <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 10v11M12 10v11M16 10v11"/>
         </svg></span>
       <div class="app-name">Desembargos y Embargos</div>
@@ -216,10 +232,12 @@
       <span class="app-badge badge-demand">⚡ Alta demanda</span>
       <span class="app-arrow">↗</span>
     </a>
-    <a href="buscador.html" class="app-card card-gold">
+
+    <a href="buscador.html" class="app-card card-gold" data-mod="buscador" data-orden="2">
       <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
       <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>
           <path d="M11 8v6M8 11h6" stroke-width="1.2"/>
         </svg></span>
@@ -230,10 +248,12 @@
       </div>
       <span class="app-arrow">↗</span>
     </a>
-    <a href="tutelas_v2.html" class="app-card card-cyan">
+
+    <a href="tutelas_v2.html" class="app-card card-cyan" data-mod="tutelas" data-orden="3">
       <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
       <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v18M3 6l9-3 9 3M6 10l-3 6h6L6 10zM18 10l-3 6h6l-3-6zM5 21h14"/>
         </svg></span>
       <div class="app-name">Sistema de Tutelas</div>
@@ -243,14 +263,12 @@
       </div>
       <span class="app-arrow">↗</span>
     </a>
-  </div>
 
-  <!-- Fila 2: Acuerdos · Recaudo · Seguimiento -->
-  <div class="grid-3x1" style="animation-delay:.28s">
-    <a href="acuerdos.html" class="app-card card-green">
+    <a href="acuerdos.html" class="app-card card-green" data-mod="acuerdos" data-orden="4">
       <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
       <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
         </svg></span>
       <div class="app-name">Acuerdos de Pago</div>
@@ -260,10 +278,12 @@
       </div>
       <span class="app-arrow">↗</span>
     </a>
-    <a href="recaudo.html" class="app-card card-orange">
+
+    <a href="recaudo.html" class="app-card card-orange" data-mod="recaudo" data-orden="5">
       <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
       <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="9"/>
           <path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1"/>
           <line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/>
@@ -275,10 +295,12 @@
       </div>
       <span class="app-arrow">↗</span>
     </a>
-    <a href="seguimiento.html" class="app-card card-green">
+
+    <a href="seguimiento.html" class="app-card card-green" data-mod="seguimiento" data-orden="6">
       <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
       <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
           <line x1="6" y1="20" x2="6" y2="14"/>
           <path d="M2 20h20"/>
@@ -287,14 +309,12 @@
       <div class="app-desc">Estadísticas de expedientes y cobro coactivo</div>
       <span class="app-arrow">↗</span>
     </a>
-  </div>
 
-  <!-- Fila 3: Central Jurídica · Notificaciones -->
-  <div class="grid-3x1" style="animation-delay:.36s">
-    <a href="index.html" class="app-card card-purple">
+    <a href="index.html" class="app-card card-purple" data-mod="juridica" data-orden="7">
       <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
       <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/>
           <line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/>
@@ -306,47 +326,53 @@
       </div>
       <span class="app-arrow">↗</span>
     </a>
-    <div class="app-card card-notif" onclick="openNotifMenu()" style="cursor:pointer">
+
+    <div class="app-card card-notif" data-mod="notificaciones" data-orden="8" onclick="openNotifMenu()" style="cursor:pointer" tabindex="0" role="button" aria-label="Abrir menú de notificaciones" onkeydown="if(event.key==='Enter')openNotifMenu()">
       <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
       <span class="app-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
           <polyline points="22,6 12,13 2,6"/>
         </svg></span>
       <div class="app-name">Notificaciones</div>
-      <div class="app-desc">Comparendos 2024 y predial: correo electrónico, certificado y notificación web</div>
+      <div class="app-desc">Comparendos 2024 y predial: correo, certificado y web</div>
       <div class="card-stat">
         <span class="cs-dot cs-rose"></span><span>Con correo · Certificado · Predial</span>
       </div>
       <span class="app-arrow">↗</span>
     </div>
+
+    <!-- Card Próximamente: llena la grilla 3x3 y comunica el roadmap -->
+    <div class="app-card card-soon" aria-label="Módulo en desarrollo">
+      <span class="soon-badge">🚧 Próximamente</span>
+      <div class="app-name">Panel de Recaudo en vivo</div>
+      <div class="app-desc">Indicadores del mes conectados a Supabase, directo en el home</div>
+      <div class="soon-progress-wrap">
+        <div class="soon-progress-label"><span>Avance</span><span>35%</span></div>
+        <div class="soon-progress-track"><div class="soon-progress-fill" style="width:35%"></div></div>
+      </div>
+      <div class="soon-eta">💡 ¿Ideas? Cuéntale a Teo</div>
+    </div>
+
   </div>
 
-  <!-- ── STATS ── -->
-  <div class="stats-row">
-    <div class="stat" title="Ver en Tutelas V2">
-      <div class="stat-num" style="font-size:13px;color:rgba(255,255,255,.35)">🔒 PIN</div>
-      <div class="stat-label">Tutelas activas</div>
-    </div>
-    <div class="stat" title="Ver en Tutelas V2">
-      <div class="stat-num" style="font-size:13px;color:rgba(255,255,255,.35)">🔒 PIN</div>
-      <div class="stat-label">Urgentes hoy</div>
-    </div>
-    <div class="stat" title="Ver en Tutelas V2">
-      <div class="stat-num" style="font-size:13px;color:rgba(255,255,255,.35)">🔒 PIN</div>
-      <div class="stat-label">Fallos activos</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num" id="stat-fecha">—</div>
-      <div class="stat-label">Hoy</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num" id="stat-hora">—</div>
-      <div class="stat-label">Hora</div>
-    </div>
-  </div>
+  <!-- ── STATS (se construye por JS según sesión y caché) ── -->
+  <div class="stats-row" id="stats-row"></div>
 
 </div><!-- /wrap -->
+
+<!-- ══ PALETA DE COMANDOS (Ctrl+K) ══ -->
+<div class="kpal" id="kpal" role="dialog" aria-label="Búsqueda rápida de módulos">
+  <div class="kpal-box">
+    <div class="kpal-inp-wrap">
+      <span class="kpal-lupa" aria-hidden="true">🔎</span>
+      <input id="kpal-inp" placeholder="Buscar módulo... (tutelas, embargo, acuerdo...)" autocomplete="off" aria-label="Buscar módulo" />
+      <span class="kpal-esc">ESC</span>
+    </div>
+    <div class="kpal-list" id="kpal-list"></div>
+  </div>
+</div>
 
 <!-- ══ TEO — CHAT FLOTANTE ══ -->
 <button class="teo-fab" id="teo-fab" onclick="teoToggle()" aria-label="Abrir chat con Teo, asistente del sistema">
@@ -390,7 +416,7 @@
 
 <footer>
   <div class="footer-info">
-    <span class="footer-pill" id="fp-version">v2.5</span>
+    <span class="footer-pill" id="fp-version">v2.7</span>
     <span class="footer-pill" id="fp-actualizado">Actualizando...</span>
     <span class="footer-pill" id="fp-usuario">—</span>
     <span class="footer-pill" id="fp-modulos">8 módulos activos</span>
@@ -400,41 +426,35 @@
 </footer>
 
 <!-- Sub-menú Notificaciones -->
-<div id="notifMenu" onclick="if(event.target.id==='notifMenu')closeNotifMenu()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,9,20,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
-  <div style="background:linear-gradient(160deg,#0d1730,#0a1226);border:1px solid rgba(232,160,32,.25);border-radius:20px;max-width:560px;width:100%;box-shadow:0 30px 70px rgba(0,0,0,.5);overflow:hidden">
-    <div style="padding:22px 26px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between">
+<div id="notifMenu" class="notif-overlay" onclick="if(event.target.id==='notifMenu')closeNotifMenu()" role="dialog" aria-modal="true" aria-label="Tipos de notificación">
+  <div class="notif-box">
+    <div class="notif-head">
       <div>
-        <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:rgba(245,192,80,.85);font-weight:600">Notificaciones · Comparendos 2024</div>
-        <div style="font-size:19px;font-weight:700;color:#fff;margin-top:3px;font-family:'DM Serif Display',serif">Elige el tipo de notificación</div>
+        <div class="notif-eyebrow">Notificaciones · Comparendos 2024</div>
+        <div class="notif-title">Elige el tipo de notificación</div>
       </div>
-      <button onclick="closeNotifMenu()" style="background:transparent;border:none;color:rgba(255,255,255,.6);font-size:26px;cursor:pointer;line-height:1">×</button>
+      <button class="notif-close" onclick="closeNotifMenu()" aria-label="Cerrar menú">×</button>
     </div>
-    <div style="padding:20px 26px;display:grid;gap:14px">
-      <a href="con_correo.html" style="text-decoration:none;display:block;background:rgba(45,141,232,.08);border:1px solid rgba(45,141,232,.3);border-radius:14px;padding:18px 20px;transition:.2s" onmouseover="this.style.background='rgba(45,141,232,.16)'" onmouseout="this.style.background='rgba(45,141,232,.08)'">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:26px">📧</span>
-          <div>
-            <div style="font-size:16px;font-weight:700;color:#fff">Con correo</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px">Genera notificaciones (Word) y mandamientos (PDF). Divide el PDF radicado por persona.</div>
-          </div>
+    <div class="notif-list">
+      <a href="con_correo.html" class="notif-item ni-blue">
+        <span class="ni-icon">📧</span>
+        <div>
+          <div class="ni-name">Con correo</div>
+          <div class="ni-desc">Genera notificaciones (Word) y mandamientos (PDF). Divide el PDF radicado por persona.</div>
         </div>
       </a>
-      <a href="certificado.html" style="text-decoration:none;display:block;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.3);border-radius:14px;padding:18px 20px;transition:.2s" onmouseover="this.style.background='rgba(232,160,32,.16)'" onmouseout="this.style.background='rgba(232,160,32,.08)'">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:26px">📭</span>
-          <div>
-            <div style="font-size:16px;font-weight:700;color:#fff">Sin correo (certificado)</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px">Listados para correo certificado por zona, resumen geográfico y notificación web.</div>
-          </div>
+      <a href="certificado.html" class="notif-item ni-gold">
+        <span class="ni-icon">📭</span>
+        <div>
+          <div class="ni-name">Sin correo (certificado)</div>
+          <div class="ni-desc">Listados para correo certificado por zona, resumen geográfico y notificación web.</div>
         </div>
       </a>
-      <a href="predial.html" style="text-decoration:none;display:block;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-radius:14px;padding:18px 20px;transition:.2s" onmouseover="this.style.background='rgba(34,197,94,.16)'" onmouseout="this.style.background='rgba(34,197,94,.08)'">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span style="font-size:26px">🏠</span>
-          <div>
-            <div style="font-size:16px;font-weight:700;color:#fff">Predial (con correo)</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:2px">Mandamientos de pago de predial por radicado, en Word y PDF, para envío por correo.</div>
-          </div>
+      <a href="predial.html" class="notif-item ni-green">
+        <span class="ni-icon">🏠</span>
+        <div>
+          <div class="ni-name">Predial (con correo)</div>
+          <div class="ni-desc">Mandamientos de pago de predial por radicado, en Word y PDF, para envío por correo.</div>
         </div>
       </a>
     </div>
@@ -442,9 +462,16 @@
 </div>
 
 <script>
-function openNotifMenu(){document.getElementById('notifMenu').style.display='flex';}
-function closeNotifMenu(){document.getElementById('notifMenu').style.display='none';}
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNotifMenu();});
+function openNotifMenu(){document.getElementById('notifMenu').classList.add('open');}
+function closeNotifMenu(){document.getElementById('notifMenu').classList.remove('open');}
+// Escape cierra en orden: paleta → Teo → menú de notificaciones
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  var kpal=document.getElementById('kpal');
+  if(kpal&&kpal.classList.contains('open')){kpalCerrar();return;}
+  if(typeof teoAbierto!=='undefined'&&teoAbierto){teoToggle();return;}
+  closeNotifMenu();
+});
 </script>
 
 <script>
@@ -455,14 +482,16 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNotifMe
 // en localStorage por tutelas_v2 tras login con PIN).
 // ════════════════════════════════════════
 var CONFIG = {
-  version: "v2.6",
+  version: "v2.7",
   modulos: 8
 };
+
+var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Stats cacheadas (opcional) — tutelas_v2.html puede escribirlas tras login:
 // localStorage.setItem("tutelas_stats_cache",
 //   JSON.stringify({tutelas:N, urgentes:N, fallos:N, ts:Date.now()}));
-// Si existen y tienen menos de 6 horas, alimentan a Teo y las cards.
+// Si existen y tienen menos de 6 horas, alimentan a Teo, las cards y la fila de stats.
 try {
   var _statsCache = JSON.parse(localStorage.getItem("tutelas_stats_cache")||"null");
   if (_statsCache && Date.now() - (_statsCache.ts||0) < 6*3600*1000) {
@@ -491,6 +520,7 @@ try {
   var textEl  = document.getElementById('saludo-text');
   if (!emojiEl||!textEl) return;
   emojiEl.textContent = emoji;
+  if (REDUCED_MOTION) { textEl.textContent = textoFull; textEl.classList.remove('typing'); return; }
   var i=0;
   function typeWriter(){
     if(i<=textoFull.length){
@@ -508,7 +538,6 @@ function actualizarFechaHora(){
   if(fEl) fEl.textContent=now.toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
   if(hEl) hEl.textContent=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
 }
-actualizarFechaHora();
 setInterval(actualizarFechaHora,30000);
 
 // ── TEO — CUERPO COMPLETO CON EMOCIONES Y BRAZOS ──
@@ -585,13 +614,153 @@ setInterval(actualizarFechaHora,30000);
   setInterval(function(){parpadear();setTimeout(parpadear,175);},2600+Math.random()*1800);
 })();
 
-// ── ANIMACIÓN CARDS ──
-document.querySelectorAll('.grid-2x2, .grid-3x1').forEach(function(grid,gi){
+// ════════════════════════════════════════
+// FAVORITOS — fija tus módulos más usados de primeros
+// ════════════════════════════════════════
+(function(){
+  var grid=document.getElementById('grid-modulos'); if(!grid)return;
+  var favs=[];
+  try{ favs=JSON.parse(localStorage.getItem('home_favoritos')||'[]'); }catch(e){}
+
+  function guardar(){ try{ localStorage.setItem('home_favoritos',JSON.stringify(favs)); }catch(e){} }
+
+  function ordenar(){
+    var cards=Array.prototype.slice.call(grid.querySelectorAll('.app-card[data-mod]'));
+    cards.sort(function(a,b){
+      var fa=favs.indexOf(a.getAttribute('data-mod'))>-1?0:1;
+      var fb=favs.indexOf(b.getAttribute('data-mod'))>-1?0:1;
+      if(fa!==fb) return fa-fb;
+      return (+a.getAttribute('data-orden'))-(+b.getAttribute('data-orden'));
+    });
+    cards.forEach(function(c){ grid.appendChild(c); });
+    var soon=grid.querySelector('.card-soon');
+    if(soon) grid.appendChild(soon); // "Próximamente" siempre de último
+  }
+
+  grid.querySelectorAll('.app-card[data-mod]').forEach(function(card){
+    var btn=card.querySelector('.fav-btn'); if(!btn)return;
+    var id=card.getAttribute('data-mod');
+    function pintar(){
+      var on=favs.indexOf(id)>-1;
+      btn.classList.toggle('active',on);
+      btn.textContent=on?'★':'☆';
+      btn.setAttribute('aria-label',on?'Quitar de favoritos':'Fijar como favorito');
+      btn.title=on?'Quitar de favoritos':'Fijar como favorito';
+    }
+    pintar();
+    function toggle(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      var i=favs.indexOf(id);
+      if(i>-1) favs.splice(i,1); else favs.unshift(id);
+      guardar(); pintar(); ordenar();
+    }
+    btn.addEventListener('click',toggle);
+    btn.addEventListener('keydown',function(ev){ if(ev.key==='Enter'||ev.key===' ') toggle(ev); });
+  });
+
+  ordenar();
+
+  // Registrar el último módulo visitado (para "Continuar donde quedaste")
+  grid.addEventListener('click',function(ev){
+    var a=ev.target.closest('a.app-card'); if(!a)return;
+    var nom=a.querySelector('.app-name');
+    try{
+      localStorage.setItem('home_ultimo_modulo',JSON.stringify({
+        n:nom?nom.textContent:'', h:a.getAttribute('href'), t:Date.now()
+      }));
+    }catch(e){}
+  });
+
+  // Animación de entrada (después de ordenar, para respetar el orden final)
   grid.querySelectorAll('.app-card').forEach(function(card,ci){
-    card.style.animationDelay=(0.20+gi*0.08+ci*0.04)+'s';
+    card.style.animationDelay=(0.20+ci*0.045)+'s';
     card.style.animationName='fadeUp'; card.style.animationDuration='0.6s'; card.style.animationFillMode='both';
   });
-});
+})();
+
+// ════════════════════════════════════════
+// PALETA DE COMANDOS — Ctrl+K o "/"
+// ════════════════════════════════════════
+var kpalCerrar; // expuesta para el handler global de Escape
+(function(){
+  var MODS=[
+    {n:'Desembargos y Embargos', d:'Oficios bancarios y órdenes de embargo',            h:'desembargos.html', i:'🏦', k:'oficio embargo desembargo banco mandamiento'},
+    {n:'Buscador de Guías',      d:'Contribuyentes, radicados y expedientes',           h:'buscador.html',    i:'🔎', k:'buscar contribuyente radicado expediente guia cedula'},
+    {n:'Sistema de Tutelas',     d:'Términos procesales y semáforo de vencimientos',    h:'tutelas_v2.html',  i:'⚖️', k:'tutela fallo incidente urgente juzgado termino'},
+    {n:'Acuerdos de Pago',       d:'Cuotas, convenios y F-GAF-68',                      h:'acuerdos.html',    i:'🤝', k:'acuerdo cuota convenio pago facilidad fgaf'},
+    {n:'Recaudo Histórico',      d:'Depósitos judiciales y devoluciones',               h:'recaudo.html',     i:'💰', k:'recaudo deposito judicial devolucion aplicacion'},
+    {n:'Seguimiento de Procesos',d:'Estadísticas de cobro coactivo',                    h:'seguimiento.html', i:'📊', k:'seguimiento estadistica cartera proceso cobro'},
+    {n:'Central Jurídica',       d:'Paz y salvo, resoluciones y documentos',            h:'index.html',       i:'📜', k:'paz salvo resolucion juridica documento'},
+    {n:'Notificaciones',         d:'Comparendos y predial: correo y certificado',       h:'#notif',           i:'📧', k:'notificacion comparendo predial correo certificado masivo'}
+  ];
+  var overlay=document.getElementById('kpal');
+  var inp=document.getElementById('kpal-inp');
+  var list=document.getElementById('kpal-list');
+  if(!overlay||!inp||!list) return;
+  var sel=0, filtrados=MODS;
+
+  function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+  function render(){
+    if(filtrados.length===0){
+      list.innerHTML='<div class="kpal-empty">Sin resultados. Prueba con "tutela", "embargo", "predial"...</div>';
+      return;
+    }
+    list.innerHTML=filtrados.map(function(m,i){
+      return '<div class="kpal-item'+(i===sel?' sel':'')+'" data-i="'+i+'">'+
+        '<span class="kpal-ico">'+m.i+'</span>'+
+        '<span class="kpal-txt"><div class="kpal-nom">'+m.n+'</div><div class="kpal-des">'+m.d+'</div></span>'+
+        '<span class="kpal-go">Enter ↵</span></div>';
+    }).join('');
+    list.querySelectorAll('.kpal-item').forEach(function(el){
+      el.addEventListener('click',function(){ ir(filtrados[+el.getAttribute('data-i')]); });
+      el.addEventListener('mousemove',function(){
+        var i=+el.getAttribute('data-i');
+        if(i!==sel){ sel=i; render(); }
+      });
+    });
+    var s=list.querySelector('.kpal-item.sel');
+    if(s) s.scrollIntoView({block:'nearest'});
+  }
+
+  function filtrar(){
+    var q=norm(inp.value.trim());
+    sel=0;
+    filtrados=!q?MODS:MODS.filter(function(m){
+      return norm(m.n).indexOf(q)>-1||norm(m.d).indexOf(q)>-1||norm(m.k).indexOf(q)>-1;
+    });
+    render();
+  }
+
+  function ir(m){
+    if(!m) return;
+    cerrar();
+    if(m.h==='#notif'){ openNotifMenu(); return; }
+    try{ localStorage.setItem('home_ultimo_modulo',JSON.stringify({n:m.n,h:m.h,t:Date.now()})); }catch(e){}
+    location.href=m.h;
+  }
+
+  function abrir(){
+    overlay.classList.add('open');
+    inp.value=''; filtrar();
+    setTimeout(function(){ inp.focus(); },50);
+  }
+  function cerrar(){ overlay.classList.remove('open'); }
+  kpalCerrar=cerrar;
+
+  inp.addEventListener('input',filtrar);
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='ArrowDown'){ e.preventDefault(); sel=Math.min(sel+1,filtrados.length-1); render(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); sel=Math.max(sel-1,0); render(); }
+    else if(e.key==='Enter'){ e.preventDefault(); ir(filtrados[sel]); }
+  });
+  overlay.addEventListener('click',function(e){ if(e.target===overlay) cerrar(); });
+
+  document.addEventListener('keydown',function(e){
+    if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); abrir(); return; }
+    if(e.key==='/'&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){ e.preventDefault(); abrir(); }
+  });
+})();
 
 // ════════════════════════════════════════
 // ESTADO DEL SISTEMA — verificar si Apps Script responde
@@ -609,7 +778,7 @@ async function verificarSistema(){
   }
   try{
     var ctrl=new AbortController();
-    var timer=setTimeout(()=>ctrl.abort(),5000);
+    var timer=setTimeout(function(){ctrl.abort();},5000);
     var res=await fetch(url,{method:"GET",signal:ctrl.signal});
     clearTimeout(timer);
     var d=await res.json();
@@ -664,22 +833,50 @@ function actualizarCardStats(stats){
 }
 
 // ════════════════════════════════════════
-// CARD NOVEDADES — historial de actividad
+// FILA DE STATS — inteligente según sesión y caché
+// ════════════════════════════════════════
+function construirStatsRow(){
+  var row=document.getElementById('stats-row'); if(!row)return;
+  var s=window._homeStats;
+  var html='';
+  if(s && s.tutelas!==undefined){
+    var mins=Math.max(1,Math.round((Date.now()-(s.ts||Date.now()))/60000));
+    var edad=mins<60?('hace '+mins+' min'):('hace '+Math.round(mins/60)+' h');
+    html+='<a class="stat" href="tutelas_v2.html" title="Datos de tu última sesión">'+
+      '<div class="stat-num">'+s.tutelas+'</div><div class="stat-label">Tutelas activas</div>'+
+      '<div class="stat-cache">🔒 '+edad+'</div></a>';
+    html+='<a class="stat" href="tutelas_v2.html">'+
+      '<div class="stat-num'+(s.urgentes>0?' stat-alerta':'')+'">'+s.urgentes+'</div>'+
+      '<div class="stat-label">Urgentes hoy</div></a>';
+    html+='<a class="stat" href="tutelas_v2.html">'+
+      '<div class="stat-num">'+(s.fallos!==undefined?s.fallos:'—')+'</div>'+
+      '<div class="stat-label">Fallos activos</div></a>';
+  } else {
+    html+='<a class="stat stat-cta" href="tutelas_v2.html">'+
+      '<div class="stat-num" style="font-size:14px">🔒 Entra con tu PIN</div>'+
+      '<div class="stat-label">para ver tutelas, urgentes y fallos</div></a>';
+  }
+  html+='<div class="stat"><div class="stat-num" id="stat-fecha">—</div><div class="stat-label">Hoy</div></div>';
+  html+='<div class="stat"><div class="stat-num" id="stat-hora">—</div><div class="stat-label">Hora</div></div>';
+  row.innerHTML=html;
+  actualizarFechaHora();
+}
+
+// ════════════════════════════════════════
+// CARD NOVEDADES — Teo las cuenta al abrirse
 // ════════════════════════════════════════
 var NOVEDADES=[
+  {icono:'🔎',txt:'Búsqueda rápida de módulos con Ctrl+K'},
+  {icono:'⭐',txt:'Fija tus módulos favoritos con la estrella de cada card'},
   {icono:'🔐',txt:'Login con PIN activado en Tutelas V2'},
   {icono:'🤖',txt:'Teo IA disponible en Tutelas V2'},
   {icono:'📊',txt:'Estadísticas con % de resolución'},
-  {icono:'🔄',txt:'Sincronización Sheets corregida'},
   {icono:'⚠️',txt:'Alertas de vencimiento activas'},
-  {icono:'📧',txt:'Nuevo módulo de Notificaciones: comparendos y predial'},
+  {icono:'📧',txt:'Módulo de Notificaciones: comparendos y predial'},
 ];
 function novedadDelDia(){
   var idx=new Date().getDate()%NOVEDADES.length;
   return NOVEDADES[idx];
-}
-function cargarNovedades(){
-  // Las novedades ahora las cuenta Teo al abrirse (ya no hay tarjeta en el home).
 }
 
 // ════════════════════════════════════════
@@ -703,9 +900,9 @@ function actualizarFooter(){
 // INIT — ejecutar todo al cargar
 // ════════════════════════════════════════
 verificarSistema();
-cargarNovedades();
 actualizarFooter();
 actualizarCardStats(window._homeStats || {});
+construirStatsRow();
 
 // Footer desde CONFIG (una sola fuente de verdad)
 (function(){
@@ -724,8 +921,16 @@ setTimeout(function(){
 }, 4000);
 
 // ════════════════════════════════════════
-// RESUMEN DEL DÍA — versión básica (sin Sheets)
+// RESUMEN DEL DÍA
 // ════════════════════════════════════════
+function tiempoRelativo(ts){
+  var s=Math.floor((Date.now()-ts)/1000);
+  if(s<3600) return 'hace '+Math.max(1,Math.floor(s/60))+' min';
+  if(s<86400) return 'hace '+Math.floor(s/3600)+' h';
+  var d=Math.floor(s/86400);
+  return d===1?'ayer':'hace '+d+' días';
+}
+
 function buildResumenDia(){
   var ahora = new Date();
   var el = function(id){ return document.getElementById(id); };
@@ -748,9 +953,20 @@ function buildResumenDia(){
   var acuerdosPend = 0;
   try{ acuerdosPend = JSON.parse(localStorage.getItem('pendientes_acuerdos')||'[]').length; }catch(e){}
 
-  // Saludo según hora
-  // Items del resumen
   var items = [];
+
+  // 0. Continuar donde quedaste
+  var ult=null;
+  try{ ult=JSON.parse(localStorage.getItem('home_ultimo_modulo')||'null'); }catch(e){}
+  if(ult && ult.t && ult.h && Date.now()-ult.t < 7*86400000){
+    items.push({
+      icono:'↩️',
+      txt:'Continuar en <strong>'+ult.n+'</strong> · última visita '+tiempoRelativo(ult.t),
+      tag:{txt:'Reciente', cls:'azul'},
+      clickable:true,
+      href:ult.h
+    });
+  }
 
   // 1. Oficios hoy
   items.push({
@@ -765,7 +981,7 @@ function buildResumenDia(){
     href: 'desembargos.html'
   });
 
-  // 3. Acuerdos pendientes
+  // 2. Acuerdos pendientes
   if(acuerdosPend > 0){
     items.push({
       icono: '🤝',
@@ -782,7 +998,7 @@ function buildResumenDia(){
     });
   }
 
-  // 4. Acceso a tutelas (sin mostrar datos sensibles)
+  // 3. Acceso a tutelas (sin mostrar datos sensibles)
   items.push({
     icono: '⚖️',
     txt: 'Para ver tutelas urgentes y vencimientos, entra al módulo con tu PIN',
@@ -822,16 +1038,22 @@ buildResumenDia();
 
 // ════════════════════════════════════════
 // BANNER MUNDIAL 2026 · COLOMBIA + CRONÓMETRO
+// Fase eliminatoria: actualiza PARTIDOS a medida que la
+// Tricolor avance (o conéctalo a un mundial.json del repo).
 // ════════════════════════════════════════
 (function(){
   var FIN = new Date('2026-07-20T00:00:00');
   var KEY = 'mundial_banner_cerrado';
 
-  // Partidos de Colombia (hora local Colombia = ET). Formato ISO con offset -05:00.
+  // Partidos de Colombia (hora local Colombia). Formato ISO con offset -05:00.
   var PARTIDOS = [
+    // — Fase de grupos (ya jugada, se conserva como historial) —
     { rival:'Uzbekistán', vs:'Uzbekistán 🇺🇿 vs Colombia 🇨🇴', sede:'Estadio Azteca, Ciudad de México', fase:'Fase de grupos · J1', inicio:'2026-06-17T22:00:00-05:00' },
     { rival:'RD Congo',   vs:'Colombia 🇨🇴 vs RD Congo 🇨🇩',   sede:'Estadio Akron, Guadalajara',      fase:'Fase de grupos · J2', inicio:'2026-06-23T22:00:00-05:00' },
-    { rival:'Portugal',   vs:'Colombia 🇨🇴 vs Portugal 🇵🇹',   sede:'Hard Rock Stadium, Miami',         fase:'Fase de grupos · J3', inicio:'2026-06-27T19:30:00-05:00' }
+    { rival:'Portugal',   vs:'Colombia 🇨🇴 vs Portugal 🇵🇹',   sede:'Hard Rock Stadium, Miami',         fase:'Fase de grupos · J3', inicio:'2026-06-27T19:30:00-05:00' },
+    // — Eliminación directa (¡líderes del Grupo K!) —
+    { rival:'Ghana',      vs:'Colombia 🇨🇴 vs Ghana 🇬🇭',      sede:'Arrowhead Stadium, Kansas City',   fase:'Dieciseisavos de final', inicio:'2026-07-03T20:30:00-05:00' },
+    { rival:'Por definir',vs:'Colombia 🇨🇴 vs Suiza 🇨🇭 / Argelia 🇩🇿', sede:'BC Place, Vancouver',    fase:'Octavos de final · si avanzamos 🤞', inicio:'2026-07-07T15:00:00-05:00' }
   ];
   var DUR_PARTIDO = 2.5 * 3600 * 1000; // 2.5h de "en vivo"
 
@@ -852,7 +1074,7 @@ buildResumenDia();
     '¡Vamos Colombia! 🇨🇴',
     'Con toda la fe, ¡a darlo todo! ⚽',
     '¡Mi Colombia querida! 💛💙❤️',
-    'Unidos por la tricolor 🇨🇴',
+    'Líderes del Grupo K, ¡invictos! 🏆',
     '¡A creer, a creer, que Colombia va a vencer! 🎉'
   ];
   var fi = 0;
@@ -886,18 +1108,17 @@ buildResumenDia();
         return { p:PARTIDOS[i], inicio:t, enVivo: ahora >= t };
       }
     }
-    return null; // ya no quedan partidos de fase de grupos
+    return null; // no quedan partidos cargados
   }
 
   function pintar(){
     var act = partidoActivo();
 
     if(!act){
-      // Terminó la fase de grupos de Colombia
       counter.style.display = 'none';
       matchEl.style.display = 'block';
-      lblEl.textContent = '¡Gracias por todo, selección! 🇨🇴';
-      metaEl.textContent = 'Revisa si Colombia clasificó a la siguiente ronda';
+      lblEl.textContent = '¡La Tricolor sigue en carrera! 🇨🇴';
+      metaEl.textContent = 'Actualiza los próximos cruces en el sistema';
       clearInterval(timer);
       return;
     }
@@ -943,25 +1164,39 @@ buildResumenDia();
 })();
 
 // ════════════════════════════════════════
-// TEO — CHAT IA
+// TEO — CHAT IA (con memoria de sesión)
 // ════════════════════════════════════════
-var teoAbierto=false, teoHistorial=[];
+var teoAbierto=false, teoRendered=false, teoHistorial=[];
+try{ teoHistorial=JSON.parse(sessionStorage.getItem('teo_hist')||'[]'); }catch(e){}
+function teoGuardar(){ try{ sessionStorage.setItem('teo_hist',JSON.stringify(teoHistorial.slice(-20))); }catch(e){} }
 
 function teoToggle(){
   teoAbierto=!teoAbierto;
   document.getElementById('teo-panel').classList.toggle('open',teoAbierto);
   document.getElementById('teo-fab').classList.toggle('open',teoAbierto);
   document.getElementById('teo-badge').classList.remove('show');
-  if(teoAbierto&&teoHistorial.length===0) teoSaludo();
+  if(teoAbierto){
+    if(!teoRendered){
+      teoRendered=true;
+      if(teoHistorial.length===0){
+        teoSaludo();
+      } else {
+        // Restaurar conversación previa de esta sesión (sobrevive navegación entre módulos)
+        teoHistorial.forEach(function(m){ teoAddMsg(m.content, m.role==='user'?'usr':'bot'); });
+        document.getElementById('teo-chips').style.display='none';
+      }
+    }
+    setTimeout(function(){ var i=document.getElementById('teo-inp'); if(i)i.focus(); },260);
+  }
 }
 
 function teoSaludo(){
   var stats=window._homeStats||{};
-  var msg='¡Hola! Soy Teo 🤖, el asistente del sistema.<br><br>Puedo ayudarte a navegar entre los módulos, responder preguntas sobre tutelas y cobro coactivo, o contarte el estado del día.';
-  if(stats.urgentes>0) msg+=`<br><br><span style="color:#f87171">⚠️ Hay <strong>${stats.urgentes}</strong> proceso(s) urgentes hoy.</span>`;
+  var msg='¡Hola! Soy Teo 🤖, el asistente del sistema.<br><br>Puedo ayudarte a navegar entre los módulos, responder preguntas sobre tutelas y cobro coactivo, o contarte el estado del día.<br><br><span style="color:#a5b4fc">💡 Tip: presiona <strong>Ctrl+K</strong> para buscar módulos al instante.</span>';
+  if(stats.urgentes>0) msg+='<br><br><span style="color:#f87171">⚠️ Hay <strong>'+stats.urgentes+'</strong> proceso(s) urgentes hoy.</span>';
   try{
     var nov=novedadDelDia();
-    if(nov) msg+=`<br><br><span style="color:#7dd3fc">📣 <strong>Novedad:</strong> ${nov.icono} ${nov.txt}</span>`;
+    if(nov) msg+='<br><br><span style="color:#7dd3fc">📣 <strong>Novedad:</strong> '+nov.icono+' '+nov.txt+'</span>';
   }catch(e){}
   teoAddMsg(msg,'bot');
 }
@@ -1005,6 +1240,7 @@ El sistema tiene estos módulos:
 - Recaudo histórico (recaudo.html): depósitos judiciales, aplicaciones y devoluciones
 - Seguimiento de procesos (seguimiento.html): estadísticas de cobro coactivo
 - Central Jurídica (index.html): paz y salvo, resoluciones y documentos jurídicos
+- Notificaciones: comparendos 2024 y predial por correo, certificado y web
 - Home (home.html): esta pantalla de inicio
 
 ${stats.tutelas!==undefined?`Estado actual: ${stats.tutelas} tutelas activas, ${stats.fallos} fallos activos, ${stats.urgentes} urgentes hoy.`:''}
@@ -1012,6 +1248,7 @@ ${stats.tutelas!==undefined?`Estado actual: ${stats.tutelas} tutelas activas, ${
 Contexto legal: cobro coactivo municipal colombiano, normativa tributaria local, tutelas constitucionales.`;
 
   teoHistorial.push({role:"user",content:pregunta});
+  teoGuardar();
 
   // Intentar usar APPS_URL de tutelas si está disponible
   var appsUrl="";
@@ -1025,6 +1262,7 @@ Contexto legal: cobro coactivo municipal colombiano, normativa tributaria local,
       try{d=JSON.parse(txt);}catch(e){throw new Error("Respuesta inválida");}
       if(!d.ok)throw new Error(d.error||"Error del servidor");
       teoHistorial.push({role:"assistant",content:d.respuesta});
+      teoGuardar();
       typing.remove(); teoAddMsg(d.respuesta,'bot'); return;
     }catch(e){ console.warn("[Teo]",e); }
   }
@@ -1033,14 +1271,15 @@ Contexto legal: cobro coactivo municipal colombiano, normativa tributaria local,
   typing.remove();
   var resp=teoRespuestaLocal(pregunta,stats);
   teoHistorial.push({role:"assistant",content:resp});
+  teoGuardar();
   teoAddMsg(resp,'bot');
 }
 
 function teoRespuestaLocal(q,stats){
   var ql=q.toLowerCase();
   if(ql.includes("tutela")||ql.includes("urgente")){
-    if(stats.urgentes>0) return `Hay <strong>${stats.urgentes}</strong> proceso(s) urgentes hoy y <strong>${stats.tutelas||'—'}</strong> tutelas activas en total. Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a> para verlos.`;
-    return `Hay <strong>${stats.tutelas||'—'}</strong> tutelas activas. ${stats.urgentes===0?'Sin urgencias hoy ✅':''} Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a>.`;
+    if(stats.urgentes>0) return 'Hay <strong>'+stats.urgentes+'</strong> proceso(s) urgentes hoy y <strong>'+(stats.tutelas||'—')+'</strong> tutelas activas en total. Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a> para verlos.';
+    return 'Hay <strong>'+(stats.tutelas||'—')+'</strong> tutelas activas. '+(stats.urgentes===0?'Sin urgencias hoy ✅':'')+' Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a>.';
   }
   if(ql.includes("embargo")||ql.includes("desembargo")||ql.includes("oficio"))
     return 'Para generar oficios de desembargo o embargo, usa el módulo <a href="desembargos.html" style="color:#60a5fa">Desembargos</a>.';
@@ -1054,6 +1293,10 @@ function teoRespuestaLocal(q,stats){
     return 'Los depósitos judiciales, aplicaciones y devoluciones están en <a href="recaudo.html" style="color:#60a5fa">Recaudo Histórico</a>.';
   if(ql.includes("paz y salvo")||ql.includes("resoluci")||ql.includes("jurídic")||ql.includes("juridic"))
     return 'Paz y salvos, resoluciones y documentos jurídicos se generan en la <a href="index.html" style="color:#60a5fa">Central Jurídica</a>.';
+  if(ql.includes("mundial")||ql.includes("colombia")||ql.includes("partido")||ql.includes("ghana"))
+    return '⚽ ¡Colombia clasificó líder del Grupo K! Juega contra Ghana en dieciseisavos, el viernes 3 de julio a las 8:30 p.m. en Kansas City. 🇨🇴';
+  if(ql.includes("ctrl")||ql.includes("atajo")||ql.includes("buscar módulo")||ql.includes("favorito"))
+    return 'Atajos del home: <strong>Ctrl+K</strong> (o <strong>/</strong>) abre la búsqueda rápida de módulos, y la <strong>⭐ estrella</strong> de cada card fija tus favoritos de primeros.';
   return 'Puedo ayudarte con tutelas, desembargos, búsqueda de expedientes, acuerdos de pago, recaudo, seguimiento y documentos jurídicos. ¿Con qué módulo necesitas ayuda?';
 }
 </script>
