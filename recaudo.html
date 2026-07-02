@@ -136,7 +136,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
 
 /* ── SELECCIÓN / BARRA FLOTANTE DE IMPRESIÓN ── */
-.chk-dep,#chk-all{width:16px;height:16px;cursor:pointer;accent-color:var(--gold)}
+.chk-dep,#chk-all,.chk-aplicar{width:16px;height:16px;cursor:pointer;accent-color:var(--gold)}
 .sel-bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:500;
   display:none;align-items:center;gap:14px;padding:11px 18px;border-radius:14px;
   background:linear-gradient(135deg,#0d2550,#132a52);border:1px solid rgba(232,160,32,.4);
@@ -588,7 +588,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 
   <div class="sel-bar" id="sel-bar">
     <div class="sel-bar-txt"><b id="sel-bar-count">0</b> depósitos seleccionados · <b id="sel-bar-total">$0</b></div>
-    <button class="fbtn fbtn-gold" onclick="abrirModalSeleccion()">🖨️ Ver / Imprimir</button>
+    <button class="fbtn fbtn-gold" onclick="abrirModalSeleccion()">📋 Ver seleccionados</button>
     <button class="fbtn fbtn-outline" onclick="limpiarSeleccion()">✕ Limpiar</button>
   </div>
 </div>
@@ -1064,23 +1064,24 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 
 <!-- ══ MODAL SELECCIÓN / IMPRESIÓN DE DEPÓSITOS ══ -->
 <div class="ov" id="modal-sel" onclick="if(event.target===this)cerrarModalSel()">
-  <div class="mbox" style="max-width:820px">
+  <div class="mbox" style="max-width:860px">
     <div class="mhdr">
       <div class="mhdr-info">
         <h3>🖨️ Depósitos seleccionados (<span id="sel-count">0</span>)</h3>
-        <p>Relación individual y valor total de los depósitos escogidos</p>
+        <p>Marque cuáles quedan en "Aplicar" y cuáles no, y luego genere el PDF</p>
       </div>
       <button class="mclose" onclick="cerrarModalSel()">✕</button>
     </div>
     <div class="mbody" id="sel-contenido"></div>
-    <div class="mfoot">
-      <div class="sel-total-box" style="flex:1;margin-right:12px">
+    <div class="mfoot" style="flex-wrap:wrap">
+      <div class="sel-total-box" style="flex:1;min-width:200px;margin-right:12px">
         <span class="lbl">Total combinado</span>
         <span class="val" id="sel-total">$0</span>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="fbtn fbtn-outline" onclick="cerrarModalSel()">Cerrar</button>
-        <button class="fbtn fbtn-gold" onclick="exportarSeleccionPDF()">🖨️ Imprimir / PDF</button>
+        <button class="fbtn fbtn-green" onclick="aplicarSeleccionEnTramite()">✅ Aplicar marcados (→ En trámite)</button>
+        <button class="fbtn fbtn-gold" onclick="exportarSeleccionPDF()">📄 Generar PDF (para imprimir)</button>
       </div>
     </div>
   </div>
@@ -1777,11 +1778,16 @@ function actualizarBarraSeleccion(){
   document.getElementById('sel-bar-count').textContent=seleccionados.size.toLocaleString('es-CO');
   document.getElementById('sel-bar-total').textContent=fmt$(total);
 }
-// Arma la relación (agrupada por persona) de los depósitos seleccionados y abre el modal
+// Arma la relación (agrupada por persona) de los depósitos seleccionados y abre el modal.
+// Cada depósito trae una casilla "Aplicar" (marcada por defecto) para decidir cuáles
+// se pasan a Estado Aplicación = EN TRÁMITE y cuáles se dejan fuera de ese lote.
 function abrirModalSeleccion(){
   if(!seleccionados.size){ alert('No ha seleccionado ningún depósito. Marque la casilla al inicio de cada fila.'); return; }
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
   if(!filas.length){ alert('Los depósitos seleccionados ya no están en la lista actual (puede que hayan sido eliminados).'); return; }
+  // Recordar qué quedó marcado/desmarcado si el modal ya estaba abierto antes (ej. tras aplicar un lote)
+  var marcaPrevia={};
+  document.querySelectorAll('#sel-contenido .chk-aplicar').forEach(function(c){ marcaPrevia[c.getAttribute('data-id')]=c.checked; });
   var porPersona={}, orden=[];
   filas.forEach(function(r){
     var key=String(r['Identificación Demandado']||'—')+'|'+String(r['Nombre Demandante.1']||'—');
@@ -1798,14 +1804,22 @@ function abrirModalSeleccion(){
       var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
       subtotal+=v;
       var fecha=String(r['Fecha Emisión']||'').substring(0,10);
-      return `<tr><td class="mono">${eh(r['deposito judicial'])}</td><td class="mono">${eh(fecha)}</td><td class="mono" style="text-align:right">${fmt$(v)}</td></tr>`;
+      var idStr=String(r._id);
+      var marcado = (idStr in marcaPrevia) ? marcaPrevia[idStr] : true;
+      return `<tr>
+        <td class="mono">${eh(r['deposito judicial'])}</td>
+        <td class="mono">${eh(fecha)}</td>
+        <td class="mono" style="text-align:right">${fmt$(v)}</td>
+        <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+        <td style="text-align:center"><input type="checkbox" class="chk-aplicar" data-id="${eh(idStr)}" data-dep="${eh(r['deposito judicial'])}" ${marcado?'checked':''}/></td>
+      </tr>`;
     }).join('');
     total+=subtotal;
     html+=`<div class="sel-grupo">
       <div class="sel-grupo-hdr"><b>${eh(nombre)}</b> <span class="mono" style="color:var(--soft)">· C.C./NIT ${eh(cedula)}</span></div>
-      <table class="sel-tabla"><thead><tr><th>Depósito</th><th>Fecha</th><th style="text-align:right">Valor</th></tr></thead>
+      <table class="sel-tabla"><thead><tr><th>Depósito</th><th>Fecha</th><th style="text-align:right">Valor</th><th>Estado actual</th><th style="text-align:center">Aplicar</th></tr></thead>
       <tbody>${filasHtml}
-      <tr class="sel-subtotal"><td colspan="2">Subtotal · ${grupo.length} depósito${grupo.length===1?'':'s'}</td><td style="text-align:right">${fmt$(subtotal)}</td></tr>
+      <tr class="sel-subtotal"><td colspan="2">Subtotal · ${grupo.length} depósito${grupo.length===1?'':'s'}</td><td style="text-align:right">${fmt$(subtotal)}</td><td colspan="2"></td></tr>
       </tbody></table></div>`;
   });
   document.getElementById('sel-contenido').innerHTML=html;
@@ -1816,11 +1830,44 @@ function abrirModalSeleccion(){
 function cerrarModalSel(){
   document.getElementById('modal-sel').classList.remove('open');
 }
-// Genera un PDF de la relación de depósitos seleccionados (agrupada por persona) y abre el diálogo de impresión
+// Actualiza en Supabase el Estado de Aplicación a EN TRÁMITE de los depósitos marcados
+// con la casilla "Aplicar" dentro del modal. Los que quedaron desmarcados no se tocan.
+async function aplicarSeleccionEnTramite(){
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
+  var checks=Array.from(document.querySelectorAll('#sel-contenido .chk-aplicar:checked'));
+  if(!checks.length){ alert('No hay depósitos marcados en la columna "Aplicar". Marque al menos uno o use "Cerrar" si no va a aplicar ninguno.'); return; }
+  var detalles=checks.map(c=>({id:c.getAttribute('data-id'), dep:c.getAttribute('data-dep')}));
+  if(!confirm('Se actualizará el Estado de Aplicación a "EN TRÁMITE" para '+detalles.length+' depósito(s) marcado(s).\n\nQuedará pendiente de que usted lo confirme como Finalizado más adelante en el módulo.\n\n¿Continuar?')) return;
+
+  var user=USUARIO_ACTIVO;
+  var okCount=0, failCount=0;
+  for(var i=0;i<detalles.length;i++){
+    var idTec=detalles[i].id;
+    var filaPrev=dataBanco.find(x=>String(x._id)===idTec);
+    var estadoAntes=filaPrev?String(filaPrev['ESTADO APLICACIÓN']||'').trim():'';
+    var payload={ estado_aplicacion:'EN TRAMITE', ultima_edicion:new Date().toISOString(), editado_por:user };
+    var ok=await patchRecaudo(idTec, payload);
+    if(ok){
+      okCount++;
+      if(filaPrev){ filaPrev['ESTADO APLICACIÓN']='EN TRAMITE'; filaPrev._editadoPor=user; filaPrev._editadoFecha=new Date().toLocaleString('es-CO'); filaPrev._ultimaEdicionISO=payload.ultima_edicion; }
+      if(estadoAntes!=='EN TRAMITE'){
+        registrarBitacora(detalles[i].dep, user, 'ESTADO APLICACIÓN: "'+(estadoAntes||'(vacío)')+'" → "EN TRAMITE" (aplicado en lote desde selección múltiple)');
+      }
+    } else { failCount++; }
+  }
+  renderKpis(); filtrar(); actualizarBadgeDuplicados();
+  abrirModalSeleccion(); // refresca el modal mostrando los nuevos estados
+  if(failCount){ alert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.\n⚠️ '+failCount+' no se pudieron actualizar (revise su conexión e inténtelo de nuevo).'); }
+  else { alert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.'); }
+}
+// Genera un PDF de la relación de depósitos seleccionados (agrupada por persona), con la
+// columna "Aplica" reflejando lo marcado en el modal, y abre el diálogo de impresión.
 function exportarSeleccionPDF(){
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
   if(!filas.length){ alert('No hay depósitos seleccionados.'); return; }
   if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  var aplicaPorId={};
+  document.querySelectorAll('#sel-contenido .chk-aplicar').forEach(function(c){ aplicaPorId[c.getAttribute('data-id')]=c.checked; });
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
   var W=doc.internal.pageSize.getWidth();
@@ -1851,18 +1898,20 @@ function exportarSeleccionPDF(){
     y+=6;
     var body=grupo.map(function(r){
       var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
-      return [String(r['deposito judicial']||''), String(r['Fecha Emisión']||'').substring(0,10), fmt$(v)];
+      var idStr=String(r._id);
+      var aplica=(idStr in aplicaPorId)?aplicaPorId[idStr]:true;
+      return [String(r['deposito judicial']||''), String(r['Fecha Emisión']||'').substring(0,10), fmt$(v), aplica?'Sí':'No'];
     });
-    body.push(['','Subtotal ('+grupo.length+')', fmt$(subtotal)]);
+    body.push(['','Subtotal ('+grupo.length+')', fmt$(subtotal), '']);
     doc.autoTable({
       startY:y+4,
-      head:[['Depósito','Fecha','Valor']],
+      head:[['Depósito','Fecha','Valor','Aplica']],
       body:body,
       theme:'grid',
       headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:9},
       bodyStyles:{fontSize:9,textColor:[40,40,40]},
       margin:{left:40,right:40},
-      columnStyles:{2:{halign:'right'}},
+      columnStyles:{2:{halign:'right'},3:{halign:'center'}},
       didParseCell:function(data){
         if(data.row.index===body.length-1 && data.section==='body'){ data.cell.styles.fontStyle='bold'; data.cell.styles.textColor=[13,37,71]; }
       }
