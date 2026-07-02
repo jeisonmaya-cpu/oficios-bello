@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Gestión Contractual</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<link rel="stylesheet" href="sistema_contratacion.css">
+</head>
+<body>
+
+<!-- ===================================== -->
+<!-- SIDEBAR -->
+<!-- ===================================== -->
+<div class="sidebar">
+
+  <div class="logo">
+    <i class="fa-solid fa-file-signature"></i>
+    <h2>Contratación</h2>
+  </div>
+
+  <ul>
+    <li class="active" data-tab="dashboard"><i class="fa-solid fa-house"></i> Dashboard</li>
+    <li data-tab="contratistas"><i class="fa-solid fa-users"></i> Contratistas</li>
+    <li data-tab="documentos"><i class="fa-solid fa-folder-open"></i> Documentos</li>
+    <li data-tab="formatos"><i class="fa-solid fa-print"></i> Formatos</li>
+    <li data-tab="estadisticas"><i class="fa-solid fa-chart-line"></i> Estadísticas</li>
+    <li data-tab="historial"><i class="fa-solid fa-clock-rotate-left"></i> Historial</li>
+    <li data-tab="configuracion"><i class="fa-solid fa-gear"></i> Configuración</li>
+  </ul>
+
+</div>
+
+<!-- ===================================== -->
+<!-- MAIN -->
+<!-- ===================================== -->
+<div class="main">
+
+  <header>
+    <h1>Sistema de Gestión Contractual</h1>
+    <div class="usuario">
+      <i class="fa-solid fa-user-circle"></i>
+      Administrador
+    </div>
+  </header>
+
+  <!-- TARJETAS -->
+  <div class="cards">
+    <div class="card azul">
+      <h3>Contratistas</h3>
+      <h1 id="cardTotal">0</h1>
+      <p>Registrados</p>
+    </div>
+    <div class="card verde">
+      <h3>Completos</h3>
+      <h1 id="cardCompletos">0</h1>
+      <p>Expedientes</p>
+    </div>
+    <div class="card naranja">
+      <h3>Pendientes</h3>
+      <h1 id="cardPendientes">0</h1>
+      <p>Revisión</p>
+    </div>
+    <div class="card rojo">
+      <h3>Documentos</h3>
+      <h1 id="cardDocumentos">0</h1>
+      <p>Almacenados</p>
+    </div>
+  </div>
+
+  <!-- HERRAMIENTAS -->
+  <div class="toolbar">
+    <div class="buscar">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="buscador" placeholder="Buscar por nombre o cédula...">
+    </div>
+
+    <select id="filtroEstado">
+      <option value="todos">Todos los estados</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="completo">Completo</option>
+      <option value="revision">Revisión</option>
+    </select>
+
+    <div class="toolbar-acciones">
+      <button class="nuevo" id="btnNuevo">
+        <i class="fa-solid fa-plus"></i> Nuevo Contratista
+      </button>
+      <button class="imprimir" id="btnImprimirMasivo" disabled>
+        <i class="fa-solid fa-print"></i> Imprimir Seleccionados <span id="contadorSeleccion">(0)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="tabla">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-check"><input type="checkbox" id="seleccionarTodos"></th>
+          <th>Nombre</th>
+          <th>Cédula</th>
+          <th>Cargo</th>
+          <th>Dependencia</th>
+          <th>Estado</th>
+          <th>Documentos</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tablaBody">
+        <!-- Filas generadas dinámicamente por app.js -->
+      </tbody>
+    </table>
+    <p class="vacio" id="tablaVacio" hidden>No se encontraron contratistas con ese criterio.</p>
+  </div>
+
+</div>
+
+<!-- ===================================== -->
+<!-- MODAL CONTRATISTA -->
+<!-- ===================================== -->
+<div class="modal" id="modal">
+  <div class="contenido">
+
+    <div class="cabecera">
+      <div class="cabecera-titulo">
+        <span class="sello" id="modalSello">Completo</span>
+        <h2 id="modalNombre">Nombre del contratista</h2>
+      </div>
+      <button id="cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-panel="datos">Datos</button>
+      <button class="tab" data-panel="documentos">Documentos</button>
+      <button class="tab" data-panel="formatos">Formatos</button>
+      <button class="tab" data-panel="observaciones">Observaciones</button>
+    </div>
+
+    <!-- PANEL: DATOS -->
+    <div class="panel" data-panel="datos">
+      <h3>Información general</h3>
+      <form id="formDatos" class="grid">
+        <div>
+          <label>Nombre completo</label>
+          <input type="text" id="campoNombre" required>
+        </div>
+        <div>
+          <label>Cédula</label>
+          <input type="text" id="campoCedula" required>
+        </div>
+        <div>
+          <label>Correo</label>
+          <input type="email" id="campoCorreo">
+        </div>
+        <div>
+          <label>Teléfono</label>
+          <input type="text" id="campoTelefono">
+        </div>
+        <div>
+          <label>Cargo / Perfil</label>
+          <input type="text" id="campoCargo">
+        </div>
+        <div>
+          <label>Dependencia</label>
+          <input type="text" id="campoDependencia">
+        </div>
+        <div>
+          <label>Valor del contrato</label>
+          <input type="text" id="campoValor" placeholder="$ 0">
+        </div>
+        <div>
+          <label>Estado del trámite</label>
+          <select id="campoEstado">
+            <option value="pendiente">Pendiente</option>
+            <option value="revision">Revisión</option>
+            <option value="completo">Completo</option>
+          </select>
+        </div>
+      </form>
+      <div class="panel-acciones">
+        <button type="button" class="guardar" id="btnGuardarDatos"><i class="fa-solid fa-floppy-disk"></i> Guardar cambios</button>
+      </div>
+    </div>
+
+    <!-- PANEL: DOCUMENTOS -->
+    <div class="panel" data-panel="documentos" hidden>
+      <h3>Documentos del expediente</h3>
+
+      <div class="dropzone" id="dropzone">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <p>Arrastre archivos aquí o</p>
+        <button type="button" id="btnSeleccionarArchivo">Seleccionar archivos</button>
+        <input type="file" id="inputArchivo" multiple hidden>
+        <span class="dropzone-nota">Cédula, RUT, hoja de vida, certificados, pólizas (PDF, JPG, PNG)</span>
+      </div>
+
+      <div class="lista-documentos" id="listaDocumentos">
+        <!-- documentos ya cargados / requeridos, generados por app.js -->
+      </div>
+
+      <div class="progreso" id="progresoSubida" hidden>
+        <div class="barra"><div class="relleno" id="progresoRelleno"></div></div>
+        <span id="progresoTexto">Subiendo a Google Drive...</span>
+      </div>
+    </div>
+
+    <!-- PANEL: FORMATOS -->
+    <div class="panel" data-panel="formatos" hidden>
+      <h3>Formatos e impresión individual</h3>
+      <div class="acciones">
+        <button data-formato="contrato"><i class="fa-solid fa-print"></i> Contrato</button>
+        <button data-formato="acta_inicio"><i class="fa-solid fa-print"></i> Acta de Inicio</button>
+        <button data-formato="seguridad_social"><i class="fa-solid fa-print"></i> Seguridad Social</button>
+        <button data-formato="hoja_vida"><i class="fa-solid fa-print"></i> Hoja de Vida</button>
+      </div>
+    </div>
+
+    <!-- PANEL: OBSERVACIONES -->
+    <div class="panel" data-panel="observaciones" hidden>
+      <h3>Observaciones</h3>
+      <textarea id="campoObservaciones" rows="6" placeholder="Anotaciones sobre el expediente..."></textarea>
+      <div class="panel-acciones">
+        <button type="button" class="guardar" id="btnGuardarObs"><i class="fa-solid fa-floppy-disk"></i> Guardar observación</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Área oculta usada para generar el documento imprimible -->
+<div id="areaImprimible" class="imprimible" hidden></div>
+
+<script src="sistema_contratacion.js"></script>
+</body>
+</html>
