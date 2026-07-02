@@ -135,6 +135,43 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .chip-nuevo{background:rgba(45,141,232,.25);color:#93c5fd;border:1px solid rgba(45,141,232,.4);
   font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
 
+/* ── SELECCIÓN / BARRA FLOTANTE DE IMPRESIÓN ── */
+.chk-dep,#chk-all{width:16px;height:16px;cursor:pointer;accent-color:var(--gold)}
+.sel-bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:500;
+  display:none;align-items:center;gap:14px;padding:11px 18px;border-radius:14px;
+  background:linear-gradient(135deg,#0d2550,#132a52);border:1px solid rgba(232,160,32,.4);
+  box-shadow:0 14px 36px rgba(0,0,0,.5);backdrop-filter:blur(10px)}
+.sel-bar.show{display:flex}
+.sel-bar-txt{font-size:12.5px;color:var(--text)}
+.sel-bar-txt b{color:var(--gold2)}
+.sel-grupo{margin-bottom:16px}
+.sel-grupo-hdr{font-size:13px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+table.sel-tabla{width:100%;border-collapse:collapse;font-size:12px}
+table.sel-tabla th{text-align:left;padding:5px 8px;color:var(--soft);font-weight:600;font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border)}
+table.sel-tabla td{padding:5px 8px;border-bottom:1px solid var(--border2)}
+tr.sel-subtotal td{font-weight:700;color:var(--gold2);border-top:1px solid var(--border)}
+.sel-total-box{margin-top:6px;padding:14px 16px;border-radius:var(--radius-sm);
+  background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);
+  display:flex;align-items:center;justify-content:space-between}
+.sel-total-box .lbl{font-size:12px;color:var(--soft)}
+.sel-total-box .val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--gold2)}
+
+/* ── DUPLICADOS ── */
+.dup-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.dup-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px 16px;margin-bottom:12px}
+.dup-card-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.dup-card-hdr .info{font-size:13px}
+.dup-card-hdr .info b{color:var(--gold2)}
+.dup-card-hdr .info .sub{font-size:11px;color:var(--soft);margin-top:2px}
+table.dup-tabla{width:100%;border-collapse:collapse;font-size:12px}
+table.dup-tabla th{text-align:left;padding:6px 8px;color:var(--soft);font-weight:600;font-size:10px;
+  text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border)}
+table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-size:12px}
+.dup-empty{padding:40px 20px;text-align:center;color:var(--soft)}
+.dup-empty .ico{font-size:38px;margin-bottom:10px;opacity:.6}
+
 /* ── PAGINACIÓN ── */
 .pag{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;
   background:var(--surface2);border-top:1px solid var(--border2);flex-wrap:wrap;gap:8px}
@@ -433,6 +470,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   </button>
   <button class="ntab" id="tab-dashboard" onclick="goTab('dashboard')">📊 Dashboard</button>
   <button class="ntab" id="tab-reportes" onclick="goTab('reportes')">📑 Reportes</button>
+  <button class="ntab" id="tab-duplicados" onclick="goTab('duplicados')">🔁 Duplicados <span class="nbadge nb-gold" id="badge-dup" style="display:none">0</span></button>
   <button class="ntab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
   <button class="ntab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
 </div>
@@ -526,6 +564,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
     <div class="tw">
       <table id="tabla">
         <thead><tr>
+          <th style="width:32px" onclick="event.stopPropagation()"><input type="checkbox" id="chk-all" title="Seleccionar todos los de esta página" onclick="toggleSeleccionarPagina(this)"/></th>
           <th onclick="sortBy('deposito judicial', this)">#Depósito</th>
           <th onclick="sortBy('Fecha Emisión', this)">Fecha</th>
           <th onclick="sortBy('Nombre Demandante.1', this)">Demandado</th>
@@ -545,6 +584,12 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
       <div class="pag-info" id="pag-info">Cargando...</div>
       <div class="pag-btns" id="pag-btns"></div>
     </div>
+  </div>
+
+  <div class="sel-bar" id="sel-bar">
+    <div class="sel-bar-txt"><b id="sel-bar-count">0</b> depósitos seleccionados · <b id="sel-bar-total">$0</b></div>
+    <button class="fbtn fbtn-gold" onclick="abrirModalSeleccion()">🖨️ Ver / Imprimir</button>
+    <button class="fbtn fbtn-outline" onclick="limpiarSeleccion()">✕ Limpiar</button>
   </div>
 </div>
 
@@ -756,6 +801,29 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
     </div>
   </div>
   <!-- ══ FIN repview-deudores ══ -->
+</div>
+
+<!-- ══ PANEL DUPLICADOS ══ -->
+<div id="panel-duplicados" style="display:none">
+  <div class="dup-stats">
+    <div class="kpi red"><div class="kpi-lbl">Grupos duplicados (mismo #depósito)</div><div class="kpi-val" id="dup-k-grupos">—</div></div>
+    <div class="kpi red"><div class="kpi-lbl">Registros sobrantes</div><div class="kpi-val" id="dup-k-sobrantes">—</div></div>
+    <div class="kpi red"><div class="kpi-lbl">Valor duplicado</div><div class="kpi-val" id="dup-k-valor">—</div></div>
+    <div class="kpi blue"><div class="kpi-lbl">Posibles duplicados (misma cédula/nombre/valor/fecha, distinto #depósito)</div><div class="kpi-val" id="dup-k-posibles">—</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-hdr-title">🔁 Mismo número de depósito repetido</div>
+      <button class="tb-btn" onclick="renderDuplicados()">↻ Recalcular</button>
+    </div>
+    <div style="padding:16px" id="dup-exactos-cont">Cargando...</div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="card-hdr"><div class="card-hdr-title">🟡 Posibles duplicados (misma cédula, nombre, valor y fecha — depósito distinto)</div></div>
+    <div style="padding:16px" id="dup-posibles-cont">Cargando...</div>
+  </div>
 </div>
 
 <!-- ══ PANEL IMPORTAR ══ -->
@@ -994,6 +1062,30 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   </div>
 </div>
 
+<!-- ══ MODAL SELECCIÓN / IMPRESIÓN DE DEPÓSITOS ══ -->
+<div class="ov" id="modal-sel" onclick="if(event.target===this)cerrarModalSel()">
+  <div class="mbox" style="max-width:820px">
+    <div class="mhdr">
+      <div class="mhdr-info">
+        <h3>🖨️ Depósitos seleccionados (<span id="sel-count">0</span>)</h3>
+        <p>Relación individual y valor total de los depósitos escogidos</p>
+      </div>
+      <button class="mclose" onclick="cerrarModalSel()">✕</button>
+    </div>
+    <div class="mbody" id="sel-contenido"></div>
+    <div class="mfoot">
+      <div class="sel-total-box" style="flex:1;margin-right:12px">
+        <span class="lbl">Total combinado</span>
+        <span class="val" id="sel-total">$0</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="fbtn fbtn-outline" onclick="cerrarModalSel()">Cerrar</button>
+        <button class="fbtn fbtn-gold" onclick="exportarSeleccionPDF()">🖨️ Imprimir / PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════
 // RECAUDO HISTÓRICO — Capa de datos Supabase (reemplaza Apps Script/Sheets)
@@ -1098,6 +1190,8 @@ var _huellaModal = null;
 // Marca de tiempo de última edición del registro al momento de abrir el modal
 // (para detectar si otra persona lo editó mientras lo teníamos abierto)
 var _ultimaEdicionAlAbrir = null;
+// Depósitos marcados para imprimir/exportar en conjunto (guarda 'deposito judicial' como string)
+var seleccionados = new Set();
 
 // ── DEBOUNCE de buscadores: espera 300ms a que el usuario deje de teclear ──
 // Evita recalcular los 48 mil registros en cada tecla (mejora rendimiento en máquinas modestas)
@@ -1272,11 +1366,11 @@ async function cargarTodo(){
     var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     setSS('ok','Sincronizado '+ts);
     renderKpis(); filtrar(); llenarSelectResponsables(); actualizarCfgPanel();
-    actualizarPendientesPill(); procesarCola();
+    actualizarPendientesPill(); procesarCola(); actualizarBadgeDuplicados();
   }catch(err){
     setSS('error','Error al cargar');
     var tb=document.getElementById('tbody');
-    if(tb) tb.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la base de datos. Revise su conexión e intente recargar.</p></div></td></tr>';
+    if(tb) tb.innerHTML='<tr><td colspan="12"><div class="empty"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la base de datos. Revise su conexión e intente recargar.</p></div></td></tr>';
   }
 }
 
@@ -1366,7 +1460,7 @@ if(document.readyState==='loading'){
 
 // TABS
 function goTab(t){
-  ['registros','pendientes','dashboard','reportes','importar','config'].forEach(p=>{
+  ['registros','pendientes','dashboard','reportes','duplicados','importar','config'].forEach(p=>{
     var el=document.getElementById('panel-'+p);
     var tb=document.getElementById('tab-'+p);
     if(el) el.style.display= p===t?'block':'none';
@@ -1375,6 +1469,7 @@ function goTab(t){
   if(t==='pendientes') filtrarPend();
   if(t==='dashboard') renderDashboard();
   if(t==='reportes'){ if(_vistaReporteActual==='deudores'){ renderMayoresDeudores(); } else { renderReporte(); } }
+  if(t==='duplicados') renderDuplicados();
   if(t==='config') actualizarCfgPanel();
 }
 
@@ -1594,9 +1689,10 @@ function renderTabla(){
   var totalPags=Math.ceil(data.length/PS)||1;
   var ini=(pagActual-1)*PS,fin=Math.min(ini+PS,data.length),pag=data.slice(ini,fin);
   if(!pag.length){
-    document.getElementById('tbody').innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
+    document.getElementById('tbody').innerHTML='<tr><td colspan="12"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
     document.getElementById('pag-info').textContent='0 registros';
     document.getElementById('pag-btns').innerHTML='';
+    sincronizarChkAll();
     return;
   }
   document.getElementById('tbody').innerHTML=pag.map(r=>{
@@ -1618,7 +1714,9 @@ function renderTabla(){
       var nc=transitoPorCedula[cid].comparendos;
       procCell='🚗 '+nc+(nc===1?' comparendo':' comparendos');
     }
-    return `<tr class="${gestionado?'gestionado':''}" tabindex="0" role="button" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${String(dep).replace(/'/g,"\\'")}')}">
+    var depStr=String(dep);
+    return `<tr class="${gestionado?'gestionado':''}" tabindex="0" role="button" onclick="abrirModal('${depStr.replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${depStr.replace(/'/g,"\\'")}')}">
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-dep" ${seleccionados.has(depStr)?'checked':''} onchange="toggleSeleccion('${depStr.replace(/'/g,"\\'")}', this.checked)"/></td>
       <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
       <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
@@ -1634,6 +1732,295 @@ function renderTabla(){
   }).join('');
   document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros`;
   renderPag(data.length,'pag-btns',pagActual,(n)=>{pagActual=n;renderTabla();});
+  sincronizarChkAll();
+}
+
+// ════════════════════════════════════════════════════════════
+// SELECCIÓN DE DEPÓSITOS PARA IMPRIMIR / EXPORTAR EN CONJUNTO
+// ════════════════════════════════════════════════════════════
+function toggleSeleccion(dep, on){
+  if(on) seleccionados.add(dep); else seleccionados.delete(dep);
+  actualizarBarraSeleccion();
+  sincronizarChkAll();
+}
+// Selecciona/deselecciona TODOS los registros de la página visible actual (respeta filtros)
+function toggleSeleccionarPagina(chk){
+  var ini=(pagActual-1)*PS, fin=Math.min(ini+PS, filtrados.length);
+  var pag=filtrados.slice(ini,fin);
+  pag.forEach(r=>{
+    var dep=String(r['deposito judicial']);
+    if(chk.checked) seleccionados.add(dep); else seleccionados.delete(dep);
+  });
+  renderTabla();
+  actualizarBarraSeleccion();
+}
+// Marca el checkbox "seleccionar todos" como marcado solo si TODOS los de la página actual están seleccionados
+function sincronizarChkAll(){
+  var chkAll=document.getElementById('chk-all');
+  if(!chkAll) return;
+  var ini=(pagActual-1)*PS, fin=Math.min(ini+PS, filtrados.length);
+  var pag=filtrados.slice(ini,fin);
+  chkAll.checked = pag.length>0 && pag.every(r=>seleccionados.has(String(r['deposito judicial'])));
+}
+function limpiarSeleccion(){
+  seleccionados.clear();
+  renderTabla();
+  actualizarBarraSeleccion();
+}
+function actualizarBarraSeleccion(){
+  var bar=document.getElementById('sel-bar');
+  if(!bar) return;
+  if(!seleccionados.size){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
+  var total=filas.reduce((s,r)=>s+(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),0);
+  document.getElementById('sel-bar-count').textContent=seleccionados.size.toLocaleString('es-CO');
+  document.getElementById('sel-bar-total').textContent=fmt$(total);
+}
+// Arma la relación (agrupada por persona) de los depósitos seleccionados y abre el modal
+function abrirModalSeleccion(){
+  if(!seleccionados.size){ alert('No ha seleccionado ningún depósito. Marque la casilla al inicio de cada fila.'); return; }
+  var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
+  if(!filas.length){ alert('Los depósitos seleccionados ya no están en la lista actual (puede que hayan sido eliminados).'); return; }
+  var porPersona={}, orden=[];
+  filas.forEach(function(r){
+    var key=String(r['Identificación Demandado']||'—')+'|'+String(r['Nombre Demandante.1']||'—');
+    if(!porPersona[key]){ porPersona[key]=[]; orden.push(key); }
+    porPersona[key].push(r);
+  });
+  var total=0, html='';
+  orden.forEach(function(key){
+    var grupo=porPersona[key];
+    var nombre=grupo[0]['Nombre Demandante.1']||'—';
+    var cedula=grupo[0]['Identificación Demandado']||'—';
+    var subtotal=0;
+    var filasHtml=grupo.map(function(r){
+      var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+      subtotal+=v;
+      var fecha=String(r['Fecha Emisión']||'').substring(0,10);
+      return `<tr><td class="mono">${eh(r['deposito judicial'])}</td><td class="mono">${eh(fecha)}</td><td class="mono" style="text-align:right">${fmt$(v)}</td></tr>`;
+    }).join('');
+    total+=subtotal;
+    html+=`<div class="sel-grupo">
+      <div class="sel-grupo-hdr"><b>${eh(nombre)}</b> <span class="mono" style="color:var(--soft)">· C.C./NIT ${eh(cedula)}</span></div>
+      <table class="sel-tabla"><thead><tr><th>Depósito</th><th>Fecha</th><th style="text-align:right">Valor</th></tr></thead>
+      <tbody>${filasHtml}
+      <tr class="sel-subtotal"><td colspan="2">Subtotal · ${grupo.length} depósito${grupo.length===1?'':'s'}</td><td style="text-align:right">${fmt$(subtotal)}</td></tr>
+      </tbody></table></div>`;
+  });
+  document.getElementById('sel-contenido').innerHTML=html;
+  document.getElementById('sel-count').textContent=filas.length.toLocaleString('es-CO');
+  document.getElementById('sel-total').textContent=fmt$(total);
+  document.getElementById('modal-sel').classList.add('open');
+}
+function cerrarModalSel(){
+  document.getElementById('modal-sel').classList.remove('open');
+}
+// Genera un PDF de la relación de depósitos seleccionados (agrupada por persona) y abre el diálogo de impresión
+function exportarSeleccionPDF(){
+  var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
+  if(!filas.length){ alert('No hay depósitos seleccionados.'); return; }
+  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+  var W=doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(10,31,61); doc.rect(0,0,W,58,'F');
+  doc.setTextColor(232,160,32); doc.setFontSize(15); doc.setFont('helvetica','bold');
+  doc.text('Relación de Depósitos Seleccionados', 40, 28);
+  doc.setTextColor(200,210,225); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello', 40, 44);
+  doc.setTextColor(150,160,175);
+  doc.text('Generado: '+new Date().toLocaleString('es-CO'), W-40, 44, {align:'right'});
+
+  var porPersona={}, orden=[];
+  filas.forEach(function(r){
+    var key=String(r['Identificación Demandado']||'—')+'|'+String(r['Nombre Demandante.1']||'—');
+    if(!porPersona[key]){ porPersona[key]=[]; orden.push(key); }
+    porPersona[key].push(r);
+  });
+  var total=0, y=76;
+  orden.forEach(function(key){
+    var grupo=porPersona[key];
+    var nombre=grupo[0]['Nombre Demandante.1']||'—';
+    var cedula=grupo[0]['Identificación Demandado']||'—';
+    var subtotal=grupo.reduce((s,r)=>s+(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),0);
+    total+=subtotal;
+    doc.setTextColor(40,40,40); doc.setFontSize(10.5); doc.setFont('helvetica','bold');
+    doc.text(String(nombre)+'  ·  C.C./NIT '+String(cedula), 40, y);
+    y+=6;
+    var body=grupo.map(function(r){
+      var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+      return [String(r['deposito judicial']||''), String(r['Fecha Emisión']||'').substring(0,10), fmt$(v)];
+    });
+    body.push(['','Subtotal ('+grupo.length+')', fmt$(subtotal)]);
+    doc.autoTable({
+      startY:y+4,
+      head:[['Depósito','Fecha','Valor']],
+      body:body,
+      theme:'grid',
+      headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:9},
+      bodyStyles:{fontSize:9,textColor:[40,40,40]},
+      margin:{left:40,right:40},
+      columnStyles:{2:{halign:'right'}},
+      didParseCell:function(data){
+        if(data.row.index===body.length-1 && data.section==='body'){ data.cell.styles.fontStyle='bold'; data.cell.styles.textColor=[13,37,71]; }
+      }
+    });
+    y=doc.lastAutoTable.finalY+22;
+    if(y>doc.internal.pageSize.getHeight()-80){ doc.addPage(); y=40; }
+  });
+
+  doc.setDrawColor(232,160,32); doc.setLineWidth(1);
+  doc.line(40,y,W-40,y); y+=20;
+  doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(13,37,71);
+  doc.text('TOTAL COMBINADO ('+filas.length+' depósitos): '+fmt$(total), 40, y);
+
+  doc.save('Depositos_seleccionados_'+new Date().toISOString().slice(0,10)+'.pdf');
+  try{ doc.autoPrint(); doc.output('dataurlnewwindow'); }catch(e){}
+}
+
+// ════════════════════════════════════════════════════════════
+// DUPLICADOS — detecta registros repetidos en el banco
+// ════════════════════════════════════════════════════════════
+function detectarDuplicados(){
+  // 1) Duplicados exactos: mismo número de depósito repetido (nunca debería pasar)
+  var porDeposito={};
+  dataBanco.forEach(function(r){
+    var dep=String(r['deposito judicial']||'').trim();
+    if(!dep) return;
+    (porDeposito[dep]=porDeposito[dep]||[]).push(r);
+  });
+  var exactos=Object.keys(porDeposito).filter(k=>porDeposito[k].length>1).map(k=>porDeposito[k]);
+
+  // 2) Posibles duplicados: misma cédula + nombre + valor + fecha, pero #depósito distinto
+  //    (probable doble digitación / doble carga con distinto consecutivo del banco)
+  var porCombo={};
+  dataBanco.forEach(function(r){
+    var ced=String(r['Identificación Demandado']||'').trim();
+    var nom=String(r['Nombre Demandante.1']||'').trim().toUpperCase();
+    var val=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var fecha=String(r['Fecha Emisión']||'').substring(0,10);
+    if(!ced||!nom||!fecha) return;
+    var key=ced+'|'+nom+'|'+val+'|'+fecha;
+    (porCombo[key]=porCombo[key]||[]).push(r);
+  });
+  var posibles=Object.keys(porCombo).filter(function(k){
+    var g=porCombo[k];
+    if(g.length<2) return false;
+    var deps=new Set(g.map(r=>String(r['deposito judicial']||'').trim()));
+    return deps.size>1; // depósitos distintos, todo lo demás igual -> sospechoso
+  }).map(k=>porCombo[k]);
+
+  return {exactos:exactos, posibles:posibles};
+}
+
+function actualizarBadgeDuplicados(){
+  var b=document.getElementById('badge-dup');
+  if(!b) return;
+  var d=detectarDuplicados();
+  var n=d.exactos.length;
+  if(n>0){ b.style.display='inline-block'; b.textContent=n; }
+  else { b.style.display='none'; }
+}
+
+function renderDuplicados(){
+  var d=detectarDuplicados();
+  var sobrantes=d.exactos.reduce((s,g)=>s+(g.length-1),0);
+  var valorSobrante=d.exactos.reduce((s,g)=>{
+    // el valor "sobrante" es el de todas las copias menos la primera (la que se conservaría)
+    var ordenado=g.slice().sort((a,b)=>(a._id||0)-(b._id||0));
+    return s+ordenado.slice(1).reduce((s2,r)=>s2+(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),0);
+  },0);
+  document.getElementById('dup-k-grupos').textContent=d.exactos.length.toLocaleString('es-CO');
+  document.getElementById('dup-k-sobrantes').textContent=sobrantes.toLocaleString('es-CO');
+  document.getElementById('dup-k-valor').textContent=fmtM(valorSobrante);
+  document.getElementById('dup-k-posibles').textContent=d.posibles.length.toLocaleString('es-CO');
+
+  var contE=document.getElementById('dup-exactos-cont');
+  if(!d.exactos.length){
+    contE.innerHTML='<div class="dup-empty"><div class="ico">✅</div><p>No se encontraron números de depósito repetidos.</p></div>';
+  } else {
+    contE.innerHTML=d.exactos.map(function(g,gi){
+      var ordenado=g.slice().sort((a,b)=>(a._id||0)-(b._id||0));
+      var nombre=ordenado[0]['Nombre Demandante.1']||'—';
+      var cedula=ordenado[0]['Identificación Demandado']||'—';
+      var filas=ordenado.map(function(r,i){
+        var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+        var fecha=String(r['Fecha Emisión']||'').substring(0,10);
+        var esOriginal=i===0;
+        return `<tr>
+          <td>${esOriginal?'<span class="badge b-fin">✅ Conservar</span>':'<label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" class="chk-dup" data-id="${eh(r._id)}" checked/> Eliminar</label>'}</td>
+          <td class="mono">${eh(r._id)}</td>
+          <td class="mono">${eh(fecha)}</td>
+          <td class="mono" style="text-align:right">${fmt$(v)}</td>
+          <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
+          <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+          <td>${eh(r['RESPONSABLE']||'—')}</td>
+        </tr>`;
+      }).join('');
+      return `<div class="dup-card">
+        <div class="dup-card-hdr">
+          <div class="info">📄 Depósito <b>${eh(g[0]['deposito judicial'])}</b> · ${g.length} registros idénticos
+            <div class="sub">${eh(nombre)} · C.C./NIT ${eh(cedula)}</div>
+          </div>
+          <button class="fbtn fbtn-outline" style="border-color:rgba(220,38,38,.4);color:#fca5a5" onclick="eliminarDuplicadosGrupo(this, ${gi})">🗑️ Eliminar seleccionados</button>
+        </div>
+        <table class="dup-tabla" data-grupo="${gi}">
+          <thead><tr><th>Acción</th><th>ID interno</th><th>Fecha</th><th style="text-align:right">Valor</th><th>Devolución</th><th>Aplicación</th><th>Responsable</th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>`;
+    }).join('');
+  }
+  // Guardamos los grupos exactos en memoria para que eliminarDuplicadosGrupo() los pueda usar por índice
+  window._dupGruposExactos = d.exactos.map(g=>g.slice().sort((a,b)=>(a._id||0)-(b._id||0)));
+
+  var contP=document.getElementById('dup-posibles-cont');
+  if(!d.posibles.length){
+    contP.innerHTML='<div class="dup-empty"><div class="ico">✅</div><p>No se encontraron posibles duplicados con depósito distinto.</p></div>';
+  } else {
+    contP.innerHTML=d.posibles.map(function(g){
+      var nombre=g[0]['Nombre Demandante.1']||'—';
+      var cedula=g[0]['Identificación Demandado']||'—';
+      var filas=g.map(function(r){
+        var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+        var fecha=String(r['Fecha Emisión']||'').substring(0,10);
+        return `<tr><td class="mono">${eh(r['deposito judicial'])}</td><td class="mono">${eh(fecha)}</td><td class="mono" style="text-align:right">${fmt$(v)}</td></tr>`;
+      }).join('');
+      return `<div class="dup-card">
+        <div class="dup-card-hdr">
+          <div class="info"><b>${eh(nombre)}</b> · C.C./NIT ${eh(cedula)} · ${g.length} depósitos con mismo valor y fecha
+            <div class="sub">Revise manualmente: puede ser un pago legítimo repetido o una doble carga del banco.</div>
+          </div>
+        </div>
+        <table class="dup-tabla"><thead><tr><th>Depósito</th><th>Fecha</th><th style="text-align:right">Valor</th></tr></thead>
+        <tbody>${filas}</tbody></table>
+      </div>`;
+    }).join('');
+  }
+}
+
+// Elimina en Supabase las filas marcadas (checkbox) de un grupo de duplicados exactos, conservando la primera (más antigua por id)
+async function eliminarDuplicadosGrupo(btn, gi){
+  var grupo=(window._dupGruposExactos||[])[gi];
+  if(!grupo) return;
+  var tabla=btn.closest('.dup-card').querySelector('table.dup-tabla');
+  var ids=Array.from(tabla.querySelectorAll('.chk-dup:checked')).map(chk=>chk.getAttribute('data-id'));
+  if(!ids.length){ alert('No hay filas marcadas para eliminar en este grupo (la primera se conserva siempre).'); return; }
+  if(!confirm('Se eliminarán '+ids.length+' registro(s) duplicado(s) del depósito '+grupo[0]['deposito judicial']+'.\nSe conservará el registro más antiguo (ID '+grupo[0]._id+').\n\n¿Continuar? Esta acción no se puede deshacer.')) return;
+  btn.disabled=true; btn.textContent='Eliminando...';
+  try{
+    for(var i=0;i<ids.length;i++){
+      var res=await fetch(SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(ids[i]),{ method:'DELETE', headers: sbHeaders() });
+      if(!res.ok) throw new Error('Supabase HTTP '+res.status+' al eliminar id '+ids[i]);
+    }
+    await cargarTodo();
+    renderDuplicados();
+  }catch(err){
+    alert('Ocurrió un error eliminando los duplicados: '+err.message+'\nRevise cuáles quedaron eliminados antes de reintentar.');
+    btn.disabled=false; btn.textContent='🗑️ Eliminar seleccionados';
+  }
 }
 
 // PENDIENTES
