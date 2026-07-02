@@ -70,6 +70,11 @@
       <h1 id="cardDocumentos">0</h1>
       <p>Almacenados</p>
     </div>
+    <div class="card morado">
+      <h3>Alertas</h3>
+      <h1 id="cardAlertas">0</h1>
+      <p>Pólizas por vencer</p>
+    </div>
   </div>
 
   <!-- HERRAMIENTAS -->
@@ -93,6 +98,9 @@
       <button class="imprimir" id="btnImprimirMasivo" disabled>
         <i class="fa-solid fa-print"></i> Imprimir Seleccionados <span id="contadorSeleccion">(0)</span>
       </button>
+      <button class="exportar" id="btnExportarCSV">
+        <i class="fa-solid fa-file-csv"></i> Exportar CSV
+      </button>
     </div>
   </div>
 
@@ -108,6 +116,7 @@
           <th>Dependencia</th>
           <th>Estado</th>
           <th>Documentos</th>
+          <th>Póliza</th>
           <th></th>
         </tr>
       </thead>
@@ -139,6 +148,7 @@
       <button class="tab" data-panel="documentos">Documentos</button>
       <button class="tab" data-panel="formatos">Formatos</button>
       <button class="tab" data-panel="observaciones">Observaciones</button>
+      <button class="tab" data-panel="historial">Historial</button>
     </div>
 
     <!-- PANEL: DATOS -->
@@ -146,16 +156,19 @@
       <h3>Información general</h3>
       <form id="formDatos" class="grid">
         <div>
-          <label>Nombre completo</label>
+          <label>Nombre completo *</label>
           <input type="text" id="campoNombre" required>
+          <span class="error-campo" id="errorNombre"></span>
         </div>
         <div>
-          <label>Cédula</label>
+          <label>Cédula *</label>
           <input type="text" id="campoCedula" required>
+          <span class="error-campo" id="errorCedula"></span>
         </div>
         <div>
-          <label>Correo</label>
-          <input type="email" id="campoCorreo">
+          <label>Correo *</label>
+          <input type="email" id="campoCorreo" required>
+          <span class="error-campo" id="errorCorreo"></span>
         </div>
         <div>
           <label>Teléfono</label>
@@ -170,10 +183,6 @@
           <input type="text" id="campoDependencia">
         </div>
         <div>
-          <label>Valor del contrato</label>
-          <input type="text" id="campoValor" placeholder="$ 0">
-        </div>
-        <div>
           <label>Estado del trámite</label>
           <select id="campoEstado">
             <option value="pendiente">Pendiente</option>
@@ -181,7 +190,43 @@
             <option value="completo">Completo</option>
           </select>
         </div>
+        <div>
+          <label>Vencimiento póliza de cumplimiento</label>
+          <input type="date" id="campoVencimientoPoliza">
+        </div>
       </form>
+
+      <h3 class="separador">Valor y plazo del contrato</h3>
+      <div class="grid grid-plazo">
+        <div>
+          <label>Valor total *</label>
+          <input type="text" id="campoValorTotal" placeholder="$ 0">
+          <span class="error-campo" id="errorValorTotal"></span>
+        </div>
+        <div>
+          <label>Plazo — meses</label>
+          <input type="number" id="campoPlazoMeses" min="0" value="0">
+        </div>
+        <div>
+          <label>Plazo — días</label>
+          <input type="number" id="campoPlazoDias" min="0" max="29" value="0">
+        </div>
+      </div>
+      <div class="valores-calculados">
+        <div class="valor-calc">
+          <span>Valor mensual</span>
+          <strong id="calcValorMensual">$ 0</strong>
+        </div>
+        <div class="valor-calc">
+          <span>Valor diario</span>
+          <strong id="calcValorDiario">$ 0</strong>
+        </div>
+        <div class="valor-calc">
+          <span>Plazo total en días</span>
+          <strong id="calcPlazoDias">0</strong>
+        </div>
+      </div>
+
       <div class="panel-acciones">
         <button type="button" class="guardar" id="btnGuardarDatos"><i class="fa-solid fa-floppy-disk"></i> Guardar cambios</button>
       </div>
@@ -226,6 +271,14 @@
       <textarea id="campoObservaciones" rows="6" placeholder="Anotaciones sobre el expediente..."></textarea>
       <div class="panel-acciones">
         <button type="button" class="guardar" id="btnGuardarObs"><i class="fa-solid fa-floppy-disk"></i> Guardar observación</button>
+      </div>
+    </div>
+
+    <!-- PANEL: HISTORIAL -->
+    <div class="panel" data-panel="historial" hidden>
+      <h3>Historial de cambios de estado</h3>
+      <div class="linea-tiempo" id="listaHistorial">
+        <!-- generado por app.js -->
       </div>
     </div>
 
