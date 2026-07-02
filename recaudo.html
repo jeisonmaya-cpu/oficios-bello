@@ -151,6 +151,9 @@ table.sel-tabla th{text-align:left;padding:5px 8px;color:var(--soft);font-weight
   text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border)}
 table.sel-tabla td{padding:5px 8px;border-bottom:1px solid var(--border2)}
 tr.sel-subtotal td{font-weight:700;color:var(--gold2);border-top:1px solid var(--border)}
+select.sel-tramite{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;cursor:pointer;width:100%}
+select.sel-tramite option{background:#0d1a30;color:var(--text)}
 .sel-total-box{margin-top:6px;padding:14px 16px;border-radius:var(--radius-sm);
   background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);
   display:flex;align-items:center;justify-content:space-between}
@@ -1064,11 +1067,11 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 
 <!-- ══ MODAL SELECCIÓN / IMPRESIÓN DE DEPÓSITOS ══ -->
 <div class="ov" id="modal-sel" onclick="if(event.target===this)cerrarModalSel()">
-  <div class="mbox" style="max-width:860px">
+  <div class="mbox" style="max-width:960px">
     <div class="mhdr">
       <div class="mhdr-info">
-        <h3>🖨️ Depósitos seleccionados (<span id="sel-count">0</span>)</h3>
-        <p>Marque cuáles quedan en "Aplicar" y cuáles no, y luego genere el PDF</p>
+        <h3>📦 Entrega a Recaudos y Pagos (<span id="sel-count">0</span>)</h3>
+        <p>Por cada depósito elija si se Aplica o se Devuelve. El consignante (banco) y el valor quedan listos para cruzar en Recaudos y Pagos</p>
       </div>
       <button class="mclose" onclick="cerrarModalSel()">✕</button>
     </div>
@@ -1080,7 +1083,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="fbtn fbtn-outline" onclick="cerrarModalSel()">Cerrar</button>
-        <button class="fbtn fbtn-green" onclick="aplicarSeleccionEnTramite()">✅ Aplicar marcados (→ En trámite)</button>
+        <button class="fbtn fbtn-green" onclick="procesarSeleccionEnTramite()">▶️ Procesar marcados (→ En trámite)</button>
         <button class="fbtn fbtn-gold" onclick="exportarSeleccionPDF()">📄 Generar PDF (para imprimir)</button>
       </div>
     </div>
@@ -1779,15 +1782,16 @@ function actualizarBarraSeleccion(){
   document.getElementById('sel-bar-total').textContent=fmt$(total);
 }
 // Arma la relación (agrupada por persona) de los depósitos seleccionados y abre el modal.
-// Cada depósito trae una casilla "Aplicar" (marcada por defecto) para decidir cuáles
-// se pasan a Estado Aplicación = EN TRÁMITE y cuáles se dejan fuera de ese lote.
+// Cada depósito trae un selector "Trámite" (Sin definir / Aplicar / Devolver) para decidir
+// qué se le pide a Recaudos y Pagos que haga con ese dinero, y muestra el Nombre Consignante
+// (banco/entidad que hizo la consignación) para que puedan cruzarlo en su propio sistema.
 function abrirModalSeleccion(){
   if(!seleccionados.size){ alert('No ha seleccionado ningún depósito. Marque la casilla al inicio de cada fila.'); return; }
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
   if(!filas.length){ alert('Los depósitos seleccionados ya no están en la lista actual (puede que hayan sido eliminados).'); return; }
-  // Recordar qué quedó marcado/desmarcado si el modal ya estaba abierto antes (ej. tras aplicar un lote)
-  var marcaPrevia={};
-  document.querySelectorAll('#sel-contenido .chk-aplicar').forEach(function(c){ marcaPrevia[c.getAttribute('data-id')]=c.checked; });
+  // Recordar qué trámite quedó elegido si el modal ya estaba abierto antes (ej. tras procesar un lote)
+  var tramitePrevio={};
+  document.querySelectorAll('#sel-contenido .sel-tramite').forEach(function(s){ tramitePrevio[s.getAttribute('data-id')]=s.value; });
   var porPersona={}, orden=[];
   filas.forEach(function(r){
     var key=String(r['Identificación Demandado']||'—')+'|'+String(r['Nombre Demandante.1']||'—');
@@ -1805,21 +1809,30 @@ function abrirModalSeleccion(){
       subtotal+=v;
       var fecha=String(r['Fecha Emisión']||'').substring(0,10);
       var idStr=String(r._id);
-      var marcado = (idStr in marcaPrevia) ? marcaPrevia[idStr] : true;
+      var t=(idStr in tramitePrevio)?tramitePrevio[idStr]:'';
+      var consig=r['Nombre Consignante']||'—';
+      var concepto=r['Concepto del Depósito']||'';
       return `<tr>
         <td class="mono">${eh(r['deposito judicial'])}</td>
         <td class="mono">${eh(fecha)}</td>
+        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${eh(consig)}${concepto?' · '+eh(concepto):''}">${eh(consig)}</td>
         <td class="mono" style="text-align:right">${fmt$(v)}</td>
-        <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
-        <td style="text-align:center"><input type="checkbox" class="chk-aplicar" data-id="${eh(idStr)}" data-dep="${eh(r['deposito judicial'])}" ${marcado?'checked':''}/></td>
+        <td style="white-space:nowrap">${badgeEst(r['ESTADO DEVOLUCION'])} ${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+        <td>
+          <select class="sel-tramite" data-id="${eh(idStr)}" data-dep="${eh(r['deposito judicial'])}">
+            <option value="" ${t===''?'selected':''}>— Sin definir —</option>
+            <option value="aplicar" ${t==='aplicar'?'selected':''}>✅ Aplicar</option>
+            <option value="devolver" ${t==='devolver'?'selected':''}>↩️ Devolver</option>
+          </select>
+        </td>
       </tr>`;
     }).join('');
     total+=subtotal;
     html+=`<div class="sel-grupo">
       <div class="sel-grupo-hdr"><b>${eh(nombre)}</b> <span class="mono" style="color:var(--soft)">· C.C./NIT ${eh(cedula)}</span></div>
-      <table class="sel-tabla"><thead><tr><th>Depósito</th><th>Fecha</th><th style="text-align:right">Valor</th><th>Estado actual</th><th style="text-align:center">Aplicar</th></tr></thead>
+      <table class="sel-tabla"><thead><tr><th>Depósito</th><th>Fecha</th><th>Consignante</th><th style="text-align:right">Valor</th><th>Estado</th><th>Trámite</th></tr></thead>
       <tbody>${filasHtml}
-      <tr class="sel-subtotal"><td colspan="2">Subtotal · ${grupo.length} depósito${grupo.length===1?'':'s'}</td><td style="text-align:right">${fmt$(subtotal)}</td><td colspan="2"></td></tr>
+      <tr class="sel-subtotal"><td colspan="3">Subtotal · ${grupo.length} depósito${grupo.length===1?'':'s'}</td><td style="text-align:right">${fmt$(subtotal)}</td><td colspan="2"></td></tr>
       </tbody></table></div>`;
   });
   document.getElementById('sel-contenido').innerHTML=html;
@@ -1830,51 +1843,63 @@ function abrirModalSeleccion(){
 function cerrarModalSel(){
   document.getElementById('modal-sel').classList.remove('open');
 }
-// Actualiza en Supabase el Estado de Aplicación a EN TRÁMITE de los depósitos marcados
-// con la casilla "Aplicar" dentro del modal. Los que quedaron desmarcados no se tocan.
-async function aplicarSeleccionEnTramite(){
+// Actualiza en Supabase el Estado de Devolución o el Estado de Aplicación (según lo elegido
+// por depósito en el selector "Trámite") a EN TRÁMITE. Los que quedaron "Sin definir" no se tocan.
+async function procesarSeleccionEnTramite(){
   if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
-  var checks=Array.from(document.querySelectorAll('#sel-contenido .chk-aplicar:checked'));
-  if(!checks.length){ alert('No hay depósitos marcados en la columna "Aplicar". Marque al menos uno o use "Cerrar" si no va a aplicar ninguno.'); return; }
-  var detalles=checks.map(c=>({id:c.getAttribute('data-id'), dep:c.getAttribute('data-dep')}));
-  if(!confirm('Se actualizará el Estado de Aplicación a "EN TRÁMITE" para '+detalles.length+' depósito(s) marcado(s).\n\nQuedará pendiente de que usted lo confirme como Finalizado más adelante en el módulo.\n\n¿Continuar?')) return;
+  var selects=Array.from(document.querySelectorAll('#sel-contenido .sel-tramite')).filter(s=>s.value);
+  if(!selects.length){ alert('No hay depósitos con un trámite elegido. Seleccione "Aplicar" o "Devolver" en al menos uno, o use "Cerrar" si no va a procesar ninguno.'); return; }
+  var aAplicar=selects.filter(s=>s.value==='aplicar').map(s=>({id:s.getAttribute('data-id'),dep:s.getAttribute('data-dep')}));
+  var aDevolver=selects.filter(s=>s.value==='devolver').map(s=>({id:s.getAttribute('data-id'),dep:s.getAttribute('data-dep')}));
+  var msg='Se actualizará el estado a "EN TRÁMITE" así:\n';
+  if(aAplicar.length) msg+='  • Aplicar: '+aAplicar.length+' depósito(s)\n';
+  if(aDevolver.length) msg+='  • Devolver: '+aDevolver.length+' depósito(s)\n';
+  msg+='\nQuedará pendiente de que usted lo confirme como Finalizado más adelante en el módulo.\n\n¿Continuar?';
+  if(!confirm(msg)) return;
 
   var user=USUARIO_ACTIVO;
   var okCount=0, failCount=0;
-  for(var i=0;i<detalles.length;i++){
-    var idTec=detalles[i].id;
-    var filaPrev=dataBanco.find(x=>String(x._id)===idTec);
-    var estadoAntes=filaPrev?String(filaPrev['ESTADO APLICACIÓN']||'').trim():'';
-    var payload={ estado_aplicacion:'EN TRAMITE', ultima_edicion:new Date().toISOString(), editado_por:user };
-    var ok=await patchRecaudo(idTec, payload);
-    if(ok){
-      okCount++;
-      if(filaPrev){ filaPrev['ESTADO APLICACIÓN']='EN TRAMITE'; filaPrev._editadoPor=user; filaPrev._editadoFecha=new Date().toLocaleString('es-CO'); filaPrev._ultimaEdicionISO=payload.ultima_edicion; }
-      if(estadoAntes!=='EN TRAMITE'){
-        registrarBitacora(detalles[i].dep, user, 'ESTADO APLICACIÓN: "'+(estadoAntes||'(vacío)')+'" → "EN TRAMITE" (aplicado en lote desde selección múltiple)');
-      }
-    } else { failCount++; }
+
+  async function procesarLista(lista, campo, etiqueta){
+    for(var i=0;i<lista.length;i++){
+      var idTec=lista[i].id;
+      var filaPrev=dataBanco.find(x=>String(x._id)===idTec);
+      var estadoAntes=filaPrev?String(filaPrev[etiqueta]||'').trim():'';
+      var payload={ ultima_edicion:new Date().toISOString(), editado_por:user };
+      payload[campo]='EN TRAMITE';
+      var ok=await patchRecaudo(idTec, payload);
+      if(ok){
+        okCount++;
+        if(filaPrev){ filaPrev[etiqueta]='EN TRAMITE'; filaPrev._editadoPor=user; filaPrev._editadoFecha=new Date().toLocaleString('es-CO'); filaPrev._ultimaEdicionISO=payload.ultima_edicion; }
+        if(estadoAntes!=='EN TRAMITE'){
+          registrarBitacora(lista[i].dep, user, etiqueta+': "'+(estadoAntes||'(vacío)')+'" → "EN TRAMITE" (procesado en lote desde selección múltiple)');
+        }
+      } else { failCount++; }
+    }
   }
+  await procesarLista(aAplicar, 'estado_aplicacion', 'ESTADO APLICACIÓN');
+  await procesarLista(aDevolver, 'estado_devolucion', 'ESTADO DEVOLUCION');
+
   renderKpis(); filtrar(); actualizarBadgeDuplicados();
   abrirModalSeleccion(); // refresca el modal mostrando los nuevos estados
   if(failCount){ alert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.\n⚠️ '+failCount+' no se pudieron actualizar (revise su conexión e inténtelo de nuevo).'); }
   else { alert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.'); }
 }
-// Genera un PDF de la relación de depósitos seleccionados (agrupada por persona), con la
-// columna "Aplica" reflejando lo marcado en el modal, y abre el diálogo de impresión.
+// Genera el PDF de entrega para Recaudos y Pagos: depósito, consignante (banco/quien consignó),
+// concepto del depósito, valor y el trámite pedido (Aplicar/Devolver) por cada uno.
 function exportarSeleccionPDF(){
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
   if(!filas.length){ alert('No hay depósitos seleccionados.'); return; }
   if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
-  var aplicaPorId={};
-  document.querySelectorAll('#sel-contenido .chk-aplicar').forEach(function(c){ aplicaPorId[c.getAttribute('data-id')]=c.checked; });
+  var tramitePorId={};
+  document.querySelectorAll('#sel-contenido .sel-tramite').forEach(function(s){ tramitePorId[s.getAttribute('data-id')]=s.value; });
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
   var W=doc.internal.pageSize.getWidth();
 
   doc.setFillColor(10,31,61); doc.rect(0,0,W,58,'F');
   doc.setTextColor(232,160,32); doc.setFontSize(15); doc.setFont('helvetica','bold');
-  doc.text('Relación de Depósitos Seleccionados', 40, 28);
+  doc.text('Entrega de Depósitos a Recaudos y Pagos', 40, 28);
   doc.setTextColor(200,210,225); doc.setFontSize(9); doc.setFont('helvetica','normal');
   doc.text('Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello', 40, 44);
   doc.setTextColor(150,160,175);
@@ -1887,6 +1912,7 @@ function exportarSeleccionPDF(){
     porPersona[key].push(r);
   });
   var total=0, y=76;
+  var etiquetaTramite={'aplicar':'✅ Aplicar','devolver':'↩️ Devolver','':'—'};
   orden.forEach(function(key){
     var grupo=porPersona[key];
     var nombre=grupo[0]['Nombre Demandante.1']||'—';
@@ -1899,19 +1925,23 @@ function exportarSeleccionPDF(){
     var body=grupo.map(function(r){
       var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
       var idStr=String(r._id);
-      var aplica=(idStr in aplicaPorId)?aplicaPorId[idStr]:true;
-      return [String(r['deposito judicial']||''), String(r['Fecha Emisión']||'').substring(0,10), fmt$(v), aplica?'Sí':'No'];
+      var t=(idStr in tramitePorId)?tramitePorId[idStr]:'';
+      var consig=r['Nombre Consignante']||'—';
+      var idConsig=r['Identificación Consignante']||'';
+      var consigTxt=idConsig? String(consig)+' (NIT/CC '+idConsig+')' : String(consig);
+      var concepto=r['Concepto del Depósito']||'—';
+      return [String(r['deposito judicial']||''), String(r['Fecha Emisión']||'').substring(0,10), consigTxt, concepto, fmt$(v), etiquetaTramite[t]];
     });
-    body.push(['','Subtotal ('+grupo.length+')', fmt$(subtotal), '']);
+    body.push(['','Subtotal ('+grupo.length+')','','', fmt$(subtotal), '']);
     doc.autoTable({
       startY:y+4,
-      head:[['Depósito','Fecha','Valor','Aplica']],
+      head:[['Depósito','Fecha','Consignante','Concepto','Valor','Trámite']],
       body:body,
       theme:'grid',
-      headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:9},
-      bodyStyles:{fontSize:9,textColor:[40,40,40]},
+      headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:8.5},
+      bodyStyles:{fontSize:8,textColor:[40,40,40]},
       margin:{left:40,right:40},
-      columnStyles:{2:{halign:'right'},3:{halign:'center'}},
+      columnStyles:{4:{halign:'right'},5:{halign:'center'}},
       didParseCell:function(data){
         if(data.row.index===body.length-1 && data.section==='body'){ data.cell.styles.fontStyle='bold'; data.cell.styles.textColor=[13,37,71]; }
       }
@@ -1925,7 +1955,7 @@ function exportarSeleccionPDF(){
   doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(13,37,71);
   doc.text('TOTAL COMBINADO ('+filas.length+' depósitos): '+fmt$(total), 40, y);
 
-  doc.save('Depositos_seleccionados_'+new Date().toISOString().slice(0,10)+'.pdf');
+  doc.save('Entrega_recaudos_pagos_'+new Date().toISOString().slice(0,10)+'.pdf');
   try{ doc.autoPrint(); doc.output('dataurlnewwindow'); }catch(e){}
 }
 
@@ -2279,7 +2309,7 @@ function renderOtrosDepositos(cid, depActual){
         <input type="checkbox" class="chk-dep" ${todosMarcados?'checked':''} onchange="toggleSeleccionCedula('${cidEsc}', this.checked)"/> Marcar todos de esta persona
       </label>
       <span style="font-size:11.5px;color:var(--soft)" id="m-otros-dep-marcados">${marcados} marcado${marcados===1?'':'s'}</span>
-      <button class="fbtn fbtn-gold" style="font-size:11px;padding:5px 11px;margin-left:auto" onclick="abrirModalSeleccion()">📋 Ver / Aplicar seleccionados</button>
+      <button class="fbtn fbtn-gold" style="font-size:11px;padding:5px 11px;margin-left:auto" onclick="abrirModalSeleccion()">📦 Ver / Procesar seleccionados</button>
     </div>`;
     html+=todos.map(d=>{
       var esActual=String(d['deposito judicial'])===String(depActual);
