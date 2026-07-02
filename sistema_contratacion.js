@@ -13,13 +13,25 @@
 // 1. DATOS (en producción: reemplazar por fetch('/api/contratistas'))
 // -----------------------------------------------------
 const DOCUMENTOS_REQUERIDOS = [
-  { clave: 'cedula', nombre: 'Cédula de ciudadanía' },
-  { clave: 'rut', nombre: 'RUT' },
-  { clave: 'hoja_vida', nombre: 'Hoja de vida (SIGEP)' },
-  { clave: 'antecedentes', nombre: 'Certificado antecedentes' },
-  { clave: 'poliza', nombre: 'Póliza de cumplimiento' },
-  { clave: 'certificado_bancario', nombre: 'Certificación bancaria' },
+  { clave: 'redam', nombre: 'Certificado del Registro de Deudores Alimentarios Morosos – REDAM' },
+  { clave: 'cedula', nombre: 'Fotocopia cédula de ciudadanía (PDF)' },
+  { clave: 'eps', nombre: 'Certificado de la Entidad Promotora de Salud - EPS' },
+  { clave: 'pension', nombre: 'Certificado de afiliación al Fondo de Pensión' },
+  { clave: 'educacion_formal', nombre: 'Certificados de estudio de educación formal' },
+  { clave: 'certificados_educacion', nombre: 'Certificados de Educación' },
+  { clave: 'tarjeta_profesional', nombre: 'Tarjeta, Registro o Matrícula profesional en los casos exigidos por la Ley' },
+  { clave: 'laborales', nombre: 'Certificados laborales' },
+  { clave: 'antecedentes_disciplinarios', nombre: 'Certificado Vigente de Antecedentes disciplinarios profesionales en los casos exigidos por la Ley' },
+  { clave: 'rut', nombre: 'RUT (Registro Único Tributario)' },
+  { clave: 'libreta_militar', nombre: 'Copia Libreta militar o certificado de definición de situación militar' },
+  { clave: 'hoja_vida_sigep', nombre: 'Hoja de Vida del SIGEP II' },
+  { clave: 'cuenta_bancaria', nombre: 'Certificado cuenta bancaria' },
 ];
+
+// Documentos requeridos para un contratista: la lista base + los agregados manualmente
+function docsRequeridos(c) {
+  return [...DOCUMENTOS_REQUERIDOS, ...(c.documentosExtra || [])];
+}
 
 let contratistas = [
   {
@@ -28,7 +40,8 @@ let contratistas = [
     valorTotal: 4500000, plazoMeses: 4, plazoDias: 0, vencimientoPoliza: '2026-11-15',
     estado: 'completo', actualizadoEn: '2026-06-10T14:30:00',
     bitacora: [{ texto: 'Expediente completo. Póliza verificada con la aseguradora.', fecha: '2026-06-10T14:32:00' }],
-    documentos: ['cedula', 'rut', 'hoja_vida', 'antecedentes', 'poliza', 'certificado_bancario'],
+    documentosExtra: [],
+    documentos: ['redam', 'cedula', 'eps', 'pension', 'educacion_formal', 'certificados_educacion', 'tarjeta_profesional', 'laborales', 'antecedentes_disciplinarios', 'rut', 'libreta_militar', 'hoja_vida_sigep', 'cuenta_bancaria'],
     historialEstados: [{ anterior: null, nuevo: 'pendiente', fecha: '2026-05-02T09:00:00' }, { anterior: 'pendiente', nuevo: 'completo', fecha: '2026-06-10T14:30:00' }],
   },
   {
@@ -36,8 +49,9 @@ let contratistas = [
     telefono: '3009876543', cargo: 'Ingeniera', dependencia: 'Planeación',
     valorTotal: 5200000, plazoMeses: 3, plazoDias: 15, vencimientoPoliza: '2026-07-20',
     estado: 'pendiente', actualizadoEn: '2026-06-01T11:00:00',
-    bitacora: [{ texto: 'Se solicitó por correo la póliza de cumplimiento y la certificación bancaria.', fecha: '2026-06-01T11:05:00' }],
-    documentos: ['cedula', 'rut', 'hoja_vida', 'antecedentes'],
+    bitacora: [{ texto: 'Se solicitó por correo el certificado de cuenta bancaria y la hoja de vida del SIGEP II.', fecha: '2026-06-01T11:05:00' }],
+    documentosExtra: [],
+    documentos: ['redam', 'cedula', 'eps', 'pension', 'educacion_formal', 'laborales', 'rut'],
     historialEstados: [{ anterior: null, nuevo: 'pendiente', fecha: '2026-06-01T11:00:00' }],
   },
   {
@@ -46,6 +60,7 @@ let contratistas = [
     valorTotal: 3800000, plazoMeses: 6, plazoDias: 0, vencimientoPoliza: '',
     estado: 'revision', actualizadoEn: '2026-06-28T16:45:00',
     bitacora: [],
+    documentosExtra: [],
     documentos: ['cedula', 'rut'],
     historialEstados: [{ anterior: null, nuevo: 'pendiente', fecha: '2026-06-15T08:00:00' }, { anterior: 'pendiente', nuevo: 'revision', fecha: '2026-06-28T16:45:00' }],
   },
@@ -175,7 +190,7 @@ function renderTabla() {
       <td>${c.cargo}</td>
       <td>${c.dependencia}</td>
       <td><span class="estado ${c.estado}">${etiquetaEstado(c.estado)}</span></td>
-      <td>${c.documentos.length}/${DOCUMENTOS_REQUERIDOS.length}</td>
+      <td>${c.documentos.length}/${docsRequeridos(c).length}</td>
       <td><span class="badge-vence ${venc.estado}">${textoVenc}</span></td>
       <td><button class="gestionar" data-id="${c.id}">Gestionar</button></td>
     `;
@@ -298,7 +313,7 @@ function snapshotFormulario() {
 
 // Barra de avance del expediente (documentos cargados vs requeridos)
 function actualizarAvanceExpediente(c) {
-  const total = DOCUMENTOS_REQUERIDOS.length;
+  const total = docsRequeridos(c).length;
   const cargados = c.documentos.length;
   const pct = total > 0 ? Math.round((cargados / total) * 100) : 0;
   const relleno = document.getElementById('avanceRelleno');
@@ -555,20 +570,83 @@ document.getElementById('btnNuevo').addEventListener('click', () => {
 function renderListaDocumentos(c) {
   const cont = document.getElementById('listaDocumentos');
   cont.innerHTML = '';
-  DOCUMENTOS_REQUERIDOS.forEach(doc => {
+
+  docsRequeridos(c).forEach(doc => {
     const cargado = c.documentos.includes(doc.clave);
     const div = document.createElement('div');
     div.className = 'doc-item';
     div.innerHTML = `
       <div class="doc-info">
-        <i class="fa-solid ${cargado ? 'fa-file-pdf' : 'fa-file-circle-question'}"></i>
+        <i class="fa-solid ${cargado ? 'fa-file-circle-check' : 'fa-file-circle-question'}"></i>
         <span>${doc.nombre}</span>
       </div>
-      <span class="doc-estado ${cargado ? 'cargado' : 'faltante'}">${cargado ? 'Cargado' : 'Faltante'}</span>
+      <div class="doc-controles">
+        <button type="button" class="doc-adjuntar" data-clave="${doc.clave}" title="Adjuntar archivo de este documento">
+          <i class="fa-solid fa-paperclip"></i> Adjuntar
+        </button>
+        <span class="doc-estado ${cargado ? 'cargado' : 'faltante'}" data-clave="${doc.clave}" title="Clic para marcar manualmente">${cargado ? 'Cargado' : 'Faltante'}</span>
+      </div>
     `;
     cont.appendChild(div);
   });
+
+  // Adjuntar archivo para un documento específico: al subir, ese ítem queda Cargado
+  cont.querySelectorAll('.doc-adjuntar').forEach(btn => {
+    btn.addEventListener('click', () => {
+      docPendienteClave = btn.dataset.clave;
+      inputArchivoItem.click();
+    });
+  });
+
+  // Toggle manual del estado (para documentos entregados en físico, etc.)
+  cont.querySelectorAll('.doc-estado').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const clave = pill.dataset.clave;
+      const idx = c.documentos.indexOf(clave);
+      if (idx >= 0) {
+        c.documentos.splice(idx, 1);
+        notificar('Documento marcado como faltante');
+      } else {
+        c.documentos.push(clave);
+        notificar('Documento marcado como cargado');
+      }
+      c.actualizadoEn = new Date().toISOString();
+      renderListaDocumentos(c);
+      actualizarAvanceExpediente(c);
+      renderTabla();
+      // TODO: persistir el cambio en la API/Supabase
+    });
+  });
 }
+
+// -----------------------------------------------------
+// AGREGAR DOCUMENTO REQUERIDO ADICIONAL (por contratista)
+// -----------------------------------------------------
+document.getElementById('btnAgregarDoc').addEventListener('click', () => {
+  const c = contratistas.find(x => x.id === contratistaActivoId);
+  if (!c) return;
+  const campo = document.getElementById('campoNuevoDoc');
+  const nombre = campo.value.trim();
+  if (!nombre) { notificar('Escriba el nombre del documento.', 'error'); return; }
+
+  const yaExiste = docsRequeridos(c).some(d => d.nombre.toLowerCase() === nombre.toLowerCase());
+  if (yaExiste) { notificar('Ese documento ya está en la lista.', 'error'); return; }
+
+  if (!c.documentosExtra) c.documentosExtra = [];
+  const clave = 'extra_' + Date.now(); // clave única para el documento personalizado
+  c.documentosExtra.push({ clave, nombre });
+  c.actualizadoEn = new Date().toISOString();
+  campo.value = '';
+  renderListaDocumentos(c);
+  actualizarAvanceExpediente(c);
+  renderTabla();
+  notificar('Documento agregado a la lista de requeridos');
+  // TODO: persistir en la API/Supabase (tabla documentos_extra o tipos_documento)
+});
+
+document.getElementById('campoNuevoDoc').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btnAgregarDoc').click(); }
+});
 
 // -----------------------------------------------------
 // 5. CARGA DE ARCHIVOS -> BACKEND -> GOOGLE DRIVE
@@ -580,6 +658,8 @@ function renderListaDocumentos(c) {
 
 const dropzone = document.getElementById('dropzone');
 const inputArchivo = document.getElementById('inputArchivo');
+const inputArchivoItem = document.getElementById('inputArchivoItem');
+let docPendienteClave = null; // clave del documento al que se está adjuntando archivo
 
 document.getElementById('btnSeleccionarArchivo').addEventListener('click', () => inputArchivo.click());
 
@@ -591,15 +671,23 @@ document.getElementById('btnSeleccionarArchivo').addEventListener('click', () =>
 });
 
 dropzone.addEventListener('drop', (e) => subirArchivos(e.dataTransfer.files));
-inputArchivo.addEventListener('change', (e) => subirArchivos(e.target.files));
+inputArchivo.addEventListener('change', (e) => { subirArchivos(e.target.files); e.target.value = ''; });
 
-function subirArchivos(fileList) {
+// Subida de un archivo asociado a un documento específico de la lista
+inputArchivoItem.addEventListener('change', (e) => {
+  subirArchivos(e.target.files, docPendienteClave);
+  docPendienteClave = null;
+  e.target.value = ''; // permite volver a seleccionar el mismo archivo
+});
+
+function subirArchivos(fileList, claveDoc = null) {
   const c = contratistas.find(x => x.id === contratistaActivoId);
   if (!c || !fileList.length) return;
 
   const formData = new FormData();
   formData.append('nombre', c.nombre);
   formData.append('cedula', c.cedula);
+  if (claveDoc) formData.append('tipoDocumento', claveDoc); // el backend guarda el archivo asociado a este tipo
   Array.from(fileList).forEach(file => formData.append('archivos', file));
 
   const progreso = document.getElementById('progresoSubida');
@@ -622,7 +710,9 @@ function subirArchivos(fileList) {
   xhr.onload = () => {
     if (xhr.status >= 200 && xhr.status < 300) {
       texto.textContent = 'Documentos subidos correctamente.';
-      // El backend responde con las claves de documento que reconoció por nombre de archivo
+      // Si la subida fue de un documento específico, ese ítem queda Cargado
+      if (claveDoc && !c.documentos.includes(claveDoc)) c.documentos.push(claveDoc);
+      // Además, el backend responde con las claves que reconoció por nombre de archivo
       try {
         const respuesta = JSON.parse(xhr.responseText);
         (respuesta.clavesReconocidas || []).forEach(clave => {
@@ -670,7 +760,7 @@ function plantillaExpediente(c) {
   const venc = estadoVencimiento(c.vencimientoPoliza);
   const textoVenc = { 'sin-dato': 'Sin registrar', ok: `Vigente (vence ${c.vencimientoPoliza})`, pronto: `POR VENCER (${c.vencimientoPoliza})`, vencida: `VENCIDA (${c.vencimientoPoliza})` }[venc.estado];
 
-  const checklist = DOCUMENTOS_REQUERIDOS.map(doc => {
+  const checklist = docsRequeridos(c).map(doc => {
     const cargado = c.documentos.includes(doc.clave);
     return `<tr>
       <td style="padding:5px 0;">${doc.nombre}</td>
@@ -709,7 +799,7 @@ function plantillaExpediente(c) {
       <tr><td style="padding:4px 0;color:#555;">Póliza de cumplimiento</td><td>${textoVenc}</td></tr>
     </table>
 
-    <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">2. Checklist documental (${c.documentos.length}/${DOCUMENTOS_REQUERIDOS.length})</h2>
+    <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">2. Checklist documental (${c.documentos.length}/${docsRequeridos(c).length})</h2>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">${checklist}</table>
 
     <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">3. Historial de estados</h2>
@@ -797,7 +887,7 @@ document.getElementById('btnExportarCSV').addEventListener('click', () => {
       c.nombre, c.cedula, c.correo || '', c.telefono || '', c.cargo || '', c.dependencia || '',
       etiquetaEstado(c.estado), c.valorTotal || 0, c.plazoMeses || 0, c.plazoDias || 0,
       Math.round(valorMensual), Math.round(valorDiario), c.vencimientoPoliza || '',
-      `${c.documentos.length}/${DOCUMENTOS_REQUERIDOS.length}`,
+      `${c.documentos.length}/${docsRequeridos(c).length}`,
     ];
   });
 

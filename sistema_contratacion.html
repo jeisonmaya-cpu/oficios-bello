@@ -154,13 +154,13 @@
     <!-- Avance del expediente (documentos cargados / requeridos) -->
     <div class="avance-expediente">
       <div class="avance-barra"><div class="avance-relleno" id="avanceRelleno"></div></div>
-      <span class="avance-texto" id="avanceTexto">0 de 6 documentos</span>
+      <span class="avance-texto" id="avanceTexto">0 de 13 documentos</span>
     </div>
 
     <div class="tabs">
       <button class="tab active" data-panel="datos">Datos</button>
-      <button class="tab" data-panel="documentos">Documentos</button>
-      <button class="tab" data-panel="formatos">Formatos</button>
+      <button class="tab" data-panel="documentos">Documentos Contratista</button>
+      <button class="tab" data-panel="formatos">Formatos Alcaldía</button>
       <button class="tab" data-panel="observaciones">Bitácora</button>
       <button class="tab" data-panel="historial">Historial</button>
     </div>
@@ -248,18 +248,25 @@
 
     <!-- PANEL: DOCUMENTOS -->
     <div class="panel" data-panel="documentos" hidden>
-      <h3>Documentos del expediente</h3>
+      <h3>Documentos Contratista</h3>
 
       <div class="dropzone" id="dropzone">
         <i class="fa-solid fa-cloud-arrow-up"></i>
         <p>Arrastre archivos aquí o</p>
         <button type="button" id="btnSeleccionarArchivo">Seleccionar archivos</button>
         <input type="file" id="inputArchivo" multiple hidden>
-        <span class="dropzone-nota">Cédula, RUT, hoja de vida, certificados, pólizas (PDF, JPG, PNG)</span>
+        <input type="file" id="inputArchivoItem" hidden>
+        <span class="dropzone-nota">También puede adjuntar documento por documento con el botón de cada ítem</span>
       </div>
 
       <div class="lista-documentos" id="listaDocumentos">
-        <!-- documentos ya cargados / requeridos, generados por app.js -->
+        <!-- documentos requeridos / cargados, generados por app.js -->
+      </div>
+
+      <!-- Agregar un documento requerido adicional para este contratista -->
+      <div class="agregar-doc">
+        <input type="text" id="campoNuevoDoc" placeholder="Otro documento requerido para este contratista...">
+        <button type="button" id="btnAgregarDoc"><i class="fa-solid fa-plus"></i> Agregar</button>
       </div>
 
       <div class="progreso" id="progresoSubida" hidden>
@@ -270,7 +277,7 @@
 
     <!-- PANEL: FORMATOS -->
     <div class="panel" data-panel="formatos" hidden>
-      <h3>Formatos e impresión individual</h3>
+      <h3>Formatos Alcaldía</h3>
       <div class="acciones">
         <button data-formato="contrato"><i class="fa-solid fa-print"></i> Contrato</button>
         <button data-formato="acta_inicio"><i class="fa-solid fa-print"></i> Acta de Inicio</button>
