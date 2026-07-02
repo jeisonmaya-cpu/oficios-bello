@@ -110,13 +110,13 @@
       <thead>
         <tr>
           <th class="col-check"><input type="checkbox" id="seleccionarTodos"></th>
-          <th>Nombre</th>
-          <th>Cédula</th>
-          <th>Cargo</th>
-          <th>Dependencia</th>
-          <th>Estado</th>
-          <th>Documentos</th>
-          <th>Póliza</th>
+          <th class="ordenable" data-orden="nombre">Nombre <i class="fa-solid fa-sort"></i></th>
+          <th class="ordenable" data-orden="cedula">Cédula <i class="fa-solid fa-sort"></i></th>
+          <th class="ordenable" data-orden="cargo">Cargo <i class="fa-solid fa-sort"></i></th>
+          <th class="ordenable" data-orden="dependencia">Dependencia <i class="fa-solid fa-sort"></i></th>
+          <th class="ordenable" data-orden="estado">Estado <i class="fa-solid fa-sort"></i></th>
+          <th class="ordenable" data-orden="documentos">Documentos <i class="fa-solid fa-sort"></i></th>
+          <th class="ordenable" data-orden="poliza">Póliza <i class="fa-solid fa-sort"></i></th>
           <th></th>
         </tr>
       </thead>
@@ -138,16 +138,30 @@
     <div class="cabecera">
       <div class="cabecera-titulo">
         <span class="sello" id="modalSello">Completo</span>
-        <h2 id="modalNombre">Nombre del contratista</h2>
+        <div>
+          <h2 id="modalNombre">Nombre del contratista</h2>
+          <div class="cabecera-sub">
+            <span class="copiable" id="copiarCedula" title="Clic para copiar la cédula">
+              <i class="fa-regular fa-copy"></i> C.C. <span id="modalCedula">—</span>
+            </span>
+            <span class="cabecera-fecha" id="modalActualizado"></span>
+          </div>
+        </div>
       </div>
       <button id="cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+
+    <!-- Avance del expediente (documentos cargados / requeridos) -->
+    <div class="avance-expediente">
+      <div class="avance-barra"><div class="avance-relleno" id="avanceRelleno"></div></div>
+      <span class="avance-texto" id="avanceTexto">0 de 6 documentos</span>
     </div>
 
     <div class="tabs">
       <button class="tab active" data-panel="datos">Datos</button>
       <button class="tab" data-panel="documentos">Documentos</button>
       <button class="tab" data-panel="formatos">Formatos</button>
-      <button class="tab" data-panel="observaciones">Observaciones</button>
+      <button class="tab" data-panel="observaciones">Bitácora</button>
       <button class="tab" data-panel="historial">Historial</button>
     </div>
 
@@ -262,15 +276,19 @@
         <button data-formato="acta_inicio"><i class="fa-solid fa-print"></i> Acta de Inicio</button>
         <button data-formato="seguridad_social"><i class="fa-solid fa-print"></i> Seguridad Social</button>
         <button data-formato="hoja_vida"><i class="fa-solid fa-print"></i> Hoja de Vida</button>
+        <button data-formato="expediente" class="accion-destacada"><i class="fa-solid fa-folder-open"></i> Expediente completo (datos + checklist + bitácora)</button>
       </div>
     </div>
 
-    <!-- PANEL: OBSERVACIONES -->
+    <!-- PANEL: OBSERVACIONES (BITÁCORA) -->
     <div class="panel" data-panel="observaciones" hidden>
-      <h3>Observaciones</h3>
-      <textarea id="campoObservaciones" rows="6" placeholder="Anotaciones sobre el expediente..."></textarea>
-      <div class="panel-acciones">
-        <button type="button" class="guardar" id="btnGuardarObs"><i class="fa-solid fa-floppy-disk"></i> Guardar observación</button>
+      <h3>Bitácora del expediente</h3>
+      <div class="bitacora-entrada">
+        <textarea id="campoNuevaAnotacion" rows="3" placeholder="Nueva anotación... (Ctrl+Enter para agregar)"></textarea>
+        <button type="button" class="guardar" id="btnAgregarAnotacion"><i class="fa-solid fa-plus"></i> Agregar anotación</button>
+      </div>
+      <div class="bitacora-lista" id="listaBitacora">
+        <!-- anotaciones generadas por app.js -->
       </div>
     </div>
 
@@ -287,6 +305,9 @@
 
 <!-- Área oculta usada para generar el documento imprimible -->
 <div id="areaImprimible" class="imprimible" hidden></div>
+
+<!-- Notificaciones flotantes -->
+<div id="toasts" class="toasts"></div>
 
 <script src="sistema_contratacion.js"></script>
 </body>

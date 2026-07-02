@@ -26,7 +26,8 @@ let contratistas = [
     id: 1, nombre: 'Juan Pérez', cedula: '1034567890', correo: 'juan.perez@example.com',
     telefono: '3001234567', cargo: 'Abogado', dependencia: 'Jurídica',
     valorTotal: 4500000, plazoMeses: 4, plazoDias: 0, vencimientoPoliza: '2026-11-15',
-    estado: 'completo', observaciones: '',
+    estado: 'completo', actualizadoEn: '2026-06-10T14:30:00',
+    bitacora: [{ texto: 'Expediente completo. Póliza verificada con la aseguradora.', fecha: '2026-06-10T14:32:00' }],
     documentos: ['cedula', 'rut', 'hoja_vida', 'antecedentes', 'poliza', 'certificado_bancario'],
     historialEstados: [{ anterior: null, nuevo: 'pendiente', fecha: '2026-05-02T09:00:00' }, { anterior: 'pendiente', nuevo: 'completo', fecha: '2026-06-10T14:30:00' }],
   },
@@ -34,7 +35,8 @@ let contratistas = [
     id: 2, nombre: 'Ana Gómez', cedula: '43125467', correo: 'ana.gomez@example.com',
     telefono: '3009876543', cargo: 'Ingeniera', dependencia: 'Planeación',
     valorTotal: 5200000, plazoMeses: 3, plazoDias: 15, vencimientoPoliza: '2026-07-20',
-    estado: 'pendiente', observaciones: '',
+    estado: 'pendiente', actualizadoEn: '2026-06-01T11:00:00',
+    bitacora: [{ texto: 'Se solicitó por correo la póliza de cumplimiento y la certificación bancaria.', fecha: '2026-06-01T11:05:00' }],
     documentos: ['cedula', 'rut', 'hoja_vida', 'antecedentes'],
     historialEstados: [{ anterior: null, nuevo: 'pendiente', fecha: '2026-06-01T11:00:00' }],
   },
@@ -42,7 +44,8 @@ let contratistas = [
     id: 3, nombre: 'Carlos López', cedula: '80987654', correo: 'carlos.lopez@example.com',
     telefono: '3011122233', cargo: 'Contador', dependencia: 'Hacienda',
     valorTotal: 3800000, plazoMeses: 6, plazoDias: 0, vencimientoPoliza: '',
-    estado: 'revision', observaciones: '',
+    estado: 'revision', actualizadoEn: '2026-06-28T16:45:00',
+    bitacora: [],
     documentos: ['cedula', 'rut'],
     historialEstados: [{ anterior: null, nuevo: 'pendiente', fecha: '2026-06-15T08:00:00' }, { anterior: 'pendiente', nuevo: 'revision', fecha: '2026-06-28T16:45:00' }],
   },
@@ -85,6 +88,24 @@ function estadoVencimiento(fechaISO) {
 
 let seleccionados = new Set();
 let contratistaActivoId = null;
+let ordenActual = { campo: 'nombre', direccion: 1 }; // 1 asc, -1 desc
+let _snapshotModal = null; // estado del formulario al abrir, para detectar cambios sin guardar
+
+// -----------------------------------------------------
+// NOTIFICACIONES (TOASTS)
+// -----------------------------------------------------
+function notificar(mensaje, tipo = 'exito') {
+  const cont = document.getElementById('toasts');
+  const toast = document.createElement('div');
+  const icono = tipo === 'exito' ? 'fa-circle-check' : 'fa-circle-exclamation';
+  toast.className = `toast ${tipo}`;
+  toast.innerHTML = `<i class="fa-solid ${icono}"></i> ${mensaje}`;
+  cont.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('saliendo');
+    setTimeout(() => toast.remove(), 350);
+  }, 2600);
+}
 
 // -----------------------------------------------------
 // 2. RENDER TABLA + TARJETAS
@@ -120,6 +141,21 @@ function renderTabla() {
     const coincideTexto = !texto || c.nombre.toLowerCase().includes(texto) || c.cedula.includes(texto);
     const coincideEstado = filtro === 'todos' || c.estado === filtro;
     return coincideTexto && coincideEstado;
+  });
+
+  // Ordenamiento según la columna activa
+  const valorOrden = (c) => {
+    switch (ordenActual.campo) {
+      case 'documentos': return c.documentos.length;
+      case 'poliza': return c.vencimientoPoliza || '9999-12-31'; // sin dato al final ascendente
+      default: return (c[ordenActual.campo] || '').toString().toLowerCase();
+    }
+  };
+  filtrados.sort((a, b) => {
+    const va = valorOrden(a), vb = valorOrden(b);
+    if (va < vb) return -1 * ordenActual.direccion;
+    if (va > vb) return 1 * ordenActual.direccion;
+    return 0;
   });
 
   tablaBody.innerHTML = '';
@@ -160,6 +196,28 @@ function actualizarBarraSeleccion() {
 buscador.addEventListener('input', renderTabla);
 filtroEstado.addEventListener('change', renderTabla);
 
+// Ordenamiento al hacer clic en el encabezado de la columna
+document.querySelectorAll('th.ordenable').forEach(th => {
+  th.addEventListener('click', () => {
+    const campo = th.dataset.orden;
+    if (ordenActual.campo === campo) {
+      ordenActual.direccion *= -1; // segundo clic invierte la dirección
+    } else {
+      ordenActual = { campo, direccion: 1 };
+    }
+    document.querySelectorAll('th.ordenable').forEach(t => t.classList.toggle('activa', t === th));
+    renderTabla();
+  });
+});
+
+// Atajo: "/" enfoca el buscador desde cualquier parte del dashboard
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && !modal.classList.contains('abierto') && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    buscador.focus();
+  }
+});
+
 document.getElementById('seleccionarTodos').addEventListener('change', (e) => {
   const filas = tablaBody.querySelectorAll('.chk-fila');
   filas.forEach(chk => {
@@ -193,9 +251,15 @@ function abrirModal(id) {
   contratistaActivoId = id;
 
   document.getElementById('modalNombre').textContent = c.nombre;
+  document.getElementById('modalCedula').textContent = c.cedula || '—';
   const sello = document.getElementById('modalSello');
   sello.textContent = etiquetaEstado(c.estado);
   sello.className = `sello ${c.estado}`;
+
+  const actualizado = document.getElementById('modalActualizado');
+  actualizado.textContent = c.actualizadoEn
+    ? `Última actualización: ${new Date(c.actualizadoEn).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}`
+    : '';
 
   document.getElementById('campoNombre').value = c.nombre;
   document.getElementById('campoCedula').value = c.cedula;
@@ -208,14 +272,39 @@ function abrirModal(id) {
   document.getElementById('campoValorTotal').value = c.valorTotal ? c.valorTotal : '';
   document.getElementById('campoPlazoMeses').value = c.plazoMeses || 0;
   document.getElementById('campoPlazoDias').value = c.plazoDias || 0;
-  document.getElementById('campoObservaciones').value = c.observaciones || '';
+  document.getElementById('campoNuevaAnotacion').value = '';
   limpiarErrores();
   actualizarValoresCalculados();
+  actualizarAvanceExpediente(c);
 
   renderListaDocumentos(c);
   renderHistorial(c);
+  renderBitacora(c);
   cambiarPanel('datos');
   modal.classList.add('abierto');
+
+  // Snapshot del formulario para detectar cambios sin guardar al cerrar
+  _snapshotModal = snapshotFormulario();
+}
+
+// Serializa el estado actual del formulario de Datos
+function snapshotFormulario() {
+  return ['campoNombre', 'campoCedula', 'campoCorreo', 'campoTelefono', 'campoCargo',
+    'campoDependencia', 'campoEstado', 'campoVencimientoPoliza', 'campoValorTotal',
+    'campoPlazoMeses', 'campoPlazoDias']
+    .map(id => document.getElementById(id).value)
+    .join('|');
+}
+
+// Barra de avance del expediente (documentos cargados vs requeridos)
+function actualizarAvanceExpediente(c) {
+  const total = DOCUMENTOS_REQUERIDOS.length;
+  const cargados = c.documentos.length;
+  const pct = total > 0 ? Math.round((cargados / total) * 100) : 0;
+  const relleno = document.getElementById('avanceRelleno');
+  relleno.style.width = pct + '%';
+  relleno.classList.toggle('completo', cargados === total);
+  document.getElementById('avanceTexto').textContent = `${cargados} de ${total} documentos (${pct}%)`;
 }
 
 // Recalcula valor mensual/diario en vivo mientras se edita valor o plazo
@@ -260,14 +349,96 @@ function renderHistorial(c) {
   }).join('');
 }
 
-function cerrarModal() {
+function cerrarModal(forzar = false) {
+  // Guard: si hay cambios sin guardar en el formulario, pedir confirmación
+  if (!forzar && _snapshotModal !== null && snapshotFormulario() !== _snapshotModal) {
+    const confirmar = confirm('Hay cambios sin guardar en los datos del contratista. ¿Cerrar de todas formas?');
+    if (!confirmar) return;
+  }
   modal.classList.remove('abierto');
   contratistaActivoId = null;
+  _snapshotModal = null;
 }
 
-document.getElementById('cerrar').addEventListener('click', cerrarModal);
+document.getElementById('cerrar').addEventListener('click', () => cerrarModal());
 modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModal(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('abierto')) cerrarModal(); });
+
+// Atajo Ctrl+S dentro del modal: guarda los datos sin pasar por el mouse
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's' && modal.classList.contains('abierto')) {
+    e.preventDefault();
+    document.getElementById('btnGuardarDatos').click();
+  }
+});
+
+// Clic en la cédula de la cabecera: copiar al portapapeles
+document.getElementById('copiarCedula').addEventListener('click', () => {
+  const cedula = document.getElementById('modalCedula').textContent;
+  if (!cedula || cedula === '—') return;
+  navigator.clipboard.writeText(cedula).then(() => {
+    const el = document.getElementById('copiarCedula');
+    el.classList.add('copiado');
+    notificar('Cédula copiada al portapapeles');
+    setTimeout(() => el.classList.remove('copiado'), 1500);
+  }).catch(() => notificar('No se pudo copiar. Copie manualmente.', 'error'));
+});
+
+// -----------------------------------------------------
+// BITÁCORA DEL EXPEDIENTE (anotaciones fechadas, solo agregar)
+// -----------------------------------------------------
+function renderBitacora(c) {
+  const cont = document.getElementById('listaBitacora');
+  const bitacora = c.bitacora || [];
+
+  if (!bitacora.length) {
+    cont.innerHTML = '<p class="historial-vacio">Sin anotaciones. Registre aquí cada actuación del proceso.</p>';
+    return;
+  }
+
+  cont.innerHTML = [...bitacora].reverse().map(a => {
+    const fecha = new Date(a.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+    return `
+      <div class="anotacion">
+        <div class="anotacion-fecha"><i class="fa-regular fa-clock"></i> ${fecha}</div>
+        <div class="anotacion-texto">${escaparHTML(a.texto)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Escapa HTML del texto libre de la bitácora para evitar inyección en el DOM
+function escaparHTML(texto) {
+  const div = document.createElement('div');
+  div.textContent = texto;
+  return div.innerHTML;
+}
+
+function agregarAnotacion() {
+  const c = contratistas.find(x => x.id === contratistaActivoId);
+  if (!c) return;
+  const campo = document.getElementById('campoNuevaAnotacion');
+  const texto = campo.value.trim();
+  if (!texto) { notificar('Escriba la anotación antes de agregarla.', 'error'); return; }
+
+  if (!c.bitacora) c.bitacora = [];
+  c.bitacora.push({ texto, fecha: new Date().toISOString() });
+  c.actualizadoEn = new Date().toISOString();
+  campo.value = '';
+  renderBitacora(c);
+  notificar('Anotación registrada en la bitácora');
+  // TODO: reemplazar por POST /api/contratistas/:id/bitacora
+}
+
+document.getElementById('btnAgregarAnotacion').addEventListener('click', agregarAnotacion);
+
+// Ctrl+Enter en el campo de anotación la agrega directo
+document.getElementById('campoNuevaAnotacion').addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    agregarAnotacion();
+  }
+});
 
 // Tabs internos del modal
 document.querySelectorAll('.tab').forEach(tab => {
@@ -355,16 +526,12 @@ document.getElementById('btnGuardarDatos').addEventListener('click', () => {
     c.estado = nuevoEstado;
   }
 
-  renderTabla();
-  abrirModal(c.id); // refresca cabecera (nombre, sello) e historial
-  // TODO: reemplazar por PUT /api/contratistas/:id
-});
+  c.actualizadoEn = new Date().toISOString();
 
-document.getElementById('btnGuardarObs').addEventListener('click', () => {
-  const c = contratistas.find(x => x.id === contratistaActivoId);
-  if (!c) return;
-  c.observaciones = document.getElementById('campoObservaciones').value;
-  // TODO: reemplazar por PUT /api/contratistas/:id/observaciones
+  renderTabla();
+  abrirModal(c.id); // refresca cabecera (nombre, sello), historial y snapshot
+  notificar('Cambios guardados correctamente');
+  // TODO: reemplazar por PUT /api/contratistas/:id
 });
 
 // Nuevo contratista (alta rápida)
@@ -373,7 +540,7 @@ document.getElementById('btnNuevo').addEventListener('click', () => {
   const nuevo = {
     id: nuevoId, nombre: 'Nuevo contratista', cedula: '', correo: '', telefono: '',
     cargo: '', dependencia: '', valorTotal: 0, plazoMeses: 0, plazoDias: 0, vencimientoPoliza: '',
-    estado: 'pendiente', observaciones: '', documentos: [],
+    estado: 'pendiente', actualizadoEn: new Date().toISOString(), bitacora: [], documentos: [],
     historialEstados: [{ anterior: null, nuevo: 'pendiente', fecha: new Date().toISOString() }],
   };
   contratistas.push(nuevo);
@@ -463,9 +630,13 @@ function subirArchivos(fileList) {
         });
       } catch (err) { /* respuesta no JSON, se ignora */ }
       renderListaDocumentos(c);
+      actualizarAvanceExpediente(c);
+      c.actualizadoEn = new Date().toISOString();
       renderTabla();
+      notificar('Documentos subidos a Google Drive');
     } else {
       texto.textContent = 'Error al subir. Intente nuevamente.';
+      notificar('Error al subir los documentos', 'error');
     }
     setTimeout(() => { progreso.hidden = true; }, 1500);
   };
@@ -490,7 +661,66 @@ const NOMBRES_FORMATO = {
   acta_inicio: 'Acta de Inicio',
   seguridad_social: 'Afiliación Seguridad Social',
   hoja_vida: 'Hoja de Vida',
+  expediente: 'Expediente Completo',
 };
+
+// Formato especial: expediente completo con checklist documental, historial y bitácora
+function plantillaExpediente(c) {
+  const { totalDias, valorMensual, valorDiario } = calcularValores(c);
+  const venc = estadoVencimiento(c.vencimientoPoliza);
+  const textoVenc = { 'sin-dato': 'Sin registrar', ok: `Vigente (vence ${c.vencimientoPoliza})`, pronto: `POR VENCER (${c.vencimientoPoliza})`, vencida: `VENCIDA (${c.vencimientoPoliza})` }[venc.estado];
+
+  const checklist = DOCUMENTOS_REQUERIDOS.map(doc => {
+    const cargado = c.documentos.includes(doc.clave);
+    return `<tr>
+      <td style="padding:5px 0;">${doc.nombre}</td>
+      <td style="padding:5px 0;font-weight:600;color:${cargado ? '#2e7d4f' : '#c0392b'};">${cargado ? '✓ Cargado' : '✗ Faltante'}</td>
+    </tr>`;
+  }).join('');
+
+  const historial = (c.historialEstados || []).map(h => {
+    const fecha = new Date(h.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+    const cambio = h.anterior ? `${etiquetaEstado(h.anterior)} → ${etiquetaEstado(h.nuevo)}` : `Registrado como ${etiquetaEstado(h.nuevo)}`;
+    return `<tr><td style="padding:4px 0;width:200px;color:#555;">${fecha}</td><td style="padding:4px 0;">${cambio}</td></tr>`;
+  }).join('') || '<tr><td style="padding:4px 0;color:#888;">Sin registros</td></tr>';
+
+  const bitacora = (c.bitacora || []).map(a => {
+    const fecha = new Date(a.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+    return `<div style="margin-bottom:10px;padding-left:10px;border-left:2px solid #ccc;">
+      <div style="font-size:11px;color:#777;">${fecha}</div>
+      <div>${escaparHTML(a.texto)}</div>
+    </div>`;
+  }).join('') || '<p style="color:#888;">Sin anotaciones registradas.</p>';
+
+  return `
+    <h1 style="font-size:20px;margin-bottom:4px;">Expediente de Contratación</h1>
+    <p style="color:#555;margin-bottom:6px;">${c.nombre} — C.C. ${c.cedula}</p>
+    <p style="color:#888;font-size:12px;margin-bottom:24px;">Generado el ${new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })} · Estado: ${etiquetaEstado(c.estado)}</p>
+
+    <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">1. Información general</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <tr><td style="padding:4px 0;width:180px;color:#555;">Correo</td><td>${c.correo || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Teléfono</td><td>${c.telefono || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Cargo / Perfil</td><td>${c.cargo || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Dependencia</td><td>${c.dependencia || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Valor total</td><td>${formatoMoneda(c.valorTotal)}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Plazo</td><td>${c.plazoMeses || 0} meses y ${c.plazoDias || 0} días (${totalDias} días)</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Valor mensual / diario</td><td>${formatoMoneda(valorMensual)} / ${formatoMoneda(valorDiario)}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Póliza de cumplimiento</td><td>${textoVenc}</td></tr>
+    </table>
+
+    <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">2. Checklist documental (${c.documentos.length}/${DOCUMENTOS_REQUERIDOS.length})</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">${checklist}</table>
+
+    <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">3. Historial de estados</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">${historial}</table>
+
+    <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">4. Bitácora del proceso</h2>
+    <div style="font-size:13px;">${bitacora}</div>
+
+    <p style="margin-top:40px;font-size:12px;color:#888;">Documento generado automáticamente por el Sistema de Gestión Contractual.</p>
+  `;
+}
 
 function plantillaFormato(c, formato) {
   const titulo = NOMBRES_FORMATO[formato] || 'Documento';
@@ -516,7 +746,7 @@ function plantillaFormato(c, formato) {
 
 function imprimirFormato(c, formato) {
   const area = document.getElementById('areaImprimible');
-  area.innerHTML = plantillaFormato(c, formato);
+  area.innerHTML = formato === 'expediente' ? plantillaExpediente(c) : plantillaFormato(c, formato);
   area.hidden = false;
   window.print();
   area.hidden = true;
@@ -592,6 +822,7 @@ document.getElementById('btnExportarCSV').addEventListener('click', () => {
   enlace.click();
   document.body.removeChild(enlace);
   URL.revokeObjectURL(url);
+  notificar(`CSV exportado (${filtrados.length} contratistas)`);
 });
 
 // -----------------------------------------------------
