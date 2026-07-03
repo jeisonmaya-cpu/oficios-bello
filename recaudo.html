@@ -47,6 +47,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
   color:var(--text);cursor:pointer;text-decoration:none;font-family:'DM Sans',sans-serif;transition:all .18s}
 .tb-btn:hover{background:rgba(255,255,255,.12)}
 .tb-btn.gold{background:rgba(232,160,32,.15);border-color:rgba(232,160,32,.35);color:var(--gold2)}
+.tb-btn.on{background:var(--gold);border-color:var(--gold);color:#0a1f3d}
 
 /* ── TABS ── */
 .tabs{position:sticky;top:56px;z-index:99;display:flex;align-items:center;
@@ -408,6 +409,23 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .bv-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .2s}
 .bv-dot.active{background:var(--gold);width:18px;border-radius:4px}
 
+/* ── TOUR GUIADO CON RESALTADO (pasos 2-4 de la bienvenida) ── */
+.bv-spot{position:fixed;z-index:10050;border:2.5px solid var(--gold);border-radius:10px;
+  box-shadow:0 0 0 4px rgba(232,160,32,.25),0 0 24px rgba(232,160,32,.55);
+  pointer-events:none;display:none;transition:top .35s cubic-bezier(.22,.68,0,1.2),left .35s cubic-bezier(.22,.68,0,1.2),
+  width .35s cubic-bezier(.22,.68,0,1.2),height .35s cubic-bezier(.22,.68,0,1.2);animation:bvPulse 1.6s ease-in-out infinite}
+.bv-spot.show{display:block}
+@keyframes bvPulse{0%,100%{box-shadow:0 0 0 4px rgba(232,160,32,.25),0 0 24px rgba(232,160,32,.55)}50%{box-shadow:0 0 0 8px rgba(232,160,32,.12),0 0 34px rgba(232,160,32,.75)}}
+.bv-callout{position:fixed;z-index:10051;width:290px;background:linear-gradient(160deg,rgba(13,37,80,.98),rgba(9,24,48,.99));
+  border:1px solid rgba(232,160,32,.35);border-radius:14px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,.6);
+  display:none;transition:top .35s cubic-bezier(.22,.68,0,1.2),left .35s cubic-bezier(.22,.68,0,1.2)}
+.bv-callout.show{display:block}
+.bv-callout-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bv-callout-ico{font-size:20px;flex-shrink:0}
+.bv-callout-titulo{font-family:'DM Serif Display',serif;font-size:15px;font-weight:400;line-height:1.2}
+.bv-callout-txt{font-size:12px;color:var(--soft);line-height:1.55;margin-bottom:12px}
+.bv-callout-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+
 /* ── CABECERA MODAL REDISEÑADA ── */
 .mhdr-dep{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace;margin-bottom:6px}
 .mhdr-nombre{display:flex;align-items:center;gap:8px;font-family:'DM Serif Display',serif;font-size:22px;color:#fff;line-height:1.2;margin-bottom:4px}
@@ -627,7 +645,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
           <th style="width:32px" onclick="event.stopPropagation()"><input type="checkbox" id="chk-all" title="Seleccionar todos los de esta página" onclick="toggleSeleccionarPagina(this)"/></th>
           <th onclick="sortBy('deposito judicial', this)">#Depósito</th>
           <th onclick="sortBy('Fecha Emisión', this)">Fecha</th>
-          <th title="Días desde la fecha de emisión, sin gestión finalizada">Antigüedad</th>
+          <th id="th-antiguedad" title="Días desde la fecha de emisión, sin gestión finalizada">Antigüedad</th>
           <th onclick="sortBy('Nombre Demandante.1', this)">Demandado</th>
           <th onclick="sortBy('Identificación Demandado', this)">Cédula</th>
           <th onclick="sortBy('Valor del Depóstio', this)" style="text-align:right">Valor</th>
@@ -735,6 +753,34 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
           <th style="text-align:center">Avance</th>
         </tr></thead>
         <tbody id="dash-resp-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Actividad semanal — quién hizo qué -->
+  <div class="card" style="margin-top:18px">
+    <div class="card-hdr">
+      <div class="card-hdr-title">📅 Actividad — quién hizo qué</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button class="tb-btn" id="act-btn-semana" onclick="cargarActividadSemanal('semana')">Esta semana</button>
+        <button class="tb-btn" id="act-btn-pasada" onclick="cargarActividadSemanal('pasada')">Semana pasada</button>
+        <input type="date" class="finp" id="act-desde" style="width:130px" onchange="cargarActividadSemanal('custom')"/>
+        <span style="font-size:11px;color:var(--soft)">a</span>
+        <input type="date" class="finp" id="act-hasta" style="width:130px" onchange="cargarActividadSemanal('custom')"/>
+        <button class="tb-btn" onclick="exportarActividadPDF()">📄 PDF</button>
+      </div>
+    </div>
+    <div style="padding:6px 18px 4px;font-size:11px;color:var(--soft)" id="act-rango-txt">Cargando...</div>
+    <div style="padding:6px 18px 18px;overflow-x:auto">
+      <table class="dash-table">
+        <thead><tr>
+          <th>Responsable</th>
+          <th style="text-align:right">Gestiones</th>
+          <th style="text-align:right">Depósitos distintos</th>
+          <th>Último cambio</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="act-body"></tbody>
       </table>
     </div>
   </div>
@@ -1086,6 +1132,24 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
           <button class="fbtn fbtn-gold" id="bv-btn-sig" onclick="bvSiguiente()">Siguiente →</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tour guiado: resalta el elemento real de la pantalla + tarjeta flotante de Teo -->
+<div class="bv-spot" id="bv-spot"></div>
+<div class="bv-callout" id="bv-callout">
+  <div class="bv-callout-head">
+    <span class="bv-callout-ico" id="bv-callout-ico">🤖</span>
+    <span class="bv-callout-titulo" id="bv-callout-titulo"></span>
+  </div>
+  <div class="bv-callout-txt" id="bv-callout-txt"></div>
+  <div id="bv-callout-dots" style="display:flex;gap:6px;justify-content:center;margin-bottom:10px"></div>
+  <div class="bv-callout-foot">
+    <button class="fbtn fbtn-outline" id="bv-callout-omitir" onclick="bvCerrar()" style="padding:6px 12px;font-size:11px">Omitir</button>
+    <div style="display:flex;gap:6px">
+      <button class="fbtn fbtn-outline" id="bv-callout-atras" onclick="bvAtras()" style="padding:6px 12px;font-size:11px">← Atrás</button>
+      <button class="fbtn fbtn-gold" id="bv-callout-sig" onclick="bvSiguiente()" style="padding:6px 12px;font-size:11px">Siguiente →</button>
     </div>
   </div>
 </div>
@@ -1744,36 +1808,41 @@ try { loadCfgUsuario(); } catch(e){ cfgUsuario = {}; }
 })();
 
 // ════════════════════════════════════════════════════════════
-// BIENVENIDA "TEO" — solo la primera vez, explica en pasos qué hay de nuevo
-// respecto al Excel de siempre (antigüedad, duplicados, entrega a Recaudos y Pagos)
+// BIENVENIDA "TEO" — solo la primera vez. Los pasos 2 a 4 no solo lo cuentan:
+// cambian de pestaña y resaltan el elemento real en pantalla ("mostrar, no solo contar").
 // ════════════════════════════════════════════════════════════
 const BIENVENIDA_KEY = 'recaudo_bienvenida_v1';
 var bvPasoActual = 0;
 const BV_PASOS = [
   {
+    tipo: 'centro',
     bubble: '¡Hola! Soy Teodoro 👋',
     titulo: '¡Bienvenido a Recaudo!',
-    html: 'Antes de arrancar te cuento en 4 pasitos qué cambió respecto al Excel de siempre. No toma ni un minuto.'
+    html: 'Antes de arrancar te muestro en 4 pasitos qué cambió respecto al Excel de siempre. Voy a ir señalando cada cosa directo en la pantalla — no toma ni un minuto.'
   },
   {
+    tipo: 'spot', tab: 'registros', selector: '#th-antiguedad',
     bubble: '⏳ Nada se te pasa',
     titulo: '🕒 Antigüedad de cada depósito',
-    html: 'Cada depósito sin resolver ahora muestra <b>hace cuántos días</b> está así, con color: <span style="color:#86efac">verde</span> (menos de 15 días), <span style="color:var(--gold2)">amarillo</span> (15 a 30) y <span style="color:#fca5a5">rojo</span> (más de 30). Ya no toca ordenar la columna de fecha a mano para saber qué es urgente.'
+    html: 'Esta columna muestra <b>hace cuántos días</b> un depósito sigue sin resolverse: <span style="color:#86efac">verde</span> (menos de 15 días), <span style="color:var(--gold2)">amarillo</span> (15 a 30) y <span style="color:#fca5a5">rojo</span> (más de 30). Ya no toca ordenar por fecha a mano para saber qué es urgente.'
   },
   {
+    tipo: 'spot', tab: 'duplicados', selector: '#tab-duplicados',
     bubble: '🔁 Yo los encuentro solo',
     titulo: '🔁 Duplicados, detectados solos',
-    html: 'En la pestaña <b>"Duplicados"</b> encuentro los depósitos repetidos —mismo número, o misma cédula/nombre/valor/fecha— y te dejo decidir cuáles eliminar, conservando siempre el más antiguo. En Excel esto era casi imposible de ver con miles de filas.'
+    html: 'Aquí encuentro los depósitos repetidos —mismo número, o misma cédula/nombre/valor/fecha— y te dejo decidir cuáles eliminar, conservando siempre el más antiguo. Con miles de filas, en Excel esto era casi imposible de ver.'
   },
   {
+    tipo: 'spot', tab: 'registros', selector: '#chk-all',
     bubble: '📦 Listo para entregar',
     titulo: '📦 Entrega a Recaudos y Pagos',
-    html: 'Marca varios depósitos —desde la tabla o desde la ficha de una persona—, elige por cada uno si se <b>Aplica</b> o se <b>Devuelve</b>, y genero un PDF listo para entregar, con el banco/consignante incluido para que lo crucen fácil.'
+    html: 'Marca esta casilla (o la de cualquier fila) para seleccionar varios depósitos, elige por cada uno si se <b>Aplica</b> o se <b>Devuelve</b>, y genero un PDF listo para entregar, con el banco/consignante incluido.'
   },
   {
+    tipo: 'centro',
     bubble: '✅ ¡Todo tuyo!',
     titulo: '✅ Listo, ya puedes empezar',
-    html: 'Este mensaje no vuelve a aparecer. Si tienes dudas sobre algo, cualquier duda me la puedes preguntar a mí (Teo) desde el chat, o consultarle a Jeison.'
+    html: 'Este mensaje no vuelve a aparecer. Cualquier duda me la preguntas a mí (Teo) o le escribes a Jeison.'
   }
 ];
 
@@ -1784,21 +1853,77 @@ function intentarMostrarBienvenida(){
 function bvAbrir(){
   bvPasoActual = 0;
   bvRenderPaso();
-  document.getElementById('modal-bv').classList.add('open');
+}
+function bvOcultarTodo(){
+  document.getElementById('modal-bv').classList.remove('open');
+  document.getElementById('bv-spot').classList.remove('show');
+  document.getElementById('bv-callout').classList.remove('show');
 }
 function bvRenderPaso(){
   var p = BV_PASOS[bvPasoActual];
-  document.getElementById('bvBubble').textContent = p.bubble;
-  document.getElementById('bv-titulo').textContent = p.titulo;
-  document.getElementById('bv-contenido').innerHTML = p.html;
-  document.getElementById('bv-dots').innerHTML = BV_PASOS.map(function(_,i){
+  bvOcultarTodo();
+  if(p.tipo === 'centro'){
+    document.getElementById('bvBubble').textContent = p.bubble;
+    document.getElementById('bv-titulo').textContent = p.titulo;
+    document.getElementById('bv-contenido').innerHTML = p.html;
+    bvPintarDots('bv-dots');
+    bvPintarBotones('bv-btn-atras','bv-btn-sig','bv-btn-omitir');
+    document.getElementById('modal-bv').classList.add('open');
+  } else {
+    // Paso con resaltado: primero cambia a la pestaña correcta, luego posiciona el spot
+    goTab(p.tab);
+    document.getElementById('bv-callout-ico').textContent = p.bubble.split(' ')[0];
+    document.getElementById('bv-callout-titulo').textContent = p.titulo;
+    document.getElementById('bv-callout-txt').innerHTML = p.html;
+    bvPintarDots('bv-callout-dots');
+    bvPintarBotones('bv-callout-atras','bv-callout-sig','bv-callout-omitir');
+    setTimeout(function(){ bvPosicionarSpot(p.selector); }, 120);
+  }
+}
+function bvPintarDots(contId){
+  document.getElementById(contId).innerHTML = BV_PASOS.map(function(_,i){
     return '<span class="bv-dot'+(i===bvPasoActual?' active':'')+'"></span>';
   }).join('');
-  document.getElementById('bv-btn-atras').style.visibility = bvPasoActual===0 ? 'hidden' : 'visible';
-  var esUltimo = bvPasoActual === BV_PASOS.length-1;
-  document.getElementById('bv-btn-sig').textContent = esUltimo ? '¡Entendido, vamos! 🚀' : 'Siguiente →';
-  document.getElementById('bv-btn-omitir').style.display = esUltimo ? 'none' : 'inline-flex';
 }
+function bvPintarBotones(idAtras, idSig, idOmitir){
+  var btnAtras=document.getElementById(idAtras), btnSig=document.getElementById(idSig), btnOmitir=document.getElementById(idOmitir);
+  btnAtras.style.visibility = bvPasoActual===0 ? 'hidden' : 'visible';
+  var esUltimo = bvPasoActual === BV_PASOS.length-1;
+  btnSig.textContent = esUltimo ? '¡Entendido, vamos! 🚀' : 'Siguiente →';
+  btnOmitir.style.display = esUltimo ? 'none' : 'inline-flex';
+}
+// Coloca el aro dorado sobre el elemento real y la tarjeta de Teo justo al lado (arriba o abajo, según el espacio disponible)
+function bvPosicionarSpot(selector){
+  var el = document.querySelector(selector);
+  var spot = document.getElementById('bv-spot');
+  var callout = document.getElementById('bv-callout');
+  if(!el){ spot.classList.remove('show'); callout.classList.remove('show'); return; }
+  el.scrollIntoView({block:'center', behavior:'smooth'});
+  setTimeout(function(){
+    var r = el.getBoundingClientRect();
+    var pad = 6;
+    spot.style.left = (r.left-pad)+'px';
+    spot.style.top = (r.top-pad)+'px';
+    spot.style.width = (r.width+pad*2)+'px';
+    spot.style.height = (r.height+pad*2)+'px';
+    spot.classList.add('show');
+
+    var calloutW = 290, margen = 14;
+    var left = Math.min(Math.max(r.left, margen), window.innerWidth-calloutW-margen);
+    var espacioAbajo = window.innerHeight - r.bottom;
+    var arriba;
+    if(espacioAbajo > 220){ arriba = r.bottom + margen; }
+    else { arriba = Math.max(r.top - margen - 260, margen); }
+    callout.style.left = left+'px';
+    callout.style.top = arriba+'px';
+    callout.classList.add('show');
+  }, 300);
+}
+window.addEventListener('resize', function(){
+  if(bvPasoActual===undefined) return;
+  var p = BV_PASOS[bvPasoActual];
+  if(p && p.tipo==='spot' && document.getElementById('bv-spot').classList.contains('show')) bvPosicionarSpot(p.selector);
+});
 function bvSiguiente(){
   if(bvPasoActual < BV_PASOS.length-1){ bvPasoActual++; bvRenderPaso(); }
   else { bvCerrar(); }
@@ -1808,7 +1933,8 @@ function bvAtras(){
 }
 function bvCerrar(){
   try{ localStorage.setItem(BIENVENIDA_KEY, '1'); }catch(e){}
-  document.getElementById('modal-bv').classList.remove('open');
+  bvOcultarTodo();
+  goTab('registros');
 }
 
 // TABS
@@ -3300,10 +3426,166 @@ function renderDashboard(){
   renderTendencia(porMes);
   renderDonaEstado('chart-dev','dona-dev-total',valorDev,conteoDev,valorTotal);
   renderDonaEstado('chart-apl','dona-apl-total',valorApl,conteoApl,valorTotal);
+  cargarActividadSemanal();
 }
 
 function kpiCard(lbl,val,sub){
   return '<div class="dash-kpi"><div class="dash-kpi-lbl">'+lbl+'</div><div class="dash-kpi-val">'+val+'</div><div class="dash-kpi-sub">'+sub+'</div></div>';
+}
+
+// ════════════════════════════════════════════════════════════
+// ACTIVIDAD SEMANAL — "quién hizo qué", leído directo de recaudo_bitacora
+// (no es el estado actual de los depósitos, sino las gestiones registradas en un rango de fechas)
+// ════════════════════════════════════════════════════════════
+var _actividadCache = { desde:null, hasta:null, filas:[] };
+
+function _lunesDe(offsetSemanas){
+  var hoy=new Date(); hoy.setHours(0,0,0,0);
+  var dow=hoy.getDay(); // 0=domingo..6=sábado
+  var diffLunes=(dow===0?-6:1-dow);
+  var lunes=new Date(hoy); lunes.setDate(hoy.getDate()+diffLunes+(offsetSemanas*7));
+  return lunes;
+}
+
+async function cargarActividadSemanal(modo){
+  var desde, hasta;
+  if(modo==='pasada'){
+    desde=_lunesDe(-1);
+    hasta=new Date(desde); hasta.setDate(desde.getDate()+6); hasta.setHours(23,59,59,999);
+  } else if(modo==='custom'){
+    var dEl=document.getElementById('act-desde'), hEl=document.getElementById('act-hasta');
+    if(!dEl.value||!hEl.value) return;
+    desde=new Date(dEl.value+'T00:00:00');
+    hasta=new Date(hEl.value+'T23:59:59');
+  } else {
+    modo='semana';
+    desde=_lunesDe(0);
+    hasta=new Date(); hasta.setHours(23,59,59,999);
+  }
+  var dEl=document.getElementById('act-desde'), hEl=document.getElementById('act-hasta');
+  if(dEl) dEl.value=desde.toISOString().slice(0,10);
+  if(hEl) hEl.value=hasta.toISOString().slice(0,10);
+  var bs=document.getElementById('act-btn-semana'), bp=document.getElementById('act-btn-pasada');
+  if(bs) bs.classList.toggle('on', modo==='semana');
+  if(bp) bp.classList.toggle('on', modo==='pasada');
+  var rangoEl=document.getElementById('act-rango-txt');
+  if(rangoEl) rangoEl.textContent='Cargando actividad del '+desde.toLocaleDateString('es-CO')+' al '+hasta.toLocaleDateString('es-CO')+'...';
+
+  try{
+    var url=SUPABASE_URL+'/rest/v1/recaudo_bitacora?fecha=gte.'+encodeURIComponent(desde.toISOString())
+      +'&fecha=lte.'+encodeURIComponent(hasta.toISOString())+'&order=fecha.desc&select=usuario,cambios,fecha,deposito_judicial';
+    var res=await fetch(url,{headers:sbHeaders()});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var rows=await res.json();
+    _actividadCache={desde:desde,hasta:hasta,filas:rows};
+    renderActividadTabla(rows,desde,hasta);
+  }catch(e){
+    if(rangoEl) rangoEl.textContent='No se pudo cargar la actividad (revise su conexión).';
+    var body=document.getElementById('act-body'); if(body) body.innerHTML='';
+  }
+}
+
+function renderActividadTabla(rows,desde,hasta){
+  var rangoEl=document.getElementById('act-rango-txt');
+  if(rangoEl) rangoEl.textContent=rows.length.toLocaleString('es-CO')+' gestión(es) registrada(s) del '+desde.toLocaleDateString('es-CO')+' al '+hasta.toLocaleDateString('es-CO');
+  var porUsuario={};
+  rows.forEach(function(r){
+    var u=(r.usuario&&r.usuario.trim())?r.usuario.trim():'(sin identificar)';
+    if(!porUsuario[u]) porUsuario[u]={count:0,deps:new Set(),ultima:null,items:[]};
+    porUsuario[u].count++;
+    porUsuario[u].deps.add(r.deposito_judicial);
+    porUsuario[u].items.push(r);
+    if(!porUsuario[u].ultima || new Date(r.fecha)>new Date(porUsuario[u].ultima)) porUsuario[u].ultima=r.fecha;
+  });
+  var usuarios=Object.keys(porUsuario).sort(function(a,b){ return porUsuario[b].count-porUsuario[a].count; });
+  var cont=document.getElementById('act-body');
+  if(!usuarios.length){
+    cont.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Sin gestiones registradas en este rango.</td></tr>';
+    return;
+  }
+  window._actPorUsuario = porUsuario; // para el toggle de detalle sin re-leer el DOM
+  cont.innerHTML=usuarios.map(function(u,idx){
+    var d=porUsuario[u];
+    var f=d.ultima?new Date(d.ultima).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+    var rowId='act-det-'+idx;
+    return '<tr style="cursor:pointer" onclick="actToggleDet(\''+rowId+'\')">'
+      +'<td style="font-weight:600">'+eh(u)+'</td>'
+      +'<td style="text-align:right">'+d.count.toLocaleString('es-CO')+'</td>'
+      +'<td style="text-align:right">'+d.deps.size.toLocaleString('es-CO')+'</td>'
+      +'<td class="mono" style="font-size:11.5px;color:var(--soft)">'+f+'</td>'
+      +'<td style="font-size:11px;color:var(--soft)" id="'+rowId+'-flecha">▾ ver</td>'
+      +'</tr>'
+      +'<tr><td colspan="5" style="padding:0;border:none"><div id="'+rowId+'" style="display:none;padding:8px 4px 14px"></div></td></tr>';
+  }).join('');
+}
+// Expande/colapsa el detalle de gestiones de un responsable (se arma perezosamente al abrir)
+function actToggleDet(rowId){
+  var cont=document.getElementById(rowId);
+  var flecha=document.getElementById(rowId+'-flecha');
+  if(!cont) return;
+  var abrir = cont.style.display==='none';
+  cont.style.display = abrir?'block':'none';
+  if(flecha) flecha.textContent = abrir?'▴ ocultar':'▾ ver';
+  if(abrir && !cont.dataset.armado){
+    var idx=parseInt(rowId.replace('act-det-',''),10);
+    var usuarios=Object.keys(window._actPorUsuario||{}).sort(function(a,b){ return window._actPorUsuario[b].count-window._actPorUsuario[a].count; });
+    var d=window._actPorUsuario[usuarios[idx]];
+    if(d){
+      cont.innerHTML=d.items.slice(0,30).map(function(r){
+        var fh=r.fecha?new Date(r.fecha).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+        return '<div class="log-item"><div class="log-item-top"><span class="mono" style="font-size:10.5px;color:var(--soft)">'+eh(r.deposito_judicial)+'</span><span class="log-fecha">'+fh+'</span></div><div class="log-cambios">'+eh(r.cambios||'')+'</div></div>';
+      }).join('') + (d.items.length>30?'<div style="font-size:11px;color:var(--muted);text-align:center;padding-top:4px">…y '+(d.items.length-30)+' más</div>':'');
+    }
+    cont.dataset.armado='1';
+  }
+}
+// PDF de una página para llevar a reunión: quién gestionó qué en el rango cargado
+function exportarActividadPDF(){
+  if(!_actividadCache.desde || !_actividadCache.filas){ alert('Primero elija un rango de actividad.'); return; }
+  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+  var W=doc.internal.pageSize.getWidth();
+  var desde=_actividadCache.desde, hasta=_actividadCache.hasta;
+
+  doc.setFillColor(10,31,61); doc.rect(0,0,W,58,'F');
+  doc.setTextColor(232,160,32); doc.setFontSize(15); doc.setFont('helvetica','bold');
+  doc.text('Resumen de Actividad — Recaudo', 40, 28);
+  doc.setTextColor(200,210,225); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello', 40, 44);
+  doc.setTextColor(150,160,175);
+  doc.text('Del '+desde.toLocaleDateString('es-CO')+' al '+hasta.toLocaleDateString('es-CO'), W-40, 44, {align:'right'});
+
+  var porUsuario={};
+  _actividadCache.filas.forEach(function(r){
+    var u=(r.usuario&&r.usuario.trim())?r.usuario.trim():'(sin identificar)';
+    if(!porUsuario[u]) porUsuario[u]={count:0,deps:new Set(),ultima:null};
+    porUsuario[u].count++; porUsuario[u].deps.add(r.deposito_judicial);
+    if(!porUsuario[u].ultima || new Date(r.fecha)>new Date(porUsuario[u].ultima)) porUsuario[u].ultima=r.fecha;
+  });
+  var usuarios=Object.keys(porUsuario).sort(function(a,b){ return porUsuario[b].count-porUsuario[a].count; });
+  var body=usuarios.map(function(u){
+    var d=porUsuario[u];
+    var f=d.ultima?new Date(d.ultima).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+    return [u, String(d.count), String(d.deps.size), f];
+  });
+  doc.autoTable({
+    startY:76,
+    head:[['Responsable','Gestiones','Depósitos distintos','Último cambio']],
+    body:body,
+    theme:'grid',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:9},
+    bodyStyles:{fontSize:9,textColor:[40,40,40]},
+    margin:{left:40,right:40},
+    columnStyles:{1:{halign:'center'},2:{halign:'center'}}
+  });
+  var y=doc.lastAutoTable.finalY+22;
+  doc.setDrawColor(232,160,32); doc.setLineWidth(1);
+  doc.line(40,y,W-40,y); y+=20;
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(13,37,71);
+  doc.text('Total: '+_actividadCache.filas.length+' gestión(es) de '+usuarios.length+' responsable(s)', 40, y);
+
+  doc.save('Actividad_recaudo_'+desde.toISOString().slice(0,10)+'_a_'+hasta.toISOString().slice(0,10)+'.pdf');
 }
 
 // Instancias de gráficos (para destruirlas antes de redibujar)
