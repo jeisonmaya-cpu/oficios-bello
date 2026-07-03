@@ -1972,7 +1972,7 @@ function buscarGlobal(){
     return;
   }
   cont.innerHTML=encontrados.map(function(r){
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(r['Valor del Depóstio']);
     var depSeguro=String(r['deposito judicial']).replace(/'/g,"\\'");
     return '<div class="gr-item" onclick="irADepositoGlobal(\''+depSeguro+'\')">'
       +'<div><div class="gr-acc">'+eh(r['Nombre Demandante.1']||'—')+'</div>'
@@ -2101,7 +2101,7 @@ function renderKpis(){
     if(enCurso) tram++;
     else if(algunFin) fin++;
     else pen++;
-    valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valor+=parsearValor(r['Valor del Depóstio']);
   });
   document.getElementById('k-total').textContent=total.toLocaleString('es-CO');
   document.getElementById('k-pen').textContent=pen.toLocaleString('es-CO');
@@ -2113,6 +2113,49 @@ function renderKpis(){
   if(ki) ki.textContent=ultimaSync?('Sync: '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})):'—';
   var bt=document.getElementById('badge-total'); if(bt) bt.textContent=total.toLocaleString('es-CO');
   var bp=document.getElementById('badge-pen'); if(bp) bp.textContent=(pen+tram).toLocaleString('es-CO');
+}
+
+// ════════════════════════════════════════════════════════════
+// PARSEO DE VALORES MONETARIOS — punto único, usado en TODA la app.
+// Corrige el bug donde "1.220.000,00" (formato colombiano) se leía como $1,22
+// porque el regex viejo (/[^\d.]/g) solo quitaba la coma y dejaba los puntos de
+// miles, y parseFloat cortaba en el segundo punto ("1.220" → 1.22).
+// Ahora detecta el formato mirando cuál separador (. o ,) aparece MÁS A LA DERECHA:
+//   "1.220.000,00" → la coma es la última → es decimal → formato colombiano → 1220000.00
+//   "9,009,635.00" → el punto es el último → es decimal → formato EE.UU.     → 9009635.00
+//   "0,57" (solo coma, con 2 dígitos después) → decimal corto → 0.57
+//   "200.000" (solo punto, 3 dígitos después) → separador de miles → 200000
+// Si el valor ya viene como número de Supabase (numeric/float), se usa tal cual.
+// ════════════════════════════════════════════════════════════
+function parsearValor(raw){
+  if(raw===null || raw===undefined || raw==='') return 0;
+  if(typeof raw==='number') return isNaN(raw)?0:raw;
+  var s=String(raw).trim();
+  if(!s) return 0;
+  s=s.replace(/[^\d.,-]/g,''); // fuera símbolos de moneda, espacios, etc.
+  if(!s) return 0;
+  var neg = s.charAt(0)==='-';
+  s = s.replace(/-/g,'');
+  var lastComa=s.lastIndexOf(','), lastPunto=s.lastIndexOf('.');
+  var limpio;
+  if(lastComa>-1 && lastPunto>-1){
+    // Los dos aparecen: el que esté más a la derecha es el separador decimal
+    limpio = lastComa>lastPunto
+      ? s.replace(/\./g,'').replace(',','.')   // colombiano: puntos=miles, coma=decimal
+      : s.replace(/,/g,'');                     // EE.UU.: comas=miles, punto=decimal
+  } else if(lastComa>-1){
+    // Solo coma: 2 dígitos después → decimal corto ("0,57"); si no, separador de miles
+    limpio = (s.length-lastComa-1)===2 ? s.replace(',','.') : s.replace(/,/g,'');
+  } else if(lastPunto>-1){
+    // Solo punto(s): más de uno, o el último grupo no tiene 2 dígitos → son miles ("200.000")
+    var puntos=(s.match(/\./g)||[]).length;
+    limpio = (puntos>1 || (s.length-lastPunto-1)!==2) ? s.replace(/\./g,'') : s;
+  } else {
+    limpio = s;
+  }
+  var n=parseFloat(limpio);
+  if(isNaN(n)) return 0;
+  return neg? -n : n;
 }
 
 function fmtM(n){
@@ -2147,13 +2190,13 @@ function filtrar(){
     if(fEApl){ var ea=normEst(r['ESTADO APLICACIÓN']); if(fEApl==='SIN GESTIONAR'&&ea) return false; if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false; }
     if(fImp){ var imp=impuestoDe(r).toUpperCase(); if(!imp.includes(fImp)) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
-    if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
+    if(fMonto){ var v=parsearValor(r['Valor del Depóstio']); if(v<fMonto) return false; }
     if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
     return true;
   });
   // Si hay filtro de monto activo, ordenar de mayor a menor para priorizar los grandes
   if(fMonto){
-    filtrados.sort((a,b)=>(parseFloat(String(b['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0)-(parseFloat(String(a['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0));
+    filtrados.sort((a,b)=>(parsearValor(b['Valor del Depóstio']))-(parsearValor(a['Valor del Depóstio'])));
   } else {
     ordenarPor(filtrados, sortCol, sortDir);
   }
@@ -2203,7 +2246,7 @@ function renderTabla(){
     var gestionado=r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN'];
     var tieneNotas=r['Observacion'];
     var fecha=String(r['Fecha Emisión']||'');if(fecha.length>10)fecha=fecha.substring(0,10);
-    var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var valor=parsearValor(r['Valor del Depóstio']);
     var cid=String(r['Identificación Demandado']||'');
     var tieneExp=(expedientesPorCedula[cid]||transitoPorCedula[cid])?'<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:#93c5fd"></span>':'';
     // Columna Proceso: 1) lo que el contador escribió a mano  2) radicado del expediente predial  3) comparendos de tránsito  4) vacío
@@ -2277,7 +2320,7 @@ function actualizarBarraSeleccion(){
   if(!seleccionados.size){ bar.classList.remove('show'); return; }
   bar.classList.add('show');
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
-  var total=filas.reduce((s,r)=>s+(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),0);
+  var total=filas.reduce((s,r)=>s+(parsearValor(r['Valor del Depóstio'])),0);
   document.getElementById('sel-bar-count').textContent=seleccionados.size.toLocaleString('es-CO');
   document.getElementById('sel-bar-total').textContent=fmt$(total);
 }
@@ -2305,7 +2348,7 @@ function abrirModalSeleccion(){
     var cedula=grupo[0]['Identificación Demandado']||'—';
     var subtotal=0;
     var filasHtml=grupo.map(function(r){
-      var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+      var v=parsearValor(r['Valor del Depóstio']);
       subtotal+=v;
       var fecha=String(r['Fecha Emisión']||'').substring(0,10);
       var idStr=String(r._id);
@@ -2417,13 +2460,13 @@ function exportarSeleccionPDF(){
     var grupo=porPersona[key];
     var nombre=grupo[0]['Nombre Demandante.1']||'—';
     var cedula=grupo[0]['Identificación Demandado']||'—';
-    var subtotal=grupo.reduce((s,r)=>s+(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),0);
+    var subtotal=grupo.reduce((s,r)=>s+(parsearValor(r['Valor del Depóstio'])),0);
     total+=subtotal;
     doc.setTextColor(40,40,40); doc.setFontSize(10.5); doc.setFont('helvetica','bold');
     doc.text(String(nombre)+'  ·  C.C./NIT '+String(cedula), 40, y);
     y+=6;
     var body=grupo.map(function(r){
-      var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+      var v=parsearValor(r['Valor del Depóstio']);
       var idStr=String(r._id);
       var t=(idStr in tramitePorId)?tramitePorId[idStr]:'';
       var consig=r['Nombre Consignante']||'—';
@@ -2478,7 +2521,7 @@ function detectarDuplicados(){
   dataBanco.forEach(function(r){
     var ced=String(r['Identificación Demandado']||'').trim();
     var nom=String(r['Nombre Demandante.1']||'').trim().toUpperCase();
-    var val=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var val=parsearValor(r['Valor del Depóstio']);
     var fecha=String(r['Fecha Emisión']||'').substring(0,10);
     if(!ced||!nom||!fecha) return;
     var key=ced+'|'+nom+'|'+val+'|'+fecha;
@@ -2509,7 +2552,7 @@ function renderDuplicados(){
   var valorSobrante=d.exactos.reduce((s,g)=>{
     // el valor "sobrante" es el de todas las copias menos la primera (la que se conservaría)
     var ordenado=g.slice().sort((a,b)=>(a._id||0)-(b._id||0));
-    return s+ordenado.slice(1).reduce((s2,r)=>s2+(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),0);
+    return s+ordenado.slice(1).reduce((s2,r)=>s2+(parsearValor(r['Valor del Depóstio'])),0);
   },0);
   document.getElementById('dup-k-grupos').textContent=d.exactos.length.toLocaleString('es-CO');
   document.getElementById('dup-k-sobrantes').textContent=sobrantes.toLocaleString('es-CO');
@@ -2525,7 +2568,7 @@ function renderDuplicados(){
       var nombre=ordenado[0]['Nombre Demandante.1']||'—';
       var cedula=ordenado[0]['Identificación Demandado']||'—';
       var filas=ordenado.map(function(r,i){
-        var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+        var v=parsearValor(r['Valor del Depóstio']);
         var fecha=String(r['Fecha Emisión']||'').substring(0,10);
         var esOriginal=i===0;
         return `<tr>
@@ -2563,7 +2606,7 @@ function renderDuplicados(){
       var nombre=g[0]['Nombre Demandante.1']||'—';
       var cedula=g[0]['Identificación Demandado']||'—';
       var filas=g.map(function(r){
-        var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+        var v=parsearValor(r['Valor del Depóstio']);
         var fecha=String(r['Fecha Emisión']||'').substring(0,10);
         return `<tr><td class="mono">${eh(r['deposito judicial'])}</td><td class="mono">${eh(fecha)}</td><td class="mono" style="text-align:right">${fmt$(v)}</td></tr>`;
       }).join('');
@@ -2613,7 +2656,7 @@ function renderPendientesStats(){
     else if(estado==='EN REVISION') rev++;
     var dias=diasAntiguedad(r);
     if(dias!==null && dias>30) venc++;
-    valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    valor+=parsearValor(r['Valor del Depóstio']);
     var resp=r['RESPONSABLE']||'';if(resp.trim())resps.add(resp.trim());
   });
   var s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
@@ -2637,12 +2680,12 @@ function filtrarPend(){
     if(buscar){ var hay=r._buscable!==undefined?r._buscable:construirBuscable(r); if(hay.indexOf(buscar)<0) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fImp){ if(!impuestoDe(r).toUpperCase().includes(fImp)) return false; }
-    if(fMonto){ var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0; if(v<fMonto) return false; }
+    if(fMonto){ var v=parsearValor(r['Valor del Depóstio']); if(v<fMonto) return false; }
     if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
     return true;
   });
   if(fMonto){
-    pendFiltrados.sort((a,b)=>(parseFloat(String(b['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0)-(parseFloat(String(a['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0));
+    pendFiltrados.sort((a,b)=>(parsearValor(b['Valor del Depóstio']))-(parsearValor(a['Valor del Depóstio'])));
   }
   pagPend=1; renderPendientes();
 }
@@ -2658,7 +2701,7 @@ function renderPendientes(){
   document.getElementById('tbody-pend').innerHTML=pag.map(r=>{
     var dep=r['deposito judicial'];
     var fecha=String(r['Fecha Emisión']||'').substring(0,10);
-    var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var valor=parsearValor(r['Valor del Depóstio']);
     return `<tr tabindex="0" role="button" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${String(dep).replace(/'/g,"\\'")}')}">
       <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}</td>
       <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
@@ -2719,7 +2762,7 @@ function abrirModal(dep){
   document.getElementById('m-dep-num').textContent=dep;
   document.getElementById('m-nombre').textContent=nombre;
   document.getElementById('m-cedula').textContent=cid||'—';
-  var valor=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+  var valor=parsearValor(r['Valor del Depóstio']);
   document.getElementById('m-banco-datos').innerHTML=`
     <div class="banco-item"><div class="banco-lbl">Valor depósito</div><div class="banco-val money">${fmt$(valor)}</div></div>
     <div class="banco-item"><div class="banco-lbl">Fecha emisión</div><div class="banco-val">${eh(String(r['Fecha Emisión']||'').substring(0,10))}</div></div>
@@ -2779,7 +2822,7 @@ function renderOtrosDepositos(cid, depActual){
   if(!todos.length){ wrap.style.display='none'; return; }
   wrap.style.display='block';
   // Total sumado de todos los depósitos de la persona
-  var total=todos.reduce((s,d)=>s+(parseFloat(String(d['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),0);
+  var total=todos.reduce((s,d)=>s+(parsearValor(d['Valor del Depóstio'])),0);
   cnt.textContent=todos.length+(todos.length===1?' depósito':' depósitos');
 
   // ── Armar texto plano con TODOS los depósitos (para copiar de un tirón) ──
@@ -2788,7 +2831,7 @@ function renderOtrosDepositos(cid, depActual){
   lineas.push(nombre+' — C.C./NIT '+cid);
   lineas.push('');
   todos.forEach(function(d){
-    var v=parseFloat(String(d['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(d['Valor del Depóstio']);
     var fecha=String(d['Fecha Emisión']||'').substring(0,10);
     lineas.push(d['deposito judicial']+'\t'+fecha+'\t'+fmt$(v));
   });
@@ -2820,7 +2863,7 @@ function renderOtrosDepositos(cid, depActual){
       var depStr=String(d['deposito judicial']);
       var depEsc=depStr.replace(/'/g,"\\'");
       var marcado=seleccionados.has(depStr);
-      var valor=parseFloat(String(d['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+      var valor=parsearValor(d['Valor del Depóstio']);
       var fecha=String(d['Fecha Emisión']||'').substring(0,10);
       return `<div class="v360-row ${esActual?'actual':''}" ${esActual?'':`onclick="abrirModal('${depEsc}')" style="cursor:pointer"`}>
         <input type="checkbox" class="chk-dep" style="flex-shrink:0" ${marcado?'checked':''} onclick="event.stopPropagation()" onchange="toggleSeleccion('${depEsc}', this.checked); refrescarOtrosDep(); renderTabla();"/>
@@ -3261,8 +3304,9 @@ function parseFechaImport(v){
   return null;
 }
 function parseValorImport(v){
-  v=String(v||'').replace(/\./g,'').replace(/,/g,'.').replace(/[^\d.]/g,'');
-  var n=parseFloat(v); return isNaN(n)?null:Math.round(n*100)/100;
+  var s=String(v||'').trim();
+  if(!s || !/\d/.test(s)) return null; // vacío o sin ningún dígito
+  return Math.round(parsearValor(v)*100)/100;
 }
 function limpiarCedula(v){
   var nums=String(v||'').match(/\d+/g);
@@ -3361,7 +3405,7 @@ function renderDashboard(){
   estadosBase.forEach(k=>{ valorDev[k]=0; conteoDev[k]=0; valorApl[k]=0; conteoApl[k]=0; });
 
   dataBanco.forEach(r=>{
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(r['Valor del Depóstio']);
     valorTotal+=v;
     var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     var tieneGestion=r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN']||r['RESPONSABLE']||r['Observacion'];
@@ -3794,7 +3838,7 @@ function pintarReporte(){
   var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   datos.forEach(r=>{
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(r['Valor del Depóstio']);
     valorTotal+=v;
     var cls=estadoEfectivo(r);
     conteoCls[cls]++; valorCls[cls]+=v;
@@ -3858,7 +3902,7 @@ function renderRepEstado(contId,campo,datos,valorTotal){
   datos.forEach(r=>{
     var e=normEst(r[campo])||'Sin gestionar';
     if(conteo[e]===undefined){conteo[e]=0;valor[e]=0;}
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(r['Valor del Depóstio']);
     conteo[e]++; valor[e]+=v;
   });
   var maxVal=Math.max(1,...Object.values(valor));
@@ -3891,7 +3935,7 @@ function renderReporteDetalle(){
   // Mostrar hasta 500 en pantalla (el export lleva todos)
   var muestra=datos.slice(0,500);
   body.innerHTML=muestra.map(r=>{
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(r['Valor del Depóstio']);
     var cid=String(r['Identificación Demandado']||'').trim();
     var proc=String(r['Proceso']||'').trim() || (expedientesPorCedula[cid]?'📁 '+(expedientesPorCedula[cid][0].radicado||''):'—');
     // Celda de comparendos: usa el cache del año si está; si no, cae al resumen general
@@ -3935,7 +3979,7 @@ function exportarReporteExcel(){
   var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   _repDatos.forEach(r=>{
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(r['Valor del Depóstio']);
     valorTotal+=v;
     var c=estadoEfectivo(r);
     conteoCls[c]++; valorCls[c]+=v;
@@ -3969,7 +4013,7 @@ function exportarReporteExcel(){
     'Fecha Emisión':String(r['Fecha Emisión']||'').substring(0,10),
     'Cédula/NIT':r['Identificación Demandado'],
     'Demandado':r['Nombre Demandante.1'],
-    'Valor':parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0,
+    'Valor':parsearValor(r['Valor del Depóstio']),
     'Proceso':r['Proceso']||'',
     'Clasificación':estadoEfectivo(r),
     'Estado Devolución':normEst(r['ESTADO DEVOLUCION'])||'Sin gestionar',
@@ -4005,7 +4049,7 @@ function exportarReportePDF(){
   var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   _repDatos.forEach(r=>{
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(r['Valor del Depóstio']);
     valorTotal+=v;
     var c=estadoEfectivo(r);
     conteoCls[c]++; valorCls[c]+=v;
@@ -4051,7 +4095,7 @@ function exportarReportePDF(){
     String(r['Fecha Emisión']||'').substring(0,10),
     r['Identificación Demandado']||'',
     (r['Nombre Demandante.1']||'').substring(0,28),
-    fmt$(parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0),
+    fmt$(parsearValor(r['Valor del Depóstio'])),
     (normEst(r['ESTADO DEVOLUCION'])||'—'),
     (normEst(r['ESTADO APLICACIÓN'])||'—'),
     (normResp(r['RESPONSABLE'])||'—').substring(0,20)
@@ -4104,7 +4148,7 @@ function calcularMayoresDeudores(){
   dataBanco.forEach(function(r){
     var cid=String(r['Identificación Demandado']||'').trim();
     if(!cid) return;
-    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    var v=parsearValor(r['Valor del Depóstio']);
     if(!mapa[cid]){
       mapa[cid]={
         cedula:cid,
