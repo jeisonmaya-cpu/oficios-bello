@@ -41,17 +41,37 @@
 <div class="main">
 
   <header>
-    <h1>Sistema de Gestión Contractual</h1>
-    <div class="header-acciones">
-      <button id="btnTema" class="btn-tema" title="Cambiar tema claro/oscuro">
-        <i class="fa-solid fa-moon"></i>
-      </button>
-      <div class="usuario">
-        <i class="fa-solid fa-user-circle"></i>
-        Administrador
+    <div class="marca">
+      <div class="icono-marca"><i class="fa-solid fa-file-signature"></i></div>
+      <div>
+        <h1>Sistema de Gestión Contractual</h1>
+        <p class="subtitulo">Contratación · Alcaldía de Bello</p>
       </div>
     </div>
+
+    <div class="buscar buscar-header">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="buscador" placeholder="Buscar por nombre, cédula o # de contrato...">
+    </div>
+
+    <div class="header-acciones">
+      <span class="pill-info" id="pillActualizado"><span class="punto-vivo"></span> Actualizado —</span>
+      <button id="btnTema" class="pill-boton" title="Cambiar tema claro/oscuro">
+        <i class="fa-solid fa-moon"></i> <span id="btnTemaTexto">Oscuro</span>
+      </button>
+      <a href="home.html" class="pill-boton pill-enlace"><i class="fa-solid fa-house"></i> Inicio</a>
+      <a href="index.html" class="pill-boton pill-enlace"><i class="fa-solid fa-layer-group"></i> Oficios</a>
+    </div>
   </header>
+
+  <!-- BANNER DE ALERTA (contratos con plazo vencido) -->
+  <div class="banner-alerta" id="bannerAlerta" hidden>
+    <div class="banner-texto">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span id="bannerAlertaTexto">Tienes 0 contrato(s) vencidos que requieren atención inmediata.</span>
+    </div>
+    <button id="btnVerVencidos" class="banner-boton">Ver vencidos</button>
+  </div>
 
   <!-- TARJETAS -->
   <div class="cards">
@@ -84,11 +104,6 @@
 
   <!-- HERRAMIENTAS -->
   <div class="toolbar">
-    <div class="buscar">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="buscador" placeholder="Buscar por nombre o cédula...">
-    </div>
-
     <select id="filtroEstado">
       <option value="todos">Todos los estados</option>
       <option value="pendiente">Pendiente</option>

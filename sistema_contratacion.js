@@ -142,7 +142,9 @@ function notificar(mensaje, tipo = 'exito') {
 function aplicarTema(tema) {
   document.documentElement.setAttribute('data-theme', tema);
   const icono = document.querySelector('#btnTema i');
+  const texto = document.getElementById('btnTemaTexto');
   icono.className = tema === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  texto.textContent = tema === 'dark' ? 'Claro' : 'Oscuro';
   localStorage.setItem('contratacion_tema', tema);
 }
 
@@ -170,7 +172,49 @@ function renderTarjetas() {
 
   const alertas = contratistas.filter(c => diasParaTerminacion(c) !== null && diasParaTerminacion(c) <= DIAS_ALERTA_VENCIMIENTO).length;
   document.getElementById('cardAlertas').textContent = alertas;
+
+  actualizarBannerVencidos();
+  actualizarPillActualizado();
 }
+
+// Banner rojo superior: solo aparece si hay contratos con plazo ya vencido (no solo "por vencer")
+function actualizarBannerVencidos() {
+  const vencidos = contratistas.filter(c => {
+    const d = diasParaTerminacion(c);
+    return d !== null && d < 0;
+  }).length;
+
+  const banner = document.getElementById('bannerAlerta');
+  const texto = document.getElementById('bannerAlertaTexto');
+  const boton = document.getElementById('btnVerVencidos');
+
+  if (vencidos > 0) {
+    banner.hidden = false;
+    texto.textContent = `Tienes ${vencidos} contrato(s) vencido(s) que requieren atención inmediata.`;
+    boton.textContent = soloVencidos ? 'Quitar filtro' : 'Ver vencidos';
+  } else {
+    banner.hidden = true;
+    if (soloVencidos) { soloVencidos = false; renderTabla(); }
+  }
+}
+
+// Pill "Actualizado hh:mm" con la actualización más reciente entre todos los contratistas
+function actualizarPillActualizado() {
+  const fechas = contratistas.map(c => c.actualizadoEn).filter(Boolean).sort().reverse();
+  const pill = document.getElementById('pillActualizado');
+  if (!fechas.length) { pill.innerHTML = '<span class="punto-vivo"></span> Sin actualizaciones'; return; }
+  const hora = new Date(fechas[0]).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  pill.innerHTML = `<span class="punto-vivo"></span> Actualizado ${hora}`;
+}
+
+// Toggle del banner: filtra la tabla a solo los contratos vencidos
+let soloVencidos = false;
+document.getElementById('btnVerVencidos').addEventListener('click', () => {
+  soloVencidos = !soloVencidos;
+  renderTabla();
+  actualizarBannerVencidos();
+  if (soloVencidos) document.querySelector('.tabla').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 // Días restantes hasta la fecha de terminación estimada (null si no hay fecha de inicio)
 function diasParaTerminacion(c) {
@@ -190,7 +234,8 @@ function renderTabla() {
   const filtrados = contratistas.filter(c => {
     const coincideTexto = !texto || c.nombre.toLowerCase().includes(texto) || c.cedula.includes(texto) || (c.numeroContrato && c.numeroContrato.toLowerCase().includes(texto));
     const coincideEstado = filtro === 'todos' || c.estado === filtro;
-    return coincideTexto && coincideEstado;
+    const coincideVencido = !soloVencidos || (diasParaTerminacion(c) !== null && diasParaTerminacion(c) < 0);
+    return coincideTexto && coincideEstado && coincideVencido;
   });
 
   // Ordenamiento según la columna activa
@@ -218,7 +263,12 @@ function renderTabla() {
     tr.innerHTML = `
       <td><input type="checkbox" class="chk-fila" data-id="${c.id}" ${seleccionados.has(c.id) ? 'checked' : ''}></td>
       <td class="celda-contrato">${c.numeroContrato || '<span class="sin-asignar">Sin asignar</span>'}</td>
-      <td>${c.nombre}</td>
+      <td>
+        <div class="celda-nombre">
+          <span class="avatar-mini" style="background:${colorAvatar(c.nombre)}">${obtenerIniciales(c.nombre)}</span>
+          ${c.nombre}
+        </div>
+      </td>
       <td>${c.cedula}</td>
       <td>${c.cargo}</td>
       <td>${c.dependencia}</td>
@@ -231,6 +281,14 @@ function renderTabla() {
 
   renderTarjetas();
   actualizarBarraSeleccion();
+}
+
+// Color determinístico por nombre para los avatares (misma persona = mismo color siempre)
+const PALETA_AVATAR = ['#0a1f3d', '#0f8b8d', '#b5461f', '#6b4fa0', '#1f6f4a', '#a0396b', '#3a5f8a', '#8a5a1f'];
+function colorAvatar(nombre) {
+  let hash = 0;
+  for (let i = 0; i < (nombre || '').length; i++) hash = nombre.charCodeAt(i) + ((hash << 5) - hash);
+  return PALETA_AVATAR[Math.abs(hash) % PALETA_AVATAR.length];
 }
 
 function actualizarBarraSeleccion() {

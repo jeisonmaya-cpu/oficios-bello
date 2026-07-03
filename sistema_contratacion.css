@@ -21,11 +21,11 @@
 }
 
 [data-theme="dark"] {
-  --bg: #0d1526;
-  --card: #142238;
-  --border: #23324d;
+  --bg: #0a0f1e;
+  --card: #131b2e;
+  --border: #232c42;
   --text: #e6ebf5;
-  --text-muted: #93a0bd;
+  --text-muted: #8792a8;
   --navy: #0a1f3d;
   --navy-light: #1b2f52;
   --gold-light: #2b2211;
@@ -105,39 +105,86 @@ h1, h2, h3 { font-family: 'DM Serif Display', serif; }
 
 header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  gap: 24px;
+  margin-bottom: 18px;
 }
 
-header h1 { font-size: 22px; font-weight: 600; color: var(--navy); }
-[data-theme="dark"] header h1 { color: #dfe6f5; }
+.marca { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
-.header-acciones { display: flex; align-items: center; gap: 16px; }
-
-.btn-tema {
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+.icono-marca {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--navy);
+  color: var(--gold);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  transition: border-color .15s, color .15s;
+  font-size: 17px;
+  flex-shrink: 0;
 }
-.btn-tema:hover { border-color: var(--gold); color: var(--gold); }
 
-.usuario {
+header h1 { font-size: 17px; font-weight: 700; color: var(--navy); line-height: 1.2; font-family: 'DM Sans', sans-serif; }
+[data-theme="dark"] header h1 { color: #eef1f8; }
+.subtitulo { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+
+.buscar-header { flex: 1; max-width: 480px; margin: 0 auto; }
+
+.header-acciones { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.pill-info, .pill-boton {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 7px;
+  font-size: 12px;
+  padding: 8px 13px;
+  border-radius: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
   color: var(--text-muted);
+  white-space: nowrap;
 }
-.usuario i { font-size: 22px; color: var(--navy); }
+
+.pill-boton { transition: border-color .15s, color .15s; text-decoration: none; }
+.pill-boton:hover { border-color: var(--gold); color: var(--gold); }
+.pill-enlace { color: var(--text); }
+
+.punto-vivo {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+/* ===================== BANNER DE ALERTA ===================== */
+.banner-alerta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #3a1420;
+  border: 1px solid #5c2030;
+  color: #ffd9df;
+  padding: 12px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+[data-theme="dark"] .banner-alerta { background: #3a1420; border-color: #5c2030; }
+.banner-texto { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.banner-texto i { color: #ff8a9b; font-size: 15px; }
+.banner-boton {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.banner-boton:hover { background: rgba(255,255,255,0.2); }
 
 /* ===================== CARDS ===================== */
 .cards {
@@ -182,14 +229,14 @@ header h1 { font-size: 22px; font-weight: 600; color: var(--navy); }
   gap: 8px;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 14px;
+  border-radius: 20px;
+  padding: 9px 16px;
   flex: 1;
   min-width: 220px;
   max-width: 340px;
 }
-.buscar i { color: var(--text-muted); }
-.buscar input { border: none; outline: none; font-size: 13px; width: 100%; font-family: inherit; }
+.buscar i { color: var(--text-muted); font-size: 12.5px; }
+.buscar input { border: none; outline: none; font-size: 13px; width: 100%; font-family: inherit; background: transparent; color: var(--text); }
 
 select {
   padding: 9px 12px;
@@ -261,6 +308,20 @@ tbody tr.seleccionada { background: var(--gold-light); }
 .celda-contrato { font-weight: 600; color: var(--navy); font-size: 12.5px; }
 [data-theme="dark"] .celda-contrato { color: var(--gold); }
 .sin-asignar { font-weight: 400; color: var(--text-muted); font-style: italic; font-size: 12px; }
+
+.celda-nombre { display: flex; align-items: center; gap: 10px; }
+.avatar-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
 
 /* sellos de estado (estilo timbre / sello oficial) */
 .sello {
@@ -723,6 +784,8 @@ button.guardar:hover { opacity: .9; }
 
 @media (max-width: 900px) {
   .sidebar { display: none; }
+  header { flex-wrap: wrap; }
+  .buscar-header { order: 3; max-width: none; flex-basis: 100%; }
   .cards { grid-template-columns: 1fr 1fr; }
   .grid, .grid-plazo-4, .valores-calculados { grid-template-columns: 1fr; }
 }
