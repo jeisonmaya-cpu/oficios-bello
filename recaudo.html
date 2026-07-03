@@ -733,7 +733,13 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
   <div class="card" style="margin-top:18px">
     <div class="card-hdr">
       <div class="card-hdr-title">📈 Tendencia mensual — emitido vs gestionado</div>
-      <div style="font-size:11px;color:var(--soft)">Valor por mes de emisión</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--soft)" id="tend-subtitulo">Valor por mes de emisión</span>
+        <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
+          <button class="tb-btn on" id="tend-btn-valor" style="border:none;border-radius:0" onclick="cambiarModoTendencia('valor')">💰 Valor</button>
+          <button class="tb-btn" id="tend-btn-cantidad" style="border:none;border-radius:0;border-left:1px solid var(--border)" onclick="cambiarModoTendencia('cantidad')">🔢 Cantidad</button>
+        </div>
+      </div>
     </div>
     <div style="padding:18px 18px 22px"><div style="position:relative;height:300px"><canvas id="chart-tendencia"></canvas></div></div>
   </div>
@@ -3424,9 +3430,10 @@ function renderDashboard(){
 
     var f=String(r['Fecha Emisión']||'').substring(0,7);
     if(/^\d{4}-\d{2}$/.test(f)){
-      if(!porMes[f]) porMes[f]={emitido:0,gestionado:0};
+      if(!porMes[f]) porMes[f]={emitido:0,gestionado:0,cantEmitido:0,cantGestionado:0};
       porMes[f].emitido+=v;
-      if(ed==='FINALIZADO'||ea==='FINALIZADO') porMes[f].gestionado+=v;
+      porMes[f].cantEmitido++;
+      if(ed==='FINALIZADO'||ea==='FINALIZADO'){ porMes[f].gestionado+=v; porMes[f].cantGestionado++; }
     }
 
     var kd=ed||'Sin gestionar';
@@ -3671,12 +3678,25 @@ function renderDonaEstado(canvasId, totalId, valorPorEstado, conteo, valorTotal)
 }
 
 // ── TENDENCIA mensual: emitido vs gestionado — recibe porMes ya calculado por renderDashboard ──
+var _ultimoPorMes = null;   // guardado para poder re-renderizar al cambiar de modo sin recalcular todo
+var _modoTendencia = 'valor';
+
+function cambiarModoTendencia(modo){
+  _modoTendencia = modo;
+  document.getElementById('tend-btn-valor').classList.toggle('on', modo==='valor');
+  document.getElementById('tend-btn-cantidad').classList.toggle('on', modo==='cantidad');
+  document.getElementById('tend-subtitulo').textContent = modo==='valor' ? 'Valor por mes de emisión' : 'Cantidad de depósitos por mes de emisión';
+  if(_ultimoPorMes) renderTendencia(_ultimoPorMes);
+}
+
 function renderTendencia(porMes){
+  _ultimoPorMes = porMes;
   if(typeof Chart==='undefined') return;
   var meses=Object.keys(porMes).sort();
   if(meses.length>24) meses=meses.slice(-24);
-  var emit=meses.map(m=>Math.round(porMes[m].emitido));
-  var gest=meses.map(m=>Math.round(porMes[m].gestionado));
+  var esValor = _modoTendencia==='valor';
+  var emit = esValor ? meses.map(m=>Math.round(porMes[m].emitido))    : meses.map(m=>porMes[m].cantEmitido);
+  var gest = esValor ? meses.map(m=>Math.round(porMes[m].gestionado)) : meses.map(m=>porMes[m].cantGestionado);
   var labels=meses.map(m=>{ var p=m.split('-'); var mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return mn[parseInt(p[1])-1]+' '+p[0].substring(2); });
 
   if(_charts.tendencia){ _charts.tendencia.destroy(); _charts.tendencia=null; }
@@ -3693,11 +3713,11 @@ function renderTendencia(porMes){
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{position:'top',labels:{color:'#cbd5e1',font:{size:12,family:'DM Sans'},padding:14,boxWidth:14,usePointStyle:true,pointStyle:'circle'}},
-        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmt$(c.parsed.y); }}}
+        tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+(esValor?fmt$(c.parsed.y):c.parsed.y.toLocaleString('es-CO')+' depósito'+(c.parsed.y===1?'':'s')); }}}
       },
       scales:{
         x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',font:{size:11,family:'DM Sans'},maxRotation:45,minRotation:0}},
-        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',font:{size:11,family:'DM Sans'},callback:function(v){ return fmtM(v); }}}
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',font:{size:11,family:'DM Sans'},callback:function(v){ return esValor?fmtM(v):v.toLocaleString('es-CO'); }}}
       }
     }
   });
