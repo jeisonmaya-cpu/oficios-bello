@@ -747,10 +747,11 @@ document.querySelectorAll('[data-formato]').forEach(btn => {
 });
 
 const NOMBRES_FORMATO = {
-  contrato: 'Contrato de Prestación de Servicios',
-  acta_inicio: 'Acta de Inicio',
-  seguridad_social: 'Afiliación Seguridad Social',
-  hoja_vida: 'Hoja de Vida',
+  acta_designacion: 'Acta de Designación',
+  cdp_banco: 'CDP y Banco',
+  estudios_previos: 'Estudios Previos',
+  minuta: 'Minuta del Contrato',
+  visto_bueno: 'Visto Bueno',
   expediente: 'Expediente Completo',
 };
 
@@ -852,7 +853,7 @@ document.getElementById('btnImprimirMasivo').addEventListener('click', () => {
 
   area.innerHTML = elegidos.map(c => `
     <div style="page-break-after:always;">
-      ${plantillaFormato(c, 'contrato')}
+      ${plantillaFormato(c, 'acta_designacion')}
     </div>
   `).join('');
 
