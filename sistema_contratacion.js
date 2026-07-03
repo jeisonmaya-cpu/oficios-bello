@@ -37,7 +37,9 @@ let contratistas = [
   {
     id: 1, nombre: 'Juan Pérez', cedula: '1034567890', correo: 'juan.perez@example.com',
     telefono: '3001234567', cargo: 'Abogado', dependencia: 'Jurídica',
-    valorTotal: 4500000, plazoMeses: 4, plazoDias: 0, vencimientoPoliza: '2026-11-15',
+    numeroContrato: 'CB-2026-001', tipoContrato: 'Prestación de Servicios', modalidad: 'Contratación Directa',
+    supervisor: 'Juan Pablo Gómez Londoño', fechaFirma: '2026-05-02', fechaInicio: '2026-05-04',
+    valorMensual: 3800000, valorTotal: 15200000, plazoMeses: 4, plazoDias: 0,
     estado: 'completo', actualizadoEn: '2026-06-10T14:30:00',
     bitacora: [{ texto: 'Expediente completo. Póliza verificada con la aseguradora.', fecha: '2026-06-10T14:32:00' }],
     documentosExtra: [],
@@ -47,7 +49,9 @@ let contratistas = [
   {
     id: 2, nombre: 'Ana Gómez', cedula: '43125467', correo: 'ana.gomez@example.com',
     telefono: '3009876543', cargo: 'Ingeniera', dependencia: 'Planeación',
-    valorTotal: 5200000, plazoMeses: 3, plazoDias: 15, vencimientoPoliza: '2026-07-20',
+    numeroContrato: 'CB-2026-002', tipoContrato: 'Prestación de Servicios', modalidad: 'Mínima Cuantía',
+    supervisor: '', fechaFirma: '2026-06-01', fechaInicio: '2026-06-03',
+    valorMensual: 3200000, valorTotal: 11200000, plazoMeses: 3, plazoDias: 15,
     estado: 'pendiente', actualizadoEn: '2026-06-01T11:00:00',
     bitacora: [{ texto: 'Se solicitó por correo el certificado de cuenta bancaria y la hoja de vida del SIGEP II.', fecha: '2026-06-01T11:05:00' }],
     documentosExtra: [],
@@ -57,7 +61,9 @@ let contratistas = [
   {
     id: 3, nombre: 'Carlos López', cedula: '80987654', correo: 'carlos.lopez@example.com',
     telefono: '3011122233', cargo: 'Contador', dependencia: 'Hacienda',
-    valorTotal: 3800000, plazoMeses: 6, plazoDias: 0, vencimientoPoliza: '',
+    numeroContrato: 'CB-2026-003', tipoContrato: 'Prestación de Servicios', modalidad: 'Contratación Directa',
+    supervisor: '', fechaFirma: '', fechaInicio: '',
+    valorMensual: 2900000, valorTotal: 17400000, plazoMeses: 6, plazoDias: 0,
     estado: 'revision', actualizadoEn: '2026-06-28T16:45:00',
     bitacora: [],
     documentosExtra: [],
@@ -84,21 +90,29 @@ function plazoEnDias(meses, dias) {
 
 function calcularValores(c) {
   const totalDias = plazoEnDias(c.plazoMeses, c.plazoDias);
-  const valorDiario = totalDias > 0 ? c.valorTotal / totalDias : 0;
-  const valorMensual = valorDiario * 30;
-  return { totalDias, valorDiario, valorMensual };
+  const valorMensual = Number(c.valorMensual) || 0;
+  const valorDiario = valorMensual / 30;
+  const meses = Number(c.plazoMeses) || 0;
+  const diasExtra = Number(c.plazoDias) || 0;
+  const valorTotalCalculado = meses * valorMensual + diasExtra * valorDiario;
+  return { totalDias, valorDiario, valorTotalCalculado };
 }
 
-// Estado de vencimiento de la póliza: 'sin-dato' | 'ok' | 'pronto' | 'vencida'
-function estadoVencimiento(fechaISO) {
-  if (!fechaISO) return { estado: 'sin-dato', dias: null };
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const fecha = new Date(fechaISO + 'T00:00:00');
-  const dias = Math.round((fecha - hoy) / (1000 * 60 * 60 * 24));
-  if (dias < 0) return { estado: 'vencida', dias };
-  if (dias <= DIAS_ALERTA_VENCIMIENTO) return { estado: 'pronto', dias };
-  return { estado: 'ok', dias };
+// Calcula la fecha estimada de terminación a partir de fecha de inicio + plazo (meses/días)
+function fechaTerminacionEstimada(fechaInicioISO, meses, dias) {
+  if (!fechaInicioISO) return null;
+  const fecha = new Date(fechaInicioISO + 'T00:00:00');
+  fecha.setMonth(fecha.getMonth() + (Number(meses) || 0));
+  fecha.setDate(fecha.getDate() + (Number(dias) || 0));
+  return fecha;
+}
+
+// Genera el siguiente consecutivo "CB-AAAA-NNN" (Contratación Bello) según el año actual
+function siguienteNumeroContrato() {
+  const anio = new Date().getFullYear();
+  const delAnio = contratistas.filter(c => (c.numeroContrato || '').includes(`-${anio}-`));
+  const consecutivo = delAnio.length + 1;
+  return `CB-${anio}-${String(consecutivo).padStart(3, '0')}`;
 }
 
 let seleccionados = new Set();
@@ -123,6 +137,23 @@ function notificar(mensaje, tipo = 'exito') {
 }
 
 // -----------------------------------------------------
+// TEMA CLARO / OSCURO
+// -----------------------------------------------------
+function aplicarTema(tema) {
+  document.documentElement.setAttribute('data-theme', tema);
+  const icono = document.querySelector('#btnTema i');
+  icono.className = tema === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  localStorage.setItem('contratacion_tema', tema);
+}
+
+document.getElementById('btnTema').addEventListener('click', () => {
+  const actual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  aplicarTema(actual);
+});
+
+aplicarTema(localStorage.getItem('contratacion_tema') || 'light');
+
+// -----------------------------------------------------
 // 2. RENDER TABLA + TARJETAS
 // -----------------------------------------------------
 const tablaBody = document.getElementById('tablaBody');
@@ -137,11 +168,15 @@ function renderTarjetas() {
   const totalDocs = contratistas.reduce((acc, c) => acc + c.documentos.length, 0);
   document.getElementById('cardDocumentos').textContent = totalDocs;
 
-  const alertas = contratistas.filter(c => {
-    const { estado } = estadoVencimiento(c.vencimientoPoliza);
-    return estado === 'pronto' || estado === 'vencida';
-  }).length;
+  const alertas = contratistas.filter(c => diasParaTerminacion(c) !== null && diasParaTerminacion(c) <= DIAS_ALERTA_VENCIMIENTO).length;
   document.getElementById('cardAlertas').textContent = alertas;
+}
+
+// Días restantes hasta la fecha de terminación estimada (null si no hay fecha de inicio)
+function diasParaTerminacion(c) {
+  const fin = fechaTerminacionEstimada(c.fechaInicio, c.plazoMeses, c.plazoDias);
+  if (!fin) return null;
+  return Math.round((fin - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24));
 }
 
 function etiquetaEstado(estado) {
@@ -153,7 +188,7 @@ function renderTabla() {
   const filtro = filtroEstado.value;
 
   const filtrados = contratistas.filter(c => {
-    const coincideTexto = !texto || c.nombre.toLowerCase().includes(texto) || c.cedula.includes(texto);
+    const coincideTexto = !texto || c.nombre.toLowerCase().includes(texto) || c.cedula.includes(texto) || (c.numeroContrato && c.numeroContrato.toLowerCase().includes(texto));
     const coincideEstado = filtro === 'todos' || c.estado === filtro;
     return coincideTexto && coincideEstado;
   });
@@ -162,7 +197,7 @@ function renderTabla() {
   const valorOrden = (c) => {
     switch (ordenActual.campo) {
       case 'documentos': return c.documentos.length;
-      case 'poliza': return c.vencimientoPoliza || '9999-12-31'; // sin dato al final ascendente
+      case 'numeroContrato': return c.numeroContrato || '';
       default: return (c[ordenActual.campo] || '').toString().toLowerCase();
     }
   };
@@ -180,18 +215,15 @@ function renderTabla() {
     const tr = document.createElement('tr');
     if (seleccionados.has(c.id)) tr.classList.add('seleccionada');
 
-    const venc = estadoVencimiento(c.vencimientoPoliza);
-    const textoVenc = { 'sin-dato': 'Sin dato', ok: `Vigente (${venc.dias} d)`, pronto: `Vence en ${venc.dias} d`, vencida: 'Vencida' }[venc.estado];
-
     tr.innerHTML = `
       <td><input type="checkbox" class="chk-fila" data-id="${c.id}" ${seleccionados.has(c.id) ? 'checked' : ''}></td>
+      <td class="celda-contrato">${c.numeroContrato || '<span class="sin-asignar">Sin asignar</span>'}</td>
       <td>${c.nombre}</td>
       <td>${c.cedula}</td>
       <td>${c.cargo}</td>
       <td>${c.dependencia}</td>
       <td><span class="estado ${c.estado}">${etiquetaEstado(c.estado)}</span></td>
       <td>${c.documentos.length}/${docsRequeridos(c).length}</td>
-      <td><span class="badge-vence ${venc.estado}">${textoVenc}</span></td>
       <td><button class="gestionar" data-id="${c.id}">Gestionar</button></td>
     `;
     tablaBody.appendChild(tr);
@@ -267,6 +299,12 @@ function abrirModal(id) {
 
   document.getElementById('modalNombre').textContent = c.nombre;
   document.getElementById('modalCedula').textContent = c.cedula || '—';
+  document.getElementById('modalAvatar').textContent = obtenerIniciales(c.nombre);
+
+  const badgeContrato = document.getElementById('modalNumeroContrato');
+  if (c.numeroContrato) { badgeContrato.textContent = c.numeroContrato; badgeContrato.hidden = false; }
+  else { badgeContrato.hidden = true; }
+
   const sello = document.getElementById('modalSello');
   sello.textContent = etiquetaEstado(c.estado);
   sello.className = `sello ${c.estado}`;
@@ -283,7 +321,13 @@ function abrirModal(id) {
   document.getElementById('campoCargo').value = c.cargo || '';
   document.getElementById('campoDependencia').value = c.dependencia || '';
   document.getElementById('campoEstado').value = c.estado;
-  document.getElementById('campoVencimientoPoliza').value = c.vencimientoPoliza || '';
+  document.getElementById('campoNumeroContrato').value = c.numeroContrato || '';
+  document.getElementById('campoTipoContrato').value = c.tipoContrato || '';
+  document.getElementById('campoModalidad').value = c.modalidad || '';
+  document.getElementById('campoSupervisor').value = c.supervisor || '';
+  document.getElementById('campoFechaFirma').value = c.fechaFirma || '';
+  document.getElementById('campoFechaInicio').value = c.fechaInicio || '';
+  document.getElementById('campoValorMensual').value = c.valorMensual ? c.valorMensual : '';
   document.getElementById('campoValorTotal').value = c.valorTotal ? c.valorTotal : '';
   document.getElementById('campoPlazoMeses').value = c.plazoMeses || 0;
   document.getElementById('campoPlazoDias').value = c.plazoDias || 0;
@@ -302,11 +346,19 @@ function abrirModal(id) {
   _snapshotModal = snapshotFormulario();
 }
 
+// Iniciales para el avatar circular (primeras letras del nombre y apellido)
+function obtenerIniciales(nombre) {
+  const partes = (nombre || '').trim().split(/\s+/).filter(Boolean);
+  if (!partes.length) return '—';
+  return (partes[0][0] + (partes[1] ? partes[1][0] : '')).toUpperCase();
+}
+
 // Serializa el estado actual del formulario de Datos
 function snapshotFormulario() {
   return ['campoNombre', 'campoCedula', 'campoCorreo', 'campoTelefono', 'campoCargo',
-    'campoDependencia', 'campoEstado', 'campoVencimientoPoliza', 'campoValorTotal',
-    'campoPlazoMeses', 'campoPlazoDias']
+    'campoDependencia', 'campoEstado', 'campoNumeroContrato',
+    'campoTipoContrato', 'campoModalidad', 'campoSupervisor', 'campoFechaFirma', 'campoFechaInicio',
+    'campoValorMensual', 'campoValorTotal', 'campoPlazoMeses', 'campoPlazoDias']
     .map(id => document.getElementById(id).value)
     .join('|');
 }
@@ -322,19 +374,48 @@ function actualizarAvanceExpediente(c) {
   document.getElementById('avanceTexto').textContent = `${cargados} de ${total} documentos (${pct}%)`;
 }
 
-// Recalcula valor mensual/diario en vivo mientras se edita valor o plazo
+// Recalcula el valor total (mensual × plazo) y lo deja escrito en el campo,
+// que sigue siendo editable por si el abogado necesita ajustarlo a mano
+// (adiciones, redondeos, etc. — por eso NO se vuelve a pisar salvo que cambie mensual o plazo).
 function actualizarValoresCalculados() {
-  const valorTotal = Number(document.getElementById('campoValorTotal').value) || 0;
+  const valorMensual = Number(document.getElementById('campoValorMensual').value) || 0;
   const meses = Number(document.getElementById('campoPlazoMeses').value) || 0;
   const dias = Number(document.getElementById('campoPlazoDias').value) || 0;
-  const { totalDias, valorDiario, valorMensual } = calcularValores({ valorTotal, plazoMeses: meses, plazoDias: dias });
+  const { totalDias, valorDiario, valorTotalCalculado } = calcularValores({ valorMensual, plazoMeses: meses, plazoDias: dias });
 
-  document.getElementById('calcValorMensual').textContent = formatoMoneda(valorMensual);
+  document.getElementById('campoValorTotal').value = valorMensual > 0 ? Math.round(valorTotalCalculado) : '';
   document.getElementById('calcValorDiario').textContent = formatoMoneda(valorDiario);
   document.getElementById('calcPlazoDias').textContent = totalDias;
+
+  const fechaInicio = document.getElementById('campoFechaInicio').value;
+  const caja = document.getElementById('calcTerminacionCaja');
+  const texto = document.getElementById('calcFechaTerminacion');
+  const fin = fechaTerminacionEstimada(fechaInicio, meses, dias);
+
+  if (!fin) {
+    texto.textContent = 'Falta fecha de inicio';
+    caja.classList.remove('alerta-vencimiento');
+    return;
+  }
+
+  const finTexto = fin.toLocaleDateString('es-CO', { dateStyle: 'medium' });
+  const diasRestantes = Math.round((fin - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24));
+
+  if (diasRestantes < 0) {
+    texto.textContent = `${finTexto} (venció hace ${Math.abs(diasRestantes)} días)`;
+    caja.classList.add('alerta-vencimiento');
+  } else if (diasRestantes <= DIAS_ALERTA_VENCIMIENTO) {
+    texto.textContent = `${finTexto} (en ${diasRestantes} días)`;
+    caja.classList.add('alerta-vencimiento');
+  } else {
+    texto.textContent = finTexto;
+    caja.classList.remove('alerta-vencimiento');
+  }
 }
 
-['campoValorTotal', 'campoPlazoMeses', 'campoPlazoDias'].forEach(id => {
+// El total SOLO se recalcula automáticamente cuando cambian el mensual o el plazo;
+// si el abogado edita el total directamente, ese valor manual se respeta.
+['campoValorMensual', 'campoPlazoMeses', 'campoPlazoDias', 'campoFechaInicio'].forEach(id => {
   document.getElementById(id).addEventListener('input', actualizarValoresCalculados);
 });
 
@@ -469,7 +550,7 @@ function cambiarPanel(nombre) {
 // VALIDACIONES DE CAMPOS
 // -----------------------------------------------------
 function limpiarErrores() {
-  ['Nombre', 'Cedula', 'Correo', 'ValorTotal'].forEach(campo => {
+  ['Nombre', 'Cedula', 'Correo', 'ValorMensual'].forEach(campo => {
     document.getElementById(`campo${campo}`).classList.remove('campo-invalido');
     const err = document.getElementById(`error${campo}`);
     if (err) err.textContent = '';
@@ -489,7 +570,7 @@ function validarFormularioDatos() {
   const nombre = document.getElementById('campoNombre').value.trim();
   const cedula = document.getElementById('campoCedula').value.trim();
   const correo = document.getElementById('campoCorreo').value.trim();
-  const valorTotal = document.getElementById('campoValorTotal').value.trim();
+  const valorMensual = document.getElementById('campoValorMensual').value.trim();
 
   if (!nombre) { marcarError('Nombre', 'El nombre es obligatorio.'); valido = false; }
 
@@ -505,8 +586,10 @@ function validarFormularioDatos() {
     marcarError('Correo', 'El formato del correo no es válido.'); valido = false;
   }
 
-  if (valorTotal && (isNaN(Number(valorTotal)) || Number(valorTotal) < 0)) {
-    marcarError('ValorTotal', 'Ingrese solo números, sin puntos ni símbolos.'); valido = false;
+  if (!valorMensual) {
+    marcarError('ValorMensual', 'El valor mensual es obligatorio.'); valido = false;
+  } else if (isNaN(Number(valorMensual)) || Number(valorMensual) < 0) {
+    marcarError('ValorMensual', 'Ingrese solo números, sin puntos ni símbolos.'); valido = false;
   }
 
   // Cédula duplicada en otro contratista
@@ -529,7 +612,13 @@ document.getElementById('btnGuardarDatos').addEventListener('click', () => {
   c.telefono = document.getElementById('campoTelefono').value.trim();
   c.cargo = document.getElementById('campoCargo').value.trim();
   c.dependencia = document.getElementById('campoDependencia').value.trim();
-  c.vencimientoPoliza = document.getElementById('campoVencimientoPoliza').value;
+  c.numeroContrato = document.getElementById('campoNumeroContrato').value.trim();
+  c.tipoContrato = document.getElementById('campoTipoContrato').value;
+  c.modalidad = document.getElementById('campoModalidad').value;
+  c.supervisor = document.getElementById('campoSupervisor').value.trim();
+  c.fechaFirma = document.getElementById('campoFechaFirma').value;
+  c.fechaInicio = document.getElementById('campoFechaInicio').value;
+  c.valorMensual = Number(document.getElementById('campoValorMensual').value) || 0;
   c.valorTotal = Number(document.getElementById('campoValorTotal').value) || 0;
   c.plazoMeses = Number(document.getElementById('campoPlazoMeses').value) || 0;
   c.plazoDias = Number(document.getElementById('campoPlazoDias').value) || 0;
@@ -554,7 +643,9 @@ document.getElementById('btnNuevo').addEventListener('click', () => {
   const nuevoId = Math.max(0, ...contratistas.map(c => c.id)) + 1;
   const nuevo = {
     id: nuevoId, nombre: 'Nuevo contratista', cedula: '', correo: '', telefono: '',
-    cargo: '', dependencia: '', valorTotal: 0, plazoMeses: 0, plazoDias: 0, vencimientoPoliza: '',
+    cargo: '', dependencia: '', numeroContrato: siguienteNumeroContrato(), tipoContrato: '',
+    modalidad: '', supervisor: '', fechaFirma: '', fechaInicio: '',
+    valorTotal: 0, valorMensual: 0, plazoMeses: 0, plazoDias: 0,
     estado: 'pendiente', actualizadoEn: new Date().toISOString(), bitacora: [], documentos: [],
     historialEstados: [{ anterior: null, nuevo: 'pendiente', fecha: new Date().toISOString() }],
   };
@@ -755,11 +846,25 @@ const NOMBRES_FORMATO = {
   expediente: 'Expediente Completo',
 };
 
+// Membrete oficial reutilizable para todos los documentos impresos
+function membrete(titulo, c) {
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0a1f3d;padding-bottom:10px;margin-bottom:18px;">
+      <div>
+        <div style="font-size:11px;letter-spacing:.05em;color:#888;text-transform:uppercase;">Alcaldía de Bello</div>
+        <h1 style="font-size:19px;margin:2px 0 0;color:#0a1f3d;">${titulo}</h1>
+      </div>
+      <div style="text-align:right;font-size:11px;color:#888;">
+        ${c.numeroContrato ? `<div style="font-weight:600;color:#0a1f3d;">Contrato ${c.numeroContrato}</div>` : ''}
+        <div>Generado el ${new Date().toLocaleDateString('es-CO')}</div>
+      </div>
+    </div>
+  `;
+}
+
 // Formato especial: expediente completo con checklist documental, historial y bitácora
 function plantillaExpediente(c) {
-  const { totalDias, valorMensual, valorDiario } = calcularValores(c);
-  const venc = estadoVencimiento(c.vencimientoPoliza);
-  const textoVenc = { 'sin-dato': 'Sin registrar', ok: `Vigente (vence ${c.vencimientoPoliza})`, pronto: `POR VENCER (${c.vencimientoPoliza})`, vencida: `VENCIDA (${c.vencimientoPoliza})` }[venc.estado];
+  const { totalDias, valorDiario } = calcularValores(c);
 
   const checklist = docsRequeridos(c).map(doc => {
     const cargado = c.documentos.includes(doc.clave);
@@ -783,21 +888,30 @@ function plantillaExpediente(c) {
     </div>`;
   }).join('') || '<p style="color:#888;">Sin anotaciones registradas.</p>';
 
+  const finEstimado = fechaTerminacionEstimada(c.fechaInicio, c.plazoMeses, c.plazoDias);
+  const terminacionTexto = finEstimado ? finEstimado.toLocaleDateString('es-CO', { dateStyle: 'medium' }) : 'Sin fecha de inicio registrada';
+
   return `
-    <h1 style="font-size:20px;margin-bottom:4px;">Expediente de Contratación</h1>
+    ${membrete('Expediente de Contratación', c)}
     <p style="color:#555;margin-bottom:6px;">${c.nombre} — C.C. ${c.cedula}</p>
-    <p style="color:#888;font-size:12px;margin-bottom:24px;">Generado el ${new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })} · Estado: ${etiquetaEstado(c.estado)}</p>
+    <p style="color:#888;font-size:12px;margin-bottom:24px;">Estado: ${etiquetaEstado(c.estado)}</p>
 
     <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">1. Información general</h2>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <tr><td style="padding:4px 0;width:180px;color:#555;">Correo</td><td>${c.correo || '—'}</td></tr>
+      <tr><td style="padding:4px 0;width:200px;color:#555;">Correo</td><td>${c.correo || '—'}</td></tr>
       <tr><td style="padding:4px 0;color:#555;">Teléfono</td><td>${c.telefono || '—'}</td></tr>
       <tr><td style="padding:4px 0;color:#555;">Cargo / Perfil</td><td>${c.cargo || '—'}</td></tr>
       <tr><td style="padding:4px 0;color:#555;">Dependencia</td><td>${c.dependencia || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Tipo de contrato</td><td>${c.tipoContrato || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Modalidad de contratación</td><td>${c.modalidad || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Supervisor del contrato</td><td>${c.supervisor || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Fecha de firma</td><td>${c.fechaFirma || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Fecha de inicio</td><td>${c.fechaInicio || '—'}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Fecha de terminación estimada</td><td>${terminacionTexto}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Valor mensual</td><td>${formatoMoneda(c.valorMensual)}</td></tr>
       <tr><td style="padding:4px 0;color:#555;">Valor total</td><td>${formatoMoneda(c.valorTotal)}</td></tr>
       <tr><td style="padding:4px 0;color:#555;">Plazo</td><td>${c.plazoMeses || 0} meses y ${c.plazoDias || 0} días (${totalDias} días)</td></tr>
-      <tr><td style="padding:4px 0;color:#555;">Valor mensual / diario</td><td>${formatoMoneda(valorMensual)} / ${formatoMoneda(valorDiario)}</td></tr>
-      <tr><td style="padding:4px 0;color:#555;">Póliza de cumplimiento</td><td>${textoVenc}</td></tr>
+      <tr><td style="padding:4px 0;color:#555;">Valor diario (sobre el mensual)</td><td>${formatoMoneda(valorDiario)}</td></tr>
     </table>
 
     <h2 style="font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">2. Checklist documental (${c.documentos.length}/${docsRequeridos(c).length})</h2>
@@ -815,21 +929,64 @@ function plantillaExpediente(c) {
 
 function plantillaFormato(c, formato) {
   const titulo = NOMBRES_FORMATO[formato] || 'Documento';
-  const { totalDias, valorMensual, valorDiario } = calcularValores(c);
+  const { totalDias, valorDiario } = calcularValores(c);
   const plazoTexto = `${c.plazoMeses || 0} meses y ${c.plazoDias || 0} días (${totalDias} días)`;
+  const finEstimado = fechaTerminacionEstimada(c.fechaInicio, c.plazoMeses, c.plazoDias);
+  const terminacionTexto = finEstimado ? finEstimado.toLocaleDateString('es-CO', { dateStyle: 'medium' }) : '—';
 
-  return `
-    <h1 style="font-size:20px;margin-bottom:4px;">${titulo}</h1>
-    <p style="color:#555;margin-bottom:24px;">Generado el ${new Date().toLocaleDateString('es-CO')}</p>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;">
-      <tr><td style="padding:6px 0;width:180px;color:#555;">Nombre</td><td style="padding:6px 0;">${c.nombre}</td></tr>
-      <tr><td style="padding:6px 0;color:#555;">Cédula</td><td style="padding:6px 0;">${c.cedula}</td></tr>
-      <tr><td style="padding:6px 0;color:#555;">Cargo</td><td style="padding:6px 0;">${c.cargo}</td></tr>
-      <tr><td style="padding:6px 0;color:#555;">Dependencia</td><td style="padding:6px 0;">${c.dependencia}</td></tr>
+  // Filas base presentes en todos los formatos
+  const filasBase = `
+    <tr><td style="padding:6px 0;width:200px;color:#555;">Nombre</td><td style="padding:6px 0;">${c.nombre}</td></tr>
+    <tr><td style="padding:6px 0;color:#555;">Cédula</td><td style="padding:6px 0;">${c.cedula}</td></tr>
+    <tr><td style="padding:6px 0;color:#555;">Cargo</td><td style="padding:6px 0;">${c.cargo || '—'}</td></tr>
+    <tr><td style="padding:6px 0;color:#555;">Dependencia</td><td style="padding:6px 0;">${c.dependencia || '—'}</td></tr>
+  `;
+
+  // Filas adicionales según el tipo de formato oficial
+  const filasExtra = {
+    acta_designacion: `
+      <tr><td style="padding:6px 0;color:#555;">Tipo de contrato</td><td style="padding:6px 0;">${c.tipoContrato || '—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Modalidad de contratación</td><td style="padding:6px 0;">${c.modalidad || '—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Supervisor designado</td><td style="padding:6px 0;">${c.supervisor || '—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Fecha de designación</td><td style="padding:6px 0;">${c.fechaFirma || '—'}</td></tr>
+    `,
+    cdp_banco: `
+      <tr><td style="padding:6px 0;color:#555;">Valor total del contrato</td><td style="padding:6px 0;">${formatoMoneda(c.valorTotal)}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Valor mensual</td><td style="padding:6px 0;">${formatoMoneda(c.valorMensual)}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Certificado de Disponibilidad Presupuestal (CDP) N°</td><td style="padding:6px 0;">______________</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Entidad bancaria</td><td style="padding:6px 0;">______________</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Número de cuenta</td><td style="padding:6px 0;">______________</td></tr>
+    `,
+    estudios_previos: `
+      <tr><td style="padding:6px 0;color:#555;">Tipo de contrato</td><td style="padding:6px 0;">${c.tipoContrato || '—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Modalidad de contratación</td><td style="padding:6px 0;">${c.modalidad || '—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Valor total</td><td style="padding:6px 0;">${formatoMoneda(c.valorTotal)}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Plazo estimado</td><td style="padding:6px 0;">${plazoTexto}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Justificación de la necesidad</td><td style="padding:6px 0;">______________</td></tr>
+    `,
+    minuta: `
+      <tr><td style="padding:6px 0;color:#555;">Tipo de contrato</td><td style="padding:6px 0;">${c.tipoContrato || '—'}</td></tr>
       <tr><td style="padding:6px 0;color:#555;">Valor total</td><td style="padding:6px 0;">${formatoMoneda(c.valorTotal)}</td></tr>
       <tr><td style="padding:6px 0;color:#555;">Plazo</td><td style="padding:6px 0;">${plazoTexto}</td></tr>
-      <tr><td style="padding:6px 0;color:#555;">Valor mensual</td><td style="padding:6px 0;">${formatoMoneda(valorMensual)}</td></tr>
-      <tr><td style="padding:6px 0;color:#555;">Valor diario</td><td style="padding:6px 0;">${formatoMoneda(valorDiario)}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Valor mensual</td><td style="padding:6px 0;">${formatoMoneda(c.valorMensual)}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Fecha de inicio</td><td style="padding:6px 0;">${c.fechaInicio || '—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Fecha de terminación estimada</td><td style="padding:6px 0;">${terminacionTexto}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Supervisor del contrato</td><td style="padding:6px 0;">${c.supervisor || '—'}</td></tr>
+    `,
+    visto_bueno: `
+      <tr><td style="padding:6px 0;color:#555;">Estado del expediente</td><td style="padding:6px 0;">${etiquetaEstado(c.estado)}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Documentos cargados</td><td style="padding:6px 0;">${c.documentos.length}/${docsRequeridos(c).length}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Supervisor del contrato</td><td style="padding:6px 0;">${c.supervisor || '—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Observación</td><td style="padding:6px 0;">______________</td></tr>
+      <tr><td style="padding:6px 0;color:#555;">Firma de aprobación</td><td style="padding:6px 0;">______________</td></tr>
+    `,
+  }[formato] || '';
+
+  return `
+    ${membrete(titulo, c)}
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      ${filasBase}
+      ${filasExtra}
     </table>
     <p style="margin-top:40px;font-size:12px;color:#888;">Documento generado automáticamente por el Sistema de Gestión Contractual.</p>
   `;
@@ -871,23 +1028,26 @@ document.getElementById('btnExportarCSV').addEventListener('click', () => {
   const filtro = filtroEstado.value;
 
   const filtrados = contratistas.filter(c => {
-    const coincideTexto = !texto || c.nombre.toLowerCase().includes(texto) || c.cedula.includes(texto);
+    const coincideTexto = !texto || c.nombre.toLowerCase().includes(texto) || c.cedula.includes(texto) || (c.numeroContrato && c.numeroContrato.toLowerCase().includes(texto));
     const coincideEstado = filtro === 'todos' || c.estado === filtro;
     return coincideTexto && coincideEstado;
   });
 
   const encabezados = [
-    'Nombre', 'Cédula', 'Correo', 'Teléfono', 'Cargo', 'Dependencia', 'Estado',
-    'Valor total', 'Plazo (meses)', 'Plazo (días)', 'Valor mensual', 'Valor diario',
-    'Vencimiento póliza', 'Documentos cargados',
+    'Número de contrato', 'Nombre', 'Cédula', 'Correo', 'Teléfono', 'Cargo', 'Dependencia',
+    'Tipo de contrato', 'Modalidad', 'Supervisor', 'Fecha de firma', 'Fecha de inicio', 'Estado',
+    'Valor mensual', 'Valor total', 'Plazo (meses)', 'Plazo (días)', 'Valor diario',
+    'Fecha de terminación estimada', 'Documentos cargados',
   ];
 
   const filas = filtrados.map(c => {
-    const { valorMensual, valorDiario } = calcularValores(c);
+    const { valorDiario } = calcularValores(c);
+    const fin = fechaTerminacionEstimada(c.fechaInicio, c.plazoMeses, c.plazoDias);
     return [
-      c.nombre, c.cedula, c.correo || '', c.telefono || '', c.cargo || '', c.dependencia || '',
-      etiquetaEstado(c.estado), c.valorTotal || 0, c.plazoMeses || 0, c.plazoDias || 0,
-      Math.round(valorMensual), Math.round(valorDiario), c.vencimientoPoliza || '',
+      c.numeroContrato || '', c.nombre, c.cedula, c.correo || '', c.telefono || '', c.cargo || '', c.dependencia || '',
+      c.tipoContrato || '', c.modalidad || '', c.supervisor || '', c.fechaFirma || '', c.fechaInicio || '',
+      etiquetaEstado(c.estado), c.valorMensual || 0, c.valorTotal || 0, c.plazoMeses || 0, c.plazoDias || 0,
+      Math.round(valorDiario), fin ? fin.toLocaleDateString('es-CO') : '',
       `${c.documentos.length}/${docsRequeridos(c).length}`,
     ];
   });

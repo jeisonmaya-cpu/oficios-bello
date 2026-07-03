@@ -42,9 +42,14 @@
 
   <header>
     <h1>Sistema de Gestión Contractual</h1>
-    <div class="usuario">
-      <i class="fa-solid fa-user-circle"></i>
-      Administrador
+    <div class="header-acciones">
+      <button id="btnTema" class="btn-tema" title="Cambiar tema claro/oscuro">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <div class="usuario">
+        <i class="fa-solid fa-user-circle"></i>
+        Administrador
+      </div>
     </div>
   </header>
 
@@ -73,7 +78,7 @@
     <div class="card morado">
       <h3>Alertas</h3>
       <h1 id="cardAlertas">0</h1>
-      <p>Pólizas por vencer</p>
+      <p>Contratos por vencer</p>
     </div>
   </div>
 
@@ -110,13 +115,13 @@
       <thead>
         <tr>
           <th class="col-check"><input type="checkbox" id="seleccionarTodos"></th>
+          <th class="ordenable" data-orden="numeroContrato"># Contrato <i class="fa-solid fa-sort"></i></th>
           <th class="ordenable" data-orden="nombre">Nombre <i class="fa-solid fa-sort"></i></th>
           <th class="ordenable" data-orden="cedula">Cédula <i class="fa-solid fa-sort"></i></th>
           <th class="ordenable" data-orden="cargo">Cargo <i class="fa-solid fa-sort"></i></th>
           <th class="ordenable" data-orden="dependencia">Dependencia <i class="fa-solid fa-sort"></i></th>
           <th class="ordenable" data-orden="estado">Estado <i class="fa-solid fa-sort"></i></th>
           <th class="ordenable" data-orden="documentos">Documentos <i class="fa-solid fa-sort"></i></th>
-          <th class="ordenable" data-orden="poliza">Póliza <i class="fa-solid fa-sort"></i></th>
           <th></th>
         </tr>
       </thead>
@@ -137,8 +142,12 @@
 
     <div class="cabecera">
       <div class="cabecera-titulo">
-        <span class="sello" id="modalSello">Completo</span>
+        <div class="avatar" id="modalAvatar">AB</div>
         <div>
+          <div class="cabecera-linea1">
+            <span class="sello" id="modalSello">Completo</span>
+            <span class="badge-contrato" id="modalNumeroContrato" hidden></span>
+          </div>
           <h2 id="modalNombre">Nombre del contratista</h2>
           <div class="cabecera-sub">
             <span class="copiable" id="copiarCedula" title="Clic para copiar la cédula">
@@ -204,18 +213,58 @@
             <option value="completo">Completo</option>
           </select>
         </div>
-        <div>
-          <label>Vencimiento póliza de cumplimiento</label>
-          <input type="date" id="campoVencimientoPoliza">
-        </div>
       </form>
 
-      <h3 class="separador">Valor y plazo del contrato</h3>
-      <div class="grid grid-plazo">
+      <h3 class="separador">Información contractual</h3>
+      <div class="grid">
         <div>
-          <label>Valor total *</label>
-          <input type="text" id="campoValorTotal" placeholder="$ 0">
-          <span class="error-campo" id="errorValorTotal"></span>
+          <label>Número de contrato</label>
+          <input type="text" id="campoNumeroContrato" placeholder="Se asigna automáticamente">
+        </div>
+        <div>
+          <label>Tipo de contrato</label>
+          <select id="campoTipoContrato">
+            <option value="">Seleccione...</option>
+            <option value="Prestación de Servicios">Prestación de Servicios</option>
+            <option value="Obra">Obra</option>
+            <option value="Suministro">Suministro</option>
+            <option value="Consultoría">Consultoría</option>
+            <option value="Interventoría">Interventoría</option>
+            <option value="Arrendamiento">Arrendamiento</option>
+            <option value="Convenio">Convenio</option>
+          </select>
+        </div>
+        <div>
+          <label>Modalidad de contratación</label>
+          <select id="campoModalidad">
+            <option value="">Seleccione...</option>
+            <option value="Contratación Directa">Contratación Directa</option>
+            <option value="Mínima Cuantía">Mínima Cuantía</option>
+            <option value="Selección Abreviada">Selección Abreviada</option>
+            <option value="Licitación Pública">Licitación Pública</option>
+            <option value="Concurso de Méritos">Concurso de Méritos</option>
+          </select>
+        </div>
+        <div>
+          <label>Supervisor del contrato</label>
+          <input type="text" id="campoSupervisor" placeholder="Nombre del supervisor">
+        </div>
+        <div>
+          <label>Fecha de firma</label>
+          <input type="date" id="campoFechaFirma">
+        </div>
+        <div>
+          <label>Fecha de inicio</label>
+          <input type="date" id="campoFechaInicio">
+        </div>
+      </div>
+
+      <h3 class="separador">Valor y plazo del contrato</h3>
+      <div class="grid grid-plazo-4">
+        <div>
+          <label>Valor mensual *</label>
+          <input type="text" id="campoValorMensual" placeholder="Ej: 3.200.000">
+          <span class="error-campo" id="errorValorMensual"></span>
         </div>
         <div>
           <label>Plazo — meses</label>
@@ -225,19 +274,24 @@
           <label>Plazo — días</label>
           <input type="number" id="campoPlazoDias" min="0" max="29" value="0">
         </div>
+        <div>
+          <label>Valor total</label>
+          <input type="text" id="campoValorTotal" placeholder="$ 0">
+          <span class="campo-nota">Se calcula solo; puede editarlo si lo necesita</span>
+        </div>
       </div>
       <div class="valores-calculados">
         <div class="valor-calc">
-          <span>Valor mensual</span>
-          <strong id="calcValorMensual">$ 0</strong>
-        </div>
-        <div class="valor-calc">
-          <span>Valor diario</span>
+          <span>Valor diario (sobre el mensual)</span>
           <strong id="calcValorDiario">$ 0</strong>
         </div>
         <div class="valor-calc">
           <span>Plazo total en días</span>
           <strong id="calcPlazoDias">0</strong>
+        </div>
+        <div class="valor-calc" id="calcTerminacionCaja">
+          <span>Fecha de terminación estimada</span>
+          <strong id="calcFechaTerminacion">—</strong>
         </div>
       </div>
 
