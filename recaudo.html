@@ -405,6 +405,8 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .log-fecha{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
 .log-cambios{font-size:11px;color:var(--soft);line-height:1.5;word-break:break-word}
 @media(max-width:480px){.wiz{max-width:100%}.wiz-body{padding:18px 20px 4px}.wiz-footer{padding:12px 20px 18px}.wiz-alert-box{margin:0 20px 12px}}
+.bv-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .2s}
+.bv-dot.active{background:var(--gold);width:18px;border-radius:4px}
 
 /* ── CABECERA MODAL REDISEÑADA ── */
 .mhdr-dep{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace;margin-bottom:6px}
@@ -1026,6 +1028,68 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
   </div>
 </div>
 
+<!-- ══ BIENVENIDA "TEO" — solo primera vez, explica en pasos qué hay de nuevo ══ -->
+<div class="ov" id="modal-bv" onclick="if(event.target===this)bvCerrar()">
+  <div class="mbox" style="max-width:480px">
+    <div class="mhdr" style="flex-direction:column;align-items:center;text-align:center;gap:6px">
+      <div class="wiz-robot" id="bvRobot" onclick="sacudirRobot('bvRobot','bvBubble')" title="¡Haz clic!" style="margin-bottom:2px;transform:scale(.85)">
+        <svg width="72" height="90" viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+          <line x1="32" y1="6" x2="32" y2="14" stroke="#f5c050" stroke-width="2" stroke-linecap="round"/>
+          <circle class="wiz-antenna" cx="32" cy="4" r="3" fill="#f5c050"/>
+          <rect x="14" y="14" width="36" height="26" rx="7" fill="url(#bvHG)" stroke="rgba(245,192,80,.5)" stroke-width="1.2"/>
+          <rect class="wiz-eye-l"  x="20" y="21" width="8"  height="7" rx="2" fill="#0a1f3d"/>
+          <rect class="wiz-eye-r"  x="36" y="21" width="8"  height="7" rx="2" fill="#0a1f3d"/>
+          <circle class="wiz-pupil-l" cx="24" cy="24.5" r="2.2" fill="#2d8de8"/>
+          <circle class="wiz-pupil-r" cx="40" cy="24.5" r="2.2" fill="#2d8de8"/>
+          <circle cx="25" cy="23.5" r=".8" fill="white" opacity=".9"/>
+          <circle cx="41" cy="23.5" r=".8" fill="white" opacity=".9"/>
+          <rect x="22" y="32" width="20" height="4" rx="2" fill="#0a1f3d"/>
+          <rect class="wiz-mouth-l1" x="24" y="33" width="3" height="2" rx="1" fill="#f5c050"/>
+          <rect class="wiz-mouth-l2" x="28.5" y="33" width="3" height="2" rx="1" fill="#2d8de8"/>
+          <rect class="wiz-mouth-l3" x="33" y="33" width="3" height="2" rx="1" fill="#f5c050"/>
+          <rect x="28" y="40" width="8" height="5" rx="2" fill="rgba(245,192,80,.3)" stroke="rgba(245,192,80,.3)" stroke-width="1"/>
+          <rect x="10" y="45" width="44" height="28" rx="8" fill="url(#bvBG)" stroke="rgba(45,141,232,.4)" stroke-width="1.2"/>
+          <rect x="18" y="51" width="28" height="16" rx="4" fill="rgba(0,0,0,.3)" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+          <circle class="wiz-led1" cx="26" cy="59" r="3.5" fill="#f5c050" opacity=".9"/>
+          <circle class="wiz-led2" cx="36" cy="59" r="3.5" fill="#2d8de8" opacity=".9"/>
+          <rect x="20" y="53" width="8"  height="2.5" rx="1.2" fill="#2d8de8" opacity=".7"/>
+          <rect x="30" y="53" width="14" height="2.5" rx="1.2" fill="rgba(255,255,255,.12)"/>
+          <rect class="wiz-arm-l" x="1"  y="47" width="9" height="20" rx="4.5" fill="url(#bvAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <rect class="wiz-arm-r" x="54" y="47" width="9" height="20" rx="4.5" fill="url(#bvAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <circle cx="5.5"  cy="69" r="4" fill="url(#bvAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <circle cx="58.5" cy="69" r="4" fill="url(#bvAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <defs>
+            <linearGradient id="bvHG" x1="14" y1="14" x2="50" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#1a3a6e"/><stop offset="100%" stop-color="#0f2550"/>
+            </linearGradient>
+            <linearGradient id="bvBG" x1="10" y1="45" x2="54" y2="73" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#1a3a6e"/><stop offset="100%" stop-color="#0a1f3d"/>
+            </linearGradient>
+            <linearGradient id="bvAG" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stop-color="#1a4a8a"/><stop offset="100%" stop-color="#0f2d5e"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="wiz-bubble" id="bvBubble" style="max-width:100%">¡Hola! Soy Teodoro 👋</div>
+    </div>
+    <div class="mbody" style="text-align:center;padding-top:10px">
+      <h3 id="bv-titulo" style="font-family:'DM Serif Display',serif;font-size:19px;font-weight:400;margin-bottom:10px"></h3>
+      <div id="bv-contenido" style="font-size:13px;color:var(--soft);line-height:1.65;min-height:90px"></div>
+    </div>
+    <div class="mfoot" style="flex-direction:column;gap:12px">
+      <div id="bv-dots" style="display:flex;gap:6px;justify-content:center"></div>
+      <div style="display:flex;gap:8px;width:100%;justify-content:space-between">
+        <button class="fbtn fbtn-outline" id="bv-btn-omitir" onclick="bvCerrar()">Omitir</button>
+        <div style="display:flex;gap:8px">
+          <button class="fbtn fbtn-outline" id="bv-btn-atras" onclick="bvAtras()">← Atrás</button>
+          <button class="fbtn fbtn-gold" id="bv-btn-sig" onclick="bvSiguiente()">Siguiente →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="modal" onclick="if(event.target===this)cerrarModal()">
   <div class="mbox">
     <div class="mhdr">
@@ -1578,16 +1642,17 @@ function onWizNombre(val){
     bubble.style.color='var(--gold2)';
   }
 }
-function sacudirWizRobot(){
-  var r=document.getElementById('wizRobot');
+function sacudirRobot(robotId, bubbleId){
+  var r=document.getElementById(robotId);
   if(!r) return;
   var frases=['⚡ ¡Beep boop!','🔧 Sistemas OK','📂 Listo para trabajar','💡 ¡Teodoro activo!'];
-  var b=document.getElementById('wizBubble');
+  var b=document.getElementById(bubbleId);
   if(b){ b.innerHTML=frases[Math.floor(Math.random()*frases.length)]; }
   r.classList.remove('shake');
   void r.offsetWidth;
   r.classList.add('shake');
 }
+function sacudirWizRobot(){ sacudirRobot('wizRobot','wizBubble'); }
 function wizAlert(t,m){
   var el=document.getElementById('wizAlert');
   if(!el) return;
@@ -1643,6 +1708,7 @@ async function conectar(){
   pintarUsuarioActivo();
   actualizarCfgPanel();
   cargarTodo();
+  intentarMostrarBienvenida();
 }
 
 // Reabre el wizard si por algún motivo se perdió la identificación
@@ -1670,11 +1736,80 @@ try { loadCfgUsuario(); } catch(e){ cfgUsuario = {}; }
     pintarUsuarioActivo();
     actualizarCfgPanel();
     cargarTodo();
+    intentarMostrarBienvenida();
   } else {
     var ov=document.getElementById('wizOverlay');
     if(ov) ov.classList.add('visible');
   }
 })();
+
+// ════════════════════════════════════════════════════════════
+// BIENVENIDA "TEO" — solo la primera vez, explica en pasos qué hay de nuevo
+// respecto al Excel de siempre (antigüedad, duplicados, entrega a Recaudos y Pagos)
+// ════════════════════════════════════════════════════════════
+const BIENVENIDA_KEY = 'recaudo_bienvenida_v1';
+var bvPasoActual = 0;
+const BV_PASOS = [
+  {
+    bubble: '¡Hola! Soy Teodoro 👋',
+    titulo: '¡Bienvenido a Recaudo!',
+    html: 'Antes de arrancar te cuento en 4 pasitos qué cambió respecto al Excel de siempre. No toma ni un minuto.'
+  },
+  {
+    bubble: '⏳ Nada se te pasa',
+    titulo: '🕒 Antigüedad de cada depósito',
+    html: 'Cada depósito sin resolver ahora muestra <b>hace cuántos días</b> está así, con color: <span style="color:#86efac">verde</span> (menos de 15 días), <span style="color:var(--gold2)">amarillo</span> (15 a 30) y <span style="color:#fca5a5">rojo</span> (más de 30). Ya no toca ordenar la columna de fecha a mano para saber qué es urgente.'
+  },
+  {
+    bubble: '🔁 Yo los encuentro solo',
+    titulo: '🔁 Duplicados, detectados solos',
+    html: 'En la pestaña <b>"Duplicados"</b> encuentro los depósitos repetidos —mismo número, o misma cédula/nombre/valor/fecha— y te dejo decidir cuáles eliminar, conservando siempre el más antiguo. En Excel esto era casi imposible de ver con miles de filas.'
+  },
+  {
+    bubble: '📦 Listo para entregar',
+    titulo: '📦 Entrega a Recaudos y Pagos',
+    html: 'Marca varios depósitos —desde la tabla o desde la ficha de una persona—, elige por cada uno si se <b>Aplica</b> o se <b>Devuelve</b>, y genero un PDF listo para entregar, con el banco/consignante incluido para que lo crucen fácil.'
+  },
+  {
+    bubble: '✅ ¡Todo tuyo!',
+    titulo: '✅ Listo, ya puedes empezar',
+    html: 'Este mensaje no vuelve a aparecer. Si tienes dudas sobre algo, cualquier duda me la puedes preguntar a mí (Teo) desde el chat, o consultarle a Jeison.'
+  }
+];
+
+function intentarMostrarBienvenida(){
+  try{ if(localStorage.getItem(BIENVENIDA_KEY)) return; }catch(e){}
+  setTimeout(bvAbrir, 500);
+}
+function bvAbrir(){
+  bvPasoActual = 0;
+  bvRenderPaso();
+  document.getElementById('modal-bv').classList.add('open');
+}
+function bvRenderPaso(){
+  var p = BV_PASOS[bvPasoActual];
+  document.getElementById('bvBubble').textContent = p.bubble;
+  document.getElementById('bv-titulo').textContent = p.titulo;
+  document.getElementById('bv-contenido').innerHTML = p.html;
+  document.getElementById('bv-dots').innerHTML = BV_PASOS.map(function(_,i){
+    return '<span class="bv-dot'+(i===bvPasoActual?' active':'')+'"></span>';
+  }).join('');
+  document.getElementById('bv-btn-atras').style.visibility = bvPasoActual===0 ? 'hidden' : 'visible';
+  var esUltimo = bvPasoActual === BV_PASOS.length-1;
+  document.getElementById('bv-btn-sig').textContent = esUltimo ? '¡Entendido, vamos! 🚀' : 'Siguiente →';
+  document.getElementById('bv-btn-omitir').style.display = esUltimo ? 'none' : 'inline-flex';
+}
+function bvSiguiente(){
+  if(bvPasoActual < BV_PASOS.length-1){ bvPasoActual++; bvRenderPaso(); }
+  else { bvCerrar(); }
+}
+function bvAtras(){
+  if(bvPasoActual > 0){ bvPasoActual--; bvRenderPaso(); }
+}
+function bvCerrar(){
+  try{ localStorage.setItem(BIENVENIDA_KEY, '1'); }catch(e){}
+  document.getElementById('modal-bv').classList.remove('open');
+}
 
 // TABS
 function goTab(t){
