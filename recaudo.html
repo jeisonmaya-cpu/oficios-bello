@@ -11,6 +11,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --navy:#0a1f3d;--navy2:#0f2d5e;--navy3:#132444;
@@ -132,6 +133,11 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .b-rev{background:rgba(124,58,237,.15);color:#c4b5fd;border:1px solid rgba(124,58,237,.3)}
 .b-vacio{background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border2)}
 .b-imp{background:rgba(234,88,12,.15);color:#fdba74;border:1px solid rgba(234,88,12,.3)}
+.ant-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.ant-verde{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+.ant-amarillo{background:rgba(232,160,32,.18);color:var(--gold2);border:1px solid rgba(232,160,32,.35)}
+.ant-rojo{background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.35)}
+.ant-ok{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border2)}
 .chip-nuevo{background:rgba(45,141,232,.25);color:#93c5fd;border:1px solid rgba(45,141,232,.4);
   font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
 
@@ -330,14 +336,65 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .rep-evals{text-align:right;min-width:140px}
 .rep-eval{font-weight:700;color:var(--text)}
 .rep-ecount{font-size:10px;color:var(--muted)}
-/* ── OVERLAY USUARIO ── */
-.user-card{background:linear-gradient(160deg,#11294d,#0a1f3d);border:1px solid rgba(232,160,32,.25);border-radius:18px;padding:34px 30px;max-width:440px;width:90%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)}
-.user-card-ico{font-size:42px;margin-bottom:10px}
-.user-card-title{font-family:'DM Serif Display',serif;font-size:24px;color:#fff;margin:0 0 8px}
-.user-card-sub{font-size:13px;color:var(--soft);margin:0 0 22px;line-height:1.5}
-.user-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.user-opt{padding:13px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
-.user-opt:hover{background:rgba(232,160,32,.18);border-color:var(--gold);transform:translateY(-1px)}
+/* ── WIZARD DE ACCESO "TEODORO" — Supabase Auth (mismo modelo que Tutelas/Desembargos) ── */
+.wiz-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:16px;
+  background:radial-gradient(ellipse 120% 100% at 50% 0%,rgba(15,45,94,.97) 0%,rgba(5,12,28,.99) 70%);
+  backdrop-filter:blur(14px);animation:wizFadeIn .4s ease both}
+.wiz-overlay.visible{display:flex}
+@keyframes wizFadeIn{from{opacity:0}to{opacity:1}}
+.wiz{background:linear-gradient(160deg,rgba(13,37,80,.98),rgba(9,24,48,.99));border:1px solid rgba(232,160,32,.28);
+  border-radius:24px;max-width:440px;width:100%;box-shadow:0 32px 100px rgba(0,0,0,.7),0 0 0 1px rgba(232,160,32,.08);
+  animation:wizSlide .5s cubic-bezier(.22,.68,0,1.2) both;overflow:hidden;max-height:92vh;overflow-y:auto}
+@keyframes wizSlide{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.wiz-hero{padding:32px 28px 20px;display:flex;flex-direction:column;align-items:center;
+  background:linear-gradient(180deg,rgba(26,111,196,.12) 0%,transparent 100%);
+  border-bottom:1px solid rgba(255,255,255,.07);position:relative;overflow:hidden}
+.wiz-hero::before{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:200px;height:200px;
+  border-radius:50%;background:radial-gradient(circle,rgba(232,160,32,.12) 0%,transparent 70%);pointer-events:none}
+.wiz-robot{filter:drop-shadow(0 8px 24px rgba(45,141,232,.4));animation:wizFloat 3s ease-in-out infinite;cursor:pointer;margin-bottom:14px}
+.wiz-robot:hover{filter:drop-shadow(0 10px 30px rgba(245,192,80,.5))}
+@keyframes wizFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-7px) rotate(1deg)}}
+.wiz-bubble{position:relative;background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);
+  border-radius:14px 14px 14px 4px;padding:10px 16px;font-size:13px;font-weight:600;color:var(--gold2);
+  max-width:280px;text-align:center;line-height:1.5;margin-bottom:4px;animation:wizBubblePop .5s .6s cubic-bezier(.22,.68,0,1.2) both}
+.wiz-bubble::before{content:'';position:absolute;bottom:-8px;left:20px;width:0;height:0;
+  border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid rgba(232,160,32,.3)}
+@keyframes wizBubblePop{from{opacity:0;transform:scale(.8) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.wiz-hero-title{font-family:'DM Serif Display',serif;font-size:24px;font-weight:400;text-align:center;margin-top:10px;line-height:1.1}
+.wiz-hero-title em{font-style:italic;color:var(--gold2)}
+.wiz-hero-sub{font-size:12px;color:var(--soft);text-align:center;margin-top:5px;line-height:1.6}
+.wiz-body{padding:22px 28px 6px}
+.wiz-field{margin-bottom:13px}
+.wiz-field label{font-size:10.5px;font-weight:700;color:var(--soft);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:6px}
+.wiz-field input{width:100%;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);
+  background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.14);border-radius:9px;outline:none;transition:all .2s}
+.wiz-field input:focus{border-color:rgba(45,141,232,.5);background:rgba(45,141,232,.1)}
+.wiz-field input::placeholder{color:rgba(255,255,255,.28)}
+.wiz-footer{padding:14px 28px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.06)}
+.wiz-skip{font-size:11.5px;color:rgba(255,255,255,.3);cursor:pointer;margin-left:auto;transition:color .2s}
+.wiz-skip:hover{color:var(--soft)}
+.wiz-alert-box{margin:0 28px 14px;padding:10px 14px;border-radius:9px;font-size:12.5px;display:none;align-items:flex-start;gap:8px}
+.wiz-alert-box.show{display:flex}
+.wiz-alert-box.alert-s{background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+.wiz-alert-box.alert-e{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+.wiz-alert-box.alert-w{background:rgba(232,160,32,.12);color:var(--gold2);border:1px solid rgba(232,160,32,.3)}
+.wiz-eye-l,.wiz-eye-r,.wiz-pupil-l,.wiz-pupil-r{animation:wizEyeBlink 4.5s ease-in-out infinite}
+@keyframes wizEyeBlink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(.08)}}
+.wiz-led1{animation:wizLedP1 1.8s ease-in-out infinite}
+.wiz-led2{animation:wizLedP2 1.8s ease-in-out infinite .6s}
+@keyframes wizLedP1{0%,100%{opacity:.9}50%{opacity:.3}}
+@keyframes wizLedP2{0%,100%{opacity:.9}50%{opacity:.3}}
+.wiz-arm-l{transform-origin:5.5px 47px;animation:wizArmL 3s ease-in-out infinite}
+.wiz-arm-r{transform-origin:58.5px 47px;animation:wizArmR 3s ease-in-out infinite}
+@keyframes wizArmL{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes wizArmR{0%,100%{transform:rotate(6deg)}50%{transform:rotate(-6deg)}}
+.wiz-antenna{animation:wizAntBlink 2.5s ease-in-out infinite}
+@keyframes wizAntBlink{0%,100%{fill:#f5c050;opacity:1}50%{fill:#fff;opacity:.4}}
+.wiz-mouth-l1,.wiz-mouth-l3{animation:wizMLed 1.4s ease-in-out infinite alternate}
+.wiz-mouth-l2{animation:wizMLed 1.4s ease-in-out infinite alternate-reverse}
+@keyframes wizMLed{from{opacity:1}to{opacity:.2}}
+.wiz-robot.shake{animation:wizShake .5s ease,wizFloat 3s ease-in-out infinite .5s}
+@keyframes wizShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-12deg) scale(1.08)}30%{transform:rotate(12deg) scale(1.1)}50%{transform:rotate(-7deg) scale(1.05)}70%{transform:rotate(5deg) scale(1.02)}}
 .sync-pendientes{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#fdba74;background:rgba(234,88,12,.18);border:1px solid rgba(234,88,12,.4);border-radius:20px;padding:4px 11px;cursor:pointer;white-space:nowrap}
 .sync-pendientes:hover{background:rgba(234,88,12,.3)}
 /* ── BITÁCORA / HISTORIAL ── */
@@ -347,9 +404,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .log-user{font-size:11px;font-weight:700;color:var(--gold2)}
 .log-fecha{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
 .log-cambios{font-size:11px;color:var(--soft);line-height:1.5;word-break:break-word}
-@media(max-width:480px){.user-options{grid-template-columns:1fr}}
-.user-skip{margin-top:16px;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif}
-.user-skip:hover{color:var(--soft)}
+@media(max-width:480px){.wiz{max-width:100%}.wiz-body{padding:18px 20px 4px}.wiz-footer{padding:12px 20px 18px}.wiz-alert-box{margin:0 20px 12px}}
 
 /* ── CABECERA MODAL REDISEÑADA ── */
 .mhdr-dep{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.6);font-family:monospace;margin-bottom:6px}
@@ -457,7 +512,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
       <button class="sync-reload" id="sync-reload" onclick="recargarTodo()" title="Traer los últimos cambios del equipo">🔄</button>
     </div>
     <span class="sync-pendientes" id="sync-pendientes" onclick="procesarCola()" title="Reintentar sincronización" style="display:none"></span>
-    <button class="tb-btn" id="usuario-activo" onclick="cambiarUsuario()" title="Cambiar usuario">👤 Sin identificar</button>
+    <button class="tb-btn" id="usuario-activo" onclick="cambiarUsuario()" title="Cerrar sesión">👤 Sin identificar</button>
     <button class="tb-btn gold" onclick="exportarExcel()">⬇️ Exportar Excel</button>
     <a href="home.html" class="tb-btn">🏛️ Inicio</a>
   </div>
@@ -570,6 +625,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
           <th style="width:32px" onclick="event.stopPropagation()"><input type="checkbox" id="chk-all" title="Seleccionar todos los de esta página" onclick="toggleSeleccionarPagina(this)"/></th>
           <th onclick="sortBy('deposito judicial', this)">#Depósito</th>
           <th onclick="sortBy('Fecha Emisión', this)">Fecha</th>
+          <th title="Días desde la fecha de emisión, sin gestión finalizada">Antigüedad</th>
           <th onclick="sortBy('Nombre Demandante.1', this)">Demandado</th>
           <th onclick="sortBy('Identificación Demandado', this)">Cédula</th>
           <th onclick="sortBy('Valor del Depóstio', this)" style="text-align:right">Valor</th>
@@ -602,6 +658,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
     <div class="pend-stat err"><div class="pend-stat-num" id="ps-sin">—</div><div class="pend-stat-lbl">Sin gestionar</div></div>
     <div class="pend-stat warn"><div class="pend-stat-num" id="ps-tram">—</div><div class="pend-stat-lbl">En trámite</div></div>
     <div class="pend-stat warn"><div class="pend-stat-num" id="ps-rev">—</div><div class="pend-stat-lbl">En revisión</div></div>
+    <div class="pend-stat err"><div class="pend-stat-num" id="ps-venc">—</div><div class="pend-stat-lbl">Vencidos (+30 días)</div></div>
     <div class="pend-stat"><div class="pend-stat-num" id="ps-valor">—</div><div class="pend-stat-lbl">Valor total pendiente</div></div>
     <div class="pend-stat"><div class="pend-stat-num" id="ps-resp">—</div><div class="pend-stat-lbl">Responsables activos</div></div>
   </div>
@@ -633,7 +690,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
     <div class="tw">
       <table>
         <thead><tr>
-          <th>#Depósito</th><th>Fecha</th><th>Demandado</th><th>Cédula</th>
+          <th>#Depósito</th><th>Fecha</th><th>Antigüedad</th><th>Demandado</th><th>Cédula</th>
           <th style="text-align:right">Valor</th><th>Impuesto</th>
           <th>Devolución</th><th>Aplicación</th><th>Responsable</th><th></th>
         </tr></thead>
@@ -886,14 +943,86 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 </footer>
 
 <!-- ══ MODAL GESTIÓN ══ -->
-<!-- ══ OVERLAY IDENTIFICACIÓN ══ -->
-<div class="ov" id="user-overlay">
-  <div class="user-card">
-    <div class="user-card-ico">👤</div>
-    <h3 class="user-card-title">¿Quién está gestionando?</h3>
-    <p class="user-card-sub">Selecciona tu nombre para registrar tus gestiones. Quedará firmado quién hace cada cambio.</p>
-    <div class="user-options" id="user-options"></div>
-    <button class="user-skip" onclick="document.getElementById('user-overlay').classList.remove('open')">Continuar sin identificar por ahora</button>
+<!-- ══ WIZARD DE ACCESO "TEODORO" — Supabase Auth (mismo modelo que Tutelas / Desembargos) ══ -->
+<div class="wiz-overlay" id="wizOverlay">
+  <div class="wiz">
+    <div class="wiz-hero">
+      <div class="wiz-robot" id="wizRobot" onclick="sacudirWizRobot()" title="¡Haz clic!">
+        <svg width="72" height="90" viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+          <line x1="32" y1="6" x2="32" y2="14" stroke="#f5c050" stroke-width="2" stroke-linecap="round"/>
+          <circle class="wiz-antenna" cx="32" cy="4" r="3" fill="#f5c050"/>
+          <rect x="14" y="14" width="36" height="26" rx="7" fill="url(#wHG)" stroke="rgba(245,192,80,.5)" stroke-width="1.2"/>
+          <rect class="wiz-eye-l"  x="20" y="21" width="8"  height="7" rx="2" fill="#0a1f3d"/>
+          <rect class="wiz-eye-r"  x="36" y="21" width="8"  height="7" rx="2" fill="#0a1f3d"/>
+          <circle class="wiz-pupil-l" cx="24" cy="24.5" r="2.2" fill="#2d8de8"/>
+          <circle class="wiz-pupil-r" cx="40" cy="24.5" r="2.2" fill="#2d8de8"/>
+          <circle cx="25" cy="23.5" r=".8" fill="white" opacity=".9"/>
+          <circle cx="41" cy="23.5" r=".8" fill="white" opacity=".9"/>
+          <rect x="22" y="32" width="20" height="4" rx="2" fill="#0a1f3d"/>
+          <rect class="wiz-mouth-l1" x="24" y="33" width="3" height="2" rx="1" fill="#f5c050"/>
+          <rect class="wiz-mouth-l2" x="28.5" y="33" width="3" height="2" rx="1" fill="#2d8de8"/>
+          <rect class="wiz-mouth-l3" x="33" y="33" width="3" height="2" rx="1" fill="#f5c050"/>
+          <rect x="28" y="40" width="8" height="5" rx="2" fill="rgba(245,192,80,.3)" stroke="rgba(245,192,80,.3)" stroke-width="1"/>
+          <rect x="10" y="45" width="44" height="28" rx="8" fill="url(#wBG)" stroke="rgba(45,141,232,.4)" stroke-width="1.2"/>
+          <rect x="18" y="51" width="28" height="16" rx="4" fill="rgba(0,0,0,.3)" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+          <circle class="wiz-led1" cx="26" cy="59" r="3.5" fill="#f5c050" opacity=".9"/>
+          <circle class="wiz-led2" cx="36" cy="59" r="3.5" fill="#2d8de8" opacity=".9"/>
+          <rect x="20" y="53" width="8"  height="2.5" rx="1.2" fill="#2d8de8" opacity=".7"/>
+          <rect x="30" y="53" width="14" height="2.5" rx="1.2" fill="rgba(255,255,255,.12)"/>
+          <rect class="wiz-arm-l" x="1"  y="47" width="9" height="20" rx="4.5" fill="url(#wAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <rect class="wiz-arm-r" x="54" y="47" width="9" height="20" rx="4.5" fill="url(#wAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <circle cx="5.5"  cy="69" r="4" fill="url(#wAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <circle cx="58.5" cy="69" r="4" fill="url(#wAG)" stroke="rgba(45,141,232,.3)" stroke-width="1"/>
+          <defs>
+            <linearGradient id="wHG" x1="14" y1="14" x2="50" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#1a3a6e"/><stop offset="100%" stop-color="#0f2550"/>
+            </linearGradient>
+            <linearGradient id="wBG" x1="10" y1="45" x2="54" y2="73" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#1a3a6e"/><stop offset="100%" stop-color="#0a1f3d"/>
+            </linearGradient>
+            <linearGradient id="wAG" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stop-color="#1a4a8a"/><stop offset="100%" stop-color="#0f2d5e"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="wiz-bubble" id="wizBubble">
+        ¡Hola! Soy <strong>Teodoro</strong> 👋<br>¿Con quién tengo el gusto?
+      </div>
+      <h2 class="wiz-hero-title">Recaudo <em>Histórico</em></h2>
+      <p class="wiz-hero-sub">Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello</p>
+    </div>
+    <div class="wiz-body">
+      <div class="wiz-field">
+        <label>Su nombre completo</label>
+        <input id="wNombre" type="text" placeholder="Ej. Jeison Maya" autocomplete="name"
+               oninput="onWizNombre(this.value)"
+               onkeydown="if(event.key==='Enter') document.getElementById('wCorreo').focus()">
+      </div>
+      <div class="wiz-field">
+        <label>Equipo / Cargo <span style="font-size:10px;opacity:.5">(opcional)</span></label>
+        <input id="wEquipo" type="text" placeholder="Ej. Cobro Coactivo"
+               onkeydown="if(event.key==='Enter') document.getElementById('wCorreo').focus()">
+      </div>
+      <div class="wiz-field">
+        <label>Correo</label>
+        <input id="wCorreo" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="username"
+               onkeydown="if(event.key==='Enter') document.getElementById('wPass').focus()">
+      </div>
+      <div class="wiz-field">
+        <label>Contraseña</label>
+        <input id="wPass" type="password" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter') conectar()">
+      </div>
+    </div>
+    <div class="wiz-alert-box alert-w" id="wizAlert">
+      <span></span><span id="wizAlertMsg"></span>
+    </div>
+    <div class="wiz-footer">
+      <button class="fbtn fbtn-gold" id="btnConectar" onclick="conectar()" style="flex:1;justify-content:center">
+        🚀 ¡Entrar con Teodoro!
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1374,7 +1503,7 @@ async function cargarTodo(){
   }catch(err){
     setSS('error','Error al cargar');
     var tb=document.getElementById('tbody');
-    if(tb) tb.innerHTML='<tr><td colspan="12"><div class="empty"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la base de datos. Revise su conexión e intente recargar.</p></div></td></tr>';
+    if(tb) tb.innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la base de datos. Revise su conexión e intente recargar.</p></div></td></tr>';
   }
 }
 
@@ -1389,78 +1518,163 @@ async function recargarTodo(){
 }
 
 // ════════════════════════════════════════════════════════════
-// USUARIO ACTIVO — integra con la sesión del sistema; si no hay, pregunta
+// AUTENTICACIÓN — Supabase Auth (mismo modelo que Tutelas / Desembargos / Acuerdos / Buscador)
+// Login unificado: mismo proyecto Supabase y mismo dominio, la sesión se
+// comparte con los demás módulos. (SUPABASE_URL y SUPABASE_ANON ya están declaradas.)
 // ════════════════════════════════════════════════════════════
-// Lista de responsables (definida aquí, ANTES del init que la usa)
 const RESPONSABLES = ['Gloria Marcela Duque','Jose Francineth','Jose Fernando Zapata','Julieth Duque','Jhon Fredy Perez','Nadya Catalina Tamayo','Juan Pablo Gómez Londoño'];
 var USUARIO_ACTIVO = '';
 
-function detectarUsuario(){
-  // 1) Intentar leer la sesión compartida de otros módulos
-  var claves=['tutelas_sesion_v2','buscador_session','oficios_session'];
-  for(var i=0;i<claves.length;i++){
-    try{
-      var s=JSON.parse(localStorage.getItem(claves[i])||'null');
-      if(s && (!s.expira || s.expira>Date.now())){
-        var n=s.usuario||s.nombre||'';
-        if(n){ return n; }
-      }
-    }catch(e){}
+let sbAuth = null;
+try {
+  if (window.supabase && window.supabase.createClient) {
+    sbAuth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  } else {
+    console.error('La librería de Supabase no cargó. Revisa la conexión.');
   }
-  // 2) Usuario propio de recaudo (si ya lo eligió antes)
-  try{ var r=localStorage.getItem('teodoro_usuario'); if(r) return r; }catch(e){}
-  return '';
+} catch(e) {
+  console.error('Error creando cliente Supabase Auth:', e);
 }
 
-function llenarBotonesUsuario(){
-  var cont=document.getElementById('user-options');
-  if(!cont) return;
-  cont.innerHTML=RESPONSABLES.map(function(n){
-    var safe=n.replace(/'/g,"\\'");
-    return '<button class="user-opt" onclick="setUsuario(\''+safe+'\')">'+eh(n)+'</button>';
-  }).join('');
-}
+// Identidad para firmar gestiones/oficios (independiente de la sesión de Supabase Auth)
+const CFG_USUARIO_KEY = 'recaudo_cfg_v1';
+var cfgUsuario = {};
+function loadCfgUsuario(){ try{ cfgUsuario=JSON.parse(localStorage.getItem(CFG_USUARIO_KEY)||'{}'); }catch(e){ cfgUsuario={}; } }
+function saveCfgUsuario(){ try{ localStorage.setItem(CFG_USUARIO_KEY, JSON.stringify(cfgUsuario)); }catch(e){} }
 
-function pedirUsuario(){
-  // Llenar botones SIEMPRE al mostrar (por si init corrió antes de tiempo)
-  llenarBotonesUsuario();
-  var ov=document.getElementById('user-overlay');
-  if(ov) ov.classList.add('open');
+async function cerrarSesion(){
+  if(!confirm('¿Cerrar sesión?')) return;
+  if(sbAuth){ try{ await sbAuth.auth.signOut(); }catch(e){} }
+  location.reload();
 }
-
-function setUsuario(nombre){
-  USUARIO_ACTIVO=nombre;
-  try{ localStorage.setItem('teodoro_usuario', nombre); }catch(e){}
-  var ov=document.getElementById('user-overlay');
-  if(ov) ov.classList.remove('open');
-  pintarUsuarioActivo();
-}
+function cambiarUsuario(){ cerrarSesion(); }
 
 function pintarUsuarioActivo(){
   var el=document.getElementById('usuario-activo');
   if(el) el.textContent = USUARIO_ACTIVO ? '👤 '+USUARIO_ACTIVO.split(' ').slice(0,2).join(' ') : '👤 Sin identificar';
 }
 
-function cambiarUsuario(){ pedirUsuario(); }
+// ── Wizard "Teodoro" — mismas frases y animaciones que Desembargos ──
+const FRASES_TEO_WIZ = [
+  (n)=>`Listo ${n}, ¡a trabajar!`,
+  (n)=>`Bienvenido, ${n} 🤝`,
+  (n)=>`${n}, Teodoro a tu servicio`,
+  (n)=>`¡Hola ${n}! Todo listo 🚀`,
+];
+function onWizNombre(val){
+  var bubble=document.getElementById('wizBubble');
+  if(!bubble) return;
+  var nombre=val.trim().split(' ')[0];
+  if(nombre.length>=2){
+    var fn=FRASES_TEO_WIZ[Math.floor(Math.random()*FRASES_TEO_WIZ.length)];
+    bubble.innerHTML=fn(nombre);
+    bubble.style.borderColor='rgba(34,197,94,.4)';
+    bubble.style.background='rgba(34,197,94,.1)';
+    bubble.style.color='#86efac';
+  } else {
+    bubble.innerHTML='¡Hola! Soy <strong>Teodoro</strong> 👋<br>¿Con quién tengo el gusto?';
+    bubble.style.borderColor='rgba(232,160,32,.3)';
+    bubble.style.background='rgba(232,160,32,.12)';
+    bubble.style.color='var(--gold2)';
+  }
+}
+function sacudirWizRobot(){
+  var r=document.getElementById('wizRobot');
+  if(!r) return;
+  var frases=['⚡ ¡Beep boop!','🔧 Sistemas OK','📂 Listo para trabajar','💡 ¡Teodoro activo!'];
+  var b=document.getElementById('wizBubble');
+  if(b){ b.innerHTML=frases[Math.floor(Math.random()*frases.length)]; }
+  r.classList.remove('shake');
+  void r.offsetWidth;
+  r.classList.add('shake');
+}
+function wizAlert(t,m){
+  var el=document.getElementById('wizAlert');
+  if(!el) return;
+  el.className='wiz-alert-box show alert-'+(t==='s'?'s':t==='e'?'e':'w');
+  var spans=el.querySelectorAll('span');
+  if(spans[0]) spans[0].textContent=t==='s'?'✅':t==='e'?'❌':'⏳';
+  if(spans[1]) spans[1].textContent=m;
+}
 
-function initUsuario(){
-  llenarBotonesUsuario();
-  var u=detectarUsuario();
-  if(u){ USUARIO_ACTIVO=u; pintarUsuarioActivo(); }
-  else { pedirUsuario(); }
+async function conectar(){
+  var nom = document.getElementById('wNombre').value.trim();
+  var eq  = document.getElementById('wEquipo').value.trim();
+  var email = document.getElementById('wCorreo').value.trim();
+  var pass  = document.getElementById('wPass').value;
+  if(!nom){
+    sacudirWizRobot();
+    var b = document.getElementById('wizBubble');
+    if(b){
+      b.innerHTML = 'Espera, necesito tu nombre 😅';
+      b.style.borderColor = 'rgba(239,68,68,.4)';
+      b.style.color = '#fca5a5';
+      b.style.background = 'rgba(239,68,68,.1)';
+    }
+    return;
+  }
+  if(!email || !pass){
+    wizAlert('e', 'Ingresa tu correo y contraseña.');
+    return;
+  }
+  if(!sbAuth){
+    wizAlert('e', 'Error de conexión con el servidor. Recarga la página.');
+    return;
+  }
+  var btn = document.getElementById('btnConectar');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Entrando…'; }
+  try{
+    var res = await sbAuth.auth.signInWithPassword({ email:email, password:pass });
+    if(res.error){
+      wizAlert('e', 'Correo o contraseña incorrectos.');
+      if(btn){ btn.disabled = false; btn.innerHTML = '🚀 ¡Entrar con Teodoro!'; }
+      return;
+    }
+  }catch(e){
+    wizAlert('e', 'Error de conexión. Intenta de nuevo.');
+    if(btn){ btn.disabled = false; btn.innerHTML = '🚀 ¡Entrar con Teodoro!'; }
+    return;
+  }
+  cfgUsuario = { nombre: nom, equipo: eq };
+  saveCfgUsuario();
+  document.getElementById('wizOverlay').classList.remove('visible');
+  if(btn){ btn.disabled = false; btn.innerHTML = '🚀 ¡Entrar con Teodoro!'; }
+  USUARIO_ACTIVO = nom;
+  pintarUsuarioActivo();
+  actualizarCfgPanel();
+  cargarTodo();
+}
+
+// Reabre el wizard si por algún motivo se perdió la identificación
+function pedirUsuario(){
+  var ov=document.getElementById('wizOverlay');
+  if(ov) ov.classList.add('visible');
 }
 
 // ── INIT ──
-function arrancar(){
-  actualizarCfgPanel();
-  initUsuario();
-  cargarTodo();
-}
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded', arrancar);
-}else{
-  arrancar();
-}
+// cargarTodo() ya NO se dispara directo: solo arranca tras un login válido
+// (sesión de Supabase Auth activa + nombre guardado), para no exponer datos antes de identificarse.
+try { loadCfgUsuario(); } catch(e){ cfgUsuario = {}; }
+
+(async function decidirArranque(){
+  var haySesion = false;
+  if(sbAuth){
+    try{
+      var r = await sbAuth.auth.getSession();
+      haySesion = !!(r && r.data && r.data.session);
+    }catch(e){ haySesion = false; }
+  }
+  if(haySesion && cfgUsuario.nombre){
+    // Sesión activa (p.ej. iniciada en otro módulo) y nombre conocido — entrar directo
+    USUARIO_ACTIVO = cfgUsuario.nombre;
+    pintarUsuarioActivo();
+    actualizarCfgPanel();
+    cargarTodo();
+  } else {
+    var ov=document.getElementById('wizOverlay');
+    if(ov) ov.classList.add('visible');
+  }
+})();
 
 // TABS
 function goTab(t){
@@ -1587,6 +1801,30 @@ function badgeEst(v){
   return '<span class="badge b-vacio">'+eh(n)+'</span>';
 }
 
+// ── ANTIGÜEDAD: días desde la fecha de emisión del depósito, solo mientras siga sin gestión finalizada ──
+// (una vez el depósito queda Devuelto o Aplicado, la antigüedad deja de ser relevante y no se muestra)
+function diasAntiguedad(r){
+  var f=String(r['Fecha Emisión']||'').substring(0,10);
+  if(!f) return null;
+  var fecha=new Date(f+'T00:00:00');
+  if(isNaN(fecha.getTime())) return null;
+  var hoy=new Date(); hoy.setHours(0,0,0,0);
+  var dias=Math.floor((hoy-fecha)/86400000);
+  return dias>=0 ? dias : null;
+}
+function claseAntiguedad(dias){
+  if(dias>30) return 'ant-rojo';
+  if(dias>=15) return 'ant-amarillo';
+  return 'ant-verde';
+}
+function badgeAntiguedad(r){
+  var estado=estadoEfectivo(r);
+  if(estado==='DEVUELTO'||estado==='APLICADO') return '<span class="ant-badge ant-ok" title="Ya resuelto">✓</span>';
+  var d=diasAntiguedad(r);
+  if(d===null) return '<span class="badge b-vacio">—</span>';
+  return '<span class="ant-badge '+claseAntiguedad(d)+'" title="Días desde la fecha de emisión del depósito, sin gestión finalizada">'+d+'d</span>';
+}
+
 // En el modelo Supabase la gestión vive en la misma fila -> getRow devuelve la fila tal cual
 function getRow(r){ return r; }
 
@@ -1693,7 +1931,7 @@ function renderTabla(){
   var totalPags=Math.ceil(data.length/PS)||1;
   var ini=(pagActual-1)*PS,fin=Math.min(ini+PS,data.length),pag=data.slice(ini,fin);
   if(!pag.length){
-    document.getElementById('tbody').innerHTML='<tr><td colspan="12"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
+    document.getElementById('tbody').innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
     document.getElementById('pag-info').textContent='0 registros';
     document.getElementById('pag-btns').innerHTML='';
     sincronizarChkAll();
@@ -1723,6 +1961,7 @@ function renderTabla(){
       <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-dep" ${seleccionados.has(depStr)?'checked':''} onchange="toggleSeleccion('${depStr.replace(/'/g,"\\'")}', this.checked)"/></td>
       <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
       <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
+      <td>${badgeAntiguedad(r)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
       <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
@@ -2104,13 +2343,15 @@ async function eliminarDuplicadosGrupo(btn, gi){
 
 // PENDIENTES
 function renderPendientesStats(){
-  var sin=0,tram=0,rev=0,valor=0,resps=new Set();
+  var sin=0,tram=0,rev=0,venc=0,valor=0,resps=new Set();
   pendFiltrados.forEach(r=>{
     var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     var estado=ed||ea||'';
     if(!estado||estado==='PENDIENTE') sin++;
     else if(estado==='EN TRAMITE') tram++;
     else if(estado==='EN REVISION') rev++;
+    var dias=diasAntiguedad(r);
+    if(dias!==null && dias>30) venc++;
     valor+=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
     var resp=r['RESPONSABLE']||'';if(resp.trim())resps.add(resp.trim());
   });
@@ -2118,6 +2359,7 @@ function renderPendientesStats(){
   s('ps-sin',sin.toLocaleString('es-CO'));
   s('ps-tram',tram.toLocaleString('es-CO'));
   s('ps-rev',rev.toLocaleString('es-CO'));
+  s('ps-venc',venc.toLocaleString('es-CO'));
   s('ps-valor',fmtM(valor));
   s('ps-resp',resps.size);
 }
@@ -2147,7 +2389,7 @@ function filtrarPend(){
 function renderPendientes(){
   var ini=(pagPend-1)*PS,fin=Math.min(ini+PS,pendFiltrados.length),pag=pendFiltrados.slice(ini,fin);
   if(!pag.length){
-    document.getElementById('tbody-pend').innerHTML='<tr><td colspan="10"><div class="empty"><div class="empty-ico">🎉</div><p>No hay registros pendientes.</p></div></td></tr>';
+    document.getElementById('tbody-pend').innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">🎉</div><p>No hay registros pendientes.</p></div></td></tr>';
     document.getElementById('pag-info-pend').textContent='0 registros';
     document.getElementById('pag-btns-pend').innerHTML='';
     return;
@@ -2159,6 +2401,7 @@ function renderPendientes(){
     return `<tr tabindex="0" role="button" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${String(dep).replace(/'/g,"\\'")}')}">
       <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}</td>
       <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
+      <td>${badgeAntiguedad(r)}</td>
       <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
       <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px">${fmt$(valor)}</td>
