@@ -137,23 +137,9 @@ function notificar(mensaje, tipo = 'exito') {
 }
 
 // -----------------------------------------------------
-// TEMA CLARO / OSCURO
+// NOTA: Teodoro es un sistema siempre-oscuro (glassmorphism), sin toggle de tema.
+// El estilo vive completamente en sistema_contratacion.css.
 // -----------------------------------------------------
-function aplicarTema(tema) {
-  document.documentElement.setAttribute('data-theme', tema);
-  const icono = document.querySelector('#btnTema i');
-  const texto = document.getElementById('btnTemaTexto');
-  icono.className = tema === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-  texto.textContent = tema === 'dark' ? 'Claro' : 'Oscuro';
-  localStorage.setItem('contratacion_tema', tema);
-}
-
-document.getElementById('btnTema').addEventListener('click', () => {
-  const actual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  aplicarTema(actual);
-});
-
-aplicarTema(localStorage.getItem('contratacion_tema') || 'light');
 
 // -----------------------------------------------------
 // 2. RENDER TABLA + TARJETAS
