@@ -1364,17 +1364,68 @@ function sbHeaders(extra){
   return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer " + SUPABASE_ANON }, extra || {});
 }
 
+// ── Parser CSV mínimo (RFC4180): maneja comillas, comas y saltos de línea embebidos
+// en campos de texto (observaciones, direcciones, etc. pueden traer cualquiera de los tres). ──
+function _parsearFilasCSV(texto){
+  var filas = [], fila = [], campo = '', dentroComillas = false;
+  for(var i = 0; i < texto.length; i++){
+    var c = texto[i];
+    if(dentroComillas){
+      if(c === '"'){
+        if(texto[i+1] === '"'){ campo += '"'; i++; }
+        else { dentroComillas = false; }
+      } else { campo += c; }
+    } else {
+      if(c === '"'){ dentroComillas = true; }
+      else if(c === ','){ fila.push(campo); campo = ''; }
+      else if(c === '\r'){ /* el \n que sigue cierra la fila */ }
+      else if(c === '\n'){ fila.push(campo); campo = ''; filas.push(fila); fila = []; }
+      else { campo += c; }
+    }
+  }
+  if(campo.length || fila.length){ fila.push(campo); filas.push(fila); }
+  return filas;
+}
+// Convierte "n" en número si TODO el campo es numérico (igual que haría JSON.parse
+// con una columna numeric/bigint); todo lo demás (fechas, texto, ids) queda como string,
+// igual que ya se comportaba con las respuestas JSON de Supabase.
+function _valorCSV(v){
+  if(v === '') return null;
+  return /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
+}
+// Primera fila del CSV = encabezados (nombres de columna). El resto son datos.
+function _csvAObjetos(texto){
+  var filas = _parsearFilasCSV(texto);
+  if(!filas.length) return [];
+  var header = filas[0];
+  var out = [];
+  for(var i = 1; i < filas.length; i++){
+    var f = filas[i];
+    if(f.length === 1 && f[0] === '') continue; // línea vacía al final del archivo
+    var obj = {};
+    for(var j = 0; j < header.length; j++) obj[header[j]] = _valorCSV(f[j]);
+    out.push(obj);
+  }
+  return out;
+}
+
 // ── Trae TODAS las filas de una tabla/vista, paginando de a 1000 (límite REST de Supabase) ──
 // Pide la primera página con "Prefer: count=exact" para conocer el total de una vez,
 // y si el servidor lo entrega, pide TODAS las páginas restantes EN PARALELO (antes se
 // pedían una por una, esperando cada respuesta antes de pedir la siguiente).
+//
+// Se pide en CSV (Accept: text/csv) en vez de JSON: PostgREST repite el nombre de
+// cada columna en CADA fila cuando responde en JSON, lo que en tablas anchas como
+// "recaudo" (32 columnas) casi duplicaba el peso real de los datos. En CSV los
+// nombres de columna van UNA sola vez, en el encabezado — mismo dato, mucho menos
+// egress. Esto fue lo que llevó a la organización a superar la cuota de 5 GB/mes.
 async function sbFetchAll(tabla, select, extraQuery){
   var bloque = 1000;
   var url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (extraQuery ? "&" + extraQuery : "");
 
-  var primera = await fetch(url, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact" }) });
+  var primera = await fetch(url, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact", Accept: "text/csv" }) });
   if(!primera.ok) throw new Error("Supabase HTTP " + primera.status);
-  var todos = await primera.json();
+  var todos = _csvAObjetos(await primera.text());
   if(todos.length < bloque) return todos; // ya vino todo en la primera página
 
   var cr = primera.headers.get("content-range"); // ej. "0-999/48321"
@@ -1391,8 +1442,8 @@ async function sbFetchAll(tabla, select, extraQuery){
       var intentos=3, ultimoError=null;
       for(var i=0;i<intentos;i++){
         try{
-          var res = await fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items" }) });
-          if(res.ok) return await res.json();
+          var res = await fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items", Accept: "text/csv" }) });
+          if(res.ok) return _csvAObjetos(await res.text());
           ultimoError = new Error("Supabase HTTP " + res.status);
         }catch(e){ ultimoError = e; }
       }
@@ -1421,9 +1472,9 @@ async function sbFetchAll(tabla, select, extraQuery){
   // Respaldo: si el servidor no devolvió el conteo exacto (poco común), seguir en serie como antes.
   var desde2 = bloque;
   while(true){
-    var res = await fetch(url, { headers: sbHeaders({ Range: desde2 + "-" + (desde2 + bloque - 1), "Range-Unit": "items" }) });
+    var res = await fetch(url, { headers: sbHeaders({ Range: desde2 + "-" + (desde2 + bloque - 1), "Range-Unit": "items", Accept: "text/csv" }) });
     if(!res.ok) throw new Error("Supabase HTTP " + res.status);
-    var chunk = await res.json();
+    var chunk = _csvAObjetos(await res.text());
     todos = todos.concat(chunk);
     if(chunk.length < bloque) break;
     desde2 += bloque;
