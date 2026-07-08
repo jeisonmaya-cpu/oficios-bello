@@ -157,42 +157,12 @@
   </div>
 
   <!-- ══════════════════════════════
-       BANNER MUNDIAL 2026 · COLOMBIA
-  ══════════════════════════════ -->
-  <div class="mundial-banner" id="mundial-banner" style="display:none">
-    <div class="mb-stripes" aria-hidden="true"></div>
-    <div class="mb-flag" aria-hidden="true">
-      <span class="mb-amarillo"></span>
-      <span class="mb-azul"></span>
-      <span class="mb-rojo"></span>
-    </div>
-    <div class="mb-content">
-      <div class="mb-eyebrow">⚽ Mundial 2026</div>
-      <div class="mb-msg" id="mb-msg">¡Vamos Colombia! 🇨🇴</div>
-      <div class="mb-match" id="mb-match">
-        <span class="mb-match-label" id="mb-match-label"></span>
-        <span class="mb-match-meta" id="mb-match-meta"></span>
-      </div>
-    </div>
-    <div class="mb-counter" id="mb-counter" aria-live="polite">
-      <div class="mb-clock" id="mb-clock">
-        <div class="mb-unit"><span id="mb-dd">0</span><small>días</small></div>
-        <div class="mb-unit"><span id="mb-hh">0</span><small>hrs</small></div>
-        <div class="mb-unit"><span id="mb-mm">0</span><small>min</small></div>
-        <div class="mb-unit"><span id="mb-ss">0</span><small>seg</small></div>
-      </div>
-    </div>
-    <div class="mb-ball" aria-hidden="true">⚽</div>
-    <button class="mb-close" id="mb-close" aria-label="Cerrar banner">✕</button>
-  </div>
-
-  <!-- ══════════════════════════════
        RESUMEN DEL DÍA
   ══════════════════════════════ -->
   <div class="resumen-dia" id="resumen-dia">
     <div class="resumen-header">
       <div class="resumen-titulo">
-        <span>📅</span> Resumen del día
+        <span class="resumen-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Resumen del día
       </div>
       <span class="resumen-fecha" id="resumen-fecha">—</span>
     </div>
@@ -209,7 +179,7 @@
      MÓDULOS — grilla unificada con favoritos
 ══════════════════════════════ -->
   <div class="section-label">
-    <span class="section-label-icon">⚙️</span>
+    <span class="section-label-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
     Módulos del sistema
     <span class="sl-line"></span>
     <span class="kbd-hint" title="Búsqueda rápida de módulos"><kbd>Ctrl</kbd>+<kbd>K</kbd> buscar</span>
@@ -416,7 +386,7 @@
 
 <footer>
   <div class="footer-info">
-    <span class="footer-pill" id="fp-version">v2.7</span>
+    <span class="footer-pill" id="fp-version">v2.8</span>
     <span class="footer-pill" id="fp-actualizado">Actualizando...</span>
     <span class="footer-pill" id="fp-usuario">—</span>
     <span class="footer-pill" id="fp-modulos">8 módulos activos</span>
@@ -482,7 +452,7 @@ document.addEventListener('keydown',function(e){
 // en localStorage por tutelas_v2 tras login con PIN).
 // ════════════════════════════════════════
 var CONFIG = {
-  version: "v2.7",
+  version: "v2.8",
   modulos: 8
 };
 
@@ -699,7 +669,7 @@ var kpalCerrar; // expuesta para el handler global de Escape
   if(!overlay||!inp||!list) return;
   var sel=0, filtrados=MODS;
 
-  function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
 
   function render(){
     if(filtrados.length===0){
@@ -798,6 +768,21 @@ async function verificarSistema(){
 }
 
 // ════════════════════════════════════════
+// CONEXIÓN — aviso inmediato si el equipo queda offline
+// (eventos del navegador: no hace ninguna llamada externa)
+// ════════════════════════════════════════
+window.addEventListener('offline', function(){
+  var dot=document.getElementById('sys-dot'), txt=document.getElementById('sys-txt');
+  if(dot) dot.className='sys-dot err';
+  if(txt) txt.textContent='Sin conexión a internet';
+});
+window.addEventListener('online', function(){
+  var txt=document.getElementById('sys-txt');
+  if(txt) txt.textContent='Conexión restablecida · verificando...';
+  verificarSistema();
+});
+
+// ════════════════════════════════════════
 // CARD STATS — datos contextuales por módulo
 // ════════════════════════════════════════
 function actualizarCardStats(stats){
@@ -812,7 +797,7 @@ function actualizarCardStats(stats){
   }
   // Card cola desembargos — desde localStorage
   var cola=[];
-  try{ cola=JSON.parse(localStorage.getItem('cola_local')||'[]'); }catch(e){}
+  try{ cola=JSON.parse(localStorage.getItem('cola_local_desem')||localStorage.getItem('cola_local')||'[]'); }catch(e){}
   var colaHoy=cola.filter(function(x){
     var hoy=new Date().toLocaleDateString('es-CO');
     return x['Fecha']===hoy||x.fecha===hoy;
@@ -824,7 +809,7 @@ function actualizarCardStats(stats){
   }
   // Card acuerdos — desde localStorage
   var acuerdos=[];
-  try{ acuerdos=JSON.parse(localStorage.getItem('pendientes_acuerdos')||'[]'); }catch(e){}
+  try{ acuerdos=JSON.parse(localStorage.getItem('acuerdos_pendientes_v3')||localStorage.getItem('pendientes_acuerdos')||'[]'); }catch(e){}
   var acEl=document.getElementById('cs-acuerdos-txt');
   if(acEl){
     if(acuerdos.length>0) acEl.textContent=acuerdos.length+' acuerdo(s) pendiente(s)';
@@ -873,6 +858,8 @@ var NOVEDADES=[
   {icono:'📊',txt:'Estadísticas con % de resolución'},
   {icono:'⚠️',txt:'Alertas de vencimiento activas'},
   {icono:'📧',txt:'Módulo de Notificaciones: comparendos y predial'},
+  {icono:'🗓️',txt:'El resumen del día muestra el próximo festivo'},
+  {icono:'📡',txt:'Aviso inmediato si el equipo queda sin internet'},
 ];
 function novedadDelDia(){
   var idx=new Date().getDate()%NOVEDADES.length;
@@ -934,7 +921,6 @@ function tiempoRelativo(ts){
 function buildResumenDia(){
   var ahora = new Date();
   var el = function(id){ return document.getElementById(id); };
-
   // Fecha
   var opcFecha = {weekday:'long', day:'numeric', month:'long'};
   var fechaStr = ahora.toLocaleDateString('es-CO', opcFecha);
@@ -944,14 +930,14 @@ function buildResumenDia(){
   // Oficios generados hoy (localStorage)
   var colaHoy = 0;
   try{
-    var cola = JSON.parse(localStorage.getItem('cola_local')||'[]');
+    var cola = JSON.parse(localStorage.getItem('cola_local_desem')||localStorage.getItem('cola_local')||'[]');
     var hoyStr = ahora.toLocaleDateString('es-CO');
     colaHoy = cola.filter(function(x){ return x['Fecha']===hoyStr||x.fecha===hoyStr; }).length;
   }catch(e){}
 
   // Acuerdos pendientes (localStorage)
   var acuerdosPend = 0;
-  try{ acuerdosPend = JSON.parse(localStorage.getItem('pendientes_acuerdos')||'[]').length; }catch(e){}
+  try{ acuerdosPend = JSON.parse(localStorage.getItem('acuerdos_pendientes_v3')||localStorage.getItem('pendientes_acuerdos')||'[]').length; }catch(e){}
 
   var items = [];
 
@@ -1007,6 +993,44 @@ function buildResumenDia(){
     href: 'tutelas_v2.html'
   });
 
+  // 4. Próximo festivo — calendario oficial (calculado localmente, sin consumir red ni cuota)
+  var FESTIVOS = [
+    ['2026-07-20','Independencia de Colombia'],
+    ['2026-08-07','Batalla de Boyacá'],
+    ['2026-08-17','Asunción de la Virgen'],
+    ['2026-10-12','Día de la Raza'],
+    ['2026-11-02','Todos los Santos'],
+    ['2026-11-16','Independencia de Cartagena'],
+    ['2026-12-08','Inmaculada Concepción'],
+    ['2026-12-25','Navidad'],
+    ['2027-01-01','Año Nuevo'],
+    ['2027-01-11','Reyes Magos'],
+    ['2027-03-22','San José'],
+    ['2027-03-25','Jueves Santo'],
+    ['2027-03-26','Viernes Santo'],
+    ['2027-05-01','Día del Trabajo']
+  ];
+  function isoLocal(d){
+    var m=d.getMonth()+1, dd=d.getDate();
+    return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd;
+  }
+  var hoyISO = isoLocal(ahora), proxFest = null;
+  for(var fi2=0; fi2<FESTIVOS.length; fi2++){
+    if(FESTIVOS[fi2][0] >= hoyISO){ proxFest = FESTIVOS[fi2]; break; }
+  }
+  if(proxFest){
+    var pf = new Date(proxFest[0]+'T00:00:00');
+    var diasFest = Math.round((pf - new Date(hoyISO+'T00:00:00'))/86400000);
+    var pfStr = pf.toLocaleDateString('es-CO',{weekday:'long', day:'numeric', month:'long'});
+    items.push({
+      icono:'🗓️',
+      txt: diasFest===0
+        ? 'Hoy es festivo: <strong>'+proxFest[1]+'</strong>'
+        : 'Próximo festivo: <strong>'+pfStr+'</strong> · '+proxFest[1],
+      tag:{ txt: diasFest===0 ? 'Hoy' : 'En '+diasFest+' día'+(diasFest===1?'':'s'), cls: diasFest<=3 ? 'ambar' : 'gris' }
+    });
+  }
+
   // Renderizar (sin onclick inline: data-href + listeners, accesible por teclado)
   var html = items.map(function(item){
     var cls = 'ri' + (item.clickable?' clickable':'');
@@ -1035,133 +1059,6 @@ function buildResumenDia(){
 }
 
 buildResumenDia();
-
-// ════════════════════════════════════════
-// BANNER MUNDIAL 2026 · COLOMBIA + CRONÓMETRO
-// Fase eliminatoria: actualiza PARTIDOS a medida que la
-// Tricolor avance (o conéctalo a un mundial.json del repo).
-// ════════════════════════════════════════
-(function(){
-  var FIN = new Date('2026-07-20T00:00:00');
-  var KEY = 'mundial_banner_cerrado';
-
-  // Partidos de Colombia (hora local Colombia). Formato ISO con offset -05:00.
-  var PARTIDOS = [
-    // — Fase de grupos (ya jugada, se conserva como historial) —
-    { rival:'Uzbekistán', vs:'Uzbekistán 🇺🇿 vs Colombia 🇨🇴', sede:'Estadio Azteca, Ciudad de México', fase:'Fase de grupos · J1', inicio:'2026-06-17T22:00:00-05:00' },
-    { rival:'RD Congo',   vs:'Colombia 🇨🇴 vs RD Congo 🇨🇩',   sede:'Estadio Akron, Guadalajara',      fase:'Fase de grupos · J2', inicio:'2026-06-23T22:00:00-05:00' },
-    { rival:'Portugal',   vs:'Colombia 🇨🇴 vs Portugal 🇵🇹',   sede:'Hard Rock Stadium, Miami',         fase:'Fase de grupos · J3', inicio:'2026-06-27T19:30:00-05:00' },
-    // — Eliminación directa (¡líderes del Grupo K!) —
-    { rival:'Ghana',      vs:'Colombia 🇨🇴 vs Ghana 🇬🇭',      sede:'Arrowhead Stadium, Kansas City',   fase:'Dieciseisavos de final', inicio:'2026-07-03T20:30:00-05:00' },
-    { rival:'Por definir',vs:'Colombia 🇨🇴 vs Suiza 🇨🇭 / Argelia 🇩🇿', sede:'BC Place, Vancouver',    fase:'Octavos de final · si avanzamos 🤞', inicio:'2026-07-07T15:00:00-05:00' }
-  ];
-  var DUR_PARTIDO = 2.5 * 3600 * 1000; // 2.5h de "en vivo"
-
-  var hoy = new Date();
-  var INICIO = new Date('2026-06-11T00:00:00');
-
-  var cerradoHoy = false;
-  try{ cerradoHoy = localStorage.getItem(KEY) === hoy.toDateString(); }catch(e){}
-
-  if(hoy < INICIO || hoy >= FIN || cerradoHoy) return;
-
-  var banner = document.getElementById('mundial-banner');
-  if(!banner) return;
-  banner.style.display = 'flex';
-
-  // Frases motivacionales (se muestran cuando no hay partido inminente)
-  var frases = [
-    '¡Vamos Colombia! 🇨🇴',
-    'Con toda la fe, ¡a darlo todo! ⚽',
-    '¡Mi Colombia querida! 💛💙❤️',
-    'Líderes del Grupo K, ¡invictos! 🏆',
-    '¡A creer, a creer, que Colombia va a vencer! 🎉'
-  ];
-  var fi = 0;
-  var msgEl   = document.getElementById('mb-msg');
-  var matchEl = document.getElementById('mb-match');
-  var lblEl   = document.getElementById('mb-match-label');
-  var metaEl  = document.getElementById('mb-match-meta');
-  var counter = document.getElementById('mb-counter');
-  var clock   = document.getElementById('mb-clock');
-  var dd=document.getElementById('mb-dd'), hh=document.getElementById('mb-hh'),
-      mm=document.getElementById('mb-mm'), ss=document.getElementById('mb-ss');
-
-  // Rotación de frases motivacionales
-  var rotador = setInterval(function(){
-    msgEl.style.opacity = 0;
-    setTimeout(function(){
-      fi = (fi + 1) % frases.length;
-      msgEl.textContent = frases[fi];
-      msgEl.style.opacity = 1;
-    }, 400);
-  }, 5000);
-
-  function dos(n){ return n < 10 ? '0'+n : ''+n; }
-
-  // Devuelve el partido relevante: en vivo, o el próximo futuro
-  function partidoActivo(){
-    var ahora = Date.now();
-    for(var i=0;i<PARTIDOS.length;i++){
-      var t = new Date(PARTIDOS[i].inicio).getTime();
-      if(ahora < t + DUR_PARTIDO){
-        return { p:PARTIDOS[i], inicio:t, enVivo: ahora >= t };
-      }
-    }
-    return null; // no quedan partidos cargados
-  }
-
-  function pintar(){
-    var act = partidoActivo();
-
-    if(!act){
-      counter.style.display = 'none';
-      matchEl.style.display = 'block';
-      lblEl.textContent = '¡La Tricolor sigue en carrera! 🇨🇴';
-      metaEl.textContent = 'Actualiza los próximos cruces en el sistema';
-      clearInterval(timer);
-      return;
-    }
-
-    matchEl.style.display = 'block';
-    counter.style.display = 'flex';
-    lblEl.textContent = act.p.vs;
-    metaEl.textContent = act.p.fase + ' · ' + act.p.sede;
-
-    if(act.enVivo){
-      clock.style.display = 'none';
-      counter.classList.add('en-vivo');
-      counter.setAttribute('data-vivo','🔴 EN VIVO');
-      clearInterval(rotador);
-      msgEl.textContent = '¡Está jugando Colombia! 🔥';
-      msgEl.style.opacity = 1;
-      return;
-    }
-
-    counter.classList.remove('en-vivo');
-    counter.removeAttribute('data-vivo');
-    clock.style.display = 'flex';
-    var diff = act.inicio - Date.now();
-    var s = Math.floor(diff/1000);
-    var d = Math.floor(s/86400); s-=d*86400;
-    var h = Math.floor(s/3600);  s-=h*3600;
-    var m = Math.floor(s/60);    s-=m*60;
-    dd.textContent = d;
-    hh.textContent = dos(h);
-    mm.textContent = dos(m);
-    ss.textContent = dos(s);
-  }
-
-  pintar();
-  var timer = setInterval(pintar, 1000);
-
-  document.getElementById('mb-close').addEventListener('click', function(){
-    try{ localStorage.setItem(KEY, hoy.toDateString()); }catch(e){}
-    clearInterval(timer); clearInterval(rotador);
-    banner.style.animation = 'mbIn .4s ease reverse both';
-    setTimeout(function(){ banner.style.display = 'none'; }, 350);
-  });
-})();
 
 // ════════════════════════════════════════
 // TEO — CHAT IA (con memoria de sesión)
@@ -1293,10 +1190,10 @@ function teoRespuestaLocal(q,stats){
     return 'Los depósitos judiciales, aplicaciones y devoluciones están en <a href="recaudo.html" style="color:#60a5fa">Recaudo Histórico</a>.';
   if(ql.includes("paz y salvo")||ql.includes("resoluci")||ql.includes("jurídic")||ql.includes("juridic"))
     return 'Paz y salvos, resoluciones y documentos jurídicos se generan en la <a href="index.html" style="color:#60a5fa">Central Jurídica</a>.';
-  if(ql.includes("mundial")||ql.includes("colombia")||ql.includes("partido")||ql.includes("ghana"))
-    return '⚽ ¡Colombia clasificó líder del Grupo K! Juega contra Ghana en dieciseisavos, el viernes 3 de julio a las 8:30 p.m. en Kansas City. 🇨🇴';
   if(ql.includes("ctrl")||ql.includes("atajo")||ql.includes("buscar módulo")||ql.includes("favorito"))
     return 'Atajos del home: <strong>Ctrl+K</strong> (o <strong>/</strong>) abre la búsqueda rápida de módulos, y la <strong>⭐ estrella</strong> de cada card fija tus favoritos de primeros.';
+  if(ql.includes("festivo")||ql.includes("feriado"))
+    return 'El próximo festivo aparece en el <strong>Resumen del día</strong>, en la parte superior del home. Se calcula en tu equipo, sin consultar internet.';
   return 'Puedo ayudarte con tutelas, desembargos, búsqueda de expedientes, acuerdos de pago, recaudo, seguimiento y documentos jurídicos. ¿Con qué módulo necesitas ayuda?';
 }
 </script>
