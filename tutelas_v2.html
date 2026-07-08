@@ -80,7 +80,7 @@
     .twrap{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .tcols-adm{display:grid;grid-template-columns:100px 110px 1fr 180px 105px 155px 130px}
     .tcols-fal{display:grid;grid-template-columns:100px 100px 110px 1fr 155px 105px 130px}
-    .tcols-otr{display:grid;grid-template-columns:100px 120px 1fr 170px 105px 155px 130px}
+    .tcols-otr{display:grid;grid-template-columns:100px 110px 1fr 150px 100px 135px 120px 118px}
     .tcols-his{display:grid;grid-template-columns:100px 120px 1fr 155px 105px 130px 110px}
     .thead{padding:10px 14px;background:rgba(255,255,255,.05);border-bottom:1px solid var(--border)}
     .thead .cel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--soft)}
@@ -118,6 +118,11 @@
     .be-venc{background:rgba(239,68,68,.12);color:#f87171}
     .be-anulado{background:rgba(120,120,130,.15);color:#9ca3af;text-decoration:line-through}
     .be-superado{background:rgba(34,197,94,.12);color:#4ade80}
+    /* NOTIFICACIÓN DE INCIDENTES */
+    .btn-notif{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap;background:rgba(249,115,22,.13);border:1px solid rgba(249,115,22,.35);color:#fb923c}
+    .btn-notif:hover{background:rgba(249,115,22,.28)}
+    .btn-notif.hecho{background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.35);color:#4ade80}
+    .btn-notif.hecho:hover{background:rgba(34,197,94,.25)}
     /* PAGINACIÓN */
     .pag{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
     .pag-btns{display:flex;gap:4px}
@@ -195,7 +200,7 @@
     .toast.show{transform:translateY(0);opacity:1}
     .toast.ok{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.12)}
     .toast.err{border-color:rgba(239,68,68,.4)}
-    @media(max-width:900px){.tcols-adm,.tcols-fal,.tcols-otr,.tcols-his{grid-template-columns:90px 1fr 90px}.col-hide{display:none}.main{padding:16px}.topbar{padding:0 16px}.topbar-mid{display:none}.nav-tabs{padding:0 16px}.m-grid{grid-template-columns:1fr}}
+    @media(max-width:900px){.tcols-adm,.tcols-fal,.tcols-otr,.tcols-his{grid-template-columns:90px 1fr 90px}.tcols-otr{grid-template-columns:80px 1fr 90px 104px}.col-hide{display:none}.main{padding:16px}.topbar{padding:0 16px}.topbar-mid{display:none}.nav-tabs{padding:0 16px}.m-grid{grid-template-columns:1fr}}
     /* ── INFORME EJECUTIVO ── */
     .informe-doc{background:#fff;color:#111827;max-width:840px;width:94vw;max-height:88vh;overflow:auto;border-radius:14px;padding:30px 38px;font-size:12.5px;line-height:1.55}
     .inf-h{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:3px solid #0f2d5e;padding-bottom:12px;margin-bottom:16px;flex-wrap:wrap}
@@ -331,7 +336,7 @@
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('otros')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
   </div>
   <div class="twrap">
-    <div class="thead tcols-otr"><div class="cel">Urgencia</div><div class="cel">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div></div>
+    <div class="thead tcols-otr"><div class="cel">Urgencia</div><div class="cel col-hide">Tipo</div><div class="cel">Accionante</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Estado</div><div class="cel col-hide">Abogado</div><div class="cel">Radicado</div><div class="cel">Notificación</div></div>
     <div id="body-otros"><div class="loader"><div class="spinner"></div></div></div>
   </div>
   <div class="pag" id="pag-otros" style="display:none"><span id="pag-inc-info"></span><div class="pag-btns" id="pag-inc-btns"></div></div>
@@ -474,6 +479,7 @@
         <div class="m-grid" style="margin-bottom:0;gap:10px">
           <div class="mf" id="m-info-pqr-w" style="display:none"><label>Respuesta PQR</label><div class="v-copy"><div class="v" id="m-info-pqr">—</div></div></div>
           <div class="mf" id="m-info-rad-w" style="display:none"><label>Rad. cumplimiento</label><div class="v-copy"><div class="v" id="m-info-rad">—</div></div></div>
+          <div class="mf" id="m-info-notif-w" style="display:none"><label>📣 Incidente notificado</label><div class="v-copy"><div class="v" id="m-info-notif" style="color:#4ade80">—</div></div></div>
         </div>
         <div class="mf full" id="m-info-sp-w" style="display:none;margin-top:10px">
           <label>📎 Documento SharePoint</label>
@@ -578,6 +584,13 @@
           <label id="m-lbl-pqr">Respuesta PQR</label>
           <textarea id="m-resp-pqr" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa la respuesta de la PQR..."></textarea>
         </div>
+      </div>
+
+      <!-- Notificación del incidente (solo visible en incidentes/desacatos) -->
+      <div id="m-notif-wrap" style="display:none;margin-bottom:14px;padding:12px 14px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.2);border-radius:8px">
+        <div style="font-size:10px;letter-spacing:.08em;color:#4ade80;font-weight:600;text-transform:uppercase;margin-bottom:8px">📣 Notificación del incidente</div>
+        <div id="m-notif-estado" style="font-size:13px;margin-bottom:10px">—</div>
+        <button id="m-notif-btn" class="btn-notif" style="width:100%;justify-content:center;padding:9px" onclick="toggleNotificadoModal()">📣 Marcar como notificado</button>
       </div>
 
       <div class="mf full" id="m-sp-wrap" style="margin-bottom:12px">
@@ -865,10 +878,17 @@ const MAPA_SB_A_SHEET = {
   radicado_pqr:          "PQR",
   respuesta_pqr:         "RESPUESTA PQR",
   radicado_cumplimiento: "RADICADO DE CUMPLIMIENTO",
-  sharepoint:            "SHAREPOINT"
+  sharepoint:            "SHAREPOINT",
+  notificado:            "NOTIFICADO"
 };
 // Mapa inverso: nombre del Sheet → columna Supabase (para guardar)
 const MAPA_SHEET_A_SB = Object.fromEntries(Object.entries(MAPA_SB_A_SHEET).map(([k,v])=>[v,k]));
+
+// ── Ahorro de egress (plan gratuito de Supabase) ──
+// Los campos de texto largo son la mayor parte de los bytes de cada fila.
+// Las LISTAS no los descargan; se cargan solo al abrir el detalle de un caso.
+const SB_COLS_LARGAS = ["derecho_invocado","hechos_resumidos","pretensiones","observaciones"];
+const SB_COLS_LISTA  = "id," + Object.keys(MAPA_SB_A_SHEET).filter(c=>!SB_COLS_LARGAS.includes(c)).join(",");
 
 // Convierte un registro de Supabase a la forma que el dashboard espera (nombres del Sheet)
 function sbASheet(reg){
@@ -877,6 +897,8 @@ function sbASheet(reg){
     r[colSheet] = String(reg[colSB] ?? "").trim();
   }
   r._id = reg.id; // guardamos el id de Supabase para poder editar con precisión
+  // ¿Este registro ya trae los campos largos? (true si vino con select=*)
+  r._detalle = SB_COLS_LARGAS.every(c => reg[c] !== undefined);
   return normalizarRegistro(r);
 }
 
@@ -884,12 +906,18 @@ function sbASheet(reg){
 const Repo = {
   // Lee una categoría desde Supabase. Devuelve registros con nombres del Sheet.
   async listar(categoria){
-    const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`
+    const base = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`
       + `?categoria=eq.${encodeURIComponent(categoria)}`
-      + `&select=*&order=id.asc`;
-    const res = await fetch(url, {
+      + `&order=id.asc`;
+    // Egress mínimo: pedir solo las columnas ligeras (sin textos largos)
+    let res = await fetch(base + `&select=${SB_COLS_LISTA}`, {
       headers: await getAuthHeaders()
     });
+    if(res.status===400){
+      // Fallback: si alguna columna aún no existe (p.ej. falta correr el SQL de
+      // "notificado"), pedir todo para no tumbar el dashboard.
+      res = await fetch(base + `&select=*`, { headers: await getAuthHeaders() });
+    }
     if(!res.ok) throw new Error(`Supabase HTTP ${res.status}`);
     const filas = await res.json();
     return filas.map(sbASheet).filter(filaValida);
@@ -945,6 +973,64 @@ const Repo = {
     return arr && arr.length ? arr[0] : null;
   }
 };
+// ── Carga diferida de campos largos (ahorro de egress) ──
+// Trae derecho/hechos/pretensiones/observaciones SOLO de los registros pedidos
+// (una fila pesa unos pocos KB, frente a bajarlos todos en cada recarga).
+async function asegurarDetalle(regs){
+  if(!USAR_SUPABASE) return;
+  const pendientes = (regs||[]).filter(r => r && r._id && !r._detalle);
+  if(!pendientes.length) return;
+  const ids = [...new Set(pendientes.map(r=>r._id))];
+  const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}?id=in.(${ids.join(",")})&select=id,${SB_COLS_LARGAS.join(",")}`;
+  const res = await fetch(url, { headers: await getAuthHeaders() });
+  if(!res.ok) throw new Error(`Supabase HTTP ${res.status}`);
+  const filas = await res.json();
+  const porId = new Map(filas.map(f=>[f.id,f]));
+  pendientes.forEach(reg=>{
+    const f = porId.get(reg._id);
+    if(!f) return;
+    SB_COLS_LARGAS.forEach(c=>{ reg[MAPA_SB_A_SHEET[c]] = String(f[c] ?? "").trim(); });
+    reg._detalle = true;
+  });
+}
+
+// Pinta (o repinta) los campos largos del modal, con herencia del admite original
+function pintarCamposLargosModal(r, origen){
+  let rVista = r;
+  if(origen==="fallo" || origen==="incidente"){
+    const tutOrig = tutelas.find(t => t["RADICADO"] && r["RADICADO"] && normRad(t["RADICADO"])===normRad(r["RADICADO"]));
+    if(tutOrig){
+      rVista = Object.assign({}, r);
+      ["DERECHO INVOCADO","HECHOS RESUMIDOS","PRETENSIONES","OBSERVACIONES"].forEach(col=>{
+        if(!String(rVista[col]||"").trim() && String(tutOrig[col]||"").trim()) rVista[col]=tutOrig[col];
+      });
+    }
+  }
+  [["DERECHO INVOCADO","m-derecho","m-derecho-w"],["HECHOS RESUMIDOS","m-hechos","m-hechos-w"],["PRETENSIONES","m-pret","m-pret-w"],["OBSERVACIONES","m-obs","m-obs-w"]].forEach(([col,id,wid])=>{
+    const val=rVista[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
+  });
+}
+
+// Al abrir un caso: baja sus campos largos (y los del admite original) y repinta
+async function cargarDetalleParaModal(r, origen){
+  if(!USAR_SUPABASE || !r || !r._id) return;
+  const arr = origen==="incidente" ? incidentes : origen==="fallo" ? fallos : tutelas;
+  const enMem = arr.find(x=>x._id===r._id)
+             || [...tutelas,...fallos,...incidentes].find(x=>x._id===r._id);
+  const tutOrig = (origen==="fallo"||origen==="incidente")
+    ? tutelas.find(t => t["RADICADO"] && r["RADICADO"] && normRad(t["RADICADO"])===normRad(r["RADICADO"]))
+    : null;
+  const objetivos = [r, enMem, tutOrig].filter(Boolean);
+  if(objetivos.some(o=>!o._detalle)){
+    try{ await asegurarDetalle(objetivos); }
+    catch(e){ console.warn("[detalle] no cargó:", e.message); return; }
+  }
+  // Repinta solo si el modal sigue abierto con este mismo caso
+  if(actual===r && document.getElementById("overlay").classList.contains("open")){
+    pintarCamposLargosModal(r, origen);
+  }
+}
+
 // Lista COMPLETA — incluye a Deisy para que sus procesos sigan apareciendo en
 // reparto, rankings, filtros y estadísticas (y se puedan cerrar).
 const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño","Anderson Correa"];
@@ -1103,8 +1189,10 @@ async function guardarNuevoIncidente(){
 // ════════════════════════════════════════════════════════════
 let _escCategoria=null, _escCampos=null;
 
-function escalarCaso(categoria){
+async function escalarCaso(categoria){
   if(!actual) return;
+  // Asegura que los campos largos estén cargados antes de heredarlos al nuevo registro
+  try{ await asegurarDetalle([actual]); }catch(e){ console.warn("[detalle]", e.message); }
   _escCategoria = categoria;
   const tipoNuevo = categoria==="fallo" ? "Fallo de tutela" : "Desacato";
   // Hereda TODOS los campos del admite (no solo los básicos)
@@ -1213,8 +1301,11 @@ async function marcarHechoSuperado(){
 // EDITAR DATOS DEL CASO — corrige errores de lectura del PDF
 // Edita accionante, CC, radicado, juzgado, fechas, abogado y textos.
 // ════════════════════════════════════════════════════════════
-function abrirEditarCaso(){
+async function abrirEditarCaso(){
   if(!actual) return;
+  // Asegura los campos largos antes de editar (evita sobreescribirlos con vacío)
+  try{ await asegurarDetalle([actual]); }
+  catch(e){ toast("⚠️ No se pudieron cargar los textos del caso; intenta de nuevo","err"); return; }
   const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||"";};
   set("ed-acc",     actual["ACCIONANTE"]||"");
   set("ed-cc",      actual["CC / NIT"]||"");
@@ -1603,17 +1694,25 @@ function renderOtros(){
   const activos=datos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const nuevos=activos.filter(r=>r["ESTADO"]==="Nuevo");
+  const sinNotif=activos.filter(r=>!String(r["NOTIFICADO"]||"").trim());
   document.getElementById("stats-inc").innerHTML=
     scardQuick(activos.length,"Total activos","c-amber","otr",null)+
     scardQuick(urg.length,"Urgentes ≤3d","c-red","otr","urg3")+
-    scardClick(nuevos.length,"Nuevos","c-purple","fo-est","Nuevo");
+    scardClick(nuevos.length,"Nuevos","c-purple","fo-est","Nuevo")+
+    scardQuick(sinNotif.length,"Sin notificar","c-cyan","otr","sinnotif");
   document.getElementById("badge-otros").textContent=activos.length;
   const visiblesOtr=aplicarQuick(datos,quickOtr);
   const pag=renderPag(visiblesOtr,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
   const el=document.getElementById("body-otros");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagOtros=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
+  el.innerHTML=pag.map((r,i)=>{
+    const notif=String(r["NOTIFICADO"]||"").trim();
+    const btnNotif = notif
+      ? `<button class="btn-notif hecho" title="Notificado: ${esc(notif)} — clic para quitar la marca" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">✅ Notificado</button>`
+      : `<button class="btn-notif" title="Marcar que este incidente ya fue notificado" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">📣 Notificar</button>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel">${btnNotif}</div></div>`;
+  }).join("");
   window._exportOtros=visiblesOtr;
 }
 
@@ -1756,7 +1855,7 @@ function exportarTabla(tab){
   const mapas={
     admites:{datos:()=>window._exportAdmites||[],nombre:"Admites",cols:["ACCIONANTE","CC / NIT","RADICADO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL","RESPUESTA PQR","ENCARGADO PQR"]},
     fallos: {datos:()=>window._exportFallos||[], nombre:"Fallos_Sentencias",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL"]},
-    otros:  {datos:()=>window._exportOtros||[], nombre:"Incidentes_Desacatos",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","RESPUESTA PQR","ENCARGADO PQR"]},
+    otros:  {datos:()=>window._exportOtros||[], nombre:"Incidentes_Desacatos",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","RESPUESTA PQR","ENCARGADO PQR","NOTIFICADO"]},
     historico:{datos:()=>window._exportHistorico||[],nombre:"Historico",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL","RESPUESTA PQR","ENCARGADO PQR"]}
   };
   const m=mapas[tab];if(!m)return;
@@ -1906,10 +2005,8 @@ function abrirModal(da, origen){
   else if(dias<=2){dEl.textContent=dias+"d — ¡urgente!";dEl.style.color="#f87171";}
   else if(dias<=5){dEl.textContent=dias+" días";dEl.style.color="#fbbf24";}
   else{dEl.textContent=dias+" días";dEl.style.color="#4ade80";}
-  // Campos largos (usa rVista, ya calculado al inicio con herencia del admite)
-  [["DERECHO INVOCADO","m-derecho","m-derecho-w"],["HECHOS RESUMIDOS","m-hechos","m-hechos-w"],["PRETENSIONES","m-pret","m-pret-w"],["OBSERVACIONES","m-obs","m-obs-w"]].forEach(([col,id,wid])=>{
-    const val=rVista[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
-  });
+  // Campos largos (pinta lo que haya; la versión completa llega con cargarDetalleParaModal)
+  pintarCamposLargosModal(r, origenModal);
   document.getElementById("m-esel").value=r["ESTADO"]||"Nuevo";
   // Aviso histórico si ya está en estado final
   const avisoHist=document.getElementById("m-aviso-historico");
@@ -1970,9 +2067,17 @@ function abrirModal(da, origen){
   }
   // ── Gestión visible en pestaña Información (para que los abogados la vean sin entrar a Gestión) ──
   llenarGestionVisible(r);
+  // Bloque de notificación (solo incidentes/desacatos)
+  const notifWrap=document.getElementById("m-notif-wrap");
+  if(notifWrap){
+    notifWrap.style.display = (origenModal==="incidente") ? "block" : "none";
+    if(origenModal==="incidente") pintarNotifModal();
+  }
   document.getElementById("overlay").classList.add("open");
   // Snapshot de los campos editables para detectar cambios sin guardar al cerrar
   _snapshotModal = leerCamposModal();
+  // Carga diferida de los campos largos (las listas ya no los traen — ahorro de egress)
+  cargarDetalleParaModal(r, origenModal);
 }
 
 // Lee el estado actual de los campos editables del modal principal
@@ -1997,6 +2102,7 @@ function llenarGestionVisible(r){
   const pqr = String(r["RESPUESTA PQR"]||"").trim();
   const rad = String(r["RADICADO DE CUMPLIMIENTO"]||r["RESPUESTA RADICADO TUTELA"]||"").trim();
   const sp  = String(r["SHAREPOINT"]||"").trim();
+  const notif = String(r["NOTIFICADO"]||"").trim();
 
   const setVis=(wid,val,vid)=>{
     const w=document.getElementById(wid);
@@ -2006,6 +2112,7 @@ function llenarGestionVisible(r){
   };
   setVis("m-info-pqr-w", pqr, "m-info-pqr");
   setVis("m-info-rad-w", rad, "m-info-rad");
+  setVis("m-info-notif-w", notif, "m-info-notif");
 
   // SharePoint con botón de abrir si es link
   const spW=document.getElementById("m-info-sp-w");
@@ -2023,7 +2130,7 @@ function llenarGestionVisible(r){
 
   // Mostrar la tarjeta contenedora solo si hay al menos un dato
   const cont=document.getElementById("m-info-gestion-w");
-  if(cont) cont.style.display=(pqr||rad||sp)?"":"none";
+  if(cont) cont.style.display=(pqr||rad||sp||notif)?"":"none";
 }
 
 // Muestra el botón "Abrir" solo si el contenido del SharePoint es un link (http...)
@@ -2165,6 +2272,7 @@ function aplicarQuick(arr,key){
   if(key==='ok')    return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>3);
   if(key==='nuevo') return arr.filter(r=>r["ESTADO"]==="Nuevo");
   if(key==='pendtec') return arr.filter(r=>act(r)&&faltaTecnico(r));
+  if(key==='sinnotif') return arr.filter(r=>act(r)&&!String(r["NOTIFICADO"]||"").trim());
   return arr;
 }
 
@@ -2289,6 +2397,60 @@ async function guardarEstado(){
       toast("❌ Error al guardar: "+(d.error||"Sin detalle")+" — los cambios NO se guardaron","err");
     }
   }catch(e){toast("❌ Error de red: "+e.message,"err");}
+}
+
+// ════════════════════════════════════════
+// NOTIFICACIÓN DE INCIDENTES (gestión técnica)
+// Marca quién notificó y cuándo. Se guarda en la columna "notificado"
+// de Supabase con un solo PATCH (consumo mínimo).
+// ════════════════════════════════════════
+function nombreUsuarioActual(){
+  const e=(USUARIO_EMAIL||"").toLowerCase();
+  if(e.startsWith("verosuarez")) return "Verónica";
+  if(e.startsWith("jeisonmaya")) return "Jeison";
+  return e.split("@")[0]||"Usuario";
+}
+async function toggleNotificado(arrKey, idx){
+  const arr=window[arrKey]; const r=arr&&arr[idx];
+  if(!r) return;
+  if(!(USAR_SUPABASE && r._id)){ toast("⚠️ Este registro no tiene id de Supabase; no se puede marcar","err"); return; }
+  const ya=String(r["NOTIFICADO"]||"").trim();
+  const ok = await confirmar(
+    ya ? "¿Quitar la marca de notificado?" : "¿Marcar incidente como notificado?",
+    ya ? `${r["ACCIONANTE"]||"Este incidente"} — actualmente: ${ya}`
+       : `${r["ACCIONANTE"]||"Este incidente"} quedará marcado como notificado por ${nombreUsuarioActual()}.`
+  );
+  if(!ok) return;
+  const ahora=new Date();
+  const valor = ya ? "" : nombreUsuarioActual()+" · "+ahora.toLocaleDateString("es-CO",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+ahora.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"});
+  toast("⏳ Guardando...","");
+  try{
+    await Repo.actualizar(r._id, { "NOTIFICADO": valor });
+    r["NOTIFICADO"]=valor;
+    const enInc=incidentes.find(x=>x._id===r._id); if(enInc) enInc["NOTIFICADO"]=valor;
+    if(actual && actual._id===r._id){ actual["NOTIFICADO"]=valor; llenarGestionVisible(actual); }
+    toast(valor ? "✅ Incidente marcado como notificado" : "↩️ Marca de notificación quitada","ok");
+    renderOtros();
+  }catch(e){
+    if(/JWT expired|401/i.test(e.message)) toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
+    else toast("❌ No se pudo guardar: "+e.message,"err");
+  }
+}
+// Estado del bloque de notificación dentro del modal (pestaña Técnica)
+function pintarNotifModal(){
+  const est=document.getElementById("m-notif-estado"), btn=document.getElementById("m-notif-btn");
+  if(!est||!btn||!actual) return;
+  const ya=String(actual["NOTIFICADO"]||"").trim();
+  est.innerHTML = ya ? `✅ Notificado: <strong>${esc(ya)}</strong>`
+                     : `<span style="color:var(--muted)">Aún sin notificar</span>`;
+  btn.className = "btn-notif"+(ya?" hecho":"");
+  btn.textContent = ya ? "↩️ Quitar marca de notificado" : "📣 Marcar como notificado";
+}
+async function toggleNotificadoModal(){
+  if(!actual) return;
+  window._notifTmp=[actual];
+  await toggleNotificado("_notifTmp", 0);
+  pintarNotifModal();
 }
 
 function irOficio(){
@@ -2619,11 +2781,13 @@ async function cerrarSesion(){
 // (~170 MB/día por pestaña), lo cual se identificó como el principal consumidor
 // de egress del sistema. Ahora: intervalo más largo (15 min) y solo si la pestaña
 // está visible en primer plano — las pestañas en segundo plano no generan tráfico.
+// Ahora las listas bajan solo columnas ligeras (sin textos largos), y el
+// intervalo pasó de 15 a 30 min para reducir aún más el egress del plan gratuito.
 setInterval(()=>{
   if(document.visibilityState === 'visible'){
     cargarDatosSafe(true);
   }
-}, 15*60*1000);
+}, 30*60*1000);
 
 // Además, al volver a una pestaña que estuvo en segundo plano, se refresca una vez
 // de inmediato (si ya pasaron más de 5 min desde la última carga) en vez de esperar
@@ -2636,7 +2800,7 @@ cargarDatosSafe = async function(esAutoRefresh=false){
   return _cargarDatosOriginal(esAutoRefresh);
 };
 document.addEventListener('visibilitychange', ()=>{
-  if(document.visibilityState === 'visible' && (Date.now() - _ultimaCargaTS) > 5*60*1000){
+  if(document.visibilityState === 'visible' && (Date.now() - _ultimaCargaTS) > 10*60*1000){
     cargarDatosSafe(true);
   }
 });
