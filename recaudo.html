@@ -139,6 +139,20 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .ant-amarillo{background:rgba(232,160,32,.18);color:var(--gold2);border:1px solid rgba(232,160,32,.35)}
 .ant-rojo{background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.35)}
 .ant-ok{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border2)}
+
+/* ── OBSERVACIÓN EDITABLE EN TABLA ── */
+.obs-cell{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 7px;border-radius:6px;
+  font-size:11.5px;color:var(--soft);transition:background .15s;min-height:26px}
+.obs-cell:hover{background:rgba(232,160,32,.1)}
+.obs-cell .obs-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.obs-cell .obs-lapiz{opacity:0;font-size:11px;transition:opacity .15s;flex-shrink:0}
+.obs-cell:hover .obs-lapiz{opacity:.8}
+.obs-pop{position:fixed;z-index:800;width:320px;background:linear-gradient(160deg,#0d2550,#0a1f3d);
+  border:1px solid rgba(232,160,32,.4);border-radius:12px;padding:12px;box-shadow:0 16px 44px rgba(0,0,0,.55)}
+.obs-pop textarea{width:100%;min-height:84px;padding:8px 10px;font-size:12px;font-family:'DM Sans',sans-serif;
+  color:var(--text);background:rgba(255,255,255,.06);border:1.5px solid var(--border);border-radius:8px;outline:none;resize:vertical}
+.obs-pop textarea:focus{border-color:var(--gold)}
+.obs-pop-foot{display:flex;justify-content:flex-end;gap:6px;margin-top:8px}
 .chip-nuevo{background:rgba(45,141,232,.25);color:#93c5fd;border:1px solid rgba(45,141,232,.4);
   font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
 
@@ -637,6 +651,11 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
         <option value="con">✅ Con expediente</option>
         <option value="sin">— Sin expediente</option>
       </select>
+      <select class="finp" id="f-obs" onchange="filtrar()">
+        <option value="">📝 Observación (todas)</option>
+        <option value="con">✅ Con observación</option>
+        <option value="sin">— Sin observación</option>
+      </select>
       <button class="fbtn fbtn-outline" onclick="limpiarFiltros()" style="font-size:11px">✕ Limpiar</button>
     </div>
     <div class="tw">
@@ -654,6 +673,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
           <th onclick="sortBy('ESTADO DEVOLUCION', this)">Devolución</th>
           <th onclick="sortBy('ESTADO APLICACIÓN', this)">Aplicación</th>
           <th onclick="sortBy('RESPONSABLE', this)">Responsable</th>
+          <th onclick="sortBy('Observacion', this)">📝 Observación</th>
           <th></th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -929,7 +949,10 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
   <div class="card">
     <div class="card-hdr">
       <div class="card-hdr-title">🔁 Mismo número de depósito repetido</div>
-      <button class="tb-btn" onclick="renderDuplicados()">↻ Recalcular</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--soft)" id="dup-ocultos-txt"></span>
+        <button class="tb-btn" onclick="renderDuplicados()">↻ Recalcular</button>
+      </div>
     </div>
     <div style="padding:16px" id="dup-exactos-cont">Cargando...</div>
   </div>
@@ -1364,68 +1387,17 @@ function sbHeaders(extra){
   return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer " + SUPABASE_ANON }, extra || {});
 }
 
-// ── Parser CSV mínimo (RFC4180): maneja comillas, comas y saltos de línea embebidos
-// en campos de texto (observaciones, direcciones, etc. pueden traer cualquiera de los tres). ──
-function _parsearFilasCSV(texto){
-  var filas = [], fila = [], campo = '', dentroComillas = false;
-  for(var i = 0; i < texto.length; i++){
-    var c = texto[i];
-    if(dentroComillas){
-      if(c === '"'){
-        if(texto[i+1] === '"'){ campo += '"'; i++; }
-        else { dentroComillas = false; }
-      } else { campo += c; }
-    } else {
-      if(c === '"'){ dentroComillas = true; }
-      else if(c === ','){ fila.push(campo); campo = ''; }
-      else if(c === '\r'){ /* el \n que sigue cierra la fila */ }
-      else if(c === '\n'){ fila.push(campo); campo = ''; filas.push(fila); fila = []; }
-      else { campo += c; }
-    }
-  }
-  if(campo.length || fila.length){ fila.push(campo); filas.push(fila); }
-  return filas;
-}
-// Convierte "n" en número si TODO el campo es numérico (igual que haría JSON.parse
-// con una columna numeric/bigint); todo lo demás (fechas, texto, ids) queda como string,
-// igual que ya se comportaba con las respuestas JSON de Supabase.
-function _valorCSV(v){
-  if(v === '') return null;
-  return /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v;
-}
-// Primera fila del CSV = encabezados (nombres de columna). El resto son datos.
-function _csvAObjetos(texto){
-  var filas = _parsearFilasCSV(texto);
-  if(!filas.length) return [];
-  var header = filas[0];
-  var out = [];
-  for(var i = 1; i < filas.length; i++){
-    var f = filas[i];
-    if(f.length === 1 && f[0] === '') continue; // línea vacía al final del archivo
-    var obj = {};
-    for(var j = 0; j < header.length; j++) obj[header[j]] = _valorCSV(f[j]);
-    out.push(obj);
-  }
-  return out;
-}
-
 // ── Trae TODAS las filas de una tabla/vista, paginando de a 1000 (límite REST de Supabase) ──
 // Pide la primera página con "Prefer: count=exact" para conocer el total de una vez,
 // y si el servidor lo entrega, pide TODAS las páginas restantes EN PARALELO (antes se
 // pedían una por una, esperando cada respuesta antes de pedir la siguiente).
-//
-// Se pide en CSV (Accept: text/csv) en vez de JSON: PostgREST repite el nombre de
-// cada columna en CADA fila cuando responde en JSON, lo que en tablas anchas como
-// "recaudo" (32 columnas) casi duplicaba el peso real de los datos. En CSV los
-// nombres de columna van UNA sola vez, en el encabezado — mismo dato, mucho menos
-// egress. Esto fue lo que llevó a la organización a superar la cuota de 5 GB/mes.
 async function sbFetchAll(tabla, select, extraQuery){
   var bloque = 1000;
   var url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (extraQuery ? "&" + extraQuery : "");
 
-  var primera = await fetch(url, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact", Accept: "text/csv" }) });
+  var primera = await fetch(url, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact" }) });
   if(!primera.ok) throw new Error("Supabase HTTP " + primera.status);
-  var todos = _csvAObjetos(await primera.text());
+  var todos = await primera.json();
   if(todos.length < bloque) return todos; // ya vino todo en la primera página
 
   var cr = primera.headers.get("content-range"); // ej. "0-999/48321"
@@ -1442,8 +1414,8 @@ async function sbFetchAll(tabla, select, extraQuery){
       var intentos=3, ultimoError=null;
       for(var i=0;i<intentos;i++){
         try{
-          var res = await fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items", Accept: "text/csv" }) });
-          if(res.ok) return _csvAObjetos(await res.text());
+          var res = await fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items" }) });
+          if(res.ok) return await res.json();
           ultimoError = new Error("Supabase HTTP " + res.status);
         }catch(e){ ultimoError = e; }
       }
@@ -1472,9 +1444,9 @@ async function sbFetchAll(tabla, select, extraQuery){
   // Respaldo: si el servidor no devolvió el conteo exacto (poco común), seguir en serie como antes.
   var desde2 = bloque;
   while(true){
-    var res = await fetch(url, { headers: sbHeaders({ Range: desde2 + "-" + (desde2 + bloque - 1), "Range-Unit": "items", Accept: "text/csv" }) });
+    var res = await fetch(url, { headers: sbHeaders({ Range: desde2 + "-" + (desde2 + bloque - 1), "Range-Unit": "items" }) });
     if(!res.ok) throw new Error("Supabase HTTP " + res.status);
-    var chunk = _csvAObjetos(await res.text());
+    var chunk = await res.json();
     todos = todos.concat(chunk);
     if(chunk.length < bloque) break;
     desde2 += bloque;
@@ -1487,6 +1459,8 @@ async function sbFetchAll(tabla, select, extraQuery){
 // ESTADO EN MEMORIA (sin localStorage — el navegador aguanta, localStorage no)
 // ════════════════════════════════════════════════════════════
 var dataBanco  = [];   // depósitos (filas de la tabla recaudo, con nombres de columna originales remapeados)
+var dataBancoCompleto = [];  // TODOS los registros, incluyendo repetidos (solo lo usa la pestaña Duplicados)
+var _duplicadosOcultos = 0;  // cuántas filas repetidas se ocultaron de la vista en la última carga
 var filtrados  = [];
 var pendFiltrados = [];
 var pagActual  = 1;
@@ -1633,6 +1607,25 @@ async function cargarTodo(){
     // 1) Depósitos — es la fuente principal; si falla, no hay nada que mostrar.
     if(resultados[0].status!=='fulfilled') throw resultados[0].reason;
     dataBanco = resultados[0].value.map(filaSupaAUI);
+    // Deduplicación EN VISTA: si el mismo número de depósito está más de una vez en la BD,
+    // aquí solo se conserva la fila más antigua (menor id). Los repetidos NO se borran de
+    // Supabase — siguen visibles en la pestaña "Duplicados" para su limpieza definitiva —
+    // pero dejan de aparecer en tablas, KPIs, dashboard y reportes (no se cuentan doble).
+    dataBancoCompleto = dataBanco;
+    (function(){
+      var vistos = {};
+      dataBanco.forEach(function(r){
+        var dep = String(r['deposito judicial']||'').trim();
+        if(!dep) return;
+        if(!(dep in vistos) || (r._id||0) < (vistos[dep]._id||0)) vistos[dep] = r;
+      });
+      var unicos = dataBanco.filter(function(r){
+        var dep = String(r['deposito judicial']||'').trim();
+        return !dep || vistos[dep] === r;
+      });
+      _duplicadosOcultos = dataBanco.length - unicos.length;
+      dataBanco = unicos;
+    })();
     ultimaSync = new Date();
 
     // 2) Expedientes prediales -> índice por cédula (para el modal 360). Si falla, el modal simplemente no los muestra.
@@ -1688,7 +1681,7 @@ async function cargarTodo(){
   }catch(err){
     setSS('error','Error al cargar');
     var tb=document.getElementById('tbody');
-    if(tb) tb.innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la base de datos. Revise su conexión e intente recargar.</p></div></td></tr>';
+    if(tb) tb.innerHTML='<tr><td colspan="14"><div class="empty"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la base de datos. Revise su conexión e intente recargar.</p></div></td></tr>';
   }
 }
 
@@ -2262,6 +2255,7 @@ function filtrar(){
   var fResp=(document.getElementById('f-responsable').value||'').toLowerCase();
   var fMonto=parseFloat(document.getElementById('f-monto').value)||0;
   var fExp=document.getElementById('f-expediente').value;
+  var fObs=(document.getElementById('f-obs')||{value:''}).value;
   filtrados=dataBanco.filter(r=>{
     if(buscar){
       var hay=r._buscable!==undefined?r._buscable:construirBuscable(r);
@@ -2273,6 +2267,7 @@ function filtrar(){
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fMonto){ var v=parsearValor(r['Valor del Depóstio']); if(v<fMonto) return false; }
     if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
+    if(fObs){ var tieneObs=!!(r['Observacion']&&String(r['Observacion']).trim()); if(fObs==='con'&&!tieneObs) return false; if(fObs==='sin'&&tieneObs) return false; }
     return true;
   });
   // Si hay filtro de monto activo, ordenar de mayor a menor para priorizar los grandes
@@ -2307,7 +2302,7 @@ function sortBy(col, th){
   filtrar();
 }
 function limpiarFiltros(){
-  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable','f-monto','f-expediente'].forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
+  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable','f-monto','f-expediente','f-obs'].forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
   filtrar();
 }
 
@@ -2316,7 +2311,7 @@ function renderTabla(){
   var totalPags=Math.ceil(data.length/PS)||1;
   var ini=(pagActual-1)*PS,fin=Math.min(ini+PS,data.length),pag=data.slice(ini,fin);
   if(!pag.length){
-    document.getElementById('tbody').innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
+    document.getElementById('tbody').innerHTML='<tr><td colspan="14"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
     document.getElementById('pag-info').textContent='0 registros';
     document.getElementById('pag-btns').innerHTML='';
     sincronizarChkAll();
@@ -2355,6 +2350,12 @@ function renderTabla(){
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
       <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
+      <td onclick="event.stopPropagation()" style="max-width:190px">
+        <div class="obs-cell" onclick="abrirEditorObs(this, '${eh(String(r._id))}')" title="${eh(r['Observacion']||'Clic para agregar observación')}">
+          <span class="obs-txt">${r['Observacion']?eh(String(r['Observacion']).substring(0,42))+(String(r['Observacion']).length>42?'…':''):'<span style="color:var(--muted)">— agregar</span>'}</span>
+          <span class="obs-lapiz">✏️</span>
+        </div>
+      </td>
       <td onclick="event.stopPropagation()"><button class="btn-gest" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
     </tr>`;
   }).join('');
@@ -2587,9 +2588,12 @@ function exportarSeleccionPDF(){
 // DUPLICADOS — detecta registros repetidos en el banco
 // ════════════════════════════════════════════════════════════
 function detectarDuplicados(){
+  // Usa dataBancoCompleto (con repetidos incluidos): dataBanco ya viene deduplicado
+  // en vista, así que ahí los repetidos exactos nunca se verían.
+  var fuente = dataBancoCompleto.length ? dataBancoCompleto : dataBanco;
   // 1) Duplicados exactos: mismo número de depósito repetido (nunca debería pasar)
   var porDeposito={};
-  dataBanco.forEach(function(r){
+  fuente.forEach(function(r){
     var dep=String(r['deposito judicial']||'').trim();
     if(!dep) return;
     (porDeposito[dep]=porDeposito[dep]||[]).push(r);
@@ -2599,7 +2603,7 @@ function detectarDuplicados(){
   // 2) Posibles duplicados: misma cédula + nombre + valor + fecha, pero #depósito distinto
   //    (probable doble digitación / doble carga con distinto consecutivo del banco)
   var porCombo={};
-  dataBanco.forEach(function(r){
+  fuente.forEach(function(r){
     var ced=String(r['Identificación Demandado']||'').trim();
     var nom=String(r['Nombre Demandante.1']||'').trim().toUpperCase();
     var val=parsearValor(r['Valor del Depóstio']);
@@ -2629,6 +2633,10 @@ function actualizarBadgeDuplicados(){
 
 function renderDuplicados(){
   var d=detectarDuplicados();
+  var ocultosEl=document.getElementById('dup-ocultos-txt');
+  if(ocultosEl) ocultosEl.textContent = _duplicadosOcultos>0
+    ? '👁 '+_duplicadosOcultos+' repetido(s) ya ocultos de las tablas y KPIs — aquí los limpia definitivamente'
+    : '';
   var sobrantes=d.exactos.reduce((s,g)=>s+(g.length-1),0);
   var valorSobrante=d.exactos.reduce((s,g)=>{
     // el valor "sobrante" es el de todas las copias menos la primera (la que se conservaría)
@@ -2723,6 +2731,76 @@ async function eliminarDuplicadosGrupo(btn, gi){
   }catch(err){
     alert('Ocurrió un error eliminando los duplicados: '+err.message+'\nRevise cuáles quedaron eliminados antes de reintentar.');
     btn.disabled=false; btn.textContent='🗑️ Eliminar seleccionados';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// EDITOR RÁPIDO DE OBSERVACIONES — anotar sin abrir el modal completo.
+// Guarda directo a Supabase (solo el campo observacion), actualiza la
+// memoria local y deja rastro en la bitácora, igual que el modal grande.
+// ════════════════════════════════════════════════════════════
+var _obsPopAbierto = null;
+
+function abrirEditorObs(celda, idTec){
+  cerrarEditorObs();
+  var fila = dataBanco.find(x=>String(x._id)===String(idTec));
+  if(!fila) return;
+  var pop = document.createElement('div');
+  pop.className = 'obs-pop';
+  pop.innerHTML = '<div style="font-size:11px;color:var(--gold2);font-weight:700;margin-bottom:6px">📝 Observación · depósito '+eh(fila['deposito judicial'])+'</div>'
+    +'<textarea id="obs-pop-txt" placeholder="Escriba la observación...">'+eh(fila['Observacion']||'')+'</textarea>'
+    +'<div class="obs-pop-foot">'
+    +'<button class="fbtn fbtn-outline" style="padding:5px 11px;font-size:11px" onclick="cerrarEditorObs()">Cancelar</button>'
+    +'<button class="fbtn fbtn-gold" style="padding:5px 11px;font-size:11px" onclick="guardarObsRapida(\''+eh(String(idTec))+'\')">💾 Guardar</button>'
+    +'</div>';
+  document.body.appendChild(pop);
+  // Posicionar cerca de la celda, sin salirse de la pantalla
+  var r = celda.getBoundingClientRect();
+  var W = 320, margen = 10;
+  var left = Math.min(Math.max(r.left, margen), window.innerWidth - W - margen);
+  var top = (window.innerHeight - r.bottom > 190) ? r.bottom + 6 : Math.max(r.top - 176, margen);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+  _obsPopAbierto = pop;
+  var ta = pop.querySelector('textarea');
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+  // Cerrar al hacer clic fuera (con un pequeño retraso para no cerrarse con el mismo clic que lo abrió)
+  setTimeout(function(){ document.addEventListener('mousedown', _obsClickFuera); }, 50);
+}
+function _obsClickFuera(e){
+  if(_obsPopAbierto && !_obsPopAbierto.contains(e.target)) cerrarEditorObs();
+}
+function cerrarEditorObs(){
+  if(_obsPopAbierto){ _obsPopAbierto.remove(); _obsPopAbierto = null; }
+  document.removeEventListener('mousedown', _obsClickFuera);
+}
+async function guardarObsRapida(idTec){
+  if(!USUARIO_ACTIVO){ cerrarEditorObs(); pedirUsuario(); return; }
+  var ta = document.getElementById('obs-pop-txt');
+  if(!ta) return;
+  var nueva = ta.value.trim();
+  var fila = dataBanco.find(x=>String(x._id)===String(idTec));
+  if(!fila){ cerrarEditorObs(); return; }
+  var anterior = String(fila['Observacion']||'').trim();
+  if(nueva === anterior){ cerrarEditorObs(); return; }
+  var btn = _obsPopAbierto ? _obsPopAbierto.querySelector('.fbtn-gold') : null;
+  if(btn){ btn.disabled = true; btn.textContent = 'Guardando...'; }
+  var payload = { observacion: nueva || null, ultima_edicion: new Date().toISOString(), editado_por: USUARIO_ACTIVO };
+  var ok = await patchRecaudo(idTec, payload);
+  if(ok){
+    fila['Observacion'] = nueva;
+    fila._editadoPor = USUARIO_ACTIVO;
+    fila._editadoFecha = new Date().toLocaleString('es-CO');
+    fila._ultimaEdicionISO = payload.ultima_edicion;
+    if(fila._buscable!==undefined) fila._buscable = construirBuscable(fila);
+    registrarBitacora(fila['deposito judicial'], USUARIO_ACTIVO,
+      'Observacion: "'+(anterior||'(vacío)')+'" → "'+(nueva||'(vacío)')+'" (edición rápida desde la tabla)');
+    cerrarEditorObs();
+    renderTabla();
+  } else {
+    if(btn){ btn.disabled = false; btn.textContent = '💾 Guardar'; }
+    alert('No se pudo guardar la observación. Revise su conexión e intente de nuevo.');
   }
 }
 
