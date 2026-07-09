@@ -746,6 +746,12 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 
 <!-- ══ PANEL DASHBOARD ══ -->
 <div id="panel-dashboard" style="display:none">
+  <!-- Frescura de los datos: el dashboard muestra lo que este navegador cargó; los cambios
+       hechos por otras personas solo aparecen al traerlos de nuevo de la base de datos -->
+  <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:10px">
+    <span style="font-size:11px;color:var(--soft)" id="dash-frescura">—</span>
+    <button class="tb-btn gold" onclick="refrescarDatosDashboard(this)">🔄 Traer cambios del equipo</button>
+  </div>
   <!-- Resumen general -->
   <div class="dash-kpis" id="dash-kpis"></div>
 
@@ -1461,6 +1467,27 @@ async function sbFetchAll(tabla, select, extraQuery){
 var dataBanco  = [];   // depósitos (filas de la tabla recaudo, con nombres de columna originales remapeados)
 var dataBancoCompleto = [];  // TODOS los registros, incluyendo repetidos (solo lo usa la pestaña Duplicados)
 var _duplicadosOcultos = 0;  // cuántas filas repetidas se ocultaron de la vista en la última carga
+
+// Puntúa cuánta gestión tiene una fila: cada campo de trabajo lleno suma 1.
+// Se usa para decidir, entre dos copias del mismo depósito, cuál se muestra
+// (y cuál se sugiere conservar en la pestaña Duplicados): la más trabajada.
+function puntuarGestion(r){
+  var campos = ['ESTADO DEVOLUCION','ESTADO APLICACIÓN','RESPONSABLE','Observacion',
+    'COMPROBANTE DE EGRESO','RADICADO DE RESPUESTA','GESTION TESORERIA','CI INICIAL',
+    'Proceso','Impuesto','TELEFONO DE CONTACTO','CORREO ELECTRONICO','Pendiente convenio'];
+  var p = 0;
+  campos.forEach(function(c){ if(String(r[c]||'').trim()) p++; });
+  return p;
+}
+// true si `a` debe ganar sobre `b`: más gestión gana; en empate, edición más reciente;
+// en doble empate, la más antigua (menor id) — que sería el registro original.
+function esMejorFila(a, b){
+  var pa = puntuarGestion(a), pb = puntuarGestion(b);
+  if(pa !== pb) return pa > pb;
+  var ea = a._ultimaEdicionISO || '', ebi = b._ultimaEdicionISO || '';
+  if(ea !== ebi) return ea > ebi;
+  return (a._id||0) < (b._id||0);
+}
 var filtrados  = [];
 var pendFiltrados = [];
 var pagActual  = 1;
@@ -1608,16 +1635,18 @@ async function cargarTodo(){
     if(resultados[0].status!=='fulfilled') throw resultados[0].reason;
     dataBanco = resultados[0].value.map(filaSupaAUI);
     // Deduplicación EN VISTA: si el mismo número de depósito está más de una vez en la BD,
-    // aquí solo se conserva la fila más antigua (menor id). Los repetidos NO se borran de
-    // Supabase — siguen visibles en la pestaña "Duplicados" para su limpieza definitiva —
-    // pero dejan de aparecer en tablas, KPIs, dashboard y reportes (no se cuentan doble).
+    // aquí solo se conserva UNA fila — la que tenga MÁS GESTIÓN (estados, responsable,
+    // observación, comprobantes...), porque entre dos copias del mismo depósito la valiosa
+    // es la trabajada, no la más vieja. En empate de gestión, gana la más antigua (menor id).
+    // Los repetidos NO se borran de Supabase — siguen visibles en la pestaña "Duplicados"
+    // para su limpieza definitiva — pero dejan de aparecer en tablas, KPIs y reportes.
     dataBancoCompleto = dataBanco;
     (function(){
       var vistos = {};
       dataBanco.forEach(function(r){
         var dep = String(r['deposito judicial']||'').trim();
         if(!dep) return;
-        if(!(dep in vistos) || (r._id||0) < (vistos[dep]._id||0)) vistos[dep] = r;
+        if(!(dep in vistos) || esMejorFila(r, vistos[dep])) vistos[dep] = r;
       });
       var unicos = dataBanco.filter(function(r){
         var dep = String(r['deposito judicial']||'').trim();
@@ -2505,7 +2534,7 @@ async function procesarSeleccionEnTramite(){
   await procesarLista(aAplicar, 'estado_aplicacion', 'ESTADO APLICACIÓN');
   await procesarLista(aDevolver, 'estado_devolucion', 'ESTADO DEVOLUCION');
 
-  renderKpis(); filtrar(); actualizarBadgeDuplicados();
+  renderKpis(); filtrar(); actualizarBadgeDuplicados(); refrescarDashboardSiVisible();
   abrirModalSeleccion(); // refresca el modal mostrando los nuevos estados
   if(failCount){ alert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.\n⚠️ '+failCount+' no se pudieron actualizar (revise su conexión e inténtelo de nuevo).'); }
   else { alert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.'); }
@@ -2640,7 +2669,7 @@ function renderDuplicados(){
   var sobrantes=d.exactos.reduce((s,g)=>s+(g.length-1),0);
   var valorSobrante=d.exactos.reduce((s,g)=>{
     // el valor "sobrante" es el de todas las copias menos la primera (la que se conservaría)
-    var ordenado=g.slice().sort((a,b)=>(a._id||0)-(b._id||0));
+    var ordenado=g.slice().sort(function(a,b){ return esMejorFila(a,b)?-1:1; }); // la más gestionada primero (esa se conserva)
     return s+ordenado.slice(1).reduce((s2,r)=>s2+(parsearValor(r['Valor del Depóstio'])),0);
   },0);
   document.getElementById('dup-k-grupos').textContent=d.exactos.length.toLocaleString('es-CO');
@@ -2653,21 +2682,23 @@ function renderDuplicados(){
     contE.innerHTML='<div class="dup-empty"><div class="ico">✅</div><p>No se encontraron números de depósito repetidos.</p></div>';
   } else {
     contE.innerHTML=d.exactos.map(function(g,gi){
-      var ordenado=g.slice().sort((a,b)=>(a._id||0)-(b._id||0));
+      var ordenado=g.slice().sort(function(a,b){ return esMejorFila(a,b)?-1:1; }); // la más gestionada primero (esa se conserva)
       var nombre=ordenado[0]['Nombre Demandante.1']||'—';
       var cedula=ordenado[0]['Identificación Demandado']||'—';
       var filas=ordenado.map(function(r,i){
         var v=parsearValor(r['Valor del Depóstio']);
         var fecha=String(r['Fecha Emisión']||'').substring(0,10);
         var esOriginal=i===0;
+        var pts=puntuarGestion(r);
         return `<tr>
-          <td>${esOriginal?'<span class="badge b-fin">✅ Conservar</span>':'<label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" class="chk-dup" data-id="${eh(r._id)}" checked/> Eliminar</label>'}</td>
+          <td>${esOriginal?'<span class="badge b-fin" title="Es la fila con más campos de gestión llenos — es la que se muestra en las tablas">✅ Conservar (visible)</span>':'<label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" class="chk-dup" data-id="${eh(r._id)}" checked/> Eliminar</label>'}</td>
           <td class="mono">${eh(r._id)}</td>
           <td class="mono">${eh(fecha)}</td>
           <td class="mono" style="text-align:right">${fmt$(v)}</td>
           <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
           <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
           <td>${eh(r['RESPONSABLE']||'—')}</td>
+          <td class="mono" style="text-align:center" title="Campos de gestión llenos (estados, responsable, observación, comprobantes...)">${pts}</td>
         </tr>`;
       }).join('');
       return `<div class="dup-card">
@@ -2678,14 +2709,14 @@ function renderDuplicados(){
           <button class="fbtn fbtn-outline" style="border-color:rgba(220,38,38,.4);color:#fca5a5" onclick="eliminarDuplicadosGrupo(this, ${gi})">🗑️ Eliminar seleccionados</button>
         </div>
         <table class="dup-tabla" data-grupo="${gi}">
-          <thead><tr><th>Acción</th><th>ID interno</th><th>Fecha</th><th style="text-align:right">Valor</th><th>Devolución</th><th>Aplicación</th><th>Responsable</th></tr></thead>
+          <thead><tr><th>Acción</th><th>ID interno</th><th>Fecha</th><th style="text-align:right">Valor</th><th>Devolución</th><th>Aplicación</th><th>Responsable</th><th style="text-align:center" title="Cuántos campos de gestión tiene llenos">Gestión</th></tr></thead>
           <tbody>${filas}</tbody>
         </table>
       </div>`;
     }).join('');
   }
   // Guardamos los grupos exactos en memoria para que eliminarDuplicadosGrupo() los pueda usar por índice
-  window._dupGruposExactos = d.exactos.map(g=>g.slice().sort((a,b)=>(a._id||0)-(b._id||0)));
+  window._dupGruposExactos = d.exactos.map(g=>g.slice().sort(function(a,b){ return esMejorFila(a,b)?-1:1; }));
 
   var contP=document.getElementById('dup-posibles-cont');
   if(!d.posibles.length){
@@ -2719,7 +2750,7 @@ async function eliminarDuplicadosGrupo(btn, gi){
   var tabla=btn.closest('.dup-card').querySelector('table.dup-tabla');
   var ids=Array.from(tabla.querySelectorAll('.chk-dup:checked')).map(chk=>chk.getAttribute('data-id'));
   if(!ids.length){ alert('No hay filas marcadas para eliminar en este grupo (la primera se conserva siempre).'); return; }
-  if(!confirm('Se eliminarán '+ids.length+' registro(s) duplicado(s) del depósito '+grupo[0]['deposito judicial']+'.\nSe conservará el registro más antiguo (ID '+grupo[0]._id+').\n\n¿Continuar? Esta acción no se puede deshacer.')) return;
+  if(!confirm('Se eliminarán '+ids.length+' registro(s) duplicado(s) del depósito '+grupo[0]['deposito judicial']+'.\nSe conservará el registro con más gestión (ID '+grupo[0]._id+').\n\n¿Continuar? Esta acción no se puede deshacer.')) return;
   btn.disabled=true; btn.textContent='Eliminando...';
   try{
     for(var i=0;i<ids.length;i++){
@@ -2798,6 +2829,7 @@ async function guardarObsRapida(idTec){
       'Observacion: "'+(anterior||'(vacío)')+'" → "'+(nueva||'(vacío)')+'" (edición rápida desde la tabla)');
     cerrarEditorObs();
     renderTabla();
+    refrescarDashboardSiVisible();
   } else {
     if(btn){ btn.disabled = false; btn.textContent = '💾 Guardar'; }
     alert('No se pudo guardar la observación. Revise su conexión e intente de nuevo.');
@@ -3241,7 +3273,7 @@ async function guardarGestion(){
       registrarBitacora(document.getElementById('m-dep-num').textContent, user, cambios.join(' · '));
     }
     showAl(alEl,'al-ok','✅ Guardado por '+user.split(' ')[0]+'.');
-    renderKpis(); filtrar();
+    renderKpis(); filtrar(); refrescarDashboardSiVisible();
     _huellaModal=null;
     setTimeout(function(){ cerrarModal(true); },800);
   }else{
@@ -3250,7 +3282,7 @@ async function guardarGestion(){
     var fila=dataBanco.find(x=>x._id===idTec);
     if(fila){ Object.keys(g).forEach(k=>{ if(k!=='_editadoPor') fila[k]=g[k]; }); fila._editadoPor=user; fila._editadoFecha=ts; fila._ultimaEdicionISO=payload.ultima_edicion; fila._buscable=construirBuscable(fila); }
     showAl(alEl,'al-warn','⚠️ Sin conexión. El cambio quedó <strong>guardado localmente</strong> y se sincronizará automáticamente. No lo pierdes.');
-    renderKpis(); filtrar();
+    renderKpis(); filtrar(); refrescarDashboardSiVisible();
     _huellaModal=null;
     actualizarPendientesPill();
     setTimeout(function(){ cerrarModal(true); },1600);
@@ -3631,10 +3663,34 @@ function renderDashboard(){
   renderDonaEstado('chart-dev','dona-dev-total',valorDev,conteoDev,valorTotal);
   renderDonaEstado('chart-apl','dona-apl-total',valorApl,conteoApl,valorTotal);
   cargarActividadSemanal();
+  pintarFrescuraDashboard();
 }
 
 function kpiCard(lbl,val,sub){
   return '<div class="dash-kpi"><div class="dash-kpi-lbl">'+lbl+'</div><div class="dash-kpi-val">'+val+'</div><div class="dash-kpi-sub">'+sub+'</div></div>';
+}
+
+// Re-renderiza el dashboard SOLO si está visible en pantalla (barato: usa la memoria local,
+// no consulta Supabase). Se llama tras cada guardado para que los números se muevan al instante.
+function refrescarDashboardSiVisible(){
+  var p=document.getElementById('panel-dashboard');
+  if(p && p.style.display!=='none') renderDashboard();
+}
+// Pinta hace cuánto se trajeron los datos de Supabase (los cambios de OTRAS personas
+// solo aparecen al recargar — este aviso lo hace explícito en vez de dejar la duda)
+function pintarFrescuraDashboard(){
+  var el=document.getElementById('dash-frescura');
+  if(!el) return;
+  if(!ultimaSync){ el.textContent='Datos sin sincronizar'; return; }
+  var min=Math.round((Date.now()-ultimaSync.getTime())/60000);
+  el.textContent = min<1 ? 'Datos actualizados hace un momento'
+    : 'Datos de hace '+min+' min — los cambios de otras personas requieren recargar';
+}
+// Botón "Traer cambios del equipo": recarga TODO desde Supabase y re-renderiza el dashboard
+async function refrescarDatosDashboard(btn){
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Trayendo cambios...'; }
+  try{ await cargarTodo(); renderDashboard(); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML='🔄 Traer cambios del equipo'; } }
 }
 
 // ════════════════════════════════════════════════════════════
