@@ -153,6 +153,42 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   color:var(--text);background:rgba(255,255,255,.06);border:1.5px solid var(--border);border-radius:8px;outline:none;resize:vertical}
 .obs-pop textarea:focus{border-color:var(--gold)}
 .obs-pop-foot{display:flex;justify-content:flex-end;gap:6px;margin-top:8px}
+.est-cell{cursor:pointer;display:inline-block;border-radius:6px;transition:transform .1s}
+.est-cell:hover{transform:scale(1.06)}
+.est-pop{position:fixed;z-index:800;width:200px;background:linear-gradient(160deg,#0d2550,#0a1f3d);
+  border:1px solid rgba(232,160,32,.4);border-radius:12px;padding:8px;box-shadow:0 16px 44px rgba(0,0,0,.55)}
+.est-pop-titulo{font-size:10.5px;color:var(--soft);font-weight:700;text-transform:uppercase;padding:4px 8px 6px}
+.est-pop-opt{display:flex;align-items:center;gap:7px;padding:8px 9px;border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--text)}
+.est-pop-opt:hover{background:rgba(232,160,32,.15)}
+.col-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:400;display:none;
+  background:linear-gradient(160deg,#0d2550,#0a1f3d);border:1px solid var(--border);
+  border-radius:10px;padding:8px;box-shadow:0 14px 36px rgba(0,0,0,.5);min-width:150px}
+.col-menu.open{display:block}
+.col-menu label{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;
+  font-size:12px;color:var(--text);cursor:pointer;white-space:nowrap}
+.col-menu label:hover{background:rgba(255,255,255,.06)}
+#tabla.oculta-cedula .col-cedula,
+#tabla.oculta-proceso .col-proceso,
+#tabla.oculta-impuesto .col-impuesto{display:none}
+
+/* ── TARJETAS PARA MÓVIL (reemplazan la tabla bajo 768px) ── */
+.tarjetas-mobile{display:none}
+.tj-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:13px 14px;margin-bottom:10px;position:relative}
+.tj-card.gestionado{border-left:3px solid rgba(34,197,94,.5)}
+.tj-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.tj-chk{margin-top:2px;flex-shrink:0}
+.tj-info{flex:1;min-width:0}
+.tj-dep{font-family:monospace;font-size:11px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tj-nombre{font-weight:700;font-size:14.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tj-valor{font-weight:700;font-size:15px;color:#86efac;white-space:nowrap;flex-shrink:0}
+.tj-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.tj-obs{margin-top:8px;font-size:12px;color:var(--soft);padding:7px 9px;background:rgba(255,255,255,.03);border-radius:8px;display:flex;align-items:center;gap:6px}
+.tj-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:11px;color:var(--muted)}
+@media(max-width:768px){
+  .tw{display:none}
+  .tarjetas-mobile{display:block}
+}
 .chip-nuevo{background:rgba(45,141,232,.25);color:#93c5fd;border:1px solid rgba(45,141,232,.4);
   font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
 
@@ -175,6 +211,20 @@ tr.sel-subtotal td{font-weight:700;color:var(--gold2);border-top:1px solid var(-
 select.sel-tramite{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);
   border-radius:6px;padding:4px 6px;font-size:11px;font-family:inherit;cursor:pointer;width:100%}
 select.sel-tramite option{background:#0d1a30;color:var(--text)}
+.sel-lote-bar{display:flex;flex-wrap:wrap;gap:14px;padding:12px 24px;background:rgba(255,255,255,.03);
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.sel-lote-grupo{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.sel-lote-lbl{font-size:11.5px;color:var(--soft);white-space:nowrap}
+.chip-filtros{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
+  color:var(--gold2);background:rgba(232,160,32,.15);border:1px solid rgba(232,160,32,.35);
+  border-radius:20px;padding:5px 12px;cursor:pointer;white-space:nowrap}
+.chip-filtros:hover{background:rgba(232,160,32,.28)}
+.undo-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:10060;
+  display:none;align-items:center;gap:14px;padding:11px 16px 11px 18px;border-radius:14px;
+  background:linear-gradient(135deg,#0d2550,#132a52);border:1px solid rgba(45,141,232,.4);
+  box-shadow:0 14px 36px rgba(0,0,0,.5);font-size:12.5px;color:var(--text)}
+.undo-toast.show{display:flex;animation:undoIn .25s ease both}
+@keyframes undoIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .sel-total-box{margin-top:6px;padding:14px 16px;border-radius:var(--radius-sm);
   background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);
   display:flex;align-items:center;justify-content:space-between}
@@ -536,14 +586,14 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
     </div>
   </div>
   <div class="tb-mid" style="flex:1;display:flex;justify-content:center;position:relative;max-width:420px;margin:0 auto">
-    <input id="global-buscar" class="finp" style="width:100%" placeholder="🔍 Buscar depósito, cédula o nombre..." oninput="buscarGlobalDebounced()" onkeydown="if(event.key==='Escape'){this.value='';cerrarBusquedaGlobal();}"/>
+    <input id="global-buscar" class="finp" style="width:100%" placeholder="🔍 Buscar depósito, cédula o nombre..." oninput="buscarGlobalDebounced()" onkeydown="if(event.key==='Escape'){this.value='';cerrarBusquedaGlobal();} if(event.key==='Enter'){irAlPrimerResultadoGlobal();}"/>
     <div id="global-resultados" class="global-results"></div>
   </div>
   <div class="tb-right">
     <div class="sync-pill" id="sync-pill">
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-lbl">Sin conexión</span>
-      <button class="sync-reload" id="sync-reload" onclick="recargarTodo()" title="Traer los últimos cambios del equipo">🔄</button>
+      <button class="sync-reload" id="sync-reload" onclick="recargarTodo()" title="Traer los últimos cambios del equipo" aria-label="Traer los últimos cambios del equipo">🔄</button>
     </div>
     <span class="sync-pendientes" id="sync-pendientes" onclick="procesarCola()" title="Reintentar sincronización" style="display:none"></span>
     <button class="tb-btn" id="usuario-activo" onclick="cambiarUsuario()" title="Cerrar sesión">👤 Sin identificar</button>
@@ -656,7 +706,18 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
         <option value="con">✅ Con observación</option>
         <option value="sin">— Sin observación</option>
       </select>
+      <span class="chip-filtros" id="chip-filtros" style="display:none" onclick="limpiarFiltros()" title="Clic para limpiar todos los filtros">
+        🔍 Filtros activos (<span class="chip-filtros-n">0</span>) ✕
+      </span>
       <button class="fbtn fbtn-outline" onclick="limpiarFiltros()" style="font-size:11px">✕ Limpiar</button>
+      <div style="position:relative">
+        <button class="fbtn fbtn-outline" style="font-size:11px" onclick="toggleMenuColumnas(this)">⚙️ Columnas</button>
+        <div class="col-menu" id="col-menu">
+          <label><input type="checkbox" data-col="cedula" onchange="toggleColumna(this)"> Cédula</label>
+          <label><input type="checkbox" data-col="proceso" onchange="toggleColumna(this)"> Proceso</label>
+          <label><input type="checkbox" data-col="impuesto" onchange="toggleColumna(this)"> Impuesto</label>
+        </div>
+      </div>
     </div>
     <div class="tw">
       <table id="tabla">
@@ -666,10 +727,10 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
           <th onclick="sortBy('Fecha Emisión', this)">Fecha</th>
           <th id="th-antiguedad" title="Días desde la fecha de emisión, sin gestión finalizada">Antigüedad</th>
           <th onclick="sortBy('Nombre Demandante.1', this)">Demandado</th>
-          <th onclick="sortBy('Identificación Demandado', this)">Cédula</th>
+          <th onclick="sortBy('Identificación Demandado', this)" class="col-cedula">Cédula</th>
           <th onclick="sortBy('Valor del Depóstio', this)" style="text-align:right">Valor</th>
-          <th onclick="sortBy('Proceso', this)">Proceso</th>
-          <th onclick="sortBy('Impuesto', this)">Impuesto</th>
+          <th onclick="sortBy('Proceso', this)" class="col-proceso">Proceso</th>
+          <th onclick="sortBy('Impuesto', this)" class="col-impuesto">Impuesto</th>
           <th onclick="sortBy('ESTADO DEVOLUCION', this)">Devolución</th>
           <th onclick="sortBy('ESTADO APLICACIÓN', this)">Aplicación</th>
           <th onclick="sortBy('RESPONSABLE', this)">Responsable</th>
@@ -679,6 +740,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
         <tbody id="tbody"></tbody>
       </table>
     </div>
+    <div id="tarjetas-mobile" class="tarjetas-mobile"></div>
     <div class="pag">
       <div class="pag-info" id="pag-info">Cargando...</div>
       <div class="pag-btns" id="pag-btns"></div>
@@ -690,6 +752,13 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
     <button class="fbtn fbtn-gold" onclick="abrirModalSeleccion()">📋 Ver seleccionados</button>
     <button class="fbtn fbtn-outline" onclick="limpiarSeleccion()">✕ Limpiar</button>
   </div>
+</div>
+
+<!-- Toast de "Deshacer" — global, no depende de qué pestaña esté abierta.
+     Se muestra ~10s después de guardar una gestión (individual o en lote). -->
+<div class="undo-toast" id="undo-toast">
+  <span id="undo-toast-msg">Cambio guardado</span>
+  <button class="fbtn fbtn-gold" style="padding:6px 14px;font-size:12px" onclick="deshacerUltimoGuardado()">↩️ Deshacer</button>
 </div>
 
 <!-- ══ PANEL PENDIENTES ══ -->
@@ -1096,6 +1165,9 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
         <label>Contraseña</label>
         <input id="wPass" type="password" placeholder="••••••••" autocomplete="current-password"
                onkeydown="if(event.key==='Enter') conectar()">
+        <div style="text-align:right;margin-top:5px">
+          <span style="font-size:11px;color:rgba(255,255,255,.4);cursor:pointer;text-decoration:underline" onclick="olvidoContrasena()">¿Olvidaste tu contraseña?</span>
+        </div>
       </div>
     </div>
     <div class="wiz-alert-box alert-w" id="wizAlert">
@@ -1209,7 +1281,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
         </div>
         <p id="m-sub" style="display:none"></p>
       </div>
-      <button class="mclose" onclick="cerrarModal()">✕</button>
+      <button class="mclose" onclick="cerrarModal()" aria-label="Cerrar ficha de gestión">✕</button>
     </div>
     <div class="mbody">
       <div class="banco-info">
@@ -1365,9 +1437,31 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
         <h3>📦 Entrega a Recaudos y Pagos (<span id="sel-count">0</span>)</h3>
         <p>Por cada depósito elija si se Aplica o se Devuelve. El consignante (banco) y el valor quedan listos para cruzar en Recaudos y Pagos</p>
       </div>
-      <button class="mclose" onclick="cerrarModalSel()">✕</button>
+      <button class="mclose" onclick="cerrarModalSel()" aria-label="Cerrar selección">✕</button>
     </div>
     <div class="mbody" id="sel-contenido"></div>
+    <div class="sel-lote-bar" id="sel-lote-bar">
+      <div class="sel-lote-grupo">
+        <span class="sel-lote-lbl">👤 Asignar responsable a todos:</span>
+        <select class="finp" id="sel-lote-responsable" style="width:180px"><option value="">— elegir —</option></select>
+        <button class="fbtn fbtn-outline" style="padding:6px 12px;font-size:11.5px" onclick="aplicarResponsableLote(this)">Aplicar a marcados</button>
+      </div>
+      <div class="sel-lote-grupo">
+        <span class="sel-lote-lbl">🔄 Cambiar estado a todos:</span>
+        <select class="finp" id="sel-lote-tipo-estado" style="width:130px">
+          <option value="devolucion">Devolución</option>
+          <option value="aplicacion">Aplicación</option>
+        </select>
+        <select class="finp" id="sel-lote-estado" style="width:150px">
+          <option value="">— elegir —</option>
+          <option value="PENDIENTE">⏳ Pendiente</option>
+          <option value="EN TRAMITE">🔄 En trámite</option>
+          <option value="EN REVISION">👁 En revisión</option>
+          <option value="FINALIZADO">✅ Finalizado</option>
+        </select>
+        <button class="fbtn fbtn-outline" style="padding:6px 12px;font-size:11.5px" onclick="aplicarEstadoLote(this)">Aplicar a marcados</button>
+      </div>
+    </div>
     <div class="mfoot" style="flex-wrap:wrap">
       <div class="sel-total-box" style="flex:1;min-width:200px;margin-right:12px">
         <span class="lbl">Total combinado</span>
@@ -1525,34 +1619,40 @@ function renderReporteDetalleDebounced(){ clearTimeout(_debRep); _debRep=setTime
 // Campos que alimentan la búsqueda de texto libre en Registros/Pendientes/Reportes.
 // Se concatenan UNA sola vez por fila (al cargar o al editar), en vez de volver a
 // concatenar y pasar a minúsculas las ~48.000 filas en cada tecla que se escribe.
+// Quita tildes/diacríticos para que "MARIA" encuentre "MARÍA" y viceversa —
+// muy común en estos datos, que vienen con nombres inconsistentes.
+function quitarTildes(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
 function construirBuscable(fila){
-  return ((fila['deposito judicial']||'')+' '+(fila['Nombre Demandante.1']||'')+' '+(fila['Identificación Demandado']||'')+' '+(fila['Proceso']||'')+' '+(fila['Número del Proceso']||'')+' '+(fila['RESPONSABLE']||'')).toLowerCase();
+  return quitarTildes((fila['deposito judicial']||'')+' '+(fila['Nombre Demandante.1']||'')+' '+(fila['Identificación Demandado']||'')+' '+(fila['Proceso']||'')+' '+(fila['Número del Proceso']||'')+' '+(fila['RESPONSABLE']||'')).toLowerCase();
 }
 
 function filaSupaAUI(r){
+  // 'Estado del Depósito' y 'Tipo de TX origen' NO se mapean aquí a propósito: no vienen
+  // en el fetch principal (ver COLUMNAS_RECAUDO_LISTA), se traen perezosamente cuando se
+  // abre la ficha de un depósito (cargarDetalleModal). Por eso quedan "undefined" —no ''—
+  // hasta que esa carga puntual las llene, lo que abrirModal() usa para decidir si pedirlas.
+  // 'Título Padre', 'Identificación Demandante', 'Nombre Demandante' (sin .1) y
+  // 'ANO DE GESTION' se quitaron del todo: se auditó el código y nada las lee.
   var fila = {
     _id: r.id,                                   // id técnico (para UPDATE)
     'deposito judicial':        r.deposito_judicial || '',
     'Fecha Emisión':            r.fecha_emision || '',
-    'Estado del Depósito':      r.estado_deposito || '',
-    'Identificación Demandante':r.identificacion_demandante || '',
-    'Nombre Demandante':        r.nombre_demandante || '',
     'Identificación Demandado': r.identificacion_demandado || '',
     'Nombre Demandante.1':      r.nombre_demandado || '',   // la UI muestra el demandado con esta clave
     'Identificación Consignante':r.identificacion_consignante || '',
     'Nombre Consignante':       r.nombre_consignante || '',
     'Concepto del Depósito':    r.concepto_deposito || '',
+    'anulado':                  r.anulado || false,
     'Número del Proceso':       r.numero_proceso || '',
     'Valor del Depóstio':       r.valor_deposito || 0,
-    'Título Padre':             r.titulo_padre || '',
-    'Tipo de TX origen':        r.tipo_tx_origen || '',
     // campos de gestión
     'Observacion':              r.observacion || '',
     'TELEFONO DE CONTACTO':     r.telefono_contacto || '',
     'CORREO ELECTRONICO':       r.correo_electronico || '',
     'DIRECCION':                r.direccion || '',
     'CIUDAD':                   r.ciudad || '',
-    'ANO DE GESTION':           r.ano_gestion || '',
     'RESPONSABLE':              r.responsable || '',
     'GESTION TESORERIA':        r.gestion_tesoreria || '',
     'COMPROBANTE DE EGRESO':    r.comprobante_egreso || '',
@@ -1618,44 +1718,70 @@ function mostrarCargaInicial(){
   var pi=document.getElementById('pag-info');
   if(pi) pi.textContent='Cargando depósitos… esto puede tardar unos segundos con muchos registros.';
 }
+// Columnas reales que se usan en la tabla, dashboard, duplicados, búsqueda y validaciones
+// de FINALIZADO en lote. NO incluye 'estado_deposito' ni 'tipo_tx_origen' (solo se ven
+// dentro de la ficha de un depósito puntual — se traen al vuelo, ver cargarDetalleModal()).
+// Tampoco incluye 'titulo_padre', 'identificacion_demandante', 'nombre_demandante' ni
+// 'ano_gestion': se auditó el código entero y ningún lugar las lee — siempre eran
+// "Alcaldía de Bello" o quedaban vacías. Quitarlas no cambia nada visible, solo pesa menos.
+const COLUMNAS_RECAUDO_LISTA = 'id,deposito_judicial,fecha_emision,identificacion_demandado,'
+  +'nombre_demandado,identificacion_consignante,nombre_consignante,concepto_deposito,anulado,'
+  +'numero_proceso,valor_deposito,observacion,telefono_contacto,correo_electronico,direccion,'
+  +'ciudad,responsable,gestion_tesoreria,comprobante_egreso,radicado_respuesta,estado_devolucion,'
+  +'estado_aplicacion,numero_proceso_manual,tipo_impuesto,editado_por,ultima_edicion';
+
+const ULTIMA_CARGA_KEY = 'recaudo_ultima_carga_v1';
+
+// Reconstruye `dataBanco` (lo que se muestra) a partir de `dataBancoCompleto` (todo lo que
+// hay, incluidos repetidos y anulados). Se llama tanto después de la carga inicial completa
+// como después de cada sincronización delta, para que el criterio de "cuál copia se muestra"
+// (la de más gestión) y el filtro de anulados se apliquen siempre sobre los datos más frescos.
+function reconstruirDataBancoDesdeCompleto(){
+  var vistos = {};
+  dataBancoCompleto.forEach(function(r){
+    if(r['anulado']) return; // fuera de la vista, pero sigue en dataBancoCompleto
+    var dep = String(r['deposito judicial']||'').trim();
+    if(!dep) return;
+    if(!(dep in vistos) || esMejorFila(r, vistos[dep])) vistos[dep] = r;
+  });
+  var unicos = dataBancoCompleto.filter(function(r){
+    if(r['anulado']) return false;
+    var dep = String(r['deposito judicial']||'').trim();
+    return !dep || vistos[dep] === r;
+  });
+  _duplicadosOcultos = dataBancoCompleto.length - unicos.length;
+  dataBanco = unicos;
+}
+
 async function cargarTodo(){
   setSS('loading','Cargando desde Supabase...');
   mostrarCargaInicial();
+  var horaAntesDeLaConsulta = new Date().toISOString(); // para el delta sync de la próxima recarga
   try{
     // Las 3 consultas son independientes entre sí -> se piden en paralelo.
     // Antes se esperaba una, luego la otra, luego la otra (tiempo total = suma de las 3).
     // Ahora el tiempo total es aprox. el de la más lenta de las 3.
+    //
+    // COLUMNAS: antes era select=* (traía TODAS las columnas de recaudo, incluidas
+    // 4 que ningún lugar del código llega a leer: titulo_padre, identificacion_demandante,
+    // nombre_demandante, ano_gestion — siempre son "Alcaldía de Bello" o quedan vacías).
+    // Esas se quitaron del todo. 'estado_deposito' y 'tipo_tx_origen' solo se muestran
+    // dentro de la ficha de un depósito (nunca en la tabla, dashboard o duplicados),
+    // así que se sacaron de aquí y se traen al vuelo, una sola fila, cuando se abre esa ficha
+    // (ver cargarDetalleModal()) — ver COLUMNAS_RECAUDO_LISTA más abajo.
     var resultados = await Promise.allSettled([
-      sbFetchAll('recaudo', '*', 'order=fecha_emision.desc.nullslast'),
+      sbFetchAll('recaudo', COLUMNAS_RECAUDO_LISTA, 'order=fecha_emision.desc.nullslast'),
       sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion'),
       sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total')
     ]);
 
     // 1) Depósitos — es la fuente principal; si falla, no hay nada que mostrar.
     if(resultados[0].status!=='fulfilled') throw resultados[0].reason;
-    dataBanco = resultados[0].value.map(filaSupaAUI);
-    // Deduplicación EN VISTA: si el mismo número de depósito está más de una vez en la BD,
-    // aquí solo se conserva UNA fila — la que tenga MÁS GESTIÓN (estados, responsable,
-    // observación, comprobantes...), porque entre dos copias del mismo depósito la valiosa
-    // es la trabajada, no la más vieja. En empate de gestión, gana la más antigua (menor id).
-    // Los repetidos NO se borran de Supabase — siguen visibles en la pestaña "Duplicados"
-    // para su limpieza definitiva — pero dejan de aparecer en tablas, KPIs y reportes.
-    dataBancoCompleto = dataBanco;
-    (function(){
-      var vistos = {};
-      dataBanco.forEach(function(r){
-        var dep = String(r['deposito judicial']||'').trim();
-        if(!dep) return;
-        if(!(dep in vistos) || esMejorFila(r, vistos[dep])) vistos[dep] = r;
-      });
-      var unicos = dataBanco.filter(function(r){
-        var dep = String(r['deposito judicial']||'').trim();
-        return !dep || vistos[dep] === r;
-      });
-      _duplicadosOcultos = dataBanco.length - unicos.length;
-      dataBanco = unicos;
-    })();
+    dataBancoCompleto = resultados[0].value.map(filaSupaAUI);
+    reconstruirDataBancoDesdeCompleto();
+    _nombresUnicosCache = null; // se recalcula perezosamente con los datos frescos
     ultimaSync = new Date();
+    try{ localStorage.setItem(ULTIMA_CARGA_KEY, horaAntesDeLaConsulta); }catch(e){}
 
     // 2) Expedientes prediales -> índice por cédula (para el modal 360). Si falla, el modal simplemente no los muestra.
     expedientesPorCedula = {};
@@ -1705,7 +1831,7 @@ async function cargarTodo(){
 
     var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
     setSS('ok','Sincronizado '+ts);
-    renderKpis(); filtrar(); llenarSelectResponsables(); actualizarCfgPanel();
+    renderKpis(); llenarSelectResponsables(); restaurarFiltrosLocal(); restaurarColumnasLocal(); filtrar(); actualizarCfgPanel();
     actualizarPendientesPill(); procesarCola(); actualizarBadgeDuplicados();
   }catch(err){
     setSS('error','Error al cargar');
@@ -1714,11 +1840,56 @@ async function cargarTodo(){
   }
 }
 
+// ════════════════════════════════════════════════════════════
+// SINCRONIZACIÓN DELTA — en vez de re-descargar las ~49.000 filas completas cada
+// vez que alguien recarga, solo se piden las que cambiaron desde la última carga
+// (ultima_edicion >= marca guardada) y se fusionan en lo que ya está en memoria.
+// Cubre ediciones y anulaciones de cualquier persona del equipo; lo único que NO
+// detecta es un borrado físico hecho por fuera de la app directo en Supabase —
+// por eso "anular" (no DELETE) es también la pieza que hace esto seguro.
+// ════════════════════════════════════════════════════════════
+async function sincronizarDelta(){
+  if(!dataBancoCompleto.length) return await cargarTodo(); // primera vez: no hay nada de qué hacer delta
+  var ultimaCarga;
+  try{ ultimaCarga = localStorage.getItem(ULTIMA_CARGA_KEY); }catch(e){ ultimaCarga = null; }
+  if(!ultimaCarga) return await cargarTodo(); // sin marca de tiempo previa (ej. localStorage se borró) -> traer todo, para no arriesgar
+
+  setSS('loading','Buscando cambios...');
+  var horaAntesDeLaConsulta = new Date().toISOString();
+  try{
+    var cambiados = await sbFetchAll('recaudo', COLUMNAS_RECAUDO_LISTA,
+      'ultima_edicion=gte.'+encodeURIComponent(ultimaCarga)+'&order=ultima_edicion.asc');
+    var porId = {};
+    dataBancoCompleto.forEach(function(r){ porId[r._id] = r; });
+    var nuevos=0, actualizados=0;
+    cambiados.map(filaSupaAUI).forEach(function(nueva){
+      if(porId[nueva._id]!==undefined) actualizados++; else nuevos++;
+      porId[nueva._id] = nueva;
+    });
+    dataBancoCompleto = Object.keys(porId).map(function(k){ return porId[k]; });
+    reconstruirDataBancoDesdeCompleto();
+    _nombresUnicosCache = null;
+    ultimaSync = new Date();
+    try{ localStorage.setItem(ULTIMA_CARGA_KEY, horaAntesDeLaConsulta); }catch(e){}
+    setSS('ok','Sincronizado '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}));
+    renderKpis(); llenarSelectResponsables(); filtrar(); actualizarBadgeDuplicados(); actualizarPendientesPill();
+    return { nuevos:nuevos, actualizados:actualizados, total:cambiados.length };
+  }catch(err){
+    // Si el delta falla por lo que sea, no dejamos a nadie con datos desactualizados:
+    // caemos de vuelta a la carga completa de siempre.
+    await cargarTodo();
+    return null;
+  }
+}
+
 async function recargarTodo(){
   var alEl=document.getElementById('cfg-alert');
-  if(alEl) showAl(alEl,'al-load','<div class="spin"></div> Recargando...');
-  await cargarTodo();
-  if(alEl) showAl(alEl,'al-ok','✅ Datos recargados.');
+  if(alEl) showAl(alEl,'al-load','<div class="spin"></div> Buscando cambios...');
+  var resultado = await sincronizarDelta();
+  if(alEl){
+    if(resultado) showAl(alEl,'al-ok','✅ '+resultado.total.toLocaleString('es-CO')+' cambio(s) traído(s) ('+resultado.nuevos+' nuevo(s), '+resultado.actualizados+' actualizado(s)).');
+    else showAl(alEl,'al-ok','✅ Datos recargados.');
+  }
   // feedback breve en la sync pill
   var l=document.getElementById('sync-lbl');
   if(l){ var prev=l.textContent; l.textContent='✅ Actualizado'; setTimeout(()=>{ if(ultimaSync) l.textContent='Sincronizado '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); },1500); }
@@ -1805,6 +1976,21 @@ function wizAlert(t,m){
   if(spans[1]) spans[1].textContent=m;
 }
 
+async function olvidoContrasena(){
+  var email=(document.getElementById('wCorreo').value||'').trim();
+  if(!email){
+    wizAlert('e', 'Escriba primero su correo arriba, y luego haga clic aquí de nuevo.');
+    document.getElementById('wCorreo').focus();
+    return;
+  }
+  if(!sbAuth){ wizAlert('e', 'Error de conexión con el servidor. Recarga la página.'); return; }
+  try{
+    await sbAuth.auth.resetPasswordForEmail(email);
+    wizAlert('s', 'Si '+email+' tiene una cuenta, te llegará un correo para restablecer tu contraseña.');
+  }catch(e){
+    wizAlert('e', 'No se pudo enviar el correo de recuperación. Intenta de nuevo en un momento.');
+  }
+}
 async function conectar(){
   var nom = document.getElementById('wNombre').value.trim();
   var eq  = document.getElementById('wEquipo').value.trim();
@@ -1909,7 +2095,7 @@ const BV_PASOS = [
     tipo: 'spot', tab: 'duplicados', selector: '#tab-duplicados',
     bubble: '🔁 Yo los encuentro solo',
     titulo: '🔁 Duplicados, detectados solos',
-    html: 'Aquí encuentro los depósitos repetidos —mismo número, o misma cédula/nombre/valor/fecha— y te dejo decidir cuáles eliminar, conservando siempre el más antiguo. Con miles de filas, en Excel esto era casi imposible de ver.'
+    html: 'Aquí encuentro los depósitos repetidos —mismo número, o misma cédula/nombre/valor/fecha— y te dejo decidir cuáles anular, conservando siempre el que tenga más gestión. Con miles de filas, en Excel esto era casi imposible de ver.'
   },
   {
     tipo: 'spot', tab: 'registros', selector: '#chk-all',
@@ -2038,15 +2224,73 @@ function goTab(t){
 var _debGlobal;
 function buscarGlobalDebounced(){ clearTimeout(_debGlobal); _debGlobal=setTimeout(buscarGlobal, 250); }
 
+// Distancia de edición simple (Levenshtein) — solo se usa cuando una búsqueda da 0
+// resultados, para sugerir "¿Quisiste decir...?" con nombres reales de la base.
+function distanciaLevenshtein(a, b){
+  if(a===b) return 0;
+  var la=a.length, lb=b.length;
+  if(!la) return lb; if(!lb) return la;
+  var fila=new Array(lb+1);
+  for(var j=0;j<=lb;j++) fila[j]=j;
+  for(var i=1;i<=la;i++){
+    var anterior=fila[0]; fila[0]=i;
+    for(var j2=1;j2<=lb;j2++){
+      var temp=fila[j2];
+      fila[j2]=Math.min(fila[j2]+1, fila[j2-1]+1, anterior+(a[i-1]===b[j2-1]?0:1));
+      anterior=temp;
+    }
+  }
+  return fila[lb];
+}
+var _nombresUnicosCache=null;
+function nombresUnicosParaSugerir(){
+  if(_nombresUnicosCache) return _nombresUnicosCache;
+  var vistos={}, lista=[];
+  dataBanco.forEach(function(r){
+    var n=String(r['Nombre Demandante.1']||'').trim();
+    if(n && !vistos[n]){ vistos[n]=true; lista.push(n); }
+  });
+  _nombresUnicosCache=lista;
+  return lista;
+}
+// Top 3 nombres más parecidos a lo que la persona escribió (solo si están razonablemente
+// cerca — de lo contrario es mejor no sugerir nada a inventar coincidencias sin sentido).
+function sugerirNombresParecidos(q){
+  if(q.length<3) return [];
+  var nombres=nombresUnicosParaSugerir();
+  var qNorm=quitarTildes(q).toUpperCase();
+  var candidatos=nombres.map(function(n){
+    var nNorm=quitarTildes(n).toUpperCase();
+    var primera=nNorm.split(' ')[0];
+    var d=Math.min(distanciaLevenshtein(qNorm, nNorm.substring(0,qNorm.length+3)), distanciaLevenshtein(qNorm, primera));
+    return {n:n, d:d};
+  }).filter(function(c){ return c.d<=3; })
+    .sort(function(a,b){ return a.d-b.d; });
+  var vistos={}, top=[];
+  for(var i=0;i<candidatos.length && top.length<3;i++){
+    if(!vistos[candidatos[i].n]){ vistos[candidatos[i].n]=true; top.push(candidatos[i].n); }
+  }
+  return top;
+}
+
 function buscarGlobal(){
   var input=document.getElementById('global-buscar');
   var cont=document.getElementById('global-resultados');
   if(!input||!cont) return;
-  var q=(input.value||'').toLowerCase().trim();
+  var q=quitarTildes(input.value||'').toLowerCase().trim();
   if(q.length<2){ cerrarBusquedaGlobal(); return; }
   var encontrados=dataBanco.filter(r=>(r._buscable!==undefined?r._buscable:construirBuscable(r)).indexOf(q)>=0).slice(0,15);
   if(!encontrados.length){
-    cont.innerHTML='<div class="gr-item" style="cursor:default;color:var(--muted)">Sin resultados</div>';
+    var sugerencias=sugerirNombresParecidos(q);
+    if(sugerencias.length){
+      cont.innerHTML='<div class="gr-item" style="cursor:default;color:var(--muted)">Sin resultados exactos. ¿Quisiste decir...?</div>'
+        + sugerencias.map(function(n){
+            return '<div class="gr-item" onclick="document.getElementById(\'global-buscar\').value='+JSON.stringify(n)+';buscarGlobal();">'
+              +'<div><div class="gr-acc">'+eh(n)+'</div></div></div>';
+          }).join('');
+    } else {
+      cont.innerHTML='<div class="gr-item" style="cursor:default;color:var(--muted)">Sin resultados</div>';
+    }
     cont.classList.add('open');
     return;
   }
@@ -2068,6 +2312,13 @@ function irADepositoGlobal(dep){
   if(input) input.value='';
   goTab('registros');
   abrirModal(dep);
+}
+// Enter en el buscador global: si hay resultados en pantalla, va directo al primero
+function irAlPrimerResultadoGlobal(){
+  var cont=document.getElementById('global-resultados');
+  if(!cont) return;
+  var primero=cont.querySelector('.gr-item');
+  if(primero) primero.click();
 }
 
 function cerrarBusquedaGlobal(){
@@ -2277,7 +2528,7 @@ function fmt$(n){
 
 // FILTRAR
 function filtrar(){
-  var buscar=(document.getElementById('f-buscar').value||'').toLowerCase().trim();
+  var buscar=quitarTildes(document.getElementById('f-buscar').value||'').toLowerCase().trim();
   var fEDev=document.getElementById('f-estado-dev').value;
   var fEApl=document.getElementById('f-estado-apl').value;
   var fImp=(document.getElementById('f-impuesto').value||'').toUpperCase();
@@ -2306,6 +2557,46 @@ function filtrar(){
     ordenarPor(filtrados, sortCol, sortDir);
   }
   pagActual=1; renderTabla();
+  guardarFiltrosLocal();
+  pintarChipFiltros();
+}
+
+// ════════════════════════════════════════════════════════════
+// PERSISTENCIA DE FILTROS — recuerda lo que cada quien filtró, entre
+// recargas de página y reinicios del navegador (queda por dispositivo/perfil).
+// ════════════════════════════════════════════════════════════
+const FILTROS_KEY='recaudo_filtros_v1';
+const IDS_FILTROS_REGISTROS=['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable','f-monto','f-expediente','f-obs'];
+function guardarFiltrosLocal(){
+  try{
+    var obj={};
+    IDS_FILTROS_REGISTROS.forEach(function(id){ var el=document.getElementById(id); if(el) obj[id]=el.value; });
+    localStorage.setItem(FILTROS_KEY, JSON.stringify(obj));
+  }catch(e){}
+}
+// Se llama una sola vez, después de cargarTodo() (para que el select de Responsable
+// ya tenga sus opciones llenas antes de intentar restaurarle un valor).
+function restaurarFiltrosLocal(){
+  var obj;
+  try{ obj=JSON.parse(localStorage.getItem(FILTROS_KEY)||'null'); }catch(e){ obj=null; }
+  if(!obj) return;
+  IDS_FILTROS_REGISTROS.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el && obj[id]!==undefined && obj[id]!==''){ el.value=obj[id]; }
+  });
+}
+// Chip "Filtros activos (N) ✕ limpiar" — para que nadie se quede viendo una lista
+// recortada sin darse cuenta de que tiene un filtro puesto de una sesión anterior.
+function pintarChipFiltros(){
+  var chip=document.getElementById('chip-filtros');
+  if(!chip) return;
+  var activos=IDS_FILTROS_REGISTROS.filter(function(id){ var el=document.getElementById(id); return el && el.value; }).length;
+  if(activos>0){
+    chip.style.display='inline-flex';
+    chip.querySelector('.chip-filtros-n').textContent=activos;
+  } else {
+    chip.style.display='none';
+  }
 }
 
 // Columnas cuyo valor real es numérico (no deben ordenarse como texto).
@@ -2341,6 +2632,7 @@ function renderTabla(){
   var ini=(pagActual-1)*PS,fin=Math.min(ini+PS,data.length),pag=data.slice(ini,fin);
   if(!pag.length){
     document.getElementById('tbody').innerHTML='<tr><td colspan="14"><div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div></td></tr>';
+    document.getElementById('tarjetas-mobile').innerHTML='<div class="empty"><div class="empty-ico">📂</div><p>No hay registros que coincidan con los filtros.</p></div>';
     document.getElementById('pag-info').textContent='0 registros';
     document.getElementById('pag-btns').innerHTML='';
     sincronizarChkAll();
@@ -2367,17 +2659,17 @@ function renderTabla(){
     }
     var depStr=String(dep);
     return `<tr class="${gestionado?'gestionado':''}" tabindex="0" role="button" onclick="abrirModal('${depStr.replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${depStr.replace(/'/g,"\\'")}')}">
-      <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-dep" ${seleccionados.has(depStr)?'checked':''} onchange="toggleSeleccion('${depStr.replace(/'/g,"\\'")}', this.checked)"/></td>
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-dep" data-dep="${eh(depStr)}" ${seleccionados.has(depStr)?'checked':''} onclick="clicCheckboxFila(event, this)"/></td>
       <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
       <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
       <td>${badgeAntiguedad(r)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
-      <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
+      <td class="mono col-cedula" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
-      <td class="mono" style="font-size:12px;color:var(--soft)">${procCell}</td>
-      <td>${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
-      <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
-      <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
+      <td class="mono col-proceso" style="font-size:12px;color:var(--soft)">${procCell}</td>
+      <td class="col-impuesto">${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
+      <td onclick="event.stopPropagation()"><span class="est-cell" onclick="abrirEditorEstado(this,'${eh(String(r._id))}','devolucion')">${badgeEst(r['ESTADO DEVOLUCION'])}</span></td>
+      <td onclick="event.stopPropagation()"><span class="est-cell" onclick="abrirEditorEstado(this,'${eh(String(r._id))}','aplicacion')">${badgeEst(r['ESTADO APLICACIÓN'])}</span></td>
       <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
       <td onclick="event.stopPropagation()" style="max-width:190px">
         <div class="obs-cell" onclick="abrirEditorObs(this, '${eh(String(r._id))}')" title="${eh(r['Observacion']||'Clic para agregar observación')}">
@@ -2391,6 +2683,44 @@ function renderTabla(){
   document.getElementById('pag-info').textContent=`Mostrando ${ini+1}–${fin} de ${data.length.toLocaleString('es-CO')} registros`;
   renderPag(data.length,'pag-btns',pagActual,(n)=>{pagActual=n;renderTabla();});
   sincronizarChkAll();
+  renderTarjetasMobile(pag);
+}
+
+// Vista de tarjetas para pantallas angostas (celular) — misma página de datos que la
+// tabla (mismo `pag`), solo que en formato apilado en vez de columnas con scroll horizontal.
+function renderTarjetasMobile(pag){
+  var cont=document.getElementById('tarjetas-mobile');
+  if(!cont) return;
+  cont.innerHTML=pag.map(function(r){
+    var dep=r['deposito judicial'];
+    var depStr=String(dep);
+    var depEsc=depStr.replace(/'/g,"\\'");
+    var valor=parsearValor(r['Valor del Depóstio']);
+    var fecha=String(r['Fecha Emisión']||'').substring(0,10);
+    var gestionado=!!(r['ESTADO DEVOLUCION']||r['ESTADO APLICACIÓN']||r['RESPONSABLE']);
+    var obs=r['Observacion'];
+    return `<div class="tj-card ${gestionado?'gestionado':''}">
+      <div class="tj-top">
+        <input type="checkbox" class="tj-chk chk-dep" data-dep="${eh(depStr)}" ${seleccionados.has(depStr)?'checked':''} onclick="clicCheckboxFila(event, this)"/>
+        <div class="tj-info" onclick="abrirModal('${depEsc}')">
+          <div class="tj-dep">📄 ${eh(dep)} · ${eh(fecha)} ${badgeAntiguedad(r)}</div>
+          <div class="tj-nombre">${eh(r['Nombre Demandante.1']||'—')}</div>
+        </div>
+        <div class="tj-valor">${fmt$(valor)}</div>
+      </div>
+      <div class="tj-badges">
+        <span class="est-cell" onclick="abrirEditorEstado(this,'${eh(String(r._id))}','devolucion')">${badgeEst(r['ESTADO DEVOLUCION'])}</span>
+        <span class="est-cell" onclick="abrirEditorEstado(this,'${eh(String(r._id))}','aplicacion')">${badgeEst(r['ESTADO APLICACIÓN'])}</span>
+      </div>
+      <div class="tj-obs" onclick="abrirEditorObs(this, '${eh(String(r._id))}')">
+        📝 ${obs?eh(String(obs).substring(0,60))+(String(obs).length>60?'…':''):'<span style="color:var(--muted)">Sin observación — toca para agregar</span>'}
+      </div>
+      <div class="tj-foot">
+        <span>👤 ${eh(r['RESPONSABLE']||'Sin asignar')}</span>
+        <button class="btn-gest" onclick="abrirModal('${depEsc}')">Gestionar</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════════════════════
@@ -2398,6 +2728,71 @@ function renderTabla(){
 // ════════════════════════════════════════════════════════════
 function toggleSeleccion(dep, on){
   if(on) seleccionados.add(dep); else seleccionados.delete(dep);
+  actualizarBarraSeleccion();
+  sincronizarChkAll();
+}
+// Recuerda el último checkbox clicado en la tabla, para saber dónde empieza el rango
+// si la persona hace Shift+clic en otro más abajo (o más arriba) de la misma página.
+var _ultimoChkClicado=null;
+// ════════════════════════════════════════════════════════════
+// COLUMNAS CONFIGURABLES — oculta/muestra Cédula/Proceso/Impuesto (las que menos
+// se consultan de un vistazo), guardado por dispositivo en localStorage.
+// ════════════════════════════════════════════════════════════
+const COLUMNAS_KEY='recaudo_columnas_v1';
+function toggleMenuColumnas(btn){
+  var menu=document.getElementById('col-menu');
+  menu.classList.toggle('open');
+  if(menu.classList.contains('open')){
+    setTimeout(function(){ document.addEventListener('mousedown', _colMenuClickFuera); }, 30);
+  }
+}
+function _colMenuClickFuera(e){
+  var menu=document.getElementById('col-menu');
+  if(menu && !menu.contains(e.target) && !e.target.closest('button[onclick^="toggleMenuColumnas"]')){
+    menu.classList.remove('open');
+    document.removeEventListener('mousedown', _colMenuClickFuera);
+  }
+}
+function toggleColumna(chk){
+  var col=chk.getAttribute('data-col');
+  document.getElementById('tabla').classList.toggle('oculta-'+col, !chk.checked);
+  guardarColumnasLocal();
+}
+function guardarColumnasLocal(){
+  try{
+    var obj={};
+    document.querySelectorAll('#col-menu input[data-col]').forEach(function(chk){ obj[chk.getAttribute('data-col')]=chk.checked; });
+    localStorage.setItem(COLUMNAS_KEY, JSON.stringify(obj));
+  }catch(e){}
+}
+function restaurarColumnasLocal(){
+  var obj;
+  try{ obj=JSON.parse(localStorage.getItem(COLUMNAS_KEY)||'null'); }catch(e){ obj=null; }
+  var tabla=document.getElementById('tabla');
+  document.querySelectorAll('#col-menu input[data-col]').forEach(function(chk){
+    var col=chk.getAttribute('data-col');
+    var visible = obj && obj[col]!==undefined ? obj[col] : true; // por defecto, todas visibles
+    chk.checked=visible;
+    tabla.classList.toggle('oculta-'+col, !visible);
+  });
+}
+
+function clicCheckboxFila(e, chk){
+  var todos=Array.from(document.querySelectorAll('#tbody .chk-dep'));
+  var dep=chk.getAttribute('data-dep');
+  if(e.shiftKey && _ultimoChkClicado && todos.includes(_ultimoChkClicado)){
+    var i1=todos.indexOf(_ultimoChkClicado), i2=todos.indexOf(chk);
+    var ini=Math.min(i1,i2), fin=Math.max(i1,i2);
+    var marcar=chk.checked; // el estado al que la persona acaba de dejar ESTE checkbox
+    for(var i=ini;i<=fin;i++){
+      todos[i].checked=marcar;
+      var d=todos[i].getAttribute('data-dep');
+      if(marcar) seleccionados.add(d); else seleccionados.delete(d);
+    }
+  } else {
+    if(chk.checked) seleccionados.add(dep); else seleccionados.delete(dep);
+  }
+  _ultimoChkClicado=chk;
   actualizarBarraSeleccion();
   sincronizarChkAll();
 }
@@ -2492,10 +2887,115 @@ function abrirModalSeleccion(){
   document.getElementById('sel-contenido').innerHTML=html;
   document.getElementById('sel-count').textContent=filas.length.toLocaleString('es-CO');
   document.getElementById('sel-total').textContent=fmt$(total);
+  var selResp=document.getElementById('sel-lote-responsable');
+  if(selResp && selResp.options.length<=1){
+    selResp.innerHTML='<option value="">— elegir —</option>'+RESPONSABLES.map(n=>'<option value="'+eh(n)+'">'+eh(n)+'</option>').join('');
+  }
   document.getElementById('modal-sel').classList.add('open');
 }
 function cerrarModalSel(){
   document.getElementById('modal-sel').classList.remove('open');
+}
+// Asigna un mismo responsable a TODOS los depósitos actualmente seleccionados, de un solo golpe
+// (evita abrir el modal completo 40 veces solo para cambiar el responsable).
+async function aplicarResponsableLote(btn){
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
+  var resp=document.getElementById('sel-lote-responsable').value;
+  if(!resp){ alert('Elija un responsable en la lista.'); return; }
+  var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
+  if(!filas.length){ alert('No hay depósitos seleccionados.'); return; }
+  if(!confirm('Se asignará "'+resp+'" como responsable de '+filas.length+' depósito(s) seleccionado(s).\n\n¿Continuar?')) return;
+
+  var user=USUARIO_ACTIVO, ok=0, fail=0, sinCambio=0;
+  var loteDeshacer=[];
+  var txtOrig=btn.textContent; btn.disabled=true;
+  for(var i=0;i<filas.length;i++){
+    var r=filas[i];
+    var antes=String(r['RESPONSABLE']||'').trim();
+    btn.textContent='Aplicando '+(i+1)+'/'+filas.length+'...';
+    if(antes===resp){ sinCambio++; continue; }
+    var payload={ responsable:resp, ultima_edicion:new Date().toISOString(), editado_por:user };
+    var okUno=await patchRecaudo(r._id, payload);
+    if(okUno){
+      loteDeshacer.push({ idTec:r._id, dep:r['deposito judicial'], payloadPrevio:{responsable:antes||null}, uiPrevio:{'RESPONSABLE':antes} });
+      r['RESPONSABLE']=resp; r._editadoPor=user; r._editadoFecha=new Date().toLocaleString('es-CO'); r._ultimaEdicionISO=payload.ultima_edicion;
+      if(r._buscable!==undefined) r._buscable=construirBuscable(r);
+      registrarBitacora(r['deposito judicial'], user, 'RESPONSABLE: "'+(antes||'(vacío)')+'" → "'+resp+'" (asignación en lote desde selección múltiple)');
+      ok++;
+    } else fail++;
+  }
+  btn.disabled=false; btn.textContent=txtOrig;
+  if(loteDeshacer.length) registrarParaDeshacer(loteDeshacer, resp+' asignado a '+loteDeshacer.length+' depósito(s)');
+  renderKpis(); filtrar(); refrescarDashboardSiVisible(); actualizarBadgeDuplicados();
+  abrirModalSeleccion();
+  var msg='✅ '+ok+' depósito(s) actualizado(s) a "'+resp+'".';
+  if(sinCambio) msg+='\n('+sinCambio+' ya tenían ese responsable, sin cambios.)';
+  if(fail) msg+='\n⚠️ '+fail+' no se pudieron actualizar (revise su conexión).';
+  alert(msg);
+}
+// Cambia el Estado de Devolución o de Aplicación (elegido en el selector) a TODOS los
+// depósitos seleccionados. Respeta la misma validación de FINALIZADO del modal individual:
+// si a un depósito le falta Responsable o Comprobante/Radicado, ese se salta y se reporta,
+// en vez de bloquear todo el lote o guardar un FINALIZADO incompleto.
+async function aplicarEstadoLote(btn){
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
+  var tipo=document.getElementById('sel-lote-tipo-estado').value; // 'devolucion' | 'aplicacion'
+  var nuevoEstado=document.getElementById('sel-lote-estado').value;
+  if(!nuevoEstado){ alert('Elija a qué estado quiere cambiarlos.'); return; }
+  var campoUI = tipo==='aplicacion' ? 'ESTADO APLICACIÓN' : 'ESTADO DEVOLUCION';
+  var campoDB = tipo==='aplicacion' ? 'estado_aplicacion' : 'estado_devolucion';
+  var etiquetaTipo = tipo==='aplicacion' ? 'Aplicación' : 'Devolución';
+  var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
+  if(!filas.length){ alert('No hay depósitos seleccionados.'); return; }
+
+  // Si van a FINALIZADO, separar de una vez los que no cumplen el requisito mínimo
+  var aplicables=filas, bloqueados=[];
+  if(nuevoEstado==='FINALIZADO'){
+    aplicables=[]; bloqueados=[];
+    filas.forEach(function(r){
+      var tieneResp=!!(r['RESPONSABLE']||'').trim();
+      var tieneComp=!!(r['COMPROBANTE DE EGRESO']||'').trim() || !!(r['RADICADO DE RESPUESTA']||'').trim();
+      if(tieneResp && tieneComp) aplicables.push(r); else bloqueados.push(r);
+    });
+  }
+  if(!aplicables.length){
+    alert('Ninguno de los seleccionados puede pasar a FINALIZADO: a todos les falta Responsable o Comprobante/Radicado. Complételos primero en la ficha individual.');
+    return;
+  }
+  var msgConfirm='Se cambiará "'+etiquetaTipo+'" a "'+nuevoEstado+'" en '+aplicables.length+' depósito(s).';
+  if(bloqueados.length) msgConfirm+='\n\n⚠️ '+bloqueados.length+' quedarán SIN tocar por faltarles Responsable o Comprobante/Radicado (requisito para Finalizado).';
+  msgConfirm+='\n\n¿Continuar?';
+  if(!confirm(msgConfirm)) return;
+
+  var user=USUARIO_ACTIVO, ok=0, fail=0, sinCambio=0;
+  var loteDeshacer=[];
+  var txtOrig=btn.textContent; btn.disabled=true;
+  for(var i=0;i<aplicables.length;i++){
+    var r=aplicables[i];
+    var antes=String(r[campoUI]||'').trim();
+    btn.textContent='Aplicando '+(i+1)+'/'+aplicables.length+'...';
+    if(antes===nuevoEstado){ sinCambio++; continue; }
+    var payload={ ultima_edicion:new Date().toISOString(), editado_por:user };
+    payload[campoDB]=nuevoEstado;
+    var okUno=await patchRecaudo(r._id, payload);
+    if(okUno){
+      var payloadPrevioUno={}; payloadPrevioUno[campoDB]=antes||null;
+      var uiPrevioUno={}; uiPrevioUno[campoUI]=antes;
+      loteDeshacer.push({ idTec:r._id, dep:r['deposito judicial'], payloadPrevio:payloadPrevioUno, uiPrevio:uiPrevioUno });
+      r[campoUI]=nuevoEstado; r._editadoPor=user; r._editadoFecha=new Date().toLocaleString('es-CO'); r._ultimaEdicionISO=payload.ultima_edicion;
+      registrarBitacora(r['deposito judicial'], user, campoUI+': "'+(antes||'(vacío)')+'" → "'+nuevoEstado+'" (cambio en lote desde selección múltiple)');
+      ok++;
+    } else fail++;
+  }
+  if(loteDeshacer.length) registrarParaDeshacer(loteDeshacer, etiquetaTipo+' → '+nuevoEstado+' en '+loteDeshacer.length+' depósito(s)');
+  btn.disabled=false; btn.textContent=txtOrig;
+  renderKpis(); filtrar(); refrescarDashboardSiVisible(); actualizarBadgeDuplicados();
+  abrirModalSeleccion();
+  var msg='✅ '+ok+' depósito(s) actualizado(s) a "'+nuevoEstado+'" ('+etiquetaTipo+').';
+  if(sinCambio) msg+='\n('+sinCambio+' ya estaban en ese estado.)';
+  if(bloqueados.length) msg+='\n⚠️ '+bloqueados.length+' se saltaron por faltarles Responsable o Comprobante/Radicado.';
+  if(fail) msg+='\n⚠️ '+fail+' no se pudieron actualizar (revise su conexión).';
+  alert(msg);
 }
 // Actualiza en Supabase el Estado de Devolución o el Estado de Aplicación (según lo elegido
 // por depósito en el selector "Trámite") a EN TRÁMITE. Los que quedaron "Sin definir" no se tocan.
@@ -2691,7 +3191,7 @@ function renderDuplicados(){
         var esOriginal=i===0;
         var pts=puntuarGestion(r);
         return `<tr>
-          <td>${esOriginal?'<span class="badge b-fin" title="Es la fila con más campos de gestión llenos — es la que se muestra en las tablas">✅ Conservar (visible)</span>':'<label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" class="chk-dup" data-id="${eh(r._id)}" checked/> Eliminar</label>'}</td>
+          <td>${esOriginal?'<span class="badge b-fin" title="Es la fila con más campos de gestión llenos — es la que se muestra en las tablas">✅ Conservar (visible)</span>':'<label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" class="chk-dup" data-id="${eh(r._id)}" checked/> Anular</label>'}</td>
           <td class="mono">${eh(r._id)}</td>
           <td class="mono">${eh(fecha)}</td>
           <td class="mono" style="text-align:right">${fmt$(v)}</td>
@@ -2706,7 +3206,7 @@ function renderDuplicados(){
           <div class="info">📄 Depósito <b>${eh(g[0]['deposito judicial'])}</b> · ${g.length} registros idénticos
             <div class="sub">${eh(nombre)} · C.C./NIT ${eh(cedula)}</div>
           </div>
-          <button class="fbtn fbtn-outline" style="border-color:rgba(220,38,38,.4);color:#fca5a5" onclick="eliminarDuplicadosGrupo(this, ${gi})">🗑️ Eliminar seleccionados</button>
+          <button class="fbtn fbtn-outline" style="border-color:rgba(220,38,38,.4);color:#fca5a5" onclick="eliminarDuplicadosGrupo(this, ${gi})">🗑️ Anular seleccionados</button>
         </div>
         <table class="dup-tabla" data-grupo="${gi}">
           <thead><tr><th>Acción</th><th>ID interno</th><th>Fecha</th><th style="text-align:right">Valor</th><th>Devolución</th><th>Aplicación</th><th>Responsable</th><th style="text-align:center" title="Cuántos campos de gestión tiene llenos">Gestión</th></tr></thead>
@@ -2744,24 +3244,32 @@ function renderDuplicados(){
 }
 
 // Elimina en Supabase las filas marcadas (checkbox) de un grupo de duplicados exactos, conservando la primera (más antigua por id)
+// Anula (no borra) los registros marcados como duplicados de un grupo. Se guarda como
+// anulado=true en Supabase (columna que debe existir — ver ALTER TABLE en el mensaje),
+// nunca un DELETE físico: así queda rastro para Control Interno y es reversible desde
+// la bitácora si algún día hace falta.
 async function eliminarDuplicadosGrupo(btn, gi){
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
   var grupo=(window._dupGruposExactos||[])[gi];
   if(!grupo) return;
   var tabla=btn.closest('.dup-card').querySelector('table.dup-tabla');
   var ids=Array.from(tabla.querySelectorAll('.chk-dup:checked')).map(chk=>chk.getAttribute('data-id'));
-  if(!ids.length){ alert('No hay filas marcadas para eliminar en este grupo (la primera se conserva siempre).'); return; }
-  if(!confirm('Se eliminarán '+ids.length+' registro(s) duplicado(s) del depósito '+grupo[0]['deposito judicial']+'.\nSe conservará el registro con más gestión (ID '+grupo[0]._id+').\n\n¿Continuar? Esta acción no se puede deshacer.')) return;
-  btn.disabled=true; btn.textContent='Eliminando...';
+  if(!ids.length){ alert('No hay filas marcadas para anular en este grupo (la primera se conserva siempre).'); return; }
+  if(!confirm('Se ANULARÁN '+ids.length+' registro(s) duplicado(s) del depósito '+grupo[0]['deposito judicial']+' (quedan marcados como anulado, no se borran).\nSe conservará visible el registro con más gestión (ID '+grupo[0]._id+').\n\n¿Continuar?')) return;
+  btn.disabled=true; btn.textContent='Anulando...';
+  var user=USUARIO_ACTIVO;
   try{
     for(var i=0;i<ids.length;i++){
-      var res=await fetch(SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(ids[i]),{ method:'DELETE', headers: sbHeaders() });
-      if(!res.ok) throw new Error('Supabase HTTP '+res.status+' al eliminar id '+ids[i]);
+      var payload={ anulado:true, ultima_edicion:new Date().toISOString(), editado_por:user };
+      var ok=await patchRecaudo(ids[i], payload);
+      if(!ok) throw new Error('Supabase no confirmó la anulación del id '+ids[i]);
+      registrarBitacora(grupo[0]['deposito judicial'], user, 'Registro id '+ids[i]+' ANULADO por duplicado (se conservó id '+grupo[0]._id+')');
     }
     await cargarTodo();
     renderDuplicados();
   }catch(err){
-    alert('Ocurrió un error eliminando los duplicados: '+err.message+'\nRevise cuáles quedaron eliminados antes de reintentar.');
-    btn.disabled=false; btn.textContent='🗑️ Eliminar seleccionados';
+    alert('Ocurrió un error anulando los duplicados: '+err.message+'\nRevise cuáles quedaron anulados antes de reintentar.');
+    btn.disabled=false; btn.textContent='🗑️ Anular seleccionados';
   }
 }
 
@@ -2774,6 +3282,7 @@ var _obsPopAbierto = null;
 
 function abrirEditorObs(celda, idTec){
   cerrarEditorObs();
+  cerrarEditorEstado();
   var fila = dataBanco.find(x=>String(x._id)===String(idTec));
   if(!fila) return;
   var pop = document.createElement('div');
@@ -2827,12 +3336,101 @@ async function guardarObsRapida(idTec){
     if(fila._buscable!==undefined) fila._buscable = construirBuscable(fila);
     registrarBitacora(fila['deposito judicial'], USUARIO_ACTIVO,
       'Observacion: "'+(anterior||'(vacío)')+'" → "'+(nueva||'(vacío)')+'" (edición rápida desde la tabla)');
+    registrarParaDeshacer(
+      [{ idTec:idTec, dep:fila['deposito judicial'],
+         payloadPrevio: { observacion: anterior || null },
+         uiPrevio: { 'Observacion': anterior } }],
+      'Observación editada · Depósito '+fila['deposito judicial']
+    );
     cerrarEditorObs();
     renderTabla();
     refrescarDashboardSiVisible();
   } else {
     if(btn){ btn.disabled = false; btn.textContent = '💾 Guardar'; }
     alert('No se pudo guardar la observación. Revise su conexión e intente de nuevo.');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// EDITOR RÁPIDO DE ESTADO — clic en el badge de Devolución/Aplicación en la tabla.
+// Convierte el 70% de las gestiones diarias (solo cambiar un estado) en 2 clics,
+// sin abrir el modal de 35 campos. Respeta la misma regla de FINALIZADO que el
+// modal completo: si falta Responsable o Comprobante/Radicado, no deja guardar
+// así no más — abre el modal completo con un aviso, para completar eso primero.
+// ════════════════════════════════════════════════════════════
+var _estPopAbierto=null;
+const ESTADOS_OPCIONES=[
+  {v:'',icono:'—',lbl:'Sin gestionar'},
+  {v:'PENDIENTE',icono:'⏳',lbl:'Pendiente'},
+  {v:'EN TRAMITE',icono:'🔄',lbl:'En trámite'},
+  {v:'EN REVISION',icono:'👁',lbl:'En revisión'},
+  {v:'FINALIZADO',icono:'✅',lbl:'Finalizado'},
+];
+function abrirEditorEstado(celda, idTec, tipo){
+  cerrarEditorEstado();
+  cerrarEditorObs();
+  var fila=dataBanco.find(x=>String(x._id)===String(idTec));
+  if(!fila) return;
+  var campoUI = tipo==='aplicacion' ? 'ESTADO APLICACIÓN' : 'ESTADO DEVOLUCION';
+  var actual=normEst(fila[campoUI]);
+  var pop=document.createElement('div');
+  pop.className='est-pop';
+  pop.innerHTML='<div class="est-pop-titulo">'+(tipo==='aplicacion'?'Estado Aplicación':'Estado Devolución')+'</div>'
+    + ESTADOS_OPCIONES.map(function(o){
+        return '<div class="est-pop-opt" style="'+(o.v===actual?'background:rgba(232,160,32,.12)':'')+'" onclick="guardarEstadoRapido(\''+eh(String(idTec))+'\',\''+tipo+'\',\''+o.v+'\')">'
+          +'<span>'+o.icono+'</span><span>'+o.lbl+'</span>'+(o.v===actual?' <span style="margin-left:auto;color:var(--gold2)">✓</span>':'')
+          +'</div>';
+      }).join('');
+  document.body.appendChild(pop);
+  var r=celda.getBoundingClientRect();
+  var W=200, margen=10;
+  var left=Math.min(Math.max(r.left, margen), window.innerWidth-W-margen);
+  var top=(window.innerHeight-r.bottom>210) ? r.bottom+6 : Math.max(r.top-206, margen);
+  pop.style.left=left+'px'; pop.style.top=top+'px';
+  _estPopAbierto=pop;
+  setTimeout(function(){ document.addEventListener('mousedown', _estClickFuera); }, 50);
+}
+function _estClickFuera(e){
+  if(_estPopAbierto && !_estPopAbierto.contains(e.target)) cerrarEditorEstado();
+}
+function cerrarEditorEstado(){
+  if(_estPopAbierto){ _estPopAbierto.remove(); _estPopAbierto=null; }
+  document.removeEventListener('mousedown', _estClickFuera);
+}
+async function guardarEstadoRapido(idTec, tipo, nuevoEstado){
+  cerrarEditorEstado();
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
+  var fila=dataBanco.find(x=>String(x._id)===String(idTec));
+  if(!fila) return;
+  var campoUI = tipo==='aplicacion' ? 'ESTADO APLICACIÓN' : 'ESTADO DEVOLUCION';
+  var campoDB = tipo==='aplicacion' ? 'estado_aplicacion' : 'estado_devolucion';
+  var antes=String(fila[campoUI]||'').trim();
+  if(antes===nuevoEstado) return;
+
+  // Misma validación que el modal completo: FINALIZADO exige Responsable + Comprobante/Radicado
+  if(nuevoEstado==='FINALIZADO'){
+    var tieneResp=!!(fila['RESPONSABLE']||'').trim();
+    var tieneComp=!!(fila['COMPROBANTE DE EGRESO']||'').trim() || !!(fila['RADICADO DE RESPUESTA']||'').trim();
+    if(!tieneResp || !tieneComp){
+      alert('Para marcar como FINALIZADO falta Responsable y/o Comprobante de egreso/Radicado. Se abre la ficha completa para diligenciarlo.');
+      abrirModal(fila['deposito judicial']);
+      return;
+    }
+  }
+  var user=USUARIO_ACTIVO;
+  var payload={ ultima_edicion:new Date().toISOString(), editado_por:user };
+  payload[campoDB]=nuevoEstado||null;
+  var ok=await patchRecaudo(idTec, payload);
+  if(ok){
+    fila[campoUI]=nuevoEstado; fila._editadoPor=user; fila._editadoFecha=new Date().toLocaleString('es-CO'); fila._ultimaEdicionISO=payload.ultima_edicion;
+    registrarBitacora(fila['deposito judicial'], user, campoUI+': "'+(antes||'(vacío)')+'" → "'+(nuevoEstado||'(vacío)')+'" (edición rápida desde la tabla)');
+    var payloadPrevio={}; payloadPrevio[campoDB]=antes||null;
+    var uiPrevio={}; uiPrevio[campoUI]=antes;
+    registrarParaDeshacer([{ idTec:idTec, dep:fila['deposito judicial'], payloadPrevio:payloadPrevio, uiPrevio:uiPrevio }],
+      (tipo==='aplicacion'?'Estado Aplicación':'Estado Devolución')+' → '+(nuevoEstado||'Sin gestionar')+' · Depósito '+fila['deposito judicial']);
+    renderTabla(); renderKpis(); refrescarDashboardSiVisible(); actualizarBadgeDuplicados();
+  } else {
+    alert('No se pudo guardar el estado. Revise su conexión e intente de nuevo.');
   }
 }
 
@@ -2942,6 +3540,33 @@ function renderPag(total,btnId,pag,cb){
 // ════════════════════════════════════════════════════════════
 // MODAL (con vista 360: otros depósitos + expedientes)
 // ════════════════════════════════════════════════════════════
+// Trae, para UN solo depósito, los 2 campos que se quitaron del fetch principal por pesar
+// para todos y usarse solo aquí (ver COLUMNAS_RECAUDO_LISTA). Se cachea en la fila en
+// memoria para no volver a pedirlo si se reabre esta misma ficha en la misma sesión.
+async function cargarDetalleModal(r){
+  try{
+    var url=SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(r._id)+'&select=estado_deposito,tipo_tx_origen';
+    var res=await fetch(url,{headers:sbHeaders()});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var filas=await res.json();
+    var d=filas&&filas[0]?filas[0]:{};
+    r['Estado del Depósito']=d.estado_deposito||'';
+    r['Tipo de TX origen']=d.tipo_tx_origen||'';
+    // Solo pintar si el modal sigue abierto en ESTE mismo depósito (pudo cambiarse mientras cargaba)
+    if(registroActivo===r._id){
+      var elEstado=document.getElementById('m-banco-estado-dep');
+      var elTipo=document.getElementById('m-banco-tipo-tx');
+      if(elEstado) elEstado.textContent=r['Estado del Depósito']||'—';
+      if(elTipo) elTipo.textContent=r['Tipo de TX origen']||'—';
+    }
+  }catch(e){
+    var elEstado=document.getElementById('m-banco-estado-dep');
+    var elTipo=document.getElementById('m-banco-tipo-tx');
+    if(elEstado) elEstado.textContent='—';
+    if(elTipo) elTipo.textContent='—';
+  }
+}
+
 function abrirModal(dep){
   var r=dataBanco.find(x=>String(x['deposito judicial'])===String(dep));
   if(!r) return;
@@ -2957,10 +3582,11 @@ function abrirModal(dep){
   document.getElementById('m-banco-datos').innerHTML=`
     <div class="banco-item"><div class="banco-lbl">Valor depósito</div><div class="banco-val money">${fmt$(valor)}</div></div>
     <div class="banco-item"><div class="banco-lbl">Fecha emisión</div><div class="banco-val">${eh(String(r['Fecha Emisión']||'').substring(0,10))}</div></div>
-    <div class="banco-item"><div class="banco-lbl">Estado depósito</div><div class="banco-val">${eh(r['Estado del Depósito']||'—')}</div></div>
-    <div class="banco-item"><div class="banco-lbl">Tipo TX</div><div class="banco-val">${eh(r['Tipo de TX origen']||'—')}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Estado depósito</div><div class="banco-val" id="m-banco-estado-dep">${r['Estado del Depósito']!==undefined?eh(r['Estado del Depósito']||'—'):'<span style="color:var(--muted)">cargando…</span>'}</div></div>
+    <div class="banco-item"><div class="banco-lbl">Tipo TX</div><div class="banco-val" id="m-banco-tipo-tx">${r['Tipo de TX origen']!==undefined?eh(r['Tipo de TX origen']||'—'):'<span style="color:var(--muted)">cargando…</span>'}</div></div>
     <div class="banco-item"><div class="banco-lbl">N° Proceso banco</div><div class="banco-val" style="font-family:monospace">${eh(String(r['Número del Proceso']||'—').replace(/^0+/,'')||'—')}</div></div>
     <div class="banco-item"><div class="banco-lbl">Nombre Consignante</div><div class="banco-val">${eh(r['Nombre Consignante']||'—')}</div></div>`;
+  if(r['Estado del Depósito']===undefined || r['Tipo de TX origen']===undefined) cargarDetalleModal(r);
 
   var campos={'m-est-dev':'ESTADO DEVOLUCION','m-est-apl':'ESTADO APLICACIÓN','m-responsable':'RESPONSABLE','m-proceso':'Proceso','m-impuesto':'Impuesto','m-convenio':'Pendiente convenio','m-ci-inicial':'CI INICIAL','m-comp-egreso':'COMPROBANTE DE EGRESO','m-radicado-resp':'RADICADO DE RESPUESTA','m-gest-tes':'GESTION TESORERIA','m-telefono':'TELEFONO DE CONTACTO','m-correo':'CORREO ELECTRONICO','m-direccion':'DIRECCION','m-ciudad':'CIUDAD','m-observacion':'Observacion'};
   Object.keys(campos).forEach(id=>{ var el=document.getElementById(id);if(!el)return; var val=r[campos[id]]||''; if(id.includes('est-'))val=normEst(val); el.value=String(val||'').trim(); });
@@ -3172,12 +3798,20 @@ function cerrarModal(forzar){
   _ultimaEdicionAlAbrir=null;
 }
 
-// Cerrar el modal de gestión con la tecla Esc (atajo esperado en cualquier modal)
+// Cerrar CUALQUIER modal/popover abierto con la tecla Esc (atajo esperado en cualquier modal).
+// Orden: primero lo más "encima" (popover de observación, luego selección, luego bienvenida,
+// luego el modal de gestión) — así un solo Esc cierra lo que la persona tiene enfrente,
+// sin cerrar de un tirón todo lo que hubiera debajo.
 document.addEventListener('keydown', function(e){
-  if(e.key==='Escape'){
-    var m=document.getElementById('modal');
-    if(m && m.classList.contains('open')) cerrarModal();
-  }
+  if(e.key!=='Escape') return;
+  if(_estPopAbierto){ cerrarEditorEstado(); return; }
+  if(_obsPopAbierto){ cerrarEditorObs(); return; }
+  var msel=document.getElementById('modal-sel');
+  if(msel && msel.classList.contains('open')){ cerrarModalSel(); return; }
+  var mbv=document.getElementById('modal-bv');
+  if(mbv && mbv.classList.contains('open')){ bvCerrar(); return; }
+  var m=document.getElementById('modal');
+  if(m && m.classList.contains('open')) cerrarModal();
 });
 
 // ════════════════════════════════════════════════════════════
@@ -3244,14 +3878,16 @@ async function guardarGestion(){
   }
 
   showAl(alEl,'al-load','<div class="spin"></div> Guardando...');
-  // Capturar valores ANTES de cambiar, para la bitácora
+  // Capturar valores ANTES de cambiar, para la bitácora Y para poder "Deshacer" después
   var filaPrev=dataBanco.find(x=>x._id===idTec);
   var camposBitacora=['ESTADO DEVOLUCION','ESTADO APLICACIÓN','RESPONSABLE','Proceso','Impuesto','COMPROBANTE DE EGRESO','RADICADO DE RESPUESTA','GESTION TESORERIA','TELEFONO DE CONTACTO','CORREO ELECTRONICO','DIRECCION','CIUDAD','Observacion'];
   var cambios=[];
+  var gPrevio={};
   if(filaPrev){
     camposBitacora.forEach(function(k){
       var antes=String(filaPrev[k]||'').trim();
       var despues=String(g[k]||'').trim();
+      gPrevio[k]=filaPrev[k]||'';
       if(antes!==despues){
         cambios.push(k+': "'+(antes||'(vacío)')+'" → "'+(despues||'(vacío)')+'"');
       }
@@ -3271,6 +3907,12 @@ async function guardarGestion(){
     // Registrar en bitácora (solo si hubo cambios reales)
     if(cambios.length){
       registrarBitacora(document.getElementById('m-dep-num').textContent, user, cambios.join(' · '));
+      registrarParaDeshacer(
+        [{ idTec:idTec, dep:document.getElementById('m-dep-num').textContent,
+           payloadPrevio: gestionUIASupa(Object.assign({}, gPrevio, {_editadoPor:user})),
+           uiPrevio: gPrevio }],
+        'Gestión guardada · Depósito '+document.getElementById('m-dep-num').textContent
+      );
     }
     showAl(alEl,'al-ok','✅ Guardado por '+user.split(' ')[0]+'.');
     renderKpis(); filtrar(); refrescarDashboardSiVisible();
@@ -3415,7 +4057,8 @@ function procesarImport(inp){
             concepto_deposito: String(row['Concepto del Depósito']||'').trim()||null,
             numero_proceso: String(row['Número del Proceso']||row['Numero del Proceso']||'').trim()||null,
             nombre_consignante: String(row['Nombre Consignante']||'').trim()||null,
-            tipo_tx_origen: String(row['Tipo de TX origen']||'').trim()||null
+            tipo_tx_origen: String(row['Tipo de TX origen']||'').trim()||null,
+            ultima_edicion: new Date().toISOString() // así el delta sync (sincronizarDelta) la trae en la próxima recarga de cualquiera
           });
           existentes.add(dep);
         }
@@ -3528,8 +4171,22 @@ function exportarExcel(){
   var filas=usar.map(r=>({'Depósito':r['deposito judicial'],'Fecha':r['Fecha Emisión'],'Demandado':r['Nombre Demandante.1'],'Cédula':r['Identificación Demandado'],'Valor':r['Valor del Depóstio'],'Proceso':r['Proceso'],'Est. Devolución':r['ESTADO DEVOLUCION'],'Est. Aplicación':r['ESTADO APLICACIÓN'],'Responsable':r['RESPONSABLE'],'Comp. Egreso':r['COMPROBANTE DE EGRESO'],'Radicado':r['RADICADO DE RESPUESTA'],'Observación':r['Observacion']}));
   var ws=XLSX.utils.json_to_sheet(filas);
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Recaudo');
-  var sufijo=recortado?('_primeros_'+TOPE):'';
+  var sufijo=(recortado?('_primeros_'+TOPE):'')+sufijoFiltrosActivos();
   XLSX.writeFile(wb,'Recaudo_'+new Date().toISOString().slice(0,10)+sufijo+'.xlsx');
+}
+// Arma un sufijo corto de archivo con los filtros activos (ej. "_transito_sinGestionar")
+// para que el nombre del Excel exportado refleje qué subconjunto es, sin abrirlo a ver.
+function sufijoFiltrosActivos(){
+  var partes=[];
+  var imp=(document.getElementById('f-impuesto')||{}).value;
+  if(imp) partes.push(imp.toLowerCase().replace(/[^a-z0-9]+/g,''));
+  var ed=(document.getElementById('f-estado-dev')||{}).value;
+  if(ed) partes.push('dev-'+ed.toLowerCase().replace(/[^a-z0-9]+/g,''));
+  var ea=(document.getElementById('f-estado-apl')||{}).value;
+  if(ea) partes.push('apl-'+ea.toLowerCase().replace(/[^a-z0-9]+/g,''));
+  var resp=(document.getElementById('f-responsable')||{}).value;
+  if(resp) partes.push(resp.toLowerCase().replace(/[^a-z0-9]+/g,'').substring(0,15));
+  return partes.length ? '_'+partes.join('_') : '';
 }
 
 // CONFIG (informativo)
@@ -3666,6 +4323,54 @@ function renderDashboard(){
   pintarFrescuraDashboard();
 }
 
+// ════════════════════════════════════════════════════════════
+// DESHACER — ventana de ~10s tras guardar (individual o en lote) para revertir.
+// Usa el estado ANTERIOR real de cada fila (no la bitácora en texto, que no es
+// fiable de parsear de vuelta), así que la reversión es exacta campo por campo.
+// ════════════════════════════════════════════════════════════
+var _ultimoLoteDeshacer = null;   // [{idTec, dep, payloadPrevio:{col_db:val,...}, uiPrevio:{'CAMPO UI':val,...}}]
+var _undoTimeoutId = null;
+
+function registrarParaDeshacer(lote, descripcion){
+  if(!lote || !lote.length) return;
+  _ultimoLoteDeshacer = lote;
+  var toast=document.getElementById('undo-toast');
+  var msg=document.getElementById('undo-toast-msg');
+  if(msg) msg.textContent = descripcion;
+  if(toast) toast.classList.add('show');
+  if(_undoTimeoutId) clearTimeout(_undoTimeoutId);
+  _undoTimeoutId=setTimeout(ocultarUndoToast, 10000);
+}
+function ocultarUndoToast(){
+  var toast=document.getElementById('undo-toast');
+  if(toast) toast.classList.remove('show');
+  _ultimoLoteDeshacer=null;
+}
+async function deshacerUltimoGuardado(){
+  var lote=_ultimoLoteDeshacer;
+  if(!lote || !lote.length) return;
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
+  ocultarUndoToast();
+  var user=USUARIO_ACTIVO, ok=0, fail=0;
+  for(var i=0;i<lote.length;i++){
+    var item=lote[i];
+    var payload=Object.assign({}, item.payloadPrevio, { ultima_edicion:new Date().toISOString(), editado_por:user });
+    var okUno=await patchRecaudo(item.idTec, payload);
+    if(okUno){
+      var fila=dataBanco.find(x=>String(x._id)===String(item.idTec)) || dataBancoCompleto.find(x=>String(x._id)===String(item.idTec));
+      if(fila){
+        Object.keys(item.uiPrevio).forEach(function(k){ fila[k]=item.uiPrevio[k]; });
+        fila._ultimaEdicionISO=payload.ultima_edicion;
+        if(fila._buscable!==undefined) fila._buscable=construirBuscable(fila);
+      }
+      registrarBitacora(item.dep, user, '↩️ Revertido con "Deshacer" (últimos '+lote.length+' guardado(s))');
+      ok++;
+    } else fail++;
+  }
+  renderKpis(); filtrar(); refrescarDashboardSiVisible(); actualizarBadgeDuplicados();
+  alert(fail ? ('✅ '+ok+' revertido(s).\n⚠️ '+fail+' no se pudieron revertir (revise su conexión).') : ('✅ '+ok+' cambio(s) revertido(s).'));
+}
+
 function kpiCard(lbl,val,sub){
   return '<div class="dash-kpi"><div class="dash-kpi-lbl">'+lbl+'</div><div class="dash-kpi-val">'+val+'</div><div class="dash-kpi-sub">'+sub+'</div></div>';
 }
@@ -3689,7 +4394,7 @@ function pintarFrescuraDashboard(){
 // Botón "Traer cambios del equipo": recarga TODO desde Supabase y re-renderiza el dashboard
 async function refrescarDatosDashboard(btn){
   if(btn){ btn.disabled=true; btn.textContent='⏳ Trayendo cambios...'; }
-  try{ await cargarTodo(); renderDashboard(); }
+  try{ await sincronizarDelta(); renderDashboard(); }
   finally{ if(btn){ btn.disabled=false; btn.innerHTML='🔄 Traer cambios del equipo'; } }
 }
 
