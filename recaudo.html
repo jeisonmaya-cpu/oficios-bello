@@ -20,7 +20,7 @@
   --green:#16a34a;--red:#dc2626;--orange:#ea580c;--purple:#7c3aed;
   --surface:rgba(255,255,255,.06);--surface2:rgba(255,255,255,.04);
   --border:rgba(255,255,255,.10);--border2:rgba(255,255,255,.06);
-  --text:#f1f5f9;--soft:rgba(241,245,249,.55);--muted:rgba(241,245,249,.35);
+  --text:#f1f5f9;--soft:rgba(241,245,249,.72);--muted:rgba(241,245,249,.48);
   --radius:14px;--radius-sm:9px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -219,6 +219,28 @@ select.sel-tramite option{background:#0d1a30;color:var(--text)}
   color:var(--gold2);background:rgba(232,160,32,.15);border:1px solid rgba(232,160,32,.35);
   border-radius:20px;padding:5px 12px;cursor:pointer;white-space:nowrap}
 .chip-filtros:hover{background:rgba(232,160,32,.28)}
+/* ── COPIAR CON UN CLIC (hover en cédula / depósito) ── */
+.copy-wrap{display:inline-flex;align-items:center;gap:4px}
+.copy-ico{opacity:0;border:none;background:rgba(255,255,255,.08);color:var(--soft);
+  border-radius:5px;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:11px;line-height:1;padding:0;transition:opacity .15s,background .15s;flex-shrink:0}
+td:hover .copy-ico,.copy-wrap:hover .copy-ico{opacity:.75}
+.copy-ico:hover{opacity:1!important;background:rgba(232,160,32,.25);color:var(--gold2)}
+.copy-ico.ok{opacity:1!important;background:rgba(22,163,74,.3);color:#86efac}
+
+/* ── AVISO TEODORO (reemplaza teoAlert() nativo) ── */
+.teo-alert-back{position:fixed;inset:0;z-index:10080;display:none;align-items:center;justify-content:center;
+  background:rgba(5,13,26,.6);backdrop-filter:blur(4px);padding:20px}
+.teo-alert-back.show{display:flex;animation:undoIn .2s ease both}
+.teo-alert{background:linear-gradient(160deg,#0f2d5e,#0a1f3d);border:1px solid rgba(232,160,32,.3);
+  border-radius:var(--radius);max-width:440px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.teo-alert-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.teo-alert-ico{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--gold),#d4891a);
+  display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.teo-alert-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--gold2)}
+.teo-alert-msg{font-size:14px;line-height:1.55;color:var(--text);white-space:pre-line;margin-bottom:18px}
+.teo-alert-btns{display:flex;justify-content:flex-end;gap:8px}
+
 .undo-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:10060;
   display:none;align-items:center;gap:14px;padding:11px 16px 11px 18px;border-radius:14px;
   background:linear-gradient(135deg,#0d2550,#132a52);border:1px solid rgba(45,141,232,.4);
@@ -759,6 +781,20 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 <div class="undo-toast" id="undo-toast">
   <span id="undo-toast-msg">Cambio guardado</span>
   <button class="fbtn fbtn-gold" style="padding:6px 14px;font-size:12px" onclick="deshacerUltimoGuardado()">↩️ Deshacer</button>
+</div>
+
+<!-- Aviso estilizado de Teodoro — reemplaza los teoAlert() nativos del navegador -->
+<div class="teo-alert-back" id="teo-alert-back" onclick="if(event.target===this)cerrarTeoAlert()">
+  <div class="teo-alert" role="alertdialog" aria-labelledby="teo-alert-title" aria-describedby="teo-alert-msg">
+    <div class="teo-alert-hdr">
+      <div class="teo-alert-ico" id="teo-alert-ico">🦉</div>
+      <div class="teo-alert-title" id="teo-alert-title">Aviso de Teodoro</div>
+    </div>
+    <div class="teo-alert-msg" id="teo-alert-msg"></div>
+    <div class="teo-alert-btns">
+      <button class="fbtn fbtn-gold" style="padding:8px 18px;font-size:13px" onclick="cerrarTeoAlert()">Entendido</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ PANEL PENDIENTES ══ -->
@@ -1477,6 +1513,39 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 </div>
 
 <script>
+/* ══ AVISO TEODORO — reemplazo de teoAlert() nativo ══ */
+function teoAlert(msg, titulo){
+  var back=document.getElementById('teo-alert-back');
+  if(!back){ window.alert(msg); return; } // respaldo si el DOM aún no cargó
+  document.getElementById('teo-alert-msg').textContent=String(msg);
+  document.getElementById('teo-alert-title').textContent=titulo||'Aviso de Teodoro';
+  back.classList.add('show');
+  var btn=back.querySelector('.fbtn'); if(btn) setTimeout(function(){btn.focus();},50);
+}
+function cerrarTeoAlert(){
+  var back=document.getElementById('teo-alert-back');
+  if(back) back.classList.remove('show');
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') cerrarTeoAlert();
+});
+
+/* ══ COPIAR CON UN CLIC (cédula, depósito) ══ */
+function copiarCelda(ev, texto, btn){
+  ev.stopPropagation(); ev.preventDefault();
+  function ok(){
+    if(btn){ var prev=btn.textContent; btn.textContent='✓'; btn.classList.add('ok');
+      setTimeout(function(){ btn.textContent=prev; btn.classList.remove('ok'); },1200); }
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(String(texto)).then(ok).catch(function(){ copiarFallback(texto); ok(); });
+  } else { copiarFallback(texto); ok(); }
+}
+function copiarFallback(texto){
+  var ta=document.createElement('textarea'); ta.value=String(texto);
+  ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+  ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta);
+}
 // ════════════════════════════════════════════════════════════
 // RECAUDO HISTÓRICO — Capa de datos Supabase (reemplaza Apps Script/Sheets)
 // ════════════════════════════════════════════════════════════
@@ -2648,10 +2717,11 @@ function renderTabla(){
     var tieneExp=(expedientesPorCedula[cid]||transitoPorCedula[cid])?'<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:#93c5fd"></span>':'';
     // Columna Proceso: 1) lo que el contador escribió a mano  2) radicado del expediente predial  3) comparendos de tránsito  4) vacío
     var procManual=String(r['Proceso']||'').trim();
-    var procCell='—';
-    if(procManual){ procCell=eh(procManual); }
+    var procCell='—', procCopy='';
+    if(procManual){ procCell=eh(procManual); procCopy=procManual; }
     else if(expedientesPorCedula[cid] && expedientesPorCedula[cid][0] && expedientesPorCedula[cid][0].radicado){
       procCell='📁 '+eh(expedientesPorCedula[cid][0].radicado);
+      procCopy=String(expedientesPorCedula[cid][0].radicado);
     }
     else if(transitoPorCedula[cid]){
       var nc=transitoPorCedula[cid].comparendos;
@@ -2660,17 +2730,17 @@ function renderTabla(){
     var depStr=String(dep);
     return `<tr class="${gestionado?'gestionado':''}" tabindex="0" role="button" onclick="abrirModal('${depStr.replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${depStr.replace(/'/g,"\\'")}')}">
       <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-dep" data-dep="${eh(depStr)}" ${seleccionados.has(depStr)?'checked':''} onclick="clicCheckboxFila(event, this)"/></td>
-      <td class="mono" style="font-size:12px;white-space:nowrap">${eh(dep)}${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
-      <td class="mono" style="white-space:nowrap;font-size:12px;color:var(--soft)">${eh(fecha)}</td>
+      <td class="mono" style="font-size:13px;white-space:nowrap"><span class="copy-wrap">${eh(dep)}<button class="copy-ico" title="Copiar depósito" onclick="copiarCelda(event,'${eh(depStr)}',this)">⧉</button></span>${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
+      <td class="mono" style="white-space:nowrap;font-size:13px;color:var(--soft)">${eh(fecha)}</td>
       <td>${badgeAntiguedad(r)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
-      <td class="mono col-cedula" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
+      <td class="mono col-cedula" style="font-size:13px;white-space:nowrap"><span class="copy-wrap">${eh(r['Identificación Demandado']||'—')}${cid?`<button class="copy-ico" title="Copiar cédula" onclick="copiarCelda(event,'${eh(cid)}',this)">⧉</button>`:''}</span></td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
-      <td class="mono col-proceso" style="font-size:12px;color:var(--soft)">${procCell}</td>
+      <td class="mono col-proceso" style="font-size:13px;color:var(--soft);white-space:nowrap"><span class="copy-wrap">${procCell}${procCopy?`<button class="copy-ico" title="Copiar radicado" onclick="copiarCelda(event,'${eh(procCopy)}',this)">⧉</button>`:''}</span></td>
       <td class="col-impuesto">${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
       <td onclick="event.stopPropagation()"><span class="est-cell" onclick="abrirEditorEstado(this,'${eh(String(r._id))}','devolucion')">${badgeEst(r['ESTADO DEVOLUCION'])}</span></td>
       <td onclick="event.stopPropagation()"><span class="est-cell" onclick="abrirEditorEstado(this,'${eh(String(r._id))}','aplicacion')">${badgeEst(r['ESTADO APLICACIÓN'])}</span></td>
-      <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
+      <td style="font-size:13px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
       <td onclick="event.stopPropagation()" style="max-width:190px">
         <div class="obs-cell" onclick="abrirEditorObs(this, '${eh(String(r._id))}')" title="${eh(r['Observacion']||'Clic para agregar observación')}">
           <span class="obs-txt">${r['Observacion']?eh(String(r['Observacion']).substring(0,42))+(String(r['Observacion']).length>42?'…':''):'<span style="color:var(--muted)">— agregar</span>'}</span>
@@ -2835,9 +2905,9 @@ function actualizarBarraSeleccion(){
 // qué se le pide a Recaudos y Pagos que haga con ese dinero, y muestra el Nombre Consignante
 // (banco/entidad que hizo la consignación) para que puedan cruzarlo en su propio sistema.
 function abrirModalSeleccion(){
-  if(!seleccionados.size){ alert('No ha seleccionado ningún depósito. Marque la casilla al inicio de cada fila.'); return; }
+  if(!seleccionados.size){ teoAlert('No ha seleccionado ningún depósito. Marque la casilla al inicio de cada fila.'); return; }
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
-  if(!filas.length){ alert('Los depósitos seleccionados ya no están en la lista actual (puede que hayan sido eliminados).'); return; }
+  if(!filas.length){ teoAlert('Los depósitos seleccionados ya no están en la lista actual (puede que hayan sido eliminados).'); return; }
   // Recordar qué trámite quedó elegido si el modal ya estaba abierto antes (ej. tras procesar un lote)
   var tramitePrevio={};
   document.querySelectorAll('#sel-contenido .sel-tramite').forEach(function(s){ tramitePrevio[s.getAttribute('data-id')]=s.value; });
@@ -2901,9 +2971,9 @@ function cerrarModalSel(){
 async function aplicarResponsableLote(btn){
   if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
   var resp=document.getElementById('sel-lote-responsable').value;
-  if(!resp){ alert('Elija un responsable en la lista.'); return; }
+  if(!resp){ teoAlert('Elija un responsable en la lista.'); return; }
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
-  if(!filas.length){ alert('No hay depósitos seleccionados.'); return; }
+  if(!filas.length){ teoAlert('No hay depósitos seleccionados.'); return; }
   if(!confirm('Se asignará "'+resp+'" como responsable de '+filas.length+' depósito(s) seleccionado(s).\n\n¿Continuar?')) return;
 
   var user=USUARIO_ACTIVO, ok=0, fail=0, sinCambio=0;
@@ -2931,7 +3001,7 @@ async function aplicarResponsableLote(btn){
   var msg='✅ '+ok+' depósito(s) actualizado(s) a "'+resp+'".';
   if(sinCambio) msg+='\n('+sinCambio+' ya tenían ese responsable, sin cambios.)';
   if(fail) msg+='\n⚠️ '+fail+' no se pudieron actualizar (revise su conexión).';
-  alert(msg);
+  teoAlert(msg);
 }
 // Cambia el Estado de Devolución o de Aplicación (elegido en el selector) a TODOS los
 // depósitos seleccionados. Respeta la misma validación de FINALIZADO del modal individual:
@@ -2941,12 +3011,12 @@ async function aplicarEstadoLote(btn){
   if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
   var tipo=document.getElementById('sel-lote-tipo-estado').value; // 'devolucion' | 'aplicacion'
   var nuevoEstado=document.getElementById('sel-lote-estado').value;
-  if(!nuevoEstado){ alert('Elija a qué estado quiere cambiarlos.'); return; }
+  if(!nuevoEstado){ teoAlert('Elija a qué estado quiere cambiarlos.'); return; }
   var campoUI = tipo==='aplicacion' ? 'ESTADO APLICACIÓN' : 'ESTADO DEVOLUCION';
   var campoDB = tipo==='aplicacion' ? 'estado_aplicacion' : 'estado_devolucion';
   var etiquetaTipo = tipo==='aplicacion' ? 'Aplicación' : 'Devolución';
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
-  if(!filas.length){ alert('No hay depósitos seleccionados.'); return; }
+  if(!filas.length){ teoAlert('No hay depósitos seleccionados.'); return; }
 
   // Si van a FINALIZADO, separar de una vez los que no cumplen el requisito mínimo
   var aplicables=filas, bloqueados=[];
@@ -2959,7 +3029,7 @@ async function aplicarEstadoLote(btn){
     });
   }
   if(!aplicables.length){
-    alert('Ninguno de los seleccionados puede pasar a FINALIZADO: a todos les falta Responsable o Comprobante/Radicado. Complételos primero en la ficha individual.');
+    teoAlert('Ninguno de los seleccionados puede pasar a FINALIZADO: a todos les falta Responsable o Comprobante/Radicado. Complételos primero en la ficha individual.');
     return;
   }
   var msgConfirm='Se cambiará "'+etiquetaTipo+'" a "'+nuevoEstado+'" en '+aplicables.length+' depósito(s).';
@@ -2995,14 +3065,14 @@ async function aplicarEstadoLote(btn){
   if(sinCambio) msg+='\n('+sinCambio+' ya estaban en ese estado.)';
   if(bloqueados.length) msg+='\n⚠️ '+bloqueados.length+' se saltaron por faltarles Responsable o Comprobante/Radicado.';
   if(fail) msg+='\n⚠️ '+fail+' no se pudieron actualizar (revise su conexión).';
-  alert(msg);
+  teoAlert(msg);
 }
 // Actualiza en Supabase el Estado de Devolución o el Estado de Aplicación (según lo elegido
 // por depósito en el selector "Trámite") a EN TRÁMITE. Los que quedaron "Sin definir" no se tocan.
 async function procesarSeleccionEnTramite(){
   if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
   var selects=Array.from(document.querySelectorAll('#sel-contenido .sel-tramite')).filter(s=>s.value);
-  if(!selects.length){ alert('No hay depósitos con un trámite elegido. Seleccione "Aplicar" o "Devolver" en al menos uno, o use "Cerrar" si no va a procesar ninguno.'); return; }
+  if(!selects.length){ teoAlert('No hay depósitos con un trámite elegido. Seleccione "Aplicar" o "Devolver" en al menos uno, o use "Cerrar" si no va a procesar ninguno.'); return; }
   var aAplicar=selects.filter(s=>s.value==='aplicar').map(s=>({id:s.getAttribute('data-id'),dep:s.getAttribute('data-dep')}));
   var aDevolver=selects.filter(s=>s.value==='devolver').map(s=>({id:s.getAttribute('data-id'),dep:s.getAttribute('data-dep')}));
   var msg='Se actualizará el estado a "EN TRÁMITE" así:\n';
@@ -3036,15 +3106,15 @@ async function procesarSeleccionEnTramite(){
 
   renderKpis(); filtrar(); actualizarBadgeDuplicados(); refrescarDashboardSiVisible();
   abrirModalSeleccion(); // refresca el modal mostrando los nuevos estados
-  if(failCount){ alert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.\n⚠️ '+failCount+' no se pudieron actualizar (revise su conexión e inténtelo de nuevo).'); }
-  else { alert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.'); }
+  if(failCount){ teoAlert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.\n⚠️ '+failCount+' no se pudieron actualizar (revise su conexión e inténtelo de nuevo).'); }
+  else { teoAlert('✅ '+okCount+' depósito(s) actualizado(s) a EN TRÁMITE.'); }
 }
 // Genera el PDF de entrega para Recaudos y Pagos: depósito, consignante (banco/quien consignó),
 // concepto del depósito, valor y el trámite pedido (Aplicar/Devolver) por cada uno.
 function exportarSeleccionPDF(){
   var filas=dataBanco.filter(r=>seleccionados.has(String(r['deposito judicial'])));
-  if(!filas.length){ alert('No hay depósitos seleccionados.'); return; }
-  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  if(!filas.length){ teoAlert('No hay depósitos seleccionados.'); return; }
+  if(typeof window.jspdf==='undefined'){ teoAlert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
   var tramitePorId={};
   document.querySelectorAll('#sel-contenido .sel-tramite').forEach(function(s){ tramitePorId[s.getAttribute('data-id')]=s.value; });
   var jsPDF=window.jspdf.jsPDF;
@@ -3254,7 +3324,7 @@ async function eliminarDuplicadosGrupo(btn, gi){
   if(!grupo) return;
   var tabla=btn.closest('.dup-card').querySelector('table.dup-tabla');
   var ids=Array.from(tabla.querySelectorAll('.chk-dup:checked')).map(chk=>chk.getAttribute('data-id'));
-  if(!ids.length){ alert('No hay filas marcadas para anular en este grupo (la primera se conserva siempre).'); return; }
+  if(!ids.length){ teoAlert('No hay filas marcadas para anular en este grupo (la primera se conserva siempre).'); return; }
   if(!confirm('Se ANULARÁN '+ids.length+' registro(s) duplicado(s) del depósito '+grupo[0]['deposito judicial']+' (quedan marcados como anulado, no se borran).\nSe conservará visible el registro con más gestión (ID '+grupo[0]._id+').\n\n¿Continuar?')) return;
   btn.disabled=true; btn.textContent='Anulando...';
   var user=USUARIO_ACTIVO;
@@ -3268,7 +3338,7 @@ async function eliminarDuplicadosGrupo(btn, gi){
     await cargarTodo();
     renderDuplicados();
   }catch(err){
-    alert('Ocurrió un error anulando los duplicados: '+err.message+'\nRevise cuáles quedaron anulados antes de reintentar.');
+    teoAlert('Ocurrió un error anulando los duplicados: '+err.message+'\nRevise cuáles quedaron anulados antes de reintentar.');
     btn.disabled=false; btn.textContent='🗑️ Anular seleccionados';
   }
 }
@@ -3347,7 +3417,7 @@ async function guardarObsRapida(idTec){
     refrescarDashboardSiVisible();
   } else {
     if(btn){ btn.disabled = false; btn.textContent = '💾 Guardar'; }
-    alert('No se pudo guardar la observación. Revise su conexión e intente de nuevo.');
+    teoAlert('No se pudo guardar la observación. Revise su conexión e intente de nuevo.');
   }
 }
 
@@ -3412,7 +3482,7 @@ async function guardarEstadoRapido(idTec, tipo, nuevoEstado){
     var tieneResp=!!(fila['RESPONSABLE']||'').trim();
     var tieneComp=!!(fila['COMPROBANTE DE EGRESO']||'').trim() || !!(fila['RADICADO DE RESPUESTA']||'').trim();
     if(!tieneResp || !tieneComp){
-      alert('Para marcar como FINALIZADO falta Responsable y/o Comprobante de egreso/Radicado. Se abre la ficha completa para diligenciarlo.');
+      teoAlert('Para marcar como FINALIZADO falta Responsable y/o Comprobante de egreso/Radicado. Se abre la ficha completa para diligenciarlo.');
       abrirModal(fila['deposito judicial']);
       return;
     }
@@ -3430,7 +3500,7 @@ async function guardarEstadoRapido(idTec, tipo, nuevoEstado){
       (tipo==='aplicacion'?'Estado Aplicación':'Estado Devolución')+' → '+(nuevoEstado||'Sin gestionar')+' · Depósito '+fila['deposito judicial']);
     renderTabla(); renderKpis(); refrescarDashboardSiVisible(); actualizarBadgeDuplicados();
   } else {
-    alert('No se pudo guardar el estado. Revise su conexión e intente de nuevo.');
+    teoAlert('No se pudo guardar el estado. Revise su conexión e intente de nuevo.');
   }
 }
 
@@ -4157,7 +4227,7 @@ function showImportResult(tipo,msg){
 // EXPORTAR
 function exportarExcel(){
   var data=filtrados.length?filtrados:dataBanco;
-  if(!data.length){alert('No hay datos para exportar.');return;}
+  if(!data.length){teoAlert('No hay datos para exportar.');return;}
   // Tope de seguridad para no congelar el navegador con archivos gigantes — muy por
   // encima del volumen actual. Si se llega a superar, se AVISA (antes se cortaba en
   // silencio a 10.000 filas sin que el usuario se enterara).
@@ -4368,7 +4438,7 @@ async function deshacerUltimoGuardado(){
     } else fail++;
   }
   renderKpis(); filtrar(); refrescarDashboardSiVisible(); actualizarBadgeDuplicados();
-  alert(fail ? ('✅ '+ok+' revertido(s).\n⚠️ '+fail+' no se pudieron revertir (revise su conexión).') : ('✅ '+ok+' cambio(s) revertido(s).'));
+  teoAlert(fail ? ('✅ '+ok+' revertido(s).\n⚠️ '+fail+' no se pudieron revertir (revise su conexión).') : ('✅ '+ok+' cambio(s) revertido(s).'));
 }
 
 function kpiCard(lbl,val,sub){
@@ -4506,8 +4576,8 @@ function actToggleDet(rowId){
 }
 // PDF de una página para llevar a reunión: quién gestionó qué en el rango cargado
 function exportarActividadPDF(){
-  if(!_actividadCache.desde || !_actividadCache.filas){ alert('Primero elija un rango de actividad.'); return; }
-  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  if(!_actividadCache.desde || !_actividadCache.filas){ teoAlert('Primero elija un rango de actividad.'); return; }
+  if(typeof window.jspdf==='undefined'){ teoAlert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
   var W=doc.internal.pageSize.getWidth();
@@ -4908,7 +4978,7 @@ function renderReporteDetalle(){
 
 // ── EXPORTAR EXCEL (2 hojas: Resumen + Detalle) ──
 function exportarReporteExcel(){
-  if(!_repDatos.length){ alert('No hay datos para exportar.'); return; }
+  if(!_repDatos.length){ teoAlert('No hay datos para exportar.'); return; }
   var valorTotal=0;
   var conteoCls={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
   var valorCls ={DEVUELTO:0,APLICADO:0,'EN GESTION':0,'SIN GESTIONAR':0};
@@ -4973,8 +5043,8 @@ function exportarReporteExcel(){
 
 // ── EXPORTAR PDF (resumen + tabla) ──
 function exportarReportePDF(){
-  if(!_repDatos.length){ alert('No hay datos para exportar.'); return; }
-  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  if(!_repDatos.length){ teoAlert('No hay datos para exportar.'); return; }
+  if(typeof window.jspdf==='undefined'){ teoAlert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
   var W=doc.internal.pageSize.getWidth();
@@ -5178,7 +5248,7 @@ function renderMayoresDeudores(){
 }
 
 function exportarDeudoresExcel(){
-  if(!_deudDatos.length){ alert('No hay datos para exportar.'); return; }
+  if(!_deudDatos.length){ teoAlert('No hay datos para exportar.'); return; }
   var filas=_deudDatos.map(function(d,i){
     return {
       '#':i+1,
@@ -5197,8 +5267,8 @@ function exportarDeudoresExcel(){
 }
 
 function exportarDeudoresPDF(){
-  if(!_deudDatos.length){ alert('No hay datos para exportar.'); return; }
-  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  if(!_deudDatos.length){ teoAlert('No hay datos para exportar.'); return; }
+  if(typeof window.jspdf==='undefined'){ teoAlert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
   var W=doc.internal.pageSize.getWidth();
