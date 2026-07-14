@@ -23,7 +23,7 @@
     <!-- Hero con Teodoro -->
     <div class="wiz-hero">
       <!-- Robot SVG animado -->
-      <div class="wiz-robot" id="wizRobot" onclick="sacudirWizRobot()" title="¡Haz clic!">
+      <div class="wiz-robot" id="wizRobot" onclick="sacudirWizRobot()" role="button" tabindex="0" aria-label="Saludar a Teodoro" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sacudirWizRobot();}" title="¡Haz clic!">
         <svg width="72" height="90" viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible">
           <line x1="32" y1="6" x2="32" y2="14" stroke="#f5c050" stroke-width="2" stroke-linecap="round"/>
           <circle class="wiz-antenna" cx="32" cy="4" r="3" fill="#f5c050"/>
@@ -122,18 +122,18 @@
       <div class="nav-brand-sub">Ejecuciones Fiscales</div>
     </div>
   </a>
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="goPanel('form')">📝 Generar</button>
-    <button class="nav-tab" onclick="goPanel('cola')">🖨️ Cola <span class="nav-badge" id="badgeCola">0</span></button>
-    <button class="nav-tab" onclick="goPanel('historial')">🔍 Historial</button>
-    <button class="nav-tab" onclick="goPanel('registro')">📋 Registro <span class="nav-badge" id="badgeCnt">…</span></button>
-    <button class="nav-tab" onclick="goPanel('dashboard')">📊 Dashboard</button>
-    <button class="nav-tab" onclick="goPanel('config')">⚙️ Config</button>
+  <div class="nav-tabs" role="tablist" aria-label="Secciones del módulo de Desembargos">
+    <button class="nav-tab active" role="tab" aria-selected="true" aria-label="Generar oficio" onclick="goPanel('form')">📝 Generar</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-label="Cola de impresión" onclick="goPanel('cola')">🖨️ Cola <span class="nav-badge" id="badgeCola">0</span></button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-label="Historial por contribuyente" onclick="goPanel('historial')">🔍 Historial</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-label="Registro de oficios" onclick="goPanel('registro')">📋 Registro <span class="nav-badge" id="badgeCnt">…</span></button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-label="Dashboard de actividad" onclick="goPanel('dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" role="tab" aria-selected="false" aria-label="Configuración del módulo" onclick="goPanel('config')">⚙️ Config</button>
   </div>
   <div class="nav-right">
     <div class="sync-dot spin" id="sdot"></div>
     <span class="sync-lbl" id="slbl">Iniciando…</span>
-    <button class="nav-logout" onclick="cerrarSesion()" title="Cerrar sesión">🔒 Salir</button>
+    <button class="nav-logout" onclick="cerrarSesion()" aria-label="Cerrar sesión" title="Cerrar sesión">🔒 Salir</button>
   </div>
 </nav>
 
@@ -314,7 +314,7 @@
       <div class="g3">
         <div class="fg">
           <label>N° de oficio</label>
-          <input id="f_num" type="text" value="1070.02">
+          <input id="f_num" type="text" value="1070.02" readonly aria-readonly="true">
           <span class="hint">Fijo — no editar</span>
         </div>
         <div class="fg">
@@ -352,7 +352,7 @@
   <div class="btn-row">
     <button class="btn btn-gold" id="btnGen" onclick="generarDesdeForm()">⬇️ Generar y descargar Word</button>
     <button class="btn btn-primary" id="btnEncolar" onclick="encolarDesdeForm()">🖨️ Enviar a cola</button>
-    <button class="btn btn-ghost" onclick="limpiarForm()">🗑️ Limpiar</button>
+    <button class="btn btn-ghost" onclick="confirmarLimpiar()">🗑️ Limpiar</button>
   </div>
 </div><!-- /panel-form -->
 
@@ -441,6 +441,7 @@
       <div class="fg" style="margin-bottom:12px">
         <label>URL del Apps Script</label>
         <input id="c_url" type="url" placeholder="https://script.google.com/macros/s/…/exec">
+        <span class="hint">💡 ¿No la tienes? Pídesela a Jeison o a Verónica — es la misma para todo el equipo</span>
       </div>
       <div class="g2">
         <div class="fg">
@@ -564,6 +565,7 @@
         <thead><tr>
           <th style="width:38px">
             <input type="checkbox" id="chkTodos" onchange="seleccionarTodosCola(this.checked)"
+              aria-label="Seleccionar todos los oficios de la cola"
               style="width:14px;height:14px;accent-color:var(--blue2)">
           </th>
           <th>Fecha / Hora</th>
@@ -608,6 +610,18 @@
 </div><!-- /panel-historial -->
 
 </div><!-- /wrap -->
+
+<!-- ═══════════════════════════ MODAL CONFIRMAR LIMPIAR ═══════════════════════════ -->
+<div class="confirm-overlay" id="confirmLimpiar" role="dialog" aria-modal="true" aria-label="Confirmar limpieza del formulario">
+  <div class="confirm-box">
+    <h3>¿Vaciar el formulario?</h3>
+    <p>Se perderán todos los datos que ha escrito en esta pantalla. Esta acción no se puede deshacer.</p>
+    <div class="confirm-row">
+      <button class="btn btn-danger" onclick="ejecutarLimpiar()">🗑️ Sí, vaciar</button>
+      <button class="btn btn-ghost" onclick="cerrarConfirmLimpiar()">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════ MODAL ELIMINAR TEODORO ═══════════════════════════ -->
 <div class="modal-overlay" id="modalEliminar">

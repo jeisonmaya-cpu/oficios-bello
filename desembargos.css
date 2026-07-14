@@ -25,6 +25,55 @@ body {
   overflow-x: hidden;
 }
 
+/* ── ACCESIBILIDAD: foco visible por teclado ── */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, [tabindex]:focus-visible, .nav-tab:focus-visible,
+.tipo-btn:focus-visible, .motivo-pill:focus-visible {
+  outline: 2px solid var(--gold2);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.wiz-robot:focus-visible, .teodoro-robot:focus-visible {
+  outline: 2px solid var(--gold2);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Campo bloqueado (N° de oficio) ── */
+input[readonly] {
+  background: rgba(255,255,255,0.03) !important;
+  color: var(--soft) !important;
+  cursor: not-allowed;
+  border-style: dashed !important;
+}
+
+/* ── Modal confirmación simple (Limpiar, etc.) ── */
+.confirm-overlay{
+  display:none; position:fixed; inset:0; z-index:180;
+  background:rgba(5,9,20,.72); backdrop-filter:blur(4px);
+  align-items:center; justify-content:center; padding:20px;
+}
+.confirm-overlay.open{ display:flex; }
+.confirm-box{
+  background:linear-gradient(160deg,#0d1730,#0a1226);
+  border:1px solid rgba(232,160,32,.25);
+  border-radius:18px; max-width:380px; width:100%;
+  padding:26px 24px; text-align:center;
+  box-shadow:0 30px 70px rgba(0,0,0,.5);
+}
+.confirm-box h3{ font-family:'DM Serif Display',serif; font-size:18px; font-weight:400; margin-bottom:8px; }
+.confirm-box p{ font-size:12.5px; color:var(--soft); line-height:1.6; margin-bottom:18px; }
+.confirm-row{ display:flex; gap:10px; justify-content:center; }
+
+
 /* ── FONDO ── */
 .bg {
   position: fixed; inset: 0; z-index: 0;

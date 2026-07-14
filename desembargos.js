@@ -486,10 +486,14 @@ function iniciarApp(){
 // ════════════════════════════════════════
 function goPanel(n){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-selected','false');});
   document.getElementById('panel-'+n).classList.add('active');
   const idx={form:0,cola:1,historial:2,registro:3,dashboard:4,config:5}[n];
-  if(idx!==undefined) document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  if(idx!==undefined){
+    const btn=document.querySelectorAll('.nav-tab')[idx];
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected','true');
+  }
   if(n==='registro')  cargarRemoto();
   if(n==='dashboard') renderDash();
   if(n==='cola')      cargarCola();
@@ -1440,6 +1444,22 @@ async function generarDesdeForm(){
 // ════════════════════════════════════════
 // LIMPIAR / MODAL SIGUIENTE
 // ════════════════════════════════════════
+function confirmarLimpiar(){
+  // Si el formulario ya está vacío, no molestar con el modal
+  const tocado = ['f_nombre','f_cedula','f_fauto','f_obs'].some(id=>{
+    const el=document.getElementById(id); return el && el.value.trim()!=='';
+  }) || motivoSeleccionado;
+  if(!tocado){ limpiarForm(); toastD('✓ Formulario ya estaba vacío'); return; }
+  document.getElementById('confirmLimpiar').classList.add('open');
+}
+function cerrarConfirmLimpiar(){
+  document.getElementById('confirmLimpiar').classList.remove('open');
+}
+function ejecutarLimpiar(){
+  cerrarConfirmLimpiar();
+  limpiarForm();
+  toastD('🗑️ Formulario vacío');
+}
 function limpiarForm(){
   ['f_nombre','f_cedula','f_fauto','f_concepto_manual','f_motivo_manual','f_obs','f_celular','f_correo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f_concepto').selectedIndex=0;
