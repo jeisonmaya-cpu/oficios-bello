@@ -1377,14 +1377,24 @@ async function cargarTodo(){
     // Antes se esperaba una, luego la otra, luego la otra (tiempo total = suma de las 3).
     // Ahora el tiempo total es aprox. el de la más lenta de las 3.
     var resultados = await Promise.allSettled([
-      sbFetchAll('recaudo', '*', 'order=fecha_emision.desc.nullslast'),
-      sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion'),
-      sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total')
+      // ⚠️ El orden DEBE terminar en una columna única (id / documento). Si solo se
+      // ordena por fecha, los empates se barajan entre páginas paralelas y una fila
+      // puede venir repetida en dos páginas (y otra perderse) — eso producía
+      // depósitos "duplicados" en la app que NO existían en la base, y números
+      // de KPIs levemente distintos en cada carga/PC.
+      sbFetchAll('recaudo', '*', 'order=fecha_emision.desc.nullslast,id.asc'),
+      sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion', 'order=id.asc'),
+      sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total', 'order=documento.asc')
     ]);
 
     // 1) Depósitos — es la fuente principal; si falla, no hay nada que mostrar.
     if(resultados[0].status!=='fulfilled') throw resultados[0].reason;
-    dataBanco = resultados[0].value.map(filaSupaAUI);
+    // Desduplicar por id técnico (defensa extra ante cualquier solape de paginación)
+    var _vistos=new Set();
+    dataBanco = resultados[0].value.filter(function(r){
+      if(_vistos.has(r.id)) return false;
+      _vistos.add(r.id); return true;
+    }).map(filaSupaAUI);
     ultimaSync = new Date();
 
     // 2) Expedientes prediales -> índice por cédula (para el modal 360). Si falla, el modal simplemente no los muestra.
@@ -2352,7 +2362,7 @@ async function renderTransitoModal(cid){
   try{
     var comps=await sbFetchAll('expedientes_transito',
       'nro_comparendo,fecha_comparendo,anio,cod_infraccion,numero_placa,estado_moroso,cobro_coactivo,valor_multa,valor_interes,valor_total',
-      'documento=eq.'+encodeURIComponent(cid));
+      'documento=eq.'+encodeURIComponent(cid)+'&order=nro_comparendo.asc');
     if(!comps.length){ cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">Sin comparendos.</div>'; return; }
     // ordenar por fecha desc en el cliente (más seguro que el order del servidor)
     comps.sort(function(a,b){ return String(b.fecha_comparendo||'').localeCompare(String(a.fecha_comparendo||'')); });
@@ -3201,7 +3211,7 @@ function depositosDeImpuesto(tipo){
 async function obtenerCedulasAnioUnico(anio){
   if(_cedulasAnioUnicoCache[anio]) return _cedulasAnioUnicoCache[anio];
   var filas = await sbFetchAll('v_transito_anios_por_cedula', 'documento',
-    'anios_distintos=eq.1&anio_min=eq.'+encodeURIComponent(anio));
+    'anios_distintos=eq.1&anio_min=eq.'+encodeURIComponent(anio)+'&order=documento.asc');
   var set=new Set();
   filas.forEach(function(f){ var d=String(f.documento||'').trim(); if(d) set.add(d); });
   _cedulasAnioUnicoCache[anio]=set;
