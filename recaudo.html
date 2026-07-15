@@ -975,6 +975,9 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
     <div class="card-hdr">
       <div class="card-hdr-title">📑 Reporte por impuesto</div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <select class="finp" id="rep-anio-emision" onchange="renderReporte()" style="min-width:130px" title="Filtrar por año de emisión del depósito">
+          <option value="">📅 Todos los años</option>
+        </select>
         <select class="finp" id="rep-impuesto" onchange="renderReporte()" style="min-width:160px">
           <option value="PREDIAL">🏠 Predial</option>
           <option value="ICA" disabled>🏢 ICA (próximamente)</option>
@@ -1039,6 +1042,9 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <label style="font-size:11px;color:var(--soft);white-space:nowrap">Top</label>
           <input class="finp" type="number" id="deud-top-n" value="50" min="5" max="1000" step="5" style="width:75px" onchange="renderMayoresDeudores()"/>
+          <select class="finp" id="deud-anio" onchange="renderMayoresDeudores()" style="min-width:130px" title="Solo depósitos emitidos en ese año">
+            <option value="">📅 Todos los años</option>
+          </select>
           <select class="finp" id="deud-estado" onchange="renderMayoresDeudores()" style="min-width:210px">
             <option value="todos">Todos los deudores</option>
             <option value="pendientes">Solo pendientes / sin gestionar</option>
@@ -5038,8 +5044,32 @@ async function obtenerCedulasAnioUnico(anio){
   return set;
 }
 
+// ── Filtro por año de EMISIÓN del depósito (para informes anuales: 2022, 2023...) ──
+function anioEmisionDe(r){ return String(r['Fecha Emisión']||'').substring(0,4); }
+
+// Llena los selects de años con los años que realmente existen en los datos (desc).
+// Conserva la selección actual si sigue siendo válida.
+function llenarSelectAnios(){
+  var anios=new Set();
+  dataBanco.forEach(function(r){ var a=anioEmisionDe(r); if(/^\d{4}$/.test(a)) anios.add(a); });
+  var lista=Array.from(anios).sort().reverse();
+  ['rep-anio-emision','deud-anio'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    var actual=el.value;
+    el.innerHTML='<option value="">📅 Todos los años</option>'+lista.map(function(a){ return '<option value="'+a+'">'+a+'</option>'; }).join('');
+    if(actual && lista.indexOf(actual)>=0) el.value=actual;
+  });
+}
+
+function filtrarPorAnioEmision(datos, anio){
+  if(!anio) return datos;
+  return datos.filter(function(r){ return anioEmisionDe(r)===anio; });
+}
+
 function renderReporte(){
   var tipo=(document.getElementById('rep-impuesto')||{value:'PREDIAL'}).value||'PREDIAL';
+  if(document.getElementById('rep-anio-emision') && document.getElementById('rep-anio-emision').options.length<=1) llenarSelectAnios();
 
   // Mostrar/ocultar el filtro de año (solo aplica a Tránsito)
   var wrapAnio=document.getElementById('rep-anio-wrap');
@@ -5057,9 +5087,10 @@ function renderReporte(){
   var aviso=document.getElementById('rep-anio-aviso');
   if(aviso) aviso.style.display='none';
 
-  _repImpuesto=tipo;
+  var anioEmi=(document.getElementById('rep-anio-emision')||{value:''}).value;
+  _repImpuesto=tipo+(anioEmi?('_'+anioEmi):'');
   _repAnioActivo=null;
-  _repDatos=depositosDeImpuesto(tipo);
+  _repDatos=filtrarPorAnioEmision(depositosDeImpuesto(tipo), anioEmi);
   pintarReporte();
 }
 
@@ -5076,12 +5107,13 @@ async function renderReporteTransitoAnio(anio){
     return;
   }
 
-  _repImpuesto='TRANSITO_'+anio+'_OFICIOSO';
+  var anioEmiOf=(document.getElementById('rep-anio-emision')||{value:''}).value;
+  _repImpuesto='TRANSITO_'+anio+'_OFICIOSO'+(anioEmiOf?('_EMITIDOS_'+anioEmiOf):'');
   _repAnioActivo=anio;
-  _repDatos = depositosDeImpuesto('TRANSITO').filter(function(r){
+  _repDatos = filtrarPorAnioEmision(depositosDeImpuesto('TRANSITO').filter(function(r){
     var cid=String(r['Identificación Demandado']||'').trim();
     return cid && cedulas.has(cid);
-  });
+  }), anioEmiOf);
 
   var aviso=document.getElementById('rep-anio-aviso');
   if(aviso){
@@ -5414,9 +5446,10 @@ function cambiarVistaReporte(vista){
 function renderMayoresDeudoresDebounced(){ clearTimeout(_debDeud); _debDeud=setTimeout(renderMayoresDeudores, 300); }
 
 // Agrupa TODOS los depósitos (de cualquier impuesto) por cédula del demandado
-function calcularMayoresDeudores(){
+function calcularMayoresDeudores(anioEmi){
   var mapa={};
-  dataBanco.forEach(function(r){
+  var base=filtrarPorAnioEmision(dataBanco, anioEmi||'');
+  base.forEach(function(r){
     var cid=String(r['Identificación Demandado']||'').trim();
     if(!cid) return;
     var v=parsearValor(r['Valor del Depóstio']);
@@ -5461,7 +5494,9 @@ function calcularMayoresDeudores(){
 }
 
 function renderMayoresDeudores(){
-  var todos=calcularMayoresDeudores();
+  if(document.getElementById('deud-anio') && document.getElementById('deud-anio').options.length<=1) llenarSelectAnios();
+  var anioEmiDeud=(document.getElementById('deud-anio')||{value:''}).value;
+  var todos=calcularMayoresDeudores(anioEmiDeud);
 
   var estadoFiltro=(document.getElementById('deud-estado')||{value:'todos'}).value;
   var buscar=(document.getElementById('deud-buscar')||{value:''}).value.toLowerCase().trim();
@@ -5530,7 +5565,8 @@ function exportarDeudoresExcel(){
   });
   var wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filas),'Mayores Deudores');
-  XLSX.writeFile(wb,'Mayores_Deudores_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  var _anioSuf=(document.getElementById('deud-anio')||{value:''}).value;
+  XLSX.writeFile(wb,'Mayores_Deudores_'+(_anioSuf?_anioSuf+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
 function exportarDeudoresPDF(){
@@ -5600,7 +5636,8 @@ function exportarDeudoresPDF(){
     }
   });
 
-  doc.save('Mayores_Deudores_'+new Date().toISOString().slice(0,10)+'.pdf');
+  var _anioSufP=(document.getElementById('deud-anio')||{value:''}).value;
+  doc.save('Mayores_Deudores_'+(_anioSufP?_anioSufP+'_':'')+new Date().toISOString().slice(0,10)+'.pdf');
 }
 
 function eh(v){if(v===null||v===undefined)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
