@@ -626,118 +626,125 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 }
 
 /* ════════════════════════════════════════════════════════════
-   ☀️ MODO CLARO CÁLIDO — clase .tema-claro en <html>. Preferencia por
-   navegador (localStorage: teodoro_tema). Paleta "papel": fondos crema
-   y marfil (nada de blanco puro), texto azul-tinta, acentos dorados.
+   ☀️ MODO CLARO "SANTILLANA" — tres contrastes:
+   1) CHOCOLATE #46331f — barra superior, botones de acción, énfasis
+   2) CAMEL     #a68b69 — barra de pestañas, encabezados de tabla
+   3) ARENA     #e8dfc8 — fondo general; tarjetas en crema #f6f0de
+   Texto café espresso sobre crema. Preferencia: localStorage teodoro_tema.
    ════════════════════════════════════════════════════════════ */
 html.tema-claro{
-  /* Paleta inspirada en santillanawellness.com: crema luminoso + texto café
-     espresso de alto contraste + acentos tierra/ocre. */
-  --navy:#f6f2ea;--navy2:#ede7db;--navy3:#f0ebe0;
-  --surface:#fcf9f2;--surface2:#f4efe4;
-  --border:rgba(74,58,42,.18);--border2:rgba(74,58,42,.10);
-  --text:#2e2620;--soft:rgba(46,38,32,.68);--muted:rgba(46,38,32,.46);
-  --gold2:#8f6410;
-  --money:#116e3c;--warn-txt:#9c4a10;--info-txt:#1c4fb8;--err-txt:#a82424;--err-txt2:#a82424;--imp-txt:#1c4fb8;
+  --navy:#e8dfc8;--navy2:#ddd2b6;--navy3:#e2d8bf;
+  --surface:#f6f0de;--surface2:#efe7d1;
+  --border:rgba(70,51,31,.20);--border2:rgba(70,51,31,.11);
+  --text:#3a2c1e;--soft:rgba(58,44,30,.68);--muted:rgba(58,44,30,.46);
+  --gold2:#7c5a20;
+  --blue:#46331f;--blue2:#5d4429; /* los botones primarios pasan a chocolate */
+  --money:#116e3c;--warn-txt:#9c4a10;--info-txt:#46331f;--err-txt:#a82424;--err-txt2:#a82424;--imp-txt:#5d4429;
 }
 html.tema-claro body{
   background:var(--navy);color:var(--text);
-  background-image:
-    radial-gradient(ellipse 70% 50% at 15% 0%,rgba(180,120,40,.05) 0%,transparent 55%),
-    linear-gradient(160deg,#f7f3eb 0%,#f2ecdf 55%,#f6f1e7 100%);
+  background-image:linear-gradient(160deg,#eae1cb 0%,#e5dbc1 55%,#eae1cb 100%);
 }
-/* Barra superior y pestañas */
-html.tema-claro .topbar{background:#fcf9f2;border-bottom:1px solid rgba(74,58,42,.16);box-shadow:0 1px 5px rgba(74,58,42,.07)}
-html.tema-claro .tb-title{color:#2b2118}
-html.tema-claro .tabs{background:#f9f5ec;border-bottom:1px solid var(--border)}
-html.tema-claro .ntab{color:rgba(46,38,32,.58)}
-html.tema-claro .ntab.on{color:#2b2118;border-bottom-color:#b0762a}
-html.tema-claro .ntab:hover:not(.on){color:#2e2620}
-html.tema-claro .tb-btn{background:#f2ecdf;border-color:rgba(74,58,42,.22);color:#2e2620}
-html.tema-claro .tb-btn:hover{background:#eae2d0}
-html.tema-claro .tb-btn.gold{background:#f4e6c6;border-color:rgba(143,100,16,.45);color:#75540c}
-html.tema-claro .sync-pill{background:#f2ecdf;border-color:var(--border);color:var(--soft)}
-/* Tarjetas: marfil con sombra tibia */
+/* ── NIVEL 1: barra superior CAMEL con texto crema (como la nav del sitio) ── */
+html.tema-claro .topbar{background:#a68b69;border-bottom:1px solid rgba(70,51,31,.35);box-shadow:0 1px 6px rgba(70,51,31,.2)}
+html.tema-claro .tb-title{color:#fdf8ec}
+html.tema-claro .tb-sub{color:rgba(253,248,236,.75)}
+html.tema-claro .tb-btn{background:rgba(70,51,31,.22);border-color:rgba(70,51,31,.35);color:#fdf8ec}
+html.tema-claro .tb-btn:hover{background:rgba(70,51,31,.34)}
+html.tema-claro .tb-btn.gold{background:#46331f;border-color:#46331f;color:#fdf8ec}
+html.tema-claro .sync-pill{background:rgba(70,51,31,.20);border-color:rgba(70,51,31,.3);color:#fdf8ec}
+html.tema-claro .sync-pill #sync-lbl{color:#fdf8ec}
+html.tema-claro #global-buscar{background:rgba(253,248,236,.92);border-color:rgba(70,51,31,.3);color:#3a2c1e}
+/* ── Pestañas: crema con activa en chocolate ── */
+html.tema-claro .tabs{background:#f1e9d4;border-bottom:1px solid var(--border)}
+html.tema-claro .ntab{color:rgba(58,44,30,.6)}
+html.tema-claro .ntab.on{color:#46331f;border-bottom-color:#46331f}
+html.tema-claro .ntab:hover:not(.on){color:#3a2c1e}
+/* ── NIVEL 3: tarjetas crema sobre fondo arena ── */
 html.tema-claro .card,html.tema-claro .kpi,html.tema-claro .pend-stat,html.tema-claro .dash-kpi,
 html.tema-claro .rep-kpi,html.tema-claro .dup-card{
-  background:#fcf9f2;border-color:rgba(74,58,42,.14);box-shadow:0 2px 6px rgba(74,58,42,.08)}
-html.tema-claro .card-hdr{border-bottom-color:rgba(74,58,42,.11)}
-html.tema-claro .card-hdr-title{color:#8f6410}
-html.tema-claro .filtros{background:#f4efe4;border-bottom-color:rgba(74,58,42,.09)}
-/* Tablas */
-html.tema-claro thead tr,html.tema-claro thead th{background:#ece3cf;color:#4a3a1a}
-html.tema-claro thead th:hover{background:#e4d9c0}
-html.tema-claro tbody tr{border-bottom-color:rgba(74,58,42,.10)}
-html.tema-claro tbody tr:hover{background:#f3ecd9}
+  background:#f6f0de;border-color:rgba(70,51,31,.16);box-shadow:0 2px 6px rgba(70,51,31,.10)}
+html.tema-claro .card-hdr{border-bottom-color:rgba(70,51,31,.12)}
+html.tema-claro .card-hdr-title{color:#7c5a20}
+html.tema-claro .filtros{background:#efe7d1;border-bottom-color:rgba(70,51,31,.10)}
+/* ── NIVEL 2: encabezados de tabla CAMEL con texto chocolate ── */
+html.tema-claro thead tr,html.tema-claro thead th{background:#c3ab88;color:#3b2a17}
+html.tema-claro thead th:hover{background:#b79d78}
+html.tema-claro tbody tr{border-bottom-color:rgba(70,51,31,.11)}
+html.tema-claro tbody tr:hover{background:#f0e7cf}
 html.tema-claro tbody tr.gestionado{border-left-color:rgba(17,110,60,.55)}
-html.tema-claro .dash-table th{color:rgba(46,38,32,.55);border-bottom-color:rgba(74,58,42,.18)}
-html.tema-claro .dash-table td{border-bottom-color:rgba(74,58,42,.10)}
-html.tema-claro .dash-bar,html.tema-claro .rep-ebar,html.tema-claro .dash-ebar{background:rgba(74,58,42,.10)}
-/* Controles */
-html.tema-claro .finp{border-color:rgba(74,58,42,.26);background:#fffdf7;color:var(--text)}
-html.tema-claro .finp:focus{border-color:rgba(26,111,196,.55);background:#fffdf6}
-html.tema-claro .finp option{background:#fffdf7;color:#2e2620}
-html.tema-claro .fbtn-outline{border-color:rgba(93,74,38,.3);color:var(--soft)}
-html.tema-claro .fbtn-outline:hover{background:rgba(93,74,38,.07);color:var(--text)}
-html.tema-claro .fbtn-gold{color:#fff}
+html.tema-claro .dash-table th{color:rgba(58,44,30,.55);border-bottom-color:rgba(70,51,31,.2)}
+html.tema-claro .dash-table td{border-bottom-color:rgba(70,51,31,.11)}
+html.tema-claro .dash-bar,html.tema-claro .rep-ebar,html.tema-claro .dash-ebar{background:rgba(70,51,31,.11)}
+/* ── Controles: fondo hueso, botón primario CHOCOLATE (como "Agendar mi sesión") ── */
+html.tema-claro .finp{border-color:rgba(70,51,31,.28);background:#fdf9ee;color:var(--text)}
+html.tema-claro .finp:focus{border-color:#46331f;background:#fdf9ee}
+html.tema-claro .finp option{background:#fdf9ee;color:#3a2c1e}
+html.tema-claro .fbtn-primary{background:#46331f;color:#fdf8ec}
+html.tema-claro .fbtn-primary:hover{background:#5d4429}
+html.tema-claro .fbtn-gold{background:#46331f;color:#fdf8ec}
+html.tema-claro .fbtn-outline{border-color:rgba(70,51,31,.35);color:var(--soft)}
+html.tema-claro .fbtn-outline:hover{background:rgba(70,51,31,.08);color:var(--text)}
 html.tema-claro .fbtn-green{background:rgba(17,110,60,.10);border-color:rgba(17,110,60,.35)}
-html.tema-claro .btn-gest{background:rgba(28,79,184,.08);border-color:rgba(28,79,184,.3)}
-html.tema-claro .btn-gest:hover{background:rgba(28,79,184,.16);color:#1d3358}
-html.tema-claro .pb{background:#fcf9f2;border-color:rgba(74,58,42,.24)}
-html.tema-claro .pb:hover:not(:disabled){background:#efe7d3}
-html.tema-claro .pb.cur{background:#b0762a;border-color:#b0762a;color:#fff}
-html.tema-claro .pag{background:#f4efe4;border-top-color:rgba(74,58,42,.09)}
-/* Badges y píldoras */
+html.tema-claro .btn-gest{background:rgba(70,51,31,.10);border-color:rgba(70,51,31,.35);color:#46331f}
+html.tema-claro .btn-gest:hover{background:#46331f;color:#fdf8ec}
+html.tema-claro .pb{background:#f6f0de;border-color:rgba(70,51,31,.26)}
+html.tema-claro .pb:hover:not(:disabled){background:#ece2c8}
+html.tema-claro .pb.cur{background:#46331f;border-color:#46331f;color:#fdf8ec}
+html.tema-claro .pag{background:#efe7d1;border-top-color:rgba(70,51,31,.10)}
+/* ── Badges ── */
 html.tema-claro .badge{font-weight:700}
 html.tema-claro .b-fin,html.tema-claro .ant-verde{background:rgba(17,110,60,.11);border-color:rgba(17,110,60,.3)}
-html.tema-claro .b-tram{background:rgba(28,79,184,.09);border-color:rgba(28,79,184,.28)}
-html.tema-claro .b-pen,html.tema-claro .ant-amarillo{background:rgba(164,82,13,.11);border-color:rgba(164,82,13,.3)}
-html.tema-claro .b-rev{background:rgba(109,40,217,.09);border-color:rgba(109,40,217,.28);color:#6d28d9}
-html.tema-claro .b-imp{background:rgba(28,79,184,.08);border-color:rgba(28,79,184,.22)}
-html.tema-claro .b-vacio,html.tema-claro .ant-ok{background:rgba(74,58,42,.06);color:var(--muted);border-color:rgba(74,58,42,.12)}
-html.tema-claro .ant-rojo{background:rgba(179,38,38,.10);border-color:rgba(179,38,38,.3)}
-html.tema-claro .nb-blue{background:rgba(28,79,184,.13);color:#1c4fb8}
-html.tema-claro .nb-gold{background:rgba(143,100,16,.15);color:#75540c}
-html.tema-claro .chip-nuevo{background:rgba(28,79,184,.10);border-color:rgba(28,79,184,.3)}
-html.tema-claro .v360-badge{background:rgba(28,79,184,.10)}
-html.tema-claro .sync-pendientes{background:rgba(164,82,13,.11);border-color:rgba(164,82,13,.35)}
-/* Alertas */
+html.tema-claro .b-tram{background:rgba(70,51,31,.09);border-color:rgba(70,51,31,.3)}
+html.tema-claro .b-pen,html.tema-claro .ant-amarillo{background:rgba(156,74,16,.11);border-color:rgba(156,74,16,.3)}
+html.tema-claro .b-rev{background:rgba(109,40,217,.08);border-color:rgba(109,40,217,.26);color:#6d28d9}
+html.tema-claro .b-imp{background:rgba(70,51,31,.08);border-color:rgba(70,51,31,.24)}
+html.tema-claro .b-vacio,html.tema-claro .ant-ok{background:rgba(70,51,31,.06);color:var(--muted);border-color:rgba(70,51,31,.13)}
+html.tema-claro .ant-rojo{background:rgba(168,36,36,.10);border-color:rgba(168,36,36,.3)}
+html.tema-claro .nb-blue{background:rgba(70,51,31,.13);color:#46331f}
+html.tema-claro .nb-gold{background:rgba(124,90,32,.16);color:#6b4d18}
+html.tema-claro .chip-nuevo{background:rgba(70,51,31,.10);border-color:rgba(70,51,31,.3)}
+html.tema-claro .v360-badge{background:rgba(70,51,31,.10)}
+html.tema-claro .sync-pendientes{background:rgba(156,74,16,.11);border-color:rgba(156,74,16,.35)}
+/* ── Alertas ── */
 html.tema-claro .al-ok{background:rgba(17,110,60,.09);border-color:rgba(17,110,60,.3)}
-html.tema-claro .al-err{background:rgba(179,38,38,.08);border-color:rgba(179,38,38,.3)}
-html.tema-claro .al-load{background:rgba(28,79,184,.08);border-color:rgba(28,79,184,.28)}
-html.tema-claro .al-warn{background:rgba(156,74,16,.09);border-color:rgba(156,74,16,.3);color:#75540c}
-html.tema-claro .import-banner{background:rgba(164,82,13,.07);border-color:rgba(164,82,13,.3)}
-/* Modales y superpuestos */
-html.tema-claro .ov{background:rgba(40,30,18,.45)}
-html.tema-claro .mbox{background:#fcf9f2;border-color:rgba(74,58,42,.16);box-shadow:0 32px 64px rgba(50,38,18,.30)}
-html.tema-claro .banco-info,html.tema-claro .vista360{background:#f4efe4;border-color:rgba(74,58,42,.12)}
-html.tema-claro .banco-info-title{color:#8f6410}
-html.tema-claro .v360-row,html.tema-claro .prop-row,html.tema-claro .log-item{background:#fcf9f2;border-color:rgba(74,58,42,.12)}
-html.tema-claro .v360-row.actual{background:#f4e8cc;border-color:rgba(143,100,16,.4)}
-html.tema-claro .v360-total{background:#f4e8cc;border-color:rgba(143,100,16,.35)}
+html.tema-claro .al-err{background:rgba(168,36,36,.08);border-color:rgba(168,36,36,.3)}
+html.tema-claro .al-load{background:rgba(70,51,31,.08);border-color:rgba(70,51,31,.28)}
+html.tema-claro .al-warn{background:rgba(156,74,16,.09);border-color:rgba(156,74,16,.3);color:#6b4d18}
+html.tema-claro .import-banner{background:rgba(156,74,16,.07);border-color:rgba(156,74,16,.3)}
+/* ── Modales: crema, cabecera CAMEL→CHOCOLATE ── */
+html.tema-claro .ov{background:rgba(46,33,18,.5)}
+html.tema-claro .mbox{background:#f6f0de;border-color:rgba(70,51,31,.2);box-shadow:0 32px 64px rgba(46,33,18,.35)}
+html.tema-claro .mhdr{background:linear-gradient(135deg,#5d4429,#8a6e4b)}
+html.tema-claro .banco-info,html.tema-claro .vista360{background:#efe7d1;border-color:rgba(70,51,31,.13)}
+html.tema-claro .banco-info-title{color:#7c5a20}
+html.tema-claro .v360-row,html.tema-claro .prop-row,html.tema-claro .log-item{background:#f6f0de;border-color:rgba(70,51,31,.14)}
+html.tema-claro .v360-row.actual{background:#eddfba;border-color:rgba(124,90,32,.45)}
+html.tema-claro .v360-total{background:#eddfba;border-color:rgba(124,90,32,.4)}
 html.tema-claro .campo input,html.tema-claro .campo select,html.tema-claro .campo textarea{
-  border-color:rgba(74,58,42,.26);background:#fffdf7;color:var(--text)}
+  border-color:rgba(70,51,31,.28);background:#fdf9ee;color:var(--text)}
 html.tema-claro .campo input:focus,html.tema-claro .campo select:focus,html.tema-claro .campo textarea:focus{
-  border-color:rgba(26,111,196,.55);background:#fffdf6}
-html.tema-claro .campo select option{background:#fffdf7;color:#2e2620}
-html.tema-claro .msec{color:#8f6410;border-bottom-color:rgba(74,58,42,.12)}
-html.tema-claro .mclose{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25)}
-html.tema-claro .global-results{background:#fcf9f2;border-color:var(--border);box-shadow:0 20px 40px rgba(50,38,18,.2)}
-html.tema-claro .gr-item:hover{background:#f3ecd9}
-html.tema-claro .user-card{background:#fcf9f2;border-color:rgba(143,100,16,.35)}
-html.tema-claro .user-card-title{color:#2b2118}
-html.tema-claro .user-opt{background:#f4efe4;color:var(--text)}
-html.tema-claro .sel-bar{background:#fcf9f2;border-color:rgba(143,100,16,.5);box-shadow:0 14px 36px rgba(50,38,18,.26)}
-html.tema-claro .sel-total-box{background:#f4e8cc;border-color:rgba(143,100,16,.35)}
-html.tema-claro .skel-cell{background:rgba(74,58,42,.12)}
-html.tema-claro .consig-del{background:rgba(179,38,38,.08);border-color:rgba(179,38,38,.3);color:#b32626}
-html.tema-claro .consig-add{background:rgba(26,111,196,.08);border-color:rgba(26,111,196,.45);color:#12569e}
-html.tema-claro .prop-tag{background:rgba(164,82,13,.11);border-color:rgba(164,82,13,.35);color:#a4520d}
+  border-color:#46331f;background:#fdf9ee}
+html.tema-claro .campo select option{background:#fdf9ee;color:#3a2c1e}
+html.tema-claro .msec{color:#7c5a20;border-bottom-color:rgba(70,51,31,.14)}
+html.tema-claro .mclose{background:rgba(253,248,236,.18);border-color:rgba(253,248,236,.3)}
+html.tema-claro .global-results{background:#f6f0de;border-color:var(--border);box-shadow:0 20px 40px rgba(46,33,18,.25)}
+html.tema-claro .gr-item:hover{background:#f0e7cf}
+html.tema-claro .user-card{background:#f6f0de;border-color:rgba(124,90,32,.4)}
+html.tema-claro .user-card-title{color:#46331f}
+html.tema-claro .user-opt{background:#efe7d1;color:var(--text)}
+html.tema-claro .user-opt:hover{background:#46331f;border-color:#46331f;color:#fdf8ec}
+html.tema-claro .sel-bar{background:#f6f0de;border-color:rgba(124,90,32,.5);box-shadow:0 14px 36px rgba(46,33,18,.3)}
+html.tema-claro .sel-total-box{background:#eddfba;border-color:rgba(124,90,32,.4)}
+html.tema-claro .skel-cell{background:rgba(70,51,31,.13)}
+html.tema-claro .consig-del{background:rgba(168,36,36,.08);border-color:rgba(168,36,36,.3);color:#a82424}
+html.tema-claro .consig-add{background:rgba(70,51,31,.08);border-color:rgba(70,51,31,.4);color:#46331f}
+html.tema-claro .prop-tag{background:rgba(156,74,16,.11);border-color:rgba(156,74,16,.35);color:#9c4a10}
 html.tema-claro .prop-tag.libre{background:rgba(17,110,60,.11);border-color:rgba(17,110,60,.3);color:#116e3c}
-html.tema-claro .import-drop{background:#f4efe4;border-color:rgba(74,58,42,.24)}
-html.tema-claro .import-drop:hover,html.tema-claro .import-drop.drag{background:rgba(26,111,196,.06)}
+html.tema-claro .import-drop{background:#efe7d1;border-color:rgba(70,51,31,.28)}
+html.tema-claro .import-drop:hover,html.tema-claro .import-drop.drag{background:#eae0c4;border-color:#46331f}
 html.tema-claro .tj-valor{color:var(--money)}
-html.tema-claro .copy-btn{background:rgba(74,58,42,.08);border-color:rgba(74,58,42,.18)}
+html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,31,.2)}
 </style>
 </head>
 <body>
@@ -4396,9 +4403,9 @@ async function aplicarPropagacion(){
 // ════════════════════════════════════════════════════════════
 var TEMA_KEY='teodoro_tema';
 function esTemaClaro(){ return document.documentElement.classList.contains('tema-claro'); }
-function chartTxt(){ return esTemaClaro() ? '#4a3f36' : '#cbd5e1'; }
-function chartTxt2(){ return esTemaClaro() ? '#6e5f4e' : '#94a3b8'; }
-function chartGrid(){ return esTemaClaro() ? 'rgba(74,58,42,.10)' : 'rgba(255,255,255,.05)'; }
+function chartTxt(){ return esTemaClaro() ? '#4a3826' : '#cbd5e1'; }
+function chartTxt2(){ return esTemaClaro() ? '#6e5a41' : '#94a3b8'; }
+function chartGrid(){ return esTemaClaro() ? 'rgba(70,51,31,.12)' : 'rgba(255,255,255,.05)'; }
 function aplicarTema(t){
   document.documentElement.classList.toggle('tema-claro', t==='claro');
   var btn=document.getElementById('btn-tema');
@@ -5059,7 +5066,7 @@ function renderDonaEstado(canvasId, totalId, valorPorEstado, conteo, valorTotal)
   if(!ctx) return;
   _charts[key]=new Chart(ctx,{
     type:'doughnut',
-    data:{labels:labels,datasets:[{data:valores,backgroundColor:colores,borderColor:esTemaClaro()?'#fcf9f2':'#0a1f3d',borderWidth:2,_conteos:conteos}]},
+    data:{labels:labels,datasets:[{data:valores,backgroundColor:colores,borderColor:esTemaClaro()?'#f6f0de':'#0a1f3d',borderWidth:2,_conteos:conteos}]},
     options:{
       responsive:true,maintainAspectRatio:false,cutout:'62%',
       plugins:{
