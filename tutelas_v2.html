@@ -1031,12 +1031,13 @@ async function cargarDetalleParaModal(r, origen){
   }
 }
 
-// Lista COMPLETA — incluye a Deisy para que sus procesos sigan apareciendo en
-// reparto, rankings, filtros y estadísticas (y se puedan cerrar).
-const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño","Anderson Correa"];
-// Lista ACTIVA para reparto — sin Deisy. Solo se usa en el round-robin de
-// "Nueva tutela" para que ya NO reciba asignaciones nuevas.
-const ABOGADOS_RR = ABOGADOS.filter(a => a !== "Deisy Lopez");
+// Lista COMPLETA — incluye a Deisy y Yennifer para que sus procesos sigan
+// apareciendo en reparto, rankings, filtros y estadísticas (y se puedan cerrar).
+const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño","Anderson Correa","Camila Puerta Camargo"];
+// Lista ACTIVA para reparto — sin Deisy ni Yennifer. Solo se usa en el
+// round-robin de "Nueva tutela" para que ya NO reciban asignaciones nuevas.
+const SALIENTES   = ["Deisy Lopez","Yennifer Chaverra"];
+const ABOGADOS_RR = ABOGADOS.filter(a => !SALIENTES.includes(a));
 
 // ── Rol del usuario logueado → en qué pestaña abre el modal ──
 // Técnica (PQR/SharePoint): Verónica y Jeison.  Jurídica (estado): abogados.
