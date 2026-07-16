@@ -1833,11 +1833,12 @@ async function sbFetchAll(tabla, select, extraQuery){
   }
 
   var primera = await pedirPrimera(url);
-  // Plan B: si el orden pedido no existe en la tabla/vista (ej. columna id ausente
-  // -> HTTP 400), reintentar SIN el parámetro order en vez de fallar del todo.
-  if(primera && !primera.ok && primera.status===400 && extraQuery && extraQuery.indexOf('order=')>=0){
+  // Plan B: si la consulta CON orden falla (400 = columna inexistente,
+  // 500/544 = la vista se demora demasiado al ordenar y Postgres corta),
+  // reintentar SIN el parámetro order en vez de fallar del todo.
+  if(primera && !primera.ok && extraQuery && extraQuery.indexOf('order=')>=0){
     var sinOrden = extraQuery.replace(/&?order=[^&]*/,'').replace(/^&/,'');
-    console.warn('[sbFetchAll] '+tabla+': el order falló (HTTP 400); reintentando sin orden. Revisa qué columna única tiene la tabla.');
+    console.warn('[sbFetchAll] '+tabla+': la consulta con order falló (HTTP '+primera.status+'); reintentando sin orden.');
     url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (sinOrden ? "&" + sinOrden : "");
     primera = await pedirPrimera(url);
   }
@@ -2129,7 +2130,12 @@ async function cargarTodo(){
       // expedientes_predial no tiene columna id: se ordena por radicado + factura +
       // contribuyente, combinación prácticamente única que estabiliza la paginación.
       sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion', 'order=radicado.asc,numero_factura.asc,id_contribuyente.asc'),
-      sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total', 'order=documento.asc')
+      // Sin order: esta vista agrega 130k+ comparendos al vuelo y ordenarla por
+      // página la lleva al timeout (HTTP 500). Como el resultado se indexa por
+      // cédula (transitoPorCedula[cid]=...), un duplicado entre páginas solo
+      // sobreescribe la misma clave — inocuo. (El order sí se mantiene en las
+      // tablas base, donde es barato y necesario.)
+      sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total')
     ]);
 
     // 1) Depósitos — es la fuente principal; si falla, no hay nada que mostrar.
@@ -5268,7 +5274,7 @@ function depositosDeImpuesto(tipo){
 async function obtenerCedulasAnioUnico(anio){
   if(_cedulasAnioUnicoCache[anio]) return _cedulasAnioUnicoCache[anio];
   var filas = await sbFetchAll('v_transito_anios_por_cedula', 'documento',
-    'anios_distintos=eq.1&anio_min=eq.'+encodeURIComponent(anio)+'&order=documento.asc');
+    'anios_distintos=eq.1&anio_min=eq.'+encodeURIComponent(anio));   // sin order: vista agregada; el resultado va a un Set
   var set=new Set();
   filas.forEach(function(f){ var d=String(f.documento||'').trim(); if(d) set.add(d); });
   _cedulasAnioUnicoCache[anio]=set;
