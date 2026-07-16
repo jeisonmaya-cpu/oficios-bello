@@ -1816,8 +1816,33 @@ async function sbFetchAll(tabla, select, extraQuery){
   var bloque = 1000;
   var url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (extraQuery ? "&" + extraQuery : "");
 
-  var primera = await fetch(url, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact" }) });
-  if(!primera.ok) throw new Error("Supabase HTTP " + primera.status);
+  // La PRIMERA página también reintenta (antes, un solo fallo puntual de red
+  // tumbaba la tabla completa — por eso tránsito/predial cargaban "a veces").
+  async function pedirPrimera(u){
+    var ultimo=null;
+    for(var i=0;i<3;i++){
+      try{
+        var r=await fetch(u, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact" }) });
+        if(r.ok) return r;
+        ultimo=r;
+        if(r.status>=400 && r.status<500 && r.status!==429) break; // error de consulta: no insistir
+      }catch(e){ ultimo=null; }
+      await new Promise(function(res){ setTimeout(res, 400*(i+1)); });
+    }
+    return ultimo; // puede ser null (fallo de red) o una respuesta !ok
+  }
+
+  var primera = await pedirPrimera(url);
+  // Plan B: si el orden pedido no existe en la tabla/vista (ej. columna id ausente
+  // -> HTTP 400), reintentar SIN el parámetro order en vez de fallar del todo.
+  if(primera && !primera.ok && primera.status===400 && extraQuery && extraQuery.indexOf('order=')>=0){
+    var sinOrden = extraQuery.replace(/&?order=[^&]*/,'').replace(/^&/,'');
+    console.warn('[sbFetchAll] '+tabla+': el order falló (HTTP 400); reintentando sin orden. Revisa qué columna única tiene la tabla.');
+    url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (sinOrden ? "&" + sinOrden : "");
+    primera = await pedirPrimera(url);
+  }
+  if(!primera) throw new Error("Sin conexión con Supabase al pedir " + tabla);
+  if(!primera.ok) throw new Error("Supabase HTTP " + primera.status + " en " + tabla);
   var todos = await primera.json();
   if(todos.length < bloque) return todos; // ya vino todo en la primera página
 
@@ -2101,7 +2126,9 @@ async function cargarTodo(){
       // depósitos "duplicados" fantasma que NO existían en la base, y KPIs
       // levemente distintos en cada carga/PC.
       sbFetchAll('recaudo', COLUMNAS_RECAUDO_LISTA, 'order=fecha_emision.desc.nullslast,id.asc'),
-      sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion', 'order=id.asc'),
+      // expedientes_predial no tiene columna id: se ordena por radicado + factura +
+      // contribuyente, combinación prácticamente única que estabiliza la paginación.
+      sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion', 'order=radicado.asc,numero_factura.asc,id_contribuyente.asc'),
       sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total', 'order=documento.asc')
     ]);
 
@@ -5794,6 +5821,14 @@ function calcularCruceComparendos(){
 }
 
 function renderCruceComparendos(){
+  // Si el índice de tránsito está vacío es porque esa carga falló (ver banner):
+  // avisar claro en vez de mostrar un informe en ceros.
+  if(!Object.keys(transitoPorCedula).length){
+    document.getElementById('comp-kpis').innerHTML='<div class="alerta al-warn" style="grid-column:1/-1">⚠️ Los datos de comparendos de tránsito no cargaron en esta sesión, por eso el informe sale vacío. Dale a <b>🔄 Reintentar</b> en el aviso de arriba (o al botón de recarga junto a "Sincronizado") y vuelve a esta pestaña.</div>';
+    document.getElementById('comp-count').textContent='0';
+    document.getElementById('comp-body').innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:24px">Sin datos de tránsito cargados.</td></tr>';
+    return;
+  }
   var todos=calcularCruceComparendos();
   var fCob=(document.getElementById('comp-cobertura')||{value:''}).value;
   var fEst=(document.getElementById('comp-estado')||{value:''}).value;
