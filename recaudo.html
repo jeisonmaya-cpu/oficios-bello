@@ -1092,6 +1092,7 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
   <div class="subtab-bar">
     <button class="subtab-btn on" id="subtab-impuesto" onclick="cambiarVistaReporte('impuesto')">📑 Por impuesto</button>
     <button class="subtab-btn" id="subtab-deudores" onclick="cambiarVistaReporte('deudores')">🏆 Mayores deudores</button>
+    <button class="subtab-btn" id="subtab-comparendos" onclick="cambiarVistaReporte('comparendos')">🚗 Cruce comparendos</button>
   </div>
 
   <div id="repview-impuesto">
@@ -1204,6 +1205,60 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
     </div>
   </div>
   <!-- ══ FIN repview-deudores ══ -->
+
+  <!-- ══ VISTA: CRUCE DEPÓSITOS × COMPARENDOS ══ -->
+  <div id="repview-comparendos" style="display:none">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-hdr-title">🚗 Depósitos de personas con comparendos</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <select class="finp" id="comp-cobertura" onchange="renderCruceComparendos()" style="min-width:230px">
+            <option value="">Cobertura (todas)</option>
+            <option value="cubre">✅ El depósito cubre la deuda</option>
+            <option value="parcial">⚠️ Cubre parcialmente</option>
+          </select>
+          <select class="finp" id="comp-estado" onchange="renderCruceComparendos()" style="min-width:200px">
+            <option value="">Estado (todos)</option>
+            <option value="pendientes">Solo con depósitos sin resolver</option>
+            <option value="resueltos">Solo resueltos</option>
+          </select>
+          <input class="finp" id="comp-buscar" placeholder="🔍 Nombre o cédula..." oninput="renderCruceComparendosDebounced()" style="min-width:190px"/>
+          <button class="tb-btn" onclick="exportarCrucePDF()">📄 PDF</button>
+          <button class="tb-btn gold" onclick="exportarCruceExcel()">📊 Excel</button>
+        </div>
+      </div>
+      <div style="padding:20px">
+        <div style="font-size:11px;color:var(--soft);margin-bottom:12px">
+          Una fila por persona: se suman <b>todos sus depósitos retenidos</b> y se comparan contra su <b>deuda total de comparendos</b> (multa + intereses). La cobertura indica qué porcentaje de la deuda quedaría pagado si se aplicaran todos sus depósitos.
+        </div>
+        <div class="rep-kpis" id="comp-kpis"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <div class="card-hdr">
+        <div class="card-hdr-title">📋 Detalle por persona <span class="nbadge nb-blue" id="comp-count">0</span></div>
+      </div>
+      <div class="tw" style="max-height:65vh">
+        <table>
+          <thead><tr>
+            <th>Demandado</th><th>Cédula</th>
+            <th style="text-align:right">Depósitos</th>
+            <th style="text-align:right">Valor retenido</th>
+            <th style="text-align:right">Comparendos</th>
+            <th style="text-align:right">Multa</th>
+            <th style="text-align:right">Intereses</th>
+            <th style="text-align:right">Deuda total</th>
+            <th style="text-align:right">Cobertura</th>
+            <th style="text-align:right">Diferencia</th>
+            <th>Estado dep.</th>
+          </tr></thead>
+          <tbody id="comp-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- ══ FIN repview-comparendos ══ -->
 </div>
 
 <!-- ══ PANEL DUPLICADOS ══ -->
@@ -5581,15 +5636,14 @@ var _debDeud;
 
 function cambiarVistaReporte(vista){
   _vistaReporteActual=vista;
-  var elImp=document.getElementById('repview-impuesto');
-  var elDeu=document.getElementById('repview-deudores');
-  if(elImp) elImp.style.display = (vista==='impuesto') ? 'block' : 'none';
-  if(elDeu) elDeu.style.display = (vista==='deudores') ? 'block' : 'none';
-  var btnImp=document.getElementById('subtab-impuesto');
-  var btnDeu=document.getElementById('subtab-deudores');
-  if(btnImp) btnImp.classList.toggle('on', vista==='impuesto');
-  if(btnDeu) btnDeu.classList.toggle('on', vista==='deudores');
+  [['impuesto','repview-impuesto','subtab-impuesto'],
+   ['deudores','repview-deudores','subtab-deudores'],
+   ['comparendos','repview-comparendos','subtab-comparendos']].forEach(function(v){
+    var el=document.getElementById(v[1]); if(el) el.style.display=(vista===v[0])?'block':'none';
+    var btn=document.getElementById(v[2]); if(btn) btn.classList.toggle('on', vista===v[0]);
+  });
   if(vista==='deudores') renderMayoresDeudores();
+  if(vista==='comparendos') renderCruceComparendos();
 }
 
 function renderMayoresDeudoresDebounced(){ clearTimeout(_debDeud); _debDeud=setTimeout(renderMayoresDeudores, 300); }
@@ -5696,6 +5750,190 @@ function renderMayoresDeudores(){
       +'<td style="font-size:11px;color:var(--soft);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+eh(d.responsables.join(', '))+'">'+eh(d.responsables.join(', ')||'—')+'</td>'
       +'</tr>';
   }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// CRUCE DEPÓSITOS × COMPARENDOS — una fila por persona con comparendos:
+// total retenido en depósitos vs deuda de tránsito (multa + intereses).
+// ════════════════════════════════════════════════════════════
+var _compDatos=[];
+var _debComp;
+function renderCruceComparendosDebounced(){ clearTimeout(_debComp); _debComp=setTimeout(renderCruceComparendos, 300); }
+
+function calcularCruceComparendos(){
+  var mapa={};
+  dataBanco.forEach(function(r){
+    var cid=String(r['Identificación Demandado']||'').trim();
+    if(!cid || !transitoPorCedula[cid]) return;   // solo personas con comparendos
+    var v=parseFloat(String(r['Valor del Depóstio']||0).replace(/[^\d.]/g,''))||0;
+    if(!mapa[cid]){
+      var t=transitoPorCedula[cid];
+      mapa[cid]={
+        cedula:cid,
+        nombre:r['Nombre Demandante.1']||t.nombre||'—',
+        depositos:0, valorDepositos:0, pendiente:false,
+        comparendos:t.comparendos, valorMulta:t.valorMulta,
+        valorInteres:t.valorInteres, valorTotal:t.valorTotal,
+        numerosDep:[]
+      };
+    }
+    var g=mapa[cid];
+    g.depositos++; g.valorDepositos+=v;
+    g.numerosDep.push(String(r['deposito judicial']||''));
+    var cls=estadoEfectivo(r);
+    if(cls==='EN GESTION'||cls==='SIN GESTIONAR') g.pendiente=true;
+  });
+  var lista=Object.keys(mapa).map(function(k){
+    var g=mapa[k];
+    g.cobertura = g.valorTotal>0 ? (g.valorDepositos/g.valorTotal*100) : null;
+    g.diferencia = g.valorDepositos - g.valorTotal;   // + sobra, − falta
+    return g;
+  });
+  lista.sort(function(a,b){ return b.valorTotal-a.valorTotal; });
+  return lista;
+}
+
+function renderCruceComparendos(){
+  var todos=calcularCruceComparendos();
+  var fCob=(document.getElementById('comp-cobertura')||{value:''}).value;
+  var fEst=(document.getElementById('comp-estado')||{value:''}).value;
+  var buscar=(document.getElementById('comp-buscar')||{value:''}).value.toLowerCase().trim();
+  var lista=todos.filter(function(d){
+    if(fCob==='cubre' && !(d.cobertura!==null && d.cobertura>=100)) return false;
+    if(fCob==='parcial' && !(d.cobertura!==null && d.cobertura<100)) return false;
+    if(fEst==='pendientes' && !d.pendiente) return false;
+    if(fEst==='resueltos' && d.pendiente) return false;
+    if(buscar && (d.nombre||'').toLowerCase().indexOf(buscar)<0 && (d.cedula||'').indexOf(buscar)<0) return false;
+    return true;
+  });
+  _compDatos=lista;
+
+  var nDep=lista.reduce((s,d)=>s+d.depositos,0);
+  var vDep=lista.reduce((s,d)=>s+d.valorDepositos,0);
+  var vDeuda=lista.reduce((s,d)=>s+d.valorTotal,0);
+  var nComp=lista.reduce((s,d)=>s+d.comparendos,0);
+  var cubren=lista.filter(d=>d.cobertura!==null && d.cobertura>=100).length;
+  document.getElementById('comp-kpis').innerHTML=
+    repKpi('','Personas con comparendos y depósito', lista.length.toLocaleString('es-CO'), nDep.toLocaleString('es-CO')+' depósitos')+
+    repKpi('green','Valor retenido (depósitos)', fmt$(vDep), 'suma de sus depósitos')+
+    repKpi('orange','Deuda de comparendos', fmt$(vDeuda), nComp.toLocaleString('es-CO')+' comparendos · multa + intereses')+
+    repKpi('blue','Depósito cubre la deuda', cubren.toLocaleString('es-CO'), 'personas con cobertura ≥ 100%')+
+    repKpi('purple','Cobertura global', vDeuda>0?Math.round(vDep/vDeuda*100)+'%':'—', 'retenido / deuda');
+
+  document.getElementById('comp-count').textContent=lista.length.toLocaleString('es-CO');
+  var body=document.getElementById('comp-body');
+  if(!lista.length){
+    body.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:24px">No hay personas con comparendos que coincidan con el filtro.</td></tr>';
+    return;
+  }
+  var muestra=lista.slice(0,500);
+  body.innerHTML=muestra.map(function(d){
+    var covTxt, covColor;
+    if(d.cobertura===null){ covTxt='—'; covColor='var(--muted)'; }
+    else { covTxt=Math.round(d.cobertura)+'%'; covColor=d.cobertura>=100?'var(--money)':(d.cobertura>=50?'var(--warn-txt)':'var(--err-txt)'); }
+    var difColor=d.diferencia>=0?'var(--money)':'var(--err-txt)';
+    var estCell=d.pendiente?'<span class="badge b-pen">⏳ PENDIENTE</span>':'<span class="badge b-fin">✅ RESUELTO</span>';
+    var depSeguro=String(d.numerosDep[0]||'').replace(/'/g,"\\'");
+    return '<tr onclick="irADepositoGlobal(\''+depSeguro+'\')" style="cursor:pointer" tabindex="0">'
+      +'<td style="font-size:12px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(d.nombre)+'</td>'
+      +'<td class="mono" style="font-size:11px">'+eh(d.cedula)+'</td>'
+      +'<td class="mono" style="text-align:right;font-size:12px">'+d.depositos.toLocaleString('es-CO')+'</td>'
+      +'<td class="mono" style="text-align:right;font-weight:700;font-size:12px;color:var(--money)">'+fmt$(d.valorDepositos)+'</td>'
+      +'<td class="mono" style="text-align:right;font-size:12px">'+d.comparendos.toLocaleString('es-CO')+'</td>'
+      +'<td class="mono" style="text-align:right;font-size:12px">'+fmt$(d.valorMulta)+'</td>'
+      +'<td class="mono" style="text-align:right;font-size:12px">'+fmt$(d.valorInteres)+'</td>'
+      +'<td class="mono" style="text-align:right;font-weight:700;font-size:12px">'+fmt$(d.valorTotal)+'</td>'
+      +'<td class="mono" style="text-align:right;font-weight:700;font-size:12px;color:'+covColor+'">'+covTxt+'</td>'
+      +'<td class="mono" style="text-align:right;font-size:12px;color:'+difColor+'">'+(d.diferencia>=0?'+':'')+fmt$(d.diferencia)+'</td>'
+      +'<td>'+estCell+'</td>'
+      +'</tr>';
+  }).join('');
+  if(lista.length>500){
+    body.innerHTML+='<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:12px;font-style:italic">Mostrando 500 de '+lista.length.toLocaleString('es-CO')+' en pantalla. El archivo exportado incluye todos.</td></tr>';
+  }
+}
+
+function exportarCruceExcel(){
+  if(!_compDatos.length){ alert('No hay datos para exportar.'); return; }
+  var filas=_compDatos.map(function(d,i){
+    return {
+      '#':i+1,
+      'Demandado':d.nombre,
+      'Cédula':d.cedula,
+      'Depósitos':d.depositos,
+      'Nros Depósitos':d.numerosDep.join(', '),
+      'Valor Retenido':d.valorDepositos,
+      'Comparendos':d.comparendos,
+      'Valor Multa':d.valorMulta,
+      'Valor Intereses':d.valorInteres,
+      'Deuda Total Comparendos':d.valorTotal,
+      'Cobertura %':d.cobertura===null?'':Math.round(d.cobertura),
+      'Diferencia (retenido - deuda)':d.diferencia,
+      'Estado Depósitos':d.pendiente?'PENDIENTE':'RESUELTO'
+    };
+  });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(filas),'Cruce Comparendos');
+  XLSX.writeFile(wb,'Cruce_Depositos_Comparendos_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function exportarCrucePDF(){
+  if(!_compDatos.length){ alert('No hay datos para exportar.'); return; }
+  if(typeof window.jspdf==='undefined'){ alert('No se pudo cargar el generador de PDF. Revise su conexión.'); return; }
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  var W=doc.internal.pageSize.getWidth();
+  var vDep=_compDatos.reduce((s,d)=>s+d.valorDepositos,0);
+  var vDeuda=_compDatos.reduce((s,d)=>s+d.valorTotal,0);
+  var cubren=_compDatos.filter(d=>d.cobertura!==null&&d.cobertura>=100).length;
+
+  doc.setFillColor(10,31,61); doc.rect(0,0,W,60,'F');
+  doc.setTextColor(232,160,32); doc.setFontSize(16); doc.setFont('helvetica','bold');
+  doc.text('Cruce Depósitos × Comparendos de Tránsito', 40, 30);
+  doc.setTextColor(200,210,225); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello', 40, 46);
+  doc.setTextColor(150,160,175);
+  doc.text('Generado: '+new Date().toLocaleString('es-CO'), W-40, 46, {align:'right'});
+
+  doc.autoTable({
+    startY:80,
+    head:[['Concepto','Valor']],
+    body:[
+      ['Personas con comparendos y depósito', _compDatos.length.toLocaleString('es-CO')],
+      ['Valor retenido en depósitos', fmt$(vDep)],
+      ['Deuda total de comparendos', fmt$(vDeuda)],
+      ['Personas cuyo depósito cubre la deuda', cubren.toLocaleString('es-CO')],
+      ['Cobertura global', vDeuda>0?Math.round(vDep/vDeuda*100)+'%':'—']
+    ],
+    theme:'grid',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:9},
+    bodyStyles:{fontSize:9,textColor:[40,40,40]},
+    margin:{left:40,right:40},
+    columnStyles:{1:{halign:'right'}}
+  });
+
+  var rows=_compDatos.map(function(d,i){
+    return [i+1,(d.nombre||'').substring(0,26),d.cedula,d.depositos,fmt$(d.valorDepositos),
+      d.comparendos,fmt$(d.valorMulta),fmt$(d.valorInteres),fmt$(d.valorTotal),
+      d.cobertura===null?'—':Math.round(d.cobertura)+'%',(d.diferencia>=0?'+':'')+fmt$(d.diferencia),
+      d.pendiente?'PENDIENTE':'RESUELTO'];
+  });
+  doc.autoTable({
+    startY:doc.lastAutoTable.finalY+20,
+    head:[['#','Demandado','Cédula','Dep.','Retenido','Comp.','Multa','Intereses','Deuda total','Cobert.','Diferencia','Estado']],
+    body:rows,
+    theme:'striped',
+    headStyles:{fillColor:[13,37,71],textColor:[232,160,32],fontSize:7.5},
+    bodyStyles:{fontSize:6.8,textColor:[50,50,50]},
+    alternateRowStyles:{fillColor:[245,247,250]},
+    margin:{left:40,right:40},
+    columnStyles:{4:{halign:'right'},6:{halign:'right'},7:{halign:'right'},8:{halign:'right'},9:{halign:'right'},10:{halign:'right'}},
+    didDrawPage:function(){
+      doc.setFontSize(8); doc.setTextColor(150,150,150);
+      doc.text('Página '+doc.internal.getCurrentPageInfo().pageNumber, W-40, doc.internal.pageSize.getHeight()-15, {align:'right'});
+    }
+  });
+  doc.save('Cruce_Depositos_Comparendos_'+new Date().toISOString().slice(0,10)+'.pdf');
 }
 
 function exportarDeudoresExcel(){
