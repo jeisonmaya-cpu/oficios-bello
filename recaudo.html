@@ -22,6 +22,8 @@
   --border:rgba(255,255,255,.10);--border2:rgba(255,255,255,.06);
   --text:#f1f5f9;--soft:rgba(241,245,249,.72);--muted:rgba(241,245,249,.48);
   --radius:14px;--radius-sm:9px;
+  /* Colores de texto semánticos: pastel en oscuro, intensos en claro (ver html.tema-claro) */
+  --money:var(--money);--warn-txt:var(--warn-txt);--info-txt:var(--info-txt);--err-txt:var(--err-txt);--err-txt2:var(--err-txt2);--imp-txt:var(--imp-txt);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;
@@ -60,7 +62,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 .ntab.on{color:var(--text);border-bottom-color:var(--gold)}
 .ntab:hover:not(.on){color:rgba(255,255,255,.8)}
 .nbadge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:18px;text-align:center}
-.nb-blue{background:rgba(45,141,232,.3);color:#93c5fd}
+.nb-blue{background:rgba(45,141,232,.3);color:var(--info-txt)}
 .nb-gold{background:rgba(232,160,32,.35);color:var(--gold2)}
 
 /* ── MAIN ── */
@@ -106,7 +108,7 @@ main{max-width:1300px;margin:0 auto;padding:24px 28px 80px}
 .fbtn-outline:hover{background:rgba(255,255,255,.1);color:var(--text)}
 .fbtn-gold{background:linear-gradient(135deg,var(--gold),#d4891a);color:#0a1f3d;font-weight:700}
 .fbtn-gold:hover{opacity:.9}
-.fbtn-green{background:rgba(22,163,74,.25);border:1px solid rgba(34,197,94,.3);color:#86efac}
+.fbtn-green{background:rgba(22,163,74,.25);border:1px solid rgba(34,197,94,.3);color:var(--money)}
 
 /* ── TABLA ── */
 .tw{overflow:auto;max-height:calc(100vh - 230px);border-radius:8px}
@@ -129,16 +131,16 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 
 /* ── BADGES ── */
 .badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;gap:3px}
-.b-fin{background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)}
-.b-tram{background:rgba(45,141,232,.15);color:#93c5fd;border:1px solid rgba(45,141,232,.3)}
+.b-fin{background:rgba(22,163,74,.15);color:var(--money);border:1px solid rgba(22,163,74,.3)}
+.b-tram{background:rgba(45,141,232,.15);color:var(--info-txt);border:1px solid rgba(45,141,232,.3)}
 .b-pen{background:rgba(232,160,32,.15);color:var(--gold2);border:1px solid rgba(232,160,32,.3)}
 .b-rev{background:rgba(148,163,184,.14);color:#cbd5e1;border:1px solid rgba(148,163,184,.28)}
 .b-vacio{background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border2)}
-.b-imp{background:rgba(45,141,232,.10);color:#a9c9ee;border:1px solid rgba(45,141,232,.22)}
+.b-imp{background:rgba(45,141,232,.10);color:var(--imp-txt);border:1px solid rgba(45,141,232,.22)}
 .ant-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
-.ant-verde{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+.ant-verde{background:rgba(34,197,94,.15);color:var(--money);border:1px solid rgba(34,197,94,.3)}
 .ant-amarillo{background:rgba(232,160,32,.18);color:var(--gold2);border:1px solid rgba(232,160,32,.35)}
-.ant-rojo{background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.35)}
+.ant-rojo{background:rgba(220,38,38,.18);color:var(--err-txt2);border:1px solid rgba(220,38,38,.35)}
 .ant-ok{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border2)}
 
 /* ── OBSERVACIÓN EDITABLE EN TABLA ── */
@@ -182,7 +184,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
 .tj-info{flex:1;min-width:0}
 .tj-dep{font-family:monospace;font-size:11px;color:var(--soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tj-nombre{font-weight:700;font-size:14.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tj-valor{font-weight:700;font-size:15px;color:#86efac;white-space:nowrap;flex-shrink:0}
+.tj-valor{font-weight:700;font-size:15px;color:var(--money);white-space:nowrap;flex-shrink:0}
 .tj-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
 .tj-obs{margin-top:8px;font-size:12px;color:var(--soft);padding:7px 9px;background:rgba(255,255,255,.03);border-radius:8px;display:flex;align-items:center;gap:6px}
 .tj-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:11px;color:var(--muted)}
@@ -190,7 +192,7 @@ td.mono,.mono{font-family:'DM Mono','Courier New',monospace}
   .tw{display:none}
   .tarjetas-mobile{display:block}
 }
-.chip-nuevo{background:rgba(45,141,232,.25);color:#93c5fd;border:1px solid rgba(45,141,232,.4);
+.chip-nuevo{background:rgba(45,141,232,.25);color:var(--info-txt);border:1px solid rgba(45,141,232,.4);
   font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
 
 /* ── SELECCIÓN / BARRA FLOTANTE DE IMPRESIÓN ── */
@@ -227,7 +229,7 @@ select.sel-tramite option{background:#0d1a30;color:var(--text)}
   cursor:pointer;font-size:11px;line-height:1;padding:0;transition:opacity .15s,background .15s;flex-shrink:0}
 td:hover .copy-ico,.copy-wrap:hover .copy-ico{opacity:.75}
 .copy-ico:hover{opacity:1!important;background:rgba(232,160,32,.25);color:var(--gold2)}
-.copy-ico.ok{opacity:1!important;background:rgba(22,163,74,.3);color:#86efac}
+.copy-ico.ok{opacity:1!important;background:rgba(22,163,74,.3);color:var(--money)}
 
 /* ── AVISO TEODORO (reemplaza teoAlert() nativo) ── */
 .teo-alert-back{position:fixed;inset:0;z-index:10080;display:none;align-items:center;justify-content:center;
@@ -310,7 +312,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .banco-item{font-size:11px}
 .banco-lbl{color:var(--soft);font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
 .banco-val{color:var(--text);font-weight:600;word-break:break-word}
-.banco-val.money{color:#86efac;font-size:15px}
+.banco-val.money{color:var(--money);font-size:15px}
 
 .msec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
   color:var(--gold2);margin:18px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
@@ -342,9 +344,9 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 /* ── ALERTAS ── */
 .alerta{padding:9px 13px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;
   display:flex;align-items:center;gap:7px}
-.al-ok{background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)}
-.al-err{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
-.al-load{background:rgba(45,141,232,.15);color:#93c5fd;border:1px solid rgba(45,141,232,.3)}
+.al-ok{background:rgba(22,163,74,.15);color:var(--money);border:1px solid rgba(22,163,74,.3)}
+.al-err{background:rgba(220,38,38,.15);color:var(--err-txt2);border:1px solid rgba(220,38,38,.3)}
+.al-load{background:rgba(45,141,232,.15);color:var(--info-txt);border:1px solid rgba(45,141,232,.3)}
 .al-warn{background:rgba(232,160,32,.15);color:var(--gold2);border:1px solid rgba(232,160,32,.3)}
 .spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.15);
   border-top-color:var(--blue2);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
@@ -354,7 +356,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .import-banner{background:rgba(234,88,12,.08);border:1.5px dashed rgba(234,88,12,.3);
   border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;
   justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
-.import-banner-txt h4{font-size:13px;font-weight:700;color:#fdba74;margin-bottom:3px}
+.import-banner-txt h4{font-size:13px;font-weight:700;color:var(--warn-txt);margin-bottom:3px}
 .import-banner-txt p{font-size:12px;color:var(--soft)}
 .import-drop{border:2px dashed rgba(255,255,255,.18);border-radius:var(--radius);
   padding:36px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2)}
@@ -366,7 +368,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .empty-ico{font-size:40px;margin-bottom:10px;opacity:.5}
 
 /* ── BOTÓN GESTIONAR EN TABLA ── */
-.btn-gest{background:rgba(45,141,232,.2);color:#93c5fd;border:1px solid rgba(45,141,232,.35);
+.btn-gest{background:rgba(45,141,232,.2);color:var(--info-txt);border:1px solid rgba(45,141,232,.35);
   border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;
   font-family:inherit;transition:all .15s}
 .btn-gest:hover{background:rgba(45,141,232,.4);color:#fff}
@@ -463,8 +465,8 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .wiz-skip:hover{color:var(--soft)}
 .wiz-alert-box{margin:0 28px 14px;padding:10px 14px;border-radius:9px;font-size:12.5px;display:none;align-items:flex-start;gap:8px}
 .wiz-alert-box.show{display:flex}
-.wiz-alert-box.alert-s{background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(34,197,94,.3)}
-.wiz-alert-box.alert-e{background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+.wiz-alert-box.alert-s{background:rgba(22,163,74,.15);color:var(--money);border:1px solid rgba(34,197,94,.3)}
+.wiz-alert-box.alert-e{background:rgba(220,38,38,.15);color:var(--err-txt2);border:1px solid rgba(239,68,68,.3)}
 .wiz-alert-box.alert-w{background:rgba(232,160,32,.12);color:var(--gold2);border:1px solid rgba(232,160,32,.3)}
 .wiz-eye-l,.wiz-eye-r,.wiz-pupil-l,.wiz-pupil-r{animation:wizEyeBlink 4.5s ease-in-out infinite}
 @keyframes wizEyeBlink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(.08)}}
@@ -483,7 +485,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 @keyframes wizMLed{from{opacity:1}to{opacity:.2}}
 .wiz-robot.shake{animation:wizShake .5s ease,wizFloat 3s ease-in-out infinite .5s}
 @keyframes wizShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-12deg) scale(1.08)}30%{transform:rotate(12deg) scale(1.1)}50%{transform:rotate(-7deg) scale(1.05)}70%{transform:rotate(5deg) scale(1.02)}}
-.sync-pendientes{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#fdba74;background:rgba(234,88,12,.18);border:1px solid rgba(234,88,12,.4);border-radius:20px;padding:4px 11px;cursor:pointer;white-space:nowrap}
+.sync-pendientes{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--warn-txt);background:rgba(234,88,12,.18);border:1px solid rgba(234,88,12,.4);border-radius:20px;padding:4px 11px;cursor:pointer;white-space:nowrap}
 .sync-pendientes:hover{background:rgba(234,88,12,.3)}
 /* ── BITÁCORA / HISTORIAL ── */
 .log-item{padding:9px 11px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;margin-bottom:7px}
@@ -526,7 +528,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .consig-row{display:grid;grid-template-columns:1.3fr 1fr 1fr 30px;gap:8px;margin-top:6px;align-items:center}
 .consig-row input{width:100%}
 .consig-del{width:30px;height:34px;border-radius:8px;border:1px solid rgba(220,38,38,.35);
-  background:rgba(220,38,38,.12);color:#fca5a5;cursor:pointer;font-size:13px;line-height:1;transition:all .15s}
+  background:rgba(220,38,38,.12);color:var(--err-txt2);cursor:pointer;font-size:13px;line-height:1;transition:all .15s}
 .consig-del:hover{background:rgba(220,38,38,.25)}
 .consig-add{margin-top:8px;padding:6px 13px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;
   background:rgba(26,111,196,.15);border:1px dashed rgba(45,141,232,.5);color:var(--blue2);cursor:pointer;
@@ -546,8 +548,8 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .prop-row-sub{font-size:11px;color:var(--soft);margin-top:2px}
 .prop-row-val{font-size:12px;font-weight:600;font-family:'DM Mono',monospace;flex-shrink:0}
 .prop-tag{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px;flex-shrink:0;
-  background:rgba(234,88,12,.15);border:1px solid rgba(234,88,12,.4);color:#fdba74}
-.prop-tag.libre{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.4);color:#86efac}
+  background:rgba(234,88,12,.15);border:1px solid rgba(234,88,12,.4);color:var(--warn-txt)}
+.prop-tag.libre{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.4);color:var(--money)}
 
 /* ── VISTA 360 (depósitos + expedientes en modal) ── */
 .vista360{margin-top:18px;padding:14px;background:rgba(26,111,196,.06);border:1px solid rgba(45,141,232,.18);border-radius:var(--radius-sm)}
@@ -566,8 +568,8 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .v360-row-top{font-family:monospace;font-size:11px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .v360-row-sub{font-size:10px;color:var(--muted)}
 .v360-row-right{text-align:right;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
-.v360-val{font-weight:700;color:#86efac}
-.v360-badge{font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(45,141,232,.18);color:#93c5fd;font-weight:600}
+.v360-val{font-weight:700;color:var(--money)}
+.v360-badge{font-size:9px;padding:1px 7px;border-radius:8px;background:rgba(45,141,232,.18);color:var(--info-txt);font-weight:600}
 .v360-aqui{font-size:9px;color:var(--gold2);font-weight:700}
 .v360-empty{font-size:11px;color:var(--muted);font-style:italic;padding:4px 2px}
 .v360-total{display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:8px;background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);border-radius:8px;font-size:12px;color:var(--soft)}
@@ -604,8 +606,8 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .pend-stat-num{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--text);line-height:1}
 .pend-stat-lbl{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
 .pend-stat.warn .pend-stat-num{color:var(--gold2)}
-.pend-stat.err .pend-stat-num{color:#f87171}
-.pend-stat.ok .pend-stat-num{color:#86efac}
+.pend-stat.err .pend-stat-num{color:var(--err-txt)}
+.pend-stat.ok .pend-stat-num{color:var(--money)}
 
 /* ── SKELETON DE CARGA INICIAL ── */
 @keyframes skel-pulse{0%,100%{opacity:.35}50%{opacity:.75}}
@@ -624,77 +626,114 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 }
 
 /* ════════════════════════════════════════════════════════════
-   ☀️ MODO CLARO — se activa con la clase .tema-claro en <html>.
-   Redefine las variables y los fondos oscuros codificados a mano.
-   La preferencia se guarda por navegador (localStorage: teodoro_tema).
+   ☀️ MODO CLARO — clase .tema-claro en <html>. Preferencia por
+   navegador (localStorage: teodoro_tema). Diseño: fondo gris azulado
+   suave, tarjetas BLANCAS con sombra y colores de texto intensos.
    ════════════════════════════════════════════════════════════ */
 html.tema-claro{
-  --navy:#eef2f8;--navy2:#dfe7f2;--navy3:#e6ecf5;
-  --surface:rgba(15,35,70,.045);--surface2:rgba(15,35,70,.03);
-  --border:rgba(15,35,70,.14);--border2:rgba(15,35,70,.08);
-  --text:#1a2740;--soft:rgba(26,39,64,.62);--muted:rgba(26,39,64,.42);
-  --gold2:#a06a00;
+  --navy:#eef1f6;--navy2:#dfe7f2;--navy3:#e6ecf5;
+  --surface:#ffffff;--surface2:#f6f8fc;
+  --border:rgba(15,35,70,.13);--border2:rgba(15,35,70,.08);
+  --text:#1a2740;--soft:rgba(26,39,64,.66);--muted:rgba(26,39,64,.45);
+  --gold2:#9c6a08;
+  --money:#0e7a3d;--warn-txt:#b45309;--info-txt:#1d4ed8;--err-txt:#c02626;--err-txt2:#c02626;--imp-txt:#1d4ed8;
 }
 html.tema-claro body{
   background:var(--navy);color:var(--text);
-  background-image:
-    radial-gradient(ellipse 70% 50% at 15% 0%,rgba(26,111,196,.10) 0%,transparent 55%),
-    radial-gradient(ellipse 50% 40% at 85% 100%,rgba(232,160,32,.08) 0%,transparent 55%),
-    linear-gradient(160deg,#f2f5fa 0%,#e9eff8 50%,#f5f7fb 100%);
+  background-image:linear-gradient(160deg,#eef1f6 0%,#e9edf5 60%,#eef1f6 100%);
 }
-html.tema-claro .topbar{background:rgba(255,255,255,.92);border-bottom:1px solid rgba(15,35,70,.12)}
+/* Barra superior y pestañas */
+html.tema-claro .topbar{background:#ffffff;border-bottom:1px solid rgba(15,35,70,.12);box-shadow:0 1px 4px rgba(15,35,70,.06)}
 html.tema-claro .tb-title{color:#12305e}
-html.tema-claro .tabs{background:rgba(255,255,255,.85);border-bottom:1px solid var(--border)}
-html.tema-claro .ntab.on{color:#12305e}
+html.tema-claro .tabs{background:#ffffff;border-bottom:1px solid var(--border)}
+html.tema-claro .ntab{color:rgba(26,39,64,.6)}
+html.tema-claro .ntab.on{color:#12305e;border-bottom-color:#c8871a}
 html.tema-claro .ntab:hover:not(.on){color:#1a2740}
-html.tema-claro .tb-btn{background:rgba(15,35,70,.05);border-color:rgba(15,35,70,.15);color:#1a2740}
-html.tema-claro .tb-btn:hover{background:rgba(15,35,70,.10)}
-html.tema-claro .tb-btn.gold{background:rgba(232,160,32,.16);border-color:rgba(160,106,0,.4);color:#8a5b00}
-html.tema-claro .sync-pill{background:#fff;border-color:var(--border);color:var(--soft)}
-html.tema-claro thead tr,html.tema-claro thead th{background:#e2e9f4;color:#12305e}
-html.tema-claro thead th:hover{background:#d7e1f0}
-html.tema-claro tbody tr:hover{background:rgba(15,35,70,.05)}
-html.tema-claro .finp{border-color:rgba(15,35,70,.2);background:#fff;color:var(--text)}
-html.tema-claro .finp:focus{border-color:rgba(26,111,196,.55);background:#fff}
-html.tema-claro .finp option{background:#fff;color:#1a2740}
+html.tema-claro .tb-btn{background:#f2f5fa;border-color:rgba(15,35,70,.16);color:#1a2740}
+html.tema-claro .tb-btn:hover{background:#e7ecf4}
+html.tema-claro .tb-btn.gold{background:#fdf3df;border-color:rgba(160,106,0,.45);color:#8a5b00}
+html.tema-claro .sync-pill{background:#f2f5fa;border-color:var(--border);color:var(--soft)}
+/* Tarjetas: blancas con sombra suave */
+html.tema-claro .card,html.tema-claro .kpi,html.tema-claro .pend-stat,html.tema-claro .dash-kpi,
+html.tema-claro .rep-kpi,html.tema-claro .dup-card{
+  background:#ffffff;border-color:rgba(15,35,70,.10);box-shadow:0 1px 3px rgba(15,35,70,.07)}
+html.tema-claro .card-hdr{border-bottom-color:rgba(15,35,70,.09)}
+html.tema-claro .card-hdr-title{color:#9c6a08}
+html.tema-claro .filtros{background:#f6f8fc;border-bottom-color:rgba(15,35,70,.08)}
+/* Tablas */
+html.tema-claro thead tr,html.tema-claro thead th{background:#eef2f9;color:#33528a}
+html.tema-claro thead th:hover{background:#e3eaf5}
+html.tema-claro tbody tr{border-bottom-color:rgba(15,35,70,.07)}
+html.tema-claro tbody tr:hover{background:#f3f6fb}
+html.tema-claro tbody tr.gestionado{border-left-color:rgba(14,122,61,.55)}
+html.tema-claro .dash-table th{color:rgba(26,39,64,.55);border-bottom-color:rgba(15,35,70,.14)}
+html.tema-claro .dash-table td{border-bottom-color:rgba(15,35,70,.08)}
+html.tema-claro .dash-bar,html.tema-claro .rep-ebar,html.tema-claro .dash-ebar{background:rgba(15,35,70,.08)}
+/* Controles */
+html.tema-claro .finp{border-color:rgba(15,35,70,.20);background:#ffffff;color:var(--text)}
+html.tema-claro .finp:focus{border-color:rgba(26,111,196,.55);background:#ffffff}
+html.tema-claro .finp option{background:#ffffff;color:#1a2740}
 html.tema-claro .fbtn-outline{border-color:rgba(15,35,70,.25);color:var(--soft)}
-html.tema-claro .fbtn-outline:hover{background:rgba(15,35,70,.07);color:var(--text)}
+html.tema-claro .fbtn-outline:hover{background:rgba(15,35,70,.06);color:var(--text)}
 html.tema-claro .fbtn-gold{color:#fff}
-html.tema-claro .mbox{background:#fbfcfe;border-color:rgba(15,35,70,.14)}
-html.tema-claro .global-results{background:#fff;border-color:var(--border);box-shadow:0 20px 40px rgba(15,35,70,.18)}
-html.tema-claro .gr-item:hover{background:rgba(15,35,70,.05)}
-html.tema-claro .user-card{background:#fff;border-color:rgba(160,106,0,.35)}
+html.tema-claro .fbtn-green{background:rgba(14,122,61,.10);border-color:rgba(14,122,61,.35)}
+html.tema-claro .btn-gest{background:rgba(29,78,216,.08);border-color:rgba(29,78,216,.3)}
+html.tema-claro .btn-gest:hover{background:rgba(29,78,216,.16);color:#12305e}
+html.tema-claro .pb{background:#ffffff;border-color:rgba(15,35,70,.18)}
+html.tema-claro .pb:hover:not(:disabled){background:#eef2f9}
+html.tema-claro .pb.cur{background:#c8871a;border-color:#c8871a;color:#fff}
+html.tema-claro .pag{background:#f6f8fc;border-top-color:rgba(15,35,70,.08)}
+/* Badges y píldoras: fondos tenues con texto intenso */
+html.tema-claro .badge{font-weight:700}
+html.tema-claro .b-fin,html.tema-claro .ant-verde{background:rgba(14,122,61,.10);border-color:rgba(14,122,61,.3)}
+html.tema-claro .b-tram{background:rgba(29,78,216,.08);border-color:rgba(29,78,216,.28)}
+html.tema-claro .b-pen,html.tema-claro .ant-amarillo{background:rgba(180,83,9,.10);border-color:rgba(180,83,9,.3)}
+html.tema-claro .b-rev{background:rgba(109,40,217,.08);border-color:rgba(109,40,217,.28);color:#6d28d9}
+html.tema-claro .b-imp{background:rgba(29,78,216,.07);border-color:rgba(29,78,216,.22)}
+html.tema-claro .b-vacio,html.tema-claro .ant-ok{background:rgba(15,35,70,.05);color:var(--muted);border-color:rgba(15,35,70,.10)}
+html.tema-claro .ant-rojo{background:rgba(192,38,38,.09);border-color:rgba(192,38,38,.3)}
+html.tema-claro .nb-blue{background:rgba(29,78,216,.12);color:#1d4ed8}
+html.tema-claro .nb-gold{background:rgba(156,106,8,.14);color:#8a5b00}
+html.tema-claro .chip-nuevo{background:rgba(29,78,216,.10);border-color:rgba(29,78,216,.3)}
+html.tema-claro .v360-badge{background:rgba(29,78,216,.09)}
+html.tema-claro .sync-pendientes{background:rgba(180,83,9,.10);border-color:rgba(180,83,9,.35)}
+/* Alertas */
+html.tema-claro .al-ok{background:rgba(14,122,61,.08);border-color:rgba(14,122,61,.3)}
+html.tema-claro .al-err{background:rgba(192,38,38,.07);border-color:rgba(192,38,38,.3)}
+html.tema-claro .al-load{background:rgba(29,78,216,.07);border-color:rgba(29,78,216,.28)}
+html.tema-claro .al-warn{background:rgba(180,83,9,.08);border-color:rgba(180,83,9,.3);color:#8a5b00}
+html.tema-claro .import-banner{background:rgba(180,83,9,.06);border-color:rgba(180,83,9,.3)}
+/* Modales y superpuestos */
+html.tema-claro .ov{background:rgba(20,32,55,.45)}
+html.tema-claro .mbox{background:#ffffff;border-color:rgba(15,35,70,.14);box-shadow:0 32px 64px rgba(15,35,70,.3)}
+html.tema-claro .banco-info,html.tema-claro .vista360{background:#f6f8fc;border-color:rgba(15,35,70,.10)}
+html.tema-claro .banco-info-title{color:#9c6a08}
+html.tema-claro .v360-row,html.tema-claro .prop-row,html.tema-claro .log-item{background:#ffffff;border-color:rgba(15,35,70,.10)}
+html.tema-claro .v360-row.actual{background:#fdf6e7;border-color:rgba(156,106,8,.4)}
+html.tema-claro .v360-total{background:#fdf6e7;border-color:rgba(156,106,8,.35)}
+html.tema-claro .campo input,html.tema-claro .campo select,html.tema-claro .campo textarea{
+  border-color:rgba(15,35,70,.20);background:#ffffff;color:var(--text)}
+html.tema-claro .campo input:focus,html.tema-claro .campo select:focus,html.tema-claro .campo textarea:focus{
+  border-color:rgba(26,111,196,.55);background:#ffffff}
+html.tema-claro .campo select option{background:#ffffff;color:#1a2740}
+html.tema-claro .msec{color:#9c6a08;border-bottom-color:rgba(15,35,70,.10)}
+html.tema-claro .mclose{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.25)}
+html.tema-claro .global-results{background:#ffffff;border-color:var(--border);box-shadow:0 20px 40px rgba(15,35,70,.18)}
+html.tema-claro .gr-item:hover{background:#f3f6fb}
+html.tema-claro .user-card{background:#ffffff;border-color:rgba(156,106,8,.35)}
 html.tema-claro .user-card-title{color:#12305e}
-html.tema-claro .user-opt{background:rgba(15,35,70,.04);color:var(--text)}
-html.tema-claro .sel-bar{background:#fff;border-color:rgba(160,106,0,.5);box-shadow:0 14px 36px rgba(15,35,70,.25)}
-html.tema-claro .skel-cell{background:rgba(15,35,70,.12)}
-html.tema-claro .log-item{background:rgba(15,35,70,.03)}
-/* Badges y montos: los tonos pastel del modo oscuro no se leen sobre blanco */
-html.tema-claro .b-fin,html.tema-claro .badge.b-fin{color:#15803d}
-html.tema-claro .b-tram{color:#1d4ed8}
-html.tema-claro .b-pen{color:#92400e}
-html.tema-claro .b-rev{color:#6d28d9}
-html.tema-claro .b-imp{color:#9a3412}
-html.tema-claro .nb-blue{background:rgba(29,78,216,.14);color:#1d4ed8}
-html.tema-claro .nb-gold{background:rgba(160,106,0,.16);color:#8a5b00}
-html.tema-claro .banco-val.money,html.tema-claro .v360-val{color:#15803d}
-html.tema-claro .fbtn-green{color:#15803d}
-html.tema-claro .al-ok{color:#15803d}
-html.tema-claro .al-err{color:#b91c1c}
-html.tema-claro .al-load{color:#1d4ed8}
-html.tema-claro .al-warn{color:#92400e}
-html.tema-claro .prop-tag{color:#9a3412}
-html.tema-claro .prop-tag.libre{color:#15803d}
-html.tema-claro .sync-pendientes{color:#9a3412}
-html.tema-claro .consig-del{color:#b91c1c}
-html.tema-claro .consig-add{color:#12569e}
-html.tema-claro .btn-gest{color:#1d4ed8}
-html.tema-claro .btn-gest:hover{color:#12305e}
-html.tema-claro .v360-badge{color:#1d4ed8}
-html.tema-claro .chip-nuevo{color:#1d4ed8}
-html.tema-claro .pend-stat.warn .pend-stat-num{color:#a06a00}
-html.tema-claro .pend-stat.err .pend-stat-num{color:#b91c1c}
-html.tema-claro .pend-stat.ok .pend-stat-num{color:#15803d}
+html.tema-claro .user-opt{background:#f6f8fc;color:var(--text)}
+html.tema-claro .sel-bar{background:#ffffff;border-color:rgba(156,106,8,.5);box-shadow:0 14px 36px rgba(15,35,70,.25)}
+html.tema-claro .sel-total-box{background:#fdf6e7;border-color:rgba(156,106,8,.35)}
+html.tema-claro .skel-cell{background:rgba(15,35,70,.10)}
+html.tema-claro .consig-del{background:rgba(192,38,38,.07);border-color:rgba(192,38,38,.3);color:#c02626}
+html.tema-claro .consig-add{background:rgba(26,111,196,.07);border-color:rgba(26,111,196,.45);color:#12569e}
+html.tema-claro .prop-tag{background:rgba(180,83,9,.10);border-color:rgba(180,83,9,.35);color:#b45309}
+html.tema-claro .prop-tag.libre{background:rgba(14,122,61,.10);border-color:rgba(14,122,61,.3);color:#0e7a3d}
+html.tema-claro .import-drop{background:#f6f8fc;border-color:rgba(15,35,70,.20)}
+html.tema-claro .import-drop:hover,html.tema-claro .import-drop.drag{background:rgba(26,111,196,.06)}
+html.tema-claro .tj-valor{color:var(--money)}
+html.tema-claro .copy-btn{background:rgba(15,35,70,.06);border-color:rgba(15,35,70,.15)}
 </style>
 </head>
 <body>
@@ -783,7 +822,7 @@ html.tema-claro .pend-stat.ok .pend-stat-num{color:#15803d}
   <div class="card">
     <div class="card-hdr">
       <div class="card-hdr-title">📋 Registros del banco</div>
-      <button class="tb-btn" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74">📥 Importar</button>
+      <button class="tb-btn" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:var(--warn-txt)">📥 Importar</button>
     </div>
     <div class="filtros">
       <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrarDebounced()"/>
@@ -1219,12 +1258,12 @@ html.tema-claro .pend-stat.ok .pend-stat-num{color:#15803d}
     </div>
     <div style="padding:20px">
       <div style="padding:16px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius-sm);margin-bottom:16px">
-        <div style="font-size:13px;font-weight:600;color:#86efac;margin-bottom:6px">✅ Base de datos Supabase (PostgreSQL)</div>
+        <div style="font-size:13px;font-weight:600;color:var(--money);margin-bottom:6px">✅ Base de datos Supabase (PostgreSQL)</div>
         <div style="font-size:12px;color:var(--soft);line-height:1.6">Los depósitos y las gestiones se guardan directamente en la base de datos central. Los cambios que hagan los contadores se ven al instante para todo el equipo. Ya no se requiere configurar URL de Google Sheets.</div>
       </div>
       <div class="cg3" style="gap:12px">
         <div class="campo"><label>Total depósitos</label><input type="text" id="cfg-info-total" readonly value="—" style="font-weight:700;color:var(--gold2)"/></div>
-        <div class="campo"><label>Gestionados</label><input type="text" id="cfg-info-gest" readonly value="—" style="font-weight:700;color:#86efac"/></div>
+        <div class="campo"><label>Gestionados</label><input type="text" id="cfg-info-gest" readonly value="—" style="font-weight:700;color:var(--money)"/></div>
         <div class="campo"><label>Última carga</label><input type="text" id="cfg-info-sync" readonly value="—"/></div>
       </div>
       <div id="cfg-alert" style="display:none;margin-top:14px"></div>
@@ -2178,7 +2217,7 @@ function onWizNombre(val){
     bubble.innerHTML=fn(nombre);
     bubble.style.borderColor='rgba(34,197,94,.4)';
     bubble.style.background='rgba(34,197,94,.1)';
-    bubble.style.color='#86efac';
+    bubble.style.color='var(--money)';
   } else {
     bubble.innerHTML='¡Hola! Soy <strong>Teodoro</strong> 👋<br>¿Con quién tengo el gusto?';
     bubble.style.borderColor='rgba(232,160,32,.3)';
@@ -2232,7 +2271,7 @@ async function conectar(){
     if(b){
       b.innerHTML = 'Espera, necesito tu nombre 😅';
       b.style.borderColor = 'rgba(239,68,68,.4)';
-      b.style.color = '#fca5a5';
+      b.style.color = 'var(--err-txt2)';
       b.style.background = 'rgba(239,68,68,.1)';
     }
     return;
@@ -2319,7 +2358,7 @@ const BV_PASOS = [
     tipo: 'spot', tab: 'registros', selector: '#th-antiguedad',
     bubble: '⏳ Nada se te pasa',
     titulo: '🕒 Antigüedad de cada depósito',
-    html: 'Esta columna muestra <b>hace cuántos días</b> un depósito sigue sin resolverse: <span style="color:#86efac">verde</span> (menos de 15 días), <span style="color:var(--gold2)">amarillo</span> (15 a 30) y <span style="color:#fca5a5">rojo</span> (más de 30). Ya no toca ordenar por fecha a mano para saber qué es urgente.'
+    html: 'Esta columna muestra <b>hace cuántos días</b> un depósito sigue sin resolverse: <span style="color:var(--money)">verde</span> (menos de 15 días), <span style="color:var(--gold2)">amarillo</span> (15 a 30) y <span style="color:var(--err-txt2)">rojo</span> (más de 30). Ya no toca ordenar por fecha a mano para saber qué es urgente.'
   },
   {
     tipo: 'spot', tab: 'duplicados', selector: '#tab-duplicados',
@@ -2530,7 +2569,7 @@ function buscarGlobal(){
     return '<div class="gr-item" onclick="irADepositoGlobal(\''+depSeguro+'\')">'
       +'<div><div class="gr-acc">'+eh(r['Nombre Demandante.1']||'—')+'</div>'
       +'<div class="gr-sub">Depósito '+eh(r['deposito judicial'])+' · CC '+eh(r['Identificación Demandado']||'—')+'</div></div>'
-      +'<div style="font-weight:700;color:#86efac;white-space:nowrap">'+fmt$(v)+'</div>'
+      +'<div style="font-weight:700;color:var(--money);white-space:nowrap">'+fmt$(v)+'</div>'
       +'</div>';
   }).join('');
   cont.classList.add('open');
@@ -2875,7 +2914,7 @@ function renderTabla(){
     var fecha=String(r['Fecha Emisión']||'');if(fecha.length>10)fecha=fecha.substring(0,10);
     var valor=parsearValor(r['Valor del Depóstio']);
     var cid=String(r['Identificación Demandado']||'');
-    var tieneExp=(expedientesPorCedula[cid]||transitoPorCedula[cid])?'<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:#93c5fd"></span>':'';
+    var tieneExp=(expedientesPorCedula[cid]||transitoPorCedula[cid])?'<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:var(--info-txt)"></span>':'';
     // Columna Proceso: 1) lo que el contador escribió a mano  2) radicado del expediente predial  3) comparendos de tránsito  4) vacío
     var procManual=String(r['Proceso']||'').trim();
     var procCell='—', procCopy='';
@@ -2896,9 +2935,9 @@ function renderTabla(){
       <td>${badgeAntiguedad(r)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
       <td class="mono col-cedula" style="font-size:13px;white-space:nowrap"><span class="copy-wrap">${eh(r['Identificación Demandado']||'—')}${cid?`<button class="copy-ico" title="Copiar cédula" onclick="copiarCelda(event,'${eh(cid)}',this)">⧉</button>`:''}</span></td>
-      <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'#86efac':'var(--text)'}">${fmt$(valor)}</td>
+      <td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:${valor>1e6?'var(--money)':'var(--text)'}">${fmt$(valor)}</td>
       <td class="mono col-proceso" style="font-size:13px;color:var(--soft);white-space:nowrap"><span class="copy-wrap">${procCell}${procCopy?`<button class="copy-ico" title="Copiar radicado" onclick="copiarCelda(event,'${eh(procCopy)}',this)">⧉</button>`:''}</span></td>
-      <td class="col-impuesto">${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
+      <td class="col-impuesto">${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:var(--warn-txt)" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
       <td onclick="event.stopPropagation()"><span class="est-cell" onclick="abrirEditorEstado(this,'${eh(String(r._id))}','devolucion')">${badgeEst(r['ESTADO DEVOLUCION'])}</span></td>
       <td onclick="event.stopPropagation()"><span class="est-cell" onclick="abrirEditorEstado(this,'${eh(String(r._id))}','aplicacion')">${badgeEst(r['ESTADO APLICACIÓN'])}</span></td>
       <td style="font-size:13px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
@@ -3437,7 +3476,7 @@ function renderDuplicados(){
           <div class="info">📄 Depósito <b>${eh(g[0]['deposito judicial'])}</b> · ${g.length} registros idénticos
             <div class="sub">${eh(nombre)} · C.C./NIT ${eh(cedula)}</div>
           </div>
-          <button class="fbtn fbtn-outline" style="border-color:rgba(220,38,38,.4);color:#fca5a5" onclick="eliminarDuplicadosGrupo(this, ${gi})">🗑️ Anular seleccionados</button>
+          <button class="fbtn fbtn-outline" style="border-color:rgba(220,38,38,.4);color:var(--err-txt2)" onclick="eliminarDuplicadosGrupo(this, ${gi})">🗑️ Anular seleccionados</button>
         </div>
         <table class="dup-tabla" data-grupo="${gi}">
           <thead><tr><th>Acción</th><th>ID interno</th><th>Fecha</th><th style="text-align:right">Valor</th><th>Devolución</th><th>Aplicación</th><th>Responsable</th><th style="text-align:center" title="Cuántos campos de gestión tiene llenos">Gestión</th></tr></thead>
@@ -3729,11 +3768,11 @@ function renderPendientes(){
       <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
       <td class="mono" style="font-size:12px">${eh(r['Identificación Demandado']||'—')}</td>
       <td class="mono" style="text-align:right;font-weight:700;font-size:14px">${fmt$(valor)}</td>
-      <td>${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:#fdba74" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
+      <td>${(function(){if(tieneConflictoImpuesto(r))return '<span class="badge b-imp" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.45);color:var(--warn-txt)" title="Esta persona tiene Predial y Transito. Abre el deposito y asigna a cual corresponde.">⚠️ Revisar</span>';var imp=impuestoDe(r);return imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>';})()}</td>
       <td>${badgeEst(r['ESTADO DEVOLUCION'])}</td>
       <td>${badgeEst(r['ESTADO APLICACIÓN'])}</td>
       <td style="font-size:12px;color:var(--soft)">${eh(r['RESPONSABLE']||'—')}</td>
-      <td onclick="event.stopPropagation()"><button class="btn-gest" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:#fdba74" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
+      <td onclick="event.stopPropagation()"><button class="btn-gest" style="background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:var(--warn-txt)" onclick="abrirModal('${String(dep).replace(/'/g,"\\'")}');event.stopPropagation()">Gestionar</button></td>
     </tr>`;
   }).join('');
   document.getElementById('pag-info-pend').textContent=`Mostrando ${ini+1}–${fin} de ${pendFiltrados.length.toLocaleString('es-CO')} pendientes`;
@@ -3831,7 +3870,7 @@ function abrirModal(dep){
     if(tieneConflictoImpuesto(r)){
       var av=document.createElement('div');
       av.id='m-impuesto-aviso';
-      av.style.cssText='margin-top:6px;font-size:11px;color:#fdba74;background:rgba(234,88,12,.12);border:1px solid rgba(234,88,12,.3);border-radius:6px;padding:6px 9px;line-height:1.4';
+      av.style.cssText='margin-top:6px;font-size:11px;color:var(--warn-txt);background:rgba(234,88,12,.12);border:1px solid rgba(234,88,12,.3);border-radius:6px;padding:6px 9px;line-height:1.4';
       av.innerHTML='⚠️ Esta persona tiene <strong>Predial</strong> y <strong>Tránsito</strong>. Selecciona a cuál corresponde este depósito antes de guardar.';
       mImp.parentNode.appendChild(av);
     }
@@ -4014,7 +4053,7 @@ async function renderTransitoModal(cid){
       </div>`;
     }).join('');
   }catch(e){
-    cont.innerHTML='<div style="padding:14px;text-align:center;color:#fdba74;font-size:12px">No se pudieron cargar los comparendos.</div>';
+    cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--warn-txt);font-size:12px">No se pudieron cargar los comparendos.</div>';
   }
 }
 
@@ -4745,9 +4784,9 @@ function renderDashboard(){
       return `<tr>
         <td class="dash-resp-name">${eh(n)}</td>
         <td style="text-align:right;font-weight:700">${o.asignados.toLocaleString('es-CO')}</td>
-        <td style="text-align:right;color:#86efac">${o.fin.toLocaleString('es-CO')}</td>
-        <td style="text-align:right;color:#93c5fd">${o.tram.toLocaleString('es-CO')}</td>
-        <td style="text-align:right;color:#fdba74">${o.pen.toLocaleString('es-CO')}</td>
+        <td style="text-align:right;color:var(--money)">${o.fin.toLocaleString('es-CO')}</td>
+        <td style="text-align:right;color:var(--info-txt)">${o.tram.toLocaleString('es-CO')}</td>
+        <td style="text-align:right;color:var(--warn-txt)">${o.pen.toLocaleString('es-CO')}</td>
         <td style="text-align:right;font-weight:600">${fmt$(o.valor)}</td>
         <td style="text-align:center;min-width:110px">
           <div class="dash-bar"><div class="dash-bar-fill" style="width:${avance}%"></div></div>
@@ -5202,7 +5241,7 @@ async function renderReporteTransitoAnio(anio){
   try{
     cedulas = await obtenerCedulasAnioUnico(anio);
   }catch(e){
-    if(kpis) kpis.innerHTML='<div style="padding:20px;color:#fdba74;font-size:12px">No se pudo cruzar con comparendos de tránsito. Revise conexión con Supabase.</div>';
+    if(kpis) kpis.innerHTML='<div style="padding:20px;color:var(--warn-txt);font-size:12px">No se pudo cruzar con comparendos de tránsito. Revise conexión con Supabase.</div>';
     return;
   }
 
@@ -5227,7 +5266,7 @@ async function renderReporteTransitoAnio(anio){
   if(aviso) aviso.innerHTML += ' <span id="rep-comp-load" style="color:var(--soft);font-size:11px">· 🔄 cargando números de comparendo...</span>';
   cargarComparendosPorCedulas(anio, cedulasReporte).then(function(){
     var marca=document.getElementById('rep-comp-load');
-    if(marca) marca.innerHTML='· ✅ <span style="color:#86efac">comparendos cargados</span>';
+    if(marca) marca.innerHTML='· ✅ <span style="color:var(--money)">comparendos cargados</span>';
     renderReporteDetalle();   // re-pintar con los números ya disponibles
   });
 }
@@ -5629,7 +5668,7 @@ function renderMayoresDeudores(){
   }
   body.innerHTML=_deudDatos.map(function(d,i){
     var procCell=d.tieneProceso
-      ? '<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:#93c5fd"></span> Sí'
+      ? '<span class="nota-dot" title="Tiene expedientes o comparendos" style="background:var(--info-txt)"></span> Sí'
       : '<span style="color:var(--muted)">—</span>';
     var estCell=d.pendiente
       ? '<span class="badge b-pen">⏳ PENDIENTE</span>'
@@ -5640,7 +5679,7 @@ function renderMayoresDeudores(){
       +'<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(d.nombre)+'</td>'
       +'<td class="mono" style="font-size:11px">'+eh(d.cedula)+'</td>'
       +'<td class="mono" style="text-align:right;font-size:12px">'+d.depositos.toLocaleString('es-CO')+'</td>'
-      +'<td class="mono" style="text-align:right;font-weight:700;font-size:12px;color:#86efac">'+fmt$(d.valorTotal)+'</td>'
+      +'<td class="mono" style="text-align:right;font-weight:700;font-size:12px;color:var(--money)">'+fmt$(d.valorTotal)+'</td>'
       +'<td>'+procCell+'</td>'
       +'<td>'+estCell+'</td>'
       +'<td style="font-size:11px;color:var(--soft);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+eh(d.responsables.join(', '))+'">'+eh(d.responsables.join(', ')||'—')+'</td>'
