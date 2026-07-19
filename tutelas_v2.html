@@ -367,7 +367,7 @@
 
 <div class="panel" id="panel-pqr">
   <div class="pqr-section">
-    <div class="pqr-header"><span style="font-size:20px">⚠️</span><h3 style="color:#f87171">Sin respuesta PQR</h3><span class="nbadge" id="cnt-sin" style="font-size:12px;padding:2px 10px">0</span></div>
+    <div class="pqr-header" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">⚠️</span><h3 style="color:#f87171">Sin respuesta PQR</h3><span class="nbadge" id="cnt-sin" style="font-size:12px;padding:2px 10px">0</span></div><button onclick="exportarPQRPendientes()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer">📥 Exportar pendientes</button></div>
     <div class="pqr-grid" id="grid-sin-pqr"><div class="loader"><div class="spinner"></div></div></div>
   </div>
   <div class="pqr-section">
@@ -2711,6 +2711,56 @@ function renderPQRModal(regs){
       <div style="font-size:12px;font-weight:700;color:${dc};text-align:right">${dt}</div>
     </div>`;
   }).join("");
+}
+
+// ── Export global de peticiones pendientes (todas, deduplicadas por caso) ──
+// Si tutela y fallo del mismo proceso están ambos sin respuesta, la petición
+// de fondo es UNA sola: se exporta una fila por caso (prefiere el admite).
+function exportarPQRPendientes(){
+  const conEtapa = [
+    ...tutelas.map(r=>({...r,_etapa:"Tutela/Admite"})),
+    ...fallos.map(r=>({...r,_etapa:"Fallo"})),
+    ...incidentes.map(r=>({...r,_etapa:"Incidente"}))
+  ];
+  const pend = conEtapa.filter(r=>!EST_HIST.includes(r["ESTADO"]) && !String(r["RESPUESTA PQR"]||"").trim());
+  if(!pend.length){ toast("✅ No hay peticiones pendientes para exportar","ok"); return; }
+  // Dedupe por caso: normRad + keyAcc; prefiere la etapa Tutela/Admite
+  const prioridad = {"Tutela/Admite":0,"Fallo":1,"Incidente":2};
+  const porCaso = new Map();
+  let sinClave = [];
+  pend.forEach(r=>{
+    const rad=normRad(r["RADICADO"]);
+    if(!rad || rad==="2026:"){ sinClave.push(r); return; }
+    const k = rad+"|"+keyAcc(r["ACCIONANTE"]);
+    const prev = porCaso.get(k);
+    if(!prev || prioridad[r._etapa] < prioridad[prev._etapa]) porCaso.set(k, r);
+  });
+  const unicos = byUrg([...porCaso.values(), ...sinClave]);
+  const dupsOmitidos = pend.length - unicos.length;
+
+  const headers = ["Accionante","CC/NIT","Radicado","Etapa","Juzgado","Abogado reparto","Encargado PQR","Fecha límite","Días restantes","Estado"];
+  const rows = unicos.map(r=>[
+    r["ACCIONANTE"]||"",
+    r["CC / NIT"]||"",
+    r["RADICADO"]||"",
+    r._etapa,
+    r["JUZGADO"]||"",
+    r["RESPONSABLE"]||"Sin asignar",
+    r["ENCARGADO PQR"]||"Sin asignar",
+    r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"",
+    r._dias===null?"Sin fecha":r._dias<0?"Vencido "+Math.abs(r._dias)+"d":r._dias+"d",
+    r["ESTADO"]||""
+  ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(","));
+
+  const csv = "\uFEFF" + [headers.join(","),...rows].join("\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `PQR_pendientes_${new Date().toLocaleDateString("es-CO").replace(/\//g,"-")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`📥 Exportadas ${unicos.length} peticiones pendientes${dupsOmitidos?` (${dupsOmitidos} filas duplicadas del mismo caso unificadas)`:""}`,"ok");
 }
 
 function exportarPQR(){
