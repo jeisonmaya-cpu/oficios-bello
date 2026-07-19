@@ -241,6 +241,8 @@
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 <div class="bg-layer"></div>
@@ -367,7 +369,7 @@
 
 <div class="panel" id="panel-pqr">
   <div class="pqr-section">
-    <div class="pqr-header" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">⚠️</span><h3 style="color:#f87171">Sin respuesta PQR</h3><span class="nbadge" id="cnt-sin" style="font-size:12px;padding:2px 10px">0</span></div><button onclick="exportarPQRPendientes()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer">📥 Exportar pendientes</button></div>
+    <div class="pqr-header" style="justify-content:space-between"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">⚠️</span><h3 style="color:#f87171">Sin respuesta PQR</h3><span class="nbadge" id="cnt-sin" style="font-size:12px;padding:2px 10px">0</span></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="exportarPQRPendientes()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer">📥 Exportar pendientes</button><button onclick="generarPDFPendientes()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.35);color:var(--gold2);font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer">📄 PDF ejecutivo</button></div></div>
     <div class="pqr-grid" id="grid-sin-pqr"><div class="loader"><div class="spinner"></div></div></div>
   </div>
   <div class="pqr-section">
@@ -2716,6 +2718,119 @@ function renderPQRModal(regs){
 // ── Export global de peticiones pendientes (todas, deduplicadas por caso) ──
 // Si tutela y fallo del mismo proceso están ambos sin respuesta, la petición
 // de fondo es UNA sola: se exporta una fila por caso (prefiere el admite).
+// ── PDF ejecutivo de peticiones pendientes (jsPDF + autotable) ──
+function generarPDFPendientes(){
+  if(typeof window.jspdf==="undefined"){ toast("⚠️ No se pudo cargar la librería de PDF (sin conexión al CDN)","err"); return; }
+  const conEtapa = [
+    ...tutelas.map(r=>({...r,_etapa:"Admite"})),
+    ...fallos.map(r=>({...r,_etapa:"Fallo"})),
+    ...incidentes.map(r=>({...r,_etapa:"Incidente"}))
+  ];
+  const pend = conEtapa.filter(r=>!EST_HIST.includes(r["ESTADO"]) && !String(r["RESPUESTA PQR"]||"").trim());
+  if(!pend.length){ toast("✅ No hay peticiones pendientes","ok"); return; }
+  // Dedupe por caso (mismo criterio del CSV)
+  const prioridad = {"Admite":0,"Fallo":1,"Incidente":2};
+  const porCaso = new Map(); const sinClave=[];
+  pend.forEach(r=>{
+    const rad=normRad(r["RADICADO"]);
+    if(!rad || rad==="2026:"){ sinClave.push(r); return; }
+    const k = rad+"|"+keyAcc(r["ACCIONANTE"]);
+    const prev = porCaso.get(k);
+    if(!prev || prioridad[r._etapa] < prioridad[prev._etapa]) porCaso.set(k, r);
+  });
+  const unicos = byUrg([...porCaso.values(), ...sinClave]);
+  const vencidos = unicos.filter(r=>r._dias!==null&&r._dias<0);
+  const urgentes = unicos.filter(r=>r._dias!==null&&r._dias>=0&&r._dias<=3);
+  const sinEnc   = unicos.filter(r=>!String(r["ENCARGADO PQR"]||"").trim());
+  // Por encargado (top)
+  const porEnc={};
+  unicos.forEach(r=>{const e=(r["ENCARGADO PQR"]||"").trim()||"Sin asignar";porEnc[e]=(porEnc[e]||0)+1;});
+  const rankEnc=Object.entries(porEnc).sort((a,b)=>b[1]-a[1]);
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"letter"});
+  const W=doc.internal.pageSize.getWidth();
+  const NAVY=[10,31,61], GOLD=[232,160,32], ROJO=[220,38,38], GRIS=[107,114,128];
+  const hoy=new Date().toLocaleDateString("es-CO",{day:"2-digit",month:"long",year:"numeric"});
+
+  // Encabezado institucional
+  doc.setFillColor(...NAVY); doc.rect(0,0,W,30,"F");
+  doc.setFillColor(...GOLD); doc.rect(0,30,W,1.2,"F");
+  doc.setTextColor(255,255,255);
+  doc.setFont("helvetica","bold"); doc.setFontSize(14);
+  doc.text("INFORME DE PETICIONES PENDIENTES DE RESPUESTA",W/2,13,{align:"center"});
+  doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  doc.text("Dirección Administrativa de Ejecuciones Fiscales — Alcaldía de Bello",W/2,20,{align:"center"});
+  doc.setFontSize(8); doc.setTextColor(...GOLD.map(c=>Math.min(c+40,255)));
+  doc.text("Módulo de Tutelas · Sistema Teodoro · Corte: "+hoy,W/2,26,{align:"center"});
+
+  // KPIs
+  let y=40;
+  const kpis=[
+    [String(unicos.length),"PENDIENTES",NAVY],
+    [String(vencidos.length),"VENCIDAS",ROJO],
+    [String(urgentes.length),"URGENTES ≤3 DÍAS",GOLD],
+    [String(sinEnc.length),"SIN ENCARGADO",GRIS]
+  ];
+  const kw=(W-28-3*6)/4;
+  kpis.forEach(([n,l,col],i)=>{
+    const x=14+i*(kw+6);
+    doc.setDrawColor(...col); doc.setLineWidth(.4); doc.roundedRect(x,y,kw,20,2,2);
+    doc.setTextColor(...col); doc.setFont("helvetica","bold"); doc.setFontSize(16);
+    doc.text(n,x+kw/2,y+9,{align:"center"});
+    doc.setFontSize(6.5); doc.setTextColor(...GRIS); doc.setFont("helvetica","normal");
+    doc.text(l,x+kw/2,y+15,{align:"center"});
+  });
+  y+=28;
+
+  // Resumen por encargado
+  doc.setTextColor(...NAVY); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("Pendientes por encargado PQR",14,y); y+=2;
+  doc.autoTable({
+    startY:y, margin:{left:14,right:14},
+    head:[["Encargado","Pendientes","% del total"]],
+    body:rankEnc.map(([e,n])=>[pNom(e),String(n),Math.round(n/unicos.length*100)+"%"]),
+    theme:"grid", styles:{font:"helvetica",fontSize:8,cellPadding:1.8},
+    headStyles:{fillColor:NAVY,textColor:[255,255,255],fontSize:8},
+    alternateRowStyles:{fillColor:[245,247,250]}
+  });
+  y=doc.lastAutoTable.finalY+8;
+
+  // Tabla principal: casos ordenados por urgencia
+  doc.setTextColor(...NAVY); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("Detalle de peticiones pendientes (ordenadas por urgencia)",14,y); y+=2;
+  doc.autoTable({
+    startY:y, margin:{left:14,right:14},
+    head:[["Accionante","Radicado","Etapa","Abogado","Encargado PQR","F. límite","Días"]],
+    body:unicos.map(r=>[
+      abrev(r["ACCIONANTE"]||"",34),
+      r["RADICADO"]||"—",
+      r._etapa,
+      abrev(pNom(r["RESPONSABLE"]||"Sin asignar"),16),
+      abrev(pNom((r["ENCARGADO PQR"]||"").trim()||"Sin asignar"),16),
+      r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—",
+      r._dias===null?"—":r._dias<0?"-"+Math.abs(r._dias)+"d":r._dias+"d"
+    ]),
+    theme:"striped", styles:{font:"helvetica",fontSize:7,cellPadding:1.5},
+    headStyles:{fillColor:NAVY,textColor:[255,255,255],fontSize:7.5},
+    alternateRowStyles:{fillColor:[245,247,250]},
+    didParseCell:function(d){
+      if(d.section==="body" && d.column.index===6 && String(d.cell.raw).startsWith("-")){
+        d.cell.styles.textColor=ROJO; d.cell.styles.fontStyle="bold";
+      }
+    },
+    didDrawPage:function(){
+      const h=doc.internal.pageSize.getHeight();
+      doc.setFontSize(7); doc.setTextColor(...GRIS); doc.setFont("helvetica","normal");
+      doc.text("Generado por Sistema Teodoro · Desarrollado por Jeison Maya · "+hoy,14,h-8);
+      doc.text("Pág. "+doc.internal.getNumberOfPages(),W-14,h-8,{align:"right"});
+    }
+  });
+
+  doc.save(`Informe_PQR_pendientes_${new Date().toLocaleDateString("es-CO").replace(/\//g,"-")}.pdf`);
+  toast(`📄 PDF generado: ${unicos.length} peticiones pendientes`,"ok");
+}
+
 function exportarPQRPendientes(){
   const conEtapa = [
     ...tutelas.map(r=>({...r,_etapa:"Tutela/Admite"})),
