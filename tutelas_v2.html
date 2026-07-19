@@ -299,6 +299,7 @@
 
 <div class="nav-tabs">
   <div class="ntab active" id="tab-admites"      onclick="goTab('admites')">📋 Admites <span class="nbadge" id="badge-admites">0</span></div>
+  <div class="ntab"        id="tab-mios"         onclick="toggleMisCasos()" oncontextmenu="event.preventDefault();_menuYo()" title="Clic: filtrar mis casos · Clic derecho: cambiar de persona">⭐ Mis casos</div>
   <div class="ntab"        id="tab-fallos"       onclick="goTab('fallos')">⚖️ Fallos &amp; Sent. <span class="nbadge amber" id="badge-fallos">0</span></div>
   <div class="ntab"        id="tab-otros"        onclick="goTab('otros')">⚡ Incidentes/Desacatos <span class="nbadge amber" id="badge-otros">0</span></div>
   <div class="ntab"        id="tab-reparto"      onclick="goTab('reparto')">👤 Por reparto</div>
@@ -442,9 +443,18 @@
       <select id="pqr-filtro-abo" onchange="filtrarPQRModal()" style="background:#1e2a3a;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#f1f5f9;padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;flex:1;appearance:auto">
         <option value="">Todos los abogados de reparto</option>
       </select>
+      <button onclick="togglePqrSelMode()" id="pqr-btn-lote" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.35);color:var(--gold2);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">☑️ Asignar en lote</button>
       <button onclick="exportarPQR()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">
         📥 Exportar Excel
       </button>
+    </div>
+    <div id="pqr-asig-bar" style="display:none;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3)">
+      <span style="font-size:12px;color:var(--gold2);font-weight:600" id="pqr-asig-cnt">0 seleccionadas</span>
+      <button onclick="pqrSelTodos(true)" style="padding:5px 10px;border-radius:7px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer">Todas</button>
+      <button onclick="pqrSelTodos(false)" style="padding:5px 10px;border-radius:7px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer">Ninguna</button>
+      <input id="pqr-asig-input" list="pqr-asig-lista" placeholder="Encargado PQR (elige o escribe)" style="flex:1;min-width:180px;background:#1e2a3a;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#f1f5f9;padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+      <datalist id="pqr-asig-lista"></datalist>
+      <button onclick="aplicarAsignacionMasiva()" style="padding:7px 16px;border-radius:8px;background:rgba(245,158,11,.2);border:1px solid rgba(245,158,11,.45);color:var(--gold2);font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer">✓ Asignar</button>
     </div>
     <div id="pqr-lista-body"></div>
   </div>
@@ -2612,6 +2622,58 @@ function nombreUsuarioActual(){
   if(e.startsWith("jeisonmaya")) return "Jeison";
   return e.split("@")[0]||"Usuario";
 }
+// ═══ MIS CASOS ═══
+// Filtro global "lo mío": recuerda quién eres (localStorage) y aplica tu nombre
+// a los filtros de abogado de Admites, Fallos e Incidentes con un clic.
+const YO_KEY="tutelas_yo_v1";
+let misCasosOn=false;
+function _yoGuess(){
+  const e=(USUARIO_EMAIL||"").toLowerCase();
+  return ABOGADOS.find(a=>{
+    const nom=a.split(" ")[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    return nom.length>3 && e.includes(nom);
+  })||"";
+}
+function yoActual(){ return localStorage.getItem(YO_KEY)||_yoGuess(); }
+function toggleMisCasos(){
+  if(misCasosOn){ misCasosOn=false; _setFiltrosAbo(""); _pintarMios(); return; }
+  const yo=yoActual();
+  if(yo) _aplicarMios(yo); else _menuYo();
+}
+function _aplicarMios(yo){
+  localStorage.setItem(YO_KEY,yo);
+  misCasosOn=true;
+  _setFiltrosAbo(yo);
+  _pintarMios();
+  goTab('admites');
+  toast(`⭐ Mostrando los casos de ${pNom(yo)} (clic derecho en la pestaña para cambiar)`,"ok");
+}
+function _setFiltrosAbo(v){
+  ["fa-abo","ff-abo","fo-abo"].forEach(id=>{
+    const s=document.getElementById(id);
+    if(s) s.value=[...s.options].some(o=>o.value===v)?v:"";
+  });
+  renderAdmites(); renderFallos(); renderOtros();
+}
+function _pintarMios(){
+  const t=document.getElementById("tab-mios");
+  if(!t) return;
+  const yo=yoActual();
+  t.classList.toggle("active",misCasosOn);
+  t.innerHTML=misCasosOn?`⭐ Míos: ${esc(pNom(yo).split(" ")[0])} ✕`:"⭐ Mis casos";
+}
+function _menuYo(){
+  const prev=document.getElementById("menu-yo"); if(prev) prev.remove();
+  const d=document.createElement("div");
+  d.id="menu-yo";
+  d.style.cssText="position:fixed;top:120px;left:50%;transform:translateX(-50%);z-index:9999;background:#12233f;border:1px solid rgba(245,158,11,.4);border-radius:14px;padding:16px;box-shadow:0 16px 50px rgba(0,0,0,.6);min-width:250px";
+  d.innerHTML=`<div style="font-weight:700;font-size:13px;color:var(--gold2);margin-bottom:10px">¿Quién eres?</div>`+
+    ABOGADOS.map(a=>`<div onclick="_aplicarMios('${esc(a)}');document.getElementById('menu-yo').remove()" style="padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer;color:#e2e8f0" onmouseover="this.style.background='rgba(245,158,11,.12)'" onmouseout="this.style.background='transparent'">${esc(a)}</div>`).join("")+
+    `<div onclick="document.getElementById('menu-yo').remove()" style="padding:8px 10px;margin-top:6px;border-top:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;color:var(--muted);text-align:center">Cancelar</div>`;
+  document.body.appendChild(d);
+  setTimeout(()=>{ document.addEventListener("click",function fuera(ev){ if(!d.contains(ev.target)){ d.remove(); document.removeEventListener("click",fuera); } }); },50);
+}
+
 async function toggleNotificado(arrKey, idx){
   const arr=window[arrKey]; const r=arr&&arr[idx];
   if(!r) return;
@@ -2706,13 +2768,83 @@ function renderPQRModal(regs){
   document.getElementById("pqr-lista-body").innerHTML=ordenadas.map((r,i)=>{
     const dc=r._dias===null?"var(--muted)":r._dias<0?"#f87171":r._dias<=2?"#fb923c":"#4ade80";
     const dt=r._dias===null?"Sin fecha":r._dias<0?"Vencido "+Math.abs(r._dias)+"d":r._dias+"d";
-    return`<div style="display:grid;grid-template-columns:1fr 110px 90px 70px;gap:8px;align-items:center;padding:11px 13px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.04)'" onclick="document.getElementById('overlay-pqr').classList.remove('open');abrirModalIdx('_pqrModalRegs',${i})">
+    const sel=_pqrSelMode && r._id && _pqrSel.has(r._id);
+    const cols=(_pqrSelMode?"26px ":"")+"1fr 110px 90px 70px";
+    const click=_pqrSelMode
+      ? (r._id?`togglePqrSel('${r._id}')`:``)
+      : `document.getElementById('overlay-pqr').classList.remove('open');abrirModalIdx('_pqrModalRegs',${i})`;
+    const chk=_pqrSelMode?`<div style="font-size:15px;color:${sel?"var(--gold2)":"var(--muted)"}">${r._id?(sel?"☑":"☐"):"—"}</div>`:"";
+    return`<div style="display:grid;grid-template-columns:${cols};gap:8px;align-items:center;padding:11px 13px;border-radius:10px;margin-bottom:6px;background:${sel?"rgba(245,158,11,.10)":"rgba(255,255,255,.04)"};border:1px solid ${sel?"rgba(245,158,11,.45)":"var(--border)"};cursor:pointer;transition:background .15s" onmouseover="this.style.background='${sel?"rgba(245,158,11,.14)":"rgba(255,255,255,.09)"}'" onmouseout="this.style.background='${sel?"rgba(245,158,11,.10)":"rgba(255,255,255,.04)"}'" onclick="${click}">
+      ${chk}
       <div><div style="font-size:13px;font-weight:500">${esc(r["ACCIONANTE"]||"—")}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(r["RADICADO"]||"—")}</div></div>
       <div style="font-size:11px;color:var(--muted)">${esc(r["RESPONSABLE"]||"—")}</div>
       <div style="font-size:11px;color:var(--muted);white-space:nowrap">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div>
       <div style="font-size:12px;font-weight:700;color:${dc};text-align:right">${dt}</div>
     </div>`;
   }).join("");
+  _pqrActualizarBarra();
+}
+
+// ── Asignación masiva de encargado PQR ──
+let _pqrSelMode=false;
+let _pqrSel=new Set();
+function togglePqrSelMode(){
+  _pqrSelMode=!_pqrSelMode;
+  if(!_pqrSelMode) _pqrSel.clear();
+  const btn=document.getElementById("pqr-btn-lote");
+  btn.textContent=_pqrSelMode?"✕ Cancelar lote":"☑️ Asignar en lote";
+  document.getElementById("pqr-asig-bar").style.display=_pqrSelMode?"flex":"none";
+  if(_pqrSelMode) _pqrLlenarDatalist();
+  filtrarPQRModal();
+}
+function togglePqrSel(id){
+  if(_pqrSel.has(id)) _pqrSel.delete(id); else _pqrSel.add(id);
+  filtrarPQRModal();
+}
+function pqrSelTodos(on){
+  (window._pqrModalRegs||[]).forEach(r=>{ if(r._id){ on?_pqrSel.add(r._id):_pqrSel.delete(r._id); } });
+  filtrarPQRModal();
+}
+function _pqrActualizarBarra(){
+  const el=document.getElementById("pqr-asig-cnt");
+  if(el) el.textContent=`${_pqrSel.size} seleccionada(s)`;
+}
+function _pqrLlenarDatalist(){
+  const nombres=new Set();
+  [...tutelas,...fallos,...incidentes].forEach(r=>{
+    const e=String(r["ENCARGADO PQR"]||"").trim();
+    if(e && e.toLowerCase()!=="no registra pqr") nombres.add(e);
+  });
+  document.getElementById("pqr-asig-lista").innerHTML=[...nombres].sort()
+    .map(n=>`<option value="${esc(n)}">`).join("");
+}
+async function aplicarAsignacionMasiva(){
+  const val=document.getElementById("pqr-asig-input").value.trim();
+  if(!val){ toast("⚠️ Elige o escribe el nombre del encargado","err"); return; }
+  const ids=[..._pqrSel];
+  if(!ids.length){ toast("⚠️ No has seleccionado ninguna petición","err"); return; }
+  const ok=await confirmar("Asignación masiva",`Se asignará a «${val}» como encargado PQR de ${ids.length} petición(es). ¿Continuar?`);
+  if(!ok) return;
+  toast(`⏳ Asignando ${ids.length} peticiones...`,"ok");
+  let hechas=0, errores=0;
+  for(const id of ids){
+    try{
+      const g=await Repo.actualizar(id,{"ENCARGADO PQR":val});
+      if(!g) throw new Error("sin respuesta");
+      [tutelas,fallos,incidentes].forEach(arr=>{
+        const i=arr.findIndex(r=>r._id===id);
+        if(i>=0) arr[i]["ENCARGADO PQR"]=val;
+      });
+      hechas++;
+    }catch(e){ errores++; }
+  }
+  _pqrSel.clear(); _pqrSelMode=false;
+  document.getElementById("pqr-btn-lote").textContent="☑️ Asignar en lote";
+  document.getElementById("pqr-asig-bar").style.display="none";
+  document.getElementById("pqr-asig-input").value="";
+  document.getElementById("overlay-pqr").classList.remove("open");
+  toast(errores?`⚠️ ${hechas} asignadas, ${errores} fallaron — revisa tu sesión`:`✅ ${hechas} peticiones asignadas a ${val}`, errores?"err":"ok");
+  renderAll();
 }
 
 // ── Export global de peticiones pendientes (todas, deduplicadas por caso) ──
