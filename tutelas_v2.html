@@ -238,6 +238,202 @@
       .inf-noprint{display:none!important}
       .inf-kpi .n{color:#0f2d5e!important}
     }
+  
+/* ══════════════════════════════════════════════════════════════
+   MEJORAS UI · v1 — Jeison Maya
+   PEGAR ESTE BLOQUE COMPLETO JUSTO ANTES DE </style> (línea ~241)
+   Va al final a propósito: por cascada sobreescribe las reglas
+   originales sin que haya que borrar nada del CSS existente.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 1. CONTRASTE (WCAG AA) ─────────────────────────────────────
+   Los tokens --muted y --soft estaban en .5 / .3 de opacidad:
+   ~2.9:1 y ~1.9:1 sobre el fondo. Debajo de 4.5:1 exigido para
+   texto normal. Se suben ambos en los dos temas.               */
+:root{
+  --muted:rgba(241,245,249,.74);
+  --soft:rgba(241,245,249,.58);
+  --hover:rgba(255,255,255,.09);
+  --hover-fila:rgba(255,255,255,.07);
+  --skel:rgba(255,255,255,.07);
+  --skel-hi:rgba(255,255,255,.15);
+  --thead-bg:rgba(19,25,46,.97);
+}
+html[data-theme="light"]{
+  --muted:rgba(15,45,94,.75);
+  --soft:rgba(15,45,94,.62);
+  --hover:rgba(15,45,94,.08);
+  --hover-fila:rgba(15,45,94,.06);
+  --skel:rgba(15,45,94,.07);
+  --skel-hi:rgba(15,45,94,.14);
+  --thead-bg:rgba(246,248,252,.98);
+}
+/* Colores de texto quemados que rompían el modo claro */
+.mtext{color:var(--text);opacity:.92}
+.ntab:hover:not(.active){color:var(--text)}
+.gr-item:hover{background:var(--hover)}
+.gr-item{border-bottom-color:var(--border)}
+.scard:hover,.abo-card:hover,.pqr-card:hover,.est-kpi.clic:hover{border-color:var(--soft)}
+/* Colores de acento con suficiente luminancia en fondo claro */
+html[data-theme="light"] .c-red{color:#b91c1c}
+html[data-theme="light"] .c-amber{color:#b45309}
+html[data-theme="light"] .c-green{color:#15803d}
+html[data-theme="light"] .c-blue{color:#1d4ed8}
+html[data-theme="light"] .c-purple{color:#7e22ce}
+html[data-theme="light"] .c-cyan{color:#0e7490}
+html[data-theme="light"] .est-title,html[data-theme="light"] .msec{color:#a16207}
+/* Foco visible por teclado en todo lo interactivo (WCAG 2.4.7) */
+.fila:focus-visible,.gr-item:focus-visible,.fi:focus-visible,.mbtn:focus-visible,
+.pag-btn:focus-visible,.ntab:focus-visible,.btn-top:focus-visible,
+.btn-refresh:focus-visible,.scard:focus-visible{
+  outline:2px solid var(--gold2);outline-offset:2px;border-radius:6px
+}
+
+/* ── 2. JERARQUÍA Y ESPACIADO ───────────────────────────────────
+   Más aire = menos fatiga leyendo bloques largos de texto legal. */
+.main{padding:28px 32px}
+.stats-row{gap:14px;margin-bottom:26px}
+.scard{padding:20px 16px}
+.scard-n{font-size:30px;margin-bottom:7px}
+.scard-l{font-size:10.5px;color:var(--muted);line-height:1.35}
+.filtros{gap:10px;margin-bottom:20px}
+.fi{padding:9px 14px}
+.thead{padding:13px 18px}
+.thead .cel{font-size:10.5px;color:var(--muted)}
+.fila{padding:15px 18px;column-gap:6px}
+.cel{font-size:12.5px;padding:0 4px;line-height:1.45}
+.cel.name{font-size:13.5px;line-height:1.4}
+.cel.sub{font-size:11.5px}
+.pag{padding:14px 18px}
+.est-card{padding:24px}
+.est-row{margin-bottom:12px}
+.abo-card{padding:20px}
+.abo-stat{padding:8px 0}
+.pqr-card{padding:18px}
+.modal{padding:32px}
+.m-grid{gap:18px;margin-bottom:24px}
+.mf .v{line-height:1.6}
+.mtext{padding:15px 17px;line-height:1.8}
+
+/* ── 3. SEMÁFOROS ACCESIBLES (WCAG 1.4.1: no solo color) ────────
+   Cada nivel suma una FORMA (glifo) y un PESO tipográfico propio,
+   así se distinguen en escala de grises o con daltonismo.       */
+.sem{gap:5px;padding:4px 11px;font-size:11.5px;letter-spacing:.01em}
+.sem::before{font-size:11px;line-height:1;font-weight:900;flex-shrink:0}
+.sem-r{font-weight:800;text-transform:uppercase;letter-spacing:.04em;border-width:1.5px}
+.sem-r::before{content:"\26A0"}          /* ⚠ triángulo — vencido / hoy   */
+.sem-a{font-weight:700}
+.sem-a::before{content:"\25B2"}          /* ▲ triángulo — 2-3 días        */
+.sem-y{font-weight:600}
+.sem-y::before{content:"\25C6"}          /* ◆ rombo — 4-7 días            */
+.sem-v{font-weight:500}
+.sem-v::before{content:"\2713"}          /* ✓ check — con tiempo          */
+.sem-g{font-weight:500}
+.sem-g::before{content:"\2014"}          /* — guion — cerrado / sin fecha */
+.sem .sem-dot{display:none}              /* el glifo reemplaza al punto   */
+/* Contraste de los chips en modo claro */
+html[data-theme="light"] .sem-r{background:rgba(239,68,68,.12);color:#991b1b;border-color:rgba(239,68,68,.45)}
+html[data-theme="light"] .sem-a{background:rgba(249,115,22,.12);color:#9a3412;border-color:rgba(249,115,22,.45)}
+html[data-theme="light"] .sem-y{background:rgba(234,179,8,.14);color:#854d0e;border-color:rgba(234,179,8,.5)}
+html[data-theme="light"] .sem-v{background:rgba(34,197,94,.12);color:#166534;border-color:rgba(34,197,94,.4)}
+html[data-theme="light"] .bt-tutela{color:#1e40af}
+html[data-theme="light"] .bt-fallo,html[data-theme="light"] .bt-sanc{color:#991b1b}
+html[data-theme="light"] .bt-sent{color:#9d174d}
+html[data-theme="light"] .bt-impug{color:#92400e}
+html[data-theme="light"] .bt-aper{color:#065f46}
+html[data-theme="light"] .bt-req{color:#5b21b6}
+html[data-theme="light"] .bt-inc{color:#9a3412}
+html[data-theme="light"] .be-nuevo{color:#1e40af}
+html[data-theme="light"] .be-proceso{color:#92400e}
+html[data-theme="light"] .be-resp,html[data-theme="light"] .be-superado{color:#166534}
+html[data-theme="light"] .be-venc{color:#991b1b}
+html[data-theme="light"] .be-fin{color:#334155}
+
+/* ── 4. STICKY HEADERS ──────────────────────────────────────────
+   CLAVE: .twrap tenía overflow:hidden, que crea un contenedor de
+   scroll y anula position:sticky. overflow:clip recorta igual
+   (mantiene el border-radius) pero NO rompe el sticky.
+   El offset 56px es la altura exacta de .topbar.                */
+.twrap{overflow:clip}
+.thead{position:sticky;top:56px;z-index:20;background:var(--thead-bg);backdrop-filter:blur(10px);box-shadow:0 1px 0 var(--border)}
+@supports not (overflow:clip){.twrap{overflow:visible;border-radius:var(--radius)}}
+
+/* ── 5. HOVER DE FILA MUCHO MÁS EVIDENTE ────────────────────────*/
+.fila{position:relative;transition:background .13s ease,box-shadow .13s ease}
+.fila:hover{background:var(--hover-fila);box-shadow:inset 3px 0 0 var(--blue2)}
+.fila.urgente:hover{box-shadow:inset 3px 0 0 var(--red)}
+.fila.proximo:hover{box-shadow:inset 3px 0 0 var(--amber)}
+.fila:active{background:var(--hover)}
+
+/* ── 6. ACCIÓN RÁPIDA: COPIAR RADICADO EN LA FILA ───────────────*/
+.cel-rad{display:flex;align-items:center;gap:6px;min-width:0}
+.cel-rad .rad-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-fila-copy{flex-shrink:0;width:22px;height:22px;display:inline-flex;align-items:center;
+  justify-content:center;background:var(--input-bg);border:1px solid var(--border);
+  border-radius:5px;color:var(--muted);cursor:pointer;padding:0;font-size:11px;
+  opacity:0;transform:scale(.8);transition:opacity .14s,transform .14s,background .14s,color .14s}
+.fila:hover .btn-fila-copy{opacity:1;transform:scale(1)}
+.btn-fila-copy:focus-visible{opacity:1;transform:scale(1);outline:2px solid var(--gold2);outline-offset:1px}
+.btn-fila-copy:hover{background:rgba(245,158,11,.2);border-color:var(--gold);color:var(--gold2)}
+.btn-fila-copy.ok{opacity:1;transform:scale(1);background:rgba(34,197,94,.22);border-color:#22c55e;color:#4ade80}
+@media(hover:none){.btn-fila-copy{opacity:1;transform:scale(1)}}
+
+/* ── 7. MICROINTERACCIONES DE MODAL (fade-in + scale-up) ────────*/
+.overlay.open{animation:ovIn .18s ease-out}
+.overlay.open>.modal,.overlay.open>.informe-doc{animation:modalIn .24s cubic-bezier(.16,1,.3,1)}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.965)}to{opacity:1;transform:none}}
+.overlay.cerrando{animation:ovOut .14s ease-in forwards;pointer-events:none}
+.overlay.cerrando>.modal,.overlay.cerrando>.informe-doc{animation:modalOut .14s ease-in forwards}
+@keyframes ovOut{to{opacity:0}}
+@keyframes modalOut{to{opacity:0;transform:translateY(8px) scale(.98)}}
+.mbtn,.modal-close,.btn-top,.btn-refresh{transition:all .16s ease}
+.mbtn:hover{transform:translateY(-1px)}
+.mbtn:active{transform:translateY(0)}
+
+/* ── 8. SKELETON LOADERS ────────────────────────────────────────*/
+.skel-wrap{padding:4px 0}
+.skel-fila{display:flex;align-items:center;gap:14px;padding:15px 18px;border-top:1px solid var(--border)}
+.skel-fila:first-child{border-top:none}
+.skel{background:var(--skel);border-radius:5px;height:11px;position:relative;overflow:hidden}
+.skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,var(--skel-hi),transparent);
+  animation:shimmer 1.4s infinite}
+@keyframes shimmer{100%{transform:translateX(100%)}}
+.skel-pill{height:20px;width:78px;border-radius:20px;flex-shrink:0}
+.skel-sm{width:88px;flex-shrink:0}
+.skel-lg{flex:1;min-width:0}
+.skel-md{width:130px;flex-shrink:0}
+.skel-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;display:flex;flex-direction:column;gap:11px}
+
+/* ── 9. RESALTADO EN BUSCADOR GLOBAL ────────────────────────────*/
+.gr-item{padding:13px 16px}
+.gr-item .hl{background:rgba(245,158,11,.35);color:var(--text);font-weight:700;
+  border-radius:3px;padding:0 2px;box-shadow:0 0 0 1px rgba(245,158,11,.3)}
+html[data-theme="light"] .gr-item .hl{background:rgba(245,158,11,.4);color:#0f2d5e}
+.gr-item.sel{background:var(--hover);box-shadow:inset 3px 0 0 var(--gold)}
+.gr-hint{padding:8px 16px;font-size:10.5px;color:var(--soft);border-top:1px solid var(--border);
+  display:flex;gap:12px;flex-wrap:wrap}
+.gr-hint kbd{background:var(--input-bg);border:1px solid var(--border);border-radius:4px;
+  padding:1px 5px;font-family:inherit;font-size:10px}
+
+/* ── 10. RESPETAR prefers-reduced-motion ────────────────────────*/
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important}
+  .skel::after{display:none}
+}
+
+/* ── 11. AJUSTES MÓVIL PARA EL NUEVO ESPACIADO ──────────────────*/
+@media(max-width:900px){
+  .main{padding:18px 16px}
+  .fila{padding:14px 14px}
+  .thead{padding:12px 14px;top:56px}
+  .modal{padding:22px}
+  .scard{padding:16px 12px}
+}
+
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -1683,7 +1879,7 @@ function renderAdmites(){
   el.innerHTML=pag.map((r,i)=>{
     const falta=queFaltaTecnico(r);
     const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div>${celRad(r)}</div>`;
   }).join("");
   window._exportAdmites=visiblesAdm;
 }
@@ -1715,7 +1911,7 @@ function renderFallos(){
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagFallos=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div></div>`).join("");
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
   window._exportFallos=visiblesFal;
 }
 
@@ -1749,7 +1945,7 @@ function renderOtros(){
     const btnNotif = notif
       ? `<button class="btn-notif hecho" title="Notificado: ${esc(notif)} — clic para quitar la marca" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">✅ Notificado</button>`
       : `<button class="btn-notif" title="Marcar que este incidente ya fue notificado" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">📣 Notificar</button>`;
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel">${btnNotif}</div></div>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div>${celRad(r)}<div class="cel">${btnNotif}</div></div>`;
   }).join("");
   window._exportOtros=visiblesOtr;
 }
@@ -1782,7 +1978,7 @@ function renderHistorico(){
   el.innerHTML=pag.map((r,i)=>{
     const esI=incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
     const origen=esI?"incidente":TIPOS_FALLO.includes(r["TIPO"])?"fallo":"tutela";
-    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div><div class="cel sub">${esc(r["RADICADO"]||"—")}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;
+    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div>${celRad(r)}<div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;
   }).join("");
   window._exportHistorico=filtHis;
 }
@@ -3410,6 +3606,358 @@ function generarInformeTutelas(){
     </div>`;
   document.getElementById('overlay-informe').classList.add('open');
 }
+
+/* ══════════════════════════════════════════════════════════════
+   MEJORAS UX / PRODUCTIVIDAD · v1 — Jeison Maya
+   PEGAR ESTE BLOQUE COMPLETO JUSTO ANTES DE </script> (línea ~3413)
+   ──────────────────────────────────────────────────────────────
+   NO TOCA: Repo.*, getAuthHeaders(), cargarDatos(), el setInterval
+   de 30 min ni el listener de visibilitychange. Todo lo que hace
+   es envolver (wrap) funciones existentes o añadir listeners
+   nuevos, de modo que el flujo de datos hacia Supabase queda
+   exactamente igual y el egress no cambia.
+   ══════════════════════════════════════════════════════════════ */
+(function(){
+"use strict";
+
+/* ───────────────────────────────────────────────────────────────
+   A. UTILIDADES
+   ─────────────────────────────────────────────────────────────── */
+const escAttr = s => String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+
+const rxEsc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+
+/* Escapa el texto y luego envuelve las coincidencias en <mark class="hl"> */
+function resaltar(txt, q){
+  const safe = esc(txt || "—");
+  if(!q || q.length < 2) return safe;
+  try{
+    const re = new RegExp("(" + rxEsc(esc(q)) + ")", "gi");
+    return safe.replace(re, '<mark class="hl">$1</mark>');
+  }catch(e){ return safe; }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   B. SKELETON LOADERS  (reemplaza el <div class="spinner">)
+   Se pintan una sola vez, al arrancar. El refresco de fondo de
+   30 min NO los vuelve a mostrar — a propósito: la tabla ya tiene
+   datos y parpadear sería peor que no mostrar nada.
+   ─────────────────────────────────────────────────────────────── */
+function skelTabla(n){
+  let h = '<div class="skel-wrap">';
+  for(let i=0;i<n;i++){
+    h += '<div class="skel-fila">'
+       +   '<div class="skel skel-pill"></div>'
+       +   '<div class="skel skel-sm"></div>'
+       +   '<div class="skel skel-lg"></div>'
+       +   '<div class="skel skel-md col-hide"></div>'
+       +   '<div class="skel skel-sm col-hide"></div>'
+       + '</div>';
+  }
+  return h + '</div>';
+}
+function skelTarjetas(n){
+  let h = '';
+  for(let i=0;i<n;i++){
+    h += '<div class="skel-card">'
+       +   '<div class="skel" style="width:62%"></div>'
+       +   '<div class="skel" style="width:88%"></div>'
+       +   '<div class="skel" style="width:44%"></div>'
+       + '</div>';
+  }
+  return h;
+}
+function pintarSkeletons(){
+  ["body-admites","body-fallos","body-otros","body-historico"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && el.querySelector(".spinner")) el.innerHTML = skelTabla(8);
+  });
+  const pqr = document.getElementById("grid-sin-pqr");
+  if(pqr && pqr.querySelector(".spinner")) pqr.innerHTML = skelTarjetas(6);
+}
+pintarSkeletons();
+/* Expuesto por si quieres mostrarlos también en un refresco manual */
+window.pintarSkeletons = pintarSkeletons;
+
+/* ───────────────────────────────────────────────────────────────
+   C. FILTROS PERSISTENTES (localStorage)
+   Se restauran DENTRO de poblarSelects(), que es donde se llenan
+   los <select> de abogados desde los datos: si restauráramos antes,
+   el <option> del abogado guardado todavía no existiría.
+   ─────────────────────────────────────────────────────────────── */
+const FKEY = "tutelas_filtros_v1";
+const F_IDS = [
+  "fa-q","fa-abo","fa-est",
+  "ff-q","ff-tp","ff-abo","ff-est",
+  "fo-q","fo-abo","fo-est",
+  "fh-q","fh-abo","fh-tipo","fh-mes","fh-anio"
+];
+
+function guardarFiltros(){
+  const o = {};
+  F_IDS.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && el.value) o[id] = el.value;
+  });
+  try{ localStorage.setItem(FKEY, JSON.stringify(o)); }catch(e){}
+}
+
+let _filtrosRestaurados = false;
+function restaurarFiltros(){
+  if(_filtrosRestaurados) return;   // solo en la primera carga
+  let o = {};
+  try{ o = JSON.parse(localStorage.getItem(FKEY) || "{}"); }catch(e){ return; }
+  let algo = false;
+  Object.keys(o).forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    /* En los <select> solo restauramos si la opción realmente existe:
+       si un abogado sale del equipo, su filtro guardado se descarta. */
+    if(el.tagName === "SELECT"){
+      const ok = Array.from(el.options).some(op => op.value === o[id]);
+      if(!ok) return;
+    }
+    el.value = o[id];
+    algo = true;
+  });
+  _filtrosRestaurados = true;
+  if(algo && typeof toast === "function") toast("🔖 Filtros de tu última sesión restaurados","");
+}
+window.limpiarFiltrosGuardados = function(){
+  try{ localStorage.removeItem(FKEY); }catch(e){}
+  F_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+  if(typeof renderAll === "function") renderAll();
+  if(typeof toast === "function") toast("🧹 Filtros limpiados","ok");
+};
+
+/* Wrap de poblarSelects: corre el original y luego restaura. */
+if(typeof window.poblarSelects === "function"){
+  const _poblar = window.poblarSelects;
+  window.poblarSelects = function(){
+    const r = _poblar.apply(this, arguments);
+    restaurarFiltros();
+    return r;
+  };
+}
+/* Guardado con debounce en cualquier cambio de filtro */
+let _tGuardar = null;
+["input","change"].forEach(ev=>{
+  document.addEventListener(ev, e=>{
+    if(!e.target || !e.target.id || F_IDS.indexOf(e.target.id) === -1) return;
+    clearTimeout(_tGuardar);
+    _tGuardar = setTimeout(guardarFiltros, 350);
+  }, true);
+});
+
+/* ───────────────────────────────────────────────────────────────
+   D. ACCIÓN RÁPIDA: COPIAR RADICADO DESDE LA FILA
+   celRad() se usa dentro de las plantillas de fila (ver paso 3
+   del documento de reemplazos). El clic se maneja por delegación
+   para no generar 50 listeners por página.
+   ─────────────────────────────────────────────────────────────── */
+window.celRad = function(r){
+  const rad = (r && (r["RADICADO"] || "")) || "";
+  const txt = rad || "—";
+  const btn = rad
+    ? '<button type="button" class="btn-fila-copy" title="Copiar radicado (no abre el caso)" aria-label="Copiar radicado ' + escAttr(rad) + '">⧉</button>'
+    : "";
+  return '<div class="cel sub cel-rad" data-rad="' + escAttr(rad) + '">'
+       +   '<span class="rad-txt">' + esc(txt) + '</span>' + btn
+       + '</div>';
+};
+
+document.addEventListener("click", async e=>{
+  const btn = e.target.closest && e.target.closest(".btn-fila-copy");
+  if(!btn) return;
+  e.stopPropagation();          // que NO abra el modal del caso
+  e.preventDefault();
+  const cel = btn.closest(".cel-rad");
+  const rad = cel ? cel.dataset.rad : "";
+  if(!rad) return;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(rad);
+    }else{
+      const ta = document.createElement("textarea");
+      ta.value = rad; ta.style.position="fixed"; ta.style.opacity="0";
+      document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); ta.remove();
+    }
+    const orig = btn.textContent;
+    btn.classList.add("ok"); btn.textContent = "✓";
+    setTimeout(()=>{ btn.classList.remove("ok"); btn.textContent = orig; }, 1100);
+    if(typeof toast === "function") toast("📋 Radicado copiado: " + rad, "ok");
+  }catch(err){
+    if(typeof toast === "function") toast("No se pudo copiar el radicado","err");
+  }
+}, true);
+
+/* ───────────────────────────────────────────────────────────────
+   E. BUSCADOR GLOBAL CON RESALTADO + NAVEGACIÓN CON FLECHAS
+   Misma lógica de filtrado y deduplicación por radicado que tenías;
+   lo único nuevo es el resaltado y el teclado.
+   ─────────────────────────────────────────────────────────────── */
+let _grIdx = -1;
+
+window.buscarGlobal = function(){
+  const inp = document.getElementById("g-search");
+  const q   = inp.value.trim();
+  const ql  = q.toLowerCase();
+  const el  = document.getElementById("global-results");
+  _grIdx = -1;
+  if(ql.length < 2){ el.classList.remove("open"); return; }
+
+  const todos  = [].concat(tutelas, fallos, incidentes);
+  const vistos = new Set();
+  const res = todos.filter(r=>{
+    const key = r["RADICADO"] || Math.random();
+    if(vistos.has(key)) return false;
+    vistos.add(key);
+    return [r["ACCIONANTE"],r["RADICADO"],r["CC / NIT"],r["JUZGADO"]]
+      .join(" ").toLowerCase().includes(ql);
+  }).slice(0,12);
+
+  if(!res.length){
+    el.innerHTML = '<div class="gr-item"><span style="color:var(--muted)">Sin resultados para «'+esc(q)+'»</span></div>';
+    el.classList.add("open");
+    return;
+  }
+  window._globalResults = res;
+  el.innerHTML = res.map((r,i)=>
+      '<div class="gr-item" data-i="'+i+'" onclick="cerrarGlobal();abrirModalIdx(\'_globalResults\','+i+')">'
+    +   badgeTipo(r["TIPO"])
+    +   '<div><div class="gr-acc">' + resaltar(r["ACCIONANTE"], q) + '</div>'
+    +   '<div class="gr-sub">' + resaltar(r["RADICADO"], q) + ' · '
+    +      resaltar((r["JUZGADO"]||"").substring(0,40), q) + '</div></div>'
+    +   semaforo(r._dias, r["ESTADO"])
+    + '</div>'
+  ).join("")
+  + '<div class="gr-hint"><span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>'
+  + '<span><kbd>Enter</kbd> abrir</span><span><kbd>Esc</kbd> cerrar</span></div>';
+  el.classList.add("open");
+};
+
+function moverGr(delta){
+  const el = document.getElementById("global-results");
+  if(!el.classList.contains("open")) return false;
+  const items = el.querySelectorAll(".gr-item[data-i]");
+  if(!items.length) return false;
+  if(_grIdx >= 0 && items[_grIdx]) items[_grIdx].classList.remove("sel");
+  _grIdx = (_grIdx + delta + items.length) % items.length;
+  items[_grIdx].classList.add("sel");
+  items[_grIdx].scrollIntoView({block:"nearest"});
+  return true;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   F. ATAJOS DE TECLADO
+   Se registra como listener ADICIONAL: el listener original de
+   Escape / Ctrl+Enter sigue funcionando sin cambios.
+   ─────────────────────────────────────────────────────────────── */
+const abierto = id => { const o = document.getElementById(id); return !!(o && o.classList.contains("open")); };
+
+document.addEventListener("keydown", e=>{
+  const mod   = e.ctrlKey || e.metaKey;
+  const campo = document.activeElement;
+  const enCampo = campo && /^(INPUT|TEXTAREA|SELECT)$/.test(campo.tagName);
+
+  /* ── Ctrl/Cmd + F → foco en el buscador global ── */
+  if(mod && !e.shiftKey && (e.key === "f" || e.key === "F")){
+    const g = document.getElementById("g-search");
+    if(g){
+      e.preventDefault();
+      g.focus(); g.select();
+      if(g.value.trim().length >= 2) window.buscarGlobal();
+    }
+    return;
+  }
+
+  /* ── Ctrl/Cmd + S → guardar el modal de edición que esté abierto ── */
+  if(mod && (e.key === "s" || e.key === "S")){
+    let fn = null;
+    if(abierto("overlay-editar")      && typeof guardarEdicionCaso    === "function") fn = guardarEdicionCaso;
+    else if(abierto("overlay-nueva")  && typeof guardarNuevaTutela    === "function") fn = guardarNuevaTutela;
+    else if(abierto("overlay-nuevoinc")&&typeof guardarNuevoIncidente === "function") fn = guardarNuevoIncidente;
+    else if(abierto("overlay")        && typeof guardarEstado         === "function") fn = guardarEstado;
+    if(fn){ e.preventDefault(); fn(); }   // sin modal abierto deja pasar el guardar del navegador
+    return;
+  }
+
+  /* ── Navegación del dropdown del buscador global ── */
+  const grAbierto = abierto("global-results");
+  if(grAbierto && campo && campo.id === "g-search"){
+    if(e.key === "ArrowDown"){ e.preventDefault(); moverGr(1);  return; }
+    if(e.key === "ArrowUp"){   e.preventDefault(); moverGr(-1); return; }
+    if(e.key === "Enter"){
+      const sel = document.querySelector("#global-results .gr-item.sel");
+      if(sel){ e.preventDefault(); sel.click(); }
+      return;
+    }
+  }
+
+  /* ── Escape también cierra el dropdown global ── */
+  if(e.key === "Escape" && grAbierto){ cerrarGlobal(); _grIdx = -1; }
+
+  /* ── / → foco en el buscador de la pestaña activa (bonus) ── */
+  if(e.key === "/" && !mod && !enCampo){
+    const panel = document.querySelector(".panel.active");
+    const f = panel && panel.querySelector(".fi-buscar");
+    if(f){ e.preventDefault(); f.focus(); f.select(); }
+  }
+}, false);
+
+/* ───────────────────────────────────────────────────────────────
+   G. ANIMACIÓN DE SALIDA DEL MODAL PRINCIPAL
+   La entrada es 100% CSS. La salida necesita esperar la animación
+   antes de quitar .open, así que envolvemos cerrarModalPrincipal.
+   ─────────────────────────────────────────────────────────────── */
+window.cerrarOv = function(id){
+  const ov = typeof id === "string" ? document.getElementById(id) : id;
+  if(!ov || !ov.classList.contains("open")) return;
+  ov.classList.add("cerrando");
+  setTimeout(()=>{ ov.classList.remove("open","cerrando"); }, 150);
+};
+
+if(typeof window.cerrarModalPrincipal === "function"){
+  const _cerrar = window.cerrarModalPrincipal;
+  window.cerrarModalPrincipal = function(){
+    const ov = document.getElementById("overlay");
+    const abiertoAntes = ov && ov.classList.contains("open");
+    const r = _cerrar.apply(this, arguments);
+    /* Si el guard de "cambios sin guardar" canceló el cierre, no animamos */
+    if(abiertoAntes && ov && !ov.classList.contains("open")){
+      ov.classList.add("open","cerrando");
+      setTimeout(()=>{ ov.classList.remove("open","cerrando"); }, 150);
+    }
+    return r;
+  };
+}
+
+/* ───────────────────────────────────────────────────────────────
+   H. ACCESIBILIDAD DE LAS FILAS (foco por teclado)
+   ─────────────────────────────────────────────────────────────── */
+["renderAdmites","renderFallos","renderOtros","renderHistorico"].forEach(fn=>{
+  if(typeof window[fn] !== "function") return;
+  const _orig = window[fn];
+  window[fn] = function(){
+    const r = _orig.apply(this, arguments);
+    document.querySelectorAll(".fila:not([tabindex])").forEach(f=>{
+      f.setAttribute("tabindex","0");
+      f.setAttribute("role","button");
+    });
+    return r;
+  };
+});
+document.addEventListener("keydown", e=>{
+  if(e.key !== "Enter") return;
+  const f = document.activeElement;
+  if(f && f.classList && f.classList.contains("fila")){ e.preventDefault(); f.click(); }
+});
+
+})();
+
 </script>
 
 <!-- ══ OVERLAY INFORME EJECUTIVO ══ -->
