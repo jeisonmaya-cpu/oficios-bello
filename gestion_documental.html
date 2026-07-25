@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="oscuro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestión Documental · Ejecuciones Fiscales</title>
+<style>
+/* ==================================================================
+   SISTEMA TEODORO — navy #0a1f3d / gold #e8a020
+   Sin CDN: tipografías por pila del sistema con DM Sans si está local.
+   ================================================================== */
+:root{
+  --navy:#0a1f3d; --gold:#e8a020; --gold-suave:#f5c469;
+  --fondo:#071528; --panel:#0d2542; --panel-alto:#12304f;
+  --linea:#1c3d63; --texto:#eaf1f8; --suave:#93aac4;
+  --ok:#3fb98a; --alerta:#e8a020; --peligro:#e05c5c; --info:#4f9bd9;
+  --radio:10px; --sombra:0 6px 24px rgba(0,0,0,.34);
+  --display:"DM Serif Display","Playfair Display",Georgia,serif;
+  --cuerpo:"DM Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+html[data-tema="claro"]{
+  --fondo:#eef2f7; --panel:#ffffff; --panel-alto:#f4f7fb;
+  --linea:#d6dfea; --texto:#0a1f3d; --suave:#5d708a;
+  --sombra:0 4px 16px rgba(10,31,61,.10);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font-family:var(--cuerpo);font-size:13px;line-height:1.5}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0}
+a{color:var(--gold-suave)}
+button,input,select,textarea{font-family:inherit;font-size:13px}
+
+/* ---------- Barra superior ---------- */
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:18px;
+  padding:10px 18px;background:var(--navy);border-bottom:2px solid var(--gold)}
+html[data-tema="claro"] .topbar{background:var(--navy)}
+.marca{display:flex;align-items:center;gap:10px;color:#fff}
+.marca .sello{width:30px;height:30px;border-radius:7px;background:var(--gold);color:var(--navy);
+  display:grid;place-items:center;font-family:var(--display);font-size:16px}
+.marca h1{font-size:16px;color:#fff;letter-spacing:.2px}
+.marca small{display:block;font-size:10px;color:#9fb4cd;letter-spacing:1.4px;text-transform:uppercase}
+.nav{display:flex;gap:4px;margin-left:auto}
+.nav button{background:transparent;border:1px solid transparent;color:#c8d6e6;padding:7px 14px;
+  border-radius:var(--radio);cursor:pointer;transition:.15s}
+.nav button:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav button.activo{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:600}
+.usuario{display:flex;align-items:center;gap:8px;color:#c8d6e6;font-size:12px}
+.icono-btn{background:rgba(255,255,255,.08);border:none;color:#fff;width:30px;height:30px;
+  border-radius:8px;cursor:pointer;font-size:14px}
+.icono-btn:hover{background:rgba(255,255,255,.18)}
+
+/* ---------- Estructura ---------- */
+.contenedor{max-width:1280px;margin:0 auto;padding:20px 18px 60px}
+.vista{display:none}.vista.activa{display:block}
+.encabezado-vista{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.encabezado-vista h2{font-size:22px}
+.encabezado-vista p{margin:2px 0 0;color:var(--suave);font-size:12px}
+
+.panel{background:var(--panel);border:1px solid var(--linea);border-radius:var(--radio);
+  box-shadow:var(--sombra);padding:18px;margin-bottom:16px}
+.panel > h3{font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);
+  font-family:var(--cuerpo);font-weight:600;margin-bottom:14px}
+
+.rejilla{display:grid;gap:14px}
+.c2{grid-template-columns:repeat(2,1fr)}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:860px){.c2,.c3,.c4{grid-template-columns:1fr}}
+
+/* ---------- Formularios ---------- */
+label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--suave);margin-bottom:5px}
+input,select,textarea{width:100%;padding:9px 11px;background:var(--panel-alto);color:var(--texto);
+  border:1px solid var(--linea);border-radius:8px;outline:none;transition:.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,160,32,.16)}
+textarea{resize:vertical;min-height:76px}
+.campo{margin-bottom:14px}
+.pista{font-size:11px;color:var(--suave);margin-top:4px}
+
+.btn{padding:9px 18px;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:.15s}
+.btn-oro{background:var(--gold);color:var(--navy)}
+.btn-oro:hover{background:var(--gold-suave)}
+.btn-linea{background:transparent;color:var(--texto);border:1px solid var(--linea)}
+.btn-linea:hover{border-color:var(--gold);color:var(--gold)}
+.btn-peligro{background:transparent;color:var(--peligro);border:1px solid var(--peligro)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.barra-acciones{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* ---------- Zona de archivo ---------- */
+.zona{border:1.5px dashed var(--linea);border-radius:var(--radio);padding:26px;text-align:center;
+  cursor:pointer;transition:.15s;background:var(--panel-alto)}
+.zona:hover,.zona.encima{border-color:var(--gold);background:rgba(232,160,32,.07)}
+.zona .glifo{font-size:26px;display:block;margin-bottom:6px}
+.zona strong{color:var(--texto)}
+.archivo-listo{display:flex;align-items:center;gap:10px;justify-content:center;color:var(--ok)}
+
+/* ---------- Turno round-robin ---------- */
+.turno{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radio);
+  background:linear-gradient(90deg,rgba(232,160,32,.16),transparent);border:1px solid var(--linea)}
+.turno .avatar{width:40px;height:40px;border-radius:50%;background:var(--gold);color:var(--navy);
+  display:grid;place-items:center;font-weight:700;font-size:15px}
+.turno .nombre{font-size:15px;font-weight:600}
+.turno .rol{font-size:11px;color:var(--suave);text-transform:uppercase;letter-spacing:1px}
+
+/* ---------- Tabla ---------- */
+.tabla-envoltura{overflow-x:auto;border:1px solid var(--linea);border-radius:var(--radio)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--panel-alto);color:var(--suave);text-align:left;padding:9px 10px;
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:600;
+  border-bottom:1px solid var(--linea);position:sticky;top:0}
+td{padding:9px 10px;border-bottom:1px solid var(--linea)}
+tbody tr{cursor:pointer;transition:.12s}
+tbody tr:hover{background:var(--panel-alto)}
+.radicado{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;color:var(--gold-suave);font-weight:600}
+
+.pastilla{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;
+  letter-spacing:.5px;border:1px solid}
+.p-a_tiempo{color:var(--ok);border-color:var(--ok);background:rgba(63,185,138,.12)}
+.p-proximo{color:var(--info);border-color:var(--info);background:rgba(79,155,217,.12)}
+.p-critico{color:var(--alerta);border-color:var(--alerta);background:rgba(232,160,32,.12)}
+.p-vencido{color:var(--peligro);border-color:var(--peligro);background:rgba(224,92,92,.14)}
+.p-cerrado,.p-sin_termino{color:var(--suave);border-color:var(--linea);background:var(--panel-alto)}
+
+/* ---------- Tarjetas métricas ---------- */
+.metrica{background:var(--panel);border:1px solid var(--linea);border-left:3px solid var(--gold);
+  border-radius:var(--radio);padding:14px 16px}
+.metrica .valor{font-family:var(--display);font-size:30px;line-height:1.1}
+.metrica .etiqueta{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--suave);margin-top:4px}
+.metrica.roja{border-left-color:var(--peligro)}
+.metrica.verde{border-left-color:var(--ok)}
+.metrica.azul{border-left-color:var(--info)}
+
+/* ---------- Barras ---------- */
+.fila-barra{display:grid;grid-template-columns:150px 1fr 56px;align-items:center;gap:12px;margin-bottom:9px}
+.fila-barra .etq{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pista-barra{height:16px;background:var(--panel-alto);border-radius:8px;overflow:hidden;display:flex}
+.seg{height:100%}
+.seg.abiertos{background:var(--gold)}
+.seg.cerrados{background:var(--ok)}
+.seg.vencidos{background:var(--peligro)}
+.fila-barra .num{text-align:right;font-weight:600;font-size:12px}
+.leyenda{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--suave);margin-top:12px}
+.leyenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+
+/* ---------- Modal ---------- */
+.velo{position:fixed;inset:0;background:rgba(3,10,20,.72);display:none;z-index:60;
+  align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.velo.abierto{display:flex}
+.modal{background:var(--panel);border:1px solid var(--linea);border-radius:14px;box-shadow:var(--sombra);
+  width:100%;max-width:720px}
+.modal header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+  border-bottom:1px solid var(--linea)}
+.modal header h3{font-size:19px}
+.modal .cuerpo{padding:20px}
+.modal footer{padding:14px 20px;border-top:1px solid var(--linea);display:flex;gap:10px;flex-wrap:wrap}
+.datos{display:grid;grid-template-columns:150px 1fr;gap:8px 14px;font-size:12px;margin-bottom:18px}
+.datos dt{color:var(--suave);text-transform:uppercase;font-size:10px;letter-spacing:.8px;padding-top:2px}
+.datos dd{margin:0}
+.linea-tiempo{border-left:2px solid var(--linea);padding-left:14px;margin-left:4px}
+.linea-tiempo li{list-style:none;margin-bottom:12px;position:relative}
+.linea-tiempo li::before{content:'';position:absolute;left:-21px;top:5px;width:8px;height:8px;
+  border-radius:50%;background:var(--gold)}
+.linea-tiempo .cuando{font-size:10px;color:var(--suave);text-transform:uppercase;letter-spacing:.8px}
+
+/* ---------- Acceso ---------- */
+.acceso{position:fixed;inset:0;background:var(--fondo);z-index:80;display:grid;place-items:center;padding:20px}
+.acceso .caja{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--linea);
+  border-radius:14px;box-shadow:var(--sombra);padding:30px}
+.acceso .sello{width:46px;height:46px;border-radius:12px;background:var(--gold);color:var(--navy);
+  display:grid;place-items:center;font-family:var(--display);font-size:24px;margin-bottom:14px}
+.acceso h2{font-size:22px;margin-bottom:4px}
+.acceso p.sub{color:var(--suave);font-size:12px;margin:0 0 20px}
+
+/* ---------- Aviso flotante ---------- */
+.aviso{position:fixed;bottom:22px;right:22px;z-index:90;background:var(--panel);
+  border:1px solid var(--linea);border-left:3px solid var(--gold);border-radius:10px;
+  padding:12px 16px;box-shadow:var(--sombra);max-width:340px;transform:translateY(120%);
+  transition:transform .25s ease}
+.aviso.visible{transform:translateY(0)}
+.aviso.ok{border-left-color:var(--ok)}
+.aviso.error{border-left-color:var(--peligro)}
+
+.vacio{text-align:center;padding:40px;color:var(--suave)}
+.cargando{display:inline-block;width:14px;height:14px;border:2px solid var(--linea);
+  border-top-color:var(--gold);border-radius:50%;animation:giro .7s linear infinite;vertical-align:-2px}
+@keyframes giro{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<!-- ============================ ACCESO ============================ -->
+<div class="acceso" id="acceso">
+  <div class="caja">
+    <div class="sello">GD</div>
+    <h2>Gestión Documental</h2>
+    <p class="sub">Dirección Administrativa de Ejecuciones Fiscales</p>
+    <div class="campo">
+      <label for="correo">Correo institucional</label>
+      <input id="correo" type="email" autocomplete="username" placeholder="nombre@bello.gov.co">
+    </div>
+    <div class="campo">
+      <label for="clave">Contraseña</label>
+      <input id="clave" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn btn-oro" style="width:100%" id="btnEntrar">Entrar</button>
+    <p class="pista" id="errorAcceso" style="color:var(--peligro);min-height:16px"></p>
+  </div>
+</div>
+
+<!-- ============================ APP ============================ -->
+<div id="app" style="display:none">
+
+<div class="topbar">
+  <div class="marca">
+    <div class="sello">GD</div>
+    <div>
+      <small>Alcaldía de Bello</small>
+      <h1>Gestión Documental</h1>
+    </div>
+  </div>
+  <nav class="nav">
+    <button data-vista="radicar" class="activo">Radicar</button>
+    <button data-vista="bandeja">Bandeja</button>
+    <button data-vista="estadisticas">Estadísticas</button>
+    <button data-vista="responsables">Responsables</button>
+  </nav>
+  <div class="usuario">
+    <span id="etiquetaUsuario"></span>
+    <button class="icono-btn" id="btnTema" title="Cambiar tema">🌓</button>
+    <button class="icono-btn" id="btnSalir" title="Cerrar sesión">⏻</button>
+  </div>
+</div>
+
+<div class="contenedor">
+
+  <!-- ---------------------- RADICAR ---------------------- -->
+  <section class="vista activa" id="v-radicar">
+    <div class="encabezado-vista">
+      <div>
+        <h2>Radicar documento</h2>
+        <p>El archivo se guarda en Drive y el turno se asigna automáticamente.</p>
+      </div>
+    </div>
+
+    <div class="rejilla c2">
+      <div>
+        <div class="panel">
+          <h3>Documento</h3>
+          <div class="zona" id="zona">
+            <span class="glifo">📄</span>
+            <strong>Arrastra el archivo o haz clic</strong>
+            <div class="pista">PDF, Word o imagen · hasta 25 MB</div>
+          </div>
+          <input type="file" id="archivo" hidden accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tif,.tiff">
+          <div id="archivoInfo" style="margin-top:12px"></div>
+        </div>
+
+        <div class="panel">
+          <h3>Turno de asignación</h3>
+          <div class="turno" id="turno">
+            <div class="avatar">—</div>
+            <div>
+              <div class="nombre">Cargando turno…</div>
+              <div class="rol">Round-robin</div>
+            </div>
+          </div>
+          <div class="campo" style="margin-top:14px">
+            <label for="responsableManual">Cambiar responsable (opcional)</label>
+            <select id="responsableManual">
+              <option value="">Dejar el turno automático</option>
+            </select>
+            <div class="pista">Si eliges a alguien, no se consume el turno del round-robin.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h3>Datos del trámite</h3>
+          <div class="rejilla c2">
+            <div class="campo">
+              <label for="canal">Canal de entrada</label>
+              <select id="canal">
+                <option>Escrito físico</option>
+                <option>Correo</option>
+                <option>Formulario web</option>
+                <option>Otro</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label for="tipo">Tipo de documento</label>
+              <select id="tipo">
+                <option>Petición</option>
+                <option>Queja</option>
+                <option>Reclamo</option>
+                <option>Recurso de reposición</option>
+                <option>Tutela</option>
+                <option>Derecho de petición</option>
+                <option>Oficio interinstitucional</option>
+                <option>Acuerdo de pago</option>
+                <option>Solicitud de prescripción</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="dependencia">Dependencia destino</label>
+            <select id="dependencia">
+              <option>Ejecuciones Fiscales</option>
+              <option>Rentas Municipales</option>
+              <option>Tránsito</option>
+              <option>Gestión Documental</option>
+              <option>Otra</option>
+            </select>
+          </div>
+
+          <div class="rejilla c2">
+            <div class="campo">
+              <label for="remitente">Remitente</label>
+              <input id="remitente" placeholder="Nombre completo">
+            </div>
+            <div class="campo">
+              <label for="identificacion">Identificación</label>
+              <input id="identificacion" placeholder="CC o NIT">
+            </div>
+            <div class="campo">
+              <label for="email">Correo</label>
+              <input id="email" type="email" placeholder="Para enviar la respuesta">
+            </div>
+            <div class="campo">
+              <label for="telefono">Teléfono</label>
+              <input id="telefono">
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="asunto">Asunto</label>
+            <input id="asunto" placeholder="Resumen en una línea">
+          </div>
+
+          <div class="rejilla c2">
+            <div class="campo">
+              <label for="dias">Días de término</label>
+              <input id="dias" type="number" value="15" min="1" max="180">
+              <div class="pista">Hábiles. 15 para peticiones, 10 para tutelas.</div>
+            </div>
+            <div class="campo">
+              <label for="vencimiento">Vence el</label>
+              <input id="vencimiento" type="date">
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="observaciones">Observaciones</label>
+            <textarea id="observaciones" placeholder="Anexos, antecedentes, expediente relacionado…"></textarea>
+          </div>
+
+          <div class="barra-acciones">
+            <button class="btn btn-oro" id="btnRadicar">Radicar documento</button>
+            <button class="btn btn-linea" id="btnLimpiar">Limpiar</button>
+            <span id="estadoRadicacion" class="pista"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------- BANDEJA ---------------------- -->
+  <section class="vista" id="v-bandeja">
+    <div class="encabezado-vista">
+      <div>
+        <h2>Bandeja de radicados</h2>
+        <p id="conteoBandeja">—</p>
+      </div>
+      <div class="barra-acciones">
+        <button class="btn btn-linea" id="btnRecargar">Actualizar</button>
+        <button class="btn btn-linea" id="btnExportar">Exportar CSV</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="rejilla c4">
+        <div class="campo" style="margin:0">
+          <label for="fBuscar">Buscar</label>
+          <input id="fBuscar" placeholder="Radicado, remitente o asunto">
+        </div>
+        <div class="campo" style="margin:0">
+          <label for="fEstado">Estado</label>
+          <select id="fEstado"><option value="">Todos</option></select>
+        </div>
+        <div class="campo" style="margin:0">
+          <label for="fResponsable">Responsable</label>
+          <select id="fResponsable"><option value="">Todos</option></select>
+        </div>
+        <div class="campo" style="margin:0">
+          <label for="fSemaforo">Vencimiento</label>
+          <select id="fSemaforo">
+            <option value="">Todos</option>
+            <option value="vencido">Vencidos</option>
+            <option value="critico">Críticos (≤3 días)</option>
+            <option value="proximo">Próximos (≤7 días)</option>
+            <option value="a_tiempo">A tiempo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabla-envoltura">
+      <table>
+        <thead>
+          <tr>
+            <th>Radicado</th><th>Fecha</th><th>Tipo</th><th>Remitente</th>
+            <th>Asunto</th><th>Responsable</th><th>Estado</th><th>Vence</th><th>Archivo</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoBandeja"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ---------------------- ESTADÍSTICAS ---------------------- -->
+  <section class="vista" id="v-estadisticas">
+    <div class="encabezado-vista">
+      <div>
+        <h2>Estadísticas</h2>
+        <p>Carga, vencimientos, tipos y tiempos de respuesta.</p>
+      </div>
+      <button class="btn btn-linea" id="btnImprimir">Imprimir informe</button>
+    </div>
+
+    <div class="rejilla c4" id="tarjetas"></div>
+
+    <div class="rejilla c2" style="margin-top:16px">
+      <div class="panel">
+        <h3>Carga por responsable</h3>
+        <div id="graficoCarga"></div>
+        <div class="leyenda">
+          <span><i style="background:var(--gold)"></i>Abiertos</span>
+          <span><i style="background:var(--ok)"></i>Cerrados</span>
+          <span><i style="background:var(--peligro)"></i>Vencidos</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Estado y vencimientos</h3>
+        <div id="graficoEstado"></div>
+      </div>
+    </div>
+
+    <div class="rejilla c2">
+      <div class="panel">
+        <h3>Por tipo y dependencia</h3>
+        <div class="tabla-envoltura">
+          <table>
+            <thead><tr><th>Tipo</th><th>Dependencia</th><th>Total</th><th>Respondidos</th><th>Fuera de término</th></tr></thead>
+            <tbody id="cuerpoTipos"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Tiempos de respuesta</h3>
+        <div id="graficoTiempos"></div>
+        <div class="pista" style="margin-top:10px">Promedio de días entre radicación y respuesta.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------- RESPONSABLES ---------------------- -->
+  <section class="vista" id="v-responsables">
+    <div class="encabezado-vista">
+      <div>
+        <h2>Responsables</h2>
+        <p>Quien esté activo entra al round-robin. Desactivar no borra el historial.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Agregar responsable</h3>
+      <div class="rejilla c4">
+        <div class="campo" style="margin:0"><label>Nombre</label><input id="nrNombre"></div>
+        <div class="campo" style="margin:0"><label>Correo</label><input id="nrEmail" type="email"></div>
+        <div class="campo" style="margin:0"><label>Cargo</label><input id="nrCargo" placeholder="Abogado"></div>
+        <div class="campo" style="margin:0;display:flex;align-items:flex-end">
+          <button class="btn btn-oro" id="btnAgregarResp" style="width:100%">Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabla-envoltura">
+      <table>
+        <thead><tr><th>Orden</th><th>Nombre</th><th>Correo</th><th>Cargo</th><th>Abiertos</th><th>Última asignación</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="cuerpoResponsables"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+</div>
+
+<!-- ============================ MODAL ============================ -->
+<div class="velo" id="velo">
+  <div class="modal">
+    <header>
+      <h3 id="modalTitulo">Radicado</h3>
+      <button class="icono-btn" id="btnCerrarModal" style="background:var(--panel-alto);color:var(--texto)">✕</button>
+    </header>
+    <div class="cuerpo" id="modalCuerpo"></div>
+    <footer id="modalPie"></footer>
+  </div>
+</div>
+
+<div class="aviso" id="aviso"></div>
+
+<script>
+/* ==================================================================
+   CONFIGURACIÓN — completar antes de publicar
+   ================================================================== */
+const CONFIG = {
+  SUPABASE_URL : 'https://TU-PROYECTO.supabase.co',
+  SUPABASE_KEY : 'sb_pub_...',                       // llave pública (publishable)
+  APPS_SCRIPT  : 'https://script.google.com/macros/s/AKfycb.../exec',
+  APPS_TOKEN   : 'CAMBIA_ESTE_TOKEN_LARGO'           // mismo valor del .gs
+};
+
+const ESTADOS = ['Radicado','Asignado','En trámite','Respondido','Cerrado','Anulado'];
+
+/* Festivos Colombia 2026 — ajustar cada año */
+const FESTIVOS = ['2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03','2026-05-01',
+  '2026-05-18','2026-06-08','2026-06-15','2026-06-29','2026-07-20','2026-08-07','2026-08-17',
+  '2026-10-12','2026-11-02','2026-11-16','2026-12-08','2026-12-25'];
+
+/* ==================================================================
+   ESTADO EN MEMORIA
+   ================================================================== */
+let sesion = null;
+let responsables = [];
+let radicados = [];
+let archivoSeleccionado = null;
+
+/* ==================================================================
+   ACCESO — Supabase Auth
+   ================================================================== */
+async function entrar(){
+  const correo = document.getElementById('correo').value.trim();
+  const clave  = document.getElementById('clave').value;
+  const err    = document.getElementById('errorAcceso');
+  err.textContent = '';
+
+  if(!correo || !clave){ err.textContent = 'Escribe tu correo y contraseña.'; return; }
+
+  try{
+    const r = await fetch(CONFIG.SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method:'POST',
+      headers:{'apikey':CONFIG.SUPABASE_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({email:correo, password:clave})
+    });
+    const d = await r.json();
+    if(!r.ok){ err.textContent = 'No se pudo entrar: ' + (d.error_description || d.msg || 'revisa los datos'); return; }
+
+    sesion = { token:d.access_token, correo:d.user.email, expira:Date.now() + d.expires_in*1000 };
+    sessionStorage.setItem('gd_sesion', JSON.stringify(sesion));
+    abrirApp();
+  }catch(e){
+    err.textContent = 'Sin conexión con el servidor.';
+  }
+}
+
+function salir(){
+  sessionStorage.removeItem('gd_sesion');
+  location.reload();
+}
+
+function restaurarSesion(){
+  const guardada = sessionStorage.getItem('gd_sesion');
+  if(!guardada) return false;
+  const s = JSON.parse(guardada);
+  if(s.expira < Date.now()) { sessionStorage.removeItem('gd_sesion'); return false; }
+  sesion = s;
+  return true;
+}
+
+async function abrirApp(){
+  document.getElementById('acceso').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('etiquetaUsuario').textContent = sesion.correo;
+  await cargarResponsables();
+  await cargarBandeja();
+  await mostrarTurno();
+}
+
+/* ==================================================================
+   CLIENTE SUPABASE (REST directo, sin librerías)
+   ================================================================== */
+function cabeceras(extra){
+  return Object.assign({
+    'apikey': CONFIG.SUPABASE_KEY,
+    'Authorization': 'Bearer ' + sesion.token,
+    'Content-Type': 'application/json'
+  }, extra || {});
+}
+
+async function sb(ruta, opciones){
+  const r = await fetch(CONFIG.SUPABASE_URL + '/rest/v1/' + ruta,
+    Object.assign({headers: cabeceras((opciones||{}).headers)}, opciones));
+  if(r.status === 401){ avisar('La sesión venció. Vuelve a entrar.','error'); setTimeout(salir,1500); throw new Error('401'); }
+  const texto = await r.text();
+  const datos = texto ? JSON.parse(texto) : null;
+  if(!r.ok) throw new Error((datos && (datos.message || datos.hint)) || 'Error ' + r.status);
+  return datos;
+}
+
+const rpc = (nombre, cuerpo) =>
+  sb('rpc/' + nombre, { method:'POST', body: JSON.stringify(cuerpo || {}) });
+
+/* ==================================================================
+   APPS SCRIPT (Drive y correo) — text/plain evita el preflight CORS
+   ================================================================== */
+async function apps(carga){
+  const r = await fetch(CONFIG.APPS_SCRIPT, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({token: CONFIG.APPS_TOKEN}, carga))
+  });
+  const d = await r.json();
+  if(!d.ok) throw new Error(d.error || 'Error en Drive');
+  return d;
+}
+
+const aBase64 = archivo => new Promise((ok, mal) => {
+  const lector = new FileReader();
+  lector.onload  = () => ok(lector.result.split(',')[1]);
+  lector.onerror = () => mal(new Error('No se pudo leer el archivo'));
+  lector.readAsDataURL(archivo);
+});
+
+/* ==================================================================
+   RADICAR
+   ================================================================== */
+async function cargarResponsables(){
+  responsables = await sb('gd_responsables?select=*&order=orden.asc,id.asc');
+
+  const manual = document.getElementById('responsableManual');
+  manual.innerHTML = '<option value="">Dejar el turno automático</option>' +
+    responsables.filter(p => p.activo)
+      .map(p => `<option value="${p.id}">${escapar(p.nombre)}</option>`).join('');
+
+  const filtro = document.getElementById('fResponsable');
+  filtro.innerHTML = '<option value="">Todos</option>' +
+    responsables.map(p => `<option value="${p.id}">${escapar(p.nombre)}</option>`).join('');
+
+  const fe = document.getElementById('fEstado');
+  fe.innerHTML = '<option value="">Todos</option>' + ESTADOS.map(e => `<option>${e}</option>`).join('');
+
+  pintarResponsables();
+}
+
+async function mostrarTurno(){
+  const caja = document.getElementById('turno');
+  try{
+    const r = await rpc('gd_proximo_responsable');
+    const p = r && r[0];
+    if(!p){
+      caja.innerHTML = '<div class="avatar">!</div><div><div class="nombre">Sin responsables activos</div>' +
+                       '<div class="rol">Agrega alguien en la pestaña Responsables</div></div>';
+      return;
+    }
+    caja.innerHTML = `<div class="avatar">${iniciales(p.nombre)}</div>
+      <div><div class="nombre">${escapar(p.nombre)}</div>
+      <div class="rol">Le corresponde el siguiente radicado</div></div>`;
+  }catch(e){
+    caja.innerHTML = '<div class="avatar">—</div><div><div class="nombre">No se pudo leer el turno</div>' +
+                     `<div class="rol">${escapar(e.message)}</div></div>`;
+  }
+}
+
+function elegirArchivo(archivo){
+  if(!archivo) return;
+  if(archivo.size > 25 * 1024 * 1024){ avisar('El archivo pasa de 25 MB.','error'); return; }
+  archivoSeleccionado = archivo;
+  document.getElementById('archivoInfo').innerHTML =
+    `<div class="archivo-listo">✓ <strong>${escapar(archivo.name)}</strong>
+     <span class="pista">(${(archivo.size/1024/1024).toFixed(2)} MB)</span></div>`;
+}
+
+function calcularVencimiento(){
+  const dias = parseInt(document.getElementById('dias').value, 10) || 15;
+  let fecha = new Date();
+  let contados = 0;
+  while(contados < dias){
+    fecha.setDate(fecha.getDate() + 1);
+    const dow = fecha.getDay();
+    const iso = fecha.toISOString().slice(0,10);
+    if(dow !== 0 && dow !== 6 && !FESTIVOS.includes(iso)) contados++;
+  }
+  document.getElementById('vencimiento').value = fecha.toISOString().slice(0,10);
+}
+
+async function radicar(){
+  const boton = document.getElementById('btnRadicar');
+  const estado = document.getElementById('estadoRadicacion');
+
+  const remitente = document.getElementById('remitente').value.trim();
+  const asunto    = document.getElementById('asunto').value.trim();
+  if(!remitente || !asunto){ avisar('Faltan el remitente y el asunto.','error'); return; }
+
+  boton.disabled = true;
+  estado.innerHTML = '<span class="cargando"></span> Guardando…';
+
+  try{
+    let drive = {};
+    if(archivoSeleccionado){
+      estado.innerHTML = '<span class="cargando"></span> Subiendo a Drive…';
+      const subido = await apps({
+        accion:'subir',
+        nombreArchivo: archivoSeleccionado.name,
+        mimeType: archivoSeleccionado.type,
+        contenidoBase64: await aBase64(archivoSeleccionado)
+      });
+      drive = { drive_file_id: subido.fileId, drive_url: subido.url, nombre_archivo: subido.nombre };
+    }
+
+    estado.innerHTML = '<span class="cargando"></span> Registrando radicado…';
+    const fila = await rpc('gd_radicar', { p_datos: Object.assign({
+      canal:                    document.getElementById('canal').value,
+      tipo:                     document.getElementById('tipo').value,
+      dependencia:              document.getElementById('dependencia').value,
+      remitente_nombre:         remitente,
+      remitente_identificacion: document.getElementById('identificacion').value.trim(),
+      remitente_email:          document.getElementById('email').value.trim(),
+      remitente_telefono:       document.getElementById('telefono').value.trim(),
+      asunto:                   asunto,
+      observaciones:            document.getElementById('observaciones').value.trim(),
+      responsable_id:           document.getElementById('responsableManual').value,
+      dias_termino:             document.getElementById('dias').value,
+      fecha_vencimiento:        document.getElementById('vencimiento').value,
+      creado_por:               sesion.correo
+    }, drive) });
+
+    const persona = responsables.find(p => p.id === fila.responsable_id);
+    avisar(`Radicado ${fila.radicado} · asignado a ${persona ? persona.nombre : 'nadie'}`, 'ok');
+    estado.textContent = '';
+    limpiarFormulario();
+    await cargarResponsables();
+    await mostrarTurno();
+    await cargarBandeja();
+  }catch(e){
+    avisar('No se pudo radicar: ' + e.message, 'error');
+    estado.textContent = '';
+  }finally{
+    boton.disabled = false;
+  }
+}
+
+function limpiarFormulario(){
+  ['remitente','identificacion','email','telefono','asunto','observaciones'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('responsableManual').value = '';
+  archivoSeleccionado = null;
+  document.getElementById('archivo').value = '';
+  document.getElementById('archivoInfo').innerHTML = '';
+  calcularVencimiento();
+}
+
+/* ==================================================================
+   BANDEJA
+   ================================================================== */
+async function cargarBandeja(){
+  const cuerpo = document.getElementById('cuerpoBandeja');
+  cuerpo.innerHTML = '<tr><td colspan="9" class="vacio"><span class="cargando"></span> Cargando…</td></tr>';
+  try{
+    radicados = await sb('v_gd_bandeja?select=*&order=fecha_radicacion.desc,id.desc&limit=1000');
+    pintarBandeja();
+  }catch(e){
+    cuerpo.innerHTML = `<tr><td colspan="9" class="vacio">No se pudo cargar: ${escapar(e.message)}</td></tr>`;
+  }
+}
+
+function filtrados(){
+  const q   = document.getElementById('fBuscar').value.toLowerCase().trim();
+  const est = document.getElementById('fEstado').value;
+  const res = document.getElementById('fResponsable').value;
+  const sem = document.getElementById('fSemaforo').value;
+
+  return radicados.filter(r => {
+    if(est && r.estado !== est) return false;
+    if(res && String(r.responsable_id) !== res) return false;
+    if(sem && r.semaforo !== sem) return false;
+    if(q){
+      const heno = [r.radicado, r.remitente_nombre, r.asunto, r.tipo].join(' ').toLowerCase();
+      if(!heno.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+const SEMAFORO_TEXTO = {
+  vencido:'Vencido', critico:'Crítico', proximo:'Próximo',
+  a_tiempo:'A tiempo', cerrado:'Cerrado', sin_termino:'Sin término'
+};
+
+function pintarBandeja(){
+  const lista = filtrados();
+  const cuerpo = document.getElementById('cuerpoBandeja');
+  document.getElementById('conteoBandeja').textContent =
+    `${lista.length} de ${radicados.length} radicados`;
+
+  if(!lista.length){
+    cuerpo.innerHTML = '<tr><td colspan="9" class="vacio">Nada por aquí. Radica un documento o cambia los filtros.</td></tr>';
+    return;
+  }
+
+  cuerpo.innerHTML = lista.map(r => `
+    <tr data-id="${r.id}">
+      <td class="radicado">${escapar(r.radicado)}</td>
+      <td>${fecha(r.fecha_radicacion)}</td>
+      <td>${escapar(r.tipo)}</td>
+      <td>${escapar(r.remitente_nombre)}</td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapar(r.asunto)}</td>
+      <td>${escapar(r.responsable || '—')}</td>
+      <td>${escapar(r.estado)}</td>
+      <td><span class="pastilla p-${r.semaforo}">${SEMAFORO_TEXTO[r.semaforo]}${
+          r.dias_restantes != null && r.semaforo !== 'cerrado' ? ' · ' + r.dias_restantes + 'd' : ''}</span></td>
+      <td>${r.drive_url ? `<a href="${r.drive_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Ver</a>` : '—'}</td>
+    </tr>`).join('');
+
+  cuerpo.querySelectorAll('tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', () => abrirDetalle(Number(tr.dataset.id)));
+  });
+}
+
+function exportarCsv(){
+  const lista = filtrados();
+  const cols = ['radicado','fecha_radicacion','canal','tipo','dependencia','remitente_nombre',
+                'remitente_identificacion','remitente_email','asunto','responsable','estado',
+                'fecha_vencimiento','fecha_respuesta','dias_respuesta','drive_url'];
+  const csv = [cols.join(';')].concat(
+    lista.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g,'""')}"`).join(';'))
+  ).join('\n');
+
+  const enlace = document.createElement('a');
+  enlace.href = URL.createObjectURL(new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'}));
+  enlace.download = 'radicados_' + new Date().toISOString().slice(0,10) + '.csv';
+  enlace.click();
+}
+
+/* ==================================================================
+   DETALLE DEL RADICADO
+   ================================================================== */
+async function abrirDetalle(id){
+  const r = radicados.find(x => x.id === id);
+  if(!r) return;
+
+  document.getElementById('modalTitulo').textContent = r.radicado;
+  document.getElementById('modalCuerpo').innerHTML = `
+    <dl class="datos">
+      <dt>Asunto</dt><dd>${escapar(r.asunto)}</dd>
+      <dt>Remitente</dt><dd>${escapar(r.remitente_nombre)} ${r.remitente_identificacion ? '· ' + escapar(r.remitente_identificacion) : ''}</dd>
+      <dt>Correo</dt><dd>${escapar(r.remitente_email || '—')}</dd>
+      <dt>Canal / tipo</dt><dd>${escapar(r.canal)} · ${escapar(r.tipo)}</dd>
+      <dt>Dependencia</dt><dd>${escapar(r.dependencia || '—')}</dd>
+      <dt>Radicado el</dt><dd>${fecha(r.fecha_radicacion)}</dd>
+      <dt>Vence</dt><dd>${r.fecha_vencimiento || '—'} <span class="pastilla p-${r.semaforo}">${SEMAFORO_TEXTO[r.semaforo]}</span></dd>
+      <dt>Archivo</dt><dd>${r.drive_url ? `<a href="${r.drive_url}" target="_blank" rel="noopener">${escapar(r.nombre_archivo || 'Abrir en Drive')}</a>` : 'Sin archivo'}</dd>
+      <dt>Observaciones</dt><dd>${escapar(r.observaciones || '—')}</dd>
+    </dl>
+
+    <div class="rejilla c2">
+      <div class="campo">
+        <label for="mResponsable">Responsable</label>
+        <select id="mResponsable">${
+          responsables.map(p => `<option value="${p.id}" ${p.id===r.responsable_id?'selected':''}>${escapar(p.nombre)}</option>`).join('')
+        }</select>
+      </div>
+      <div class="campo">
+        <label for="mEstado">Estado</label>
+        <select id="mEstado">${ESTADOS.map(e => `<option ${e===r.estado?'selected':''}>${e}</option>`).join('')}</select>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="mRespuesta">Respuesta al ciudadano</label>
+      <textarea id="mRespuesta" placeholder="Al enviar se marca como Respondido y se registra la fecha.">${escapar(r.respuesta_texto || '')}</textarea>
+    </div>
+
+    <h3 style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);
+       font-family:var(--cuerpo);font-weight:600;margin:18px 0 10px">Trazabilidad</h3>
+    <ul class="linea-tiempo" id="mMovimientos"><li><span class="cargando"></span></li></ul>`;
+
+  document.getElementById('modalPie').innerHTML = `
+    <button class="btn btn-oro" id="mGuardar">Guardar cambios</button>
+    <button class="btn btn-linea" id="mEnviar" ${r.remitente_email ? '' : 'disabled title="El radicado no tiene correo"'}>Enviar respuesta por correo</button>
+    <button class="btn btn-linea" id="mCerrar" style="margin-left:auto">Cerrar</button>`;
+
+  document.getElementById('mGuardar').onclick = () => guardarCambios(r);
+  document.getElementById('mEnviar').onclick  = () => enviarRespuesta(r);
+  document.getElementById('mCerrar').onclick  = cerrarModal;
+  document.getElementById('velo').classList.add('abierto');
+
+  try{
+    const movs = await sb(`gd_movimientos?select=*&radicado_id=eq.${id}&order=fecha.desc`);
+    document.getElementById('mMovimientos').innerHTML = movs.length
+      ? movs.map(m => `<li><div class="cuando">${fecha(m.fecha)} · ${escapar(m.usuario || 'sistema')}</div>
+                       <strong>${escapar(m.accion)}</strong>
+                       ${m.detalle ? '<div>' + escapar(m.detalle) + '</div>' : ''}</li>`).join('')
+      : '<li>Sin movimientos.</li>';
+  }catch(e){
+    document.getElementById('mMovimientos').innerHTML = '<li>No se pudo cargar la trazabilidad.</li>';
+  }
+}
+
+function cerrarModal(){ document.getElementById('velo').classList.remove('abierto'); }
+
+async function guardarCambios(r){
+  const nuevoResp   = Number(document.getElementById('mResponsable').value);
+  const nuevoEstado = document.getElementById('mEstado').value;
+  const respuesta   = document.getElementById('mRespuesta').value;
+
+  const cambios = { estado:nuevoEstado, responsable_id:nuevoResp,
+                    respuesta_texto:respuesta, ultima_edicion:new Date().toISOString() };
+  if(nuevoEstado === 'Respondido' && !r.fecha_respuesta) cambios.fecha_respuesta = new Date().toISOString();
+
+  try{
+    await sb(`gd_radicados?id=eq.${r.id}`, {
+      method:'PATCH', headers:{'Prefer':'return=minimal'}, body: JSON.stringify(cambios)
+    });
+
+    const notas = [];
+    if(nuevoResp !== r.responsable_id){
+      const p = responsables.find(x => x.id === nuevoResp);
+      notas.push('Reasignado a ' + (p ? p.nombre : nuevoResp));
+    }
+    if(nuevoEstado !== r.estado) notas.push('Estado: ' + r.estado + ' → ' + nuevoEstado);
+
+    if(notas.length){
+      await sb('gd_movimientos', { method:'POST', headers:{'Prefer':'return=minimal'},
+        body: JSON.stringify({radicado_id:r.id, accion:'Actualización',
+                              detalle:notas.join(' · '), usuario:sesion.correo}) });
+    }
+
+    avisar('Cambios guardados.','ok');
+    cerrarModal();
+    await cargarBandeja();
+  }catch(e){
+    avisar('No se pudo guardar: ' + e.message, 'error');
+  }
+}
+
+async function enviarRespuesta(r){
+  const cuerpo = document.getElementById('mRespuesta').value.trim();
+  if(!cuerpo){ avisar('Escribe la respuesta antes de enviarla.','error'); return; }
+
+  const boton = document.getElementById('mEnviar');
+  boton.disabled = true;
+  boton.textContent = 'Enviando…';
+
+  try{
+    await apps({
+      accion:'responder',
+      para: r.remitente_email,
+      asunto: `Respuesta radicado ${r.radicado} — ${r.asunto}`,
+      cuerpo: cuerpo,
+      radicado: r.radicado
+    });
+
+    await sb(`gd_radicados?id=eq.${r.id}`, {
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body: JSON.stringify({estado:'Respondido', respuesta_texto:cuerpo,
+                            fecha_respuesta:new Date().toISOString(),
+                            ultima_edicion:new Date().toISOString()})
+    });
+
+    await sb('gd_movimientos', { method:'POST', headers:{'Prefer':'return=minimal'},
+      body: JSON.stringify({radicado_id:r.id, accion:'Respuesta enviada',
+                            detalle:'Correo a ' + r.remitente_email, usuario:sesion.correo}) });
+
+    avisar('Respuesta enviada a ' + r.remitente_email, 'ok');
+    cerrarModal();
+    await cargarBandeja();
+  }catch(e){
+    avisar('No se pudo enviar: ' + e.message, 'error');
+    boton.disabled = false;
+    boton.textContent = 'Enviar respuesta por correo';
+  }
+}
+
+/* ==================================================================
+   ESTADÍSTICAS
+   ================================================================== */
+async function cargarEstadisticas(){
+  try{
+    const [carga, tiempos] = await Promise.all([
+      sb('v_gd_carga?select=*&order=total.desc'),
+      sb('v_gd_tiempos?select=*&order=total.desc')
+    ]);
+    if(!radicados.length) await cargarBandeja();
+
+    pintarTarjetas();
+    pintarCarga(carga);
+    pintarEstado();
+    pintarTipos(tiempos);
+    pintarTiempos(tiempos);
+  }catch(e){
+    avisar('No se pudieron cargar las estadísticas: ' + e.message, 'error');
+  }
+}
+
+function pintarTarjetas(){
+  const vivos    = radicados.filter(r => r.estado !== 'Anulado');
+  const abiertos = vivos.filter(r => ['Radicado','Asignado','En trámite'].includes(r.estado));
+  const vencidos = abiertos.filter(r => r.semaforo === 'vencido');
+  const conDias  = vivos.filter(r => r.dias_respuesta != null);
+  const promedio = conDias.length
+    ? (conDias.reduce((s,r) => s + Number(r.dias_respuesta), 0) / conDias.length).toFixed(1) : '—';
+
+  document.getElementById('tarjetas').innerHTML = `
+    <div class="metrica"><div class="valor">${vivos.length}</div><div class="etiqueta">Radicados totales</div></div>
+    <div class="metrica azul"><div class="valor">${abiertos.length}</div><div class="etiqueta">En trámite</div></div>
+    <div class="metrica roja"><div class="valor">${vencidos.length}</div><div class="etiqueta">Fuera de término</div></div>
+    <div class="metrica verde"><div class="valor">${promedio}</div><div class="etiqueta">Días promedio de respuesta</div></div>`;
+}
+
+function pintarCarga(carga){
+  const tope = Math.max(1, ...carga.map(c => c.total || 0));
+  document.getElementById('graficoCarga').innerHTML = carga.length
+    ? carga.map(c => {
+        const ab = c.abiertos || 0, ce = c.cerrados || 0, ve = c.vencidos || 0;
+        const pct = n => (n / tope * 100).toFixed(1) + '%';
+        return `<div class="fila-barra">
+          <span class="etq" title="${escapar(c.nombre)}">${escapar(c.nombre)}</span>
+          <span class="pista-barra">
+            <span class="seg abiertos" style="width:${pct(ab - ve)}"></span>
+            <span class="seg vencidos" style="width:${pct(ve)}"></span>
+            <span class="seg cerrados" style="width:${pct(ce)}"></span>
+          </span>
+          <span class="num">${c.total || 0}</span>
+        </div>`;
+      }).join('')
+    : '<div class="vacio">Sin datos todavía.</div>';
+}
+
+function pintarEstado(){
+  const conteo = {};
+  radicados.forEach(r => { conteo[r.estado] = (conteo[r.estado] || 0) + 1; });
+  const tope = Math.max(1, ...Object.values(conteo));
+
+  const sem = {};
+  radicados.filter(r => ['Radicado','Asignado','En trámite'].includes(r.estado))
+           .forEach(r => { sem[r.semaforo] = (sem[r.semaforo] || 0) + 1; });
+
+  document.getElementById('graficoEstado').innerHTML =
+    ESTADOS.filter(e => conteo[e]).map(e => `
+      <div class="fila-barra">
+        <span class="etq">${e}</span>
+        <span class="pista-barra"><span class="seg abiertos" style="width:${(conteo[e]/tope*100).toFixed(1)}%"></span></span>
+        <span class="num">${conteo[e]}</span>
+      </div>`).join('') +
+    '<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">' +
+      ['vencido','critico','proximo','a_tiempo'].map(s =>
+        `<span class="pastilla p-${s}">${SEMAFORO_TEXTO[s]}: ${sem[s] || 0}</span>`).join('') +
+    '</div>';
+}
+
+function pintarTipos(tiempos){
+  document.getElementById('cuerpoTipos').innerHTML = tiempos.length
+    ? tiempos.map(t => `<tr>
+        <td>${escapar(t.tipo)}</td><td>${escapar(t.dependencia)}</td>
+        <td>${t.total}</td><td>${t.respondidos}</td>
+        <td>${t.fuera_de_termino ? `<span class="pastilla p-vencido">${t.fuera_de_termino}</span>` : '0'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="vacio">Sin datos todavía.</td></tr>';
+}
+
+function pintarTiempos(tiempos){
+  const conDato = tiempos.filter(t => t.promedio_dias != null);
+  const tope = Math.max(1, ...conDato.map(t => t.promedio_dias));
+  document.getElementById('graficoTiempos').innerHTML = conDato.length
+    ? conDato.map(t => `<div class="fila-barra">
+        <span class="etq" title="${escapar(t.tipo)}">${escapar(t.tipo)}</span>
+        <span class="pista-barra"><span class="seg cerrados" style="width:${(t.promedio_dias/tope*100).toFixed(1)}%"></span></span>
+        <span class="num">${t.promedio_dias}d</span>
+      </div>`).join('')
+    : '<div class="vacio">Aún no hay respuestas registradas.</div>';
+}
+
+/* ==================================================================
+   RESPONSABLES
+   ================================================================== */
+function pintarResponsables(){
+  const abiertosPor = {};
+  radicados.filter(r => ['Radicado','Asignado','En trámite'].includes(r.estado))
+           .forEach(r => { abiertosPor[r.responsable_id] = (abiertosPor[r.responsable_id] || 0) + 1; });
+
+  document.getElementById('cuerpoResponsables').innerHTML = responsables.map(p => `
+    <tr>
+      <td>${p.orden}</td>
+      <td><strong>${escapar(p.nombre)}</strong></td>
+      <td>${escapar(p.email || '—')}</td>
+      <td>${escapar(p.cargo || '—')}</td>
+      <td>${abiertosPor[p.id] || 0}</td>
+      <td>${p.ultima_asignacion ? fecha(p.ultima_asignacion) : 'Nunca'}</td>
+      <td><span class="pastilla ${p.activo ? 'p-a_tiempo' : 'p-cerrado'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
+      <td><button class="btn btn-linea" style="padding:4px 10px" data-alternar="${p.id}">
+            ${p.activo ? 'Desactivar' : 'Activar'}</button></td>
+    </tr>`).join('');
+
+  document.querySelectorAll('[data-alternar]').forEach(b => {
+    b.onclick = () => alternarResponsable(Number(b.dataset.alternar));
+  });
+}
+
+async function alternarResponsable(id){
+  const p = responsables.find(x => x.id === id);
+  try{
+    await sb(`gd_responsables?id=eq.${id}`, {
+      method:'PATCH', headers:{'Prefer':'return=minimal'},
+      body: JSON.stringify({activo: !p.activo})
+    });
+    await cargarResponsables();
+    await mostrarTurno();
+    avisar(p.nombre + (p.activo ? ' sale del round-robin.' : ' entra al round-robin.'), 'ok');
+  }catch(e){ avisar('No se pudo cambiar: ' + e.message, 'error'); }
+}
+
+async function agregarResponsable(){
+  const nombre = document.getElementById('nrNombre').value.trim();
+  if(!nombre){ avisar('Escribe el nombre.','error'); return; }
+  try{
+    await sb('gd_responsables', {
+      method:'POST', headers:{'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        nombre,
+        email: document.getElementById('nrEmail').value.trim() || null,
+        cargo: document.getElementById('nrCargo').value.trim() || null,
+        dependencia: 'Ejecuciones Fiscales',
+        orden: responsables.length + 1
+      })
+    });
+    ['nrNombre','nrEmail','nrCargo'].forEach(id => document.getElementById(id).value = '');
+    await cargarResponsables();
+    await mostrarTurno();
+    avisar(nombre + ' quedó en la lista.', 'ok');
+  }catch(e){ avisar('No se pudo agregar: ' + e.message, 'error'); }
+}
+
+/* ==================================================================
+   UTILIDADES
+   ================================================================== */
+function escapar(t){
+  return String(t ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fecha(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) +
+         ' ' + d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+}
+function iniciales(n){
+  return n.split(' ').filter(Boolean).slice(0,2).map(p => p[0].toUpperCase()).join('');
+}
+let temporizadorAviso;
+function avisar(texto, tipo){
+  const caja = document.getElementById('aviso');
+  caja.textContent = texto;
+  caja.className = 'aviso visible ' + (tipo || '');
+  clearTimeout(temporizadorAviso);
+  temporizadorAviso = setTimeout(() => caja.classList.remove('visible'), 4200);
+}
+
+/* ==================================================================
+   ARRANQUE
+   ================================================================== */
+document.getElementById('btnEntrar').onclick = entrar;
+document.getElementById('clave').addEventListener('keydown', e => { if(e.key === 'Enter') entrar(); });
+document.getElementById('btnSalir').onclick = salir;
+
+document.getElementById('btnTema').onclick = () => {
+  const nuevo = document.documentElement.dataset.tema === 'claro' ? 'oscuro' : 'claro';
+  document.documentElement.dataset.tema = nuevo;
+  localStorage.setItem('gd_tema', nuevo);
+};
+document.documentElement.dataset.tema = localStorage.getItem('gd_tema') || 'oscuro';
+
+document.querySelectorAll('.nav button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.nav button').forEach(x => x.classList.remove('activo'));
+    document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+    b.classList.add('activo');
+    document.getElementById('v-' + b.dataset.vista).classList.add('activa');
+    if(b.dataset.vista === 'estadisticas') cargarEstadisticas();
+    if(b.dataset.vista === 'responsables') pintarResponsables();
+  };
+});
+
+const zona = document.getElementById('zona');
+zona.onclick = () => document.getElementById('archivo').click();
+zona.addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('encima'); });
+zona.addEventListener('dragleave', () => zona.classList.remove('encima'));
+zona.addEventListener('drop', e => {
+  e.preventDefault(); zona.classList.remove('encima');
+  elegirArchivo(e.dataTransfer.files[0]);
+});
+document.getElementById('archivo').onchange = e => elegirArchivo(e.target.files[0]);
+
+document.getElementById('dias').onchange   = calcularVencimiento;
+document.getElementById('btnRadicar').onclick = radicar;
+document.getElementById('btnLimpiar').onclick = limpiarFormulario;
+document.getElementById('btnRecargar').onclick = cargarBandeja;
+document.getElementById('btnExportar').onclick = exportarCsv;
+document.getElementById('btnImprimir').onclick = () => window.print();
+document.getElementById('btnAgregarResp').onclick = agregarResponsable;
+document.getElementById('btnCerrarModal').onclick = cerrarModal;
+document.getElementById('velo').addEventListener('click', e => { if(e.target.id === 'velo') cerrarModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') cerrarModal(); });
+
+['fBuscar','fEstado','fResponsable','fSemaforo'].forEach(id => {
+  document.getElementById(id).addEventListener('input', pintarBandeja);
+});
+
+calcularVencimiento();
+if(restaurarSesion()) abrirApp();
+</script>
+</body>
+</html>
