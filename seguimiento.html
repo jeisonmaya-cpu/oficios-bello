@@ -6,8 +6,107 @@
 <title>Seguimiento de Cartera — Alcaldía de Bello</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="seguimiento.css"/>
 <style>
+/* ── LOGIN ── */
+.lg-screen{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:linear-gradient(160deg,#0a1f3d 0%,#0d2550 45%,#09182f 100%)}
+.lg-screen.oculto{display:none}
+.lg-card{width:100%;max-width:380px;background:rgba(255,255,255,.055);border:1px solid rgba(232,160,32,.25);
+  border-radius:18px;padding:34px 28px;text-align:center;backdrop-filter:blur(18px);box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.lg-logo{font-size:40px;margin-bottom:10px}
+.lg-t{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;color:#fff;margin-bottom:4px}
+.lg-s{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:22px;line-height:1.5}
+.lg-inp{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:10px;
+  color:#fff;padding:12px 14px;font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:11px;transition:border .2s}
+.lg-inp:focus{border-color:var(--gold)}
+.lg-inp::placeholder{color:rgba(255,255,255,.32)}
+.lg-btn{width:100%;padding:12px;border-radius:10px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;
+  background:linear-gradient(135deg,var(--gold),#f0b840);color:#0a1f3d;font-size:14px;font-weight:700;transition:filter .2s}
+.lg-btn:hover{filter:brightness(1.07)}
+.lg-err{display:none;margin-top:12px;padding:9px 12px;border-radius:8px;font-size:12.5px;
+  background:rgba(220,38,38,.14);border:1px solid rgba(220,38,38,.32);color:#fca5a5}
+.lg-foot{margin-top:22px;font-size:10.5px;color:rgba(255,255,255,.3)}
+.nav-user{font-size:10.5px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.nav-user b{color:var(--gold2);font-weight:600}
+
+/* ── CONTROL DE LEGALIDAD ── */
+.cl-intro{background:rgba(124,58,237,.10);border:1px solid rgba(124,58,237,.28);border-radius:12px;padding:14px 17px;margin-bottom:14px}
+.cl-intro-t{font-size:13.5px;font-weight:700;color:#c4b5fd;margin-bottom:5px}
+.cl-intro-d{font-size:12.5px;color:var(--soft);line-height:1.65}
+.cl-bar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:16px}
+.cl-inp,.cl-f input,.cl-f select,.cl-f textarea{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13);
+  color:#e8edf5;border-radius:9px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s}
+.cl-inp:focus,.cl-f input:focus,.cl-f select:focus,.cl-f textarea:focus{border-color:var(--gold)}
+.cl-f input[readonly]{opacity:.6;cursor:not-allowed}
+.cl-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:#cfd6e2;border-radius:9px;
+  padding:9px 15px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s}
+.cl-btn:hover{background:rgba(255,255,255,.13);color:#fff}
+.cl-btn.primary{background:linear-gradient(135deg,var(--gold),#f0b840);color:#0a1f3d;border-color:transparent;font-weight:700}
+.cl-btn.mini{padding:5px 11px;font-size:11px;margin-top:8px}
+.cl-btn:disabled{opacity:.5;cursor:wait}
+.cl-conteo{font-size:11.5px;color:var(--muted)}
+.table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;
+  border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03)}
+.table-head h3{font-family:'Syne',sans-serif;font-size:12.5px;font-weight:700;color:#fff}
+.stat-card.purple::before{background:var(--purple)}
+.cl-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.cl-pill.ok{background:rgba(22,163,74,.18);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
+.cl-pill.obs{background:rgba(232,160,32,.18);color:#f5c050;border:1px solid rgba(232,160,32,.3)}
+.cl-pill.dev{background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.3)}
+.cl-score{font-family:'Syne',sans-serif;font-weight:700;font-size:12px}
+.cl-row-item{display:grid;grid-template-columns:1fr 90px 46px;gap:10px;align-items:center;padding:7px 0;font-size:12.5px}
+.cl-track{height:7px;border-radius:4px;background:rgba(255,255,255,.09);overflow:hidden}
+.cl-fill{height:100%;border-radius:4px;transition:width .4s}
+
+/* ── MODAL ── */
+.cl-ovl{position:fixed;inset:0;z-index:8000;background:rgba(5,12,24,.78);backdrop-filter:blur(5px);
+  display:none;align-items:flex-start;justify-content:center;padding:26px 16px;overflow-y:auto}
+.cl-ovl.open{display:flex}
+.cl-modal{width:100%;max-width:680px;background:#0f2547;border:1px solid rgba(255,255,255,.13);border-radius:16px;
+  box-shadow:0 28px 70px rgba(0,0,0,.55);overflow:hidden}
+.cl-modal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:18px 22px;
+  border-bottom:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04)}
+.cl-modal-t{font-family:'Syne',sans-serif;font-size:15.5px;font-weight:700;color:#fff}
+.cl-modal-s{font-size:11.5px;color:var(--muted);margin-top:3px}
+.cl-x{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#cfd6e2;border-radius:8px;
+  width:30px;height:30px;cursor:pointer;font-size:14px;flex-shrink:0}
+.cl-modal-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.cl-modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:15px 22px;
+  border-top:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.03)}
+.cl-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.cl-grid2{grid-template-columns:1fr}}
+.cl-f{display:flex;flex-direction:column;gap:6px}
+.cl-f label{font-size:11px;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.05em}
+.cl-f textarea{resize:vertical;line-height:1.6}
+.cl-req{color:#fca5a5}
+.cl-hint{text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)}
+.cl-cnt{font-size:11px;color:var(--gold2);font-weight:600}
+.cl-chk-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:14px 16px}
+.cl-chk-t{font-size:11px;font-weight:700;color:var(--soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:11px}
+.cl-chk{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px;color:#dbe3ee;cursor:pointer}
+.cl-chk input{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0}
+.cl-chk strong{color:var(--gold2);margin-right:3px}
+.cl-msg{display:none;padding:10px 13px;border-radius:9px;font-size:12.5px}
+.cl-msg.ok{display:block;background:rgba(22,163,74,.14);border:1px solid rgba(22,163,74,.3);color:#86efac}
+.cl-msg.err{display:block;background:rgba(220,38,38,.14);border:1px solid rgba(220,38,38,.3);color:#fca5a5}
+.cl-msg.load{display:block;background:rgba(45,141,232,.13);border:1px solid rgba(45,141,232,.3);color:#93c5fd}
+
+/* ── GESTIÓN SEMESTRAL ── */
+.sem-bar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:6px 0 14px}
+.sem-tag{font-size:11px;color:var(--muted);margin-left:2px}
+.sem-delta{font-size:11px;font-weight:700;white-space:nowrap}
+.sem-delta.up{color:#4ade80}.sem-delta.down{color:#fca5a5}.sem-delta.flat{color:var(--muted)}
+.sem-nota{font-size:11.5px;color:var(--muted);line-height:1.65;margin-top:11px;padding-top:11px;border-top:1px solid rgba(255,255,255,.08)}
+
+/* ── CRÉDITOS ── */
+.creditos{margin:34px 0 10px;padding:16px 0;border-top:1px solid rgba(255,255,255,.1);display:flex;
+  align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.creditos-marca{font-family:'Syne',sans-serif;font-weight:700;color:#0a1f3d;
+  background:linear-gradient(135deg,var(--gold),#f0b840);padding:3px 10px;border-radius:20px;font-size:10px}
+.creditos strong{color:var(--gold2);font-weight:600}
+
 /* ── Gestión editable OU ── */
 .ou-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0 14px}
 .ou-toolbar input[type=text],.ou-toolbar select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#e8edf5;border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
@@ -75,7 +174,9 @@
       <button class="nav-link green" onclick="cargarDatos();cargarICA()">🔄 Actualizar</button>
       <button class="nav-link gold"  onclick="exportarExcel()">⬇️ Excel</button>
       <button class="nav-link red"   onclick="generarPDF()">📄 PDF</button>
+      <span class="nav-user" id="nav-usuario"></span>
       <a href="home.html" class="nav-link">🏛️ Inicio</a>
+      <button class="nav-link" onclick="cerrarSesionSeg()" title="Cerrar sesión">🚪 Salir</button>
     </div>
   </div>
   <div class="nav-tabs">
@@ -85,6 +186,7 @@
     <button class="nav-tab"        id="tab-ica"     onclick="goTab('ica')">🏭 ICA</button>
     <button class="nav-tab"        id="tab-transito" onclick="goTab('transito')">🚗 Tránsito</button>
     <button class="nav-tab"        id="tab-mora"    onclick="goTab('mora')">📊 Morosidad</button>
+    <button class="nav-tab"        id="tab-legalidad" onclick="goTab('legalidad')">⚖️ Legalidad</button>
   </div>
 </nav>
 
@@ -116,6 +218,10 @@
 
 <!-- PANEL CONSOLIDADO -->
 <div class="panel" id="panel-consolidado">
+
+  <!-- Gestión del semestre: evidencia de eficiencia para Control Interno.
+       El período se elige en la pestaña ⚖️ Legalidad y aplica a ambas. -->
+  <div id="cons-gestion" style="margin-bottom:20px"></div>
 
   <div class="cartera-card" id="cons-cartera">
     <div class="cartera-main">
@@ -404,7 +510,178 @@
 
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════
+     PANEL · CONTROL DE LEGALIDAD DE TÍTULOS EJECUTIVOS
+     Evidencia del control: "...validando la legalidad de los títulos
+     ejecutivos ... registrando en la base de datos la fecha del control"
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-legalidad">
+
+  <div class="cl-intro">
+    <div class="cl-intro-t">⚖️ Control de legalidad de títulos ejecutivos</div>
+    <div class="cl-intro-d">
+      Cada validación queda registrada con <strong>fecha, funcionario y memorando de origen</strong>.
+      Usa <strong>registro por lote</strong> cuando una dependencia remita varios títulos en un mismo
+      memorando: pegas los radicados, marcas la lista de chequeo una sola vez y quedan todos validados.
+    </div>
+  </div>
+
+  <div class="cl-bar">
+    <select id="cl-anio" class="cl-inp" onchange="clRender()"></select>
+    <select id="cl-sem" class="cl-inp" onchange="clRender()">
+      <option value="1">I semestre (ene–jun)</option>
+      <option value="2">II semestre (jul–dic)</option>
+      <option value="0">Año completo</option>
+    </select>
+    <select id="cl-mod" class="cl-inp" onchange="clRender()">
+      <option value="">Todos los módulos</option>
+      <option value="PREDIAL">Predial</option>
+      <option value="OU">Urbanísticas</option>
+      <option value="ICA">ICA</option>
+      <option value="TRANSITO">Tránsito</option>
+    </select>
+    <button class="cl-btn primary" onclick="clAbrirModal()">＋ Registrar control</button>
+    <button class="cl-btn" onclick="clExportarCSV()">⬇️ CSV</button>
+    <button class="cl-btn" onclick="clActualizar()">🔄 Actualizar</button>
+  </div>
+
+  <div class="stats-grid" id="cl-kpis"></div>
+
+  <div class="table-wrap">
+    <div class="table-head"><h3>📋 Cumplimiento de la lista de chequeo</h3></div>
+    <div id="cl-items" style="padding:14px 16px"></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-head"><h3>🗂️ Controles registrados</h3><span id="cl-conteo" class="cl-conteo"></span></div>
+    <table>
+      <thead><tr>
+        <th>Fecha control</th><th>Radicado</th><th>Módulo</th><th>Memorando</th>
+        <th>Dependencia</th><th>Chequeo</th><th>Resultado</th><th>Funcionario</th>
+      </tr></thead>
+      <tbody id="cl-tabla"></tbody>
+    </table>
+  </div>
+</div>
+
+
+<footer class="creditos">
+  <span class="creditos-marca">Sistema Teodoro</span>
+  <span>·</span>
+  <span>Desarrollado por <strong>Jeison Maya</strong> · 2026</span>
+</footer>
+
 </div><!-- /main-wrap -->
+
+<!-- ═══ MODAL: registrar control de legalidad ═══ -->
+<div class="cl-ovl" id="cl-ovl">
+  <div class="cl-modal">
+    <div class="cl-modal-top">
+      <div>
+        <div class="cl-modal-t">⚖️ Registrar control de legalidad</div>
+        <div class="cl-modal-s">La fecha del control queda registrada automáticamente en la base de datos</div>
+      </div>
+      <button class="cl-x" onclick="clCerrarModal()">✕</button>
+    </div>
+
+    <div class="cl-modal-body">
+
+      <div class="cl-grid2">
+        <div class="cl-f">
+          <label>Módulo <span class="cl-req">*</span></label>
+          <select id="cl-f-mod">
+            <option value="PREDIAL">🏠 Predial</option>
+            <option value="OU">🏘️ Obligaciones Urbanísticas</option>
+            <option value="ICA">🏭 Industria y Comercio</option>
+            <option value="TRANSITO">🚗 Tránsito</option>
+          </select>
+        </div>
+        <div class="cl-f">
+          <label>Fecha del control <span class="cl-req">*</span></label>
+          <input type="date" id="cl-f-fecha"/>
+        </div>
+      </div>
+
+      <div class="cl-grid2">
+        <div class="cl-f">
+          <label>Memorando remitido</label>
+          <input type="text" id="cl-f-memo" placeholder="Ej: MEM-2026-0453"/>
+        </div>
+        <div class="cl-f">
+          <label>Dependencia remitente</label>
+          <input type="text" id="cl-f-dep" list="cl-deps" placeholder="Ej: Secretaría de Hacienda"/>
+          <datalist id="cl-deps">
+            <option value="Secretaría de Hacienda"></option>
+            <option value="Secretaría de Movilidad"></option>
+            <option value="Curaduría / Planeación"></option>
+            <option value="Control Urbanístico"></option>
+            <option value="Industria y Comercio"></option>
+          </datalist>
+        </div>
+      </div>
+
+      <div class="cl-f">
+        <label>Radicado(s) <span class="cl-req">*</span>
+          <span class="cl-hint">— uno por línea o separados por coma. Varios = registro por lote.</span>
+        </label>
+        <textarea id="cl-f-rads" rows="3" placeholder="2026-00123&#10;2026-00124&#10;2026-00125"></textarea>
+        <div class="cl-cnt" id="cl-f-cnt">0 títulos</div>
+      </div>
+
+      <div class="cl-chk-box">
+        <div class="cl-chk-t">Lista de chequeo — requisitos del título ejecutivo</div>
+        <label class="cl-chk"><input type="checkbox" id="cl-k1" onchange="clPintarResultado()"><span><strong>1.</strong> Acto administrativo en firme</span></label>
+        <label class="cl-chk"><input type="checkbox" id="cl-k2" onchange="clPintarResultado()"><span><strong>2.</strong> Constancia de ejecutoria / notificación surtida</span></label>
+        <label class="cl-chk"><input type="checkbox" id="cl-k3" onchange="clPintarResultado()"><span><strong>3.</strong> Obligación clara, expresa y exigible</span></label>
+        <label class="cl-chk"><input type="checkbox" id="cl-k4" onchange="clPintarResultado()"><span><strong>4.</strong> Identificación plena del deudor</span></label>
+        <label class="cl-chk"><input type="checkbox" id="cl-k5" onchange="clPintarResultado()"><span><strong>5.</strong> Dentro del término legal (no prescrito)</span></label>
+        <button class="cl-btn mini" onclick="clMarcarTodo()">✓ Marcar los 5</button>
+      </div>
+
+      <div class="cl-grid2">
+        <div class="cl-f">
+          <label>Resultado <span class="cl-req">*</span></label>
+          <select id="cl-f-res">
+            <option value="Cumple">✅ Cumple</option>
+            <option value="Con observaciones">⚠️ Con observaciones</option>
+            <option value="Devuelto">↩️ Devuelto a la dependencia</option>
+          </select>
+        </div>
+        <div class="cl-f">
+          <label>Funcionario que valida</label>
+          <input type="text" id="cl-f-func" readonly/>
+        </div>
+      </div>
+
+      <div class="cl-f">
+        <label>Observaciones</label>
+        <textarea id="cl-f-obs" rows="2" placeholder="Opcional — obligatorio si el resultado es «Devuelto»"></textarea>
+      </div>
+
+      <div class="cl-msg" id="cl-f-msg"></div>
+    </div>
+
+    <div class="cl-modal-foot">
+      <button class="cl-btn" onclick="clCerrarModal()">Cancelar</button>
+      <button class="cl-btn primary" id="cl-f-guardar" onclick="clGuardar()">💾 Registrar control</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="lg-screen" id="lg-screen">
+  <div class="lg-card">
+    <div class="lg-logo">🏛️</div>
+    <div class="lg-t">Seguimiento de Cartera</div>
+    <div class="lg-s">Dirección Administrativa de Ejecuciones Fiscales</div>
+    <input type="email" id="lg-email" class="lg-inp" placeholder="Correo institucional" autocomplete="username"/>
+    <input type="password" id="lg-pass" class="lg-inp" placeholder="Contraseña" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter')hacerLoginSeg()"/>
+    <button class="lg-btn" id="lg-btn" onclick="hacerLoginSeg()">Ingresar</button>
+    <div class="lg-err" id="lg-err"></div>
+    <div class="lg-foot">Sistema Teodoro · Desarrollado por Jeison Maya · 2026</div>
+  </div>
+</div>
 
 
 <!-- ═══ MODAL ACTUACIONES ═══ -->
@@ -542,12 +819,10 @@ let tabActual     = 'consolidado';
 
 // ── Helper Supabase — fetch de una vista o tabla ──
 async function supaFetch(ruta) {
+  // Usa el token de la sesión si existe (evidencia atribuible); si no hay
+  // sesión cae a la publishable key para no romper las lecturas abiertas.
   const res = await fetch(SUPA_URL + '/rest/v1/' + ruta, {
-    headers: {
-      'apikey':        SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY,
-      'Accept':        'application/json'
-    }
+    headers: await supaHeaders({ 'Accept': 'application/json' })
   });
   if (!res.ok) {
     const txt = await res.text();
@@ -814,9 +1089,9 @@ async function guardarOU(){
   const r = ouEditando;
   const btn = document.getElementById('ou-btn-guardar');
   const msg = document.getElementById('ou-m-msg');
-  const usuario = (document.getElementById('ou-f-usuario').value||'').trim();
-  if(!usuario){ msg.className='ou-m-msg err'; msg.textContent='Escribe tu nombre para registrar el cambio.'; return; }
-  localStorage.setItem('ou_usuario', usuario);
+  const usuario = (typeof nombreSesion === 'function' && nombreSesion())
+    || (document.getElementById('ou-f-usuario').value||'').trim();
+  if(!usuario){ msg.className='ou-m-msg err'; msg.textContent='No hay sesión activa. Vuelve a iniciar sesión.'; return; }
 
   btn.disabled=true; msg.className='ou-m-msg'; msg.textContent='Guardando…';
 
@@ -857,7 +1132,7 @@ async function guardarOU(){
     // 1) PATCH expediente
     const u1 = SUPA_URL+'/rest/v1/expedientes_ou?id=eq.'+encodeURIComponent(r.id);
     const res1 = await fetch(u1,{ method:'PATCH',
-      headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+      headers: await supaHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
       body:JSON.stringify({...nuevoExp, contribuyente:nuevoContrib.nombre_completo}) });
     if(!res1.ok) throw new Error('expediente HTTP '+res1.status);
 
@@ -865,15 +1140,24 @@ async function guardarOU(){
     if(r.id_contribuyente){
       const u2 = SUPA_URL+'/rest/v1/contribuyentes?id_contribuyente=eq.'+encodeURIComponent(r.id_contribuyente);
       await fetch(u2,{ method:'PATCH',
-        headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
+        headers: await supaHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
         body:JSON.stringify(nuevoContrib) });
     }
 
     // 3) Bitácora (no bloquea si falla)
     if(cambios.length){
-      fetch(SUPA_URL+'/rest/v1/ou_bitacora',{ method:'POST',
-        headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},
-        body:JSON.stringify({radicado:r.radicado, usuario:usuario, cambios:cambios.join(' | ')}) }).catch(()=>{});
+      // La bitácora es rastro de auditoría: si falla, el usuario debe enterarse.
+      // Antes era .catch(()=>{}) y un fallo pasaba totalmente inadvertido.
+      try{
+        const rb = await fetch(SUPA_URL+'/rest/v1/ou_bitacora',{ method:'POST',
+          headers: await supaHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+          body:JSON.stringify({radicado:r.radicado, usuario:usuario, cambios:cambios.join(' | ')}) });
+        if(!rb.ok) throw new Error('HTTP '+rb.status);
+      }catch(eb){
+        console.warn('[bitácora OU]', eb);
+        msg.className='ou-m-msg err';
+        msg.textContent='⚠️ El expediente se guardó, pero NO se pudo registrar en la bitácora ('+eb.message+').';
+      }
     }
 
     // 4) Actualizar en memoria y re-render
@@ -1344,7 +1628,7 @@ function renderConsolidado(){
       <div class="stat-label">💰 Recaudo / Cartera</div>
       <div class="stat-value">${pct(recTotal, carteraConRec)}</div>
       <div class="stat-sub">${fmt(recTotal)} recuperados</div>
-      <span class="stat-badge blue">OU + ICA</span>
+      <span class="stat-badge blue">OU + Predial + ICA</span>
     </div>`;
 
   document.getElementById('cons-tributos').innerHTML = fuentes
@@ -1515,8 +1799,11 @@ function generarPDF() {
   const consTotal = {
     cartera: ou.cartera + pred.cartera + (icaRep ? icaRep.cartera : 0),
     exp:     ou.totalExp + pred.totalExp + (icaRep ? icaRep.totalExp : 0),
-    recaudo: (ou.recaudo||0) + (icaRep ? icaRep.recaudo : 0),
-    carteraConRec: ou.cartera + (icaRep ? icaRep.cartera : 0),
+    // CORREGIDO: antes se omitía (pred.recaudo), así que el PDF reportaba
+    // MENOS recaudo que la pantalla para el mismo corte. En un informe que
+    // va a un ente de control eso es una diferencia insostenible.
+    recaudo: (ou.recaudo||0) + (pred.recaudo||0) + (icaRep ? icaRep.recaudo : 0),
+    carteraConRec: ou.cartera + pred.cartera + (icaRep ? icaRep.cartera : 0),
     fuentes: icaRep ? 3 : 2
   };
   const vigMora = pred.porVigencia || [];
@@ -2208,13 +2495,13 @@ function abrirAct(radicado, nombre, valorAdeudado, modulo){
   document.getElementById('act-desc').value        = '';
   document.getElementById('act-st').className      = 'act-st';
 
-  // Funcionario desde sesión guardada
-  var func = '';
-  try{
-    var s = JSON.parse(localStorage.getItem('tutelas_sesion_v2')||'null');
-    if(s && s.usuario) func = s.usuario;
-  }catch(e){}
-  document.getElementById('act-funcionario').value = func;
+  // Funcionario desde la sesión autenticada. Es de solo lectura a propósito:
+  // si se pudiera escribir a mano, el registro no sería atribuible y no
+  // serviría como evidencia ante el ente de control.
+  var campoFunc = document.getElementById('act-funcionario');
+  campoFunc.value = (typeof nombreSesion === 'function') ? nombreSesion() : '';
+  campoFunc.readOnly = true;
+  campoFunc.title = 'Se toma de tu sesión — no es editable';
 
   // Abrir modal
   document.getElementById('act-overlay').classList.add('open');
@@ -2260,12 +2547,7 @@ async function guardarActuacion(){
     // ── Guardar en Supabase (todos los módulos: PREDIAL, OU, ICA) ──
     var res = await fetch(SUPA_URL + '/rest/v1/actuaciones', {
       method: 'POST',
-      headers: {
-        'apikey':        SUPA_KEY,
-        'Authorization': 'Bearer ' + SUPA_KEY,
-        'Content-Type':  'application/json',
-        'Prefer':        'return=minimal'
-      },
+      headers: await supaHeaders({ 'Content-Type':'application/json', 'Prefer':'return=minimal' }),
       body: JSON.stringify({
         radicado:       actActivo.radicado,
         modulo:         actActivo.modulo,
@@ -2359,11 +2641,466 @@ function iniciarSeguimiento(){
   cargarDatos();   // OU + Predial (Consolidado, Urbanísticas, Predial, Morosidad)
   cargarICA();     // ICA (carga su propia pestaña; alimenta el Consolidado)
 }
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', iniciarSeguimiento);
-} else {
-  iniciarSeguimiento();
+// El arranque ya NO es automático: lo dispara entrarSeguimiento() cuando
+// hay sesión válida (propia o heredada de otro módulo de Teodoro).
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   TEODORO · SEGUIMIENTO — AUTENTICACIÓN, CONTROL DE LEGALIDAD
+   Y GESTIÓN SEMESTRAL
+   Desarrollado por Jeison Maya · 2026
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ───────────── AUTENTICACIÓN ─────────────
+   Mismo proyecto de Supabase que Tutelas y el mismo origen, así que la
+   sesión se comparte por localStorage: quien ya entró en otro módulo
+   no vuelve a escribir la contraseña.                                  */
+let sbAuth = null, usuarioSesion = null;
+try{
+  if(window.supabase && window.supabase.createClient){
+    sbAuth = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  }
+}catch(e){ console.warn('[auth] no se pudo crear el cliente', e); }
+
+/* Token fresco en cada petición: Supabase renueva solo, así se evita el
+   "JWT expired" cuando la pestaña lleva más de una hora abierta.
+   Si no hay sesión cae a la publishable key para no romper las lecturas
+   de las tablas que todavía tienen RLS abierta a anon.                 */
+async function supaHeaders(extra){
+  let token = SUPA_KEY;
+  try{
+    if(sbAuth){
+      const { data } = await sbAuth.auth.getSession();
+      if(data && data.session && data.session.access_token) token = data.session.access_token;
+    }
+  }catch(e){}
+  return Object.assign({ apikey: SUPA_KEY, Authorization: 'Bearer ' + token }, extra||{});
 }
+
+/* Nombre del funcionario a partir de la sesión — NO se escribe a mano.
+   Es lo que hace que la evidencia sea atribuible ante el ente de control. */
+function nombreSesion(){
+  if(!usuarioSesion) return '';
+  const meta = usuarioSesion.user_metadata || {};
+  if(meta.full_name) return meta.full_name;
+  if(meta.nombre)    return meta.nombre;
+  const local = (usuarioSesion.email||'').split('@')[0].replace(/[._-]+/g,' ');
+  return local.replace(/\b\w/g, c=>c.toUpperCase());
+}
+
+async function hacerLoginSeg(){
+  const err = document.getElementById('lg-err');
+  const btn = document.getElementById('lg-btn');
+  err.style.display = 'none';
+  if(!sbAuth){ err.textContent='No se pudo conectar con el servidor. Recarga la página.'; err.style.display='block'; return; }
+  const email = (document.getElementById('lg-email').value||'').trim();
+  const pass  = document.getElementById('lg-pass').value;
+  if(!email || !pass){ err.textContent='Ingresa correo y contraseña.'; err.style.display='block'; return; }
+  btn.textContent='Ingresando...'; btn.disabled=true;
+  try{
+    const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pass });
+    if(error){ err.textContent='Correo o contraseña incorrectos.'; err.style.display='block'; return; }
+    usuarioSesion = data.session.user;
+    entrarSeguimiento();
+  }catch(e){
+    err.textContent='Error de conexión. Intenta de nuevo.'; err.style.display='block';
+  }finally{
+    btn.textContent='Ingresar'; btn.disabled=false;
+  }
+}
+
+async function cerrarSesionSeg(){
+  try{ if(sbAuth) await sbAuth.auth.signOut(); }catch(e){}
+  location.reload();
+}
+
+function entrarSeguimiento(){
+  document.getElementById('lg-screen').classList.add('oculto');
+  const u = document.getElementById('nav-usuario');
+  if(u) u.innerHTML = '👤 <b>'+ clEsc(nombreSesion()) +'</b>';
+  iniciarSeguimiento();
+  clActualizar();
+}
+
+/* Arranque: si ya hay sesión (propia o heredada de otro módulo) entra directo */
+(async function verificarSesionSeg(){
+  if(!sbAuth) return;
+  try{
+    const { data } = await sbAuth.auth.getSession();
+    if(data && data.session){ usuarioSesion = data.session.user; entrarSeguimiento(); }
+  }catch(e){}
+})();
+
+
+/* ───────────── UTILIDADES DE SEMESTRE ─────────────
+   El control pide seguimiento SEMESTRAL, no "a hoy".                   */
+function semHoy(){ const d=new Date(); return { anio:d.getFullYear(), sem: d.getMonth()<6 ? 1 : 2 }; }
+function semRango(anio, sem){
+  if(sem===0) return [anio+'-01-01', anio+'-12-31'];
+  return sem===1 ? [anio+'-01-01', anio+'-06-30'] : [anio+'-07-01', anio+'-12-31'];
+}
+/* Semestre inmediatamente anterior — para poder demostrar el INCREMENTO */
+function semAnterior(anio, sem){
+  if(sem===0) return { anio: anio-1, sem: 0 };
+  return sem===1 ? { anio: anio-1, sem: 2 } : { anio: anio, sem: 1 };
+}
+function semEtiqueta(anio, sem){
+  return sem===0 ? ('Año '+anio) : ((sem===1?'I':'II')+' semestre '+anio);
+}
+const clEsc = s => String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   CONTROL DE LEGALIDAD DE TÍTULOS EJECUTIVOS
+   ═══════════════════════════════════════════════════════════════════ */
+let clDatos = [];
+
+function clPeriodo(){
+  const anio = Number(document.getElementById('cl-anio').value) || semHoy().anio;
+  const sem  = Number(document.getElementById('cl-sem').value);
+  return { anio, sem };
+}
+
+function clLlenarAnios(){
+  const sel = document.getElementById('cl-anio');
+  if(!sel || sel.options.length) return;
+  const y = semHoy().anio;
+  for(let a=y; a>=y-4; a--) sel.innerHTML += `<option value="${a}">${a}</option>`;
+  document.getElementById('cl-sem').value = String(semHoy().sem);
+}
+
+async function clActualizar(){
+  clLlenarAnios();
+  const tabla = document.getElementById('cl-tabla');
+  if(tabla) tabla.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:22px">Cargando controles…</td></tr>';
+  try{
+    const res = await fetch(SUPA_URL+'/rest/v1/control_legalidad?select=*&order=fecha_control.desc,id.desc',
+      { headers: await supaHeaders({Accept:'application/json'}) });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    clDatos = await res.json();
+  }catch(e){
+    clDatos = [];
+    if(tabla) tabla.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#fca5a5;padding:22px">No se pudo cargar: '+clEsc(e.message)+'<br><span style="font-size:11px;color:var(--muted)">¿Ya corriste control_legalidad.sql en Supabase?</span></td></tr>';
+    return;
+  }
+  clRender();
+  renderGestionSemestre();
+}
+
+function clDelPeriodo(anio, sem){
+  const [d1,d2] = semRango(anio, sem);
+  const mod = document.getElementById('cl-mod') ? document.getElementById('cl-mod').value : '';
+  return clDatos.filter(r =>
+    r.fecha_control >= d1 && r.fecha_control <= d2 && (!mod || r.modulo===mod));
+}
+
+function clRender(){
+  const {anio, sem} = clPeriodo();
+  const filas = clDelPeriodo(anio, sem);
+  const prev  = semAnterior(anio, sem);
+  const filasPrev = clDelPeriodo(prev.anio, prev.sem);
+
+  const cumple = filas.filter(r=>r.resultado==='Cumple').length;
+  const obs    = filas.filter(r=>r.resultado==='Con observaciones').length;
+  const dev    = filas.filter(r=>r.resultado==='Devuelto').length;
+  const titulos= new Set(filas.map(r=>r.modulo+'|'+r.radicado)).size;
+  const memos  = new Set(filas.filter(r=>r.memorando).map(r=>r.memorando)).size;
+  const pctC   = filas.length ? Math.round(cumple/filas.length*100) : 0;
+  const dTot   = filas.length - filasPrev.length;
+
+  document.getElementById('cl-kpis').innerHTML = `
+    <div class="stat-card purple">
+      <div class="stat-label">⚖️ Controles registrados</div>
+      <div class="stat-value">${filas.length.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">${titulos.toLocaleString('es-CO')} títulos · ${memos} memorando(s)</div>
+      <span class="stat-badge ${dTot>=0?'green':'gold'}">${dTot>=0?'+':''}${dTot} vs ${semEtiqueta(prev.anio,prev.sem)}</span>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">✅ Cumplen</div>
+      <div class="stat-value">${cumple.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">títulos conformes</div>
+      <span class="stat-badge green">${pctC}%</span>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-label">⚠️ Con observaciones</div>
+      <div class="stat-value">${obs.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">requieren subsanación</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">↩️ Devueltos</div>
+      <div class="stat-value">${dev.toLocaleString('es-CO')}</div>
+      <div class="stat-sub">a la dependencia remitente</div>
+    </div>`;
+
+  /* Dónde falla la lista de chequeo */
+  const items = [
+    ['Acto administrativo en firme','chk_acto_firme'],
+    ['Constancia de ejecutoria','chk_ejecutoria'],
+    ['Obligación clara, expresa y exigible','chk_obligacion_clara'],
+    ['Identificación plena del deudor','chk_identificacion'],
+    ['Dentro del término (no prescrito)','chk_no_prescrito']
+  ];
+  document.getElementById('cl-items').innerHTML = filas.length
+    ? items.map(([lbl,campo])=>{
+        const ok = filas.filter(r=>r[campo]).length;
+        const p  = Math.round(ok/filas.length*100);
+        const c  = p>=90?'#16a34a':p>=70?'#e8a020':p>=40?'#ea580c':'#dc2626';
+        return `<div class="cl-row-item">
+          <span style="color:var(--soft)">${clEsc(lbl)}</span>
+          <div class="cl-track"><div class="cl-fill" style="width:${p}%;background:${c}"></div></div>
+          <span class="cl-score" style="color:${c}">${p}%</span>
+        </div>`;
+      }).join('')
+    : '<div style="color:var(--muted);font-size:12.5px">Sin controles registrados en este período.</div>';
+
+  /* Tabla */
+  const badge = r => r.resultado==='Cumple' ? '<span class="cl-pill ok">Cumple</span>'
+              : r.resultado==='Devuelto'    ? '<span class="cl-pill dev">Devuelto</span>'
+              :                               '<span class="cl-pill obs">Con obs.</span>';
+  document.getElementById('cl-conteo').textContent = filas.length + ' registro(s) · ' + semEtiqueta(anio,sem);
+  document.getElementById('cl-tabla').innerHTML = filas.length
+    ? filas.slice(0,300).map(r=>`<tr>
+        <td><strong>${clEsc(r.fecha_control)}</strong></td>
+        <td>${clEsc(r.radicado)}</td>
+        <td>${clEsc(r.modulo)}</td>
+        <td>${clEsc(r.memorando||'—')}</td>
+        <td>${clEsc(r.dependencia||'—')}</td>
+        <td><span class="cl-score" style="color:${r.items_cumplidos===5?'#4ade80':'#f5c050'}">${r.items_cumplidos ?? 0}/5</span></td>
+        <td>${badge(r)}</td>
+        <td style="font-size:11.5px;color:var(--soft)">${clEsc(r.funcionario)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:26px">Sin controles en '+semEtiqueta(anio,sem)+'. Usa «＋ Registrar control» para empezar.</td></tr>';
+}
+
+/* ── Modal ── */
+function clAbrirModal(){
+  if(!usuarioSesion){ alert('Debes iniciar sesión para registrar un control.'); return; }
+  document.getElementById('cl-f-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cl-f-func').value  = nombreSesion();
+  ['cl-f-memo','cl-f-dep','cl-f-rads','cl-f-obs'].forEach(id=>document.getElementById(id).value='');
+  ['cl-k1','cl-k2','cl-k3','cl-k4','cl-k5'].forEach(id=>document.getElementById(id).checked=false);
+  document.getElementById('cl-f-res').value='Cumple';
+  document.getElementById('cl-f-msg').className='cl-msg';
+  document.getElementById('cl-f-cnt').textContent='0 títulos';
+  document.getElementById('cl-ovl').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function clCerrarModal(){
+  document.getElementById('cl-ovl').classList.remove('open');
+  document.body.style.overflow='';
+}
+function clMarcarTodo(){
+  ['cl-k1','cl-k2','cl-k3','cl-k4','cl-k5'].forEach(id=>document.getElementById(id).checked=true);
+  clPintarResultado();
+}
+/* El resultado se propone solo según los ítems marcados, pero el
+   funcionario puede cambiarlo: el criterio jurídico manda sobre el conteo. */
+function clPintarResultado(){
+  const n = ['cl-k1','cl-k2','cl-k3','cl-k4','cl-k5'].filter(id=>document.getElementById(id).checked).length;
+  const sel = document.getElementById('cl-f-res');
+  sel.value = n===5 ? 'Cumple' : n>=3 ? 'Con observaciones' : 'Devuelto';
+}
+function clRadicados(){
+  return (document.getElementById('cl-f-rads').value||'')
+    .split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
+}
+
+async function clGuardar(){
+  const msg = document.getElementById('cl-f-msg');
+  const btn = document.getElementById('cl-f-guardar');
+  const set = (cls,txt)=>{ msg.className='cl-msg '+cls; msg.textContent=txt; };
+
+  const rads = clRadicados();
+  if(!rads.length){ set('err','Escribe al menos un radicado.'); return; }
+  const resultado = document.getElementById('cl-f-res').value;
+  const obs = document.getElementById('cl-f-obs').value.trim();
+  if(resultado==='Devuelto' && !obs){ set('err','Si el título se devuelve, la observación es obligatoria: es la justificación del control.'); return; }
+
+  const base = {
+    modulo:            document.getElementById('cl-f-mod').value,
+    fecha_control:     document.getElementById('cl-f-fecha').value || new Date().toISOString().slice(0,10),
+    funcionario:       nombreSesion(),
+    email_funcionario: usuarioSesion ? usuarioSesion.email : null,
+    memorando:         document.getElementById('cl-f-memo').value.trim() || null,
+    dependencia:       document.getElementById('cl-f-dep').value.trim() || null,
+    chk_acto_firme:       document.getElementById('cl-k1').checked,
+    chk_ejecutoria:       document.getElementById('cl-k2').checked,
+    chk_obligacion_clara: document.getElementById('cl-k3').checked,
+    chk_identificacion:   document.getElementById('cl-k4').checked,
+    chk_no_prescrito:     document.getElementById('cl-k5').checked,
+    resultado:         resultado,
+    observaciones:     obs || null,
+    lote:              'L'+Date.now()
+  };
+  const payload = rads.map(rad => Object.assign({ radicado: rad }, base));
+
+  // ¿Alguno ya tiene control ese mismo día? Se avisa, pero se deja decidir:
+  // repetir un control no es un error, solo suele ser trabajo duplicado.
+  const yaHay = rads.filter(rad => clDatos.some(c =>
+    c.radicado===rad && c.modulo===base.modulo && c.fecha_control===base.fecha_control));
+  if(yaHay.length && !confirm(
+      yaHay.length+' de '+rads.length+' título(s) ya tienen un control registrado con esa misma fecha:\n\n'
+      + yaHay.slice(0,8).join(', ') + (yaHay.length>8 ? ', …' : '')
+      + '\n\n¿Registrar de todas formas?')) return;
+
+  btn.disabled = true;
+  set('load', rads.length>1 ? `Registrando ${rads.length} títulos…` : 'Registrando control…');
+  try{
+    const res = await fetch(SUPA_URL+'/rest/v1/control_legalidad', {
+      method:'POST',
+      headers: await supaHeaders({'Content-Type':'application/json', Prefer:'return=minimal'}),
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error(res.status + ': ' + t.slice(0,140));
+    }
+    set('ok', `✅ ${rads.length} control(es) registrado(s) con fecha ${base.fecha_control}.`);
+    await clActualizar();
+    setTimeout(clCerrarModal, 1100);
+  }catch(e){
+    const m = /401|JWT|permission|policy/i.test(e.message)
+      ? 'Tu sesión expiró o no tienes permiso. Vuelve a iniciar sesión.'
+      : e.message;
+    set('err','❌ No se pudo registrar — '+m);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function clExportarCSV(){
+  const {anio, sem} = clPeriodo();
+  const filas = clDelPeriodo(anio, sem);
+  if(!filas.length){ alert('No hay controles en el período seleccionado.'); return; }
+  const cab = ['Fecha del control','Radicado','Módulo','Memorando','Dependencia',
+    'Acto en firme','Ejecutoria','Obligación clara','Identificación deudor','No prescrito',
+    'Ítems cumplidos','Resultado','Funcionario','Observaciones'];
+  const si = b => b ? 'SÍ' : 'NO';
+  const rows = filas.map(r=>[
+    r.fecha_control, r.radicado, r.modulo, r.memorando||'', r.dependencia||'',
+    si(r.chk_acto_firme), si(r.chk_ejecutoria), si(r.chk_obligacion_clara),
+    si(r.chk_identificacion), si(r.chk_no_prescrito),
+    (r.items_cumplidos ?? 0)+'/5', r.resultado, r.funcionario, r.observaciones||''
+  ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+  const csv = '\uFEFF' + [cab.map(h=>'"'+h+'"').join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `Control_legalidad_${semEtiqueta(anio,sem).replace(/\s+/g,'_')}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   GESTIÓN DEL SEMESTRE — evidencia del control de eficiencia
+   "…verifica mediante base de datos y módulo del cobro coactivo,
+    seguimiento semestral, que los procesos se realicen de manera
+    eficiente y contribuyan al incremento de los ingresos…"
+
+   Se alimenta de la tabla `actuaciones`, que SÍ tiene fecha. Permite
+   decir con números: "en este semestre se libraron N mandamientos y se
+   suscribieron M acuerdos de pago", comparado con el semestre anterior.
+   ═══════════════════════════════════════════════════════════════════ */
+let semActs = [], semActsPrev = [];
+
+async function cargarActuacionesSemestre(){
+  const {anio, sem} = clPeriodo();
+  const prev = semAnterior(anio, sem);
+  const [a1,a2] = semRango(anio, sem);
+  const [b1,b2] = semRango(prev.anio, prev.sem);
+  const q = (d1,d2) => `actuaciones?select=fecha,tipo_actuacion,resultado,modulo,radicado&fecha=gte.${d1}&fecha=lte.${d2}&order=fecha.desc`;
+  const pedir = async ruta => {
+    const r = await fetch(SUPA_URL+'/rest/v1/'+ruta, { headers: await supaHeaders({Accept:'application/json'}) });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  };
+  const res = await Promise.allSettled([ pedir(q(a1,a2)), pedir(q(b1,b2)) ]);
+  semActs     = res[0].status==='fulfilled' ? res[0].value : [];
+  semActsPrev = res[1].status==='fulfilled' ? res[1].value : [];
+}
+
+async function renderGestionSemestre(){
+  const cont = document.getElementById('cons-gestion');
+  if(!cont) return;
+  const {anio, sem} = clPeriodo();
+  const prev = semAnterior(anio, sem);
+  cont.innerHTML = '<div style="color:var(--muted);font-size:12.5px;padding:8px 0">Cargando gestión del semestre…</div>';
+  try{ await cargarActuacionesSemestre(); }
+  catch(e){ cont.innerHTML = '<div style="color:#fca5a5;font-size:12.5px;padding:8px 0">No se pudo cargar la gestión del semestre.</div>'; return; }
+
+  /* Los tipos que le interesan al ente de control van primero */
+  const destacados = ['Mandamiento de pago','Acuerdo de pago','Embargo','Notificación'];
+  const cuenta = (arr,t) => arr.filter(a=>a.tipo_actuacion===t).length;
+  const otros  = [...new Set(semActs.map(a=>a.tipo_actuacion))].filter(t=>t && !destacados.includes(t));
+  const orden  = [...destacados, ...otros];
+
+  const delta = (n,p) => {
+    if(p===0) return n>0 ? '<span class="sem-delta up">nuevo</span>' : '<span class="sem-delta flat">—</span>';
+    const d = Math.round((n-p)/p*100);
+    const c = d>0?'up':d<0?'down':'flat';
+    return `<span class="sem-delta ${c}">${d>0?'▲ +':d<0?'▼ ':''}${d}%</span>`;
+  };
+
+  const pagos     = semActs.filter(a=>a.resultado==='Pagó').length;
+  const pagosPrev = semActsPrev.filter(a=>a.resultado==='Pagó').length;
+  const expGest   = new Set(semActs.map(a=>a.modulo+'|'+a.radicado)).size;
+
+  const filas = orden.map(t=>{
+    const n = cuenta(semActs,t), p = cuenta(semActsPrev,t);
+    if(!n && !p) return '';
+    const dest = destacados.includes(t);
+    return `<tr>
+      <td${dest?' style="font-weight:600"':''}>${dest?'⭐ ':''}${clEsc(t)}</td>
+      <td><strong>${n.toLocaleString('es-CO')}</strong></td>
+      <td style="color:var(--soft)">${p.toLocaleString('es-CO')}</td>
+      <td>${delta(n,p)}</td>
+    </tr>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div class="stats-grid" style="margin-bottom:14px">
+      <div class="stat-card blue">
+        <div class="stat-label">📋 Mandamientos de pago</div>
+        <div class="stat-value">${cuenta(semActs,'Mandamiento de pago').toLocaleString('es-CO')}</div>
+        <div class="stat-sub">librados en el período</div>
+        <span class="stat-badge blue">${semEtiqueta(anio,sem)}</span>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-label">🤝 Acuerdos de pago</div>
+        <div class="stat-value">${cuenta(semActs,'Acuerdo de pago').toLocaleString('es-CO')}</div>
+        <div class="stat-sub">convenios suscritos</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-label">⚖️ Embargos</div>
+        <div class="stat-value">${cuenta(semActs,'Embargo').toLocaleString('es-CO')}</div>
+        <div class="stat-sub">medidas cautelares</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">💰 Actuaciones con pago</div>
+        <div class="stat-value">${pagos.toLocaleString('es-CO')}</div>
+        <div class="stat-sub">resultado «Pagó»</div>
+        <span class="stat-badge ${pagos>=pagosPrev?'green':'gold'}">${pagos>=pagosPrev?'▲':'▼'} vs ${pagosPrev}</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-head"><h3>⚙️ Actuaciones por tipo — ${semEtiqueta(anio,sem)}</h3></div>
+      <table>
+        <thead><tr><th>Tipo de actuación</th><th>${semEtiqueta(anio,sem)}</th><th>${semEtiqueta(prev.anio,prev.sem)}</th><th>Variación</th></tr></thead>
+        <tbody>${filas || '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Sin actuaciones registradas en el período.</td></tr>'}</tbody>
+      </table>
+      <div class="sem-nota" style="padding:0 16px 14px">
+        <strong style="color:var(--soft)">Cómo leer esta tabla:</strong> cuenta <strong>actuaciones registradas</strong> en el módulo
+        de cobro coactivo dentro del semestre, sobre ${expGest.toLocaleString('es-CO')} expediente(s) distinto(s).
+        No es la cartera total, que es una foto al día de hoy — aquí se mide <em>lo que se hizo</em> en el período.
+      </div>
+    </div>`;
+}
+
+/* Recalcular la gestión cuando cambie el período elegido */
+['cl-anio','cl-sem'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('change', renderGestionSemestre);
+});
 
 </script>
 </body>
