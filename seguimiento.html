@@ -51,6 +51,28 @@
   border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03)}
 .table-head h3{font-family:'Syne',sans-serif;font-size:12.5px;font-weight:700;color:#fff}
 .stat-card.purple::before{background:var(--purple)}
+/* ── Tarjetas de estado clicables ── */
+.stat-card.clic{cursor:pointer}
+.stat-card.clic:hover{background:rgba(255,255,255,.11);transform:translateY(-1px)}
+.stat-card.clic.on{outline:2px solid var(--gold);outline-offset:-2px}
+.stat-ver{display:block;margin-top:7px;font-size:10px;color:var(--muted);letter-spacing:.03em}
+.stat-card.clic:hover .stat-ver{color:var(--gold2)}
+/* ── Gestión rápida ── */
+.gq-resumen{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:13px 15px}
+.gq-r{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 0;font-size:12.5px;color:var(--soft)}
+.gq-r b{color:#fff;font-weight:600;text-align:right}
+.gq-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:11px;padding-top:11px;border-top:1px solid rgba(255,255,255,.08)}
+.gq-nums div{text-align:center}
+.gq-nums span{display:block;font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.gq-nums b{font-family:'Syne',sans-serif;font-size:13px;color:#fff}
+.gq-flecha{background:rgba(45,141,232,.09);border:1px solid rgba(45,141,232,.25);border-radius:11px;padding:12px 15px}
+.gq-prev-t{font-size:10px;font-weight:700;color:#93c5fd;text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px}
+.gq-prev-b{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gq-arrow{color:var(--gold2);font-size:15px;font-weight:700}
+.gq-pay{font-size:11.5px;color:var(--soft);margin-left:2px}
+.ou-act-btn{background:rgba(232,160,32,.16);border:1px solid rgba(232,160,32,.35);color:var(--gold2);
+  border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:5px}
+.ou-act-btn:hover{background:rgba(232,160,32,.3);color:#fff}
 .cl-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
 .cl-pill.ok{background:rgba(22,163,74,.18);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
 .cl-pill.obs{background:rgba(232,160,32,.18);color:#f5c050;border:1px solid rgba(232,160,32,.3)}
@@ -668,6 +690,56 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: GESTIÓN RÁPIDA DEL EXPEDIENTE (OU) ═══ -->
+<div class="cl-ovl" id="gq-ovl">
+  <div class="cl-modal" style="max-width:560px">
+    <div class="cl-modal-top">
+      <div>
+        <div class="cl-modal-t">⚡ Gestión rápida del expediente</div>
+        <div class="cl-modal-s" id="gq-rad">—</div>
+      </div>
+      <button class="cl-x" onclick="gqCerrar()">✕</button>
+    </div>
+
+    <div class="cl-modal-body">
+      <div class="gq-resumen">
+        <div class="gq-r"><span>Contribuyente</span><b id="gq-nombre">—</b></div>
+        <div class="gq-r"><span>Estado actual</span><b id="gq-estado">—</b></div>
+        <div class="gq-nums">
+          <div><span>Valor</span><b id="gq-valor">—</b></div>
+          <div><span>Pagado</span><b id="gq-pagado" style="color:#4ade80">—</b></div>
+          <div><span>Saldo</span><b id="gq-saldo" style="color:#f5c050">—</b></div>
+        </div>
+      </div>
+
+      <div class="cl-f">
+        <label>¿Qué se hizo? <span class="cl-req">*</span></label>
+        <select id="gq-accion" onchange="gqPintar()"></select>
+      </div>
+
+      <div class="cl-f" id="gq-monto-w" style="display:none">
+        <label>Valor del pago <span class="cl-req">*</span></label>
+        <input type="number" id="gq-monto" min="0" step="1000" placeholder="Ej: 500000" oninput="gqPintar()"/>
+        <div class="cl-cnt" id="gq-monto-hint"></div>
+      </div>
+
+      <div class="gq-flecha" id="gq-preview"></div>
+
+      <div class="cl-f">
+        <label>Observación <span class="cl-req">*</span></label>
+        <textarea id="gq-obs" rows="2" placeholder="Ej: Suscribe acuerdo a 12 cuotas — acta N° 145"></textarea>
+      </div>
+
+      <div class="cl-msg" id="gq-msg"></div>
+    </div>
+
+    <div class="cl-modal-foot">
+      <button class="cl-btn" onclick="gqCerrar()">Cancelar</button>
+      <button class="cl-btn primary" id="gq-guardar" onclick="gqGuardar()">💾 Registrar gestión</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ LOGIN ═══ -->
 <div class="lg-screen" id="lg-screen">
   <div class="lg-card">
@@ -731,6 +803,8 @@
             <option value="Desembargo">✅ Desembargo</option>
             <option value="Acuerdo de pago">🤝 Acuerdo de pago</option>
             <option value="Mandamiento de pago">📋 Mandamiento de pago</option>
+            <option value="Pago">💵 Pago registrado</option>
+            <option value="Terminación">📁 Terminación del proceso</option>
             <option value="Diligencia">📁 Diligencia</option>
             <option value="Otro">📌 Otro</option>
           </select>
@@ -998,7 +1072,7 @@ function renderTablaOU(){
       <td>${fmt(Number(r.valor_total||0))}</td>
       <td>${Number(r.pago||0)?fmt(Number(r.pago)):'—'}</td>
       <td>${r.mandamiento==='X'?'✅':'—'}</td>
-      <td><button class="ou-edit-btn" data-ouid="${ouEsc(r.id)}">✏️ Editar</button></td>
+      <td style="white-space:nowrap"><button class="ou-edit-btn" data-ouid="${ouEsc(r.id)}">✏️ Editar</button><button class="ou-act-btn" data-gqid="${ouEsc(r.id)}">⚡ Gestión</button></td>
     </tr>`;
   }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">Sin resultados con esos filtros.</td></tr>';
 
@@ -1007,7 +1081,9 @@ function renderTablaOU(){
   if(tbody && !tbody._ouBound){
     tbody.addEventListener('click', function(ev){
       const btn = ev.target.closest('.ou-edit-btn');
-      if(btn && btn.dataset.ouid) abrirModalOU(btn.dataset.ouid);
+      if(btn && btn.dataset.ouid) { abrirModalOU(btn.dataset.ouid); return; }
+      const gq = ev.target.closest('.ou-act-btn');
+      if(gq && gq.dataset.gqid) gqAbrir(gq.dataset.gqid);
     });
     tbody._ouBound = true;
   }
@@ -1388,31 +1464,22 @@ function renderOU(d) {
     </div>`;
 
   // Stats
-  document.getElementById('ou-stats').innerHTML = `
-    <div class="stat-card blue">
-      <div class="stat-label">🔵 Activos en Proceso</div>
-      <div class="stat-value">${d.activos.toLocaleString()}</div>
+  // Cada tarjeta filtra la tabla de gestión por ese estado (clic de nuevo = quitar)
+  const feAct = (document.getElementById('ou-filtro-estado')||{}).value || '';
+  const tarj = (est,icono,titulo,n,color) => `
+    <div class="stat-card ${color} clic${feAct===est?' on':''}" onclick="ouVerEstado('${est}')"
+         title="Ver y gestionar los expedientes en estado ${est}">
+      <div class="stat-label">${icono} ${titulo}</div>
+      <div class="stat-value">${n.toLocaleString()}</div>
       <div class="stat-sub">expedientes</div>
-      <span class="stat-badge blue">${pct(d.activos, d.totalExp)}</span>
-    </div>
-    <div class="stat-card gold">
-      <div class="stat-label">🤝 Convenios Activos</div>
-      <div class="stat-value">${d.convenios.toLocaleString()}</div>
-      <div class="stat-sub">expedientes</div>
-      <span class="stat-badge gold">${pct(d.convenios, d.totalExp)}</span>
-    </div>
-    <div class="stat-card green">
-      <div class="stat-label">✅ Cancelados</div>
-      <div class="stat-value">${d.cancelados.toLocaleString()}</div>
-      <div class="stat-sub">expedientes</div>
-      <span class="stat-badge green">${pct(d.cancelados, d.totalExp)}</span>
-    </div>
-    <div class="stat-card navy">
-      <div class="stat-label">📁 Terminados</div>
-      <div class="stat-value">${d.terminados.toLocaleString()}</div>
-      <div class="stat-sub">expedientes</div>
-      <span class="stat-badge blue">${pct(d.terminados, d.totalExp)}</span>
+      <span class="stat-badge ${color==='navy'?'blue':color}">${pct(n, d.totalExp)}</span>
+      <span class="stat-ver">${feAct===est?'✕ quitar filtro':'▸ ver y gestionar'}</span>
     </div>`;
+  document.getElementById('ou-stats').innerHTML =
+      tarj('Activo',   '🔵','Activos en Proceso', d.activos,    'blue')
+    + tarj('Convenio', '🤝','Convenios Activos',  d.convenios,  'gold')
+    + tarj('Cancelado','✅','Cancelados',         d.cancelados, 'green')
+    + tarj('Terminado','📁','Terminados',         d.terminados, 'navy');
 
   // Masivos
   const colores = ['#1a6fc4','#e8a020','#16a34a','#7c3aed','#dc2626'];
@@ -3008,7 +3075,7 @@ async function cargarActuacionesSemestre(){
   const prev = semAnterior(anio, sem);
   const [a1,a2] = semRango(anio, sem);
   const [b1,b2] = semRango(prev.anio, prev.sem);
-  const q = (d1,d2) => `actuaciones?select=fecha,tipo_actuacion,resultado,modulo,radicado&fecha=gte.${d1}&fecha=lte.${d2}&order=fecha.desc`;
+  const q = (d1,d2) => `actuaciones?select=fecha,tipo_actuacion,resultado,modulo,radicado,valor&fecha=gte.${d1}&fecha=lte.${d2}&order=fecha.desc`;
   const pedir = async ruta => {
     const r = await fetch(SUPA_URL+'/rest/v1/'+ruta, { headers: await supaHeaders({Accept:'application/json'}) });
     if(!r.ok) throw new Error('HTTP '+r.status);
@@ -3029,7 +3096,7 @@ async function renderGestionSemestre(){
   catch(e){ cont.innerHTML = '<div style="color:#fca5a5;font-size:12.5px;padding:8px 0">No se pudo cargar la gestión del semestre.</div>'; return; }
 
   /* Los tipos que le interesan al ente de control van primero */
-  const destacados = ['Mandamiento de pago','Acuerdo de pago','Embargo','Notificación'];
+  const destacados = ['Mandamiento de pago','Acuerdo de pago','Pago','Embargo','Notificación','Terminación'];
   const cuenta = (arr,t) => arr.filter(a=>a.tipo_actuacion===t).length;
   const otros  = [...new Set(semActs.map(a=>a.tipo_actuacion))].filter(t=>t && !destacados.includes(t));
   const orden  = [...destacados, ...otros];
@@ -3043,6 +3110,10 @@ async function renderGestionSemestre(){
 
   const pagos     = semActs.filter(a=>a.resultado==='Pagó').length;
   const pagosPrev = semActsPrev.filter(a=>a.resultado==='Pagó').length;
+  // Recaudo FECHADO del período — la cifra que pide el control de ingresos
+  const suma      = arr => arr.reduce((t,a)=>t+Number(a.valor||0),0);
+  const recSem    = suma(semActs), recPrev = suma(semActsPrev);
+  const varRec    = recPrev>0 ? Math.round((recSem-recPrev)/recPrev*100) : null;
   const expGest   = new Set(semActs.map(a=>a.modulo+'|'+a.radicado)).size;
 
   const filas = orden.map(t=>{
@@ -3076,10 +3147,10 @@ async function renderGestionSemestre(){
         <div class="stat-sub">medidas cautelares</div>
       </div>
       <div class="stat-card green">
-        <div class="stat-label">💰 Actuaciones con pago</div>
-        <div class="stat-value">${pagos.toLocaleString('es-CO')}</div>
-        <div class="stat-sub">resultado «Pagó»</div>
-        <span class="stat-badge ${pagos>=pagosPrev?'green':'gold'}">${pagos>=pagosPrev?'▲':'▼'} vs ${pagosPrev}</span>
+        <div class="stat-label">💰 Recaudo del período</div>
+        <div class="stat-value" style="font-size:22px">${fmt(recSem)}</div>
+        <div class="stat-sub">${pagos.toLocaleString('es-CO')} pago(s) registrado(s)</div>
+        <span class="stat-badge ${recSem>=recPrev?'green':'gold'}">${varRec===null?'sin base previa':(varRec>=0?'▲ +':'▼ ')+varRec+'% vs '+semEtiqueta(prev.anio,prev.sem)}</span>
       </div>
     </div>
     <div class="table-wrap">
@@ -3092,6 +3163,8 @@ async function renderGestionSemestre(){
         <strong style="color:var(--soft)">Cómo leer esta tabla:</strong> cuenta <strong>actuaciones registradas</strong> en el módulo
         de cobro coactivo dentro del semestre, sobre ${expGest.toLocaleString('es-CO')} expediente(s) distinto(s).
         No es la cartera total, que es una foto al día de hoy — aquí se mide <em>lo que se hizo</em> en el período.
+        El <strong>recaudo del período</strong> suma los pagos registrados con fecha dentro del semestre; el «Recaudo registrado»
+        del Consolidado es el acumulado histórico y por eso son cifras distintas.
       </div>
     </div>`;
 }
@@ -3101,6 +3174,232 @@ async function renderGestionSemestre(){
   const el = document.getElementById(id);
   if(el) el.addEventListener('change', renderGestionSemestre);
 });
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   GESTIÓN RÁPIDA DE EXPEDIENTES (Obligaciones Urbanísticas)
+
+   Cierra el círculo del trabajo diario con la evidencia:
+   una sola acción del usuario (1) cambia el estado del expediente,
+   (2) suma el pago, (3) registra la actuación fechada en `actuaciones`
+   —que es de donde sale la Gestión del semestre— y (4) deja el rastro
+   en `ou_bitacora`. Todo o nada, en ese orden.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Clic en las tarjetas de estado → filtra la tabla de gestión */
+function ouVerEstado(estado){
+  const sel = document.getElementById('ou-filtro-estado');
+  if(!sel) return;
+  sel.value = (sel.value === estado) ? '' : estado;   // volver a hacer clic quita el filtro
+  const buscar = document.getElementById('ou-buscar');
+  if(buscar) buscar.value = '';
+  ouPagina = 1;
+  renderTablaOU();
+  const t = document.querySelector('#panel-ou .ou-toolbar');
+  if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* Catálogo de acciones. Cada una define a qué estado lleva el expediente
+   y con qué tipo/resultado se registra la actuación, para que la
+   evidencia semestral quede consistente sin que nadie tenga que pensarlo. */
+const GQ_ACCIONES = {
+  acuerdo:  { lbl:'🤝 Suscribió acuerdo de pago', estado:'Convenio',  tipo:'Acuerdo de pago', res:'Prometió pagar', monto:false },
+  pago:     { lbl:'💵 Registrar pago / cuota',    estado:null,        tipo:'Pago',            res:'Pagó',           monto:true  },
+  cancelar: { lbl:'✅ Canceló la obligación',      estado:'Cancelado', tipo:'Pago',            res:'Pagó',           monto:true  },
+  terminar: { lbl:'📁 Terminar el proceso',        estado:'Terminado', tipo:'Terminación',     res:'En proceso',     monto:false },
+  reactivar:{ lbl:'🔄 Reactivar (volver a Activo)',estado:'Activo',    tipo:'Diligencia',      res:'En proceso',     monto:false }
+};
+
+/* Qué acciones tienen sentido según el estado actual */
+function gqDisponibles(estado){
+  if(estado === 'Activo')    return ['acuerdo','pago','cancelar','terminar'];
+  if(estado === 'Convenio')  return ['pago','cancelar','terminar'];
+  if(estado === 'Cancelado') return ['reactivar'];
+  if(estado === 'Terminado') return ['reactivar'];
+  return ['acuerdo','pago','cancelar','terminar','reactivar'];
+}
+
+let gqExp = null;
+
+function gqAbrir(idExp){
+  if(!usuarioSesion){ alert('Debes iniciar sesión para registrar gestión.'); return; }
+  const r = dataOU.find(x => String(x.id) === String(idExp));
+  if(!r) return;
+  gqExp = r;
+
+  const valor = Number(r.valor_total||0), pagado = Number(r.pago||0);
+  document.getElementById('gq-rad').textContent    = 'Expediente ' + (r.radicado||'—');
+  document.getElementById('gq-nombre').textContent = r.contribuyente || '—';
+  document.getElementById('gq-estado').innerHTML   =
+    `<span class="ou-badge ou-b-${ouEsc(r.estado||'')}">${ouEsc(r.estado||'—')}</span>`;
+  document.getElementById('gq-valor').textContent  = fmt(valor);
+  document.getElementById('gq-pagado').textContent = fmt(pagado);
+  document.getElementById('gq-saldo').textContent  = fmt(Math.max(valor - pagado, 0));
+
+  const sel = document.getElementById('gq-accion');
+  sel.innerHTML = gqDisponibles(r.estado)
+    .map(k => `<option value="${k}">${GQ_ACCIONES[k].lbl}</option>`).join('');
+
+  document.getElementById('gq-monto').value = '';
+  document.getElementById('gq-obs').value   = '';
+  document.getElementById('gq-msg').className = 'cl-msg';
+  gqPintar();
+
+  document.getElementById('gq-ovl').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function gqCerrar(){
+  document.getElementById('gq-ovl').classList.remove('open');
+  document.body.style.overflow = '';
+  gqExp = null;
+}
+
+/* Vista previa: qué va a pasar exactamente al guardar. La idea es que
+   nadie cambie un estado sin ver antes el resultado. */
+function gqPintar(){
+  if(!gqExp) return;
+  const acc = GQ_ACCIONES[document.getElementById('gq-accion').value];
+  if(!acc) return;
+  const valor  = Number(gqExp.valor_total||0);
+  const pagado = Number(gqExp.pago||0);
+  const monto  = Number(document.getElementById('gq-monto').value||0);
+
+  document.getElementById('gq-monto-w').style.display = acc.monto ? 'flex' : 'none';
+
+  let nuevoPagado = pagado, nuevoEstado = acc.estado || gqExp.estado;
+  if(acc.monto){
+    nuevoPagado = pagado + monto;
+    // Si el pago salda la obligación, el expediente pasa solo a Cancelado
+    if(document.getElementById('gq-accion').value === 'pago' && valor > 0 && nuevoPagado >= valor){
+      nuevoEstado = 'Cancelado';
+    }
+  }
+  if(document.getElementById('gq-accion').value === 'cancelar' && !monto){
+    // Cancelar sin escribir monto = se salda el total pendiente
+    nuevoPagado = Math.max(valor, pagado);
+  }
+  const saldo = Math.max(valor - nuevoPagado, 0);
+
+  const hint = document.getElementById('gq-monto-hint');
+  if(acc.monto && hint){
+    hint.textContent = document.getElementById('gq-accion').value === 'cancelar' && !monto
+      ? 'Si lo dejas vacío se registra el saldo completo: ' + fmt(Math.max(valor - pagado, 0))
+      : 'Saldo después del pago: ' + fmt(saldo);
+  }
+
+  const cambia = nuevoEstado !== gqExp.estado;
+  document.getElementById('gq-preview').innerHTML = `
+    <div class="gq-prev-t">Al guardar quedará así</div>
+    <div class="gq-prev-b">
+      <span class="ou-badge ou-b-${ouEsc(gqExp.estado||'')}">${ouEsc(gqExp.estado||'—')}</span>
+      <span class="gq-arrow">${cambia ? '→' : '＝'}</span>
+      <span class="ou-badge ou-b-${ouEsc(nuevoEstado||'')}">${ouEsc(nuevoEstado||'—')}</span>
+      ${acc.monto ? `<span class="gq-pay">pagado ${fmt(nuevoPagado)} · saldo ${fmt(saldo)}</span>` : ''}
+    </div>`;
+
+  gqExp._preview = { nuevoEstado, nuevoPagado, acc };
+}
+
+async function gqGuardar(){
+  if(!gqExp) return;
+  const msg = document.getElementById('gq-msg');
+  const btn = document.getElementById('gq-guardar');
+  const set = (c,t)=>{ msg.className='cl-msg '+c; msg.textContent=t; };
+
+  const clave = document.getElementById('gq-accion').value;
+  const acc   = GQ_ACCIONES[clave];
+  const obs   = document.getElementById('gq-obs').value.trim();
+  const monto = Number(document.getElementById('gq-monto').value||0);
+
+  if(!obs){ set('err','La observación es obligatoria: es la justificación del cambio de estado.'); return; }
+  if(clave === 'pago' && monto <= 0){ set('err','Escribe el valor del pago.'); return; }
+
+  gqPintar();
+  const { nuevoEstado, nuevoPagado } = gqExp._preview;
+  const valorPago = clave === 'cancelar' && !monto
+    ? Math.max(Number(gqExp.valor_total||0) - Number(gqExp.pago||0), 0)
+    : monto;
+
+  btn.disabled = true;
+  set('load','Guardando gestión…');
+
+  const estadoAnterior = gqExp.estado, pagoAnterior = Number(gqExp.pago||0);
+
+  try{
+    // 1) Expediente — lo primero, porque es lo que mueve los indicadores
+    const patch = { estado: nuevoEstado, pago: nuevoPagado };
+    const r1 = await fetch(SUPA_URL+'/rest/v1/expedientes_ou?id=eq.'+encodeURIComponent(gqExp.id), {
+      method:'PATCH',
+      headers: await supaHeaders({'Content-Type':'application/json', Prefer:'return=minimal'}),
+      body: JSON.stringify(patch)
+    });
+    if(!r1.ok) throw new Error('expediente HTTP '+r1.status);
+
+    // 2) Actuación fechada — es lo que alimenta la Gestión del semestre
+    //    y por tanto la evidencia ante Control Interno.
+    const ahora = new Date();
+    const descr = obs
+      + (valorPago ? ' · Pago registrado: ' + fmt(valorPago) : '')
+      + (nuevoEstado !== estadoAnterior ? ' · Estado: ' + estadoAnterior + ' → ' + nuevoEstado : '');
+    const r2 = await fetch(SUPA_URL+'/rest/v1/actuaciones', {
+      method:'POST',
+      headers: await supaHeaders({'Content-Type':'application/json', Prefer:'return=minimal'}),
+      body: JSON.stringify({
+        radicado:       gqExp.radicado,
+        modulo:         'OU',
+        tipo_actuacion: acc.tipo,
+        resultado:      acc.res,
+        descripcion:    descr,
+        funcionario:    nombreSesion(),
+        // El valor va en su propia columna, no solo en el texto: es lo que
+        // permite sumar recaudo POR FECHA (expedientes_ou.pago es acumulado
+        // y no sirve para el corte semestral).
+        valor:          valorPago > 0 ? valorPago : null,
+        fecha:          ahora.toISOString().slice(0,10),
+        hora:           ahora.toTimeString().slice(0,8)
+      })
+    });
+    if(!r2.ok) throw new Error('actuación HTTP '+r2.status);
+
+    // 3) Bitácora del expediente
+    try{
+      const cambios = [];
+      if(nuevoEstado !== estadoAnterior) cambios.push(`Estado: "${estadoAnterior}" → "${nuevoEstado}"`);
+      if(nuevoPagado !== pagoAnterior)   cambios.push(`Pagado: "${pagoAnterior}" → "${nuevoPagado}"`);
+      cambios.push('Gestión: ' + acc.lbl + ' — ' + obs);
+      const rb = await fetch(SUPA_URL+'/rest/v1/ou_bitacora', {
+        method:'POST',
+        headers: await supaHeaders({'Content-Type':'application/json', Prefer:'return=minimal'}),
+        body: JSON.stringify({ radicado: gqExp.radicado, usuario: nombreSesion(), cambios: cambios.join(' | ') })
+      });
+      if(!rb.ok) throw new Error('HTTP '+rb.status);
+    }catch(eb){
+      console.warn('[bitácora OU]', eb);
+      set('ok','✅ Gestión registrada, pero la bitácora falló ('+eb.message+').');
+    }
+
+    // 4) Memoria + refresco de indicadores
+    gqExp.estado = nuevoEstado;
+    gqExp.pago   = nuevoPagado;
+    if(msg.className.indexOf('ok') === -1) set('ok','✅ Gestión registrada. Estado: '+nuevoEstado+'.');
+    renderTablaOU();
+    try{
+      datosGlobales.ou = await cargarOUSupa();
+      renderOU(datosGlobales.ou);
+      renderConsolidado();
+    }catch(e){ console.warn('[refresco OU]', e); }
+    if(typeof renderGestionSemestre === 'function') renderGestionSemestre();
+    setTimeout(gqCerrar, 1000);
+
+  }catch(e){
+    const m = /401|JWT|permission|policy/i.test(e.message)
+      ? 'Tu sesión expiró o no tienes permiso. Vuelve a iniciar sesión.'
+      : e.message;
+    set('err','❌ No se pudo guardar — '+m+'. No se aplicó ningún cambio parcial al estado.');
+  }finally{
+    btn.disabled = false;
+  }
+}
 
 </script>
 </body>
