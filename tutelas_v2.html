@@ -1146,7 +1146,11 @@ const Repo = {
     }
     if(!res.ok) throw new Error(`Supabase HTTP ${res.status}`);
     const filas = await res.json();
-    return filas.map(sbASheet).filter(filaValida);
+    // _cat guarda la categoria REAL del registro. Antes se adivinaba comparando
+    // radicados, pero tutela/fallo/incidente del mismo proceso comparten radicado
+    // por diseno, asi que un admite se abria como "incidente" y los guardados
+    // no refrescaban la memoria (findIndex sobre el array equivocado).
+    return filas.map(f=>{ const r=sbASheet(f); r._cat=categoria; return r; }).filter(filaValida);
   },
 
   // Actualiza campos de un registro por su id de Supabase.
@@ -1285,6 +1289,15 @@ const PER_PAGE    = 50;
 
 let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
 let pagAdm=1, pagFal=1, pagHis=1, pagInc=1;
+// Firma de los filtros de cada pestana. Si cambia, la paginacion vuelve a la
+// pagina 1: si no, estando en la pagina 5 y filtrando a 120 resultados el slice
+// caia fuera de rango y la tabla mostraba "Sin registros" habiendo 120.
+const _sigFiltros={};
+function _pagPorFiltro(clave, sig){
+  const cambio = _sigFiltros[clave]!==undefined && _sigFiltros[clave]!==sig;
+  _sigFiltros[clave]=sig;
+  return cambio;
+}
 let quickAdm=null, quickFal=null, quickOtr=null; // filtro rápido por urgencia (tarjetas)
 
 // ════════════════════════════════════════
@@ -1795,6 +1808,11 @@ function buscarGlobal(){
 function cerrarGlobal(){document.getElementById("global-results").classList.remove("open");}
 
 const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+// Escape para ATRIBUTOS HTML: ademas de &<>, escapa comillas. Obligatorio en
+// title="...", value="..." y cualquier atributo que interpole datos del caso
+// (vienen de extraccion OCR/IA de PDFs, no son texto confiable).
+const escAttr=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const abrev=(s,n)=>!s?"—":s.length>n?s.substring(0,n)+"…":s;
 const pNom=s=>!s?"—":s.split(" ").slice(0,2).join(" ");
 const inic=s=>!s?"?":s.split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
@@ -1820,9 +1838,13 @@ function scard(n,label,cls){return`<div class="scard"><div class="scard-n ${cls}
 function clsFila(dias,est){if(EST_HIST.includes(est))return"";if(dias!==null&&dias<=2)return" urgente";if(dias!==null&&dias<=5)return" proximo";return"";}
 
 function renderPag(datos,pag,infoId,btnsId,pagId){
-  const total=datos.length,pages=Math.ceil(total/PER_PAGE);
+  const total=datos.length,pages=Math.max(1,Math.ceil(total/PER_PAGE));
   const pagEl=document.getElementById(pagId);
   if (total<=PER_PAGE){pagEl.style.display="none";return datos;}
+  // Clamp de seguridad: si por cualquier via quedo una pagina fuera de rango,
+  // se muestra la ultima con datos en vez de una tabla vacia enganosa.
+  if(pag>pages){ pag=pages; changePagSilencioso(pagId,pag); }
+  if(pag<1){ pag=1; changePagSilencioso(pagId,1); }
   pagEl.style.display="flex";
   document.getElementById(infoId).textContent=`${(pag-1)*PER_PAGE+1}–${Math.min(pag*PER_PAGE,total)} de ${total}`;
   const btns=document.getElementById(btnsId);
@@ -1836,6 +1858,13 @@ function renderPag(datos,pag,infoId,btnsId,pagId){
   return datos.slice((pag-1)*PER_PAGE,pag*PER_PAGE);
 }
 
+// Sincroniza la variable de pagina sin volver a renderizar (evita recursion)
+function changePagSilencioso(pagId,p){
+  if(pagId==="pag-admites")pagAdm=p;
+  else if(pagId==="pag-fallos")pagFal=p;
+  else if(pagId==="pag-his")pagHis=p;
+  else if(pagId==="pag-otros")pagInc=p;
+}
 function changePag(pagId,p){
   if(pagId==="pag-admites"){pagAdm=p;renderAdmites();}
   else if(pagId==="pag-fallos"){pagFal=p;renderFallos();}
@@ -1847,6 +1876,7 @@ function renderAdmites(){
   const q=document.getElementById("fa-q").value;
   const abo=document.getElementById("fa-abo").value;
   const est=document.getElementById("fa-est").value;
+  if(_pagPorFiltro("adm", q+"|"+abo+"|"+est)) pagAdm=1;
   const filtAdm=byUrg(tutelas.filter(r=>{
     if(TIPOS_FALLO.concat(TIPOS_OTROS).includes(r["TIPO"]))return false;
     if(!est&&EST_HIST.includes(r["ESTADO"]))return false;
@@ -1879,7 +1909,7 @@ function renderAdmites(){
   el.innerHTML=pag.map((r,i)=>{
     const falta=queFaltaTecnico(r);
     const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div>${celRad(r)}</div>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}</div>`;
   }).join("");
   window._exportAdmites=visiblesAdm;
 }
@@ -1889,6 +1919,7 @@ function renderFallos(){
   const tp=document.getElementById("ff-tp").value;
   const abo=document.getElementById("ff-abo").value;
   const est=document.getElementById("ff-est").value;
+  if(_pagPorFiltro("fal", q+"|"+tp+"|"+abo+"|"+est)) pagFal=1;
   const filtFal=byUrg(fallos.filter(r=>{
     if(!est&&EST_HIST.includes(r["ESTADO"]))return false;
     if(tp&&r["TIPO"]!==tp)return false;
@@ -1911,7 +1942,7 @@ function renderFallos(){
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagFallos=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
   window._exportFallos=visiblesFal;
 }
 
@@ -1919,6 +1950,7 @@ function renderOtros(){
   const q=document.getElementById("fo-q").value;
   const abo=document.getElementById("fo-abo").value;
   const est=document.getElementById("fo-est").value;
+  if(_pagPorFiltro("otr", q+"|"+abo+"|"+est)) pagInc=1;
   const datos=byUrg(incidentes.filter(r=>{
     if(!est&&EST_HIST.includes(r["ESTADO"]))return false;
     if(abo&&!matchAbo(r["RESPONSABLE"],abo))return false;
@@ -1943,9 +1975,9 @@ function renderOtros(){
   el.innerHTML=pag.map((r,i)=>{
     const notif=String(r["NOTIFICADO"]||"").trim();
     const btnNotif = notif
-      ? `<button class="btn-notif hecho" title="Notificado: ${esc(notif)} — clic para quitar la marca" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">✅ Notificado</button>`
+      ? `<button class="btn-notif hecho" title="Notificado: ${escAttr(notif)} — clic para quitar la marca" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">✅ Notificado</button>`
       : `<button class="btn-notif" title="Marcar que este incidente ya fue notificado" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">📣 Notificar</button>`;
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div>${celRad(r)}<div class="cel">${btnNotif}</div></div>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel">${btnNotif}</div></div>`;
   }).join("");
   window._exportOtros=visiblesOtr;
 }
@@ -1956,6 +1988,7 @@ function renderHistorico(){
   const tipo=document.getElementById("fh-tipo").value;
   const mes=document.getElementById("fh-mes").value;
   const anio=document.getElementById("fh-anio").value;
+  if(_pagPorFiltro("his", q+"|"+abo+"|"+tipo+"|"+mes+"|"+anio)) pagHis=1;
   const filtHis=[...tutelas,...fallos,...incidentes.map(r=>({...r,TIPO:r["TIPO"]||"Desacato"}))].filter(r=>{
     if(!EST_HIST.includes(r["ESTADO"]))return false;
     if(abo&&!matchAbo(r["RESPONSABLE"],abo))return false;
@@ -1976,9 +2009,9 @@ function renderHistorico(){
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🗂️</div>Sin registros históricos</div>`;return;}
   window._pagHistorico=pag;
   el.innerHTML=pag.map((r,i)=>{
-    const esI=incidentes.some(x=>x["RADICADO"]===r["RADICADO"]);
-    const origen=esI?"incidente":TIPOS_FALLO.includes(r["TIPO"])?"fallo":"tutela";
-    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${esc(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${pNom(r["RESPONSABLE"])}</div>${celRad(r)}<div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;
+    const origen = r._cat || (incidentes.some(x=>x["RADICADO"]===r["RADICADO"])
+      ? "incidente" : TIPOS_FALLO.includes(r["TIPO"]) ? "fallo" : "tutela");
+    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;
   }).join("");
   window._exportHistorico=filtHis;
 }
@@ -1991,8 +2024,9 @@ function renderReparto(){
   document.getElementById("grid-reparto").innerHTML=ABOGADOS.map(a=>{
     const mine=activos.filter(r=>matchAbo(r["RESPONSABLE"],a));
     const mineCerrados=cerrados.filter(r=>matchAbo(r["RESPONSABLE"],a));
-    const tuts=mine.filter(r=>!TIPOS_FALLO.includes(r["TIPO"])&&!incidentes.some(x=>x["RADICADO"]===r["RADICADO"]));
-    const fals=mine.filter(r=>TIPOS_FALLO.includes(r["TIPO"]));
+    const tuts=mine.filter(r=> r._cat ? r._cat==="tutela"
+      : (!TIPOS_FALLO.includes(r["TIPO"])&&!incidentes.some(x=>x["RADICADO"]===r["RADICADO"])));
+    const fals=mine.filter(r=> r._cat ? r._cat==="fallo" : TIPOS_FALLO.includes(r["TIPO"]));
     const incs=incidentes.filter(r=>matchAbo(r["RESPONSABLE"],a)&&!EST_HIST.includes(r["ESTADO"]));
     const urg=mine.filter(r=>r._dias!==null&&r._dias<=2);
     const nue=mine.filter(r=>r["ESTADO"]==="Nuevo");
@@ -2027,17 +2061,22 @@ function renderReparto(){
   }).join("");
   // Ranking tabla
   // Calcular radicadosFallos UNA sola vez fuera del loop — no 6 veces
-  const radicadosFallosSet=new Set([...fallos,...incidentes].map(r=>r["RADICADO"]));
+  // Llave canonica (normRad+keyAcc), no el radicado crudo: si el admite trae
+  // "2026-05088" y el fallo "20260000005088" el Set debe reconocerlos como
+  // el mismo caso, o la tutela se contaria como "cierre preventivo" sin serlo.
+  const radicadosFallosSet=new Set([...fallos,...incidentes].map(claveCaso));
   const rankData=ABOGADOS.map(a=>{
     const mine=todos.filter(r=>matchAbo(r["RESPONSABLE"],a));
     const act=mine.filter(r=>!EST_HIST.includes(r["ESTADO"])).length;
     const cerr=mine.filter(r=>EST_HIST.includes(r["ESTADO"])).length;
     const total=act+cerr;
     const pct=total?Math.round(cerr/total*100):0;
+    // matchAbo (no ===) para ser consistente con act/cerr: el Sheet trae
+    // variantes del mismo nombre y con === se subcontaba a esas personas.
     const preventivos=tutelas.filter(r=>
-      r["RESPONSABLE"]===a &&
+      matchAbo(r["RESPONSABLE"],a) &&
       EST_HIST.includes(r["ESTADO"]) &&
-      !radicadosFallosSet.has(r["RADICADO"])
+      !radicadosFallosSet.has(claveCaso(r))
     ).length;
     const pctPrev=cerr?Math.round(preventivos/cerr*100):0;
     return{a,act,cerr,total,pct,preventivos,pctPrev};
@@ -2207,7 +2246,7 @@ function renderEstadisticas(){
     kpi(tProm===null?"—":Math.round(tProm)+"d","Tiempo prom. respuesta","#e8a020", tiempos.length?`sobre ${tiempos.length} casos`:"requiere fecha de cierre");
 
   // ── Barras honestas: ancho = % del total del grupo ──
-  const barra=(label,n,total,color,onclick)=>`<div class="est-row${onclick?" clic":""}"${onclick?` onclick="${onclick}" title="Clic para ver estos casos"`:""}><span class="est-label" title="${esc(label)}">${esc(abrev(label,22))}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${total?Math.round(n/total*100):0}%;background:${color}"></div></div><span class="est-val" style="color:${color}">${n}</span></div>`;
+  const barra=(label,n,total,color,onclick)=>`<div class="est-row${onclick?" clic":""}"${onclick?` onclick="${onclick}" title="Clic para ver estos casos"`:""}><span class="est-label" title="${escAttr(label)}">${esc(abrev(label,22))}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${total?Math.round(n/total*100):0}%;background:${color}"></div></div><span class="est-val" style="color:${color}">${n}</span></div>`;
 
   const tiposC={};todos.forEach(r=>{tiposC[r["TIPO"]]=(tiposC[r["TIPO"]]||0)+1;});
   const totTp=todos.length||1;
@@ -2252,7 +2291,7 @@ function renderEstadisticas(){
   const cerradosH=cerradosPorAbo.map((o,i)=>{
     const medalla = o.n>0 ? (i===0?"🥇 ":i===1?"🥈 ":i===2?"🥉 ":"") : "";
     const pctTxt = o.pct===null ? "" : ` <span style="font-size:10px;color:${o.pct>=90?"#4ade80":o.pct>=70?"#fbbf24":"#f87171"}">⏱${o.pct}%</span>`;
-    return `<div class="est-row"><span class="est-label" title="${esc(o.abo)}">${medalla}${esc(abrev(pNom(o.abo),18))}${pctTxt}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${Math.round(o.n/totC*100)}%;background:#22c55e"></div></div><span class="est-val" style="color:#22c55e">${o.n}</span></div>`;
+    return `<div class="est-row"><span class="est-label" title="${escAttr(o.abo)}">${medalla}${esc(abrev(pNom(o.abo),18))}${pctTxt}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${Math.round(o.n/totC*100)}%;background:#22c55e"></div></div><span class="est-val" style="color:#22c55e">${o.n}</span></div>`;
   }).join("");
   const perLabel = {mes:"este mes",tri:"últimos 3 meses",anio:"último año",todo:"histórico completo"}[_estPeriodo];
 
@@ -2323,9 +2362,11 @@ function abrirModalIdx(arrKey, idx, origen){
   const arr=window[arrKey];
   if(!arr||arr[idx]===undefined)return;
   const r=arr[idx];
-  // Si no se pasa origen, detectarlo por el radicado
+  // Origen fiable: la categoria que trae el propio registro desde Supabase.
+  // El fallback por radicado solo aplica a registros legados sin _cat.
   if(!origen){
-    if(incidentes.some(x=>x["RADICADO"]===r["RADICADO"]))origen="incidente";
+    if(r._cat) origen=r._cat;
+    else if(incidentes.some(x=>x["RADICADO"]===r["RADICADO"]))origen="incidente";
     else if(fallos.some(x=>x["RADICADO"]===r["RADICADO"]))origen="fallo";
     else origen="tutela";
   }
@@ -2559,6 +2600,10 @@ async function copiarCampo(campo, btn){
   }
 }
 
+// Confirmacion modal. IMPORTANTE: toda via de cierre (boton, Escape, clic fuera)
+// DEBE resolver la promesa. Si el modal se cierra sin resolver, el flujo que hizo
+// `await confirmar(...)` queda suspendido para siempre y el usuario cree que guardo.
+let _confirmCerrar = null;   // handle del dialogo abierto, para cerrarlo desde fuera
 function confirmar(titulo, msg){
   return new Promise(resolve=>{
     document.getElementById("confirm-titulo").textContent=titulo;
@@ -2567,13 +2612,26 @@ function confirmar(titulo, msg){
     ov.classList.add("open");
     const ok=document.getElementById("confirm-ok");
     const cancel=document.getElementById("confirm-cancel");
+    let resuelto=false;
     function cerrar(val){
+      if(resuelto) return;      // blindaje: nunca resolver dos veces
+      resuelto=true;
       ov.classList.remove("open");
-      ok.onclick=null; cancel.onclick=null;
+      ok.onclick=null; cancel.onclick=null; ov.onclick=null;
+      document.removeEventListener("keydown", teclas, true);
+      _confirmCerrar=null;
       resolve(val);
     }
+    function teclas(e){
+      if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); cerrar(false); }
+      else if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); cerrar(true); }
+    }
+    // Captura: corre antes que el listener global de Escape, que ya no toca este overlay
+    document.addEventListener("keydown", teclas, true);
+    ov.onclick=e=>{ if(e.target===ov) cerrar(false); };
     ok.onclick=()=>cerrar(true);
     cancel.onclick=()=>cerrar(false);
+    _confirmCerrar=()=>cerrar(false);
   });
 }
 
@@ -2779,7 +2837,7 @@ async function cerrarAdmiteEnCascada(nuevoEst){
     if(!actual || origenModal!=="fallo") return;
     if(!EST_HIST.includes(nuevoEst) || nuevoEst==="Anulado") return;
     const radF=normRad(actual["RADICADO"]);
-    if(!radF || radF==="2026:") return; // sin radicado útil no hay match fiable
+    if(radDebil(radF)) return; // sin radicado útil no hay match fiable
     const accF=keyAcc(actual["ACCIONANTE"]);
     const admite=tutelas.find(r=>
       normRad(r["RADICADO"])===radF &&
@@ -2866,7 +2924,7 @@ function _menuYo(){
   d.id="menu-yo";
   d.style.cssText="position:fixed;top:120px;left:50%;transform:translateX(-50%);z-index:9999;background:#12233f;border:1px solid rgba(245,158,11,.4);border-radius:14px;padding:16px;box-shadow:0 16px 50px rgba(0,0,0,.6);min-width:250px";
   d.innerHTML=`<div style="font-weight:700;font-size:13px;color:var(--gold2);margin-bottom:10px">¿Quién eres?</div>`+
-    ABOGADOS.map(a=>`<div onclick="_aplicarMios('${esc(a)}');document.getElementById('menu-yo').remove()" style="padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer;color:#e2e8f0" onmouseover="this.style.background='rgba(245,158,11,.12)'" onmouseout="this.style.background='transparent'">${esc(a)}</div>`).join("")+
+    ABOGADOS.map((a,i)=>`<div onclick="_aplicarMios(ABOGADOS[${i}]);document.getElementById('menu-yo').remove()" style="padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer;color:#e2e8f0" onmouseover="this.style.background='rgba(245,158,11,.12)'" onmouseout="this.style.background='transparent'">${esc(a)}</div>`).join("")+
     `<div onclick="document.getElementById('menu-yo').remove()" style="padding:8px 10px;margin-top:6px;border-top:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;color:var(--muted);text-align:center">Cancelar</div>`;
   document.body.appendChild(d);
   setTimeout(()=>{ document.addEventListener("click",function fuera(ev){ if(!d.contains(ev.target)){ d.remove(); document.removeEventListener("click",fuera); } }); },50);
@@ -2946,7 +3004,7 @@ function abrirGrupoPQRDirecto(enc,regs,tipo){
   const abos = [...new Set(regs.map(r=>r["RESPONSABLE"]||"Sin asignar").filter(Boolean))].sort();
   const sel = document.getElementById("pqr-filtro-abo");
   sel.innerHTML = `<option value="">Todos los abogados (${regs.length})</option>` +
-    abos.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("");
+    abos.map(a=>`<option value="${escAttr(a)}">${esc(a)}</option>`).join("");
 
   renderPQRModal(regs);
   document.getElementById("overlay-pqr").classList.add("open");
@@ -3014,7 +3072,7 @@ function _pqrLlenarDatalist(){
     if(e && e.toLowerCase()!=="no registra pqr") nombres.add(e);
   });
   document.getElementById("pqr-asig-lista").innerHTML=[...nombres].sort()
-    .map(n=>`<option value="${esc(n)}">`).join("");
+    .map(n=>`<option value="${escAttr(n)}">`).join("");
 }
 async function aplicarAsignacionMasiva(){
   const val=document.getElementById("pqr-asig-input").value.trim();
@@ -3063,7 +3121,7 @@ function generarPDFPendientes(){
   const porCaso = new Map(); const sinClave=[];
   pend.forEach(r=>{
     const rad=normRad(r["RADICADO"]);
-    if(!rad || rad==="2026:"){ sinClave.push(r); return; }
+    if(radDebil(rad)){ sinClave.push(r); return; }
     const k = rad+"|"+keyAcc(r["ACCIONANTE"]);
     const prev = porCaso.get(k);
     if(!prev || prioridad[r._etapa] < prioridad[prev._etapa]) porCaso.set(k, r);
@@ -3175,7 +3233,7 @@ function exportarPQRPendientes(){
   let sinClave = [];
   pend.forEach(r=>{
     const rad=normRad(r["RADICADO"]);
-    if(!rad || rad==="2026:"){ sinClave.push(r); return; }
+    if(radDebil(rad)){ sinClave.push(r); return; }
     const k = rad+"|"+keyAcc(r["ACCIONANTE"]);
     const prev = porCaso.get(k);
     if(!prev || prioridad[r._etapa] < prioridad[prev._etapa]) porCaso.set(k, r);
@@ -3249,13 +3307,18 @@ function exportarPQR(){
 // y reduce el formato corto 2026 + 5 dígitos al núcleo numérico.
 function normRad(s){
   let v=String(s||"").replace(/[\s\-\.]/g,"").toLowerCase();
-  // 2026 seguido de 5 dígitos (corto) vs 2026 + relleno (largo): comparamos
-  // por los últimos dígitos significativos para que "2026-05088" y
-  // "20260000005088" se reconozcan como el mismo.
-  const m=v.match(/^20260*(\d{4,})$/);
-  if(m) return "2026:"+m[1];
+  // Ano + relleno de ceros (corto) vs numero largo: comparamos por los digitos
+  // significativos para que "2026-05088" y "20260000005088" sean el mismo.
+  // El ano NO va quemado: en 2027 y siguientes sigue funcionando igual.
+  const m=v.match(/^(20\d{2})0*(\d{4,})$/);
+  if(m) return m[1]+":"+m[2];
   return v;
 }
+// Radicado demasiado pobre para emparejar casos con seguridad.
+// (antes se comparaba contra el literal "2026:", atado al ano)
+function radDebil(rad){ return !rad || rad.length<4 || /^\d{4}:$/.test(rad) || /^20\d{2}$/.test(rad); }
+// Llave canonica de un caso: radicado normalizado + accionante normalizado
+function claveCaso(r){ return normRad(r["RADICADO"])+"|"+keyAcc(r["ACCIONANTE"]); }
 // Clave de accionante: primeras 14 letras sin tildes ni espacios.
 function keyAcc(s){ return normNom(s).replace(/\s+/g,"").substring(0,14); }
 
@@ -3271,7 +3334,7 @@ function detectarDuplicados(){
     const mapa={};
     f.arr.forEach(r=>{
       const rad=normRad(r["RADICADO"]);
-      if(!rad || rad==="2026:" ) return;           // sin radicado útil → no se evalúa
+      if(radDebil(rad)) return;                    // sin radicado útil → no se evalúa
       const acc=keyAcc(r["ACCIONANTE"]);
       const key=rad+"|"+acc;
       (mapa[key]=mapa[key]||[]).push(r);
@@ -3323,7 +3386,7 @@ function renderDuplicados(){
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:${anulado?"rgba(120,120,130,.06)":"rgba(255,255,255,.03)"};border:1px solid var(--border);margin-bottom:6px;${anulado?"opacity:.6":""}">
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;color:var(--text);font-weight:600;${anulado?"text-decoration:line-through":""}">${esc(abrev(r["ACCIONANTE"]||"—",40))}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">Rad: ${esc(r["RADICADO"]||"—")} · ${esc(abrev(r["JUZGADO"]||"",30))} · ${pNom(r["RESPONSABLE"])}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">Rad: ${esc(r["RADICADO"]||"—")} · ${esc(abrev(r["JUZGADO"]||"",30))} · ${esc(pNom(r["RESPONSABLE"]))}</div>
         </div>
         ${badgeEst(r["ESTADO"])}
         <button onclick="abrirModalIdx('${arrKey}',${idx},'${g.origen}')" style="padding:6px 12px;border-radius:7px;background:rgba(232,160,32,.16);border:1px solid rgba(232,160,32,.35);color:var(--gold);font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap">Abrir / Anular</button>
@@ -3406,7 +3469,9 @@ document.addEventListener('keydown',e=>{
     const ovP=document.getElementById('overlay');
     if(ovP && ovP.classList.contains('open')){ cerrarModalPrincipal(); }
     // Modales secundarios: cierre directo
-    ['overlay-pqr','overlay-confirm','overlay-informe','overlay-nueva','overlay-nuevoinc','overlay-escalar','overlay-editar'].forEach(id=>{
+    // overlay-confirm NO va aqui: lo gestiona confirmar(), que ademas resuelve
+    // su promesa. Cerrarlo por fuera dejaria el flujo que lo espera colgado.
+    ['overlay-pqr','overlay-informe','overlay-nueva','overlay-nuevoinc','overlay-escalar','overlay-editar'].forEach(id=>{
       const o=document.getElementById(id); if(o) o.classList.remove('open');
     });
   }
