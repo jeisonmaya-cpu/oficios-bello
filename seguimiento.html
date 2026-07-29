@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="seguimiento.css"/>
 <style>
 /* ── LOGIN ── */
@@ -73,6 +74,27 @@
 .ou-act-btn{background:rgba(232,160,32,.16);border:1px solid rgba(232,160,32,.35);color:var(--gold2);
   border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:5px}
 .ou-act-btn:hover{background:rgba(232,160,32,.3);color:#fff}
+/* ── Lista de expedientes por estado ── */
+#ou-lista-estado{background:rgba(255,255,255,.03);border:1px solid rgba(232,160,32,.28);
+  border-radius:14px;padding:15px 16px;margin:-8px 0 20px;animation:ouLEIn .22s ease}
+@keyframes ouLEIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.ou-le-head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:13px}
+.ou-le-t{font-family:'Syne',sans-serif;font-size:14.5px;font-weight:700;color:#fff}
+.ou-le-s{font-size:11.5px;color:var(--soft);margin-top:4px}
+.ou-le-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ou-le-tools input{min-width:190px}
+#ou-lista-estado .table-wrap{background:rgba(255,255,255,.03)}
+#ou-lista-estado td{padding:8px 12px}
+/* ── Análisis gráfico ── */
+.gr-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.gr-ancho{grid-column:1/-1}
+@media(max-width:820px){.gr-grid{grid-template-columns:1fr}}
+.gr-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:15px 17px}
+.gr-t{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;margin-bottom:12px}
+.gr-box{position:relative}
+.gr-nota{margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.08);
+  font-size:11.5px;color:var(--soft);line-height:1.7}
+.gr-vacio{color:var(--muted);font-size:12.5px;padding:26px 0;text-align:center}
 .cl-pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
 .cl-pill.ok{background:rgba(22,163,74,.18);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
 .cl-pill.obs{background:rgba(232,160,32,.18);color:#f5c050;border:1px solid rgba(232,160,32,.3)}
@@ -208,6 +230,7 @@
     <button class="nav-tab"        id="tab-ica"     onclick="goTab('ica')">🏭 ICA</button>
     <button class="nav-tab"        id="tab-transito" onclick="goTab('transito')">🚗 Tránsito</button>
     <button class="nav-tab"        id="tab-mora"    onclick="goTab('mora')">📊 Morosidad</button>
+    <button class="nav-tab"        id="tab-analisis" onclick="goTab('analisis')">📈 Análisis</button>
     <button class="nav-tab"        id="tab-legalidad" onclick="goTab('legalidad')">⚖️ Legalidad</button>
   </div>
 </nav>
@@ -285,6 +308,8 @@
 <div class="panel" id="panel-ou">
   <div class="cartera-card" id="ou-cartera"></div>
   <div class="stats-grid" id="ou-stats"></div>
+  <!-- Lista de expedientes del estado elegido — se abre al hacer clic en una tarjeta -->
+  <div id="ou-lista-estado" style="display:none"></div>
   <div class="section-title">📦 Distribución por Masivo</div>
   <div class="masivos-grid" id="ou-masivos"></div>
   <div class="section-title">📊 Distribución por Estado</div>
@@ -530,6 +555,48 @@
     <button onclick="copiarNotaMora()" style="margin-top:14px;background:rgba(22,163,74,.3);border:1px solid rgba(34,197,94,.4);color:#4ade80;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">📋 Copiar texto</button>
   </div>
 
+</div>
+
+<!-- ═══ PANEL · ANÁLISIS GRÁFICO ═══ -->
+<div class="panel" id="panel-analisis">
+  <div class="cl-intro" style="background:rgba(45,141,232,.09);border-color:rgba(45,141,232,.28)">
+    <div class="cl-intro-t" style="color:#93c5fd">📈 Análisis de cartera</div>
+    <div class="cl-intro-d">
+      Cuatro lecturas que las tablas no dan de un vistazo: <strong>dónde se atasca el proceso</strong>,
+      <strong>dónde está concentrada la plata</strong>, <strong>cómo evoluciona la gestión</strong> y
+      <strong>qué tributo se está quedando atrás</strong>. Todos los ejes arrancan en cero.
+    </div>
+  </div>
+
+  <div class="gr-grid">
+    <div class="gr-card gr-ancho">
+      <div class="gr-t">🔻 Embudo de etapas procesales — Predial</div>
+      <div class="gr-box" style="height:250px"><canvas id="gr-etapas"></canvas></div>
+      <div class="gr-nota" id="gr-etapas-nota"></div>
+    </div>
+
+    <div class="gr-card gr-ancho">
+      <div class="gr-t">💰 Concentración de la cartera — Urbanísticas</div>
+      <div class="gr-box" style="height:250px"><canvas id="gr-pareto"></canvas></div>
+      <div class="gr-nota" id="gr-pareto-nota"></div>
+    </div>
+
+    <div class="gr-card gr-ancho">
+      <div class="gr-t">📅 Evolución de la gestión — últimos 12 meses</div>
+      <div class="gr-box" style="height:250px"><canvas id="gr-evo"></canvas></div>
+      <div class="gr-nota" id="gr-evo-nota"></div>
+    </div>
+
+    <div class="gr-card gr-ancho">
+      <div class="gr-t">⚖️ Composición por tributo y estado</div>
+      <div class="gr-box" style="height:230px"><canvas id="gr-tributos"></canvas></div>
+      <div class="gr-nota" id="gr-tributos-nota"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:9px;margin-top:4px">
+    <button class="cl-btn" onclick="renderAnalisis()">🔄 Recalcular</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════
@@ -1445,6 +1512,8 @@ function goTab(t) {
   document.getElementById('tab-'+t).classList.add('active');
   if(t==='ica'&&!datosICA) cargarICA();
   if(t==='transito'&&!datosTransito) cargarTransito();
+  // Los canvas necesitan estar visibles para medirse: se pintan al abrir
+  if(t==='analisis' && typeof renderAnalisis==='function') setTimeout(renderAnalisis, 40);
   document.getElementById('panel-'+t).classList.add('active');
 }
 
@@ -1465,21 +1534,24 @@ function renderOU(d) {
 
   // Stats
   // Cada tarjeta filtra la tabla de gestión por ese estado (clic de nuevo = quitar)
-  const feAct = (document.getElementById('ou-filtro-estado')||{}).value || '';
+  const feAct = (typeof ouLE !== 'undefined' && ouLE.estado) || '';
   const tarj = (est,icono,titulo,n,color) => `
-    <div class="stat-card ${color} clic${feAct===est?' on':''}" onclick="ouVerEstado('${est}')"
+    <div class="stat-card ${color} clic${feAct===est?' on':''}" data-estado="${est}" onclick="ouVerEstado('${est}')"
          title="Ver y gestionar los expedientes en estado ${est}">
       <div class="stat-label">${icono} ${titulo}</div>
       <div class="stat-value">${n.toLocaleString()}</div>
       <div class="stat-sub">expedientes</div>
       <span class="stat-badge ${color==='navy'?'blue':color}">${pct(n, d.totalExp)}</span>
-      <span class="stat-ver">${feAct===est?'✕ quitar filtro':'▸ ver y gestionar'}</span>
+      <span class="stat-ver">${feAct===est?'✕ cerrar lista':'▸ ver y gestionar'}</span>
     </div>`;
   document.getElementById('ou-stats').innerHTML =
       tarj('Activo',   '🔵','Activos en Proceso', d.activos,    'blue')
     + tarj('Convenio', '🤝','Convenios Activos',  d.convenios,  'gold')
     + tarj('Cancelado','✅','Cancelados',         d.cancelados, 'green')
     + tarj('Terminado','📁','Terminados',         d.terminados, 'navy');
+
+  // Si hay una lista de estado abierta, se vuelve a pintar con los datos frescos
+  if(typeof ouLE !== 'undefined' && ouLE.estado){ ouMarcarTarjeta(); ouRenderLista(); }
 
   // Masivos
   const colores = ['#1a6fc4','#e8a020','#16a34a','#7c3aed','#dc2626'];
@@ -3186,18 +3258,6 @@ async function renderGestionSemestre(){
    en `ou_bitacora`. Todo o nada, en ese orden.
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Clic en las tarjetas de estado → filtra la tabla de gestión */
-function ouVerEstado(estado){
-  const sel = document.getElementById('ou-filtro-estado');
-  if(!sel) return;
-  sel.value = (sel.value === estado) ? '' : estado;   // volver a hacer clic quita el filtro
-  const buscar = document.getElementById('ou-buscar');
-  if(buscar) buscar.value = '';
-  ouPagina = 1;
-  renderTablaOU();
-  const t = document.querySelector('#panel-ou .ou-toolbar');
-  if(t) t.scrollIntoView({behavior:'smooth', block:'start'});
-}
 
 /* Catálogo de acciones. Cada una define a qué estado lleva el expediente
    y con qué tipo/resultado se registra la actuación, para que la
@@ -3383,6 +3443,7 @@ async function gqGuardar(){
     gqExp.pago   = nuevoPagado;
     if(msg.className.indexOf('ok') === -1) set('ok','✅ Gestión registrada. Estado: '+nuevoEstado+'.');
     renderTablaOU();
+    if(typeof ouLE !== 'undefined' && ouLE.estado) ouRenderLista();
     try{
       datosGlobales.ou = await cargarOUSupa();
       renderOU(datosGlobales.ou);
@@ -3399,6 +3460,393 @@ async function gqGuardar(){
   }finally{
     btn.disabled = false;
   }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   LISTA DE EXPEDIENTES POR ESTADO — aparece bajo las tarjetas
+   Antes el clic solo hacía scroll hasta la tabla de gestión y no se
+   notaba el cambio. Ahora la lista se abre en el sitio, con búsqueda,
+   totales y paginación de 20, y desde cada fila se gestiona directo.
+   ═══════════════════════════════════════════════════════════════════ */
+var ouLE = { estado:null, pagina:1, q:'' };
+var OU_LE_POR_PAG = 20;
+
+function ouVerEstado(estado){
+  if(ouLE.estado === estado){ ouCerrarLista(); return; }   // segundo clic = cerrar
+  ouLE = { estado: estado, pagina: 1, q: '' };
+  // Mantener coherente la tabla grande de más abajo
+  const sel = document.getElementById('ou-filtro-estado');
+  if(sel){ sel.value = estado; ouPagina = 1; renderTablaOU(); }
+  ouMarcarTarjeta();
+  ouRenderLista();
+  const cont = document.getElementById('ou-lista-estado');
+  if(cont) cont.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function ouCerrarLista(){
+  ouLE = { estado:null, pagina:1, q:'' };
+  const sel = document.getElementById('ou-filtro-estado');
+  if(sel){ sel.value=''; ouPagina=1; renderTablaOU(); }
+  ouMarcarTarjeta();
+  const cont = document.getElementById('ou-lista-estado');
+  if(cont){ cont.style.display='none'; cont.innerHTML=''; }
+}
+
+function ouMarcarTarjeta(){
+  document.querySelectorAll('#ou-stats .stat-card').forEach(c=>{
+    const on = c.dataset.estado === ouLE.estado;
+    c.classList.toggle('on', on);
+    const v = c.querySelector('.stat-ver');
+    if(v) v.textContent = on ? '✕ cerrar lista' : '▸ ver y gestionar';
+  });
+}
+
+function ouLEBuscar(v){ ouLE.q = v; ouLE.pagina = 1; ouRenderLista(true); }
+function ouLEPag(p){ ouLE.pagina = p; ouRenderLista(); 
+  document.getElementById('ou-lista-estado').scrollIntoView({behavior:'smooth', block:'nearest'}); }
+
+function ouLEFilas(){
+  const q = (ouLE.q||'').trim().toLowerCase();
+  return dataOU
+    .filter(r => r.estado === ouLE.estado)
+    .filter(r => !q || ((r.radicado||'')+' '+(r.contribuyente||'')+' '+(r.id_contribuyente||'')).toLowerCase().includes(q))
+    .sort((a,b) => Number(b.valor_total||0) - Number(a.valor_total||0));  // mayor valor primero
+}
+
+function ouRenderLista(soloTabla){
+  const cont = document.getElementById('ou-lista-estado');
+  if(!cont || !ouLE.estado) return;
+  const ICONO = {Activo:'🔵', Convenio:'🤝', Cancelado:'✅', Terminado:'📁'};
+  const TITULO= {Activo:'Activos en Proceso', Convenio:'Convenios Activos', Cancelado:'Cancelados', Terminado:'Terminados'};
+
+  const filas = ouLEFilas();
+  const totalPag = Math.max(1, Math.ceil(filas.length / OU_LE_POR_PAG));
+  if(ouLE.pagina > totalPag) ouLE.pagina = totalPag;
+  const ini = (ouLE.pagina - 1) * OU_LE_POR_PAG;
+  const pag = filas.slice(ini, ini + OU_LE_POR_PAG);
+
+  const sumaValor = filas.reduce((t,r)=>t+Number(r.valor_total||0), 0);
+  const sumaPago  = filas.reduce((t,r)=>t+Number(r.pago||0), 0);
+
+  const cuerpo = pag.map((r,i) => {
+    const valor = Number(r.valor_total||0), pagado = Number(r.pago||0);
+    const saldo = Math.max(valor - pagado, 0);
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${ini + i + 1}</td>
+      <td><strong>${ouEsc(r.radicado||'—')}</strong></td>
+      <td>${ouEsc(r.contribuyente||'—')}</td>
+      <td style="font-size:11px;color:var(--soft)">${ouEsc(r.masivo||'—')}</td>
+      <td>${fmt(valor)}</td>
+      <td style="color:${pagado?'#4ade80':'var(--muted)'}">${pagado?fmt(pagado):'—'}</td>
+      <td style="color:${saldo?'#f5c050':'#4ade80'}">${fmt(saldo)}</td>
+      <td>${r.mandamiento==='X'?'✅':'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="ou-act-btn" style="margin:0" data-gqid="${ouEsc(r.id)}">⚡ Gestión</button>
+        <button class="ou-edit-btn" data-ouid="${ouEsc(r.id)}">✏️</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Sin resultados con esa búsqueda.</td></tr>';
+
+  if(soloTabla && document.getElementById('ou-le-tbody')){
+    document.getElementById('ou-le-tbody').innerHTML = cuerpo;
+    document.getElementById('ou-le-info').innerHTML = ouLEInfo(filas.length, sumaValor, sumaPago);
+    document.getElementById('ou-le-pager').innerHTML = ouLEPager(totalPag);
+    return;
+  }
+
+  cont.style.display = 'block';
+  cont.innerHTML = `
+    <div class="ou-le-head">
+      <div>
+        <div class="ou-le-t">${ICONO[ouLE.estado]||''} ${TITULO[ouLE.estado]||ouLE.estado}</div>
+        <div class="ou-le-s" id="ou-le-info">${ouLEInfo(filas.length, sumaValor, sumaPago)}</div>
+      </div>
+      <div class="ou-le-tools">
+        <input type="text" class="cl-inp" placeholder="🔍 Buscar en esta lista…"
+               value="${ouEsc(ouLE.q)}" oninput="ouLEBuscar(this.value)">
+        <button class="cl-btn" onclick="ouLEExportar()">⬇️ CSV</button>
+        <button class="cl-btn" onclick="ouCerrarLista()">✕ Cerrar</button>
+      </div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:8px">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Radicado</th><th>Contribuyente</th><th>Masivo</th>
+          <th>Valor</th><th>Pagado</th><th>Saldo</th><th>Mand.</th><th>Acciones</th>
+        </tr></thead>
+        <tbody id="ou-le-tbody">${cuerpo}</tbody>
+      </table>
+    </div>
+    <div class="ou-pager" id="ou-le-pager">${ouLEPager(totalPag)}</div>`;
+
+  // Delegación de clics (una sola vez por contenedor)
+  if(!cont._bound){
+    cont.addEventListener('click', function(ev){
+      const g = ev.target.closest('.ou-act-btn');
+      if(g && g.dataset.gqid){ gqAbrir(g.dataset.gqid); return; }
+      const e = ev.target.closest('.ou-edit-btn');
+      if(e && e.dataset.ouid) abrirModalOU(e.dataset.ouid);
+    });
+    cont._bound = true;
+  }
+}
+
+function ouLEInfo(n, valor, pago){
+  return `<strong style="color:#fff">${n.toLocaleString('es-CO')}</strong> expediente(s) · `
+       + `cartera ${fmt(valor)} · pagado <span style="color:#4ade80">${fmt(pago)}</span> · `
+       + `saldo <span style="color:#f5c050">${fmt(Math.max(valor-pago,0))}</span>`;
+}
+
+function ouLEPager(totalPag){
+  if(totalPag <= 1) return '';
+  let h = `<button onclick="ouLEPag(${ouLE.pagina-1})" ${ouLE.pagina<=1?'disabled':''}>‹</button>`;
+  const around = [];
+  for(let p=1; p<=totalPag; p++){
+    if(p===1 || p===totalPag || (p>=ouLE.pagina-2 && p<=ouLE.pagina+2)) around.push(p);
+    else if(around[around.length-1] !== '…') around.push('…');
+  }
+  around.forEach(p=>{
+    h += p==='…' ? '<span style="color:#5a6478;padding:0 4px">…</span>'
+                 : `<button class="${p===ouLE.pagina?'act':''}" onclick="ouLEPag(${p})">${p}</button>`;
+  });
+  h += `<button onclick="ouLEPag(${ouLE.pagina+1})" ${ouLE.pagina>=totalPag?'disabled':''}>›</button>`;
+  return h;
+}
+
+function ouLEExportar(){
+  const filas = ouLEFilas();
+  if(!filas.length){ alert('No hay expedientes para exportar.'); return; }
+  const cab = ['Radicado','Contribuyente','Documento','Masivo','Estado','Valor','Pagado','Saldo','Mandamiento','Barrio','Dirección'];
+  const rows = filas.map(r=>{
+    const v=Number(r.valor_total||0), p=Number(r.pago||0);
+    return [r.radicado||'', r.contribuyente||'', r.id_contribuyente||'', r.masivo||'', r.estado||'',
+            v, p, Math.max(v-p,0), r.mandamiento==='X'?'SÍ':'NO', r.barrio||'', r.direccion||'']
+           .map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',');
+  });
+  const csv = '\uFEFF' + [cab.map(h=>'"'+h+'"').join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = `OU_${ouLE.estado}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANÁLISIS GRÁFICO
+   Cuatro gráficos elegidos porque responden preguntas que las tablas
+   no contestan bien. Todos con eje Y desde cero: un eje truncado
+   exagera diferencias y aquí se toman decisiones de cobro.
+   ═══════════════════════════════════════════════════════════════════ */
+var _charts = {};
+function _mataChart(id){ if(_charts[id]){ _charts[id].destroy(); delete _charts[id]; } }
+
+var CHART_BASE = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{ labels:{ color:'rgba(255,255,255,.7)', font:{family:"'DM Sans',sans-serif", size:11}, boxWidth:12 } } },
+  scales:{
+    x:{ ticks:{color:'rgba(255,255,255,.5)', font:{size:10}}, grid:{color:'rgba(255,255,255,.06)'} },
+    y:{ beginAtZero:true, ticks:{color:'rgba(255,255,255,.5)', font:{size:10}}, grid:{color:'rgba(255,255,255,.06)'} }
+  }
+};
+function _clona(o){ return JSON.parse(JSON.stringify(o)); }
+
+/* ── 1 · EMBUDO DE ETAPAS PROCESALES (Predial) ──────────────────────
+   La pregunta: ¿en qué etapa se está atascando el cobro?
+   Es la única vista que muestra el proceso completo de un vistazo.  */
+function graficoEtapas(){
+  const cv = document.getElementById('gr-etapas');
+  if(!cv) return;
+  const pred = datosGlobales && datosGlobales.predial;
+  if(!pred || !pred.etapas){ cv.parentElement.innerHTML = '<div class="gr-vacio">Predial aún no ha cargado.</div>'; return; }
+
+  const nombres = Object.keys(pred.etapas);
+  const con = nombres.map(n => Number(pred.etapas[n].con||0));
+  const sin = nombres.map(n => Number(pred.etapas[n].sin||0));
+
+  _mataChart('etapas');
+  const o = _clona(CHART_BASE);
+  o.indexAxis = 'y';
+  o.scales.x.stacked = true; o.scales.y.stacked = true;
+  o.plugins.tooltip = { callbacks: {} };
+  _charts.etapas = new Chart(cv, {
+    type:'bar',
+    data:{ labels:nombres, datasets:[
+      { label:'Con actuación', data:con, backgroundColor:'#16a34a', borderRadius:3 },
+      { label:'Sin actuación', data:sin, backgroundColor:'rgba(255,255,255,.14)', borderRadius:3 }
+    ]},
+    options:o
+  });
+
+  // Dónde está el mayor salto entre etapas consecutivas
+  let peor = '', caida = 0;
+  for(let i=1;i<nombres.length;i++){
+    const d = con[i-1] - con[i];
+    if(d > caida){ caida = d; peor = nombres[i-1] + ' → ' + nombres[i]; }
+  }
+  const el = document.getElementById('gr-etapas-nota');
+  if(el) el.innerHTML = peor
+    ? `Mayor caída del embudo: <strong style="color:var(--gold2)">${ouEsc(peor)}</strong> — se pierden ${caida.toLocaleString('es-CO')} expedientes entre una etapa y la siguiente. Ahí es donde más rinde intervenir.`
+    : 'Sin datos suficientes para detectar el cuello de botella.';
+}
+
+/* ── 2 · CONCENTRACIÓN DE LA CARTERA (Pareto, OU) ───────────────────
+   La pregunta: ¿cuántos expedientes hay que cobrar para recuperar la
+   mayor parte de la plata? Justifica priorizar en vez de repartir
+   esfuerzo por igual, que es lo que suele objetar una auditoría.    */
+function graficoPareto(){
+  const cv = document.getElementById('gr-pareto');
+  if(!cv) return;
+  const gestionable = (dataOU||[]).filter(r => r.estado==='Activo' || r.estado==='Convenio');
+  if(gestionable.length < 10){ cv.parentElement.innerHTML = '<div class="gr-vacio">Urbanísticas aún no ha cargado.</div>'; return; }
+
+  const vals = gestionable.map(r => Number(r.valor_total||0)).sort((a,b)=>b-a);
+  const total = vals.reduce((a,b)=>a+b,0) || 1;
+
+  // 100 puntos (percentiles) en vez de una fila por expediente
+  const puntos = [], etiquetas = [];
+  let acum = 0, j = 0;
+  for(let p=1; p<=100; p++){
+    const hasta = Math.round(vals.length * p / 100);
+    while(j < hasta){ acum += vals[j]; j++; }
+    puntos.push(Math.round(acum/total*1000)/10);
+    etiquetas.push(p+'%');
+  }
+  // ¿Qué % de expedientes concentra el 80% de la cartera?
+  let p80 = puntos.findIndex(v => v >= 80);
+  p80 = p80 === -1 ? 100 : p80 + 1;
+
+  _mataChart('pareto');
+  const o = _clona(CHART_BASE);
+  o.scales.y.max = 100;
+  o.scales.y.title = { display:true, text:'% de cartera acumulada', color:'rgba(255,255,255,.45)', font:{size:10} };
+  o.scales.x.title = { display:true, text:'% de expedientes (de mayor a menor valor)', color:'rgba(255,255,255,.45)', font:{size:10} };
+  o.scales.x.ticks.maxTicksLimit = 11;
+  _charts.pareto = new Chart(cv, {
+    type:'line',
+    data:{ labels:etiquetas, datasets:[
+      { label:'Cartera acumulada', data:puntos, borderColor:'#e8a020',
+        backgroundColor:'rgba(232,160,32,.14)', fill:true, tension:.25, pointRadius:0, borderWidth:2 },
+      { label:'Reparto proporcional (referencia)', data:etiquetas.map((_,i)=>i+1),
+        borderColor:'rgba(255,255,255,.22)', borderDash:[5,4], pointRadius:0, borderWidth:1.5, fill:false }
+    ]},
+    options:o
+  });
+
+  const nExp = Math.round(gestionable.length * p80/100);
+  const valor80 = vals.slice(0, nExp).reduce((a,b)=>a+b,0);
+  const el = document.getElementById('gr-pareto-nota');
+  if(el) el.innerHTML =
+    `El <strong style="color:var(--gold2)">${p80}%</strong> de los expedientes gestionables `
+    + `(<strong>${nExp.toLocaleString('es-CO')}</strong> de ${gestionable.length.toLocaleString('es-CO')}) `
+    + `concentra el 80% de la cartera: <strong>${fmt(valor80)}</strong>. `
+    + `La línea punteada es cómo se vería si todos valieran lo mismo — cuanto más se despega la curva dorada, más conviene priorizar por valor.`;
+}
+
+/* ── 3 · EVOLUCIÓN DE LA GESTIÓN (12 meses) ─────────────────────────
+   La pregunta: ¿se está trabajando más o menos que antes?
+   Es la evidencia del control de seguimiento. Se llena a medida que
+   se registran actuaciones — al principio va a verse casi vacío.    */
+async function graficoEvolucion(){
+  const cv = document.getElementById('gr-evo');
+  if(!cv) return;
+  const hoy = new Date();
+  const desde = new Date(hoy.getFullYear(), hoy.getMonth()-11, 1).toISOString().slice(0,10);
+  let acts = [];
+  try{
+    const r = await fetch(SUPA_URL+'/rest/v1/actuaciones?select=fecha,valor,tipo_actuacion&fecha=gte.'+desde,
+      { headers: await supaHeaders({Accept:'application/json'}) });
+    if(r.ok) acts = await r.json();
+  }catch(e){ console.warn('[evolución]', e); }
+
+  const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const claves = [], etiquetas = [];
+  for(let i=11;i>=0;i--){
+    const d = new Date(hoy.getFullYear(), hoy.getMonth()-i, 1);
+    claves.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+    etiquetas.push(MES[d.getMonth()]+' '+String(d.getFullYear()).slice(2));
+  }
+  const mesDe = f => String(f||'').slice(0,7);
+  const nAct = claves.map(k => acts.filter(a => mesDe(a.fecha)===k).length);
+  const rec  = claves.map(k => acts.filter(a => mesDe(a.fecha)===k).reduce((t,a)=>t+Number(a.valor||0),0));
+
+  _mataChart('evo');
+  const o = _clona(CHART_BASE);
+  o.scales.y.title = { display:true, text:'Actuaciones', color:'rgba(255,255,255,.45)', font:{size:10} };
+  o.scales.y1 = { beginAtZero:true, position:'right', grid:{drawOnChartArea:false},
+    ticks:{ color:'rgba(74,222,128,.75)', font:{size:10} },
+    title:{ display:true, text:'Recaudo ($)', color:'rgba(74,222,128,.6)', font:{size:10} } };
+  _charts.evo = new Chart(cv, {
+    type:'bar',
+    data:{ labels:etiquetas, datasets:[
+      { type:'bar',  label:'Actuaciones registradas', data:nAct, backgroundColor:'rgba(45,141,232,.55)',
+        borderColor:'#2d8de8', borderWidth:1, borderRadius:3, yAxisID:'y', order:2 },
+      { type:'line', label:'Recaudo del mes', data:rec, borderColor:'#4ade80',
+        backgroundColor:'rgba(74,222,128,.12)', fill:true, tension:.3, pointRadius:3, borderWidth:2, yAxisID:'y1', order:1 }
+    ]},
+    options:o
+  });
+
+  const totalAct = nAct.reduce((a,b)=>a+b,0);
+  const el = document.getElementById('gr-evo-nota');
+  if(el) el.innerHTML = totalAct
+    ? `${totalAct.toLocaleString('es-CO')} actuaciones registradas en los últimos 12 meses. El recaudo solo cuenta pagos con valor registrado desde el despliegue de esta mejora, así que los meses anteriores aparecen en cero aunque sí hubo recaudo.`
+    : `Todavía no hay actuaciones registradas en el período. Este gráfico se llena a medida que el equipo registre gestión desde <strong>⚡ Gestión</strong> o desde el botón de actuaciones — no se alimenta solo de la cartera.`;
+}
+
+/* ── 4 · COMPOSICIÓN POR TRIBUTO Y ESTADO ───────────────────────────
+   La pregunta: ¿los tres tributos se gestionan igual de bien?
+   Muestra en cuál se está quedando la cartera sin mover.            */
+function graficoTributos(){
+  const cv = document.getElementById('gr-tributos');
+  if(!cv) return;
+  const ou   = datosGlobales && datosGlobales.ou;
+  const pred = datosGlobales && datosGlobales.predial;
+  const ica  = (typeof icaResumen === 'function') ? icaResumen() : null;
+  const filas = [
+    ou   ? {n:'Urbanísticas', d:ou}   : null,
+    pred ? {n:'Predial',      d:pred} : null,
+    ica  ? {n:'ICA',          d:ica}  : null
+  ].filter(Boolean);
+  if(!filas.length){ cv.parentElement.innerHTML = '<div class="gr-vacio">Sin fuentes cargadas.</div>'; return; }
+
+  _mataChart('trib');
+  const o = _clona(CHART_BASE);
+  o.scales.x.stacked = true; o.scales.y.stacked = true;
+  _charts.trib = new Chart(cv, {
+    type:'bar',
+    data:{ labels: filas.map(f=>f.n), datasets:[
+      { label:'Activos',    data:filas.map(f=>Number(f.d.activos||0)),    backgroundColor:'#1a6fc4', borderRadius:3 },
+      { label:'Convenio',   data:filas.map(f=>Number(f.d.convenios||0)),  backgroundColor:'#e8a020', borderRadius:3 },
+      { label:'Cancelados', data:filas.map(f=>Number(f.d.cancelados||0)), backgroundColor:'#16a34a', borderRadius:3 },
+      { label:'Terminados', data:filas.map(f=>Number(f.d.terminados||0)), backgroundColor:'rgba(255,255,255,.2)', borderRadius:3 }
+    ]},
+    options:o
+  });
+
+  const mejor = filas.map(f=>{
+    const t = Number(f.d.activos||0)+Number(f.d.convenios||0)+Number(f.d.cancelados||0)+Number(f.d.terminados||0);
+    const res = Number(f.d.cancelados||0)+Number(f.d.terminados||0);
+    return { n:f.n, pct: t ? Math.round(res/t*100) : 0 };
+  }).sort((a,b)=>b.pct-a.pct);
+  const el = document.getElementById('gr-tributos-nota');
+  if(el) el.innerHTML = 'Índice de resolución (cancelados + terminados sobre el total): '
+    + mejor.map(m=>`<strong style="color:var(--gold2)">${m.n} ${m.pct}%</strong>`).join(' · ')
+    + '. Una diferencia grande entre tributos suele indicar desequilibrio en la asignación de gestión, no en la dificultad de la cartera.';
+}
+
+/* ── Orquestador ── */
+function renderAnalisis(){
+  if(typeof Chart === 'undefined'){
+    const p = document.getElementById('panel-analisis');
+    if(p) p.innerHTML = '<div class="gr-vacio">No se pudo cargar la librería de gráficos (sin conexión al CDN).</div>';
+    return;
+  }
+  graficoEtapas();
+  graficoPareto();
+  graficoTributos();
+  graficoEvolucion();
 }
 
 </script>
