@@ -958,6 +958,41 @@ let datosICA      = null;
 let datosTransito = null;
 let tabActual     = 'consolidado';
 
+// ── Helper Supabase — trae TODAS las filas, en lotes ──
+// La API REST de Supabase devuelve como máximo 1000 filas por petición y NO
+// avisa: simplemente entrega menos. Con 1073 expedientes, `select=*` traía
+// 1000 y los 73 restantes desaparecían en silencio. Se pagina con Range.
+async function supaFetchAll(ruta, lote) {
+  lote = lote || 1000;
+  const sep = ruta.indexOf('?') === -1 ? '?' : '&';
+  let desde = 0, todo = [];
+  for (let vuelta = 0; vuelta < 50; vuelta++) {          // tope de seguridad
+    const res = await fetch(SUPA_URL + '/rest/v1/' + ruta + sep + 'limit=' + lote + '&offset=' + desde, {
+      headers: await supaHeaders({
+        'Accept': 'application/json',
+        'Range-Unit': 'items',
+        'Range': desde + '-' + (desde + lote - 1)
+      })
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error('Supabase ' + res.status + ': ' + txt.slice(0, 120));
+    }
+    const parte = await res.json();
+    todo = todo.concat(parte);
+    if (!Array.isArray(parte) || parte.length < lote) break;   // último lote
+    desde += lote;
+  }
+  return todo;
+}
+
+// Normaliza un estado para comparar: sin espacios sobrantes ni diferencias
+// de mayúsculas/tildes. Evita que "Cancelado " no empate con "Cancelado".
+function ouNormEstado(v){
+  return String(v == null ? '' : v).trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 // ── Helper Supabase — fetch de una vista o tabla ──
 async function supaFetch(ruta) {
   // Usa el token de la sesión si existe (evidencia atribuible); si no hay
@@ -1045,11 +1080,19 @@ async function cargarOUSupa() {
     supaFetch('v_ou_resumen?select=*'),
     supaFetch('v_ou_por_masivo?select=*'),
     supaFetch('v_ou_top_activos?select=*'),
-    supaFetch('expedientes_ou?select=*&order=valor_total.desc')
+    supaFetchAll('expedientes_ou?select=*&order=valor_total.desc')
   ]);
 
   const r = resumen[0] || {};
   dataOU = detalle || [];
+
+  // Control de integridad: si el detalle no coincide con el total de la vista,
+  // algo se quedó por el camino y hay que verlo, no descubrirlo por casualidad.
+  const totalVista = Number(r.total_exp || 0);
+  if (totalVista && dataOU.length !== totalVista) {
+    console.warn('[OU] detalle incompleto: ' + dataOU.length + ' de ' + totalVista + ' expedientes');
+  }
+  window._ouIntegridad = { cargados: dataOU.length, esperados: totalVista };
 
   // Estados detallados (los 10 consolidados, para el desglose fino del panel)
   const estados = {};
@@ -1103,7 +1146,7 @@ function ouFiltrados(){
   const fm = document.getElementById('ou-filtro-masivo').value;
   const soloInc = document.getElementById('ou-solo-incompletos').checked;
   return dataOU.filter(r=>{
-    if(fe && r.estado!==fe) return false;
+    if(fe && ouNormEstado(r.estado)!==ouNormEstado(fe)) return false;
     if(fm && r.masivo!==fm) return false;
     if(soloInc && !ouIncompleto(r)) return false;
     if(q){
@@ -3479,6 +3522,7 @@ function ouVerEstado(estado){
   const sel = document.getElementById('ou-filtro-estado');
   if(sel){ sel.value = estado; ouPagina = 1; renderTablaOU(); }
   ouMarcarTarjeta();
+  window.ouDiagnostico = ouDiagnostico;   // disponible en consola
   ouRenderLista();
   const cont = document.getElementById('ou-lista-estado');
   if(cont) cont.scrollIntoView({ behavior:'smooth', block:'nearest' });
@@ -3508,8 +3552,9 @@ function ouLEPag(p){ ouLE.pagina = p; ouRenderLista();
 
 function ouLEFilas(){
   const q = (ouLE.q||'').trim().toLowerCase();
+  const objetivo = ouNormEstado(ouLE.estado);
   return dataOU
-    .filter(r => r.estado === ouLE.estado)
+    .filter(r => ouNormEstado(r.estado) === objetivo)
     .filter(r => !q || ((r.radicado||'')+' '+(r.contribuyente||'')+' '+(r.id_contribuyente||'')).toLowerCase().includes(q))
     .sort((a,b) => Number(b.valor_total||0) - Number(a.valor_total||0));  // mayor valor primero
 }
@@ -3546,7 +3591,7 @@ function ouRenderLista(soloTabla){
         <button class="ou-edit-btn" data-ouid="${ouEsc(r.id)}">✏️</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Sin resultados con esa búsqueda.</td></tr>';
+  }).join('') || ('<tr><td colspan="9" style="padding:22px">' + ouDiagnostico() + '</td></tr>');
 
   if(soloTabla && document.getElementById('ou-le-tbody')){
     document.getElementById('ou-le-tbody').innerHTML = cuerpo;
@@ -3590,6 +3635,32 @@ function ouRenderLista(soloTabla){
     });
     cont._bound = true;
   }
+}
+
+// Cuando la lista sale vacía, decir POR QUÉ. Antes mostraba "sin resultados"
+// aunque la tarjeta dijera 212, y no había forma de saber qué pasaba.
+function ouDiagnostico(){
+  const q = (ouLE.q||'').trim();
+  if(q) return '<div style="text-align:center;color:var(--muted)">Sin resultados para «'+ouEsc(q)+'» dentro de '+ouEsc(ouLE.estado)+'.</div>';
+
+  const integ = window._ouIntegridad || {};
+  const conteo = {};
+  (dataOU||[]).forEach(r=>{ const k=(r.estado==null?'(vacío)':String(r.estado)); conteo[k]=(conteo[k]||0)+1; });
+  const listado = Object.entries(conteo).sort((a,b)=>b[1]-a[1])
+    .map(([k,v])=>`<code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px">${ouEsc(k)}</code> ${v}`)
+    .join(' · ') || '—';
+
+  const falta = integ.esperados && integ.cargados < integ.esperados;
+  return `<div style="font-size:12px;line-height:1.8;color:var(--soft)">
+    <div style="color:#fca5a5;font-weight:600;margin-bottom:7px">No hay expedientes con estado «${ouEsc(ouLE.estado)}» entre los datos cargados.</div>
+    <div>Expedientes en memoria: <strong style="color:#fff">${(dataOU||[]).length.toLocaleString('es-CO')}</strong>${integ.esperados?' de '+integ.esperados.toLocaleString('es-CO')+' que reporta la vista':''}
+      ${falta?'<span style="color:#fca5a5"> — faltan '+(integ.esperados-integ.cargados).toLocaleString('es-CO')+'</span>':''}</div>
+    <div style="margin-top:5px">Estados encontrados: ${listado}</div>
+    <div style="margin-top:9px;font-size:11px;color:var(--muted)">
+      Si el estado que buscas aparece arriba con otro nombre, el desajuste está en los datos.
+      Si la lista de arriba está vacía, el detalle no cargó: pulsa <strong>🔄 Actualizar</strong>.
+    </div>
+  </div>`;
 }
 
 function ouLEInfo(n, valor, pago){
