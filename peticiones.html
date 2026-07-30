@@ -108,6 +108,19 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .kbd{display:inline-block;background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:11px;font-family:monospace}
 .contador{background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--gold2);font-weight:600}
 .limite-live{font-size:12.5px;color:var(--gold2);margin-top:6px;font-weight:600}
+/* Lectura de documentos */
+.dropzone{border:2px dashed rgba(232,160,32,.35);border-radius:14px;padding:22px;text-align:center;
+  cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:18px;background:rgba(232,160,32,.04)}
+.dropzone:hover,.dropzone.drag{border-color:var(--gold);background:rgba(232,160,32,.10)}
+.dz-t{font-weight:600;font-size:14.5px;margin-bottom:4px}
+.dz-s{font-size:12.5px;color:var(--muted)}
+.ocr-est{font-size:12.5px;margin-top:10px;min-height:18px}
+.chip-ia{display:inline-block;background:rgba(96,165,250,.18);color:var(--azul);border-radius:99px;
+  padding:1px 7px;font-size:9.5px;font-weight:700;letter-spacing:.04em;margin-left:6px;vertical-align:middle}
+.txt-leido{background:rgba(6,20,40,.7);border:1px solid var(--border);border-radius:11px;padding:13px;
+  font-size:11.5px;color:var(--muted);max-height:190px;overflow:auto;white-space:pre-wrap;margin-top:12px;line-height:1.5}
+.barra{height:5px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-top:9px}
+.barra > div{height:100%;background:var(--gold);width:0%;transition:width .3s}
 footer{text-align:center;padding:26px 20px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--border)}
 footer b{color:var(--gold)}
 @media(max-width:640px){table{min-width:700px}.hdr-in{gap:10px}}
@@ -146,6 +159,15 @@ footer b{color:var(--gold)}
       <p>La fecha y el tipo se conservan entre registros. <span class="kbd">Ctrl+Enter</span> guarda y deja listo el siguiente.</p>
     </div>
     <div class="card">
+      <div class="dropzone" id="dz" onclick="document.getElementById('dz-file').click()">
+        <div class="dz-t">Arrastre aquí el PDF o la imagen de la petición</div>
+        <div class="dz-s">Se leen los datos automáticamente y usted solo verifica. También puede hacer clic para buscarlo.</div>
+        <input type="file" id="dz-file" accept=".pdf,.png,.jpg,.jpeg" style="display:none" onchange="leerArchivo(this.files[0])">
+        <div class="barra" id="dz-barra" style="display:none"><div id="dz-barra-in"></div></div>
+        <div class="ocr-est" id="dz-est"></div>
+      </div>
+      <div id="dz-texto"></div>
+
       <div class="grid">
         <div class="fld">
           <label class="lbl">Radicado de entrada *</label>
@@ -234,6 +256,7 @@ footer b{color:var(--gold)}
           <button class="btn btn-ghost" onclick="cargarCola()">Recargar</button>
         </div>
       </div>
+      <div id="c-aviso"></div>
       <div id="c-cont"><div class="card">Cargando…</div></div>
     </div>
   </section>
@@ -291,6 +314,7 @@ footer b{color:var(--gold)}
         <option value="PROYECTADA">Solo proyectadas (sin radicado)</option>
         <option value="RESPONDIDA">Solo con radicado</option>
         <option value="CERRADA">Solo cerradas</option>
+        <option value="SIN_ENTREGAR">Radicadas sin entregar al notificador</option>
       </select>
       <button class="btn btn-ghost" onclick="cargarHistoricos()">Recargar</button>
     </div>
@@ -310,9 +334,9 @@ footer b{color:var(--gold)}
         <thead><tr>
           <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Abogada</th>
           <th>Radicación</th><th>Límite</th><th>Proyectó</th><th>Días</th>
-          <th>A término</th><th>Rad. respuesta</th><th>Estado</th>
+          <th>A término</th><th>Rad. respuesta</th><th>Notificador</th><th>Estado</th>
         </tr></thead>
-        <tbody id="h-body"><tr><td colspan="11">Cargando…</td></tr></tbody>
+        <tbody id="h-body"><tr><td colspan="12">Cargando…</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -401,6 +425,7 @@ let COLA_IDX = 0;
 let CONTADOR = 0;
 let ULTIMAS = [];
 let CARGAS = [];
+let NOTIFICADORES = [];
 
 /* ══════════════════════════════════════════════════════════════
    CAPA DE DATOS
@@ -543,11 +568,13 @@ async function iniciar(){
   document.getElementById('u-nom').textContent = PERFIL.nombre;
   document.getElementById('u-rol').textContent = PERFIL.rol;
 
-  const [fest, tipos, perfiles] = await Promise.all([
+  const [fest, tipos, perfiles, notif] = await Promise.all([
     supaFetch('pet_festivos?select=fecha'),
     supaFetch('pet_tipos?select=*&activo=is.true&order=orden.asc'),
-    supaFetch('pet_perfiles?select=id,nombre,rol&activo=is.true&order=nombre.asc')
+    supaFetch('pet_perfiles?select=id,nombre,rol&activo=is.true&order=nombre.asc'),
+    supaFetch('pet_notificadores?select=nombre&activo=is.true&order=orden.asc').catch(function(){ return []; })
   ]);
+  NOTIFICADORES = notif.map(function(n){ return n.nombre; });
   FESTIVOS = new Set(fest.map(function(f){ return String(f.fecha).slice(0,10); }));
   TIPOS = tipos;
   PERFILES = perfiles;
@@ -780,6 +807,7 @@ function limpiarDigitar(todo){
     document.getElementById('d-reparto').value = '';
     document.getElementById('d-msg').textContent = '';
   }
+  quitarMarcasIA();
   calcLimite();
 }
 
@@ -791,6 +819,291 @@ function pintarUltimas(){
            '<b style="color:var(--gold)">' + esc(u.radicado) + '</b> · ' + esc(u.peticionario) +
            ' <span style="color:var(--muted)">· vence ' + fmtFecha(u.fecha_limite) + '</span></div>';
   }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LECTURA DE DOCUMENTOS (pdf.js + Tesseract, sin costo)
+   ══════════════════════════════════════════════════════════════ */
+const CDN_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const CDN_PDFW  = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const CDN_TESS  = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+
+function cargarScript(src){
+  return new Promise(function(ok, fail){
+    if(document.querySelector('script[src="' + src + '"]')) return ok();
+    const s = document.createElement('script');
+    s.src = src; s.onload = ok; s.onerror = function(){ fail(new Error('No se pudo cargar ' + src)); };
+    document.head.appendChild(s);
+  });
+}
+
+function estado(txt, color){
+  const el = document.getElementById('dz-est');
+  if(el){ el.textContent = txt; el.style.color = color || 'var(--muted)'; }
+}
+function progreso(pct){
+  const b = document.getElementById('dz-barra'), i = document.getElementById('dz-barra-in');
+  if(!b) return;
+  if(pct === null){ b.style.display = 'none'; return; }
+  b.style.display = 'block'; i.style.width = Math.round(pct) + '%';
+}
+
+/* Arrastrar y soltar */
+(function(){
+  const dz = document.getElementById('dz');
+  if(!dz) return;
+  ['dragenter','dragover'].forEach(function(ev){
+    dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    dz.addEventListener(ev, function(e){ e.preventDefault(); dz.classList.remove('drag'); });
+  });
+  dz.addEventListener('drop', function(e){
+    if(e.dataTransfer.files && e.dataTransfer.files[0]) leerArchivo(e.dataTransfer.files[0]);
+  });
+})();
+
+async function leerArchivo(file){
+  if(!file) return;
+  document.getElementById('dz-texto').innerHTML = '';
+  const esPDF = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+  try{
+    let texto = '';
+    if(esPDF){
+      estado('Leyendo el PDF…');
+      texto = await textoDePDF(file);
+      if(texto.replace(/\s/g,'').length < 180){
+        estado('El PDF parece escaneado: no tiene texto.', 'var(--naranja)');
+        if(confirm('Este PDF no trae texto (es un escaneo).\n\n¿Intentar reconocerlo con OCR? Puede tardar entre 20 y 60 segundos por página.')){
+          texto = await ocrDePDF(file);
+        } else {
+          progreso(null); estado('Lectura cancelada. Digite los datos a mano.');
+          return;
+        }
+      }
+    } else {
+      estado('Reconociendo la imagen…');
+      texto = await ocrDeImagen(file);
+    }
+    progreso(null);
+    if(!texto || texto.replace(/\s/g,'').length < 40){
+      estado('No se pudo leer contenido útil. Digite los datos a mano.', 'var(--naranja)');
+      return;
+    }
+    const datos = extraerDatos(texto);
+    const puestos = aplicarDatos(datos);
+    estado(puestos.length ? 'Se completaron: ' + puestos.join(', ') + '. Verifique antes de guardar.'
+                          : 'Se leyó el documento pero no se identificaron datos. Revise el texto abajo.',
+           puestos.length ? 'var(--verde)' : 'var(--naranja)');
+    document.getElementById('dz-texto').innerHTML =
+      '<details><summary style="cursor:pointer;font-size:12.5px;color:var(--muted);padding:6px 0">' +
+      'Ver el texto que se leyó del documento</summary>' +
+      '<div class="txt-leido">' + esc(texto.slice(0, 6000)) + '</div></details>';
+  }catch(err){
+    progreso(null);
+    estado('No se pudo leer el archivo: ' + err.message, 'var(--rojo)');
+  }
+}
+
+async function textoDePDF(file){
+  await cargarScript(CDN_PDFJS);
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
+  const buf = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({data: buf}).promise;
+  const n = Math.min(pdf.numPages, 6);
+  let out = '';
+  for(let p = 1; p <= n; p++){
+    progreso(p / n * 100);
+    const pg = await pdf.getPage(p);
+    const tc = await pg.getTextContent();
+    out += tc.items.map(function(i){ return i.str; }).join(' ') + '\n';
+  }
+  return out;
+}
+
+async function ocrDePDF(file){
+  await cargarScript(CDN_PDFJS);
+  await cargarScript(CDN_TESS);
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
+  const buf = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({data: buf}).promise;
+  const n = Math.min(pdf.numPages, 3);
+  let out = '';
+  for(let p = 1; p <= n; p++){
+    estado('Reconociendo página ' + p + ' de ' + n + '… no cierre esta ventana.');
+    const pg = await pdf.getPage(p);
+    const vp = pg.getViewport({scale: 2});
+    const cv = document.createElement('canvas');
+    cv.width = vp.width; cv.height = vp.height;
+    await pg.render({canvasContext: cv.getContext('2d'), viewport: vp}).promise;
+    const r = await window.Tesseract.recognize(cv, 'spa', {
+      logger: function(m){ if(m.status === 'recognizing text') progreso(((p - 1) + m.progress) / n * 100); }
+    });
+    out += r.data.text + '\n';
+  }
+  return out;
+}
+
+async function ocrDeImagen(file){
+  await cargarScript(CDN_TESS);
+  const r = await window.Tesseract.recognize(file, 'spa', {
+    logger: function(m){ if(m.status === 'recognizing text') progreso(m.progress * 100); }
+  });
+  return r.data.text;
+}
+
+/* ── Extracción de datos del texto ── */
+const MESES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,
+               agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12};
+
+function extraerDatos(t){
+  const txt = t.replace(/\s+/g, ' ');
+  const d = {};
+
+  // Documento de identidad
+  let m = txt.match(/(?:c\.?\s?c\.?|c[ée]dula(?:\s+de\s+ciudadan[íi]a)?|n\.?\s?i\.?\s?t\.?|identificad[oa]\s+con(?:\s+la)?(?:\s+c[ée]dula)?)[^0-9]{0,25}(\d{1,3}(?:[.,]\d{3}){1,4}|\d{6,12})/i);
+  if(m) d.documento = m[1].replace(/[^0-9]/g, '');
+
+  // Nombre del peticionario
+  const patronesNombre = [
+    /\byo,?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+(?:\s+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+){1,4})\s*,?\s*(?:mayor|identificad|con\s+c|colombian)/,
+    /\b([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+(?:\s+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+){1,4})\s*,?\s*(?:mayor\s+de\s+edad|identificad[oa]\s+con)/,
+    /(?:peticionario|solicitante|suscrit[oa])\s*:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+(?:\s+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+){1,4})/i
+  ];
+  for(let i = 0; i < patronesNombre.length; i++){
+    m = txt.match(patronesNombre[i]);
+    if(m){ d.nombre = limpiarNombre(m[1]); break; }
+  }
+  if(!d.nombre){
+    const may = t.match(/^\s*([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){1,4})\s*$/m);
+    if(may) d.nombre = limpiarNombre(may[1]);
+  }
+
+  // Correo y teléfono
+  m = txt.match(/[\w.\-+]+@[\w\-]+\.[\w.\-]+/);
+  if(m) d.email = m[0].toLowerCase();
+  m = txt.match(/\b(3\d{2}[\s.-]?\d{3}[\s.-]?\d{4})\b/);
+  if(m) d.telefono = m[1].replace(/[^0-9]/g, '');
+
+  // Radicado y expediente
+  m = txt.match(/radicad[oa][^A-Za-z0-9]{0,12}(?:n[°ºo.]*\s*)?([A-Z0-9][A-Z0-9\-\/]{4,19})/i);
+  if(m) d.radicado = m[1].toUpperCase().replace(/[.,;]$/, '');
+  m = txt.match(/expediente[^A-Za-z0-9]{0,12}(?:n[°ºo.]*\s*)?([A-Z0-9][A-Z0-9\-\/]{3,19})/i);
+  if(m) d.expediente = m[1].toUpperCase().replace(/[.,;]$/, '');
+
+  // Fecha
+  m = txt.match(/(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/i);
+  if(m && MESES[m[2].toLowerCase()]){
+    d.fecha = m[3] + '-' + String(MESES[m[2].toLowerCase()]).padStart(2,'0') + '-' + m[1].padStart(2,'0');
+  } else {
+    m = txt.match(/\b(\d{1,2})[\/-](\d{1,2})[\/-](20\d{2})\b/);
+    if(m) d.fecha = m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0');
+  }
+
+  // Tipo de petición, por palabras clave
+  const claves = [
+    ['PRESCRIPCION', /prescripci[óo]n|prescribir/gi],
+    ['DESEMBARGO',   /desembargo|levantamiento\s+de(?:\s+la)?\s+medida|levantar\s+el\s+embargo/gi],
+    ['DEVOLUCION',   /devoluci[óo]n\s+de\s+dinero|reintegro|pago\s+de\s+lo\s+no\s+debido/gi],
+    ['ACUERDO_PAGO', /acuerdo\s+de\s+pago|facilidad\s+de\s+pago|refinanciaci[óo]n/gi],
+    ['EXCEPCIONES',  /excepciones|mandamiento\s+de\s+pago/gi],
+    ['REVOCATORIA',  /revocatoria\s+directa/gi],
+    ['EMBARGO',      /embargo/gi],
+    ['DOCUMENTOS',   /copia\s+(?:simple|aut[ée]ntica)|expedici[óo]n\s+de\s+copias|certificaci[óo]n/gi],
+    ['CONSULTA',     /consulta/gi]
+  ];
+  let mejor = null, top = 0;
+  claves.forEach(function(c){
+    const n = (txt.match(c[1]) || []).length;
+    if(n > top){ top = n; mejor = c[0]; }
+  });
+  if(mejor) d.tipo = mejor;
+
+  // Vigencias
+  const anios = (txt.match(/\b(19[89]\d|20[0-2]\d)\b/g) || [])
+    .filter(function(a){ return +a >= 1995 && +a <= new Date().getFullYear(); });
+  const unicos = Array.from(new Set(anios)).sort();
+  if(unicos.length) d.vigencias = unicos.join(', ');
+
+  return d;
+}
+
+function limpiarNombre(s){
+  return s.replace(/\s+/g,' ').trim()
+    .split(' ').map(function(p){
+      return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+    }).join(' ');
+}
+
+/* Solo rellena lo que esté vacío; nunca pisa lo que el radicador ya escribió */
+function aplicarDatos(d){
+  const puestos = [];
+  function set(id, val, etiqueta){
+    const el = document.getElementById(id);
+    if(!el || !val) return;
+    if(String(el.value).trim() !== '') return;
+    el.value = val;
+    marcarIA(id);
+    puestos.push(etiqueta);
+  }
+  set('d-nom', d.nombre, 'nombre');
+  set('d-doc', d.documento, 'cédula');
+  set('d-exp', d.expediente, 'expediente');
+  set('d-rad', d.radicado, 'radicado');
+
+  if(d.fecha){
+    const f = document.getElementById('d-fecha');
+    if(f && f.value === iso(new Date())){ f.value = d.fecha; marcarIA('d-fecha'); puestos.push('fecha'); }
+  }
+  if(d.tipo){
+    const s = document.getElementById('d-tipo');
+    if(s){
+      for(let i = 0; i < s.options.length; i++){
+        if(s.options[i].value === d.tipo){ s.selectedIndex = i; marcarIA('d-tipo'); puestos.push('tipo'); break; }
+      }
+    }
+  }
+  const res = document.getElementById('d-res');
+  if(res && !res.value.trim()){
+    const partes = [];
+    if(d.tipo){
+      const t = TIPOS.find(function(x){ return x.codigo === d.tipo; });
+      if(t) partes.push('Solicita ' + t.nombre.toLowerCase() + '.');
+    }
+    if(d.vigencias) partes.push('Vigencias mencionadas: ' + d.vigencias + '.');
+    if(d.email || d.telefono){
+      partes.push('Contacto: ' + [d.email, d.telefono].filter(Boolean).join(' / ') + '.');
+    }
+    if(partes.length){ res.value = partes.join(' '); marcarIA('d-res'); puestos.push('resumen'); }
+  }
+  calcLimite();
+  return puestos;
+}
+
+/* Marca visual: este dato vino del documento y hay que verificarlo */
+function marcarIA(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.style.borderColor = 'rgba(96,165,250,.6)';
+  const lbl = el.closest('.fld') ? el.closest('.fld').querySelector('.lbl') : null;
+  if(lbl && !lbl.querySelector('.chip-ia')){
+    const c = document.createElement('span');
+    c.className = 'chip-ia'; c.textContent = 'PDF';
+    lbl.appendChild(c);
+  }
+  el.addEventListener('input', function(){ el.style.borderColor = ''; }, {once:true});
+}
+
+/* Al limpiar el formulario se quitan las marcas */
+function quitarMarcasIA(){
+  const chips = document.querySelectorAll('.chip-ia');
+  for(let i = 0; i < chips.length; i++) chips[i].remove();
+  ['d-rad','d-nom','d-doc','d-exp','d-fecha','d-tipo','d-res'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(el) el.style.borderColor = '';
+  });
+  const dz = document.getElementById('dz-texto'); if(dz) dz.innerHTML = '';
+  estado('');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -811,6 +1124,7 @@ async function cargarCola(){
     COLA = await supaFetch(q);
     COLA_IDX = 0;
     pintarCaso();
+    avisoSinRadicado();
   }catch(err){
     cont.innerHTML = '<div class="card">No se pudo cargar la cola: ' + esc(err.message) + '</div>';
   }
@@ -878,6 +1192,40 @@ function pintarCaso(){
     '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
       '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
    '</div>';
+}
+
+/* Recordatorio: respuestas proyectadas que siguen sin radicado */
+async function avisoSinRadicado(){
+  const cont = document.getElementById('c-aviso');
+  if(!cont) return;
+  try{
+    let q = 'v_pet_bandeja?select=id,dias_esperando_radicado&estado=eq.PROYECTADA&limit=500';
+    if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
+    const filas = await supaFetch(q);
+    if(!filas.length){ cont.innerHTML = ''; return; }
+    const viejas = filas.filter(function(f){ return f.dias_esperando_radicado > 5; }).length;
+    const col = viejas ? 'var(--rojo)' : 'var(--morado)';
+    cont.innerHTML =
+      '<div class="card" style="border-color:' + col + '55;padding:15px 18px;display:flex;' +
+      'gap:14px;align-items:center;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:220px">' +
+          '<div style="font-weight:700;color:' + col + ';font-size:14px">' +
+            filas.length + ' respuesta(s) suya(s) sin radicado</div>' +
+          '<div style="color:var(--muted);font-size:12.5px;margin-top:3px">' +
+            (viejas ? viejas + ' llevan más de 5 días esperando. ' : '') +
+            'Sin el radicado no se pueden cerrar en el sistema de la Alcaldía.</div>' +
+        '</div>' +
+        '<button class="btn btn-primary" onclick="irAPendientesRadicado()">Completar radicados</button>' +
+      '</div>';
+  }catch(e){ cont.innerHTML = ''; }
+}
+
+function irAPendientesRadicado(){
+  irA('historicos');
+  setTimeout(function(){
+    const s = document.getElementById('h-est');
+    if(s){ s.value = 'PROYECTADA'; renderHist(); }
+  }, 600);
 }
 
 function mi(k, v){
@@ -1049,7 +1397,8 @@ function filtrarHist(){
     if(d && (!ref || ref < d)) return false;
     if(t && (!ref || ref > t)) return false;
     if(a && (r.asignado_nombre || '') !== a) return false;
-    if(e && r.estado !== e) return false;
+    if(e === 'SIN_ENTREGAR'){ if(!r.pendiente_notificacion) return false; }
+    else if(e && r.estado !== e) return false;
     return true;
   });
 }
@@ -1070,7 +1419,8 @@ function statsHist(rows){
     pctTermino: medidas.length ? Math.round(aTermino.length / medidas.length * 100) : null,
     promDias: prom(conDias, 'dias_abogado'),
     promEspera: prom(esperando, 'dias_esperando_radicado'),
-    fuera: medidas.length - aTermino.length
+    fuera: medidas.length - aTermino.length,
+    sinEntregar: rows.filter(function(r){ return r.pendiente_notificacion === true; }).length
   };
 }
 
@@ -1086,14 +1436,15 @@ function renderHist(){
       s.pctTermino === null ? 'var(--muted)' : s.pctTermino >= 90 ? 'var(--verde)' : s.pctTermino >= 70 ? 'var(--gold)' : 'var(--rojo)'],
     ['Fuera del término', s.fuera, s.fuera > 0 ? 'var(--rojo)' : 'var(--muted)'],
     ['Días hábiles promedio', s.promDias === null ? '—' : s.promDias.toFixed(1), 'var(--txt)'],
-    ['Espera de radicado', s.promEspera === null ? '—' : s.promEspera.toFixed(1) + ' d', 'var(--naranja)']
+    ['Espera de radicado', s.promEspera === null ? '—' : s.promEspera.toFixed(1) + ' d', 'var(--naranja)'],
+    ['Sin entregar a notificación', s.sinEntregar, s.sinEntregar > 0 ? 'var(--naranja)' : 'var(--muted)']
   ].map(function(k){
     return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' + k[1] + '</div>' +
            '<div class="l">' + k[0] + '</div></div>';
   }).join('');
 
   const body = document.getElementById('h-body');
-  if(!rows.length){ body.innerHTML = '<tr><td colspan="11">Sin resultados en este filtro.</td></tr>'; return; }
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="12">Sin resultados en este filtro.</td></tr>'; return; }
   body.innerHTML = rows.slice(0, 500).map(function(r){
     const at = r.abogado_a_termino;
     const atTxt = at === true ? '<span class="pill s-a_tiempo">Sí</span>'
@@ -1108,22 +1459,100 @@ function renderHist(){
       '<td>' + fmtFecha(r.fecha_proyeccion) + '</td>' +
       '<td>' + (r.dias_abogado === null || r.dias_abogado === undefined ? '—' : r.dias_abogado) + '</td>' +
       '<td>' + atTxt + '</td>' +
-      '<td>' + esc(r.radicado_respuesta || '—') + '</td>' +
+      '<td>' + (r.estado === 'PROYECTADA'
+          ? '<div style="display:flex;gap:5px;min-width:190px">' +
+              '<input type="text" id="rr-' + r.id + '" placeholder="Escriba el radicado" ' +
+                'style="padding:6px 9px;font-size:12.5px" ' +
+                'onkeydown="if(event.key===\'Enter\')guardarRadInline(' + r.id + ')">' +
+              '<button class="btn btn-primary" style="padding:6px 11px;font-size:12px" ' +
+                'onclick="guardarRadInline(' + r.id + ')">OK</button></div>'
+          : esc(r.radicado_respuesta || '—')) + '</td>' +
+      '<td>' + celdaNotificador(r) + '</td>' +
       '<td><span class="pill s-' + esc(r.semaforo) + '">' + esc(r.estado) + '</span></td>' +
     '</tr>';
   }).join('');
+}
+
+/* Entrega al notificador: se registra desde la misma fila */
+function celdaNotificador(r){
+  if(r.entregado_a){
+    return '<div style="font-size:12.5px">' + esc(r.entregado_a) + '</div>' +
+           '<div style="font-size:11px;color:var(--muted)">' + fmtFecha(r.fecha_entrega_notif) + '</div>';
+  }
+  if(!r.radicado_respuesta) return '<span style="color:var(--muted)">—</span>';
+  const ops = NOTIFICADORES.length ? NOTIFICADORES : ['Kristian','Juliana'];
+  return '<div style="display:flex;gap:5px;min-width:170px">' +
+    '<select id="nt-' + r.id + '" style="padding:6px 8px;font-size:12.5px">' +
+      '<option value="">Entregar a…</option>' +
+      ops.map(function(n){ return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('') +
+      '<option value="__otro">Otro…</option>' +
+    '</select>' +
+    '<button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" ' +
+      'onclick="guardarEntrega(' + r.id + ')">OK</button></div>';
+}
+
+async function guardarEntrega(id){
+  const sel = document.getElementById('nt-' + id);
+  const msg = document.getElementById('h-msg');
+  if(!sel) return;
+  let quien = sel.value;
+  if(!quien){ sel.focus(); return; }
+  if(quien === '__otro'){
+    quien = (prompt('Nombre de quien recibe el oficio:') || '').trim();
+    if(!quien) return;
+  }
+  sel.disabled = true;
+  try{
+    await supaFetch('pet_peticiones?id=eq.' + id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' },
+      body: JSON.stringify({ entregado_a: quien, fecha_entrega_notif: iso(new Date()) })
+    });
+    const r = HIST.find(function(x){ return x.id === id; });
+    if(r){ r.entregado_a = quien; r.fecha_entrega_notif = iso(new Date()); r.pendiente_notificacion = false; }
+    msg.className = 'msg ok'; msg.textContent = 'Entrega registrada a ' + quien + '.';
+    renderHist();
+  }catch(err){
+    sel.disabled = false;
+    msg.className = 'msg err'; msg.textContent = 'No se pudo registrar: ' + err.message;
+  }
+}
+
+/* Completar el radicado sin salir de la tabla */
+async function guardarRadInline(id){
+  const inp = document.getElementById('rr-' + id);
+  const msg = document.getElementById('h-msg');
+  if(!inp) return;
+  const val = inp.value.trim();
+  if(!val){ inp.focus(); return; }
+  inp.disabled = true;
+  try{
+    await supaFetch('pet_peticiones?id=eq.' + id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' },
+      body: JSON.stringify({ radicado_respuesta: val, fecha_respuesta: iso(new Date()) })
+    });
+    const r = HIST.find(function(x){ return x.id === id; });
+    if(r){ r.radicado_respuesta = val; r.estado = 'RESPONDIDA'; r.semaforo = 'respondida';
+           r.fecha_respuesta = iso(new Date()); }
+    msg.className = 'msg ok'; msg.textContent = 'Radicado registrado.';
+    renderHist();
+  }catch(err){
+    inp.disabled = false;
+    msg.className = 'msg err'; msg.textContent = 'No se pudo guardar: ' + err.message;
+  }
 }
 
 function exportarHistCSV(){
   const rows = filtrarHist();
   const cab = ['Radicado entrada','Peticionario','Documento','Tipo','Abogada','Fecha radicacion',
                'Fecha limite','Fecha proyeccion','Dias habiles usados','Dentro del termino',
-               'Radicado respuesta','Fecha respuesta','Dias esperando radicado','Estado'];
+               'Radicado respuesta','Fecha respuesta','Dias esperando radicado',
+               'Entregado a','Fecha entrega notificacion','Estado'];
   const lin = rows.map(function(r){
     return [r.radicado, r.peticionario, r.documento, r.tipo_nombre, r.asignado_nombre,
             r.fecha_radicado, r.fecha_limite, r.fecha_proyeccion, r.dias_abogado,
             r.abogado_a_termino === true ? 'SI' : r.abogado_a_termino === false ? 'NO' : '',
-            r.radicado_respuesta, r.fecha_respuesta, r.dias_esperando_radicado, r.estado]
+            r.radicado_respuesta, r.fecha_respuesta, r.dias_esperando_radicado,
+            r.entregado_a, r.fecha_entrega_notif, r.estado]
       .map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }).join(';');
   });
   const csv = '\uFEFF' + cab.join(';') + '\n' + lin.join('\n');
@@ -1183,7 +1612,8 @@ function informePDF(){
       ['Respondidas dentro del término legal', s.pctTermino === null ? 'Sin datos' : s.pctTermino + '%'],
       ['Respondidas fuera del término', String(s.fuera)],
       ['Promedio de días hábiles de respuesta', s.promDias === null ? 'Sin datos' : s.promDias.toFixed(1)],
-      ['Promedio de espera del radicado (Gestión Documental)', s.promEspera === null ? 'Sin datos' : s.promEspera.toFixed(1) + ' días']
+      ['Promedio de espera del radicado (Gestión Documental)', s.promEspera === null ? 'Sin datos' : s.promEspera.toFixed(1) + ' días'],
+      ['Radicadas sin entregar a notificación', String(s.sinEntregar)]
     ],
     theme:'grid',
     headStyles:{fillColor:NAVY, textColor:255, fontSize:9},
@@ -1307,7 +1737,8 @@ async function cargarTablero(){
     document.getElementById('t-reparto').style.display = esAdmin() ? 'block' : 'none';
 
     const todas = await supaFetch('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
-      'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,asignado_nombre&limit=3000');
+      'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,' +
+      'pendiente_notificacion,dias_sin_entregar,asignado_nombre&limit=3000');
     pintarAlertas(todas);
     pintarFlujo(todas);
     pintarAging(todas);
@@ -1324,11 +1755,13 @@ function pintarAlertas(rows){
   const vencidas   = abiertas.filter(function(r){ return r.dias_restantes !== null && r.dias_restantes < 0; });
   const estaSemana = abiertas.filter(function(r){ return r.dias_restantes !== null && r.dias_restantes >= 0 && r.dias_restantes <= 5; });
   const trabadas   = rows.filter(function(r){ return r.estado === 'PROYECTADA' && r.dias_esperando_radicado > 5; });
+  const sinEntregar = rows.filter(function(r){ return r.pendiente_notificacion === true && r.dias_sin_entregar > 3; });
 
   const items = [];
   if(vencidas.length)   items.push(['var(--rojo)',    vencidas.length + ' vencidas sin proyectar', 'Riesgo de tutela y desacato. Atiéndalas primero.']);
   if(estaSemana.length) items.push(['var(--naranja)', estaSemana.length + ' vencen en 5 días hábiles o menos', 'Todavía se alcanzan a responder a término.']);
   if(trabadas.length)   items.push(['var(--morado)',  trabadas.length + ' proyectadas esperando radicado hace más de 5 días', 'La demora está en Gestión Documental, no en las abogadas.']);
+  if(sinEntregar.length) items.push(['var(--azul)',   sinEntregar.length + ' radicadas sin entregar al notificador', 'La respuesta existe pero no ha salido. Revisar con quien lleva los oficios.']);
 
   const cont = document.getElementById('t-alertas');
   if(!items.length){
