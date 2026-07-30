@@ -572,6 +572,40 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
 .v360-row-right{text-align:right;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
 .v360-val{font-weight:700;color:var(--money);font-size:13.5px}
 .v360-badge{font-size:10px;padding:2px 8px;border-radius:8px;background:rgba(45,141,232,.18);color:var(--info-txt);font-weight:600}
+
+/* ── PUENTE A DESEMBARGOS: chip de estado por embargo ── */
+.chip-desem{font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;
+  letter-spacing:.02em;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;
+  font-family:inherit;line-height:1.5}
+/* Acción disponible — contorno tenue, no compite con el valor */
+.chip-desem-btn{background:transparent;border:1.2px solid rgba(232,160,32,.45);
+  color:var(--gold2);cursor:pointer;transition:all .16s}
+.chip-desem-btn:hover{background:rgba(232,160,32,.16);border-color:var(--gold)}
+.chip-desem-btn:disabled{opacity:.45;cursor:wait}
+/* En cola — dorado sólido: alguien ya lo pidió, no lo vuelvas a pedir */
+.chip-desem-cola{background:rgba(232,160,32,.20);border:1.2px solid rgba(232,160,32,.5);color:var(--gold2)}
+/* Resuelto — verde: el oficio ya existe */
+.chip-desem-ok{background:rgba(34,197,94,.16);border:1.2px solid rgba(34,197,94,.42);color:#4ade80}
+
+/* ── PUENTE A DESEMBARGOS: ventana de confirmación ── */
+#desem-ov{z-index:10055}
+#desem-ov .mbox{max-width:520px}
+.desem-body{padding:16px 20px;overflow-y:auto}
+.desem-fg{margin-bottom:15px}
+.desem-fg>label{display:block;font-size:11px;font-weight:700;color:var(--soft);
+  text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+.desem-fg select{width:100%;padding:9px 11px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit}
+.desem-pills{display:flex;flex-wrap:wrap;gap:7px}
+.desem-pill{padding:7px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1.4px solid var(--border);color:var(--soft);transition:all .16s}
+.desem-pill:hover{background:rgba(255,255,255,.09);color:var(--text)}
+.desem-pill.sel{background:rgba(232,160,32,.18);border-color:var(--gold);color:var(--gold2)}
+.desem-hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.45}
+.desem-resumen{background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-radius:9px;padding:11px 13px;font-size:11.5px;color:var(--soft);line-height:1.65}
+.desem-resumen strong{color:var(--text);font-weight:600}
+.desem-alert{margin-top:11px;padding:9px 12px;border-radius:8px;font-size:11.5px;line-height:1.45}
 .v360-aqui{font-size:10px;color:var(--gold2);font-weight:700}
 .v360-empty{font-size:12px;color:var(--muted);font-style:italic;padding:4px 2px}
 .v360-total{display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:8px;background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);border-radius:8px;font-size:12px;color:var(--soft)}
@@ -935,6 +969,46 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
 <div class="undo-toast" id="undo-toast">
   <span id="undo-toast-msg">Cambio guardado</span>
   <button class="fbtn fbtn-gold" style="padding:6px 14px;font-size:12px" onclick="deshacerUltimoGuardado()">↩️ Deshacer</button>
+</div>
+
+<!-- ═══ PUENTE A DESEMBARGOS ═══
+     Confirmación antes de encolar. Todo llega prellenado desde el depósito y el
+     catálogo de embargos; aquí solo se resuelven las 3 cosas que el dato no sabe:
+     tipo de oficio, radicado (cuando la persona tiene varios) y motivo. -->
+<div class="ov" id="desem-ov" onclick="if(event.target===this)cerrarEnvioDesembargo()">
+  <div class="mbox">
+    <div class="mhdr">
+      <div class="mhdr-info">
+        <h3>⚖️ Enviar a la cola de Desembargos</h3>
+        <p id="desem-sub">—</p>
+      </div>
+      <button class="mclose" onclick="cerrarEnvioDesembargo()">✕</button>
+    </div>
+    <div class="desem-body">
+      <div class="desem-fg">
+        <label>Tipo de oficio</label>
+        <div class="desem-pills" id="desem-tipo"></div>
+      </div>
+      <div class="desem-fg">
+        <label>Radicado / expediente</label>
+        <select id="desem-radicado" onchange="pintarResumenDesembargo()"></select>
+        <div class="desem-hint" id="desem-rad-hint"></div>
+      </div>
+      <div class="desem-fg">
+        <label>Motivo del levantamiento</label>
+        <div class="desem-pills" id="desem-motivo"></div>
+      </div>
+      <div class="desem-resumen" id="desem-resumen"></div>
+      <div class="desem-alert" id="desem-alert" style="display:none"></div>
+    </div>
+    <div class="mfoot">
+      <div style="font-size:11px;color:var(--soft)">N° oficio 1070.02 · fecha de hoy</div>
+      <div style="display:flex;gap:8px">
+        <button class="fbtn fbtn-outline" onclick="cerrarEnvioDesembargo()">Cancelar</button>
+        <button class="fbtn fbtn-gold" id="desem-btn-enviar" onclick="confirmarEnvioDesembargo()">⏳ Poner en cola</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Aviso estilizado de Teodoro — reemplaza los teoAlert() nativos del navegador -->
@@ -4198,6 +4272,13 @@ async function renderEmbargosModal(cid){
     var filas=await sbFetchAll('embargos','concepto,origen,anio,valor,referencia',
       'cedula=eq.'+encodeURIComponent(ced)+'&order=anio.asc');
 
+    // Estado en Desembargos de esta persona (para el chip: en cola / desembargado).
+    // Va después de traer los embargos y antes de pintar, para que cada fila ya
+    // sepa si alguien la pidió. Si falla, el chip simplemente sale como "enviar".
+    await cargarDesembargosPersona(ced, cid);
+    _embargosPersona = filas;
+    _cedulaEmbargos  = ced;
+
     if(!filas.length){
       cnt.textContent='sin embargos';
       cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">'
@@ -4256,14 +4337,16 @@ async function renderEmbargosModal(cid){
       var sub=[];
       if(f.anio) sub.push('Año '+f.anio);
       if(f.referencia) sub.push('Ref: '+f.referencia);
+      var idx=_embargosPersona.indexOf(f);
       return encabezado
-        +'<div class="v360-row">'
+        +'<div class="v360-row" id="emb-row-'+idx+'">'
         +'<div class="v360-row-main">'
         +  '<div class="v360-row-top">'+eh(f.origen||'—')+'</div>'
         +  '<div class="v360-row-sub">'+eh(sub.join(' · ')||'—')+'</div>'
         +'</div>'
         +'<div class="v360-row-right">'
         +  (val?'<span class="v360-val">'+fmt$(val)+'</span>':'')
+        +  chipDesembargo(f, idx)
         +'</div>'
         +'</div>';
     }).join('');
@@ -4272,6 +4355,295 @@ async function renderEmbargosModal(cid){
     cnt.textContent='error';
     cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--warn-txt);font-size:12px">'
       +'No se pudieron cargar los embargos. Verifica que la tabla <code>embargos</code> exista y tenga permiso de lectura.</div>';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// PUENTE RECAUDO → DESEMBARGOS
+// ────────────────────────────────────────────────────────────
+// Antes, para levantar un embargo había que salirse del módulo, abrir
+// Desembargos y volver a digitar nombre, cédula y concepto. Todo eso ya está
+// aquí en pantalla. Este puente escribe directo en la tabla `desembargos` con
+// estado PENDIENTE — o sea, cae en la pestaña "Cola" del otro módulo, listo
+// para generar el .docx. Es el mismo camino que ya usa Acuerdos de Pago.
+//
+// NO genera el oficio: lo encola. Los datos jurídicos que el depósito no puede
+// conocer (fecha del auto) los completa quien genera el documento.
+// ════════════════════════════════════════════════════════════
+const DESEM_TABLA      = 'desembargos';
+const DESEM_NUM_OFICIO = '1070.02';   // constante institucional: siempre el mismo
+
+// Embargos de la persona abierta y su estado en Desembargos
+var _embargosPersona = [];
+var _cedulaEmbargos  = '';
+var _desemPersona    = {};   // concepto normalizado -> 'PENDIENTE' | 'GENERADO' | 'IMPRESO'
+var _desemIdx        = -1;   // fila de embargo que se está encolando
+var _desemEnviando   = false;
+
+// Headers con el token de sesión de Supabase Auth. El resto del módulo lee con
+// la anon key (sbHeaders), pero `desembargos` tiene RLS de escritura para
+// usuarios autenticados: hay que mandar el JWT, igual que hace desembargos.js.
+async function sbAuthHeaders(extra){
+  var token = SUPABASE_ANON;
+  try{
+    if(sbAuth){
+      var r = await sbAuth.auth.getSession();
+      if(r && r.data && r.data.session && r.data.session.access_token){
+        token = r.data.session.access_token;
+      }
+    }
+  }catch(e){ /* sin sesión legible → queda la anon key */ }
+  return Object.assign({ apikey: SUPABASE_ANON, Authorization: 'Bearer ' + token }, extra || {});
+}
+
+// Normaliza texto para comparar conceptos: "Embargo tránsito 2023" y
+// "EMBARGO TRANSITO 2023" tienen que dar la misma llave.
+function normDesem(s){
+  return String(s||'').toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9]+/g,' ').trim();
+}
+
+// Trae los desembargos vivos de la persona. Consulta la cédula en sus dos
+// formas (con y sin ceros a la izquierda) porque cada módulo la guardó distinto.
+async function cargarDesembargosPersona(cedSinCeros, cedOriginal){
+  _desemPersona = {};
+  var ceds = [];
+  if(cedSinCeros) ceds.push(String(cedSinCeros));
+  if(cedOriginal && String(cedOriginal)!==String(cedSinCeros)) ceds.push(String(cedOriginal));
+  if(!ceds.length) return;
+  try{
+    var url = SUPABASE_URL + '/rest/v1/' + DESEM_TABLA
+      + '?cedula_nit=in.(' + ceds.map(encodeURIComponent).join(',') + ')'
+      + '&estado=in.(PENDIENTE,GENERADO,IMPRESO)'
+      + '&select=id,estado,concepto,radicado';
+    var res = await fetch(url, { headers: await sbAuthHeaders() });
+    if(!res.ok) return;
+    var rows = await res.json();
+    rows.forEach(function(r){
+      var k = normDesem(r.concepto);
+      if(!k) return;
+      // Un oficio ya generado manda sobre uno que sigue en cola
+      if(_desemPersona[k]==='GENERADO' || _desemPersona[k]==='IMPRESO') return;
+      _desemPersona[k] = r.estado;
+    });
+  }catch(e){ /* si falla, los chips salen como "enviar" — no bloquea el modal */ }
+}
+
+// Chip de estado de una fila de embargo
+function chipDesembargo(f, idx){
+  var est = _desemPersona[normDesem(f.origen)] || '';
+  if(est==='GENERADO' || est==='IMPRESO'){
+    return '<span class="chip-desem chip-desem-ok" title="El oficio de desembargo ya fue generado">✅ Desembargado</span>';
+  }
+  if(est==='PENDIENTE'){
+    return '<span class="chip-desem chip-desem-cola" title="Ya está en la cola de Desembargos, esperando que generen el oficio">⏳ En cola</span>';
+  }
+  return '<button class="chip-desem chip-desem-btn" onclick="abrirEnvioDesembargo('+idx+')" '
+       + 'title="Enviar este embargo a la cola de Desembargos">⚖️ Enviar a desembargo</button>';
+}
+
+// Deduce el tipo de oficio a partir del concepto del embargo
+function tipoOficioSugerido(origen){
+  var n = normDesem(origen);
+  if(n.indexOf('TRANSITO')>=0) return 'Desembargo Tránsito';
+  return 'Desembargo Banco';
+}
+
+// ── Ventana de confirmación ──
+function abrirEnvioDesembargo(idx){
+  var f = _embargosPersona[idx];
+  if(!f){ teoAlert('No se pudo leer ese embargo. Cierra y vuelve a abrir el depósito.'); return; }
+  _desemIdx = idx;
+  _desemEnviando = false;
+
+  var nombre = document.getElementById('m-nombre').textContent.trim();
+  var ced    = document.getElementById('m-cedula').textContent.trim();
+  document.getElementById('desem-sub').textContent = nombre + ' · C.C./NIT ' + ced;
+
+  // Tipo de oficio — sugerido por concepto, cambiable
+  var sug = tipoOficioSugerido(f.origen);
+  document.getElementById('desem-tipo').innerHTML =
+    ['Desembargo Banco','Desembargo Tránsito','Desembargo VUR'].map(function(t){
+      var lbl = t==='Desembargo Banco' ? '🏦 Bancario'
+              : t==='Desembargo Tránsito' ? '🚗 Tránsito' : '🏠 VUR';
+      return '<div class="desem-pill'+(t===sug?' sel':'')+'" data-val="'+eh(t)+'" '
+           + 'onclick="selPillDesem(this)">'+lbl+'</div>';
+    }).join('');
+
+  // Radicado — de los expedientes ya indexados por cédula
+  var sel  = document.getElementById('desem-radicado');
+  var hint = document.getElementById('desem-rad-hint');
+  var exps = (expedientesPorCedula[_cedulaEmbargos] || expedientesPorCedula[ced] || [])
+             .filter(function(e){ return e && e.radicado; });
+  // Si el contador ya escribió un expediente en la gestión del depósito, va de primero
+  var manual = (document.getElementById('m-proceso').value || '').trim();
+  var opts = [];
+  if(manual) opts.push({v:manual, t:'📝 '+manual+' — escrito en la gestión'});
+  exps.forEach(function(e){
+    if(manual && String(e.radicado)===manual) return;
+    opts.push({v:String(e.radicado), t:'📁 '+e.radicado+(e.modulo?' · '+e.modulo:'')});
+  });
+  opts.push({v:'(Pendiente)', t:'⏳ (Pendiente) — lo completan en Desembargos'});
+  sel.innerHTML = opts.map(function(o){
+    return '<option value="'+eh(o.v)+'">'+eh(o.t)+'</option>';
+  }).join('');
+  sel.value = opts[0].v;
+
+  if(opts.length===2 && opts[0].v!=='(Pendiente)'){
+    hint.textContent = 'Se encontró un solo expediente para esta cédula — ya quedó seleccionado.';
+  } else if(opts.length>2){
+    hint.textContent = 'Esta persona tiene varios expedientes. Confirma a cuál corresponde el levantamiento.';
+  } else {
+    hint.textContent = 'No hay expediente cruzado para esta cédula. Se envía como (Pendiente) y se completa al generar el oficio.';
+  }
+
+  // Motivo — mismas opciones que el formulario de Desembargos
+  document.getElementById('desem-motivo').innerHTML =
+    ['PAGO TOTAL','ESTAR AL DÍA','ACUERDO DE PAGO','PRESCRIPCIÓN','DUPLICIDAD'].map(function(m,i){
+      return '<div class="desem-pill'+(i===0?' sel':'')+'" data-val="'+eh(m)+'" '
+           + 'onclick="selPillDesem(this)">'+eh(m.charAt(0)+m.slice(1).toLowerCase())+'</div>';
+    }).join('');
+
+  document.getElementById('desem-alert').style.display='none';
+  var btn=document.getElementById('desem-btn-enviar');
+  btn.disabled=false; btn.textContent='⏳ Poner en cola';
+  pintarResumenDesembargo();
+  document.getElementById('desem-ov').classList.add('open');
+}
+
+function selPillDesem(el){
+  var cont = el.parentNode;
+  Array.prototype.forEach.call(cont.children, function(c){ c.classList.remove('sel'); });
+  el.classList.add('sel');
+  pintarResumenDesembargo();
+}
+
+function valorPillDesem(contId){
+  var sel = document.querySelector('#'+contId+' .desem-pill.sel');
+  return sel ? sel.getAttribute('data-val') : '';
+}
+
+// Muestra exactamente lo que se va a escribir en la tabla — sin sorpresas
+function pintarResumenDesembargo(){
+  var f = _embargosPersona[_desemIdx];
+  if(!f) return;
+  var nombre = document.getElementById('m-nombre').textContent.trim();
+  var ced    = document.getElementById('m-cedula').textContent.trim();
+  document.getElementById('desem-resumen').innerHTML =
+      'Se creará un registro <strong>PENDIENTE</strong> en la cola de Desembargos con:<br>'
+    + '👤 <strong>'+eh(nombre)+'</strong> · C.C./NIT <strong>'+eh(ced)+'</strong><br>'
+    + '📂 Concepto <strong>'+eh(f.origen||'—')+'</strong>'+(f.anio?' · año '+eh(f.anio):'')+'<br>'
+    + '📄 Tipo <strong>'+eh(valorPillDesem('desem-tipo'))+'</strong> · N° oficio <strong>'+DESEM_NUM_OFICIO+'</strong><br>'
+    + '📁 Radicado <strong>'+eh(document.getElementById('desem-radicado').value)+'</strong><br>'
+    + '✍️ Motivo <strong>'+eh(valorPillDesem('desem-motivo'))+'</strong><br>'
+    + '💰 Valor embargado <strong>'+fmt$(Number(f.valor)||0)+'</strong>';
+}
+
+function cerrarEnvioDesembargo(){
+  if(_desemEnviando) return;   // no cerrar a media escritura
+  document.getElementById('desem-ov').classList.remove('open');
+  _desemIdx = -1;
+}
+
+function avisoDesem(tipo, msg){
+  var el = document.getElementById('desem-alert');
+  el.style.display = 'block';
+  el.style.cssText += tipo==='e'
+    ? ';background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.35);color:#fca5a5'
+    : ';background:rgba(45,141,232,.14);border:1px solid rgba(45,141,232,.3);color:#93c5fd';
+  el.textContent = msg;
+}
+
+async function confirmarEnvioDesembargo(){
+  if(_desemEnviando) return;
+  var f = _embargosPersona[_desemIdx];
+  if(!f) return;
+
+  var btn = document.getElementById('desem-btn-enviar');
+  _desemEnviando = true;
+  btn.disabled = true;
+  btn.textContent = '⏳ Enviando…';
+  avisoDesem('i','Escribiendo en la cola de Desembargos…');
+
+  var nombre  = document.getElementById('m-nombre').textContent.trim();
+  var ced     = document.getElementById('m-cedula').textContent.trim();
+  var deposito= document.getElementById('m-dep-num').textContent.trim();
+  var hoy     = new Date();
+  var hoyISO  = hoy.toISOString().substring(0,10);
+  var hoyCO   = hoy.toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var usuario = USUARIO_ACTIVO || (cfgUsuario && cfgUsuario.nombre) || '—';
+
+  // Segunda verificación anti-duplicado: entre que se abrió el modal y este
+  // clic, otro compañero pudo haber encolado el mismo concepto.
+  try{
+    await cargarDesembargosPersona(_cedulaEmbargos, ced);
+    if(_desemPersona[normDesem(f.origen)]){
+      _desemEnviando = false;
+      avisoDesem('e','Este embargo ya está en Desembargos (lo acaba de encolar alguien más). No se creó un duplicado.');
+      btn.textContent = 'Ya estaba en cola';
+      renderEmbargosModal(String(ced));
+      return;
+    }
+  }catch(e){ /* si la verificación falla, seguimos: es mejor encolar que perder la solicitud */ }
+
+  var fila = {
+    estado:        'PENDIENTE',
+    tipo_oficio:   valorPillDesem('desem-tipo') || 'Desembargo Banco',
+    num_oficio:    DESEM_NUM_OFICIO,
+    fecha_oficio:  hoyISO,
+    contribuyente: nombre,
+    cedula_nit:    ced,
+    concepto:      f.origen || '',
+    radicado:      document.getElementById('desem-radicado').value || '(Pendiente)',
+    fecha_auto:    null,                       // lo completa quien genera el oficio
+    motivo:        valorPillDesem('desem-motivo') || 'PAGO TOTAL',
+    proyecto:      usuario,
+    funcionario:   usuario,
+    equipo:        (cfgUsuario && cfgUsuario.equipo) || null,
+    observacion:   'Solicitado desde Recaudo · Depósito ' + deposito
+                   + (f.referencia ? ' · Ref. embargo ' + f.referencia : '')
+                   + (f.anio ? ' · Año ' + f.anio : '')
+                   + ' · Valor embargado ' + fmt$(Number(f.valor)||0)
+                   + ' · ' + usuario + ' · ' + hoyCO,
+    dedup_key:     'RECAUDO-' + ced + '-' + normDesem(f.origen).replace(/ /g,'_')
+  };
+
+  try{
+    var res = await fetch(SUPABASE_URL + '/rest/v1/' + DESEM_TABLA, {
+      method: 'POST',
+      headers: await sbAuthHeaders({'Content-Type':'application/json',
+                                    'Prefer':'resolution=ignore-duplicates,return=minimal'}),
+      body: JSON.stringify(fila)
+    });
+    if(!res.ok){
+      var txt = await res.text();
+      throw new Error('HTTP ' + res.status + ' · ' + txt.slice(0,140));
+    }
+
+    // Trazabilidad en el propio depósito
+    registrarBitacora(deposito, usuario,
+      'Enviado a Desembargos: ' + (f.origen||'—') + ' · ' + fila.tipo_oficio
+      + ' · radicado ' + fila.radicado + ' · motivo ' + fila.motivo);
+
+    _desemPersona[normDesem(f.origen)] = 'PENDIENTE';
+    _desemEnviando = false;
+    document.getElementById('desem-ov').classList.remove('open');
+    _desemIdx = -1;
+    renderEmbargosModal(String(ced));
+    // Aquí no ofrecemos "Deshacer": la cola de Desembargos es reversible desde
+    // ese módulo (botón de eliminar de la cola), que es donde corresponde.
+    teoAlert('Listo. Quedó en la cola de Desembargos a nombre de ' + nombre
+           + '. Allá se genera el oficio y se completa la fecha del auto.',
+           '⏳ En cola');
+    cargarBitacora(deposito);
+  }catch(e){
+    _desemEnviando = false;
+    btn.disabled = false;
+    btn.textContent = '⏳ Poner en cola';
+    avisoDesem('e','No se pudo encolar: ' + e.message
+      + (String(e.message).indexOf('401')>=0 || String(e.message).indexOf('403')>=0
+         ? ' — parece un permiso de escritura (RLS) en la tabla desembargos.' : ''));
   }
 }
 
