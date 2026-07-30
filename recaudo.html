@@ -1665,6 +1665,18 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
         <div class="v360-body"><div class="v360-list" id="m-transito"></div></div>
       </div>
 
+      <!-- ⚖️ EMBARGOS QUE ORIGINARON EL DEPÓSITO (colapsable, carga bajo demanda) -->
+      <div class="vista360" id="m-embargos-wrap" style="display:none">
+        <div class="v360-title v360-toggle" onclick="toggleV360(this)">
+          <span>⚖️ Embargos de esta persona <span class="v360-count" id="m-embargos-count"></span></span>
+          <span class="v360-chevron">▼</span>
+        </div>
+        <div class="v360-body">
+          <div id="m-embargos-resumen" style="padding:8px 12px 0;font-size:11.5px;color:var(--soft)"></div>
+          <div class="v360-list" id="m-embargos"></div>
+        </div>
+      </div>
+
       <div class="vista360" id="m-log-wrap" style="display:none">
         <div class="v360-title v360-toggle" onclick="toggleV360(this)">
           <span>📝 Historial de cambios</span>
@@ -3981,6 +3993,8 @@ function abrirModal(dep){
   renderExpedientes(cid);
   // ── 360: comparendos de tránsito de la persona (bajo demanda) ──
   renderTransitoModal(cid);
+  // ── 360: embargos que originaron el depósito (bajo demanda) ──
+  renderEmbargosModal(cid);
 
   var ep=document.getElementById('m-editado-por');
   ep.textContent=r._editadoFecha?('Último cambio: '+(r._editadoPor||'—')+' · '+r._editadoFecha):'Sin cambios registrados';
@@ -4153,6 +4167,90 @@ async function renderTransitoModal(cid){
     }).join('');
   }catch(e){
     cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--warn-txt);font-size:12px">No se pudieron cargar los comparendos.</div>';
+  }
+}
+
+// ── 360: embargos que originaron el depósito ──────────────────────────────
+// Se agrupa por CONCEPTO (TRANSITO, PREDIAL, ICA, POLICIA, ACUERDO DE PAGO,
+// OBLIGACION URBANISTICA...) para que de una sola mirada se vea si la persona
+// tiene embargos de varios frentes. Ese es justo el caso donde el depósito NO
+// se puede atribuir automáticamente y el contador tiene que decidir.
+async function renderEmbargosModal(cid){
+  var wrap=document.getElementById('m-embargos-wrap');
+  var cont=document.getElementById('m-embargos');
+  var cnt =document.getElementById('m-embargos-count');
+  var res =document.getElementById('m-embargos-resumen');
+  if(!wrap) return;
+  if(!cid){ wrap.style.display='none'; return; }
+
+  // El catálogo de embargos guarda las cédulas sin ceros a la izquierda
+  var ced=String(cid).replace(/^0+/,'').trim();
+  if(!ced){ wrap.style.display='none'; return; }
+
+  wrap.style.display='block';
+  cnt.textContent='…';
+  res.innerHTML='';
+  cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">🔄 Buscando embargos…</div>';
+
+  try{
+    var filas=await sbFetchAll('embargos','concepto,origen,anio,valor,referencia',
+      'cedula=eq.'+encodeURIComponent(ced)+'&order=anio.asc');
+
+    if(!filas.length){
+      cnt.textContent='sin embargos';
+      cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--soft);font-size:12px">'
+        +'No se encontró embargo para esta cédula en el catálogo.<br>'
+        +'<span style="font-size:11px">Puede que la fuente no esté cargada — vale revisar de dónde salió este depósito.</span></div>';
+      return;
+    }
+
+    cnt.textContent=filas.length+(filas.length===1?' embargo':' embargos');
+
+    // Agrupar por concepto, contando orígenes y sumando valor
+    var porConcepto={};
+    filas.forEach(function(f){
+      if(!porConcepto[f.concepto]) porConcepto[f.concepto]={n:0,valor:0,origenes:{}};
+      var g=porConcepto[f.concepto];
+      g.n++;
+      g.valor+=Number(f.valor)||0;
+      var etq=(f.origen||'—')+(f.anio?' ('+f.anio+')':'');
+      g.origenes[etq]=(g.origenes[etq]||0)+1;
+    });
+    var conceptos=Object.keys(porConcepto).sort();
+    var totalValor=filas.reduce(function(s,f){ return s+(Number(f.valor)||0); },0);
+
+    // Resumen + aviso cuando hay más de un concepto
+    res.innerHTML='<strong>'+eh(conceptos.join(' + '))+'</strong> · '
+      +filas.length+' embargo(s) · total embargado '+fmt$(totalValor)
+      +(conceptos.length>1
+        ? '<div style="margin-top:6px;font-size:11px;color:var(--warn-txt);background:rgba(234,88,12,.12);'
+          +'border:1px solid rgba(234,88,12,.3);border-radius:6px;padding:6px 9px;line-height:1.4">'
+          +'⚠️ Esta persona tiene embargos de <strong>'+conceptos.length+' conceptos distintos</strong>. '
+          +'El depósito no se puede atribuir automáticamente — define a cuál corresponde antes de guardar.</div>'
+        : '');
+
+    // Una fila por concepto, con el desglose de fuentes
+    cont.innerHTML=conceptos.map(function(c){
+      var g=porConcepto[c];
+      var detalle=Object.keys(g.origenes).sort().map(function(o){
+        var k=g.origenes[o]; return o+(k>1?' ×'+k:'');
+      }).join(' · ');
+      return '<div class="v360-row">'
+        +'<div class="v360-row-main">'
+        +  '<div class="v360-row-top">⚖️ '+eh(c)+'</div>'
+        +  '<div class="v360-row-sub">'+eh(detalle||'—')+'</div>'
+        +'</div>'
+        +'<div class="v360-row-right">'
+        +  (g.valor?'<span class="v360-val">'+fmt$(g.valor)+'</span>':'')
+        +  '<span class="v360-badge">'+g.n+(g.n===1?' embargo':' embargos')+'</span>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+
+  }catch(e){
+    cnt.textContent='error';
+    cont.innerHTML='<div style="padding:14px;text-align:center;color:var(--warn-txt);font-size:12px">'
+      +'No se pudieron cargar los embargos. Verifica que la tabla <code>embargos</code> exista y tenga permiso de lectura.</div>';
   }
 }
 
