@@ -1276,7 +1276,7 @@ async function cargarDetalleParaModal(r, origen){
 // Lista COMPLETA — incluye a Deisy y Yennifer para que sus procesos sigan
 // apareciendo en reparto, rankings, filtros y estadísticas (y se puedan cerrar,
 // y se les puedan asignar fallos/incidentes manualmente).
-const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño","Anderson Correa","Camila Puerta Camargo"];
+const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño","Anderson Correa","Camila Puerta Camargo","Oscar Perea"];
 // Lista ACTIVA para reparto — sin Deisy ni Yennifer. Solo se usa en el
 // round-robin de "Nueva tutela" para que ya NO reciban admites nuevos.
 // Camila Puerta Camargo entra como reemplazo de Yennifer en el reparto de admites.
@@ -1317,11 +1317,21 @@ let quickAdm=null, quickFal=null, quickOtr=null; // filtro rápido por urgencia 
 // ════════════════════════════════════════
 // Calcula el siguiente abogado por turno. Cuenta cuántas tutelas tiene cada uno
 // en memoria y propone el de la rotación. Contador propio del dashboard.
+// El turno se persiste en localStorage: antes vivía solo en memoria y volvía a 0
+// en cada recarga, así que el primero de la lista recibía casi todos los admites
+// y los últimos (ahora Oscar Perea) casi nunca salían propuestos.
+const RR_KEY = "tutelas_rr_idx_v1";
 function siguienteAbogadoRR(){
-  // Round-robin simple basado en un contador en memoria de sesión
-  if(typeof window._rrIdx === "undefined") window._rrIdx = 0;
+  if(typeof window._rrIdx === "undefined"){
+    const g = parseInt(localStorage.getItem(RR_KEY), 10);
+    window._rrIdx = (Number.isFinite(g) && g >= 0) ? g : 0;
+  }
   const abo = ABOGADOS_RR[window._rrIdx % ABOGADOS_RR.length];
   return abo;
+}
+function avanzarTurnoRR(){
+  window._rrIdx = (window._rrIdx || 0) + 1;
+  try{ localStorage.setItem(RR_KEY, String(window._rrIdx)); }catch(e){}
 }
 function abrirNuevaTutela(){
   // Llenar el desplegable de abogados
@@ -1369,7 +1379,7 @@ async function guardarNuevaTutela(){
   try{
     const creado = await Repo.crear(campos);
     if(!creado) throw new Error("Supabase no devolvió el registro creado");
-    window._rrIdx = (window._rrIdx||0) + 1; // avanzar el turno
+    avanzarTurnoRR(); // avanzar el turno (queda guardado en localStorage)
     toast("✅ Tutela creada correctamente","ok");
     document.getElementById("overlay-nueva").classList.remove("open");
     await cargarDatos(); // recargar para que aparezca en la lista
@@ -2945,6 +2955,7 @@ function nombreUsuarioActual(){
   const e=(USUARIO_EMAIL||"").toLowerCase();
   if(e.startsWith("verosuarez")) return "Verónica";
   if(e.startsWith("jeisonmaya")) return "Jeison";
+  if(e.startsWith("oscarperea")) return "Oscar";
   return e.split("@")[0]||"Usuario";
 }
 // ═══ MIS CASOS ═══
