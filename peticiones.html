@@ -508,12 +508,30 @@ async function iniciar(){
   TIPOS = tipos;
   PERFILES = perfiles;
 
+  llenarFiltroCola();
   construirTabs();
   prepararDigitar();
   llenarAbogados();
 }
 
 function esAdmin(){ return PERFIL && (PERFIL.rol === 'admin' || PERFIL.rol === 'revisor'); }
+
+/* El filtro de la cola: los abogados ven lo suyo; el admin puede ver el de cada quien */
+function llenarFiltroCola(){
+  const sel = document.getElementById('c-filtro');
+  if(!sel) return;
+  let html = '<option value="mias">Mis casos</option>';
+  if(esAdmin()){
+    const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
+    html += abos.map(function(p){
+      return '<option value="' + p.id + '">Cola de ' + esc(p.nombre) + '</option>';
+    }).join('');
+    html += '<option value="sin">Sin asignar</option>';
+  }
+  html += '<option value="todas">Todas</option>';
+  sel.innerHTML = html;
+  if(esAdmin()) sel.value = 'todas';
+}
 
 function construirTabs(){
   const defs = [
@@ -739,7 +757,9 @@ async function cargarCola(){
     const filtro = document.getElementById('c-filtro').value;
     const orden = document.getElementById('c-orden').value;
     let q = 'v_pet_cola?select=*&limit=300';
-    if(filtro === 'mias') q += '&asignado_a=eq.' + PERFIL.id;
+    if(filtro === 'mias')      q += '&asignado_a=eq.' + PERFIL.id;
+    else if(filtro === 'sin')  q += '&asignado_a=is.null';
+    else if(filtro !== 'todas') q += '&asignado_a=eq.' + filtro;
     if(orden === 'tipo')    q += '&order=tipo.asc,fecha_limite.asc';
     if(orden === 'persona') q += '&order=documento.asc,fecha_limite.asc';
     COLA = await supaFetch(q);
@@ -758,12 +778,17 @@ function pintarCaso(){
     cont.innerHTML = '<div class="card" style="text-align:center;padding:44px">' +
       '<div style="font-size:34px;margin-bottom:10px">✓</div>' +
       '<h3>No hay casos pendientes en esta cola</h3>' +
-      '<p style="color:var(--muted);margin-top:6px;font-size:13px">Cambie el filtro o solicite un nuevo reparto.</p></div>';
+      '<p style="color:var(--muted);margin-top:6px;font-size:13px">' +
+      (esAdmin() ? 'Radique una petición y asígnela para que aparezca aquí.'
+                 : 'Todo al día. Cuando le asignen una nueva, aparecerá en esta pantalla.') +
+      '</p></div>';
     return;
   }
   if(COLA_IDX >= COLA.length) COLA_IDX = COLA.length - 1;
   const r = COLA[COLA_IDX];
-  pos.textContent = 'Caso ' + (COLA_IDX + 1) + ' de ' + COLA.length;
+  const f = document.getElementById('c-filtro');
+  const etq = f && f.selectedOptions[0] ? f.selectedOptions[0].textContent : '';
+  pos.textContent = 'Caso ' + (COLA_IDX + 1) + ' de ' + COLA.length + (etq ? ' · ' + etq : '');
 
   const d = r.dias_restantes;
   const color = d === null ? 'var(--muted)' : d < 0 ? 'var(--rojo)' : d <= 3 ? 'var(--naranja)' : 'var(--verde)';
