@@ -451,7 +451,7 @@ async function iniciar(){
   if(!data || !data.session) return;
   const uid = data.session.user.id;
 
-  const perf = await supaFetch('pqr_perfiles?id=eq.' + uid + '&select=*');
+  const perf = await supaFetch('pet_perfiles?id=eq.' + uid + '&select=*');
   if(!perf.length){
     document.getElementById('lg-msg').className = 'msg err';
     document.getElementById('lg-msg').textContent =
@@ -473,9 +473,9 @@ async function iniciar(){
   document.getElementById('u-rol').textContent = PERFIL.rol;
 
   const [fest, tipos, perfiles] = await Promise.all([
-    supaFetch('pqr_festivos?select=fecha'),
-    supaFetch('pqr_tipos?select=*&activo=is.true&order=orden.asc'),
-    supaFetch('pqr_perfiles?select=id,nombre,rol&activo=is.true&order=nombre.asc')
+    supaFetch('pet_festivos?select=fecha'),
+    supaFetch('pet_tipos?select=*&activo=is.true&order=orden.asc'),
+    supaFetch('pet_perfiles?select=id,nombre,rol&activo=is.true&order=nombre.asc')
   ]);
   FESTIVOS = new Set(fest.map(function(f){ return String(f.fecha).slice(0,10); }));
   TIPOS = tipos;
@@ -597,7 +597,7 @@ async function guardarPeticion(){
   };
   btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Guardando…';
   try{
-    const r = await supaFetch('pqr_peticiones', {
+    const r = await supaFetch('pet_peticiones', {
       method:'POST',
       headers:{ Prefer:'return=representation' },
       body: JSON.stringify(reg)
@@ -651,7 +651,7 @@ async function cargarCola(){
   cont.innerHTML = '<div class="card">Cargando…</div>';
   try{
     const filtro = document.getElementById('c-filtro').value;
-    let q = 'v_pqr_cola?select=*&limit=300';
+    let q = 'v_pet_cola?select=*&limit=300';
     if(filtro === 'mias') q += '&asignado_a=eq.' + PERFIL.id;
     COLA = await supaFetch(q);
     COLA_IDX = 0;
@@ -744,7 +744,7 @@ async function guardarCaso(){
   if(rad) patch.radicado_respuesta = rad;
   msg.className = 'msg'; msg.textContent = 'Guardando…';
   try{
-    await supaFetch('pqr_peticiones?id=eq.' + r.id, {
+    await supaFetch('pet_peticiones?id=eq.' + r.id, {
       method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(patch)
     });
     COLA.splice(COLA_IDX, 1);
@@ -760,7 +760,7 @@ async function marcarApoyo(){
   if(!r) return;
   const msg = document.getElementById('k-msg');
   try{
-    await supaFetch('pqr_peticiones?id=eq.' + r.id, {
+    await supaFetch('pet_peticiones?id=eq.' + r.id, {
       method:'PATCH', headers:{ Prefer:'return=minimal' },
       body: JSON.stringify({ requiere_apoyo:true, notas_gestion: document.getElementById('k-notas').value.trim() || null })
     });
@@ -787,7 +787,7 @@ async function cargarBandeja(){
   const msg = document.getElementById('b-msg');
   msg.className = 'msg'; msg.textContent = 'Cargando…';
   try{
-    BANDEJA = await supaFetch('v_pqr_bandeja?select=*&order=fecha_limite.asc&limit=1000');
+    BANDEJA = await supaFetch('v_pet_bandeja?select=*&order=fecha_limite.asc&limit=1000');
     msg.textContent = BANDEJA.length + ' peticiones cargadas (máx. 1000 más urgentes).';
     renderBandeja();
   }catch(err){
@@ -855,8 +855,8 @@ function exportarCSV(){
 async function cargarTablero(){
   try{
     const [res, prod] = await Promise.all([
-      supaFetch('v_pqr_resumen?select=*'),
-      supaFetch('v_pqr_productividad?select=*')
+      supaFetch('v_pet_resumen?select=*'),
+      supaFetch('v_pet_productividad?select=*')
     ]);
     const r = res[0] || {};
     const kpis = [
@@ -906,7 +906,7 @@ async function repartir(){
   }
   msg.className = 'msg'; msg.textContent = 'Repartiendo…';
   try{
-    const n = await rpc('pqr_repartir', { abogados: ids, cantidad: cant, etiqueta: lote });
+    const n = await rpc('pet_repartir', { abogados: ids, cantidad: cant, etiqueta: lote });
     msg.className = 'msg ok';
     msg.textContent = 'Se repartieron ' + (typeof n === 'number' ? n : JSON.stringify(n)) + ' peticiones.';
     cargarTablero();
