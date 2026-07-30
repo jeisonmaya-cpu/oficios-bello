@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root{
   --navy:#0a1f3d; --navy2:#0d2a52; --gold:#e8a020; --gold2:#f5c05a;
@@ -269,6 +271,48 @@ footer b{color:var(--gold)}
           <th>Límite</th><th>Días</th><th>Estado</th><th>Abogado</th><th>Rad. respuesta</th>
         </tr></thead>
         <tbody id="b-body"><tr><td colspan="9">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ HISTÓRICOS ══ -->
+  <section class="panel" id="p-historicos">
+    <div class="page-hdr">
+      <h2>Peticiones <em>resueltas</em></h2>
+      <p>Archivo de gestión con tiempos de respuesta. Base para informes al Director y a Control Interno.</p>
+    </div>
+
+    <div class="toolbar">
+      <input type="date" id="h-desde" onchange="renderHist()">
+      <input type="date" id="h-hasta" onchange="renderHist()">
+      <select id="h-abo" onchange="renderHist()"><option value="">Todas las abogadas</option></select>
+      <select id="h-est" onchange="renderHist()">
+        <option value="">Proyectadas, radicadas y cerradas</option>
+        <option value="PROYECTADA">Solo proyectadas (sin radicado)</option>
+        <option value="RESPONDIDA">Solo con radicado</option>
+        <option value="CERRADA">Solo cerradas</option>
+      </select>
+      <button class="btn btn-ghost" onclick="cargarHistoricos()">Recargar</button>
+    </div>
+
+    <div class="kpis" id="h-kpis"></div>
+
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn btn-ghost" onclick="exportarHistCSV()">Exportar CSV</button>
+      <button class="btn btn-primary" onclick="informePDF()">Informe PDF</button>
+      <button class="btn btn-ghost" onclick="cerrarSeleccionadas()" id="h-btn-cerrar">Cerrar las radicadas del filtro</button>
+    </div>
+
+    <div class="msg" id="h-msg"></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Abogada</th>
+          <th>Radicación</th><th>Límite</th><th>Proyectó</th><th>Días</th>
+          <th>A término</th><th>Rad. respuesta</th><th>Estado</th>
+        </tr></thead>
+        <tbody id="h-body"><tr><td colspan="11">Cargando…</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -538,6 +582,7 @@ function construirTabs(){
     {id:'digitar',  txt:'Radicar',  admin:true},
     {id:'cola',     txt:'Cola de trabajo', admin:false},
     {id:'bandeja',  txt:'Bandeja',  admin:false},
+    {id:'historicos', txt:'Resueltas', admin:false},
     {id:'tablero',  txt:'Tablero',  admin:false}
   ];
   const cont = document.getElementById('tabs');
@@ -555,7 +600,7 @@ function construirTabs(){
 }
 
 function irA(id){
-  const paneles = ['digitar','cola','bandeja','tablero'];
+  const paneles = ['digitar','cola','bandeja','historicos','tablero'];
   paneles.forEach(function(p){
     const el = document.getElementById('p-' + p);
     const tb = document.getElementById('tab-' + p);
@@ -564,6 +609,7 @@ function irA(id){
   });
   if(id === 'cola')    cargarCola();
   if(id === 'bandeja') cargarBandeja();
+  if(id === 'historicos') cargarHistoricos();
   if(id === 'tablero') cargarTablero();
 }
 
@@ -961,6 +1007,268 @@ function exportarCSV(){
   const a = document.createElement('a');
   a.href = url; a.download = 'peticiones_' + iso(new Date()) + '.csv';
   a.click(); URL.revokeObjectURL(url);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL — HISTÓRICO DE RESUELTAS E INFORMES
+   ══════════════════════════════════════════════════════════════ */
+let HIST = [];
+
+async function cargarHistoricos(){
+  const msg = document.getElementById('h-msg');
+  msg.className = 'msg'; msg.textContent = 'Cargando…';
+
+  const selA = document.getElementById('h-abo');
+  if(selA.options.length <= 1){
+    selA.innerHTML = '<option value="">Todas las abogadas</option>' +
+      PERFILES.filter(function(p){ return p.rol === 'abogado'; })
+        .map(function(p){ return '<option value="' + esc(p.nombre) + '">' + esc(p.nombre) + '</option>'; }).join('');
+  }
+  const btnC = document.getElementById('h-btn-cerrar');
+  if(btnC) btnC.style.display = esAdmin() ? 'inline-block' : 'none';
+
+  try{
+    let q = 'v_pet_bandeja?select=*&estado=in.(PROYECTADA,RESPONDIDA,CERRADA)' +
+            '&order=fecha_proyeccion.desc.nullslast&limit=3000';
+    if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
+    HIST = await supaFetch(q);
+    msg.textContent = HIST.length + ' peticiones resueltas en el archivo.';
+    renderHist();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+function filtrarHist(){
+  const d = document.getElementById('h-desde').value;
+  const t = document.getElementById('h-hasta').value;
+  const a = document.getElementById('h-abo').value;
+  const e = document.getElementById('h-est').value;
+  return HIST.filter(function(r){
+    const ref = String(r.fecha_proyeccion || r.fecha_respuesta || '').slice(0,10);
+    if(d && (!ref || ref < d)) return false;
+    if(t && (!ref || ref > t)) return false;
+    if(a && (r.asignado_nombre || '') !== a) return false;
+    if(e && r.estado !== e) return false;
+    return true;
+  });
+}
+
+function statsHist(rows){
+  const conDias = rows.filter(function(r){ return r.dias_abogado !== null && r.dias_abogado !== undefined; });
+  const medidas = rows.filter(function(r){ return r.abogado_a_termino !== null && r.abogado_a_termino !== undefined; });
+  const aTermino = medidas.filter(function(r){ return r.abogado_a_termino === true; });
+  const esperando = rows.filter(function(r){ return r.dias_esperando_radicado !== null && r.dias_esperando_radicado !== undefined; });
+  const prom = function(arr, campo){
+    if(!arr.length) return null;
+    return (arr.reduce(function(s, r){ return s + Number(r[campo]); }, 0) / arr.length);
+  };
+  return {
+    total: rows.length,
+    conRadicado: rows.filter(function(r){ return r.radicado_respuesta; }).length,
+    sinRadicado: rows.filter(function(r){ return r.estado === 'PROYECTADA'; }).length,
+    pctTermino: medidas.length ? Math.round(aTermino.length / medidas.length * 100) : null,
+    promDias: prom(conDias, 'dias_abogado'),
+    promEspera: prom(esperando, 'dias_esperando_radicado'),
+    fuera: medidas.length - aTermino.length
+  };
+}
+
+function renderHist(){
+  const rows = filtrarHist();
+  const s = statsHist(rows);
+
+  document.getElementById('h-kpis').innerHTML = [
+    ['Resueltas en el período', s.total, 'var(--txt)'],
+    ['Con radicado', s.conRadicado, 'var(--verde)'],
+    ['Esperando radicado', s.sinRadicado, 'var(--morado)'],
+    ['Dentro del término', s.pctTermino === null ? '—' : s.pctTermino + '%',
+      s.pctTermino === null ? 'var(--muted)' : s.pctTermino >= 90 ? 'var(--verde)' : s.pctTermino >= 70 ? 'var(--gold)' : 'var(--rojo)'],
+    ['Fuera del término', s.fuera, s.fuera > 0 ? 'var(--rojo)' : 'var(--muted)'],
+    ['Días hábiles promedio', s.promDias === null ? '—' : s.promDias.toFixed(1), 'var(--txt)'],
+    ['Espera de radicado', s.promEspera === null ? '—' : s.promEspera.toFixed(1) + ' d', 'var(--naranja)']
+  ].map(function(k){
+    return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' + k[1] + '</div>' +
+           '<div class="l">' + k[0] + '</div></div>';
+  }).join('');
+
+  const body = document.getElementById('h-body');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="11">Sin resultados en este filtro.</td></tr>'; return; }
+  body.innerHTML = rows.slice(0, 500).map(function(r){
+    const at = r.abogado_a_termino;
+    const atTxt = at === true ? '<span class="pill s-a_tiempo">Sí</span>'
+                : at === false ? '<span class="pill s-vencida">No</span>' : '—';
+    return '<tr>' +
+      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b></td>' +
+      '<td>' + esc(r.peticionario) + '</td>' +
+      '<td>' + esc(r.tipo_nombre || r.tipo) + '</td>' +
+      '<td>' + esc(r.asignado_nombre || '—') + '</td>' +
+      '<td>' + fmtFecha(r.fecha_radicado) + '</td>' +
+      '<td>' + fmtFecha(r.fecha_limite) + '</td>' +
+      '<td>' + fmtFecha(r.fecha_proyeccion) + '</td>' +
+      '<td>' + (r.dias_abogado === null || r.dias_abogado === undefined ? '—' : r.dias_abogado) + '</td>' +
+      '<td>' + atTxt + '</td>' +
+      '<td>' + esc(r.radicado_respuesta || '—') + '</td>' +
+      '<td><span class="pill s-' + esc(r.semaforo) + '">' + esc(r.estado) + '</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function exportarHistCSV(){
+  const rows = filtrarHist();
+  const cab = ['Radicado entrada','Peticionario','Documento','Tipo','Abogada','Fecha radicacion',
+               'Fecha limite','Fecha proyeccion','Dias habiles usados','Dentro del termino',
+               'Radicado respuesta','Fecha respuesta','Dias esperando radicado','Estado'];
+  const lin = rows.map(function(r){
+    return [r.radicado, r.peticionario, r.documento, r.tipo_nombre, r.asignado_nombre,
+            r.fecha_radicado, r.fecha_limite, r.fecha_proyeccion, r.dias_abogado,
+            r.abogado_a_termino === true ? 'SI' : r.abogado_a_termino === false ? 'NO' : '',
+            r.radicado_respuesta, r.fecha_respuesta, r.dias_esperando_radicado, r.estado]
+      .map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }).join(';');
+  });
+  const csv = '\uFEFF' + cab.join(';') + '\n' + lin.join('\n');
+  const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'peticiones_resueltas_' + iso(new Date()) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* ── Informe institucional en PDF ── */
+function informePDF(){
+  const msg = document.getElementById('h-msg');
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    msg.className = 'msg err'; msg.textContent = 'No cargó la librería del PDF. Revise la conexión y recargue.';
+    return;
+  }
+  const rows = filtrarHist();
+  if(!rows.length){
+    msg.className = 'msg err'; msg.textContent = 'No hay datos en el filtro para el informe.';
+    return;
+  }
+  const s = statsHist(rows);
+  const NAVY = [10,31,61], GOLD = [232,160,32];
+  const doc = new window.jspdf.jsPDF({unit:'pt', format:'letter'});
+  const W = doc.internal.pageSize.getWidth();
+
+  const desde = document.getElementById('h-desde').value;
+  const hasta = document.getElementById('h-hasta').value;
+  const periodo = (desde || hasta)
+    ? 'Período: ' + (desde ? fmtFecha(desde) : 'inicio') + ' a ' + (hasta ? fmtFecha(hasta) : 'la fecha')
+    : 'Período: histórico completo';
+
+  doc.setFillColor(NAVY[0],NAVY[1],NAVY[2]);
+  doc.rect(0,0,W,86,'F');
+  doc.setFillColor(GOLD[0],GOLD[1],GOLD[2]);
+  doc.rect(0,86,W,3,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(15); doc.setFont(undefined,'bold');
+  doc.text('ALCALDÍA DE BELLO', 40, 34);
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  doc.text('Dirección Administrativa de Ejecuciones Fiscales', 40, 50);
+  doc.setTextColor(GOLD[0],GOLD[1],GOLD[2]);
+  doc.setFontSize(12); doc.setFont(undefined,'bold');
+  doc.text('Informe de gestión de peticiones', 40, 70);
+
+  doc.setTextColor(70,70,70); doc.setFontSize(9); doc.setFont(undefined,'normal');
+  doc.text(periodo, 40, 108);
+  doc.text('Generado: ' + fmtFecha(iso(new Date())) + ' · ' + (PERFIL ? PERFIL.nombre : ''), 40, 121);
+
+  doc.autoTable({
+    startY: 138,
+    head: [['Indicador','Resultado']],
+    body: [
+      ['Peticiones resueltas en el período', String(s.total)],
+      ['Con radicado de respuesta', String(s.conRadicado)],
+      ['Proyectadas en espera de radicado', String(s.sinRadicado)],
+      ['Respondidas dentro del término legal', s.pctTermino === null ? 'Sin datos' : s.pctTermino + '%'],
+      ['Respondidas fuera del término', String(s.fuera)],
+      ['Promedio de días hábiles de respuesta', s.promDias === null ? 'Sin datos' : s.promDias.toFixed(1)],
+      ['Promedio de espera del radicado (Gestión Documental)', s.promEspera === null ? 'Sin datos' : s.promEspera.toFixed(1) + ' días']
+    ],
+    theme:'grid',
+    headStyles:{fillColor:NAVY, textColor:255, fontSize:9},
+    bodyStyles:{fontSize:9},
+    columnStyles:{1:{halign:'right', fontStyle:'bold'}},
+    margin:{left:40,right:40}
+  });
+
+  // Consolidado por abogada
+  const porAbo = {};
+  rows.forEach(function(r){
+    const k = r.asignado_nombre || 'Sin asignar';
+    if(!porAbo[k]) porAbo[k] = {n:0, term:0, med:0, dias:0, cd:0};
+    const o = porAbo[k];
+    o.n++;
+    if(r.abogado_a_termino !== null && r.abogado_a_termino !== undefined){
+      o.med++; if(r.abogado_a_termino === true) o.term++;
+    }
+    if(r.dias_abogado !== null && r.dias_abogado !== undefined){ o.dias += Number(r.dias_abogado); o.cd++; }
+  });
+
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 22,
+    head: [['Abogada','Resueltas','A término','% a término','Días promedio']],
+    body: Object.keys(porAbo).sort().map(function(k){
+      const o = porAbo[k];
+      return [k, String(o.n), String(o.term),
+              o.med ? Math.round(o.term/o.med*100) + '%' : '—',
+              o.cd ? (o.dias/o.cd).toFixed(1) : '—'];
+    }),
+    theme:'striped',
+    headStyles:{fillColor:NAVY, textColor:255, fontSize:9},
+    bodyStyles:{fontSize:9},
+    margin:{left:40,right:40}
+  });
+
+  // Detalle
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 22,
+    head: [['Radicado','Peticionario','Tipo','Abogada','Radicó','Proyectó','Días','Término','Rad. resp.']],
+    body: rows.slice(0,400).map(function(r){
+      return [r.radicado, String(r.peticionario||'').slice(0,26), String(r.tipo_nombre||'').slice(0,16),
+              String(r.asignado_nombre||'—').slice(0,16), fmtFecha(r.fecha_radicado), fmtFecha(r.fecha_proyeccion),
+              (r.dias_abogado === null || r.dias_abogado === undefined) ? '—' : String(r.dias_abogado),
+              r.abogado_a_termino === true ? 'Sí' : r.abogado_a_termino === false ? 'No' : '—',
+              r.radicado_respuesta || '—'];
+    }),
+    theme:'grid',
+    headStyles:{fillColor:NAVY, textColor:255, fontSize:7.5},
+    bodyStyles:{fontSize:7},
+    margin:{left:40,right:40}
+  });
+
+  const paginas = doc.internal.getNumberOfPages();
+  for(let i = 1; i <= paginas; i++){
+    doc.setPage(i);
+    doc.setFontSize(7.5); doc.setTextColor(130,130,130);
+    doc.text('Sistema Teodoro · Desarrollado por Jeison Maya · 2026', 40, doc.internal.pageSize.getHeight() - 24);
+    doc.text('Página ' + i + ' de ' + paginas, W - 40, doc.internal.pageSize.getHeight() - 24, {align:'right'});
+  }
+  if(rows.length > 400){
+    doc.setPage(paginas); doc.setFontSize(7.5); doc.setTextColor(130,130,130);
+    doc.text('El detalle muestra las primeras 400 de ' + rows.length + '. El CSV trae el total.',
+             40, doc.internal.pageSize.getHeight() - 36);
+  }
+
+  doc.save('informe_peticiones_' + iso(new Date()) + '.pdf');
+  msg.className = 'msg ok'; msg.textContent = 'Informe generado con ' + rows.length + ' peticiones.';
+}
+
+/* Cierre masivo de lo que ya tiene radicado */
+async function cerrarSeleccionadas(){
+  const msg = document.getElementById('h-msg');
+  const ids = filtrarHist().filter(function(r){ return r.estado === 'RESPONDIDA'; })
+                           .map(function(r){ return r.id; });
+  if(!ids.length){ msg.className = 'msg err'; msg.textContent = 'No hay peticiones con radicado pendientes de cerrar en este filtro.'; return; }
+  if(!confirm('Se cerrarán ' + ids.length + ' peticiones que ya tienen radicado de respuesta. ¿Continuar?')) return;
+  msg.className = 'msg'; msg.textContent = 'Cerrando…';
+  try{
+    const n = await rpc('pet_cerrar_lote', { ids: ids });
+    msg.className = 'msg ok'; msg.textContent = 'Se cerraron ' + n + ' peticiones.';
+    cargarHistoricos();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo cerrar: ' + err.message;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
