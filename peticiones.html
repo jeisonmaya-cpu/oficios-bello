@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy:#0a1f3d; --navy2:#0d2a52; --gold:#e8a020; --gold2:#f5c05a;
+  --txt:#eaf0f8; --muted:#8b9bb4; --border:rgba(255,255,255,.10);
+  --glass:rgba(255,255,255,.05);
+  --rojo:#f87171; --naranja:#fb923c; --verde:#4ade80; --azul:#60a5fa; --morado:#c084fc;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'DM Sans',system-ui,sans-serif;background:var(--navy);color:var(--txt);
+  min-height:100vh;
+  background-image:radial-gradient(circle at 15% 0%,rgba(232,160,32,.10),transparent 45%),
+                   radial-gradient(circle at 85% 100%,rgba(96,165,250,.08),transparent 45%);
+}
+h1,h2,h3{font-family:'Syne',sans-serif;letter-spacing:-.02em}
+em{font-family:'DM Serif Display',serif;font-style:italic;color:var(--gold)}
+button,input,select,textarea{font-family:inherit;font-size:14px}
+
+/* ── LOGIN ── */
+#login{position:fixed;inset:0;background:var(--navy);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:100%;max-width:390px;background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:38px 30px;backdrop-filter:blur(14px)}
+.login-card h1{font-size:23px;margin-bottom:4px}
+.login-card p{color:var(--muted);font-size:13px;margin-bottom:24px}
+.fld{margin-bottom:14px}
+.lbl{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:500}
+input,select,textarea{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--txt);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+select option{background:var(--navy2);color:var(--txt)}
+textarea{resize:vertical;min-height:64px}
+.btn{border:none;border-radius:10px;padding:11px 18px;font-weight:700;cursor:pointer;transition:transform .12s,opacity .15s;font-size:14px}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy)}
+.btn-ghost{background:rgba(255,255,255,.07);color:var(--txt);border:1px solid var(--border)}
+.btn-full{width:100%}
+.msg{font-size:12.5px;margin-top:12px;min-height:18px}
+.msg.err{color:var(--rojo)} .msg.ok{color:var(--verde)}
+
+/* ── LAYOUT ── */
+header{border-bottom:1px solid var(--border);background:rgba(10,31,61,.85);backdrop-filter:blur(12px);position:sticky;top:0;z-index:50}
+.hdr-in{max-width:1320px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-family:'Syne';font-weight:800;font-size:16px}
+.brand span{color:var(--gold)}
+.who{margin-left:auto;font-size:12px;color:var(--muted);text-align:right;line-height:1.4}
+.who b{color:var(--txt);display:block;font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;max-width:1320px;margin:0 auto;padding:0 20px 11px}
+.tab{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:8px 15px;cursor:pointer;font-weight:500;font-size:13px}
+.tab.on{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
+main{max-width:1320px;margin:0 auto;padding:24px 20px 60px}
+.panel{display:none} .panel.on{display:block}
+.card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:22px;backdrop-filter:blur(10px);margin-bottom:18px}
+.page-hdr{margin-bottom:18px}
+.page-hdr h2{font-size:24px;margin-bottom:4px}
+.page-hdr p{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px}
+.full{grid-column:1/-1}
+
+/* ── KPIs ── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:16px}
+.kpi .n{font-family:'Syne';font-size:27px;font-weight:800;line-height:1}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+
+/* ── TABLA ── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+th{background:rgba(255,255,255,.05);padding:11px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;white-space:nowrap}
+td{padding:10px 12px;border-top:1px solid var(--border);vertical-align:top}
+tbody tr:hover{background:rgba(255,255,255,.035)}
+.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap}
+.s-vencida{background:rgba(248,113,113,.18);color:var(--rojo)}
+.s-urgente{background:rgba(251,146,60,.18);color:var(--naranja)}
+.s-proxima{background:rgba(232,160,32,.18);color:var(--gold)}
+.s-a_tiempo{background:rgba(74,222,128,.15);color:var(--verde)}
+.s-proyectada{background:rgba(192,132,252,.18);color:var(--morado)}
+.s-respondida{background:rgba(96,165,250,.18);color:var(--azul)}
+.s-cerrada{background:rgba(255,255,255,.10);color:var(--muted)}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+.toolbar input,.toolbar select{width:auto;flex:1;min-width:150px}
+
+/* ── COLA ── */
+.cola-box{max-width:820px;margin:0 auto}
+.cola-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px;color:var(--muted)}
+.caso{background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:26px;backdrop-filter:blur(10px)}
+.caso-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.caso-rad{font-family:'Syne';font-size:21px;font-weight:800;color:var(--gold)}
+.caso-nom{font-size:15px;margin-top:3px}
+.caso-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.mi{font-size:13px}
+.mi .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+.caso-res{background:rgba(255,255,255,.04);border-radius:11px;padding:13px;font-size:13.5px;line-height:1.55;margin-bottom:18px;white-space:pre-wrap}
+.dias-big{font-family:'Syne';font-size:31px;font-weight:800;line-height:1;text-align:right}
+.dias-lbl{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
+.hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+.kbd{display:inline-block;background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:11px;font-family:monospace}
+.contador{background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--gold2);font-weight:600}
+.limite-live{font-size:12.5px;color:var(--gold2);margin-top:6px;font-weight:600}
+footer{text-align:center;padding:26px 20px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--border)}
+footer b{color:var(--gold)}
+@media(max-width:640px){table{min-width:700px}.hdr-in{gap:10px}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="login">
+  <div class="login-card">
+    <h1>Gestión de <em>Peticiones</em></h1>
+    <p>Ejecuciones Fiscales · Alcaldía de Bello</p>
+    <div class="fld"><label class="lbl">Correo</label><input type="email" id="lg-mail" autocomplete="username"></div>
+    <div class="fld"><label class="lbl">Contraseña</label><input type="password" id="lg-pass" autocomplete="current-password"></div>
+    <button class="btn btn-primary btn-full" id="lg-btn">Ingresar</button>
+    <div class="msg" id="lg-msg"></div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app" style="display:none">
+<header>
+  <div class="hdr-in">
+    <div class="brand">TEODORO · <span>Peticiones</span></div>
+    <div class="who"><b id="u-nom">—</b><span id="u-rol">—</span> · <a href="#" onclick="salir();return false" style="color:var(--gold)">Salir</a></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<main>
+
+  <!-- ══ DIGITAR ══ -->
+  <section class="panel" id="p-digitar">
+    <div class="page-hdr">
+      <h2>Radicación <em>rápida</em></h2>
+      <p>La fecha y el tipo se conservan entre registros. <span class="kbd">Ctrl+Enter</span> guarda y deja listo el siguiente.</p>
+    </div>
+    <div class="card">
+      <div class="grid">
+        <div class="fld">
+          <label class="lbl">Radicado de entrada *</label>
+          <div style="display:flex;gap:7px">
+            <input type="text" id="d-rad" placeholder="2026-XXXXX">
+            <button class="btn btn-ghost" onclick="siguienteRadicado()" title="Siguiente consecutivo">+1</button>
+          </div>
+        </div>
+        <div class="fld">
+          <label class="lbl">Fecha de radicación *</label>
+          <input type="date" id="d-fecha" onchange="calcLimite()">
+        </div>
+        <div class="fld">
+          <label class="lbl">Tipo de petición</label>
+          <select id="d-tipo" onchange="calcLimite()"></select>
+          <div class="limite-live" id="d-limite">—</div>
+        </div>
+        <div class="fld">
+          <label class="lbl">Peticionario *</label>
+          <input type="text" id="d-nom" placeholder="Nombre completo">
+        </div>
+        <div class="fld">
+          <label class="lbl">Cédula / NIT</label>
+          <input type="text" id="d-doc" inputmode="numeric">
+        </div>
+        <div class="fld">
+          <label class="lbl">Expediente coactivo</label>
+          <input type="text" id="d-exp">
+        </div>
+        <div class="fld">
+          <label class="lbl">Canal</label>
+          <select id="d-canal">
+            <option value="FISICO">Físico</option>
+            <option value="EMAIL">Correo</option>
+            <option value="WEB">Web</option>
+            <option value="VERBAL">Verbal</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label class="lbl">Fecha de reparto</label>
+          <input type="date" id="d-reparto">
+        </div>
+        <div class="fld full">
+          <label class="lbl">Resumen</label>
+          <textarea id="d-res" placeholder="Qué solicita, en una o dos frases."></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px">
+        <button class="btn btn-primary" id="d-btn" onclick="guardarPeticion()">Guardar y siguiente</button>
+        <button class="btn btn-ghost" onclick="limpiarDigitar(true)">Limpiar todo</button>
+        <div class="contador" id="d-cont">0 radicadas en esta sesión</div>
+      </div>
+      <div class="msg" id="d-msg"></div>
+    </div>
+    <div class="card">
+      <div class="lbl" style="margin-bottom:10px">Últimas radicadas</div>
+      <div id="d-ultimas" style="font-size:13px;color:var(--muted)">—</div>
+    </div>
+  </section>
+
+  <!-- ══ COLA ══ -->
+  <section class="panel" id="p-cola">
+    <div class="cola-box">
+      <div class="cola-top">
+        <div><span id="c-pos">—</span></div>
+        <div style="display:flex;gap:8px">
+          <select id="c-filtro" onchange="cargarCola()" style="width:auto">
+            <option value="mias">Mis casos</option>
+            <option value="todas">Todas</option>
+          </select>
+          <button class="btn btn-ghost" onclick="cargarCola()">Recargar</button>
+        </div>
+      </div>
+      <div id="c-cont"><div class="card">Cargando…</div></div>
+    </div>
+  </section>
+
+  <!-- ══ BANDEJA ══ -->
+  <section class="panel" id="p-bandeja">
+    <div class="page-hdr">
+      <h2>Bandeja <em>general</em></h2>
+      <p>Todas las peticiones registradas, con su término legal en días hábiles.</p>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="b-q" placeholder="Buscar por radicado, nombre o cédula…" oninput="renderBandeja()">
+      <select id="b-estado" onchange="renderBandeja()">
+        <option value="">Todos los estados</option>
+        <option value="PENDIENTE">Sin asignar</option>
+        <option value="ASIGNADA">Asignadas</option>
+        <option value="PROYECTADA">Proyectadas</option>
+        <option value="RESPONDIDA">Con radicado</option>
+        <option value="CERRADA">Cerradas</option>
+      </select>
+      <select id="b-sem" onchange="renderBandeja()">
+        <option value="">Todo el semáforo</option>
+        <option value="vencida">Vencidas</option>
+        <option value="urgente">Urgentes (≤3 días)</option>
+        <option value="proxima">Próximas (≤7 días)</option>
+      </select>
+      <button class="btn btn-ghost" onclick="cargarBandeja()">Recargar</button>
+      <button class="btn btn-ghost" onclick="exportarCSV()">Exportar CSV</button>
+    </div>
+    <div class="msg" id="b-msg"></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Radicación</th>
+          <th>Límite</th><th>Días</th><th>Estado</th><th>Abogado</th><th>Rad. respuesta</th>
+        </tr></thead>
+        <tbody id="b-body"><tr><td colspan="9">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ TABLERO ══ -->
+  <section class="panel" id="p-tablero">
+    <div class="page-hdr">
+      <h2>Tablero de <em>control</em></h2>
+      <p>Estado del represamiento y avance por abogado.</p>
+    </div>
+    <div class="kpis" id="t-kpis"></div>
+
+    <div class="card">
+      <div class="lbl" style="margin-bottom:12px">Productividad por abogado</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Abogado</th><th>Asignadas</th><th>Pendientes</th><th>Proyectadas</th>
+            <th>Con radicado</th><th>Vencidas</th><th>A término</th><th>Prom. días</th><th>Avance</th>
+          </tr></thead>
+          <tbody id="t-prod"><tr><td colspan="9">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="t-reparto">
+      <div class="lbl" style="margin-bottom:12px">Reparto automático (por urgencia)</div>
+      <div class="grid">
+        <div class="fld">
+          <label class="lbl">Abogados</label>
+          <select id="r-abogados" multiple size="4"></select>
+          <div class="hint">Ctrl + clic para seleccionar varios.</div>
+        </div>
+        <div class="fld">
+          <label class="lbl">Cantidad a repartir</label>
+          <input type="number" id="r-cant" value="100" min="1" max="2000">
+        </div>
+        <div class="fld">
+          <label class="lbl">Etiqueta de lote</label>
+          <input type="text" id="r-lote" placeholder="LOTE-2026-01">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:14px" onclick="repartir()">Repartir</button>
+      <div class="msg" id="r-msg"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Desarrollado por <b>Jeison Maya</b> · 2026 · Dirección Administrativa de Ejecuciones Fiscales</footer>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONFIGURACIÓN
+   ══════════════════════════════════════════════════════════════ */
+const SUPA_URL = 'https://bmurdtfztsltcgwsfbgf.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs';
+
+let sbAuth = null;
+try {
+  if (window.supabase && window.supabase.createClient) {
+    sbAuth = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  }
+} catch(e){ console.error('Supabase Auth:', e); }
+
+let PERFIL = null;
+let FESTIVOS = new Set();
+let TIPOS = [];
+let PERFILES = [];
+let BANDEJA = [];
+let COLA = [];
+let COLA_IDX = 0;
+let CONTADOR = 0;
+let ULTIMAS = [];
+
+/* ══════════════════════════════════════════════════════════════
+   CAPA DE DATOS
+   ══════════════════════════════════════════════════════════════ */
+async function authHeaders(extra){
+  let token = SUPA_KEY;
+  try{
+    if(sbAuth){
+      const { data } = await sbAuth.auth.getSession();
+      if(data && data.session && data.session.access_token) token = data.session.access_token;
+    }
+  }catch(e){}
+  return Object.assign({ apikey: SUPA_KEY, Authorization: 'Bearer ' + token }, extra || {});
+}
+
+async function supaFetch(path, opts){
+  opts = opts || {};
+  const headers = await authHeaders(Object.assign({'Content-Type':'application/json'}, opts.headers || {}));
+  const res = await fetch(SUPA_URL + '/rest/v1/' + path, Object.assign({}, opts, {headers}));
+  if(!res.ok){
+    let msg = 'HTTP ' + res.status;
+    try{ const j = await res.json(); if(j && (j.message||j.hint)) msg = j.message || j.hint; }catch(e){}
+    throw new Error(msg);
+  }
+  if(res.status === 204) return [];
+  const txt = await res.text();
+  if(!txt) return [];
+  try{ return JSON.parse(txt); }catch(e){ return []; }
+}
+
+async function rpc(nombre, body){
+  return supaFetch('rpc/' + nombre, { method:'POST', body: JSON.stringify(body || {}) });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DÍAS HÁBILES (cálculo en vivo, espejo del SQL)
+   ══════════════════════════════════════════════════════════════ */
+function iso(d){
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + dd;
+}
+function esHabil(d){
+  const dow = d.getDay();
+  if(dow === 0 || dow === 6) return false;
+  return !FESTIVOS.has(iso(d));
+}
+function sumarHabiles(fechaIso, n){
+  if(!fechaIso || !n) return null;
+  const d = new Date(fechaIso + 'T12:00:00');
+  if(isNaN(d)) return null;
+  let c = 0;
+  while(c < n){
+    d.setDate(d.getDate() + 1);
+    if(esHabil(d)) c++;
+  }
+  return iso(d);
+}
+function habilesEntre(aIso, bIso){
+  if(!aIso || !bIso) return null;
+  const a = new Date(aIso + 'T12:00:00'), b = new Date(bIso + 'T12:00:00');
+  if(isNaN(a) || isNaN(b)) return null;
+  if(iso(a) === iso(b)) return 0;
+  const paso = b > a ? 1 : -1;
+  let c = 0;
+  const d = new Date(a);
+  while(iso(d) !== iso(b)){
+    d.setDate(d.getDate() + paso);
+    if(esHabil(d)) c++;
+  }
+  return c * paso;
+}
+function fmtFecha(s){
+  if(!s) return '—';
+  const p = String(s).slice(0,10).split('-');
+  if(p.length !== 3) return s;
+  return p[2] + '/' + p[1] + '/' + p[0];
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LOGIN
+   ══════════════════════════════════════════════════════════════ */
+document.getElementById('lg-btn').addEventListener('click', entrar);
+document.getElementById('lg-pass').addEventListener('keydown', function(e){ if(e.key === 'Enter') entrar(); });
+
+async function entrar(){
+  const mail = document.getElementById('lg-mail').value.trim();
+  const pass = document.getElementById('lg-pass').value;
+  const msg  = document.getElementById('lg-msg');
+  const btn  = document.getElementById('lg-btn');
+  if(!mail || !pass){ msg.className='msg err'; msg.textContent='Ingrese correo y contraseña.'; return; }
+  if(!sbAuth){ msg.className='msg err'; msg.textContent='No cargó la librería de Supabase. Revise la conexión.'; return; }
+  btn.disabled = true; msg.className='msg'; msg.textContent='Verificando…';
+  try{
+    const { error } = await sbAuth.auth.signInWithPassword({ email: mail, password: pass });
+    if(error) throw error;
+    await iniciar();
+  }catch(err){
+    msg.className='msg err';
+    msg.textContent = 'No fue posible ingresar: ' + (err.message || err);
+    btn.disabled = false;
+  }
+}
+
+async function salir(){
+  try{ if(sbAuth) await sbAuth.auth.signOut(); }catch(e){}
+  location.reload();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ARRANQUE
+   ══════════════════════════════════════════════════════════════ */
+async function iniciar(){
+  const { data } = await sbAuth.auth.getSession();
+  if(!data || !data.session) return;
+  const uid = data.session.user.id;
+
+  const perf = await supaFetch('pqr_perfiles?id=eq.' + uid + '&select=*');
+  if(!perf.length){
+    document.getElementById('lg-msg').className = 'msg err';
+    document.getElementById('lg-msg').textContent =
+      'Su usuario no tiene perfil en el módulo. Solicite al administrador que lo registre.';
+    document.getElementById('lg-btn').disabled = false;
+    return;
+  }
+  PERFIL = perf[0];
+  if(!PERFIL.activo){
+    document.getElementById('lg-msg').className = 'msg err';
+    document.getElementById('lg-msg').textContent = 'Su usuario está inactivo.';
+    document.getElementById('lg-btn').disabled = false;
+    return;
+  }
+
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('u-nom').textContent = PERFIL.nombre;
+  document.getElementById('u-rol').textContent = PERFIL.rol;
+
+  const [fest, tipos, perfiles] = await Promise.all([
+    supaFetch('pqr_festivos?select=fecha'),
+    supaFetch('pqr_tipos?select=*&activo=is.true&order=orden.asc'),
+    supaFetch('pqr_perfiles?select=id,nombre,rol&activo=is.true&order=nombre.asc')
+  ]);
+  FESTIVOS = new Set(fest.map(function(f){ return String(f.fecha).slice(0,10); }));
+  TIPOS = tipos;
+  PERFILES = perfiles;
+
+  construirTabs();
+  prepararDigitar();
+  llenarAbogados();
+}
+
+function esAdmin(){ return PERFIL && (PERFIL.rol === 'admin' || PERFIL.rol === 'revisor'); }
+
+function construirTabs(){
+  const defs = [
+    {id:'digitar',  txt:'Radicar',  admin:true},
+    {id:'cola',     txt:'Cola de trabajo', admin:false},
+    {id:'bandeja',  txt:'Bandeja',  admin:false},
+    {id:'tablero',  txt:'Tablero',  admin:false}
+  ];
+  const cont = document.getElementById('tabs');
+  cont.innerHTML = '';
+  defs.forEach(function(d){
+    if(d.admin && !esAdmin()) return;
+    const b = document.createElement('button');
+    b.className = 'tab';
+    b.textContent = d.txt;
+    b.onclick = function(){ irA(d.id); };
+    b.id = 'tab-' + d.id;
+    cont.appendChild(b);
+  });
+  irA(esAdmin() ? 'digitar' : 'cola');
+}
+
+function irA(id){
+  const paneles = ['digitar','cola','bandeja','tablero'];
+  paneles.forEach(function(p){
+    const el = document.getElementById('p-' + p);
+    const tb = document.getElementById('tab-' + p);
+    if(el) el.classList.toggle('on', p === id);
+    if(tb) tb.classList.toggle('on', p === id);
+  });
+  if(id === 'cola')    cargarCola();
+  if(id === 'bandeja') cargarBandeja();
+  if(id === 'tablero') cargarTablero();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL 1 — RADICACIÓN RÁPIDA
+   ══════════════════════════════════════════════════════════════ */
+function prepararDigitar(){
+  const sel = document.getElementById('d-tipo');
+  sel.innerHTML = TIPOS.map(function(t){
+    return '<option value="' + esc(t.codigo) + '" data-dias="' + t.dias_termino + '">' +
+           esc(t.nombre) + ' (' + t.dias_termino + ' días)</option>';
+  }).join('');
+  const hoy = new Date();
+  document.getElementById('d-fecha').value = iso(hoy);
+  calcLimite();
+
+  ['d-rad','d-nom','d-doc','d-exp'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); guardarPeticion(); }
+    });
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.ctrlKey && e.key === 'Enter' && document.getElementById('p-digitar').classList.contains('on')){
+      e.preventDefault(); guardarPeticion();
+    }
+  });
+  document.getElementById('d-rad').focus();
+}
+
+function calcLimite(){
+  const f = document.getElementById('d-fecha').value;
+  const op = document.getElementById('d-tipo').selectedOptions[0];
+  const dias = op ? parseInt(op.getAttribute('data-dias'), 10) : 15;
+  const lim = sumarHabiles(f, dias);
+  const el = document.getElementById('d-limite');
+  if(!lim){ el.textContent = '—'; return; }
+  const rest = habilesEntre(iso(new Date()), lim);
+  el.textContent = 'Vence el ' + fmtFecha(lim) +
+    (rest !== null ? (rest < 0 ? ' · VENCIDA hace ' + Math.abs(rest) + ' días hábiles'
+                               : ' · faltan ' + rest + ' días hábiles') : '');
+  el.style.color = (rest !== null && rest < 0) ? 'var(--rojo)' : 'var(--gold2)';
+}
+
+function siguienteRadicado(){
+  const el = document.getElementById('d-rad');
+  const v = el.value.trim();
+  if(!v){ el.focus(); return; }
+  el.value = v.replace(/(\d+)(\D*)$/, function(m, num, resto){
+    const inc = String(parseInt(num, 10) + 1).padStart(num.length, '0');
+    return inc + resto;
+  });
+  el.focus();
+}
+
+async function guardarPeticion(){
+  const msg = document.getElementById('d-msg');
+  const btn = document.getElementById('d-btn');
+  const rad = document.getElementById('d-rad').value.trim();
+  const nom = document.getElementById('d-nom').value.trim();
+  const fec = document.getElementById('d-fecha').value;
+  if(!rad || !nom || !fec){
+    msg.className = 'msg err'; msg.textContent = 'Radicado, peticionario y fecha son obligatorios.';
+    return;
+  }
+  const reg = {
+    radicado: rad,
+    fecha_radicado: fec,
+    fecha_reparto: document.getElementById('d-reparto').value || null,
+    tipo: document.getElementById('d-tipo').value,
+    peticionario: nom,
+    documento: document.getElementById('d-doc').value.trim() || null,
+    expediente: document.getElementById('d-exp').value.trim() || null,
+    canal: document.getElementById('d-canal').value,
+    resumen: document.getElementById('d-res').value.trim() || null,
+    origen: 'MANUAL'
+  };
+  btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Guardando…';
+  try{
+    const r = await supaFetch('pqr_peticiones', {
+      method:'POST',
+      headers:{ Prefer:'return=representation' },
+      body: JSON.stringify(reg)
+    });
+    CONTADOR++;
+    document.getElementById('d-cont').textContent = CONTADOR + ' radicadas en esta sesión';
+    const guardada = r && r[0] ? r[0] : reg;
+    ULTIMAS.unshift(guardada);
+    ULTIMAS = ULTIMAS.slice(0, 8);
+    pintarUltimas();
+    msg.className = 'msg ok';
+    msg.textContent = 'Guardada. Vence el ' + fmtFecha(guardada.fecha_limite || '') + '.';
+    limpiarDigitar(false);
+    siguienteRadicado();
+  }catch(err){
+    msg.className = 'msg err';
+    msg.textContent = /duplicat|unique/i.test(err.message)
+      ? 'Ese radicado ya está registrado.'
+      : 'No se pudo guardar: ' + err.message;
+  }finally{
+    btn.disabled = false;
+    document.getElementById('d-rad').focus();
+  }
+}
+
+function limpiarDigitar(todo){
+  ['d-nom','d-doc','d-exp','d-res'].forEach(function(id){ document.getElementById(id).value = ''; });
+  if(todo){
+    document.getElementById('d-rad').value = '';
+    document.getElementById('d-reparto').value = '';
+    document.getElementById('d-msg').textContent = '';
+  }
+  calcLimite();
+}
+
+function pintarUltimas(){
+  const el = document.getElementById('d-ultimas');
+  if(!ULTIMAS.length){ el.textContent = '—'; return; }
+  el.innerHTML = ULTIMAS.map(function(u){
+    return '<div style="padding:6px 0;border-bottom:1px solid var(--border)">' +
+           '<b style="color:var(--gold)">' + esc(u.radicado) + '</b> · ' + esc(u.peticionario) +
+           ' <span style="color:var(--muted)">· vence ' + fmtFecha(u.fecha_limite) + '</span></div>';
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL 2 — COLA DE TRABAJO
+   ══════════════════════════════════════════════════════════════ */
+async function cargarCola(){
+  const cont = document.getElementById('c-cont');
+  cont.innerHTML = '<div class="card">Cargando…</div>';
+  try{
+    const filtro = document.getElementById('c-filtro').value;
+    let q = 'v_pqr_cola?select=*&limit=300';
+    if(filtro === 'mias') q += '&asignado_a=eq.' + PERFIL.id;
+    COLA = await supaFetch(q);
+    COLA_IDX = 0;
+    pintarCaso();
+  }catch(err){
+    cont.innerHTML = '<div class="card">No se pudo cargar la cola: ' + esc(err.message) + '</div>';
+  }
+}
+
+function pintarCaso(){
+  const cont = document.getElementById('c-cont');
+  const pos = document.getElementById('c-pos');
+  if(!COLA.length){
+    pos.textContent = '';
+    cont.innerHTML = '<div class="card" style="text-align:center;padding:44px">' +
+      '<div style="font-size:34px;margin-bottom:10px">✓</div>' +
+      '<h3>No hay casos pendientes en esta cola</h3>' +
+      '<p style="color:var(--muted);margin-top:6px;font-size:13px">Cambie el filtro o solicite un nuevo reparto.</p></div>';
+    return;
+  }
+  if(COLA_IDX >= COLA.length) COLA_IDX = COLA.length - 1;
+  const r = COLA[COLA_IDX];
+  pos.textContent = 'Caso ' + (COLA_IDX + 1) + ' de ' + COLA.length;
+
+  const d = r.dias_restantes;
+  const color = d === null ? 'var(--muted)' : d < 0 ? 'var(--rojo)' : d <= 3 ? 'var(--naranja)' : 'var(--verde)';
+  const dTxt  = d === null ? '—' : d < 0 ? '-' + Math.abs(d) : String(d);
+  const dLbl  = d === null ? 'sin fecha' : d < 0 ? 'días hábiles vencida' : 'días hábiles restantes';
+
+  cont.innerHTML =
+   '<div class="caso">' +
+    '<div class="caso-hd">' +
+      '<div><div class="caso-rad">' + esc(r.radicado) + '</div>' +
+        '<div class="caso-nom">' + esc(r.peticionario) + (r.documento ? ' · CC ' + esc(r.documento) : '') + '</div></div>' +
+      '<div><div class="dias-big" style="color:' + color + '">' + dTxt + '</div>' +
+        '<div class="dias-lbl">' + dLbl + '</div></div>' +
+    '</div>' +
+    '<div class="caso-meta">' +
+      mi('Tipo', r.tipo_nombre || r.tipo) +
+      mi('Radicación', fmtFecha(r.fecha_radicado)) +
+      mi('Vence', fmtFecha(r.fecha_limite)) +
+      mi('Expediente', r.expediente || '—') +
+      mi('Base legal', r.base_legal || '—') +
+      mi('Asignada a', r.asignado_nombre || 'Sin asignar') +
+    '</div>' +
+    (r.resumen ? '<div class="caso-res">' + esc(r.resumen) + '</div>' : '') +
+    '<div class="grid">' +
+      '<div class="fld"><label class="lbl">Fecha de proyección</label>' +
+        '<input type="date" id="k-proy" value="' + iso(new Date()) + '">' +
+        '<div class="hint">Día en que terminó el documento.</div></div>' +
+      '<div class="fld"><label class="lbl">Radicado de respuesta</label>' +
+        '<input type="text" id="k-rad" placeholder="Cuando Gestión Documental lo entregue">' +
+        '<div class="hint">Puede dejarlo vacío y completarlo después.</div></div>' +
+      '<div class="fld full"><label class="lbl">Notas de gestión</label>' +
+        '<textarea id="k-notas" placeholder="Sentido de la respuesta, observaciones…"></textarea></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:15px">' +
+      '<button class="btn btn-primary" onclick="guardarCaso()">Guardar y siguiente</button>' +
+      '<button class="btn btn-ghost" onclick="moverCaso(1)">Saltar</button>' +
+      '<button class="btn btn-ghost" onclick="moverCaso(-1)">Anterior</button>' +
+      '<button class="btn btn-ghost" onclick="marcarApoyo()">Requiere apoyo</button>' +
+    '</div>' +
+    '<div class="msg" id="k-msg"></div>' +
+    '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
+      '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
+   '</div>';
+}
+
+function mi(k, v){
+  return '<div class="mi"><div class="k">' + esc(k) + '</div><div>' + esc(v) + '</div></div>';
+}
+
+function moverCaso(paso){
+  COLA_IDX = Math.min(Math.max(COLA_IDX + paso, 0), COLA.length - 1);
+  pintarCaso();
+}
+
+async function guardarCaso(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const msg = document.getElementById('k-msg');
+  const proy = document.getElementById('k-proy').value || null;
+  const rad  = document.getElementById('k-rad').value.trim();
+  const notas= document.getElementById('k-notas').value.trim();
+  if(!proy && !rad){
+    msg.className = 'msg err'; msg.textContent = 'Indique al menos la fecha de proyección.';
+    return;
+  }
+  const patch = { fecha_proyeccion: proy, notas_gestion: notas || null };
+  if(rad) patch.radicado_respuesta = rad;
+  msg.className = 'msg'; msg.textContent = 'Guardando…';
+  try{
+    await supaFetch('pqr_peticiones?id=eq.' + r.id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(patch)
+    });
+    COLA.splice(COLA_IDX, 1);
+    if(COLA_IDX >= COLA.length) COLA_IDX = Math.max(COLA.length - 1, 0);
+    pintarCaso();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo guardar: ' + err.message;
+  }
+}
+
+async function marcarApoyo(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const msg = document.getElementById('k-msg');
+  try{
+    await supaFetch('pqr_peticiones?id=eq.' + r.id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' },
+      body: JSON.stringify({ requiere_apoyo:true, notas_gestion: document.getElementById('k-notas').value.trim() || null })
+    });
+    msg.className = 'msg ok'; msg.textContent = 'Marcada para revisión.';
+    setTimeout(function(){ moverCaso(1); }, 500);
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = err.message;
+  }
+}
+
+document.addEventListener('keydown', function(e){
+  if(!document.getElementById('p-cola').classList.contains('on')) return;
+  const enCampo = /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''));
+  if(e.ctrlKey && e.key === 'Enter'){ e.preventDefault(); guardarCaso(); return; }
+  if(enCampo) return;
+  if(e.key === 'ArrowRight') moverCaso(1);
+  if(e.key === 'ArrowLeft')  moverCaso(-1);
+});
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL 3 — BANDEJA
+   ══════════════════════════════════════════════════════════════ */
+async function cargarBandeja(){
+  const msg = document.getElementById('b-msg');
+  msg.className = 'msg'; msg.textContent = 'Cargando…';
+  try{
+    BANDEJA = await supaFetch('v_pqr_bandeja?select=*&order=fecha_limite.asc&limit=1000');
+    msg.textContent = BANDEJA.length + ' peticiones cargadas (máx. 1000 más urgentes).';
+    renderBandeja();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+function filtrarBandeja(){
+  const q  = document.getElementById('b-q').value.trim().toLowerCase();
+  const es = document.getElementById('b-estado').value;
+  const sm = document.getElementById('b-sem').value;
+  return BANDEJA.filter(function(r){
+    if(es && r.estado !== es) return false;
+    if(sm && r.semaforo !== sm) return false;
+    if(q){
+      const blob = [r.radicado, r.peticionario, r.documento, r.radicado_respuesta, r.expediente]
+        .join(' ').toLowerCase();
+      if(blob.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function renderBandeja(){
+  const rows = filtrarBandeja();
+  const body = document.getElementById('b-body');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="9">Sin resultados.</td></tr>'; return; }
+  body.innerHTML = rows.slice(0, 400).map(function(r){
+    const d = r.dias_restantes;
+    const dTxt = d === null ? '—' : d < 0 ? 'vencida ' + Math.abs(d) : d;
+    return '<tr>' +
+      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b></td>' +
+      '<td>' + esc(r.peticionario) + (r.documento ? '<div style="color:var(--muted);font-size:11.5px">' + esc(r.documento) + '</div>' : '') + '</td>' +
+      '<td>' + esc(r.tipo_nombre || r.tipo) + '</td>' +
+      '<td>' + fmtFecha(r.fecha_radicado) + '</td>' +
+      '<td>' + fmtFecha(r.fecha_limite) + '</td>' +
+      '<td>' + dTxt + '</td>' +
+      '<td><span class="pill s-' + esc(r.semaforo) + '">' + esc(r.estado) + '</span></td>' +
+      '<td>' + esc(r.asignado_nombre || '—') + '</td>' +
+      '<td>' + esc(r.radicado_respuesta || '—') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function exportarCSV(){
+  const rows = filtrarBandeja();
+  const cab = ['Radicado','Peticionario','Documento','Tipo','Fecha radicacion','Fecha limite',
+               'Dias restantes','Estado','Abogado','Fecha proyeccion','Radicado respuesta','Fecha respuesta'];
+  const lin = rows.map(function(r){
+    return [r.radicado, r.peticionario, r.documento, r.tipo_nombre, r.fecha_radicado, r.fecha_limite,
+            r.dias_restantes, r.estado, r.asignado_nombre, r.fecha_proyeccion,
+            r.radicado_respuesta, r.fecha_respuesta]
+      .map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }).join(';');
+  });
+  const csv = '\uFEFF' + cab.join(';') + '\n' + lin.join('\n');
+  const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'peticiones_' + iso(new Date()) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL 4 — TABLERO
+   ══════════════════════════════════════════════════════════════ */
+async function cargarTablero(){
+  try{
+    const [res, prod] = await Promise.all([
+      supaFetch('v_pqr_resumen?select=*'),
+      supaFetch('v_pqr_productividad?select=*')
+    ]);
+    const r = res[0] || {};
+    const kpis = [
+      ['Total registradas', r.total, 'var(--txt)'],
+      ['Sin asignar',       r.sin_asignar, 'var(--gold)'],
+      ['En gestión',        r.en_gestion, 'var(--azul)'],
+      ['Proyectadas',       r.proyectadas, 'var(--morado)'],
+      ['Con radicado',      r.respondidas, 'var(--verde)'],
+      ['Vencidas',          r.vencidas, 'var(--rojo)'],
+      ['Urgentes ≤3 días',  r.urgentes, 'var(--naranja)'],
+      ['Prom. días abogado',r.promedio_abogado, 'var(--txt)']
+    ];
+    document.getElementById('t-kpis').innerHTML = kpis.map(function(k){
+      return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' +
+             (k[1] == null ? '—' : k[1]) + '</div><div class="l">' + k[0] + '</div></div>';
+    }).join('');
+
+    document.getElementById('t-prod').innerHTML = prod.length ? prod.map(function(p){
+      return '<tr><td><b>' + esc(p.abogado) + '</b></td><td>' + p.asignadas + '</td>' +
+        '<td>' + p.pendientes + '</td><td>' + p.proyectadas + '</td><td>' + p.radicadas + '</td>' +
+        '<td style="color:' + (p.vencidas > 0 ? 'var(--rojo)' : 'var(--muted)') + '">' + p.vencidas + '</td>' +
+        '<td>' + p.a_termino + '</td><td>' + (p.promedio_dias == null ? '—' : p.promedio_dias) + '</td>' +
+        '<td><b style="color:var(--gold)">' + (p.pct_avance == null ? '—' : p.pct_avance + '%') + '</b></td></tr>';
+    }).join('') : '<tr><td colspan="9">Sin datos.</td></tr>';
+
+    document.getElementById('t-reparto').style.display = esAdmin() ? 'block' : 'none';
+  }catch(err){
+    document.getElementById('t-prod').innerHTML = '<tr><td colspan="9">Error: ' + esc(err.message) + '</td></tr>';
+  }
+}
+
+function llenarAbogados(){
+  const sel = document.getElementById('r-abogados');
+  sel.innerHTML = PERFILES.filter(function(p){ return p.rol === 'abogado'; })
+    .map(function(p){ return '<option value="' + p.id + '">' + esc(p.nombre) + '</option>'; }).join('');
+}
+
+async function repartir(){
+  const msg = document.getElementById('r-msg');
+  const sel = document.getElementById('r-abogados');
+  const ids = Array.prototype.slice.call(sel.selectedOptions).map(function(o){ return o.value; });
+  const cant = parseInt(document.getElementById('r-cant').value, 10) || 0;
+  const lote = document.getElementById('r-lote').value.trim() || null;
+  if(!ids.length || cant < 1){
+    msg.className = 'msg err'; msg.textContent = 'Seleccione al menos un abogado y una cantidad.';
+    return;
+  }
+  msg.className = 'msg'; msg.textContent = 'Repartiendo…';
+  try{
+    const n = await rpc('pqr_repartir', { abogados: ids, cantidad: cant, etiqueta: lote });
+    msg.className = 'msg ok';
+    msg.textContent = 'Se repartieron ' + (typeof n === 'number' ? n : JSON.stringify(n)) + ' peticiones.';
+    cargarTablero();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo repartir: ' + err.message;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SESIÓN EXISTENTE
+   ══════════════════════════════════════════════════════════════ */
+(async function(){
+  try{
+    if(sbAuth){
+      const { data } = await sbAuth.auth.getSession();
+      if(data && data.session) await iniciar();
+    }
+  }catch(e){ console.warn(e); }
+})();
+</script>
+</body>
+</html>
