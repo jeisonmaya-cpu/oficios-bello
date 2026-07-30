@@ -187,6 +187,15 @@ footer b{color:var(--gold)}
           <label class="lbl">Fecha de reparto</label>
           <input type="date" id="d-reparto">
         </div>
+        <div class="fld">
+          <label class="lbl">Asignar a *</label>
+          <select id="d-asignar"></select>
+          <div class="hint">La petición entra directo a su cola de trabajo.</div>
+        </div>
+        <div class="fld full" id="d-cargas-wrap">
+          <label class="lbl">Carga viva en este momento</label>
+          <div id="d-cargas" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+        </div>
         <div class="fld full">
           <label class="lbl">Resumen</label>
           <textarea id="d-res" placeholder="Qué solicita, en una o dos frases."></textarea>
@@ -214,6 +223,11 @@ footer b{color:var(--gold)}
           <select id="c-filtro" onchange="cargarCola()" style="width:auto">
             <option value="mias">Mis casos</option>
             <option value="todas">Todas</option>
+          </select>
+          <select id="c-orden" onchange="cargarCola()" style="width:auto">
+            <option value="urgencia">Por urgencia</option>
+            <option value="tipo">Agrupar por tipo</option>
+            <option value="persona">Agrupar por peticionario</option>
           </select>
           <button class="btn btn-ghost" onclick="cargarCola()">Recargar</button>
         </div>
@@ -265,7 +279,19 @@ footer b{color:var(--gold)}
       <h2>Tablero de <em>control</em></h2>
       <p>Estado del represamiento y avance por abogado.</p>
     </div>
+    <div id="t-alertas"></div>
     <div class="kpis" id="t-kpis"></div>
+
+    <div class="card">
+      <div class="lbl" style="margin-bottom:12px">Flujo de las últimas 8 semanas — entran vs. se resuelven</div>
+      <div id="t-flujo"></div>
+      <div class="hint" id="t-proyeccion" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl" style="margin-bottom:12px">Antigüedad del represamiento</div>
+      <div id="t-aging"></div>
+    </div>
 
     <div class="card">
       <div class="lbl" style="margin-bottom:12px">Productividad por abogado</div>
@@ -330,6 +356,7 @@ let COLA = [];
 let COLA_IDX = 0;
 let CONTADOR = 0;
 let ULTIMAS = [];
+let CARGAS = [];
 
 /* ══════════════════════════════════════════════════════════════
    CAPA DE DATOS
@@ -545,7 +572,52 @@ function prepararDigitar(){
       e.preventDefault(); guardarPeticion();
     }
   });
+  llenarAsignar();
+  cargarCargasVivas();
   document.getElementById('d-rad').focus();
+}
+
+/* Selector de asignación: abogados activos + reparto automático */
+function llenarAsignar(){
+  const sel = document.getElementById('d-asignar');
+  if(!sel) return;
+  const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
+  sel.innerHTML =
+    '<option value="AUTO">Automático — a quien tenga menos carga</option>' +
+    abos.map(function(p){ return '<option value="' + p.id + '">' + esc(p.nombre) + '</option>'; }).join('') +
+    '<option value="">Sin asignar (a la bolsa general)</option>';
+}
+
+/* Carga viva: cuántas tiene cada abogada sin resolver */
+async function cargarCargasVivas(){
+  const cont = document.getElementById('d-cargas');
+  if(!cont) return;
+  try{
+    const filas = await supaFetch('v_pet_productividad?select=abogado,asignado_a,pendientes,vencidas,urgentes');
+    CARGAS = filas.filter(function(f){ return f.asignado_a; });
+    if(!CARGAS.length){ cont.innerHTML = '<span style="color:var(--muted);font-size:12.5px">Sin asignaciones todavía.</span>'; return; }
+    cont.innerHTML = CARGAS.map(function(c){
+      const col = c.vencidas > 0 ? 'var(--rojo)' : c.urgentes > 0 ? 'var(--naranja)' : 'var(--verde)';
+      return '<div style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:9px 13px">' +
+        '<div style="font-size:12.5px;font-weight:600">' + esc(c.abogado) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">' +
+          '<b style="color:' + col + '">' + c.pendientes + '</b> en curso · ' +
+          c.urgentes + ' urgentes · ' + c.vencidas + ' vencidas</div></div>';
+    }).join('');
+  }catch(e){ cont.innerHTML = ''; }
+}
+
+/* Elige la abogada con menos casos en curso */
+function abogadaConMenosCarga(){
+  const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
+  if(!abos.length) return null;
+  let mejor = null, min = Infinity;
+  abos.forEach(function(a){
+    const c = CARGAS.find(function(x){ return x.asignado_a === a.id; });
+    const n = c ? Number(c.pendientes) : 0;
+    if(n < min){ min = n; mejor = a.id; }
+  });
+  return mejor;
 }
 
 function calcLimite(){
@@ -595,6 +667,17 @@ async function guardarPeticion(){
     resumen: document.getElementById('d-res').value.trim() || null,
     origen: 'MANUAL'
   };
+  const dest = document.getElementById('d-asignar').value;
+  if(dest === 'AUTO'){
+    reg.asignado_a = abogadaConMenosCarga();
+    if(!reg.asignado_a){
+      msg.className = 'msg err';
+      msg.textContent = 'No hay abogados registrados para asignar. Regístrelos o elija "Sin asignar".';
+      return;
+    }
+  } else if(dest){
+    reg.asignado_a = dest;
+  }
   btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Guardando…';
   try{
     const r = await supaFetch('pet_peticiones', {
@@ -608,8 +691,11 @@ async function guardarPeticion(){
     ULTIMAS.unshift(guardada);
     ULTIMAS = ULTIMAS.slice(0, 8);
     pintarUltimas();
+    const quien = PERFILES.find(function(p){ return p.id === guardada.asignado_a; });
     msg.className = 'msg ok';
-    msg.textContent = 'Guardada. Vence el ' + fmtFecha(guardada.fecha_limite || '') + '.';
+    msg.textContent = 'Guardada' + (quien ? ' y asignada a ' + quien.nombre : '') +
+                      '. Vence el ' + fmtFecha(guardada.fecha_limite || '') + '.';
+    cargarCargasVivas();
     limpiarDigitar(false);
     siguienteRadicado();
   }catch(err){
@@ -651,8 +737,11 @@ async function cargarCola(){
   cont.innerHTML = '<div class="card">Cargando…</div>';
   try{
     const filtro = document.getElementById('c-filtro').value;
+    const orden = document.getElementById('c-orden').value;
     let q = 'v_pet_cola?select=*&limit=300';
     if(filtro === 'mias') q += '&asignado_a=eq.' + PERFIL.id;
+    if(orden === 'tipo')    q += '&order=tipo.asc,fecha_limite.asc';
+    if(orden === 'persona') q += '&order=documento.asc,fecha_limite.asc';
     COLA = await supaFetch(q);
     COLA_IDX = 0;
     pintarCaso();
@@ -883,9 +972,155 @@ async function cargarTablero(){
     }).join('') : '<tr><td colspan="9">Sin datos.</td></tr>';
 
     document.getElementById('t-reparto').style.display = esAdmin() ? 'block' : 'none';
+
+    const todas = await supaFetch('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
+      'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,asignado_nombre&limit=3000');
+    pintarAlertas(todas);
+    pintarFlujo(todas);
+    pintarAging(todas);
   }catch(err){
     document.getElementById('t-prod').innerHTML = '<tr><td colspan="9">Error: ' + esc(err.message) + '</td></tr>';
   }
+}
+
+/* ── Alertas accionables ── */
+function pintarAlertas(rows){
+  const abiertas = rows.filter(function(r){
+    return ['PENDIENTE','ASIGNADA','EN_TRAMITE'].indexOf(r.estado) !== -1;
+  });
+  const vencidas   = abiertas.filter(function(r){ return r.dias_restantes !== null && r.dias_restantes < 0; });
+  const estaSemana = abiertas.filter(function(r){ return r.dias_restantes !== null && r.dias_restantes >= 0 && r.dias_restantes <= 5; });
+  const trabadas   = rows.filter(function(r){ return r.estado === 'PROYECTADA' && r.dias_esperando_radicado > 5; });
+
+  const items = [];
+  if(vencidas.length)   items.push(['var(--rojo)',    vencidas.length + ' vencidas sin proyectar', 'Riesgo de tutela y desacato. Atiéndalas primero.']);
+  if(estaSemana.length) items.push(['var(--naranja)', estaSemana.length + ' vencen en 5 días hábiles o menos', 'Todavía se alcanzan a responder a término.']);
+  if(trabadas.length)   items.push(['var(--morado)',  trabadas.length + ' proyectadas esperando radicado hace más de 5 días', 'La demora está en Gestión Documental, no en las abogadas.']);
+
+  const cont = document.getElementById('t-alertas');
+  if(!items.length){
+    cont.innerHTML = '<div class="card" style="border-color:rgba(74,222,128,.3)">' +
+      '<b style="color:var(--verde)">Sin alertas.</b> ' +
+      '<span style="color:var(--muted);font-size:13px">Nada vencido ni represado por radicar.</span></div>';
+    return;
+  }
+  cont.innerHTML = items.map(function(a){
+    return '<div class="card" style="border-color:' + a[0] + '33;padding:14px 18px;margin-bottom:10px">' +
+      '<div style="font-weight:700;color:' + a[0] + ';font-size:14px">' + a[1] + '</div>' +
+      '<div style="color:var(--muted);font-size:12.5px;margin-top:3px">' + a[2] + '</div></div>';
+  }).join('');
+}
+
+/* ── Flujo semanal: lo que entra contra lo que se resuelve ── */
+function lunesDe(fechaIso){
+  const d = new Date(fechaIso + 'T12:00:00');
+  if(isNaN(d)) return null;
+  const dow = d.getDay() === 0 ? 7 : d.getDay();
+  d.setDate(d.getDate() - (dow - 1));
+  return iso(d);
+}
+
+function pintarFlujo(rows){
+  const semanas = [];
+  const hoy = new Date();
+  for(let i = 7; i >= 0; i--){
+    const d = new Date(hoy);
+    d.setDate(d.getDate() - i * 7);
+    semanas.push(lunesDe(iso(d)));
+  }
+  const ent = {}, res = {};
+  semanas.forEach(function(s){ ent[s] = 0; res[s] = 0; });
+
+  rows.forEach(function(r){
+    if(r.fecha_radicado){
+      const s = lunesDe(String(r.fecha_radicado).slice(0,10));
+      if(s in ent) ent[s]++;
+    }
+    const cierre = r.fecha_proyeccion || r.fecha_respuesta;
+    if(cierre){
+      const s = lunesDe(String(cierre).slice(0,10));
+      if(s in res) res[s]++;
+    }
+  });
+
+  let tope = 1;
+  semanas.forEach(function(s){ tope = Math.max(tope, ent[s], res[s]); });
+
+  document.getElementById('t-flujo').innerHTML =
+    '<div style="display:flex;gap:16px;font-size:11.5px;color:var(--muted);margin-bottom:10px">' +
+      '<span><b style="color:var(--azul)">■</b> Entran</span>' +
+      '<span><b style="color:var(--gold)">■</b> Se resuelven</span>' +
+      '<span style="margin-left:auto">Escala 0 – ' + tope + '</span></div>' +
+    semanas.map(function(s){
+      const e = ent[s], v = res[s];
+      return '<div style="margin-bottom:9px">' +
+        '<div style="font-size:11px;color:var(--muted);margin-bottom:3px">Semana del ' + fmtFecha(s) + '</div>' +
+        barra(e, tope, 'var(--azul)') + barra(v, tope, 'var(--gold)') + '</div>';
+    }).join('');
+
+  // Proyección: ritmo de las últimas 4 semanas contra lo que queda abierto
+  const ult4 = semanas.slice(-4).reduce(function(a, s){ return a + res[s]; }, 0);
+  const ritmo = ult4 / 4;
+  const abiertas = rows.filter(function(r){
+    return ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(r.estado) !== -1;
+  }).length;
+  const entra4 = semanas.slice(-4).reduce(function(a, s){ return a + ent[s]; }, 0) / 4;
+  const neto = ritmo - entra4;
+  const el = document.getElementById('t-proyeccion');
+
+  if(abiertas === 0){
+    el.textContent = 'No hay peticiones abiertas.';
+  } else if(neto <= 0){
+    el.innerHTML = 'Ritmo actual: <b>' + ritmo.toFixed(1) + '</b> resueltas por semana frente a <b>' +
+      entra4.toFixed(1) + '</b> que entran. <span style="color:var(--rojo)">El represamiento no baja: ' +
+      'con este ritmo se necesita más capacidad.</span>';
+  } else {
+    const sem = Math.ceil(abiertas / neto);
+    const fin = new Date(); fin.setDate(fin.getDate() + sem * 7);
+    el.innerHTML = 'Ritmo actual: <b>' + ritmo.toFixed(1) + '</b> resueltas por semana, <b>' +
+      entra4.toFixed(1) + '</b> nuevas. Quedan <b>' + abiertas + '</b> abiertas: el atraso se liquidaría hacia <b style="color:var(--gold)">' +
+      fmtFecha(iso(fin)) + '</b> (' + sem + ' semanas).';
+  }
+}
+
+function barra(valor, tope, color){
+  const pct = tope > 0 ? Math.round(valor / tope * 100) : 0;
+  return '<div style="display:flex;align-items:center;gap:9px;margin-bottom:3px">' +
+    '<div style="flex:1;height:11px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden">' +
+      '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:6px"></div></div>' +
+    '<div style="width:34px;text-align:right;font-size:12px;font-weight:600">' + valor + '</div></div>';
+}
+
+/* ── Antigüedad del represamiento (barras como % del total abierto) ── */
+function pintarAging(rows){
+  const abiertas = rows.filter(function(r){
+    return ['PENDIENTE','ASIGNADA','EN_TRAMITE'].indexOf(r.estado) !== -1;
+  });
+  const hoyIso = iso(new Date());
+  const rangos = [
+    ['Vencidas hace más de 90 días', function(d){ return d > 90; },              'var(--rojo)'],
+    ['Vencidas 61 a 90 días',        function(d){ return d > 60 && d <= 90; },   'var(--rojo)'],
+    ['Vencidas 31 a 60 días',        function(d){ return d > 30 && d <= 60; },   'var(--naranja)'],
+    ['Vencidas 1 a 30 días',         function(d){ return d > 0 && d <= 30; },    'var(--naranja)'],
+    ['Aún dentro del término',       function(d){ return d <= 0; },              'var(--verde)']
+  ];
+  const total = abiertas.length;
+  const cont = document.getElementById('t-aging');
+  if(!total){ cont.innerHTML = '<span style="color:var(--muted);font-size:13px">No hay peticiones abiertas.</span>'; return; }
+
+  cont.innerHTML = rangos.map(function(r){
+    const n = abiertas.filter(function(x){
+      const d = x.dias_restantes === null ? 0 : -x.dias_restantes;
+      return r[1](d);
+    }).length;
+    const pct = Math.round(n / total * 100);
+    return '<div style="margin-bottom:10px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">' +
+        '<span>' + r[0] + '</span><span><b>' + n + '</b> <span style="color:var(--muted)">· ' + pct + '%</span></span></div>' +
+      '<div style="height:11px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + r[2] + ';border-radius:6px"></div></div></div>';
+  }).join('') +
+  '<div class="hint">Las barras son porcentaje del total abierto (' + total + ' peticiones), no relativas entre sí.</div>';
 }
 
 function llenarAbogados(){
