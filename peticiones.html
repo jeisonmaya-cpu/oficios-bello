@@ -109,6 +109,25 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .kbd{display:inline-block;background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:11px;font-family:monospace}
 .contador{background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--gold2);font-weight:600}
 .limite-live{font-size:12.5px;color:var(--gold2);margin-top:6px;font-weight:600}
+/* Avisos flotantes */
+#toasts{position:fixed;right:18px;bottom:18px;z-index:800;display:flex;flex-direction:column;gap:9px}
+.toast{background:rgba(13,42,82,.97);border:1px solid var(--border);border-left:4px solid var(--gold);
+  border-radius:11px;padding:13px 17px;font-size:13.5px;max-width:330px;box-shadow:0 8px 26px rgba(0,0,0,.4);
+  animation:sube .25s ease;backdrop-filter:blur(10px)}
+.toast.ok{border-left-color:var(--verde)} .toast.err{border-left-color:var(--rojo)}
+@keyframes sube{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.toast{animation:none}}
+/* Contador en las pestañas */
+.badge{display:inline-block;background:rgba(232,160,32,.22);color:var(--gold2);border-radius:99px;
+  padding:1px 7px;font-size:10.5px;font-weight:700;margin-left:6px;vertical-align:middle}
+.tab.on .badge{background:rgba(10,31,61,.25);color:var(--navy)}
+/* Avance del día */
+.hoy-box{display:flex;align-items:center;gap:13px;background:var(--glass);border:1px solid var(--border);
+  border-radius:13px;padding:13px 17px;margin-bottom:14px;flex-wrap:wrap}
+.hoy-n{font-family:'Syne';font-size:25px;font-weight:800;color:var(--gold);line-height:1}
+.hoy-t{font-size:12.5px;color:var(--muted);line-height:1.4}
+.hoy-barra{flex:1;min-width:130px;height:7px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
+.hoy-barra > div{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:99px;transition:width .5s}
 /* Lectura de documentos */
 .dropzone{border:2px dashed rgba(232,160,32,.35);border-radius:14px;padding:22px;text-align:center;
   cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:18px;background:rgba(232,160,32,.04)}
@@ -142,6 +161,7 @@ footer b{color:var(--gold)}
 </div>
 
 <!-- ═══════════ APP ═══════════ -->
+<div id="toasts"></div>
 <div id="app" style="display:none">
 <header>
   <div class="hdr-in">
@@ -197,6 +217,14 @@ footer b{color:var(--gold)}
         <div class="fld">
           <label class="lbl">Expediente coactivo</label>
           <input type="text" id="d-exp">
+        </div>
+        <div class="fld">
+          <label class="lbl">Correo electrónico</label>
+          <input type="email" id="d-mail" placeholder="Para enviarle la respuesta">
+        </div>
+        <div class="fld">
+          <label class="lbl">Teléfono</label>
+          <input type="text" id="d-tel" inputmode="tel">
         </div>
         <div class="fld">
           <label class="lbl">Canal</label>
@@ -257,6 +285,7 @@ footer b{color:var(--gold)}
           <button class="btn btn-ghost" onclick="cargarCola()">Recargar</button>
         </div>
       </div>
+      <div id="c-hoy"></div>
       <div id="c-aviso"></div>
       <div id="c-cont"><div class="card">Cargando…</div></div>
     </div>
@@ -596,11 +625,52 @@ async function iniciar(){
 
   llenarFiltroCola();
   construirTabs();
+  actualizarBadges();
   prepararDigitar();
   llenarAbogados();
 }
 
 function esAdmin(){ return PERFIL && (PERFIL.rol === 'admin' || PERFIL.rol === 'revisor'); }
+
+/* Aviso flotante: confirma sin robar el foco */
+function toast(texto, tipo, segundos){
+  const cont = document.getElementById('toasts');
+  if(!cont) return;
+  const t = document.createElement('div');
+  t.className = 'toast' + (tipo ? ' ' + tipo : '');
+  t.textContent = texto;
+  cont.appendChild(t);
+  setTimeout(function(){
+    t.style.transition = 'opacity .3s'; t.style.opacity = '0';
+    setTimeout(function(){ t.remove(); }, 320);
+  }, (segundos || 4) * 1000);
+}
+
+/* Contadores en las pestañas */
+async function actualizarBadges(){
+  try{
+    let q = 'v_pet_cola?select=id&limit=2000';
+    if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
+    const cola = await supaFetch(q);
+    ponerBadge('tab-cola', cola.length);
+
+    let q2 = 'v_pet_bandeja?select=id&estado=eq.PROYECTADA&limit=2000';
+    if(!esAdmin()) q2 += '&asignado_a=eq.' + PERFIL.id;
+    const sinRad = await supaFetch(q2);
+    ponerBadge('tab-historicos', sinRad.length);
+  }catch(e){}
+}
+
+function ponerBadge(id, n){
+  const tab = document.getElementById(id);
+  if(!tab) return;
+  const viejo = tab.querySelector('.badge');
+  if(viejo) viejo.remove();
+  if(!n) return;
+  const b = document.createElement('span');
+  b.className = 'badge'; b.textContent = n > 999 ? '999+' : n;
+  tab.appendChild(b);
+}
 
 /* El filtro de la cola: los abogados ven lo suyo; el admin puede ver el de cada quien */
 function llenarFiltroCola(){
@@ -770,6 +840,8 @@ async function guardarPeticion(){
     documento: document.getElementById('d-doc').value.trim() || null,
     expediente: document.getElementById('d-exp').value.trim() || null,
     canal: document.getElementById('d-canal').value,
+    email: document.getElementById('d-mail').value.trim() || null,
+    telefono: document.getElementById('d-tel').value.trim() || null,
     resumen: document.getElementById('d-res').value.trim() || null,
     origen: 'MANUAL'
   };
@@ -801,6 +873,8 @@ async function guardarPeticion(){
     msg.className = 'msg ok';
     msg.textContent = 'Guardada' + (quien ? ' y asignada a ' + quien.nombre : '') +
                       '. Vence el ' + fmtFecha(guardada.fecha_limite || '') + '.';
+    toast(rad + ' · vence ' + fmtFecha(guardada.fecha_limite || '') +
+          (quien ? ' · ' + quien.nombre : ''), 'ok', 3);
     cargarCargasVivas();
     limpiarDigitar(false);
     siguienteRadicado();
@@ -816,7 +890,9 @@ async function guardarPeticion(){
 }
 
 function limpiarDigitar(todo){
-  ['d-nom','d-doc','d-exp','d-res'].forEach(function(id){ document.getElementById(id).value = ''; });
+  ['d-nom','d-doc','d-exp','d-res','d-mail','d-tel'].forEach(function(id){
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
   if(todo){
     document.getElementById('d-rad').value = '';
     document.getElementById('d-reparto').value = '';
@@ -936,6 +1012,51 @@ async function textoDePDF(file){
   return out;
 }
 
+/* Opciones que mejoran notablemente el reconocimiento en documentos oficiales */
+const TESS_OPC = {
+  tessedit_pageseg_mode: '1',        // segmentación automática con orientación
+  preserve_interword_spaces: '1',
+  user_defined_dpi: '300'
+};
+
+/* Preprocesado: gris + contraste + binarización por umbral de Otsu.
+   Es lo que más sube la precisión en escaneos de fotocopia. */
+function limpiarCanvas(cv){
+  const ctx = cv.getContext('2d');
+  const img = ctx.getImageData(0, 0, cv.width, cv.height);
+  const d = img.data;
+  const hist = new Array(256).fill(0);
+  const gris = new Uint8Array(d.length / 4);
+
+  for(let i = 0, j = 0; i < d.length; i += 4, j++){
+    const g = (d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114) | 0;
+    gris[j] = g; hist[g]++;
+  }
+  // Umbral de Otsu
+  const total = gris.length;
+  let suma = 0;
+  for(let i = 0; i < 256; i++) suma += i * hist[i];
+  let sumaB = 0, wB = 0, mejor = 0, umbral = 128;
+  for(let t = 0; t < 256; t++){
+    wB += hist[t];
+    if(!wB) continue;
+    const wF = total - wB;
+    if(!wF) break;
+    sumaB += t * hist[t];
+    const mB = sumaB / wB, mF = (suma - sumaB) / wF;
+    const entre = wB * wF * (mB - mF) * (mB - mF);
+    if(entre > mejor){ mejor = entre; umbral = t; }
+  }
+  // Margen para no comerse los trazos delgados
+  const u = Math.min(umbral + 12, 245);
+  for(let i = 0, j = 0; i < d.length; i += 4, j++){
+    const v = gris[j] > u ? 255 : 0;
+    d[i] = d[i+1] = d[i+2] = v; d[i+3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return cv;
+}
+
 async function ocrDePDF(file){
   await cargarScript(CDN_PDFJS);
   await cargarScript(CDN_TESS);
@@ -947,13 +1068,17 @@ async function ocrDePDF(file){
   for(let p = 1; p <= n; p++){
     estado('Reconociendo página ' + p + ' de ' + n + '… no cierre esta ventana.');
     const pg = await pdf.getPage(p);
-    const vp = pg.getViewport({scale: 2});
+    // Escala 3 ≈ 300 dpi: es el punto dulce de Tesseract
+    const vp = pg.getViewport({scale: 3});
     const cv = document.createElement('canvas');
     cv.width = vp.width; cv.height = vp.height;
-    await pg.render({canvasContext: cv.getContext('2d'), viewport: vp}).promise;
-    const r = await window.Tesseract.recognize(cv, 'spa', {
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    await pg.render({canvasContext: ctx, viewport: vp}).promise;
+    limpiarCanvas(cv);
+    const r = await window.Tesseract.recognize(cv, 'spa', Object.assign({
       logger: function(m){ if(m.status === 'recognizing text') progreso(((p - 1) + m.progress) / n * 100); }
-    });
+    }, TESS_OPC));
     out += r.data.text + '\n';
   }
   return out;
@@ -961,10 +1086,39 @@ async function ocrDePDF(file){
 
 async function ocrDeImagen(file){
   await cargarScript(CDN_TESS);
-  const r = await window.Tesseract.recognize(file, 'spa', {
+  const cv = await imagenACanvas(file);
+  limpiarCanvas(cv);
+  const r = await window.Tesseract.recognize(cv, 'spa', Object.assign({
     logger: function(m){ if(m.status === 'recognizing text') progreso(m.progress * 100); }
-  });
+  }, TESS_OPC));
   return r.data.text;
+}
+
+function imagenACanvas(file){
+  return new Promise(function(ok, fail){
+    const img = new Image();
+    img.onload = function(){
+      // Si la foto es pequeña, se amplía: Tesseract falla con texto diminuto
+      const escala = img.width < 1600 ? Math.min(2200 / img.width, 3) : 1;
+      const cv = document.createElement('canvas');
+      cv.width = img.width * escala; cv.height = img.height * escala;
+      const ctx = cv.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(img.src);
+      ok(cv);
+    };
+    img.onerror = function(){ fail(new Error('no se pudo abrir la imagen')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* Corrige las confusiones típicas del OCR dentro de secuencias numéricas */
+function arreglarNumero(s){
+  return String(s || '')
+    .replace(/[OoQ]/g,'0').replace(/[IilÍ|]/g,'1').replace(/[Ss]/g,'5')
+    .replace(/[Bb]/g,'8').replace(/[Zz]/g,'2').replace(/[Gg]/g,'6')
+    .replace(/[^0-9]/g,'');
 }
 
 /* ── Extracción de datos del texto ── */
@@ -976,8 +1130,33 @@ function extraerDatos(t){
   const d = {};
 
   // Documento de identidad
-  let m = txt.match(/(?:c\.?\s?c\.?|c[ée]dula(?:\s+de\s+ciudadan[íi]a)?|n\.?\s?i\.?\s?t\.?|identificad[oa]\s+con(?:\s+la)?(?:\s+c[ée]dula)?)[^0-9]{0,25}(\d{1,3}(?:[.,]\d{3}){1,4}|\d{6,12})/i);
-  if(m) d.documento = m[1].replace(/[^0-9]/g, '');
+  const OCRD = '\\dOoIilSsBbZzGgQ';
+  let m = txt.match(new RegExp(
+    '(?:c\\.?\\s?c\\.?|c[ée]dula|n\\.?\\s?i\\.?\\s?t\\.?|identificad[oa]\\s+con)' +
+    '[^\\d]{0,30}?' +
+    '([' + OCRD + ']{1,3}(?:[.,][' + OCRD + ']{3}){1,4}|[' + OCRD + ']{6,12})', 'i'));
+  if(m){
+    const limpio = arreglarNumero(m[1]);
+    if(limpio.length >= 6 && limpio.length <= 12) d.documento = limpio;
+  }
+
+  // Comparendo: 15 a 22 dígitos seguidos
+  m = txt.match(new RegExp(
+        '(?:comparendo|orden\\s+de\\s+comparendo)[^\\d]{0,25}' +
+        '(\\d[' + OCRD + '\\s.-]{13,26}[' + OCRD + '])', 'i'))
+      || txt.match(/\b(\d{18,22})\b/);
+  if(m){
+    const c = arreglarNumero(m[1]);
+    if(c.length >= 15 && c.length <= 22) d.comparendo = c;
+  }
+
+  // Resolución sanción o mandamiento de pago
+  m = txt.match(/(?:resoluci[óo]n\s+sanci[óo]n|mandamiento\s+de\s+pago)[^0-9]{0,30}(\d{6,14})/i);
+  if(m) d.resolucion = m[1];
+
+  // Placa de vehículo
+  m = txt.match(/\b([A-Z]{3}[\s-]?\d{2,3}[A-Z]?)\b/);
+  if(m && !/^(CC|NIT|SIM)/.test(m[1])) d.placa = m[1].replace(/[\s-]/g,'');
 
   // Nombre del peticionario
   const patronesNombre = [
@@ -1065,6 +1244,8 @@ function aplicarDatos(d){
   set('d-doc', d.documento, 'cédula');
   set('d-exp', d.expediente, 'expediente');
   set('d-rad', d.radicado, 'radicado');
+  set('d-mail', d.email, 'correo');
+  set('d-tel', d.telefono, 'teléfono');
 
   if(d.fecha){
     const f = document.getElementById('d-fecha');
@@ -1085,6 +1266,9 @@ function aplicarDatos(d){
       const t = TIPOS.find(function(x){ return x.codigo === d.tipo; });
       if(t) partes.push('Solicita ' + t.nombre.toLowerCase() + '.');
     }
+    if(d.comparendo) partes.push('Comparendo: ' + d.comparendo +
+      (d.resolucion ? ' · Resolución sanción: ' + d.resolucion : '') + '.');
+    if(d.placa) partes.push('Placa: ' + d.placa + '.');
     if(d.vigencias) partes.push('Vigencias mencionadas: ' + d.vigencias + '.');
     if(d.email || d.telefono){
       partes.push('Contacto: ' + [d.email, d.telefono].filter(Boolean).join(' / ') + '.');
@@ -1140,6 +1324,8 @@ async function cargarCola(){
     COLA_IDX = 0;
     pintarCaso();
     avisoSinRadicado();
+    avanceDelDia();
+    actualizarBadges();
   }catch(err){
     cont.innerHTML = '<div class="card">No se pudo cargar la cola: ' + esc(err.message) + '</div>';
   }
@@ -1194,6 +1380,9 @@ function pintarCaso(){
       '<div class="fld"><label class="lbl">Radicado de respuesta</label>' +
         '<input type="text" id="k-rad" placeholder="Cuando Gestión Documental lo entregue">' +
         '<div class="hint">Puede dejarlo vacío y completarlo después.</div></div>' +
+      '<div class="fld"><label class="lbl">Fecha de la respuesta al usuario</label>' +
+        '<input type="date" id="k-fresp">' +
+        '<div class="hint">Fecha del radicado de salida.</div></div>' +
       '<div class="fld full"><label class="lbl">Notas de gestión</label>' +
         '<textarea id="k-notas" placeholder="Sentido de la respuesta, observaciones…"></textarea></div>' +
     '</div>' +
@@ -1205,12 +1394,37 @@ function pintarCaso(){
       (r.tipo === 'PRESCRIPCION'
         ? '<button class="btn btn-ghost" style="border-color:rgba(232,160,32,.5);color:var(--gold2)" ' +
           'onclick="abrirResolucion()">Generar resolución</button>' : '') +
+      '<button class="btn btn-ghost" style="border-color:rgba(96,165,250,.5);color:var(--azul)" ' +
+        'onclick="abrirOficio()">Oficio al usuario</button>' +
     '</div>' +
     '<div id="k-doc"></div>' +
     '<div class="msg" id="k-msg"></div>' +
     '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
       '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
    '</div>';
+}
+
+/* Cuántas lleva resueltas hoy */
+async function avanceDelDia(){
+  const cont = document.getElementById('c-hoy');
+  if(!cont) return;
+  try{
+    const hoy = iso(new Date());
+    let q = 'v_pet_bandeja?select=id&fecha_proyeccion=eq.' + hoy + '&limit=500';
+    if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
+    const hechas = await supaFetch(q);
+    const n = hechas.length;
+    const meta = 12;
+    const pct = Math.min(n / meta * 100, 100);
+    cont.innerHTML =
+      '<div class="hoy-box">' +
+        '<div><div class="hoy-n">' + n + '</div>' +
+        '<div class="hoy-t">resueltas<br>hoy</div></div>' +
+        '<div class="hoy-barra"><div style="width:' + pct + '%"></div></div>' +
+        '<div class="hoy-t" style="text-align:right">' +
+          (COLA.length ? COLA.length + ' en cola' : 'cola al día') + '</div>' +
+      '</div>';
+  }catch(e){ cont.innerHTML = ''; }
 }
 
 /* Recordatorio: respuestas proyectadas que siguen sin radicado */
@@ -1267,16 +1481,22 @@ async function guardarCaso(){
     msg.className = 'msg err'; msg.textContent = 'Indique al menos la fecha de proyección.';
     return;
   }
+  const fresp = document.getElementById('k-fresp').value || null;
   const patch = { fecha_proyeccion: proy, notas_gestion: notas || null };
   if(rad) patch.radicado_respuesta = rad;
+  if(fresp) patch.fecha_respuesta = fresp;
   msg.className = 'msg'; msg.textContent = 'Guardando…';
   try{
     await supaFetch('pet_peticiones?id=eq.' + r.id, {
       method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(patch)
     });
+    toast('Caso ' + r.radicado + ' registrado.' + (rad ? '' : ' Falta el radicado de respuesta.'),
+          rad ? 'ok' : '');
     COLA.splice(COLA_IDX, 1);
     if(COLA_IDX >= COLA.length) COLA_IDX = Math.max(COLA.length - 1, 0);
     pintarCaso();
+    avanceDelDia();
+    actualizarBadges();
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'No se pudo guardar: ' + err.message;
   }
@@ -1312,6 +1532,106 @@ document.addEventListener('keydown', function(e){
    ══════════════════════════════════════════════════════════════ */
 const URL_PLANTILLA_PRESCRIPCION =
   SUPA_URL + '/storage/v1/object/public/modelos/plantilla_prescripcion.docx';
+const URL_PLANTILLA_OFICIO =
+  SUPA_URL + '/storage/v1/object/public/modelos/plantilla_oficio_usuario.docx';
+
+const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio',
+                  'agosto','septiembre','octubre','noviembre','diciembre'];
+
+function fechaLarga(d){
+  return 'Bello, ' + String(d.getDate()).padStart(2,'0') + ' de ' +
+         MESES_ES[d.getMonth()] + ' de ' + d.getFullYear();
+}
+
+/* ── Oficio de respuesta al peticionario ── */
+function abrirOficio(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const cont = document.getElementById('k-doc');
+  if(!cont) return;
+  if(cont.getAttribute('data-modo') === 'oficio'){ cont.innerHTML = ''; cont.removeAttribute('data-modo'); return; }
+  cont.setAttribute('data-modo','oficio');
+
+  cont.innerHTML =
+   '<div style="background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.3);' +
+   'border-radius:13px;padding:18px;margin-top:16px">' +
+     '<div class="lbl" style="margin-bottom:4px">Oficio de respuesta al peticionario</div>' +
+     '<div class="hint" style="margin-bottom:14px">Acompaña el acto administrativo. ' +
+     'Se envía al correo registrado o se notifica físicamente.</div>' +
+     '<div class="grid">' +
+       '<div class="fld"><label class="lbl">Tratamiento</label>' +
+         '<select id="o-trat"><option>Señor</option><option>Señora</option><option>Señores</option></select></div>' +
+       '<div class="fld"><label class="lbl">Peticionario</label>' +
+         '<input type="text" id="o-nom" value="' + esc(r.peticionario || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Cédula</label>' +
+         '<input type="text" id="o-ced" value="' + esc(r.documento || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Correo electrónico</label>' +
+         '<input type="email" id="o-mail" value="' + esc(r.email || '') + '" placeholder="Si no tiene, se deja vacío"></div>' +
+       '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
+         '<input type="text" id="o-rad" value="' + esc(r.radicado || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Proyectó</label>' +
+         '<input type="text" id="o-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '"></div>' +
+     '</div>' +
+     '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
+       '<button class="btn btn-primary" onclick="generarOficio()">Descargar Word</button>' +
+       '<button class="btn btn-ghost" onclick="document.getElementById(\'k-doc\').innerHTML=\'\'">Cerrar</button>' +
+       '<div class="msg" id="o-msg" style="margin:0"></div>' +
+     '</div>' +
+   '</div>';
+}
+
+async function generarOficio(){
+  const msg = document.getElementById('o-msg');
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const hoy = new Date();
+  const datos = {
+    TRATAMIENTO: document.getElementById('o-trat').value,
+    NOMBRE:      (document.getElementById('o-nom').value || '').trim().toUpperCase(),
+    CEDULA:      (document.getElementById('o-ced').value || '').trim(),
+    EMAIL:       (document.getElementById('o-mail').value || '').trim(),
+    RADICADO:    (document.getElementById('o-rad').value || '').trim(),
+    PROYECTO:    (document.getElementById('o-proy').value || '').trim(),
+    FECHA_LARGA: fechaLarga(hoy),
+    FECHA_DOC:   fmtFecha(iso(hoy))
+  };
+  if(!datos.NOMBRE || !datos.RADICADO){
+    msg.className = 'msg err'; msg.textContent = 'Faltan el nombre o el radicado.';
+    return;
+  }
+  msg.className = 'msg'; msg.textContent = 'Armando el oficio…';
+  try{
+    await armarDocx(URL_PLANTILLA_OFICIO, datos,
+      'Oficio_respuesta_' + datos.CEDULA.replace(/[^0-9]/g,'') + '_' + datos.RADICADO.replace(/[^\w-]/g,'') + '.docx');
+    msg.className = 'msg ok';
+    msg.textContent = datos.EMAIL ? 'Oficio descargado. Envíelo a ' + datos.EMAIL + '.'
+                                  : 'Oficio descargado. Sin correo registrado: notificación física.';
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo generar: ' + err.message;
+  }
+}
+
+/* Motor común: descarga la plantilla, reemplaza y entrega el .docx */
+async function armarDocx(url, datos, nombreArchivo){
+  if(!window.JSZip) throw new Error('no cargó la librería del documento');
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('no se encontró la plantilla (HTTP ' + res.status + ')');
+  const zip = await window.JSZip.loadAsync(await res.arrayBuffer());
+  let xml = await zip.file('word/document.xml').async('string');
+  Object.keys(datos).forEach(function(k){
+    xml = xml.split('{{' + k + '}}').join(xmlSeguro(datos[k]));
+  });
+  zip.file('word/document.xml', xml);
+  const blob = await zip.generateAsync({
+    type:'blob',
+    mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  });
+  const u = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = u; a.download = nombreArchivo; a.click();
+  URL.revokeObjectURL(u);
+  return nombreArchivo;
+}
 
 function abrirResolucion(){
   const r = COLA[COLA_IDX];
