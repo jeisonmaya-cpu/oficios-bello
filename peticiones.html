@@ -362,6 +362,20 @@ footer b{color:var(--gold)}
     </div>
 
     <div class="card">
+      <div class="lbl" style="margin-bottom:12px">Radicación — quién registra las peticiones</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Persona</th><th>Hoy</th><th>Últimos 7 días</th><th>Últimos 30</th>
+            <th>Total</th><th>Días trabajados</th><th>Promedio/día</th><th>Última vez</th>
+          </tr></thead>
+          <tbody id="t-rad"><tr><td colspan="8">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="hint" id="t-rad-tot" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
       <div class="lbl" style="margin-bottom:12px">Productividad por abogado</div>
       <div class="tbl-wrap">
         <table>
@@ -1706,10 +1720,12 @@ async function cerrarSeleccionadas(){
    ══════════════════════════════════════════════════════════════ */
 async function cargarTablero(){
   try{
-    const [res, prod] = await Promise.all([
+    const [res, prod, rad] = await Promise.all([
       supaFetch('v_pet_resumen?select=*'),
-      supaFetch('v_pet_productividad?select=*')
+      supaFetch('v_pet_productividad?select=*'),
+      supaFetch('v_pet_radicacion?select=*').catch(function(){ return null; })
     ]);
+    pintarRadicacion(rad);
     const r = res[0] || {};
     const kpis = [
       ['Total registradas', r.total, 'var(--txt)'],
@@ -1745,6 +1761,43 @@ async function cargarTablero(){
   }catch(err){
     document.getElementById('t-prod').innerHTML = '<tr><td colspan="9">Error: ' + esc(err.message) + '</td></tr>';
   }
+}
+
+/* ── Quién radica: volumen por persona ── */
+function pintarRadicacion(rows){
+  const body = document.getElementById('t-rad');
+  const tot  = document.getElementById('t-rad-tot');
+  if(!body) return;
+  if(rows === null){
+    body.innerHTML = '<tr><td colspan="8">Falta ejecutar el SQL de medición de radicación ' +
+                     '(pet_delta_radicacion.sql).</td></tr>';
+    tot.textContent = '';
+    return;
+  }
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="8">Todavía no hay peticiones radicadas.</td></tr>';
+    tot.textContent = '';
+    return;
+  }
+  body.innerHTML = rows.map(function(r){
+    return '<tr>' +
+      '<td><b>' + esc(r.radicador) + '</b></td>' +
+      '<td><b style="color:' + (r.hoy > 0 ? 'var(--verde)' : 'var(--muted)') + '">' + r.hoy + '</b></td>' +
+      '<td>' + r.ultimos_7_dias + '</td>' +
+      '<td>' + r.ultimos_30_dias + '</td>' +
+      '<td><b style="color:var(--gold)">' + r.total + '</b></td>' +
+      '<td>' + r.dias_trabajados + '</td>' +
+      '<td>' + (r.promedio_por_dia == null ? '—' : r.promedio_por_dia) + '</td>' +
+      '<td>' + fmtFecha(r.ultima) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  const sumHoy = rows.reduce(function(a, r){ return a + Number(r.hoy); }, 0);
+  const sum7   = rows.reduce(function(a, r){ return a + Number(r.ultimos_7_dias); }, 0);
+  const sumTot = rows.reduce(function(a, r){ return a + Number(r.total); }, 0);
+  tot.innerHTML = 'Hoy: <b style="color:var(--verde)">' + sumHoy + '</b> · ' +
+    'Últimos 7 días: <b>' + sum7 + '</b> · Total registrado: <b style="color:var(--gold)">' + sumTot + '</b>' +
+    (sum7 > 0 ? ' · A ese ritmo son unas <b>' + Math.round(sum7 / 7 * 5) + '</b> por semana laboral.' : '');
 }
 
 /* ── Alertas accionables ── */
