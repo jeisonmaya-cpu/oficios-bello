@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --navy:#0a1f3d; --navy2:#0d2a52; --gold:#e8a020; --gold2:#f5c05a;
@@ -1201,7 +1202,11 @@ function pintarCaso(){
       '<button class="btn btn-ghost" onclick="moverCaso(1)">Saltar</button>' +
       '<button class="btn btn-ghost" onclick="moverCaso(-1)">Anterior</button>' +
       '<button class="btn btn-ghost" onclick="marcarApoyo()">Requiere apoyo</button>' +
+      (r.tipo === 'PRESCRIPCION'
+        ? '<button class="btn btn-ghost" style="border-color:rgba(232,160,32,.5);color:var(--gold2)" ' +
+          'onclick="abrirResolucion()">Generar resolución</button>' : '') +
     '</div>' +
+    '<div id="k-doc"></div>' +
     '<div class="msg" id="k-msg"></div>' +
     '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
       '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
@@ -1301,6 +1306,140 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'ArrowRight') moverCaso(1);
   if(e.key === 'ArrowLeft')  moverCaso(-1);
 });
+
+/* ══════════════════════════════════════════════════════════════
+   GENERACIÓN DE LA RESOLUCIÓN DE PRESCRIPCIÓN (.docx)
+   ══════════════════════════════════════════════════════════════ */
+const URL_PLANTILLA_PRESCRIPCION =
+  SUPA_URL + '/storage/v1/object/public/modelos/plantilla_prescripcion.docx';
+
+function abrirResolucion(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const cont = document.getElementById('k-doc');
+  if(!cont) return;
+  if(cont.innerHTML){ cont.innerHTML = ''; return; }
+
+  cont.innerHTML =
+   '<div style="background:rgba(232,160,32,.07);border:1px solid rgba(232,160,32,.3);' +
+   'border-radius:13px;padding:18px;margin-top:16px">' +
+     '<div class="lbl" style="margin-bottom:4px">Resolución que concede la prescripción</div>' +
+     '<div class="hint" style="margin-bottom:14px">Los datos del peticionario salen del caso. ' +
+     'Complete los del comparendo y la resolución sanción.</div>' +
+     '<div class="grid">' +
+       '<div class="fld"><label class="lbl">Peticionario</label>' +
+         '<input type="text" id="g-nom" value="' + esc(r.peticionario || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Cédula</label>' +
+         '<input type="text" id="g-ced" value="' + esc(formatoCedula(r.documento)) + '"></div>' +
+       '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
+         '<input type="text" id="g-rad" value="' + esc(r.radicado || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">N° de comparendo</label>' +
+         '<input type="text" id="g-comp" placeholder="05088000000018443355"></div>' +
+       '<div class="fld"><label class="lbl">Fecha del comparendo</label>' +
+         '<input type="text" id="g-fcomp" placeholder="DD/MM/AAAA"></div>' +
+       '<div class="fld"><label class="lbl">Resolución sanción / mandamiento</label>' +
+         '<input type="text" id="g-res" placeholder="1936992000"></div>' +
+       '<div class="fld"><label class="lbl">Fecha de la resolución</label>' +
+         '<input type="text" id="g-fres" placeholder="DD/MM/AAAA"></div>' +
+       '<div class="fld"><label class="lbl">Proyectó</label>' +
+         '<input type="text" id="g-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '"></div>' +
+     '</div>' +
+     '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
+       '<button class="btn btn-primary" onclick="generarResolucion()">Descargar Word</button>' +
+       '<button class="btn btn-ghost" onclick="document.getElementById(\'k-doc\').innerHTML=\'\'">Cerrar</button>' +
+       '<div class="msg" id="g-msg" style="margin:0"></div>' +
+     '</div>' +
+   '</div>';
+  document.getElementById('g-comp').focus();
+}
+
+/* La resolución escribe la cédula con separadores de miles */
+function formatoCedula(doc){
+  if(!doc) return '';
+  const n = String(doc).replace(/[^0-9]/g, '');
+  if(n.length < 6) return doc;
+  return n.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function xmlSeguro(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+
+async function generarResolucion(){
+  const msg = document.getElementById('g-msg');
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+
+  const datos = {
+    NOMBRE:            (document.getElementById('g-nom').value || '').trim().toUpperCase(),
+    CEDULA:            (document.getElementById('g-ced').value || '').trim(),
+    RADICADO:          (document.getElementById('g-rad').value || '').trim(),
+    COMPARENDO:        (document.getElementById('g-comp').value || '').trim(),
+    FECHA_COMPARENDO:  (document.getElementById('g-fcomp').value || '').trim(),
+    RESOLUCION:        (document.getElementById('g-res').value || '').trim(),
+    FECHA_RESOLUCION:  (document.getElementById('g-fres').value || '').trim(),
+    PROYECTO:          (document.getElementById('g-proy').value || '').trim(),
+    FECHA_DOC:         fmtFecha(iso(new Date()))
+  };
+
+  const faltan = ['NOMBRE','CEDULA','COMPARENDO','FECHA_COMPARENDO','RESOLUCION','FECHA_RESOLUCION']
+    .filter(function(k){ return !datos[k]; });
+  if(faltan.length){
+    msg.className = 'msg err';
+    msg.textContent = 'Faltan datos del comparendo o de la resolución sanción.';
+    return;
+  }
+  if(!window.JSZip){
+    msg.className = 'msg err'; msg.textContent = 'No cargó la librería del documento. Recargue la página.';
+    return;
+  }
+
+  msg.className = 'msg'; msg.textContent = 'Armando el documento…';
+  try{
+    const res = await fetch(URL_PLANTILLA_PRESCRIPCION);
+    if(!res.ok) throw new Error('No se encontró la plantilla (HTTP ' + res.status + ')');
+    const zip = await window.JSZip.loadAsync(await res.arrayBuffer());
+
+    let xml = await zip.file('word/document.xml').async('string');
+    Object.keys(datos).forEach(function(k){
+      xml = xml.split('{{' + k + '}}').join(xmlSeguro(datos[k]));
+    });
+    zip.file('word/document.xml', xml);
+
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+    const nombreArchivo = 'Resolucion_prescripcion_' +
+      datos.CEDULA.replace(/[^0-9]/g,'') + '_' + (r.radicado || '').replace(/[^\w-]/g,'') + '.docx';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nombreArchivo; a.click();
+    URL.revokeObjectURL(url);
+
+    // Deja constancia en el caso de que el documento se proyectó
+    try{
+      await supaFetch('pet_peticiones?id=eq.' + r.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        body: JSON.stringify({ doc_proyectado: nombreArchivo })
+      });
+    }catch(e){}
+
+    const notas = document.getElementById('k-notas');
+    if(notas && !notas.value.trim()){
+      notas.value = 'Se proyecta resolución que concede la prescripción del comparendo ' +
+                    datos.COMPARENDO + ' del ' + datos.FECHA_COMPARENDO + '.';
+    }
+    msg.className = 'msg ok';
+    msg.textContent = 'Documento descargado. Revíselo y guarde el caso con la fecha de proyección.';
+  }catch(err){
+    msg.className = 'msg err';
+    msg.textContent = 'No se pudo generar: ' + err.message +
+      '. Verifique que la plantilla esté cargada en Supabase Storage.';
+  }
+}
 
 /* ══════════════════════════════════════════════════════════════
    PANEL 3 — BANDEJA
