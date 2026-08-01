@@ -2345,6 +2345,29 @@ const ICONO = {
     '<path d="M12 9v4M12 17h.01"/></svg>'
 };
 
+/* Cuántas lleva resueltas hoy */
+async function avanceDelDia(){
+  const cont = document.getElementById('c-hoy');
+  if(!cont) return;
+  try{
+    const hoy = iso(new Date());
+    let q = 'v_pet_bandeja?select=id&fecha_proyeccion=eq.' + hoy + '&limit=500';
+    if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
+    const hechas = await supaFetch(q);
+    const n = hechas.length;
+    const meta = 12;
+    const pct = Math.min(n / meta * 100, 100);
+    cont.innerHTML =
+      '<div class="hoy-box">' +
+        '<div><div class="hoy-n">' + n + '</div>' +
+        '<div class="hoy-t">resueltas<br>hoy</div></div>' +
+        '<div class="hoy-barra"><div style="width:' + pct + '%"></div></div>' +
+        '<div class="hoy-t" style="text-align:right">' +
+          (COLA.length ? COLA.length + ' en cola' : 'cola al día') + '</div>' +
+      '</div>';
+  }catch(e){ cont.innerHTML = ''; }
+}
+
 /* Recordatorio: respuestas proyectadas que siguen sin radicado */
 async function avisoSinRadicado(){
   const cont = document.getElementById('c-aviso');
