@@ -3689,9 +3689,25 @@ function pintarRadicacion(rows){
   const sumHoy = rows.reduce(function(a, r){ return a + Number(r.hoy); }, 0);
   const sum7   = rows.reduce(function(a, r){ return a + Number(r.ultimos_7_dias); }, 0);
   const sumTot = rows.reduce(function(a, r){ return a + Number(r.total); }, 0);
+
+  // Proyección sobre días REALMENTE trabajados, no sobre días calendario:
+  // si el equipo lleva 2 días, dividir entre 7 subestima el ritmo.
+  const diasReales = Math.max.apply(null,
+    rows.map(function(r){ return Number(r.dias_trabajados) || 0; }).concat([0]));
+  const porDia = diasReales > 0 ? sumTot / diasReales : 0;
+  const porSemana = Math.round(porDia * 5);
+
   tot.innerHTML = 'Hoy: <b style="color:var(--verde)">' + sumHoy + '</b> · ' +
-    'Últimos 7 días: <b>' + sum7 + '</b> · Total registrado: <b style="color:var(--gold)">' + sumTot + '</b>' +
-    (sum7 > 0 ? ' · A ese ritmo son unas <b>' + Math.round(sum7 / 7 * 5) + '</b> por semana laboral.' : '');
+    'Últimos 7 días: <b>' + sum7 + '</b> · ' +
+    'Total registrado: <b style="color:var(--gold)">' + sumTot + '</b>' +
+    (diasReales > 0
+      ? ' · Promedio de <b>' + Math.round(porDia) + '</b> por jornada en <b>' + diasReales +
+        '</b> día(s) de trabajo → unas <b style="color:var(--gold2)">' + porSemana +
+        '</b> por semana laboral.' +
+        (diasReales < 3
+          ? ' <span style="color:var(--muted)">Con menos de 3 jornadas la proyección es apenas indicativa.</span>'
+          : '')
+      : '');
 }
 
 /* ── Alertas accionables ── */
