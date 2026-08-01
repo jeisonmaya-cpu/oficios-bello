@@ -470,11 +470,15 @@ footer b{color:var(--gold)}
       </select>
       <button class="btn btn-ghost" onclick="cargarBandeja()">Recargar</button>
       <button class="btn btn-ghost" onclick="exportarCSV()">Exportar CSV</button>
+      <button class="btn btn-ghost" id="b-sel" onclick="modoSeleccion()"
+        style="border-color:rgba(192,132,252,.45);color:var(--morado)">Trasladar varias</button>
     </div>
+    <div id="b-barra"></div>
     <div class="msg" id="b-msg"></div>
     <div class="tbl-wrap">
       <table>
         <thead><tr>
+          <th id="b-th-sel" style="display:none;width:34px"></th>
           <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Radicación</th>
           <th>Límite</th><th>Días</th><th>Estado</th><th>Abogado</th><th>Rad. respuesta</th>
         </tr></thead>
@@ -631,6 +635,7 @@ let CONTADOR = 0;
 let ULTIMAS = [];
 let CARGAS = [];
 let NOTIFICADORES = [];
+let MOTIVOS = [];
 
 /* ══════════════════════════════════════════════════════════════
    CAPA DE DATOS
@@ -780,6 +785,8 @@ async function iniciar(){
     supaFetch('pet_notificadores?select=nombre&activo=is.true&order=orden.asc').catch(function(){ return []; })
   ]);
   NOTIFICADORES = notif.map(function(n){ return n.nombre; });
+  supaFetch('pet_motivos_traslado?select=*&order=orden.asc')
+    .then(function(m){ MOTIVOS = m; }).catch(function(){ MOTIVOS = []; });
   FESTIVOS = new Set(fest.map(function(f){ return String(f.fecha).slice(0,10); }));
   TIPOS = tipos;
   PERFILES = perfiles;
@@ -2411,6 +2418,9 @@ function pintarCaso(){
           ICONO.check + 'Guardar y siguiente</button>' +
         '<button class="btn btn-ghost btn-ic" onclick="moverCaso(1)">Saltar ›</button>' +
         '<button class="btn btn-ghost btn-ic" onclick="moverCaso(-1)">‹ Anterior</button>' +
+        (esAdmin()
+          ? '<button class="btn btn-ghost btn-ic" style="border-color:rgba(192,132,252,.45);' +
+            'color:var(--morado)" onclick="abrirTraslado()">' + ICONO.traslado + 'Trasladar</button>' : '') +
         '<button class="btn btn-ghost btn-ic" style="margin-left:auto;border-color:rgba(251,146,60,.4);' +
           'color:var(--naranja)" onclick="marcarApoyo()">' + ICONO.alerta + 'Requiere apoyo</button>' +
       '</div>' +
@@ -2448,8 +2458,98 @@ const ICONO = {
     '<path d="M20 6L9 17l-5-5"/></svg>',
   alerta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>' +
-    '<path d="M12 9v4M12 17h.01"/></svg>'
+    '<path d="M12 9v4M12 17h.01"/></svg>',
+  traslado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M16 3l4 4-4 4M20 7H8M8 21l-4-4 4-4M4 17h12"/></svg>'
 };
+
+/* ── Traslado de una petición a otro abogado ── */
+function abrirTraslado(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const cont = document.getElementById('k-doc');
+  if(!cont) return;
+  if(cont.getAttribute('data-modo') === 'traslado'){
+    cont.innerHTML = ''; cont.removeAttribute('data-modo'); return;
+  }
+  cont.setAttribute('data-modo','traslado');
+
+  const abos = PERFILES.filter(function(p){
+    return p.rol === 'abogado' && p.id !== r.asignado_a;
+  });
+  if(!abos.length){
+    cont.innerHTML = '<div class="msg err" style="margin-top:14px">' +
+      'No hay otro abogado registrado para trasladar.</div>';
+    return;
+  }
+
+  cont.innerHTML =
+   '<div style="background:rgba(192,132,252,.07);border:1px solid rgba(192,132,252,.32);' +
+   'border-radius:13px;padding:18px;margin-top:16px">' +
+     '<div class="lbl" style="margin-bottom:4px">Trasladar a otro abogado</div>' +
+     '<div class="hint" style="margin-bottom:14px">' +
+       'El plazo legal no cambia: sigue venciendo el ' + fmtFecha(r.fecha_limite) + '. ' +
+       'Lo que se reinicia es el conteo de días en manos del abogado.' +
+       (r.trasladada_veces > 0
+         ? ' <b style="color:var(--gold2)">Esta petición ya se ha trasladado ' +
+           r.trasladada_veces + ' vez(ces).</b>' : '') +
+     '</div>' +
+     '<div class="grid">' +
+       '<div class="fld"><label class="lbl">Pasar a</label>' +
+         '<select id="tr-abo">' +
+           abos.map(function(p){
+             const c = CARGAS.find(function(x){ return x.asignado_a === p.id; });
+             return '<option value="' + p.id + '">' + esc(p.nombre) +
+                    (c ? ' — ' + c.pendientes + ' en curso' : '') + '</option>';
+           }).join('') +
+         '</select></div>' +
+       '<div class="fld"><label class="lbl">Motivo</label>' +
+         '<select id="tr-mot">' +
+           (MOTIVOS.length
+             ? MOTIVOS.map(function(m){
+                 return '<option value="' + esc(m.codigo) + '">' + esc(m.nombre) + '</option>';
+               }).join('')
+             : '<option value="OTRO">Otro motivo</option>') +
+         '</select></div>' +
+       '<div class="fld full"><label class="lbl">Nota para quien la recibe</label>' +
+         '<textarea id="tr-nota" placeholder="Qué se ha hecho, qué falta, dónde está la dificultad…"></textarea>' +
+         '<div class="hint">Queda en las notas de gestión con la fecha.</div></div>' +
+     '</div>' +
+     '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
+       '<button class="btn btn-primary" onclick="hacerTraslado()">Trasladar</button>' +
+       '<button class="btn btn-ghost" onclick="document.getElementById(\'k-doc\').innerHTML=\'\'">Cancelar</button>' +
+       '<div class="msg" id="tr-msg" style="margin:0"></div>' +
+     '</div>' +
+   '</div>';
+}
+
+async function hacerTraslado(){
+  const r = COLA[COLA_IDX];
+  const msg = document.getElementById('tr-msg');
+  if(!r) return;
+  const abo  = document.getElementById('tr-abo').value;
+  const mot  = document.getElementById('tr-mot').value;
+  const nota = (document.getElementById('tr-nota').value || '').trim();
+  if(!abo){ msg.className = 'msg err'; msg.textContent = 'Elija a quién se traslada.'; return; }
+
+  const nom = (PERFILES.find(function(p){ return p.id === abo; }) || {}).nombre || '';
+  msg.className = 'msg'; msg.textContent = 'Trasladando…';
+  try{
+    const n = await rpc('pet_trasladar', {
+      ids: [r.id], nuevo_abogado: abo, motivo: mot, nota: nota || null
+    });
+    if(!n){ msg.className = 'msg err'; msg.textContent = 'No se pudo trasladar (verifique el estado del caso).'; return; }
+    toast(r.radicado + ' trasladada a ' + nom, 'ok', 4);
+    document.getElementById('k-doc').innerHTML = '';
+    COLA.splice(COLA_IDX, 1);
+    if(COLA_IDX >= COLA.length) COLA_IDX = Math.max(COLA.length - 1, 0);
+    pintarCaso();
+    cargarCargasVivas();
+    actualizarBadges();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo trasladar: ' + err.message;
+  }
+}
 
 /* Cuántas lleva resueltas hoy */
 async function avanceDelDia(){
@@ -3023,12 +3123,27 @@ function filtrarBandeja(){
 function renderBandeja(){
   const rows = filtrarBandeja();
   const body = document.getElementById('b-body');
-  if(!rows.length){ body.innerHTML = '<tr><td colspan="9">Sin resultados.</td></tr>'; return; }
+  const th = document.getElementById('b-th-sel');
+  if(th) th.style.display = SELECCION ? '' : 'none';
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="' + (SELECCION ? 10 : 9) + '">Sin resultados.</td></tr>';
+    return;
+  }
   body.innerHTML = rows.slice(0, 400).map(function(r){
     const d = r.dias_restantes;
     const dTxt = d === null ? '—' : d < 0 ? 'vencida ' + Math.abs(d) : d;
+    const movible = ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(r.estado) !== -1;
     return '<tr>' +
-      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b></td>' +
+      (SELECCION
+        ? '<td>' + (movible
+            ? '<input type="checkbox" class="b-chk" value="' + r.id + '" ' +
+              'style="width:17px;height:17px;cursor:pointer" onchange="contarSel()">'
+            : '') + '</td>'
+        : '') +
+      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b>' +
+        (r.trasladada_veces > 0
+          ? '<div style="font-size:10.5px;color:var(--morado)">trasladada ' +
+            r.trasladada_veces + 'x</div>' : '') + '</td>' +
       '<td>' + esc(r.peticionario) + (r.documento ? '<div style="color:var(--muted);font-size:11.5px">' + esc(r.documento) + '</div>' : '') + '</td>' +
       '<td>' + esc(r.tipo_nombre || r.tipo) + '</td>' +
       '<td>' + fmtFecha(r.fecha_radicado) + '</td>' +
@@ -3039,6 +3154,82 @@ function renderBandeja(){
       '<td>' + esc(r.radicado_respuesta || '—') + '</td>' +
     '</tr>';
   }).join('');
+}
+
+/* ── Traslado en bloque desde la Bandeja ── */
+let SELECCION = false;
+
+function modoSeleccion(){
+  if(!esAdmin()){ toast('Solo el administrador puede trasladar.', 'err'); return; }
+  SELECCION = !SELECCION;
+  document.getElementById('b-sel').textContent = SELECCION ? 'Cancelar selección' : 'Trasladar varias';
+  document.getElementById('b-barra').innerHTML = SELECCION ? barraTraslado() : '';
+  renderBandeja();
+}
+
+function barraTraslado(){
+  const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
+  return '<div class="card" style="border-color:rgba(192,132,252,.35);padding:15px 18px;margin-bottom:14px">' +
+    '<div style="display:flex;gap:11px;align-items:flex-end;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:170px"><label class="lbl">Pasar a</label>' +
+        '<select id="bt-abo">' + abos.map(function(p){
+          const c = CARGAS.find(function(x){ return x.asignado_a === p.id; });
+          return '<option value="' + p.id + '">' + esc(p.nombre) +
+                 (c ? ' — ' + c.pendientes + ' en curso' : '') + '</option>';
+        }).join('') + '</select></div>' +
+      '<div style="flex:1;min-width:170px"><label class="lbl">Motivo</label>' +
+        '<select id="bt-mot">' +
+          (MOTIVOS.length
+            ? MOTIVOS.map(function(m){ return '<option value="' + esc(m.codigo) + '">' + esc(m.nombre) + '</option>'; }).join('')
+            : '<option value="OTRO">Otro motivo</option>') +
+        '</select></div>' +
+      '<button class="btn btn-ghost" onclick="marcarTodas()">Marcar las visibles</button>' +
+      '<button class="btn btn-primary" onclick="trasladarSeleccion()">Trasladar seleccionadas</button>' +
+    '</div>' +
+    '<div class="msg" id="bt-msg" style="margin-top:10px">Marque las peticiones que va a trasladar.</div>' +
+  '</div>';
+}
+
+function marcarTodas(){
+  const chks = document.querySelectorAll('.b-chk');
+  const alguna = Array.prototype.some.call(chks, function(c){ return !c.checked; });
+  Array.prototype.forEach.call(chks, function(c){ c.checked = alguna; });
+  contarSel();
+}
+
+function contarSel(){
+  const n = document.querySelectorAll('.b-chk:checked').length;
+  const m = document.getElementById('bt-msg');
+  if(m){
+    m.className = 'msg';
+    m.textContent = n ? n + ' petición(es) marcada(s).' : 'Marque las peticiones que va a trasladar.';
+  }
+}
+
+async function trasladarSeleccion(){
+  const msg = document.getElementById('bt-msg');
+  const ids = Array.prototype.map.call(
+    document.querySelectorAll('.b-chk:checked'), function(c){ return Number(c.value); });
+  if(!ids.length){ msg.className = 'msg err'; msg.textContent = 'No hay peticiones marcadas.'; return; }
+
+  const abo = document.getElementById('bt-abo').value;
+  const mot = document.getElementById('bt-mot').value;
+  const nom = (PERFILES.find(function(p){ return p.id === abo; }) || {}).nombre || '';
+  if(!confirm('Se trasladarán ' + ids.length + ' petición(es) a ' + nom + '. ¿Continuar?')) return;
+
+  msg.className = 'msg'; msg.textContent = 'Trasladando…';
+  try{
+    const n = await rpc('pet_trasladar', { ids: ids, nuevo_abogado: abo, motivo: mot });
+    msg.className = 'msg ok'; msg.textContent = n + ' petición(es) trasladada(s) a ' + nom + '.';
+    toast(n + ' trasladadas a ' + nom, 'ok', 4);
+    SELECCION = false;
+    document.getElementById('b-sel').textContent = 'Trasladar varias';
+    document.getElementById('b-barra').innerHTML = '';
+    cargarBandeja();
+    cargarCargasVivas();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo trasladar: ' + err.message;
+  }
 }
 
 function exportarCSV(){
