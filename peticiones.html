@@ -1228,19 +1228,60 @@ function extraerDatos(t){
   m = txt.match(/\b([A-Z]{3}[\s-]?\d{2,3}[A-Z]?)\b/);
   if(m && !/^(CC|NIT|SIM)/.test(m[1])) d.placa = m[1].replace(/[\s-]/g,'');
 
-  // Nombre del peticionario
-  const patronesNombre = [
-    /\byo,?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+(?:\s+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+){1,4})\s*,?\s*(?:mayor|identificad|con\s+c|colombian)/,
-    /\b([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+(?:\s+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+){1,4})\s*,?\s*(?:mayor\s+de\s+edad|identificad[oa]\s+con)/,
-    /(?:peticionario|solicitante|suscrit[oa])\s*:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+(?:\s+[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.]+){1,4})/i
-  ];
-  for(let i = 0; i < patronesNombre.length; i++){
-    m = txt.match(patronesNombre[i]);
-    if(m){ d.nombre = limpiarNombre(m[1]); break; }
+  // ── Nombre del peticionario ──
+  // Palabras que nunca son parte de un nombre: evitan capturar títulos,
+  // encabezados institucionales y jerga jurídica.
+  const VETO = /\b(SECRETARIA|SECRETARÍA|ALCALDIA|ALCALDÍA|MOVILIDAD|TRANSITO|TRÁNSITO|BELLO|MUNICIPIO|CIUDAD|SEÑORES|SEÑOR|SEÑORA|DERECHO|PETICION|PETICIÓN|EMBARGO|DESEMBARGO|PRESCRIPCION|PRESCRIPCIÓN|COMPARENDO|MULTA|MULTAS|COACTIVO|COBRO|OFICIO|RADICADO|REFERENCIA|ASUNTO|SOLICITUD|INFORMACION|INFORMACIÓN|CORDIAL|SALUDO|BUENAS|BUENOS|GRACIAS|ATENTAMENTE|CORDIALMENTE|OUTLOOK|CORREO|DESDE|PARA|FECHA|ADJUNTO|ARCHIVO|SANCIONATORIA|NOTIFICACION|NOTIFICACIÓN|EXCEPCIONES|MANDAMIENTO|PAGO|ESTATUTO|TRIBUTARIO|CONSTITUCION|CONSTITUCIÓN|POLITICA|POLÍTICA|COLOMBIA|LEY|ARTICULO|ARTÍCULO|SIMIT|RUNT|PLACA|VEHICULO|VEHÍCULO|MOTOCICLETA|NULIDAD|DEBIDO|PROCESO|INTERES|INTERÉS|PARTICULAR|BANCO|CUENTA|NEQUI|TITULAR)\b/i;
+
+  const NOM = '[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ.]*';
+  const NOMS = '(' + NOM + '(?:\\s+' + NOM + '){1,5})';
+
+  function nombreValido(s){
+    if(!s) return false;
+    s = s.trim();
+    if(s.length < 6 || s.length > 60) return false;
+    if(VETO.test(s)) return false;
+    const partes = s.split(/\s+/).filter(function(p){ return p.length > 1; });
+    return partes.length >= 2 && partes.length <= 6;
   }
+
+  const patronesNombre = [
+    // "mi nombre es X" · "me llamo X"
+    new RegExp('(?:mi\\s+nombre\\s+es|me\\s+llamo)\\s+' + NOMS, 'i'),
+    // "Peticionario: X" · "Solicitante: X"
+    new RegExp('(?:peticionari[oa]|solicitante|contribuyente)\\s*:?\\s*' + NOMS, 'i'),
+    // "a nombre de X" · "a nombre del titular X"
+    new RegExp('a\\s+nombre\\s+(?:de|del\\s+titular)\\s+' + NOMS, 'i'),
+    // "Yo, X ... identificado/mayor/con cc"
+    new RegExp('\\byo\\s*,?\\s+' + NOMS + '\\s*,?\\s*(?:mayor|identificad|con\\s+c|colombian|cc)', 'i'),
+    // "X identificado con..." · "X, mayor de edad"
+    new RegExp('\\b' + NOMS + '\\s*,?\\s*(?:mayor\\s+de\\s+edad|identificad[oa]\\s+con|con\\s+c\\.?\\s?c\\.?)', ''),
+    // "El suscrito X"
+    new RegExp('(?:el\\s+suscrit[oa]|la\\s+suscrita)\\s+' + NOMS, 'i'),
+    // Firma final: "Atentamente, / Cordialmente, ... X"
+    new RegExp('(?:atentamente|cordialmente)\\s*[,:]?\\s*(?:\\n|\\s)+' + NOMS, 'i')
+  ];
+
+  for(let i = 0; i < patronesNombre.length; i++){
+    const mm = t.match(patronesNombre[i]) || txt.match(patronesNombre[i]);
+    if(mm && nombreValido(mm[1])){ d.nombre = limpiarNombre(mm[1]); break; }
+  }
+
+  // Correo reenviado desde Outlook: "Desde Nombre Apellido <correo@...>"
   if(!d.nombre){
-    const may = t.match(/^\s*([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,}){1,4})\s*$/m);
-    if(may) d.nombre = limpiarNombre(may[1]);
+    m = txt.match(new RegExp('(?:desde|de)\\s+' + NOMS + '\\s*<', 'i'));
+    if(m && nombreValido(m[1])) d.nombre = limpiarNombre(m[1]);
+  }
+
+  // Último recurso: una línea completa en mayúsculas que parezca un nombre
+  if(!d.nombre){
+    const lineas = t.split(/\n/);
+    for(let i = 0; i < lineas.length; i++){
+      const L = lineas[i].trim();
+      if(/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s.]{8,45}$/.test(L) && nombreValido(L)){
+        d.nombre = limpiarNombre(L); break;
+      }
+    }
   }
 
   // Correo y teléfono
@@ -1250,7 +1291,7 @@ function extraerDatos(t){
   if(m) d.telefono = m[1].replace(/[^0-9]/g, '');
 
   // Radicado y expediente
-  m = txt.match(/radicad[oa][^A-Za-z0-9]{0,12}(?:n[°ºo.]*\s*)?([A-Z0-9][A-Z0-9\-\/]{4,19})/i);
+  m = txt.match(/radicad[oa][^A-Za-z0-9]{0,12}(?:n[°ºo.]*\s*)?(\d[\d\-\/]{6,19})/i);
   if(m) d.radicado = m[1].toUpperCase().replace(/[.,;]$/, '');
   m = txt.match(/expediente[^A-Za-z0-9]{0,12}(?:n[°ºo.]*\s*)?([A-Z0-9][A-Z0-9\-\/]{3,19})/i);
   if(m) d.expediente = m[1].toUpperCase().replace(/[.,;]$/, '');
@@ -1293,7 +1334,11 @@ function extraerDatos(t){
 }
 
 function limpiarNombre(s){
-  return s.replace(/\s+/g,' ').trim()
+  // Quita conectores que se cuelan al final del nombre
+  return String(s || '')
+    .replace(/\s+(con|de|del|identificad[oa]|mayor|cc|c\.c|cedula|c[ée]dula|nit|titular|portador[a]?)\b.*$/i, '')
+    .replace(/[.,;:]+$/, '')
+    .replace(/\s+/g,' ').trim()
     .split(' ').map(function(p){
       return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
     }).join(' ');
