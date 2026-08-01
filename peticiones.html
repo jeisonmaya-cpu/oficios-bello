@@ -109,6 +109,26 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .kbd{display:inline-block;background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:11px;font-family:monospace}
 .contador{background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--gold2);font-weight:600}
 .limite-live{font-size:12.5px;color:var(--gold2);margin-top:6px;font-weight:600}
+/* Vista previa del documento */
+.lote-cuerpo{display:flex;gap:14px;align-items:flex-start}
+.lote-thumb{width:104px;flex-shrink:0;border-radius:9px;overflow:hidden;border:1px solid var(--border);
+  background:rgba(255,255,255,.05);cursor:zoom-in;position:relative;transition:border-color .2s}
+.lote-thumb:hover{border-color:var(--gold)}
+.lote-thumb img{width:100%;display:block}
+.lote-thumb .lupa{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,31,61,.62);color:var(--gold2);font-size:11px;font-weight:700;opacity:0;transition:opacity .2s}
+.lote-thumb:hover .lupa{opacity:1}
+.lote-thumb .cargando{padding:26px 6px;text-align:center;font-size:10.5px;color:var(--muted)}
+.lote-datos{flex:1;min-width:0}
+/* Visor a pantalla completa */
+#visor{position:fixed;inset:0;background:rgba(4,14,28,.95);z-index:950;display:none;
+  flex-direction:column;backdrop-filter:blur(6px)}
+#visor.on{display:flex}
+.visor-top{display:flex;align-items:center;gap:13px;padding:13px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.visor-tit{font-family:'Syne';font-weight:800;color:var(--gold);font-size:15px}
+.visor-body{flex:1;overflow:auto;padding:18px;text-align:center}
+.visor-body img{max-width:100%;border-radius:9px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#fff}
+.visor-body img.zoom{max-width:none;width:190%;cursor:zoom-out}
 /* Procesamiento por lotes */
 .lote-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .lote-hd .lbl{margin:0}
@@ -178,6 +198,18 @@ footer b{color:var(--gold)}
 </div>
 
 <!-- ═══════════ APP ═══════════ -->
+<div id="visor">
+  <div class="visor-top">
+    <div class="visor-tit" id="visor-tit">—</div>
+    <div style="display:flex;gap:7px;align-items:center;margin-left:auto;flex-wrap:wrap">
+      <button class="btn btn-ghost" style="padding:8px 13px;font-size:13px" onclick="visorPag(-1)">‹ Anterior</button>
+      <span style="font-size:12.5px;color:var(--muted)" id="visor-pag">1 / 1</span>
+      <button class="btn btn-ghost" style="padding:8px 13px;font-size:13px" onclick="visorPag(1)">Siguiente ›</button>
+      <button class="btn btn-primary" style="padding:8px 15px;font-size:13px" onclick="cerrarVisor()">Cerrar</button>
+    </div>
+  </div>
+  <div class="visor-body" id="visor-body"></div>
+</div>
 <div id="toasts"></div>
 <div id="app" style="display:none">
 <header>
@@ -326,6 +358,7 @@ footer b{color:var(--gold)}
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center" id="lz-acciones" style="display:none">
         <button class="btn btn-primary" id="lz-btn" onclick="guardarLote()" style="display:none">Aprobar y guardar la tanda</button>
+        <button class="btn btn-ghost" id="lz-ocr" onclick="reconocerEscaneados()" style="display:none">Reconocer los escaneados</button>
         <button class="btn btn-ghost" id="lz-limpiar" onclick="prepararLote()" style="display:none">Descartar</button>
         <div class="msg" id="lz-msg" style="margin:0"></div>
       </div>
@@ -1296,11 +1329,32 @@ function extraerDatos(t){
   m = txt.match(/expediente[^A-Za-z0-9]{0,12}(?:n[°ºo.]*\s*)?([A-Z0-9][A-Z0-9\-\/]{3,19})/i);
   if(m) d.expediente = m[1].toUpperCase().replace(/[.,;]$/, '');
 
-  // Fecha
+  // ── Fecha ──
+  // Prioridad al sello de radicación: "Derechos de Peticion / Julio 30, 2026 14:31"
+  const MES_NUM = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,
+                   agosto:8,septiembre:9,setiembre:9,octubre:10,noviembre:11,diciembre:12};
+  m = txt.match(/(?:derechos?\s+de\s+petici[óo]n|radicad[oa])[^A-Za-z]{0,40}([a-záéíóú]+)\s+(\d{1,2})\s*,?\s+(20\d{2})/i);
+  if(m && MES_NUM[m[1].toLowerCase()]){
+    d.fecha_sello = m[3] + '-' + String(MES_NUM[m[1].toLowerCase()]).padStart(2,'0') +
+                    '-' + m[2].padStart(2,'0');
+  }
+  // Formato inverso del sello: "30 Julio 2026"
+  if(!d.fecha_sello){
+    m = txt.match(/(?:derechos?\s+de\s+petici[óo]n|radicad[oa])[^0-9]{0,40}(\d{1,2})\s+([a-záéíóú]+)\s+(20\d{2})/i);
+    if(m && MES_NUM[m[2].toLowerCase()]){
+      d.fecha_sello = m[3] + '-' + String(MES_NUM[m[2].toLowerCase()]).padStart(2,'0') +
+                      '-' + m[1].padStart(2,'0');
+    }
+  }
+  if(d.fecha_sello) d.fecha = d.fecha_sello;
+
+  // Si no hay sello, la fecha del documento
+  if(!d.fecha)
   m = txt.match(/(\d{1,2})\s+de\s+([a-záéíóú]+)\s+de\s+(\d{4})/i);
-  if(m && MESES[m[2].toLowerCase()]){
+  if(!d.fecha && m && MESES[m[2].toLowerCase()]){
     d.fecha = m[3] + '-' + String(MESES[m[2].toLowerCase()]).padStart(2,'0') + '-' + m[1].padStart(2,'0');
-  } else {
+  }
+  if(!d.fecha){
     m = txt.match(/\b(\d{1,2})[\/-](\d{1,2})[\/-](20\d{2})\b/);
     if(m) d.fecha = m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0');
   }
@@ -1360,6 +1414,7 @@ function aplicarDatos(d){
   set('d-exp', d.expediente, 'expediente');
   set('d-rad', d.radicado, 'radicado');
   set('d-mail', d.email, 'correo');
+  if(d.documento) cruzarUno(d.documento);
   set('d-tel', d.telefono, 'teléfono');
 
   if(d.fecha){
@@ -1392,6 +1447,38 @@ function aplicarDatos(d){
   }
   calcLimite();
   return puestos;
+}
+
+/* Al radicar de a uno: completa desde contribuyentes y avisa si hay previas */
+async function cruzarUno(doc){
+  const cont = document.getElementById('d-msg');
+  try{
+    const [contrib, previas] = await Promise.all([
+      supaFetch('contribuyentes?select=documento,nombre,expediente&documento=eq.' + doc + '&limit=1')
+        .catch(function(){ return []; }),
+      supaFetch('v_pet_bandeja?select=radicado,estado,asignado_a,asignado_nombre&documento=eq.' +
+        doc + '&limit=20').catch(function(){ return []; })
+    ]);
+    if(contrib.length){
+      const c = contrib[0];
+      const nom = document.getElementById('d-nom');
+      const exp = document.getElementById('d-exp');
+      if(c.nombre && nom && !nom.value.trim()){ nom.value = c.nombre; marcarIA('d-nom'); }
+      if(c.expediente && exp && !exp.value.trim()){ exp.value = c.expediente; marcarIA('d-exp'); }
+    }
+    if(previas.length){
+      const abiertas = previas.filter(function(p){
+        return ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(p.estado) !== -1;
+      });
+      const conAbo = abiertas.filter(function(p){ return p.asignado_a; })[0];
+      toast('Esta persona ya tiene ' + previas.length + ' petición(es)' +
+            (conAbo ? ' · ' + conAbo.asignado_nombre : ''), '', 6);
+      if(conAbo){
+        const sel = document.getElementById('d-asignar');
+        if(sel) sel.value = conAbo.asignado_a;
+      }
+    }
+  }catch(e){}
 }
 
 /* Marca visual: este dato vino del documento y hay que verificarlo */
@@ -1472,10 +1559,14 @@ async function cargarLote(files){
 
     const item = {
       archivo: file.name,
+      file: file,
       radicado: radicadoDeArchivo(file.name),
       datos: {},
       estado: 'leido',
-      nota: ''
+      nota: '',
+      thumb: null,
+      paginas: 1,
+      escaneado: false
     };
     try{
       let texto = '';
@@ -1483,12 +1574,14 @@ async function cargarLote(files){
       if(esPDF){
         texto = await textoDePDF(file);
         if(texto.replace(/\s/g,'').length < 180){
-          item.nota = 'Escaneado: sin texto. Complete a mano o léalo aparte.';
+          item.nota = 'Escaneado: sin texto digital.';
           item.estado = 'aviso';
+          item.escaneado = true;
         }
       } else {
-        item.nota = 'Imagen: use la pestaña Radicar para reconocerla.';
+        item.nota = 'Imagen: pendiente de reconocer.';
         item.estado = 'aviso';
+        item.escaneado = true;
       }
       if(texto) item.datos = extraerDatos(texto);
     }catch(err){
@@ -1497,13 +1590,198 @@ async function cargarLote(files){
     }
     LOTE.push(item);
     pintarLote();
+    miniatura(item, LOTE.length - 1);
   }
   progresoLote(null);
+  await cruzarDatos();
   const leidos = LOTE.filter(function(x){ return x.datos && x.datos.nombre; }).length;
   document.getElementById('lz-est').textContent =
     lista.length + ' documentos cargados · ' + leidos + ' con datos reconocidos. Revise y complete lo que falte.';
   document.getElementById('lz-btn').style.display = 'inline-block';
   document.getElementById('lz-limpiar').style.display = 'inline-block';
+  const nEsc = LOTE.filter(function(x){ return x.escaneado; }).length;
+  const bo = document.getElementById('lz-ocr');
+  bo.style.display = nEsc ? 'inline-block' : 'none';
+  bo.textContent = 'Reconocer los ' + nEsc + ' escaneados';
+}
+
+/* ── Miniatura de la primera página ── */
+async function miniatura(item, n){
+  try{
+    let url;
+    if(/\.pdf$/i.test(item.archivo) || item.file.type === 'application/pdf'){
+      const cv = await paginaACanvas(item.file, 1, 0.55);
+      item.paginas = cv.__paginas || 1;
+      url = cv.toDataURL('image/jpeg', 0.72);
+    } else {
+      url = URL.createObjectURL(item.file);
+    }
+    item.thumb = url;
+    const cont = document.getElementById('th-' + n);
+    if(cont){
+      cont.innerHTML = '<img src="' + url + '" alt="Vista previa">' +
+                       '<div class="lupa">Ampliar</div>';
+    }
+  }catch(e){
+    const cont = document.getElementById('th-' + n);
+    if(cont) cont.innerHTML = '<div class="cargando">Sin vista previa</div>';
+  }
+}
+
+/* Renderiza una página del PDF a canvas */
+async function paginaACanvas(file, pagina, escala){
+  await cargarScript(CDN_PDFJS);
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
+  const buf = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({data: buf}).promise;
+  const p = Math.min(Math.max(pagina, 1), pdf.numPages);
+  const pg = await pdf.getPage(p);
+  const vp = pg.getViewport({scale: escala || 1});
+  const cv = document.createElement('canvas');
+  cv.width = vp.width; cv.height = vp.height;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+  await pg.render({canvasContext: ctx, viewport: vp}).promise;
+  cv.__paginas = pdf.numPages;
+  return cv;
+}
+
+/* ── Visor a pantalla completa ── */
+let VISOR = { item: null, pag: 1, total: 1 };
+
+async function abrirVisor(n){
+  const it = LOTE[n];
+  if(!it) return;
+  VISOR = { item: it, pag: 1, total: it.paginas || 1 };
+  document.getElementById('visor-tit').textContent = it.radicado + ' · ' + it.archivo;
+  document.getElementById('visor').classList.add('on');
+  await pintarVisor();
+}
+
+async function pintarVisor(){
+  const body = document.getElementById('visor-body');
+  const it = VISOR.item;
+  body.innerHTML = '<div style="color:var(--muted);padding:40px;font-size:13px">Cargando página…</div>';
+  try{
+    let url;
+    if(/\.pdf$/i.test(it.archivo) || it.file.type === 'application/pdf'){
+      const cv = await paginaACanvas(it.file, VISOR.pag, 1.7);
+      VISOR.total = cv.__paginas || 1;
+      url = cv.toDataURL('image/jpeg', 0.86);
+    } else {
+      url = URL.createObjectURL(it.file);
+      VISOR.total = 1;
+    }
+    body.innerHTML = '<img src="' + url + '" onclick="this.classList.toggle(\'zoom\')" ' +
+                     'title="Clic para acercar o alejar">';
+    document.getElementById('visor-pag').textContent = VISOR.pag + ' / ' + VISOR.total;
+  }catch(e){
+    body.innerHTML = '<div style="color:var(--rojo);padding:40px;font-size:13px">No se pudo mostrar la página.</div>';
+  }
+}
+
+function visorPag(d){
+  const n = VISOR.pag + d;
+  if(n < 1 || n > VISOR.total) return;
+  VISOR.pag = n;
+  pintarVisor();
+}
+
+function cerrarVisor(){
+  document.getElementById('visor').classList.remove('on');
+  document.getElementById('visor-body').innerHTML = '';
+}
+
+document.addEventListener('keydown', function(e){
+  if(!document.getElementById('visor').classList.contains('on')) return;
+  if(e.key === 'Escape')     cerrarVisor();
+  if(e.key === 'ArrowRight') visorPag(1);
+  if(e.key === 'ArrowLeft')  visorPag(-1);
+});
+
+/* ── OCR bajo demanda para los escaneados ── */
+async function reconocerEscaneados(){
+  const btn = document.getElementById('lz-ocr');
+  const msg = document.getElementById('lz-msg');
+  const pend = LOTE.map(function(it, n){ return {it: it, n: n}; })
+                   .filter(function(x){ return x.it.escaneado && x.it.estado !== 'guardada'; });
+  if(!pend.length){ msg.className = 'msg'; msg.textContent = 'No hay escaneados pendientes.'; return; }
+
+  btn.disabled = true;
+  const t0 = Date.now();
+  for(let i = 0; i < pend.length; i++){
+    const it = pend[i].it;
+    document.getElementById('lz-est').textContent =
+      'Reconociendo ' + (i + 1) + ' de ' + pend.length + ': ' + it.archivo + ' — puede tardar.';
+    progresoLote(i / pend.length * 100);
+    try{
+      const esPDF = /\.pdf$/i.test(it.archivo) || it.file.type === 'application/pdf';
+      const texto = esPDF ? await ocrDePDF(it.file) : await ocrDeImagen(it.file);
+      const d = extraerDatos(texto || '');
+      it.datos = Object.assign({}, d, it.datos.nombre ? it.datos : {});
+      it.texto = texto;
+      const utiles = ['nombre','documento','comparendo','tipo'].filter(function(k){ return d[k]; }).length;
+      if(utiles >= 2){
+        it.nota = 'Reconocido: verifique los datos.';
+        it.estado = 'leido';
+      } else if(utiles === 1){
+        it.nota = 'Reconocido parcialmente. Complete lo que falte.';
+        it.estado = 'aviso';
+      } else {
+        it.nota = 'Sin datos legibles (puede estar escrito a mano). Use la vista previa.';
+        it.estado = 'aviso';
+      }
+      it.escaneado = false;
+    }catch(err){
+      it.nota = 'No se pudo reconocer: ' + err.message;
+    }
+    pintarLote();
+  }
+  progresoLote(null);
+  btn.disabled = false;
+  const seg = Math.round((Date.now() - t0) / 1000);
+  const quedan = LOTE.filter(function(x){ return x.escaneado; }).length;
+  btn.style.display = quedan ? 'inline-block' : 'none';
+  if(quedan) btn.textContent = 'Reconocer los ' + quedan + ' escaneados';
+  document.getElementById('lz-est').textContent =
+    'Reconocimiento terminado en ' + seg + ' segundos. Revise antes de guardar.';
+  toast('Reconocimiento terminado.', 'ok');
+}
+
+/* Cruce con contribuyentes y detección de peticiones previas */
+async function cruzarDatos(){
+  const docs = LOTE.map(function(it){ return it.datos && it.datos.documento; }).filter(Boolean);
+  if(!docs.length) return;
+  const unicos = docs.filter(function(v, i){ return docs.indexOf(v) === i; });
+  const enLista = '(' + unicos.join(',') + ')';
+
+  // Nombre y expediente desde la base ya migrada
+  try{
+    const contrib = await supaFetch(
+      'contribuyentes?select=documento,nombre,expediente&documento=in.' + enLista + '&limit=200');
+    LOTE.forEach(function(it){
+      const doc = it.datos && it.datos.documento;
+      if(!doc) return;
+      const c = contrib.find(function(x){ return String(x.documento) === String(doc); });
+      if(!c) return;
+      it.cruce = c;
+      if(c.nombre) it.datos.nombre = c.nombre;
+      if(c.expediente && !it.datos.expediente) it.datos.expediente = c.expediente;
+    });
+  }catch(e){ /* la tabla puede tener otra estructura: no interrumpe */ }
+
+  // Peticiones anteriores de la misma persona
+  try{
+    const previas = await supaFetch(
+      'v_pet_bandeja?select=documento,radicado,estado,asignado_a,asignado_nombre' +
+      '&documento=in.' + enLista + '&limit=400');
+    LOTE.forEach(function(it){
+      const doc = it.datos && it.datos.documento;
+      if(!doc) return;
+      const p = previas.filter(function(x){ return String(x.documento) === String(doc); });
+      if(p.length) it.previas = p;
+    });
+  }catch(e){}
 }
 
 function progresoLote(pct){
@@ -1539,9 +1817,44 @@ function pintarLote(){
         '<div class="lote-est" style="background:' +
           (ok ? 'rgba(74,222,128,.18);color:var(--verde)' : 'rgba(232,160,32,.18);color:var(--gold)') + '">' +
           (ok ? 'Lista' : 'Revisar') + '</div>' +
-      '</div>' + camposLote(it, n) + '</div>';
+      '</div>' +
+      '<div class="lote-cuerpo">' +
+        '<div class="lote-thumb" id="th-' + n + '" onclick="abrirVisor(' + n + ')">' +
+          (it.thumb ? '<img src="' + it.thumb + '"><div class="lupa">Ampliar</div>'
+                    : '<div class="cargando">Cargando…</div>') + '</div>' +
+        '<div class="lote-datos">' + camposLote(it, n) + '</div>' +
+      '</div></div>';
   }).join('');
   recalcLote();
+}
+
+/* Aviso: esta persona ya tiene peticiones en el sistema */
+function avisoPrevias(it){
+  if(!it.previas || !it.previas.length) return '';
+  const abiertas = it.previas.filter(function(p){
+    return ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(p.estado) !== -1;
+  });
+  const conAbogado = abiertas.filter(function(p){ return p.asignado_a; });
+  const quien = conAbogado.length ? conAbogado[0] : null;
+  it.sugerido = quien ? quien.asignado_a : null;
+
+  return '<div style="background:rgba(232,160,32,.10);border:1px solid rgba(232,160,32,.33);' +
+    'border-radius:9px;padding:9px 12px;margin-top:9px;font-size:12.5px">' +
+    '<b style="color:var(--gold2)">Ya tiene ' + it.previas.length + ' petición(es) registrada(s)</b>' +
+    (abiertas.length ? ' · ' + abiertas.length + ' sin cerrar' : '') +
+    (quien ? '<div style="color:var(--muted);margin-top:3px">En manos de <b>' +
+      esc(quien.asignado_nombre) + '</b> — conviene asignarle esta también, para responderlas juntas. ' +
+      '<a href="#" onclick="asignarAlMismo(\'' + quien.asignado_a + '\');return false" ' +
+      'style="color:var(--gold)">asignar a ' + esc((quien.asignado_nombre||'').split(' ')[0]) + '</a></div>' : '') +
+    '</div>';
+}
+
+function asignarAlMismo(id){
+  const sel = document.getElementById('lz-asignar');
+  if(!sel) return;
+  sel.value = id;
+  const nom = (PERFILES.find(function(p){ return p.id === id; }) || {}).nombre || '';
+  toast('La tanda se asignará a ' + nom + '.', 'ok', 3);
 }
 
 function camposLote(it, n){
@@ -1565,7 +1878,22 @@ function camposLote(it, n){
     '<div><div class="lbl">Expediente</div>' +
       '<input type="text" id="l-exp-' + n + '" value="' + esc(d.expediente || '') + '"' + marca(d.expediente) + '></div>' +
     '</div>' +
+    avisoPrevias(it) +
+    (d.fecha_sello
+      ? '<div style="font-size:11.5px;color:var(--azul);margin-top:7px">' +
+        'Sello de radicación detectado: <b>' + fmtFecha(d.fecha_sello) + '</b> · ' +
+        '<a href="#" onclick="usarSello(' + n + ');return false" style="color:var(--gold)">usar esta fecha</a>' +
+        '</div>' : '') +
     '<div class="lote-vence" id="l-vence-' + n + '"></div>';
+}
+
+/* Aplica a toda la tanda la fecha del sello detectada en una fila */
+function usarSello(n){
+  const f = LOTE[n] && LOTE[n].datos ? LOTE[n].datos.fecha_sello : null;
+  if(!f) return;
+  document.getElementById('lz-fecha').value = f;
+  recalcLote();
+  toast('Fecha de la tanda: ' + fmtFecha(f), 'ok', 3);
 }
 
 function recalcLote(){
@@ -1746,6 +2074,7 @@ function pintarCaso(){
   const f = document.getElementById('c-filtro');
   const etq = f && f.selectedOptions[0] ? f.selectedOptions[0].textContent : '';
   pos.textContent = 'Caso ' + (COLA_IDX + 1) + ' de ' + COLA.length + (etq ? ' · ' + etq : '');
+  historialPeticionario(r);
 
   const d = r.dias_restantes;
   const color = d === null ? 'var(--muted)' : d < 0 ? 'var(--rojo)' : d <= 3 ? 'var(--naranja)' : 'var(--verde)';
@@ -1794,6 +2123,7 @@ function pintarCaso(){
         'onclick="abrirOficio()">Oficio al usuario</button>' +
     '</div>' +
     '<div id="k-doc"></div>' +
+    '<div id="k-hist"></div>' +
     '<div class="msg" id="k-msg"></div>' +
     '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
       '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
@@ -1923,6 +2253,56 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'ArrowLeft')  moverCaso(-1);
 });
 
+/* ── Historial: otras peticiones de la misma persona ── */
+async function historialPeticionario(r){
+  const cont = document.getElementById('k-hist');
+  if(!cont || !r || !r.documento) return;
+  cont.innerHTML = '';
+  try{
+    const otras = await supaFetch(
+      'v_pet_bandeja?select=id,radicado,tipo_nombre,estado,semaforo,fecha_radicado,' +
+      'fecha_limite,dias_restantes,radicado_respuesta,asignado_nombre' +
+      '&documento=eq.' + encodeURIComponent(r.documento) +
+      '&id=neq.' + r.id + '&order=fecha_radicado.desc&limit=12');
+    if(!otras.length) return;
+
+    const abiertas = otras.filter(function(o){
+      return ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(o.estado) !== -1;
+    });
+    const mias = abiertas.filter(function(o){ return o.asignado_nombre === (PERFIL||{}).nombre; });
+
+    cont.innerHTML =
+     '<div style="background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.28);' +
+     'border-radius:13px;padding:15px 18px;margin-top:16px">' +
+       '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
+         '<b style="color:var(--azul);font-size:13.5px">' +
+           esc(r.peticionario) + ' tiene ' + otras.length + ' petición(es) más</b>' +
+         (abiertas.length ? '<span class="pill s-proyectada">' + abiertas.length + ' sin cerrar</span>' : '') +
+         (mias.length > 1 ? '<span class="pill s-urgente">' + mias.length +
+            ' suyas · respóndalas juntas</span>' : '') +
+       '</div>' +
+       '<div style="max-height:190px;overflow:auto">' +
+       otras.map(function(o){
+         return '<div style="display:flex;gap:11px;align-items:baseline;padding:6px 0;' +
+           'border-top:1px solid var(--border);font-size:12.5px;flex-wrap:wrap">' +
+           '<b style="color:var(--gold);min-width:105px">' + esc(o.radicado) + '</b>' +
+           '<span style="flex:1;min-width:110px">' + esc(o.tipo_nombre || '—') + '</span>' +
+           '<span style="color:var(--muted)">' + fmtFecha(o.fecha_radicado) + '</span>' +
+           '<span class="pill s-' + esc(o.semaforo) + '">' + esc(o.estado) + '</span>' +
+           (o.asignado_nombre ? '<span style="color:var(--muted);font-size:11.5px">' +
+              esc(o.asignado_nombre.split(' ')[0]) + '</span>' : '') +
+         '</div>';
+       }).join('') +
+       '</div>' +
+       (mias.length > 1
+         ? '<div class="hint" style="margin-top:9px">Un solo oficio puede resolver todas las que tenga asignadas.</div>'
+         : abiertas.length
+           ? '<div class="hint" style="margin-top:9px">Algunas están en manos de otro abogado: coordine antes de responder.</div>'
+           : '') +
+     '</div>';
+  }catch(e){}
+}
+
 /* ══════════════════════════════════════════════════════════════
    GENERACIÓN DE LA RESOLUCIÓN DE PRESCRIPCIÓN (.docx)
    ══════════════════════════════════════════════════════════════ */
@@ -2008,12 +2388,13 @@ async function generarOficio(){
 }
 
 /* Motor común: descarga la plantilla, reemplaza y entrega el .docx */
-async function armarDocx(url, datos, nombreArchivo){
+async function armarDocx(url, datos, nombreArchivo, transformar){
   if(!window.JSZip) throw new Error('no cargó la librería del documento');
   const res = await fetch(url);
   if(!res.ok) throw new Error('no se encontró la plantilla (HTTP ' + res.status + ')');
   const zip = await window.JSZip.loadAsync(await res.arrayBuffer());
   let xml = await zip.file('word/document.xml').async('string');
+  if(typeof transformar === 'function') xml = transformar(xml);
   Object.keys(datos).forEach(function(k){
     xml = xml.split('{{' + k + '}}').join(xmlSeguro(datos[k]));
   });
@@ -2049,14 +2430,12 @@ function abrirResolucion(){
          '<input type="text" id="g-ced" value="' + esc(formatoCedula(r.documento)) + '"></div>' +
        '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
          '<input type="text" id="g-rad" value="' + esc(r.radicado || '') + '"></div>' +
-       '<div class="fld"><label class="lbl">N° de comparendo</label>' +
-         '<input type="text" id="g-comp" placeholder="05088000000018443355"></div>' +
-       '<div class="fld"><label class="lbl">Fecha del comparendo</label>' +
-         '<input type="text" id="g-fcomp" placeholder="DD/MM/AAAA"></div>' +
-       '<div class="fld"><label class="lbl">Resolución sanción / mandamiento</label>' +
-         '<input type="text" id="g-res" placeholder="1936992000"></div>' +
-       '<div class="fld"><label class="lbl">Fecha de la resolución</label>' +
-         '<input type="text" id="g-fres" placeholder="DD/MM/AAAA"></div>' +
+     '</div>' +
+     '<div class="lbl" style="margin:16px 0 8px">Comparendos a prescribir</div>' +
+     '<div id="g-filas"></div>' +
+     '<button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;margin-top:4px" ' +
+       'onclick="agregarComparendo()">+ Agregar comparendo</button>' +
+     '<div class="grid" style="margin-top:14px">' +
        '<div class="fld"><label class="lbl">Proyectó</label>' +
          '<input type="text" id="g-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '"></div>' +
      '</div>' +
@@ -2066,7 +2445,65 @@ function abrirResolucion(){
        '<div class="msg" id="g-msg" style="margin:0"></div>' +
      '</div>' +
    '</div>';
-  document.getElementById('g-comp').focus();
+  COMPARENDOS = [];
+  // Si el resumen trae un comparendo detectado al radicar, se precarga
+  const det = (r.resumen || '').match(/Comparendo:\s*(\d{10,22})/i);
+  const detRes = (r.resumen || '').match(/Resoluci[óo]n sanci[óo]n:\s*(\d{5,15})/i);
+  agregarComparendo(det ? det[1] : '', '', detRes ? detRes[1] : '', '');
+  const p = document.getElementById('g-c-0');
+  if(p) p.focus();
+}
+
+/* Lista dinámica de comparendos */
+let COMPARENDOS = [];
+
+function agregarComparendo(comp, fcomp, res, fres){
+  COMPARENDOS.push({
+    comp: comp || '', fcomp: fcomp || '', res: res || '', fres: fres || ''
+  });
+  pintarComparendos();
+  const n = COMPARENDOS.length - 1;
+  const el = document.getElementById('g-c-' + n);
+  if(el && COMPARENDOS.length > 1) el.focus();
+}
+
+function quitarComparendo(n){
+  if(COMPARENDOS.length <= 1) return;
+  leerComparendos();
+  COMPARENDOS.splice(n, 1);
+  pintarComparendos();
+}
+
+function leerComparendos(){
+  COMPARENDOS.forEach(function(c, n){
+    const g = function(id){ const e = document.getElementById(id + n); return e ? e.value.trim() : ''; };
+    c.comp = g('g-c-'); c.fcomp = g('g-fc-'); c.res = g('g-r-'); c.fres = g('g-fr-');
+  });
+}
+
+function pintarComparendos(){
+  const cont = document.getElementById('g-filas');
+  if(!cont) return;
+  cont.innerHTML = COMPARENDOS.map(function(c, n){
+    return '<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);' +
+      'border-radius:11px;padding:12px;margin-bottom:9px">' +
+      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">' +
+        '<div style="font-family:\'Syne\';font-weight:800;color:var(--gold);font-size:13px">#' + (n + 1) + '</div>' +
+        (COMPARENDOS.length > 1
+          ? '<button class="btn btn-ghost" style="padding:4px 10px;font-size:11.5px;margin-left:auto" ' +
+            'onclick="quitarComparendo(' + n + ')">Quitar</button>' : '') +
+      '</div>' +
+      '<div class="lote-campos">' +
+        '<div><div class="lbl">N° de comparendo</div>' +
+          '<input type="text" id="g-c-' + n + '" value="' + esc(c.comp) + '" placeholder="05088000000018443355"></div>' +
+        '<div><div class="lbl">Fecha del comparendo</div>' +
+          '<input type="text" id="g-fc-' + n + '" value="' + esc(c.fcomp) + '" placeholder="DD/MM/AAAA"></div>' +
+        '<div><div class="lbl">Resolución sanción</div>' +
+          '<input type="text" id="g-r-' + n + '" value="' + esc(c.res) + '" placeholder="1936992000"></div>' +
+        '<div><div class="lbl">Fecha de la resolución</div>' +
+          '<input type="text" id="g-fr-' + n + '" value="' + esc(c.fres) + '" placeholder="DD/MM/AAAA"></div>' +
+      '</div></div>';
+  }).join('');
 }
 
 /* La resolución escribe la cédula con separadores de miles */
@@ -2087,55 +2524,45 @@ async function generarResolucion(){
   const msg = document.getElementById('g-msg');
   const r = COLA[COLA_IDX];
   if(!r) return;
+  leerComparendos();
 
-  const datos = {
-    NOMBRE:            (document.getElementById('g-nom').value || '').trim().toUpperCase(),
-    CEDULA:            (document.getElementById('g-ced').value || '').trim(),
-    RADICADO:          (document.getElementById('g-rad').value || '').trim(),
-    COMPARENDO:        (document.getElementById('g-comp').value || '').trim(),
-    FECHA_COMPARENDO:  (document.getElementById('g-fcomp').value || '').trim(),
-    RESOLUCION:        (document.getElementById('g-res').value || '').trim(),
-    FECHA_RESOLUCION:  (document.getElementById('g-fres').value || '').trim(),
-    PROYECTO:          (document.getElementById('g-proy').value || '').trim(),
-    FECHA_DOC:         fmtFecha(iso(new Date()))
-  };
-
-  const faltan = ['NOMBRE','CEDULA','COMPARENDO','FECHA_COMPARENDO','RESOLUCION','FECHA_RESOLUCION']
-    .filter(function(k){ return !datos[k]; });
-  if(faltan.length){
-    msg.className = 'msg err';
-    msg.textContent = 'Faltan datos del comparendo o de la resolución sanción.';
+  const lista = COMPARENDOS.filter(function(c){ return c.comp; });
+  if(!lista.length){
+    msg.className = 'msg err'; msg.textContent = 'Indique al menos un número de comparendo.';
     return;
   }
-  if(!window.JSZip){
-    msg.className = 'msg err'; msg.textContent = 'No cargó la librería del documento. Recargue la página.';
+  const incompleto = lista.findIndex(function(c){ return !c.fcomp || !c.res || !c.fres; });
+  if(incompleto !== -1){
+    msg.className = 'msg err';
+    msg.textContent = 'Faltan datos en el comparendo #' + (incompleto + 1) + '.';
+    return;
+  }
+
+  const datos = {
+    NOMBRE:   (document.getElementById('g-nom').value || '').trim().toUpperCase(),
+    CEDULA:   (document.getElementById('g-ced').value || '').trim(),
+    RADICADO: (document.getElementById('g-rad').value || '').trim(),
+    PROYECTO: (document.getElementById('g-proy').value || '').trim(),
+    FECHA_DOC: fmtFecha(iso(new Date())),
+    // Menciones en el texto corrido: se vuelven listas cuando hay varios
+    COMPARENDO:       enumerar(lista.map(function(c){ return c.comp; })),
+    FECHA_COMPARENDO: enumerar(unicos(lista.map(function(c){ return c.fcomp; }))),
+    RESOLUCION:       enumerar(unicos(lista.map(function(c){ return c.res; }))),
+    FECHA_RESOLUCION: enumerar(unicos(lista.map(function(c){ return c.fres; })))
+  };
+  if(!datos.NOMBRE || !datos.CEDULA){
+    msg.className = 'msg err'; msg.textContent = 'Faltan el nombre o la cédula.';
     return;
   }
 
   msg.className = 'msg'; msg.textContent = 'Armando el documento…';
   try{
-    const res = await fetch(URL_PLANTILLA_PRESCRIPCION);
-    if(!res.ok) throw new Error('No se encontró la plantilla (HTTP ' + res.status + ')');
-    const zip = await window.JSZip.loadAsync(await res.arrayBuffer());
-
-    let xml = await zip.file('word/document.xml').async('string');
-    Object.keys(datos).forEach(function(k){
-      xml = xml.split('{{' + k + '}}').join(xmlSeguro(datos[k]));
-    });
-    zip.file('word/document.xml', xml);
-
-    const blob = await zip.generateAsync({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    });
     const nombreArchivo = 'Resolucion_prescripcion_' +
       datos.CEDULA.replace(/[^0-9]/g,'') + '_' + (r.radicado || '').replace(/[^\w-]/g,'') + '.docx';
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = nombreArchivo; a.click();
-    URL.revokeObjectURL(url);
+    await armarDocx(URL_PLANTILLA_PRESCRIPCION, datos, nombreArchivo, function(xml){
+      return expandirTablas(xml, lista);
+    });
 
-    // Deja constancia en el caso de que el documento se proyectó
     try{
       await supaFetch('pet_peticiones?id=eq.' + r.id, {
         method:'PATCH', headers:{ Prefer:'return=minimal' },
@@ -2145,16 +2572,55 @@ async function generarResolucion(){
 
     const notas = document.getElementById('k-notas');
     if(notas && !notas.value.trim()){
-      notas.value = 'Se proyecta resolución que concede la prescripción del comparendo ' +
-                    datos.COMPARENDO + ' del ' + datos.FECHA_COMPARENDO + '.';
+      notas.value = 'Se proyecta resolución que concede la prescripción de ' + lista.length +
+        (lista.length === 1 ? ' comparendo.' : ' comparendos.');
     }
     msg.className = 'msg ok';
-    msg.textContent = 'Documento descargado. Revíselo y guarde el caso con la fecha de proyección.';
+    msg.textContent = 'Documento con ' + lista.length +
+      (lista.length === 1 ? ' comparendo descargado.' : ' comparendos descargado.') +
+      ' Revíselo antes de radicar.';
   }catch(err){
     msg.className = 'msg err';
     msg.textContent = 'No se pudo generar: ' + err.message +
       '. Verifique que la plantilla esté cargada en Supabase Storage.';
   }
+}
+
+function unicos(arr){
+  return arr.filter(function(v, i){ return v && arr.indexOf(v) === i; });
+}
+
+/* "A", "A y B", "A, B y C" */
+function enumerar(arr){
+  const a = arr.filter(Boolean);
+  if(!a.length) return '';
+  if(a.length === 1) return a[0];
+  return a.slice(0, -1).join(', ') + ' y ' + a[a.length - 1];
+}
+
+/* Repite la fila de datos de cada tabla, una por comparendo */
+function expandirTablas(xml, lista){
+  if(lista.length <= 1) return xml;
+
+  const tablas = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/g) || [];
+  tablas.forEach(function(tabla){
+    if(tabla.indexOf('{{COMPARENDO}}') === -1) return;
+    const filas = tabla.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
+    const plantillaFila = filas.filter(function(f){ return f.indexOf('{{COMPARENDO}}') !== -1; })[0];
+    if(!plantillaFila) return;
+
+    const nuevas = lista.map(function(c){
+      return plantillaFila
+        .split('{{COMPARENDO}}').join(xmlSeguro(c.comp))
+        .split('{{FECHA_COMPARENDO}}').join(xmlSeguro(c.fcomp))
+        .split('{{RESOLUCION}}').join(xmlSeguro(c.res))
+        .split('{{FECHA_RESOLUCION}}').join(xmlSeguro(c.fres));
+    }).join('');
+
+    const tablaNueva = tabla.replace(plantillaFila, nuevas);
+    xml = xml.replace(tabla, tablaNueva);
+  });
+  return xml;
 }
 
 /* ══════════════════════════════════════════════════════════════
