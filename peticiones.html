@@ -143,6 +143,18 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
   .visor-form{width:auto;border-left:none;border-top:1px solid var(--border)}
   .visor-doc{flex:none;max-height:42vh}
 }
+/* Avance de la tanda */
+.tanda-hd{background:var(--glass);border:1px solid var(--border);border-radius:14px;
+  padding:15px 18px;margin-bottom:16px}
+.tanda-fila{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.tanda-n{font-family:'Syne';font-size:24px;font-weight:800;color:var(--gold);line-height:1}
+.tanda-t{font-size:12.5px;color:var(--muted);line-height:1.4}
+.tanda-barra{flex:1;min-width:150px;height:9px;background:rgba(255,255,255,.08);
+  border-radius:99px;overflow:hidden;display:flex}
+.tanda-barra i{height:100%;display:block;transition:width .4s}
+.tanda-leyenda{display:flex;gap:15px;flex-wrap:wrap;margin-top:11px;font-size:11.5px;color:var(--muted)}
+.tanda-leyenda b{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.lote-fila.yaesta{border-color:rgba(139,155,180,.35);background:rgba(255,255,255,.02);opacity:.6}
 /* Ficha del caso */
 .caso-id{flex:1;min-width:230px}
 .copiable{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
@@ -369,12 +381,14 @@ footer b{color:var(--gold)}
     <div class="card">
       <div class="dropzone" id="lz" onclick="document.getElementById('lz-file').click()">
         <div class="dz-t">Arrastre aquí los PDF de la tanda</div>
-        <div class="dz-s">Hasta 10 a la vez. El nombre del archivo se toma como radicado de entrada.</div>
+        <div class="dz-s">Puede soltar todos los que descargó. Se revisan de 10 en 10 y el sistema avisa cuáles ya están registradas.</div>
         <input type="file" id="lz-file" accept=".pdf,.png,.jpg,.jpeg" multiple style="display:none"
                onchange="cargarLote(this.files)">
         <div class="barra" id="lz-barra" style="display:none"><div id="lz-barra-in"></div></div>
         <div class="ocr-est" id="lz-est"></div>
       </div>
+
+      <div id="lz-avance"></div>
 
       <div class="lote-hd" id="lz-ctrl" style="display:none">
         <div class="lbl">Valores para toda la tanda</div>
@@ -400,7 +414,7 @@ footer b{color:var(--gold)}
       <div id="lz-filas"></div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center" id="lz-acciones" style="display:none">
-        <button class="btn btn-primary" id="lz-btn" onclick="guardarLote()" style="display:none">Aprobar y guardar la tanda</button>
+        <button class="btn btn-primary" id="lz-btn" onclick="guardarLote()" style="display:none">Guardar este grupo</button>
         <button class="btn btn-ghost" id="lz-ocr" onclick="reconocerEscaneados()" style="display:none">Reconocer los escaneados</button>
         <button class="btn btn-ghost" id="lz-limpiar" onclick="prepararLote()" style="display:none">Descartar</button>
         <div class="msg" id="lz-msg" style="margin:0"></div>
@@ -1560,7 +1574,9 @@ function quitarMarcasIA(){
    CARGA POR LOTES — hasta 10 documentos por tanda
    ══════════════════════════════════════════════════════════════ */
 let LOTE = [];
-const LOTE_MAX = 10;
+let PAGINA = 0;
+const LOTE_MAX = 80;      // archivos que se pueden cargar de una vez
+const POR_PAGINA = 10;    // cuántos se revisan a la vez
 
 function prepararLote(){
   LOTE = [];
@@ -1648,7 +1664,9 @@ async function cargarLote(files){
     lista.length + ' documentos cargados · ' + leidos + ' con datos reconocidos. Revise y complete lo que falte.';
   document.getElementById('lz-btn').style.display = 'inline-block';
   document.getElementById('lz-limpiar').style.display = 'inline-block';
-  const nEsc = LOTE.filter(function(x){ return x.escaneado; }).length;
+  const yaest = LOTE.filter(function(x){ return x.estado === 'yaesta'; }).length;
+  if(yaest) toast(yaest + ' de esta tanda ya estaban registradas: se omiten.', '', 6);
+  const nEsc = LOTE.filter(function(x){ return x.escaneado && x.estado !== 'yaesta'; }).length;
   const bo = document.getElementById('lz-ocr');
   bo.style.display = nEsc ? 'inline-block' : 'none';
   bo.textContent = 'Reconocer los ' + nEsc + ' escaneados';
@@ -1844,7 +1862,9 @@ async function reconocerEscaneados(){
   const btn = document.getElementById('lz-ocr');
   const msg = document.getElementById('lz-msg');
   const pend = LOTE.map(function(it, n){ return {it: it, n: n}; })
-                   .filter(function(x){ return x.it.escaneado && x.it.estado !== 'guardada'; });
+                   .filter(function(x){
+                     return x.it.escaneado && x.it.estado !== 'guardada' && x.it.estado !== 'yaesta';
+                   });
   if(!pend.length){ msg.className = 'msg'; msg.textContent = 'No hay escaneados pendientes.'; return; }
 
   btn.disabled = true;
@@ -1964,8 +1984,73 @@ function pintarLote(){
                     : '<div class="cargando">Cargando…</div>') + '</div>' +
         '<div class="lote-datos">' + camposLote(it, n) + '</div>' +
       '</div></div>';
-  }).join('');
+  }).join('') + navegacionTanda();
   recalcLote();
+}
+
+/* Cabecera con el avance global de la tanda */
+function pintarAvanceTanda(){
+  const cont = document.getElementById('lz-avance');
+  if(!cont || !LOTE.length) return;
+  const total  = LOTE.length;
+  const guard  = LOTE.filter(function(x){ return x.estado === 'guardada'; }).length;
+  const yaest  = LOTE.filter(function(x){ return x.estado === 'yaesta'; }).length;
+  const falla  = LOTE.filter(function(x){ return x.estado === 'error'; }).length;
+  const resta  = total - guard - yaest - falla;
+  const p = function(n){ return (n / total * 100) + '%'; };
+
+  cont.innerHTML =
+    '<div class="tanda-hd">' +
+      '<div class="tanda-fila">' +
+        '<div><div class="tanda-n">' + (guard + yaest) +
+          '<span style="font-size:15px;color:var(--muted)">/' + total + '</span></div>' +
+          '<div class="tanda-t">resueltas<br>de la tanda</div></div>' +
+        '<div class="tanda-barra">' +
+          (guard ? '<i style="width:' + p(guard) + ';background:var(--verde)"></i>' : '') +
+          (yaest ? '<i style="width:' + p(yaest) + ';background:var(--muted)"></i>' : '') +
+          (falla ? '<i style="width:' + p(falla) + ';background:var(--rojo)"></i>' : '') +
+        '</div>' +
+        '<div class="tanda-t" style="text-align:right">Grupo ' + (PAGINA + 1) + ' de ' +
+          Math.ceil(total / POR_PAGINA) + '<br>' + resta + ' por revisar</div>' +
+      '</div>' +
+      '<div class="tanda-leyenda">' +
+        '<span><b style="background:var(--verde)"></b>' + guard + ' guardadas</span>' +
+        (yaest ? '<span><b style="background:var(--muted)"></b>' + yaest + ' ya estaban en el sistema</span>' : '') +
+        (falla ? '<span><b style="background:var(--rojo)"></b>' + falla + ' con problema</span>' : '') +
+        '<span><b style="background:rgba(255,255,255,.15)"></b>' + resta + ' pendientes</span>' +
+      '</div>' +
+    '</div>';
+}
+
+/* Navegación entre grupos de 10 */
+function navegacionTanda(){
+  const grupos = Math.ceil(LOTE.length / POR_PAGINA);
+  if(grupos <= 1) return '';
+  let puntos = '';
+  for(let g = 0; g < grupos; g++){
+    const desde = g * POR_PAGINA, hasta = Math.min(desde + POR_PAGINA, LOTE.length);
+    const trozo = LOTE.slice(desde, hasta);
+    const listo = trozo.every(function(x){
+      return x.estado === 'guardada' || x.estado === 'yaesta';
+    });
+    puntos += '<button class="btn ' + (g === PAGINA ? 'btn-primary' : 'btn-ghost') + '" ' +
+      'style="padding:7px 13px;font-size:12.5px' + (listo && g !== PAGINA ? ';opacity:.5' : '') + '" ' +
+      'onclick="irAGrupo(' + g + ')">' + (g + 1) + (listo ? ' ✓' : '') + '</button>';
+  }
+  return '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:14px;' +
+    'padding-top:14px;border-top:1px solid var(--border)">' +
+    '<span class="lbl" style="margin:0">Grupos de ' + POR_PAGINA + '</span>' + puntos + '</div>';
+}
+
+function irAGrupo(g){
+  const grupos = Math.ceil(LOTE.length / POR_PAGINA);
+  if(g < 0 || g >= grupos) return;
+  PAGINA = g;
+  pintarLote();
+  for(let n = g * POR_PAGINA; n < Math.min((g + 1) * POR_PAGINA, LOTE.length); n++){
+    if(!LOTE[n].thumb && LOTE[n].file) miniatura(LOTE[n], n);
+  }
+  window.scrollTo(0, 0);
 }
 
 /* Aviso: esta persona ya tiene peticiones en el sistema */
@@ -2063,9 +2148,21 @@ async function guardarLote(){
 
   if(!fecha){ msg.className = 'msg err'; msg.textContent = 'Indique la fecha de radicación de la tanda.'; return; }
 
-  const pendientes = LOTE.map(function(it, n){ return {it: it, n: n}; })
-                         .filter(function(x){ return x.it.estado !== 'guardada'; });
-  if(!pendientes.length){ msg.className = 'msg'; msg.textContent = 'No hay nada pendiente por guardar.'; return; }
+  // Solo el grupo que se está revisando
+  const ini = PAGINA * POR_PAGINA;
+  const fin = Math.min(ini + POR_PAGINA, LOTE.length);
+  const pendientes = [];
+  for(let i = ini; i < fin; i++){
+    if(LOTE[i].estado !== 'guardada' && LOTE[i].estado !== 'yaesta'){
+      pendientes.push({it: LOTE[i], n: i});
+    }
+  }
+  if(!pendientes.length){
+    msg.className = 'msg';
+    msg.textContent = 'Este grupo ya está resuelto.';
+    if(PAGINA + 1 < Math.ceil(LOTE.length / POR_PAGINA)) irAGrupo(PAGINA + 1);
+    return;
+  }
 
   // Validación previa
   for(let i = 0; i < pendientes.length; i++){
@@ -2127,14 +2224,23 @@ async function guardarLote(){
   const c = document.getElementById('d-cont');
   if(c) c.textContent = CONTADOR + ' radicadas en esta sesión';
 
+  const grupos = Math.ceil(LOTE.length / POR_PAGINA);
+  const quedan = LOTE.filter(function(x){
+    return x.estado !== 'guardada' && x.estado !== 'yaesta' && x.estado !== 'error';
+  }).length;
+
   if(fallos){
     msg.className = 'msg err';
     msg.textContent = ok + ' guardadas · ' + fallos + ' con problema. Corrija las marcadas y vuelva a guardar.';
+  } else if(PAGINA + 1 < grupos){
+    msg.className = 'msg ok';
+    msg.textContent = ok + ' guardadas. Pasando al grupo ' + (PAGINA + 2) + ' de ' + grupos + '…';
+    toast(ok + ' radicadas · quedan ' + quedan + ' de la tanda', 'ok', 4);
+    setTimeout(function(){ irAGrupo(PAGINA + 1); }, 900);
   } else {
     msg.className = 'msg ok';
-    msg.textContent = ok + ' peticiones guardadas. Puede soltar la siguiente tanda.';
-    toast(ok + ' peticiones radicadas.', 'ok');
-    setTimeout(prepararLote, 1600);
+    msg.textContent = 'Tanda terminada: ' + ok + ' guardadas en este grupo.';
+    toast('Tanda completa. Puede cargar la siguiente.', 'ok', 5);
   }
   cargarCargasVivas();
 }
