@@ -143,6 +143,19 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
   .visor-form{width:auto;border-left:none;border-top:1px solid var(--border)}
   .visor-doc{flex:none;max-height:42vh}
 }
+/* Alerta de tutela */
+.tut-alerta{display:flex;gap:12px;align-items:flex-start;border-radius:12px;
+  padding:13px 16px;margin-bottom:14px;font-size:13px;line-height:1.5}
+.tut-desacato{background:rgba(248,113,113,.13);border:1px solid rgba(248,113,113,.45)}
+.tut-critico{background:rgba(248,113,113,.09);border:1px solid rgba(248,113,113,.32)}
+.tut-alto{background:rgba(251,146,60,.09);border:1px solid rgba(251,146,60,.32)}
+.tut-ic{font-size:19px;line-height:1;flex-shrink:0}
+.tut-tit{font-weight:700;margin-bottom:3px}
+.pill-tut{display:inline-block;border-radius:99px;padding:2px 9px;font-size:10px;
+  font-weight:700;margin-left:6px;vertical-align:middle;white-space:nowrap}
+.tut-si{background:rgba(248,113,113,.2);color:var(--rojo)}
+.tut-des{background:var(--rojo);color:#fff}
+.tut-per{background:rgba(251,146,60,.18);color:var(--naranja)}
 /* Avance de la tanda */
 .tanda-hd{background:var(--glass);border:1px solid var(--border);border-radius:14px;
   padding:15px 18px;margin-bottom:16px}
@@ -433,7 +446,7 @@ footer b{color:var(--gold)}
             <option value="todas">Todas</option>
           </select>
           <select id="c-orden" onchange="cargarCola()" style="width:auto">
-            <option value="urgencia">Por urgencia</option>
+            <option value="urgencia">Por riesgo (tutelas primero)</option>
             <option value="tipo">Agrupar por tipo</option>
             <option value="persona">Agrupar por peticionario</option>
           </select>
@@ -467,6 +480,12 @@ footer b{color:var(--gold)}
         <option value="vencida">Vencidas</option>
         <option value="urgente">Urgentes (≤3 días)</option>
         <option value="proxima">Próximas (≤7 días)</option>
+      </select>
+      <select id="b-tut" onchange="renderBandeja()">
+        <option value="">Con y sin tutela</option>
+        <option value="si">Solo las que están en tutela</option>
+        <option value="des">Solo con desacato</option>
+        <option value="per">De personas que ya tutelaron</option>
       </select>
       <button class="btn btn-ghost" onclick="cargarBandeja()">Recargar</button>
       <button class="btn btn-ghost" onclick="exportarCSV()">Exportar CSV</button>
@@ -537,6 +556,7 @@ footer b{color:var(--gold)}
       <p>Estado del represamiento y avance por abogado.</p>
     </div>
     <div id="t-alertas"></div>
+    <div id="t-tutelas"></div>
     <div class="kpis" id="t-kpis"></div>
 
     <div class="card">
@@ -1536,6 +1556,25 @@ async function cruzarUno(doc){
       if(c.nombre && nom && !nom.value.trim()){ nom.value = c.nombre; marcarIA('d-nom'); }
       if(c.expediente && exp && !exp.value.trim()){ exp.value = c.expediente; marcarIA('d-exp'); }
     }
+    // ¿Este radicado ya está en tutela? ¿o la persona tuteló por otra?
+    try{
+      const rad = (document.getElementById('d-rad').value || '')
+        .replace(/[^0-9A-Za-z]/g,'').toUpperCase();
+      if(rad){
+        const et = await supaFetch('v_pet_en_tutela?select=*&radicado_norm=eq.' + rad + '&limit=1');
+        if(et.length){
+          toast((et[0].tiene_desacato ? '⚠ ESTA PETICIÓN TIENE DESACATO' : '⚖ ESTA PETICIÓN YA ESTÁ EN TUTELA') +
+                ' · tutela ' + (et[0].tutela_radicado || ''), 'err', 9);
+          return;
+        }
+      }
+      const tut = await supaFetch(
+        'v_pet_tutelas_persona?select=vigentes,tiene_desacato&documento=eq.' + doc + '&limit=1');
+      if(tut.length && (tut[0].vigentes > 0 || tut[0].tiene_desacato)){
+        toast('⚖ Esta persona ya tuteló por otra petición', '', 7);
+      }
+    }catch(e){}
+
     if(previas.length){
       const abiertas = previas.filter(function(p){
         return ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(p.estado) !== -1;
@@ -1937,6 +1976,36 @@ async function cruzarDatos(){
     });
   }catch(e){ /* la tabla puede tener otra estructura: no interrumpe */ }
 
+  // ¿Alguno de estos radicados ya está citado en una tutela?
+  try{
+    const rads = LOTE.map(function(it){
+      return String(it.radicado || '').replace(/[^0-9A-Za-z]/g,'').toUpperCase();
+    }).filter(Boolean);
+    if(rads.length){
+      const lista = '(' + rads.map(function(r){ return '"' + r + '"'; }).join(',') + ')';
+      const et = await supaFetch(
+        'v_pet_en_tutela?select=*&radicado_norm=in.' + lista + '&limit=200');
+      LOTE.forEach(function(it){
+        const k = String(it.radicado || '').replace(/[^0-9A-Za-z]/g,'').toUpperCase();
+        const t = et.find(function(x){ return x.radicado_norm === k; });
+        if(t) it.enTutela = t;
+      });
+    }
+  }catch(e){}
+
+  // Y si la persona tuteló por otra petición
+  try{
+    const tut = await supaFetch(
+      'v_pet_tutelas_persona?select=documento,vigentes,tiene_desacato' +
+      '&documento=in.' + enLista + '&limit=200');
+    LOTE.forEach(function(it){
+      const doc = it.datos && it.datos.documento;
+      if(!doc || it.enTutela) return;
+      const t = tut.find(function(x){ return String(x.documento) === String(doc); });
+      if(t && (t.vigentes > 0 || t.tiene_desacato)) it.tutela = t;
+    });
+  }catch(e){}
+
   // Peticiones anteriores de la misma persona
   try{
     const previas = await supaFetch(
@@ -2110,6 +2179,20 @@ function camposLote(it, n){
     '<div><div class="lbl">Expediente</div>' +
       '<input type="text" id="l-exp-' + n + '" value="' + esc(d.expediente || '') + '"' + marca(d.expediente) + '></div>' +
     '</div>' +
+    (it.enTutela
+      ? '<div style="background:rgba(248,113,113,.13);border:1px solid rgba(248,113,113,.48);' +
+        'border-radius:9px;padding:9px 12px;margin-top:9px;font-size:12.5px">' +
+        '<b style="color:var(--rojo)">' +
+          (it.enTutela.tiene_desacato ? '⚠ ESTA PETICIÓN TIENE DESACATO' : '⚖ ESTA PETICIÓN YA ESTÁ EN TUTELA') +
+        '</b><div style="color:var(--muted);margin-top:2px">Tutela ' +
+          esc(it.enTutela.tutela_radicado || '') +
+          (it.enTutela.tutela_responsable ? ' · ' + esc(it.enTutela.tutela_responsable) : '') +
+          ' — prioridad máxima.</div></div>'
+      : it.tutela
+        ? '<div style="background:rgba(251,146,60,.09);border:1px solid rgba(251,146,60,.35);' +
+          'border-radius:9px;padding:9px 12px;margin-top:9px;font-size:12.5px">' +
+          '<b style="color:var(--naranja)">⚖ Esta persona ya tuteló por otra petición</b></div>'
+        : '') +
     avisoPrevias(it) +
     (d.fecha_sello
       ? '<div style="font-size:11.5px;color:var(--azul);margin-top:7px">' +
@@ -2291,13 +2374,20 @@ async function cargarCola(){
   try{
     const filtro = document.getElementById('c-filtro').value;
     const orden = document.getElementById('c-orden').value;
-    let q = 'v_pet_cola?select=*&limit=300';
+    // La vista con prioridad pone primero a quienes ya tutelaron
+    let vista = (orden === 'urgencia') ? 'v_pet_cola_prioridad' : 'v_pet_cola';
+    let q = vista + '?select=*&limit=300';
     if(filtro === 'mias')      q += '&asignado_a=eq.' + PERFIL.id;
     else if(filtro === 'sin')  q += '&asignado_a=is.null';
     else if(filtro !== 'todas') q += '&asignado_a=eq.' + filtro;
     if(orden === 'tipo')    q += '&order=tipo.asc,fecha_limite.asc';
     if(orden === 'persona') q += '&order=documento.asc,fecha_limite.asc';
-    COLA = await supaFetch(q);
+    try{
+      COLA = await supaFetch(q);
+    }catch(err){
+      // Si aún no se ha ejecutado el delta de tutelas, cae a la vista normal
+      COLA = await supaFetch(q.replace('v_pet_cola_prioridad', 'v_pet_cola'));
+    }
     COLA_IDX = 0;
     pintarCaso();
     avisoSinRadicado();
@@ -2337,6 +2427,7 @@ function pintarCaso(){
 
   cont.innerHTML =
    '<div class="caso">' +
+    alertaTutela(r) +
 
     // ── Encabezado: identificación y relojes ──
     '<div class="caso-hd">' +
@@ -2611,6 +2702,54 @@ function irAPendientesRadicado(){
 /* Dato del encabezado del caso */
 function mi(k, v){
   return '<div class="mi"><div class="k">' + esc(k) + '</div><div>' + esc(v) + '</div></div>';
+}
+
+/* ── Aviso de tutela ──
+   Distingue dos cosas muy distintas:
+   · ESTA petición está en tutela  (enlace exacto por radicado PQR)
+   · la persona tuteló por OTRA    (señal de riesgo, no certeza)      */
+function alertaTutela(r){
+  const enTut = Number(r.en_tutela || 0);
+  const desac = r.tutela_desacato === true;
+  const perVig = Number(r.persona_vigentes || 0);
+
+  // Caso 1: la petición misma está en tutela
+  if(enTut > 0){
+    const clase = desac ? 'tut-desacato' : 'tut-critico';
+    return '<div class="tut-alerta ' + clase + '">' +
+      '<div class="tut-ic">' + (desac ? '⚠' : '⚖') + '</div>' +
+      '<div style="flex:1">' +
+        '<div class="tut-tit" style="color:var(--rojo)">' +
+          (desac ? 'Esta petición tiene incidente de desacato'
+                 : 'Esta petición ya está en tutela') + '</div>' +
+        '<div style="color:var(--muted)">' +
+          (desac
+            ? 'Hay un desacato en curso por no responderla. Riesgo de sanción para la Dirección: resuélvala hoy.'
+            : 'El ciudadano tuteló por esta misma petición. Responderla es lo que cierra la tutela.') +
+        '</div>' +
+        '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px">' +
+          (r.tutela_radicado
+            ? '<span class="chip copiable" onclick="copiar(\'' + esc(r.tutela_radicado) + '\', \'Radicado de tutela\')">' +
+              'Tutela ' + esc(r.tutela_radicado) + '</span>' : '') +
+          (r.tutela_juzgado ? '<span class="chip">' + esc(r.tutela_juzgado) + '</span>' : '') +
+          (r.tutela_responsable ? '<span class="chip">' + esc(r.tutela_responsable) + '</span>' : '') +
+          (r.tutela_estado ? '<span class="chip">' + esc(r.tutela_estado) + '</span>' : '') +
+        '</div>' +
+      '</div></div>';
+  }
+
+  // Caso 2: la persona tuteló por otra petición
+  if(perVig > 0 || r.persona_desacato === true){
+    return '<div class="tut-alerta tut-alto">' +
+      '<div class="tut-ic">⚖</div>' +
+      '<div><div class="tut-tit" style="color:var(--naranja)">' +
+        'Este peticionario ya tuteló por otra petición' +
+        (perVig ? ' · ' + perVig + ' vigente(s)' : '') + '</div>' +
+      '<div style="color:var(--muted)">' +
+        'No es esta petición, pero la persona conoce el camino. ' +
+        'Responder dentro del término evita una tutela más.</div></div></div>';
+  }
+  return '';
 }
 
 /* Segundo reloj: lo que el caso lleva en manos del abogado */
@@ -3096,12 +3235,24 @@ async function cargarBandeja(){
   const msg = document.getElementById('b-msg');
   msg.className = 'msg'; msg.textContent = 'Cargando…';
   try{
-    BANDEJA = await supaFetch('v_pet_bandeja?select=*&order=fecha_limite.asc&limit=1000');
+    try{
+      BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&order=fecha_limite.asc&limit=1000');
+    }catch(e){
+      BANDEJA = await supaFetch('v_pet_bandeja?select=*&order=fecha_limite.asc&limit=1000');
+    }
     msg.textContent = BANDEJA.length + ' peticiones cargadas (máx. 1000 más urgentes).';
     renderBandeja();
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'Error: ' + err.message;
   }
+}
+
+/* Distintivo compacto para tablas y listados */
+function marcaTutela(r){
+  if(r.tutela_desacato === true)   return '<span class="pill-tut tut-des">DESACATO</span>';
+  if(Number(r.en_tutela || 0) > 0) return '<span class="pill-tut tut-si">EN TUTELA</span>';
+  if(Number(r.persona_vigentes || 0) > 0) return '<span class="pill-tut tut-per">tuteló antes</span>';
+  return '';
 }
 
 function filtrarBandeja(){
@@ -3111,6 +3262,11 @@ function filtrarBandeja(){
   return BANDEJA.filter(function(r){
     if(es && r.estado !== es) return false;
     if(sm && r.semaforo !== sm) return false;
+    const tt = document.getElementById('b-tut');
+    const tv = tt ? tt.value : '';
+    if(tv === 'si'  && !(Number(r.en_tutela || 0) > 0)) return false;
+    if(tv === 'des' && r.tutela_desacato !== true) return false;
+    if(tv === 'per' && !(Number(r.persona_vigentes || 0) > 0)) return false;
     if(q){
       const blob = [r.radicado, r.peticionario, r.documento, r.radicado_respuesta, r.expediente]
         .join(' ').toLowerCase();
@@ -3140,7 +3296,7 @@ function renderBandeja(){
               'style="width:17px;height:17px;cursor:pointer" onchange="contarSel()">'
             : '') + '</td>'
         : '') +
-      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b>' +
+      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b>' + marcaTutela(r) +
         (r.trasladada_veces > 0
           ? '<div style="font-size:10.5px;color:var(--morado)">trasladada ' +
             r.trasladada_veces + 'x</div>' : '') + '</td>' +
@@ -3444,13 +3600,15 @@ function exportarHistCSV(){
   const cab = ['Radicado entrada','Peticionario','Documento','Tipo','Abogada','Fecha radicacion',
                'Fecha limite','Fecha proyeccion','Dias habiles usados','Dentro del termino',
                'Radicado respuesta','Fecha respuesta','Dias esperando radicado',
-               'Entregado a','Fecha entrega notificacion','Estado'];
+               'Entregado a','Fecha entrega notificacion','En tutela','Radicado tutela','Estado'];
   const lin = rows.map(function(r){
     return [r.radicado, r.peticionario, r.documento, r.tipo_nombre, r.asignado_nombre,
             r.fecha_radicado, r.fecha_limite, r.fecha_proyeccion, r.dias_abogado,
             r.abogado_a_termino === true ? 'SI' : r.abogado_a_termino === false ? 'NO' : '',
             r.radicado_respuesta, r.fecha_respuesta, r.dias_esperando_radicado,
-            r.entregado_a, r.fecha_entrega_notif, r.estado]
+            r.entregado_a, r.fecha_entrega_notif,
+            (r.tutela_desacato ? 'DESACATO' : (Number(r.en_tutela||0) > 0 ? 'SI' : '')),
+            r.tutela_radicado, r.estado]
       .map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }).join(';');
   });
   const csv = '\uFEFF' + cab.join(';') + '\n' + lin.join('\n');
@@ -3646,6 +3804,7 @@ async function cargarTablero(){
       if(alertas) alertas.innerHTML = '';
     }
 
+    cruceTutelas();
     const todas = await supaFetch('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
       'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,' +
       'pendiente_notificacion,dias_sin_entregar,asignado_nombre&limit=3000');
@@ -3708,6 +3867,61 @@ function pintarRadicacion(rows){
           ? ' <span style="color:var(--muted)">Con menos de 3 jornadas la proyección es apenas indicativa.</span>'
           : '')
       : '');
+}
+
+/* ── El costo del represamiento, medido en tutelas ── */
+async function cruceTutelas(){
+  const cont = document.getElementById('t-tutelas');
+  if(!cont) return;
+  try{
+    const [costo, abiertas] = await Promise.all([
+      supaFetch('v_pet_costo_represamiento?select=*'),
+      supaFetch('v_pet_bandeja_tutela?select=en_tutela,tutela_desacato,persona_vigentes,estado' +
+                '&estado=in.(PENDIENTE,ASIGNADA,EN_TRAMITE,PROYECTADA)&limit=3000')
+    ]);
+    const c = costo[0] || {};
+    const enTutela  = abiertas.filter(function(r){ return Number(r.en_tutela || 0) > 0; }).length;
+    const desacatos = abiertas.filter(function(r){ return r.tutela_desacato === true; }).length;
+    const personas  = abiertas.filter(function(r){
+      return Number(r.en_tutela || 0) === 0 && Number(r.persona_vigentes || 0) > 0;
+    }).length;
+
+    if(!enTutela && !personas && !c.tutelas_con_pqr){ cont.innerHTML = ''; return; }
+
+    cont.innerHTML =
+     '<div class="card" style="border-color:rgba(248,113,113,.3)">' +
+       '<div class="lbl" style="margin-bottom:4px">Peticiones y tutelas · lo que cuesta el represamiento</div>' +
+       '<div class="hint" style="margin-bottom:14px">' +
+         'Enlace exacto por el <b>radicado PQR</b> que cita cada tutela. ' +
+         'Una tutela cuya petición nunca se respondió era evitable.</div>' +
+       '<div class="kpis" style="margin-bottom:0">' +
+         kpiT('Tutelas que citan un PQR', c.tutelas_con_pqr, 'var(--txt)') +
+         kpiT('Con la petición ubicada', c.con_peticion_ubicada, 'var(--azul)') +
+         kpiT('Porque nunca se respondió', c.por_falta_de_respuesta, 'var(--rojo)') +
+         kpiT('Por respuesta tardía', c.por_respuesta_tardia, 'var(--naranja)') +
+         kpiT('Escalaron a desacato', c.escalaron_a_desacato, 'var(--rojo)') +
+         kpiT('% evitables', c.pct_evitables == null ? '—' : c.pct_evitables + '%', 'var(--gold)') +
+       '</div>' +
+       (enTutela || personas
+         ? '<div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--border);font-size:13px">' +
+           '<b style="color:var(--rojo)">' + enTutela + '</b> petición(es) abiertas <b>ya están en tutela</b>' +
+           (desacatos ? ' · <b style="color:var(--rojo)">' + desacatos + ' con desacato</b>' : '') +
+           (personas ? ' · <b style="color:var(--naranja)">' + personas +
+              '</b> de personas que tutelaron por otra' : '') +
+           '<div class="hint" style="margin-top:5px">Estas encabezan la cola de cada abogado automáticamente.</div>' +
+           '</div>'
+         : '') +
+     '</div>';
+  }catch(e){
+    cont.innerHTML = '<div class="card"><div class="hint">' +
+      'El cruce con Tutelas requiere ejecutar <b>pet_delta_tutelas.sql</b>.</div></div>';
+  }
+}
+
+function kpiT(lbl, val, col){
+  return '<div class="kpi"><div class="n" style="color:' + col + '">' +
+    (val === null || val === undefined ? '—' : val) + '</div>' +
+    '<div class="l">' + lbl + '</div></div>';
 }
 
 /* ── Alertas accionables ── */
