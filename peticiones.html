@@ -15,11 +15,46 @@
 <style>
 :root{
   --navy:#0a1f3d; --navy2:#0d2a52; --gold:#e8a020; --gold2:#f5c05a;
-  --txt:#eaf0f8; --muted:#8b9bb4; --border:rgba(255,255,255,.10);
+  --txt:#eaf0f8; --muted:#93a3bd; --border:rgba(255,255,255,.11);
   --glass:rgba(255,255,255,.05);
   --rojo:#f87171; --naranja:#fb923c; --verde:#4ade80; --azul:#60a5fa; --morado:#c084fc;
+
+  /* ── Significado, no color ──
+     Cada token dice QUÉ comunica. El rojo queda reservado
+     exclusivamente al vencimiento del término legal. */
+  --vencido:#f87171;      /* fuera de término · SOLO esto */
+  --urgente:#fb923c;      /* por vencer */
+  --atiempo:#4ade80;      /* dentro de término */
+  --judicial:#c084fc;     /* tutelas, desacatos, traslados */
+  --tramite:#60a5fa;      /* radicado, notificación, institucional */
+  --error:#fb923c;        /* fallos de formulario */
+  --acento:#e8a020;       /* acción principal */
+
+  /* Tipografía: mínimo legible 12px */
+  --t-micro:12px; --t-lbl:11px; --t-sm:13px; --t-base:14.5px; --t-md:15.5px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+
+/* ── Foco visible: quien digita todo el día no suelta el teclado ── */
+:focus-visible{outline:2px solid var(--acento);outline-offset:2px;border-radius:6px}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline-offset:0}
+button:focus-visible{outline-offset:3px}
+.copiable:focus-visible{outline-offset:0}
+
+/* ── Esqueletos: la espera se siente más corta ── */
+@keyframes brilla{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.esq{background:linear-gradient(90deg,rgba(255,255,255,.045) 25%,
+  rgba(255,255,255,.10) 50%,rgba(255,255,255,.045) 75%);
+  background-size:200% 100%;animation:brilla 1.4s linear infinite;border-radius:8px}
+.esq-lin{height:13px;margin-bottom:9px}
+.esq-card{height:74px;margin-bottom:11px;border-radius:13px}
+@media(prefers-reduced-motion:reduce){.esq{animation:none}}
+
+/* ── Vacíos con oficio ── */
+.vacio{text-align:center;padding:44px 22px}
+.vacio-ic{width:46px;height:46px;margin:0 auto 14px;opacity:.35}
+.vacio h3{font-size:17px;margin-bottom:6px}
+.vacio p{color:var(--muted);font-size:var(--t-sm);max-width:330px;margin:0 auto;line-height:1.55}
 body{
   font-family:'DM Sans',system-ui,sans-serif;background:var(--navy);color:var(--txt);
   min-height:100vh;
@@ -36,7 +71,7 @@ button,input,select,textarea{font-family:inherit;font-size:14px}
 .login-card h1{font-size:23px;margin-bottom:4px}
 .login-card p{color:var(--muted);font-size:13px;margin-bottom:24px}
 .fld{margin-bottom:14px}
-.lbl{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:500}
+.lbl{display:block;font-size:var(--t-lbl);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-weight:500}
 input,select,textarea{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--txt);outline:none;transition:border-color .15s}
 input:focus,select:focus,textarea:focus{border-color:var(--gold)}
 select option{background:var(--navy2);color:var(--txt)}
@@ -48,7 +83,7 @@ textarea{resize:vertical;min-height:64px}
 .btn-ghost{background:rgba(255,255,255,.07);color:var(--txt);border:1px solid var(--border)}
 .btn-full{width:100%}
 .msg{font-size:12.5px;margin-top:12px;min-height:18px}
-.msg.err{color:var(--rojo)} .msg.ok{color:var(--verde)}
+.msg.err{color:var(--error)} .msg.ok{color:var(--verde)}
 
 /* ── LAYOUT ── */
 header{border-bottom:1px solid var(--border);background:rgba(10,31,61,.85);backdrop-filter:blur(12px);position:sticky;top:0;z-index:50}
@@ -73,20 +108,20 @@ main{max-width:1320px;margin:0 auto;padding:24px 20px 60px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .kpi{background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:16px}
 .kpi .n{font-family:'Syne';font-size:27px;font-weight:800;line-height:1}
-.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+.kpi .l{font-size:var(--t-micro);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
 
 /* ── TABLA ── */
 .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
 table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
-th{background:rgba(255,255,255,.05);padding:11px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;white-space:nowrap}
+th{background:rgba(255,255,255,.05);padding:11px 12px;text-align:left;font-size:var(--t-lbl);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;white-space:nowrap}
 td{padding:10px 12px;border-top:1px solid var(--border);vertical-align:top}
 tbody tr:hover{background:rgba(255,255,255,.035)}
-.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap}
-.s-vencida{background:rgba(248,113,113,.18);color:var(--rojo)}
+.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:var(--t-micro);font-weight:700;white-space:nowrap}
+.s-vencida{background:rgba(248,113,113,.2);color:var(--vencido)}
 .s-urgente{background:rgba(251,146,60,.18);color:var(--naranja)}
 .s-proxima{background:rgba(232,160,32,.18);color:var(--gold)}
 .s-a_tiempo{background:rgba(74,222,128,.15);color:var(--verde)}
-.s-proyectada{background:rgba(192,132,252,.18);color:var(--morado)}
+.s-proyectada{background:rgba(96,165,250,.14);color:var(--tramite)}
 .s-respondida{background:rgba(96,165,250,.18);color:var(--azul)}
 .s-cerrada{background:rgba(255,255,255,.10);color:var(--muted)}
 .toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
@@ -101,12 +136,12 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .caso-nom{font-size:15px;margin-top:3px}
 .caso-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
 .mi{font-size:13px}
-.mi .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+.mi .k{font-size:var(--t-lbl);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
 .caso-res{background:rgba(255,255,255,.04);border-radius:11px;padding:13px;font-size:13.5px;line-height:1.55;margin-bottom:18px;white-space:pre-wrap}
 .dias-big{font-family:'Syne';font-size:31px;font-weight:800;line-height:1;text-align:right}
-.dias-lbl{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
-.hint{font-size:11.5px;color:var(--muted);margin-top:5px}
-.kbd{display:inline-block;background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:11px;font-family:monospace}
+.dias-lbl{font-size:var(--t-micro);color:var(--muted);text-align:right;margin-top:3px}
+.hint{font-size:var(--t-micro);color:var(--muted);margin-top:5px}
+.kbd{display:inline-block;background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:var(--t-micro);font-family:monospace}
 .contador{background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--gold2);font-weight:600}
 .limite-live{font-size:12.5px;color:var(--gold2);margin-top:6px;font-weight:600}
 /* Vista previa del documento */
@@ -118,7 +153,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .lote-thumb .lupa{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   background:rgba(10,31,61,.62);color:var(--gold2);font-size:11px;font-weight:700;opacity:0;transition:opacity .2s}
 .lote-thumb:hover .lupa{opacity:1}
-.lote-thumb .cargando{padding:26px 6px;text-align:center;font-size:10.5px;color:var(--muted)}
+.lote-thumb .cargando{padding:26px 6px;text-align:center;font-size:var(--t-micro);color:var(--muted)}
 .lote-datos{flex:1;min-width:0}
 /* Visor a pantalla completa */
 #visor{position:fixed;inset:0;background:rgba(4,14,28,.97);z-index:950;display:none;
@@ -135,9 +170,9 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .visor-form .fld{margin-bottom:13px}
 .visor-form input,.visor-form select{font-size:14px;padding:10px 12px}
 .vf-hd{font-family:'Syne';font-weight:800;font-size:16px;margin-bottom:3px}
-.vf-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+.vf-sub{font-size:var(--t-micro);color:var(--muted);margin-bottom:16px}
 .vf-nav{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
-.vf-cont{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
+.vf-cont{font-size:var(--t-micro);color:var(--muted);margin-top:12px;text-align:center}
 @media(max-width:900px){
   .visor-split{flex-direction:column}
   .visor-form{width:auto;border-left:none;border-top:1px solid var(--border)}
@@ -151,7 +186,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .tut-alto{background:rgba(251,146,60,.09);border:1px solid rgba(251,146,60,.32)}
 .tut-ic{font-size:19px;line-height:1;flex-shrink:0}
 .tut-tit{font-weight:700;margin-bottom:3px}
-.pill-tut{display:inline-block;border-radius:99px;padding:2px 9px;font-size:10px;
+.pill-tut{display:inline-block;border-radius:99px;padding:3px 10px;font-size:var(--t-micro);
   font-weight:700;margin-left:6px;vertical-align:middle;white-space:nowrap}
 .tut-si{background:rgba(248,113,113,.2);color:var(--rojo)}
 .tut-des{background:var(--rojo);color:#fff}
@@ -161,13 +196,24 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
   padding:15px 18px;margin-bottom:16px}
 .tanda-fila{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .tanda-n{font-family:'Syne';font-size:24px;font-weight:800;color:var(--gold);line-height:1}
-.tanda-t{font-size:12.5px;color:var(--muted);line-height:1.4}
+.tanda-t{font-size:var(--t-sm);color:var(--muted);line-height:1.4}
 .tanda-barra{flex:1;min-width:150px;height:9px;background:rgba(255,255,255,.08);
   border-radius:99px;overflow:hidden;display:flex}
 .tanda-barra i{height:100%;display:block;transition:width .4s}
-.tanda-leyenda{display:flex;gap:15px;flex-wrap:wrap;margin-top:11px;font-size:11.5px;color:var(--muted)}
+.tanda-leyenda{display:flex;gap:15px;flex-wrap:wrap;margin-top:11px;font-size:var(--t-micro);color:var(--muted)}
 .tanda-leyenda b{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .lote-fila.yaesta{border-color:rgba(139,155,180,.35);background:rgba(255,255,255,.02);opacity:.6}
+/* Secciones plegables: bajan la carga visual sin esconder nada */
+.pleg{border-top:1px solid var(--border);margin-top:14px;padding-top:12px}
+.pleg-btn{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;
+  color:var(--muted);font-size:var(--t-sm);cursor:pointer;padding:5px 0;text-align:left;
+  font-weight:600;transition:color .15s}
+.pleg-btn:hover{color:var(--txt)}
+.pleg-fl{transition:transform .2s;flex-shrink:0;display:inline-flex}
+.pleg.on .pleg-fl{transform:rotate(90deg)}
+.pleg-cnt{display:none;padding-top:12px}
+.pleg.on .pleg-cnt{display:block}
+.pleg-cta{margin-left:auto;font-size:var(--t-micro);color:var(--acento);font-weight:700}
 /* Ficha del caso */
 .caso-id{flex:1;min-width:230px}
 .copiable{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
@@ -177,7 +223,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .copiable:hover .ic{opacity:1}
 .contacto{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
 .chip{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.06);
-  border:1px solid var(--border);border-radius:99px;padding:6px 13px;font-size:12.5px;
+  border:1px solid var(--border);border-radius:99px;padding:7px 14px;font-size:var(--t-sm);
   color:var(--txt);text-decoration:none;transition:border-color .15s,background .15s}
 .chip:hover{border-color:var(--gold);background:rgba(232,160,32,.10)}
 .chip.vacio{color:var(--muted);border-style:dashed}
@@ -186,7 +232,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .reloj-b{text-align:right}
 .acciones{margin-top:16px}
 .acc-grupo{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
-.acc-tit{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+.acc-tit{font-size:var(--t-lbl);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
   width:100%;margin-bottom:2px;font-weight:600}
 .btn-ic{display:inline-flex;align-items:center;gap:7px}
 .btn-ic svg{width:14px;height:14px}
@@ -203,20 +249,20 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .lote-fila.error{border-color:rgba(248,113,113,.45)}
 .lote-fila.guardada{border-color:rgba(74,222,128,.55);background:rgba(74,222,128,.07);opacity:.72}
 .lote-top{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:11px}
-.lote-arch{font-size:11.5px;color:var(--muted);flex:1;min-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lote-arch{font-size:var(--t-micro);color:var(--muted);flex:1;min-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lote-rad{font-family:'Syne';font-weight:800;color:var(--gold);font-size:15px}
-.lote-est{font-size:11.5px;padding:2px 9px;border-radius:99px;font-weight:700}
+.lote-est{font-size:var(--t-micro);padding:2px 9px;border-radius:99px;font-weight:700}
 .lote-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px}
 .lote-campos input,.lote-campos select{padding:8px 10px;font-size:13px}
-.lote-campos .lbl{font-size:9.5px;margin-bottom:3px}
-.lote-vence{font-size:11.5px;color:var(--gold2);font-weight:600;margin-top:7px}
+.lote-campos .lbl{font-size:var(--t-lbl);margin-bottom:3px}
+.lote-vence{font-size:var(--t-micro);color:var(--gold2);font-weight:600;margin-top:7px}
 .auto{border-color:rgba(96,165,250,.55) !important}
 /* Avisos flotantes */
 #toasts{position:fixed;right:18px;bottom:18px;z-index:800;display:flex;flex-direction:column;gap:9px}
 .toast{background:rgba(13,42,82,.97);border:1px solid var(--border);border-left:4px solid var(--gold);
   border-radius:11px;padding:13px 17px;font-size:13.5px;max-width:330px;box-shadow:0 8px 26px rgba(0,0,0,.4);
   animation:sube .25s ease;backdrop-filter:blur(10px)}
-.toast.ok{border-left-color:var(--verde)} .toast.err{border-left-color:var(--rojo)}
+.toast.ok{border-left-color:var(--verde)} .toast.err{border-left-color:var(--error)}
 @keyframes sube{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.toast{animation:none}}
 /* Contador en las pestañas */
@@ -227,7 +273,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .hoy-box{display:flex;align-items:center;gap:13px;background:var(--glass);border:1px solid var(--border);
   border-radius:13px;padding:13px 17px;margin-bottom:14px;flex-wrap:wrap}
 .hoy-n{font-family:'Syne';font-size:25px;font-weight:800;color:var(--gold);line-height:1}
-.hoy-t{font-size:12.5px;color:var(--muted);line-height:1.4}
+.hoy-t{font-size:var(--t-sm);color:var(--muted);line-height:1.4}
 .hoy-barra{flex:1;min-width:130px;height:7px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
 .hoy-barra > div{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:99px;transition:width .5s}
 /* Lectura de documentos */
@@ -235,15 +281,15 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
   cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:18px;background:rgba(232,160,32,.04)}
 .dropzone:hover,.dropzone.drag{border-color:var(--gold);background:rgba(232,160,32,.10)}
 .dz-t{font-weight:600;font-size:14.5px;margin-bottom:4px}
-.dz-s{font-size:12.5px;color:var(--muted)}
+.dz-s{font-size:var(--t-sm);color:var(--muted)}
 .ocr-est{font-size:12.5px;margin-top:10px;min-height:18px}
-.chip-ia{display:inline-block;background:rgba(96,165,250,.18);color:var(--azul);border-radius:99px;
-  padding:1px 7px;font-size:9.5px;font-weight:700;letter-spacing:.04em;margin-left:6px;vertical-align:middle}
+.chip-ia{display:inline-block;background:rgba(96,165,250,.2);color:var(--tramite);border-radius:99px;
+  padding:2px 8px;font-size:var(--t-lbl);font-weight:700;letter-spacing:.04em;margin-left:6px;vertical-align:middle}
 .txt-leido{background:rgba(6,20,40,.7);border:1px solid var(--border);border-radius:11px;padding:13px;
-  font-size:11.5px;color:var(--muted);max-height:190px;overflow:auto;white-space:pre-wrap;margin-top:12px;line-height:1.5}
+  font-size:var(--t-micro);color:var(--muted);max-height:190px;overflow:auto;white-space:pre-wrap;margin-top:12px;line-height:1.5}
 .barra{height:5px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-top:9px}
 .barra > div{height:100%;background:var(--gold);width:0%;transition:width .3s}
-footer{text-align:center;padding:26px 20px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--border)}
+footer{text-align:center;padding:26px 20px;color:var(--muted);font-size:var(--t-micro);border-top:1px solid var(--border)}
 footer b{color:var(--gold)}
 @media(max-width:640px){table{min-width:700px}.hdr-in{gap:10px}}
 </style>
@@ -502,7 +548,11 @@ footer b{color:var(--gold)}
           <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Radicación</th>
           <th>Límite</th><th>Días</th><th>Estado</th><th>Abogado</th><th>Rad. respuesta</th>
         </tr></thead>
-        <tbody id="b-body"><tr><td colspan="9">Cargando…</td></tr></tbody>
+        <tbody id="b-body"><tr><td colspan="9">
+          <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
+          <div class="esq esq-lin" style="width:88%"></div>
+          <div class="esq esq-lin" style="width:94%"></div>
+        </td></tr></tbody>
       </table>
     </div>
   </section>
@@ -545,7 +595,11 @@ footer b{color:var(--gold)}
           <th>Radicación</th><th>Límite</th><th>Proyectó</th><th>Días</th>
           <th>A término</th><th>Rad. respuesta</th><th>Notificador</th><th>Estado</th>
         </tr></thead>
-        <tbody id="h-body"><tr><td colspan="12">Cargando…</td></tr></tbody>
+        <tbody id="h-body"><tr><td colspan="12">
+          <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
+          <div class="esq esq-lin" style="width:86%"></div>
+          <div class="esq esq-lin" style="width:92%"></div>
+        </td></tr></tbody>
       </table>
     </div>
   </section>
@@ -579,7 +633,10 @@ footer b{color:var(--gold)}
             <th>Persona</th><th>Hoy</th><th>Últimos 7 días</th><th>Últimos 30</th>
             <th>Total</th><th>Días trabajados</th><th>Promedio/día</th><th>Última vez</th>
           </tr></thead>
-          <tbody id="t-rad"><tr><td colspan="8">Cargando…</td></tr></tbody>
+          <tbody id="t-rad"><tr><td colspan="8">
+            <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
+            <div class="esq esq-lin" style="width:75%"></div>
+          </td></tr></tbody>
         </table>
       </div>
       <div class="hint" id="t-rad-tot" style="margin-top:10px"></div>
@@ -599,7 +656,10 @@ footer b{color:var(--gold)}
             <th>Con radicado</th><th>Recibidas vencidas</th><th>Días en sus manos</th>
             <th>% a término justo</th><th>Avance</th>
           </tr></thead>
-          <tbody id="t-prod"><tr><td colspan="9">Cargando…</td></tr></tbody>
+          <tbody id="t-prod"><tr><td colspan="9">
+            <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
+            <div class="esq esq-lin" style="width:80%"></div>
+          </td></tr></tbody>
         </table>
       </div>
     </div>
@@ -823,6 +883,43 @@ function esAdmin(){ return PERFIL && (PERFIL.rol === 'admin' || PERFIL.rol === '
 function puedeRadicar(){ return PERFIL && ['admin','revisor','radicador'].indexOf(PERFIL.rol) !== -1; }
 function soloRadica(){ return PERFIL && PERFIL.rol === 'radicador'; }
 
+/* Aviso con opción de deshacer: 6 segundos para arrepentirse */
+function toastDeshacer(texto, registro, cambios){
+  const cont = document.getElementById('toasts');
+  if(!cont) return;
+  const t = document.createElement('div');
+  t.className = 'toast ok';
+  t.innerHTML = '<div>' + esc(texto) + '</div>' +
+    '<button class="btn btn-ghost" style="padding:6px 13px;font-size:var(--t-micro);margin-top:9px" ' +
+    'id="btn-undo">Deshacer</button>';
+  cont.appendChild(t);
+
+  const quitar = function(){
+    t.style.transition = 'opacity .3s'; t.style.opacity = '0';
+    setTimeout(function(){ t.remove(); }, 320);
+  };
+  const btn = t.querySelector('#btn-undo');
+  if(btn) btn.onclick = async function(){
+    btn.disabled = true; btn.textContent = 'Revirtiendo…';
+    const revertir = {};
+    Object.keys(cambios).forEach(function(k){
+      revertir[k] = (registro[k] === undefined ? null : registro[k]);
+    });
+    try{
+      await supaFetch('pet_peticiones?id=eq.' + registro.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(revertir)
+      });
+      quitar();
+      toast('Cambio revertido. Recargue la cola para verlo.', 'ok', 4);
+      cargarCola();
+    }catch(err){
+      btn.disabled = false; btn.textContent = 'Deshacer';
+      toast('No se pudo revertir: ' + err.message, 'err', 5);
+    }
+  };
+  setTimeout(quitar, 6000);
+}
+
 /* Aviso flotante: confirma sin robar el foco */
 function toast(texto, tipo, segundos){
   const cont = document.getElementById('toasts');
@@ -970,7 +1067,7 @@ async function cargarCargasVivas(){
       const col = c.vencidas > 0 ? 'var(--rojo)' : c.urgentes > 0 ? 'var(--naranja)' : 'var(--verde)';
       return '<div style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:9px 13px">' +
         '<div style="font-size:12.5px;font-weight:600">' + esc(c.abogado) + '</div>' +
-        '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">' +
+        '<div style="font-size:var(--t-micro);color:var(--muted);margin-top:2px">' +
           '<b style="color:' + col + '">' + c.pendientes + '</b> en curso · ' +
           c.urgentes + ' urgentes · ' + c.vencidas + ' vencidas</div></div>';
     }).join('');
@@ -1652,7 +1749,7 @@ async function cruzarUno(doc){
       if(rad){
         const et = await supaFetch('v_pet_en_tutela?select=*&radicado_norm=eq.' + rad + '&limit=1');
         if(et.length){
-          toast((et[0].tiene_desacato ? '⚠ ESTA PETICIÓN TIENE DESACATO' : '⚖ ESTA PETICIÓN YA ESTÁ EN TUTELA') +
+          toast((et[0].tiene_desacato ? 'Esta petición tiene DESACATO' : 'Esta petición ya está EN TUTELA') +
                 ' · tutela ' + (et[0].tutela_radicado || ''), 'err', 9);
           return;
         }
@@ -1660,7 +1757,7 @@ async function cruzarUno(doc){
       const tut = await supaFetch(
         'v_pet_tutelas_persona?select=vigentes,tiene_desacato&documento=eq.' + doc + '&limit=1');
       if(tut.length && (tut[0].vigentes > 0 || tut[0].tiene_desacato)){
-        toast('⚖ Esta persona ya tuteló por otra petición', '', 7);
+        toast('Esta persona ya tuteló por otra petición', '', 7);
       }
     }catch(e){}
 
@@ -2277,18 +2374,21 @@ function camposLote(it, n){
       '<input type="text" id="l-exp-' + n + '" value="' + esc(d.expediente || '') + '"' + marca(d.expediente) + '></div>' +
     '</div>' +
     (it.enTutela
-      ? '<div style="background:rgba(248,113,113,.13);border:1px solid rgba(248,113,113,.48);' +
+      ? '<div style="background:rgba(192,132,252,.14);border:1px solid rgba(192,132,252,.5);' +
         'border-radius:9px;padding:9px 12px;margin-top:9px;font-size:12.5px">' +
-        '<b style="color:var(--rojo)">' +
-          (it.enTutela.tiene_desacato ? '⚠ ESTA PETICIÓN TIENE DESACATO' : '⚖ ESTA PETICIÓN YA ESTÁ EN TUTELA') +
+        '<b style="color:var(--judicial)">' +
+          (it.enTutela.tiene_desacato
+            ? ICONO.martillo + ' ESTA PETICIÓN TIENE DESACATO'
+            : ICONO.balanza + ' ESTA PETICIÓN YA ESTÁ EN TUTELA') +
         '</b><div style="color:var(--muted);margin-top:2px">Tutela ' +
           esc(it.enTutela.tutela_radicado || '') +
           (it.enTutela.tutela_responsable ? ' · ' + esc(it.enTutela.tutela_responsable) : '') +
           ' — prioridad máxima.</div></div>'
       : it.tutela
-        ? '<div style="background:rgba(251,146,60,.09);border:1px solid rgba(251,146,60,.35);' +
+        ? '<div style="background:rgba(192,132,252,.07);border:1px solid rgba(192,132,252,.28);' +
           'border-radius:9px;padding:9px 12px;margin-top:9px;font-size:12.5px">' +
-          '<b style="color:var(--naranja)">⚖ Esta persona ya tuteló por otra petición</b></div>'
+          '<b style="color:var(--judicial)">' + ICONO.balanza +
+          ' Esta persona ya tuteló por otra petición</b></div>'
         : '') +
     avisoPrevias(it) +
     (d.fecha_sello
@@ -2467,7 +2567,11 @@ function resumenLote(d){
    ══════════════════════════════════════════════════════════════ */
 async function cargarCola(){
   const cont = document.getElementById('c-cont');
-  cont.innerHTML = '<div class="card">Cargando…</div>';
+  cont.innerHTML = '<div class="card">' +
+    '<div class="esq esq-lin" style="width:34%;height:19px"></div>' +
+    '<div class="esq esq-lin" style="width:56%"></div>' +
+    '<div class="esq esq-card" style="margin-top:16px"></div>' +
+    '<div class="esq esq-card" style="height:110px"></div></div>';
   try{
     const filtro = document.getElementById('c-filtro').value;
     const orden = document.getElementById('c-orden').value;
@@ -2501,9 +2605,9 @@ function pintarCaso(){
   if(!COLA.length){
     pos.textContent = '';
     cont.innerHTML = '<div class="card" style="text-align:center;padding:44px">' +
-      '<div style="font-size:34px;margin-bottom:10px">✓</div>' +
+      '<div class="vacio-ic" style="color:var(--atiempo)">' + ICONO.check + '</div>' +
       '<h3>No hay casos pendientes en esta cola</h3>' +
-      '<p style="color:var(--muted);margin-top:6px;font-size:13px">' +
+      '<p style="color:var(--muted);margin-top:6px;font-size:var(--t-sm)">' +
       (esAdmin() ? 'Radique una petición y asígnela para que aparezca aquí.'
                  : 'Todo al día. Cuando le asignen una nueva, aparecerá en esta pantalla.') +
       '</p></div>';
@@ -2593,14 +2697,6 @@ function pintarCaso(){
     // ── Acciones agrupadas ──
     '<div class="acciones">' +
       '<div class="acc-grupo">' +
-        '<div class="acc-tit">Generar documentos</div>' +
-        (r.tipo === 'PRESCRIPCION'
-          ? '<button class="btn btn-doc btn-ic" onclick="abrirResolucion()">' +
-            ICONO.doc + 'Resolución de prescripción</button>' : '') +
-        '<button class="btn btn-of btn-ic" onclick="abrirOficio()">' +
-          ICONO.sobre + 'Oficio al usuario</button>' +
-      '</div>' +
-      '<div class="acc-grupo" style="margin-top:14px;padding-top:13px;border-top:1px solid var(--border)">' +
         '<div class="acc-tit">Registrar y continuar</div>' +
         '<button class="btn btn-primary btn-ic" onclick="guardarCaso()">' +
           ICONO.check + 'Guardar y siguiente</button>' +
@@ -2614,9 +2710,25 @@ function pintarCaso(){
       '</div>' +
     '</div>' +
 
-    '<div id="k-doc"></div>' +
-    '<div id="k-hist"></div>' +
     '<div class="msg" id="k-msg"></div>' +
+    '<div class="pleg" id="pleg-doc">' +
+      '<button class="pleg-btn" onclick="plegar(\'pleg-doc\')">' +
+        '<span class="pleg-fl">' + ICONO.flecha + '</span>Generar documentos' +
+        '<span class="pleg-cta">' +
+          (r.tipo === 'PRESCRIPCION' ? 'resolución y oficio' : 'oficio al usuario') + '</span>' +
+      '</button>' +
+      '<div class="pleg-cnt">' +
+        '<div class="acc-grupo">' +
+          (r.tipo === 'PRESCRIPCION'
+            ? '<button class="btn btn-doc btn-ic" onclick="abrirResolucion()">' +
+              ICONO.doc + 'Resolución de prescripción</button>' : '') +
+          '<button class="btn btn-of btn-ic" onclick="abrirOficio()">' +
+            ICONO.sobre + 'Oficio al usuario</button>' +
+        '</div>' +
+        '<div id="k-doc"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div id="k-hist"></div>' +
     '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
       '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
    '</div>';
@@ -2648,13 +2760,27 @@ const ICONO = {
     '<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>' +
     '<path d="M12 9v4M12 17h.01"/></svg>',
   traslado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-    '<path d="M16 3l4 4-4 4M20 7H8M8 21l-4-4 4-4M4 17h12"/></svg>'
+    '<path d="M16 3l4 4-4 4M20 7H8M8 21l-4-4 4-4M4 17h12"/></svg>',
+  flecha: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" ' +
+    'style="width:13px;height:13px"><path d="M9 18l6-6-6-6"/></svg>',
+  balanza: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+    'style="width:16px;height:16px;vertical-align:-3px"><path d="M12 3v18M7 21h10"/>' +
+    '<path d="M12 6l7 2M12 6L5 8"/><path d="M5 8l-3 7a3 3 0 006 0z"/>' +
+    '<path d="M19 8l3 7a3 3 0 01-6 0z"/></svg>',
+  martillo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+    'style="width:16px;height:16px;vertical-align:-3px"><path d="M14 13l-8.5 8.5a2.1 2.1 0 01-3-3L11 10"/>' +
+    '<path d="M17.6 6.4l-4.2 4.2M9.8 8.6l5.6-5.6 5.6 5.6-5.6 5.6z"/></svg>',
+  vacio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" ' +
+    'style="width:46px;height:46px"><path d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7"/>' +
+    '<path d="M4 13h4l2 3h4l2-3h4v5a2 2 0 01-2 2H6a2 2 0 01-2-2z"/></svg>'
 };
 
 /* ── Traslado de una petición a otro abogado ── */
 function abrirTraslado(){
   const r = COLA[COLA_IDX];
   if(!r) return;
+  const pl = document.getElementById('pleg-doc');
+  if(pl) pl.classList.add('on');
   const cont = document.getElementById('k-doc');
   if(!cont) return;
   if(cont.getAttribute('data-modo') === 'traslado'){
@@ -2814,9 +2940,10 @@ function alertaTutela(r){
   if(enTut > 0){
     const clase = desac ? 'tut-desacato' : 'tut-critico';
     return '<div class="tut-alerta ' + clase + '">' +
-      '<div class="tut-ic">' + (desac ? '⚠' : '⚖') + '</div>' +
+      '<div class="tut-ic" style="color:var(--judicial)">' +
+        (desac ? ICONO.martillo : ICONO.balanza) + '</div>' +
       '<div style="flex:1">' +
-        '<div class="tut-tit" style="color:var(--rojo)">' +
+        '<div class="tut-tit" style="color:var(--judicial)">' +
           (desac ? 'Esta petición tiene incidente de desacato'
                  : 'Esta petición ya está en tutela') + '</div>' +
         '<div style="color:var(--muted)">' +
@@ -2834,7 +2961,7 @@ function alertaTutela(r){
         '</div>' +
         '<div style="margin-top:11px">' +
           '<button class="btn btn-ghost" style="padding:8px 14px;font-size:12.5px;' +
-            'border-color:rgba(248,113,113,.45);color:var(--rojo)" ' +
+            'border-color:rgba(192,132,252,.5);color:var(--judicial)" ' +
             'onclick="sincronizarTutela(' + r.id + ')">Informar a Tutelas</button>' +
           '<div class="hint" style="margin-top:5px">Escribe el radicado de respuesta en el campo ' +
             '<b>RESPUESTA PQR</b> de la tutela y registra al abogado como encargado.</div>' +
@@ -2846,8 +2973,8 @@ function alertaTutela(r){
   // Caso 2: la persona tuteló por otra petición
   if(perVig > 0 || r.persona_desacato === true){
     return '<div class="tut-alerta tut-alto">' +
-      '<div class="tut-ic">⚖</div>' +
-      '<div><div class="tut-tit" style="color:var(--naranja)">' +
+      '<div class="tut-ic" style="color:var(--judicial)">' + ICONO.balanza + '</div>' +
+      '<div><div class="tut-tit" style="color:var(--judicial)">' +
         'Este peticionario ya tuteló por otra petición' +
         (perVig ? ' · ' + perVig + ' vigente(s)' : '') + '</div>' +
       '<div style="color:var(--muted)">' +
@@ -2913,6 +3040,12 @@ function relojAbogado(r){
     '</div>';
 }
 
+/* Abre o cierra una sección plegable */
+function plegar(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.toggle('on');
+}
+
 /* Copiar al portapapeles: sirve para pegar en SIMIT o en gestión documental */
 function copiar(txt, etiqueta){
   const ok = function(){ toast(etiqueta + ' copiado: ' + txt, 'ok', 2); };
@@ -2967,8 +3100,8 @@ async function guardarCaso(){
     await supaFetch('pet_peticiones?id=eq.' + r.id, {
       method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(patch)
     });
-    toast('Caso ' + r.radicado + ' registrado.' + (rad ? '' : ' Falta el radicado de respuesta.'),
-          rad ? 'ok' : '');
+    toastDeshacer('Caso ' + r.radicado + ' registrado.' +
+      (rad ? '' : ' Falta el radicado de respuesta.'), r, patch);
     COLA.splice(COLA_IDX, 1);
     if(COLA_IDX >= COLA.length) COLA_IDX = Math.max(COLA.length - 1, 0);
     pintarCaso();
@@ -3023,11 +3156,19 @@ async function historialPeticionario(r){
     const mias = abiertas.filter(function(o){ return o.asignado_nombre === (PERFIL||{}).nombre; });
 
     cont.innerHTML =
-     '<div style="background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.28);' +
-     'border-radius:13px;padding:15px 18px;margin-top:16px">' +
+     '<div class="pleg" id="pleg-hist">' +
+       '<button class="pleg-btn" onclick="plegar(\'pleg-hist\')">' +
+         '<span class="pleg-fl">' + ICONO.flecha + '</span>' +
+         'Otras peticiones de ' + esc((r.peticionario || '').split(' ')[0]) +
+         '<span class="pleg-cta">' + otras.length +
+           (abiertas.length ? ' · ' + abiertas.length + ' sin cerrar' : '') + '</span>' +
+       '</button>' +
+       '<div class="pleg-cnt">' +
+       '<div style="background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.24);' +
+       'border-radius:12px;padding:14px 16px">' +
        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">' +
-         '<b style="color:var(--azul);font-size:13.5px">' +
-           esc(r.peticionario) + ' tiene ' + otras.length + ' petición(es) más</b>' +
+         '<b style="color:var(--tramite);font-size:var(--t-base)">' +
+           esc(r.peticionario) + '</b>' +
          (abiertas.length ? '<span class="pill s-proyectada">' + abiertas.length + ' sin cerrar</span>' : '') +
          (mias.length > 1 ? '<span class="pill s-urgente">' + mias.length +
             ' suyas · respóndalas juntas</span>' : '') +
@@ -3050,7 +3191,7 @@ async function historialPeticionario(r){
          : abiertas.length
            ? '<div class="hint" style="margin-top:9px">Algunas están en manos de otro abogado: coordine antes de responder.</div>'
            : '') +
-     '</div>';
+     '</div></div></div>';
   }catch(e){}
 }
 
@@ -3074,6 +3215,8 @@ function fechaLarga(d){
 function abrirOficio(){
   const r = COLA[COLA_IDX];
   if(!r) return;
+  const pl = document.getElementById('pleg-doc');
+  if(pl) pl.classList.add('on');
   const cont = document.getElementById('k-doc');
   if(!cont) return;
   if(cont.getAttribute('data-modo') === 'oficio'){ cont.innerHTML = ''; cont.removeAttribute('data-modo'); return; }
@@ -3164,6 +3307,8 @@ async function armarDocx(url, datos, nombreArchivo, transformar){
 function abrirResolucion(){
   const r = COLA[COLA_IDX];
   if(!r) return;
+  const pl = document.getElementById('pleg-doc');
+  if(pl) pl.classList.add('on');
   const cont = document.getElementById('k-doc');
   if(!cont) return;
   if(cont.innerHTML){ cont.innerHTML = ''; return; }
@@ -3428,7 +3573,10 @@ function renderBandeja(){
   const th = document.getElementById('b-th-sel');
   if(th) th.style.display = SELECCION ? '' : 'none';
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="' + (SELECCION ? 10 : 9) + '">Sin resultados.</td></tr>';
+    body.innerHTML = '<tr><td colspan="' + (SELECCION ? 10 : 9) + '">' +
+      '<div class="vacio"><div class="vacio-ic">' + ICONO.vacio + '</div>' +
+      '<h3>Sin resultados</h3><p>Pruebe con otros filtros o con menos palabras en la búsqueda.</p>' +
+      '</div></td></tr>';
     return;
   }
   body.innerHTML = rows.slice(0, 400).map(function(r){
@@ -3644,7 +3792,14 @@ function renderHist(){
   }).join('');
 
   const body = document.getElementById('h-body');
-  if(!rows.length){ body.innerHTML = '<tr><td colspan="12">Sin resultados en este filtro.</td></tr>'; return; }
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="12">' +
+      '<div class="vacio"><div class="vacio-ic">' + ICONO.vacio + '</div>' +
+      '<h3>Nada en este período</h3>' +
+      '<p>Ajuste las fechas o el estado. Las respuestas aparecen aquí apenas se registra la proyección.</p>' +
+      '</div></td></tr>';
+    return;
+  }
   body.innerHTML = rows.slice(0, 500).map(function(r){
     const at = r.abogado_a_termino;
     const atTxt = at === true ? '<span class="pill s-a_tiempo">Sí</span>'
@@ -3677,7 +3832,7 @@ function renderHist(){
 function celdaNotificador(r){
   if(r.entregado_a){
     return '<div style="font-size:12.5px">' + esc(r.entregado_a) + '</div>' +
-           '<div style="font-size:11px;color:var(--muted)">' + fmtFecha(r.fecha_entrega_notif) + '</div>';
+           '<div style="font-size:var(--t-micro);color:var(--muted)">' + fmtFecha(r.fecha_entrega_notif) + '</div>';
   }
   if(!r.radicado_respuesta) return '<span style="color:var(--muted)">—</span>';
   const ops = NOTIFICADORES.length ? NOTIFICADORES : ['Kristian','Juliana'];
@@ -4037,7 +4192,7 @@ async function cruceTutelas(){
     if(!enTutela && !personas && !c.tutelas_con_pqr){ cont.innerHTML = ''; return; }
 
     cont.innerHTML =
-     '<div class="card" style="border-color:rgba(248,113,113,.3)">' +
+     '<div class="card" style="border-color:rgba(192,132,252,.34)">' +
        '<div class="lbl" style="margin-bottom:4px">Peticiones y tutelas · lo que cuesta el represamiento</div>' +
        '<div class="hint" style="margin-bottom:14px">' +
          'Enlace exacto por el <b>radicado PQR</b> que cita cada tutela. ' +
@@ -4047,7 +4202,7 @@ async function cruceTutelas(){
          kpiT('Con la petición ubicada', c.con_peticion_ubicada, 'var(--azul)') +
          kpiT('Porque nunca se respondió', c.por_falta_de_respuesta, 'var(--rojo)') +
          kpiT('Por respuesta tardía', c.por_respuesta_tardia, 'var(--naranja)') +
-         kpiT('Escalaron a desacato', c.escalaron_a_desacato, 'var(--rojo)') +
+         kpiT('Escalaron a desacato', c.escalaron_a_desacato, 'var(--judicial)') +
          kpiT('% evitables', c.pct_evitables == null ? '—' : c.pct_evitables + '%', 'var(--gold)') +
        '</div>' +
        (pendSync
@@ -4059,8 +4214,8 @@ async function cruceTutelas(){
          : '') +
        (enTutela || personas
          ? '<div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--border);font-size:13px">' +
-           '<b style="color:var(--rojo)">' + enTutela + '</b> petición(es) abiertas <b>ya están en tutela</b>' +
-           (desacatos ? ' · <b style="color:var(--rojo)">' + desacatos + ' con desacato</b>' : '') +
+           '<b style="color:var(--judicial)">' + enTutela + '</b> petición(es) abiertas <b>ya están en tutela</b>' +
+           (desacatos ? ' · <b style="color:var(--judicial)">' + desacatos + ' con desacato</b>' : '') +
            (personas ? ' · <b style="color:var(--naranja)">' + personas +
               '</b> de personas que tutelaron por otra' : '') +
            '<div class="hint" style="margin-top:5px">Estas encabezan la cola de cada abogado automáticamente.</div>' +
@@ -4093,7 +4248,7 @@ function pintarAlertas(rows){
   if(vencidas.length)   items.push(['var(--rojo)',    vencidas.length + ' vencidas sin proyectar', 'Riesgo de tutela y desacato. Atiéndalas primero.']);
   if(estaSemana.length) items.push(['var(--naranja)', estaSemana.length + ' vencen en 5 días hábiles o menos', 'Todavía se alcanzan a responder a término.']);
   if(trabadas.length)   items.push(['var(--morado)',  trabadas.length + ' proyectadas esperando radicado hace más de 5 días', 'La demora está en Gestión Documental, no en las abogadas.']);
-  if(sinEntregar.length) items.push(['var(--azul)',   sinEntregar.length + ' radicadas sin entregar al notificador', 'La respuesta existe pero no ha salido. Revisar con quien lleva los oficios.']);
+  if(sinEntregar.length) items.push(['var(--tramite)',   sinEntregar.length + ' radicadas sin entregar al notificador', 'La respuesta existe pero no ha salido. Revisar con quien lleva los oficios.']);
 
   const cont = document.getElementById('t-alertas');
   if(!items.length){
@@ -4145,14 +4300,14 @@ function pintarFlujo(rows){
   semanas.forEach(function(s){ tope = Math.max(tope, ent[s], res[s]); });
 
   document.getElementById('t-flujo').innerHTML =
-    '<div style="display:flex;gap:16px;font-size:11.5px;color:var(--muted);margin-bottom:10px">' +
+    '<div style="display:flex;gap:16px;font-size:var(--t-micro);color:var(--muted);margin-bottom:10px">' +
       '<span><b style="color:var(--azul)">■</b> Entran</span>' +
       '<span><b style="color:var(--gold)">■</b> Se resuelven</span>' +
       '<span style="margin-left:auto">Escala 0 – ' + tope + '</span></div>' +
     semanas.map(function(s){
       const e = ent[s], v = res[s];
       return '<div style="margin-bottom:9px">' +
-        '<div style="font-size:11px;color:var(--muted);margin-bottom:3px">Semana del ' + fmtFecha(s) + '</div>' +
+        '<div style="font-size:var(--t-micro);color:var(--muted);margin-bottom:3px">Semana del ' + fmtFecha(s) + '</div>' +
         barra(e, tope, 'var(--azul)') + barra(v, tope, 'var(--gold)') + '</div>';
     }).join('');
 
