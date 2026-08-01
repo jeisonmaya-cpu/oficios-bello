@@ -109,6 +109,23 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .kbd{display:inline-block;background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:11px;font-family:monospace}
 .contador{background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);border-radius:10px;padding:9px 14px;font-size:13px;color:var(--gold2);font-weight:600}
 .limite-live{font-size:12.5px;color:var(--gold2);margin-top:6px;font-weight:600}
+/* Procesamiento por lotes */
+.lote-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.lote-hd .lbl{margin:0}
+.lote-fila{background:var(--glass);border:1px solid var(--border);border-radius:13px;
+  padding:14px 16px;margin-bottom:10px;transition:border-color .2s}
+.lote-fila.lista{border-color:rgba(74,222,128,.4)}
+.lote-fila.error{border-color:rgba(248,113,113,.45)}
+.lote-fila.guardada{border-color:rgba(74,222,128,.55);background:rgba(74,222,128,.07);opacity:.72}
+.lote-top{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:11px}
+.lote-arch{font-size:11.5px;color:var(--muted);flex:1;min-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lote-rad{font-family:'Syne';font-weight:800;color:var(--gold);font-size:15px}
+.lote-est{font-size:11.5px;padding:2px 9px;border-radius:99px;font-weight:700}
+.lote-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px}
+.lote-campos input,.lote-campos select{padding:8px 10px;font-size:13px}
+.lote-campos .lbl{font-size:9.5px;margin-bottom:3px}
+.lote-vence{font-size:11.5px;color:var(--gold2);font-weight:600;margin-top:7px}
+.auto{border-color:rgba(96,165,250,.55) !important}
 /* Avisos flotantes */
 #toasts{position:fixed;right:18px;bottom:18px;z-index:800;display:flex;flex-direction:column;gap:9px}
 .toast{background:rgba(13,42,82,.97);border:1px solid var(--border);border-left:4px solid var(--gold);
@@ -264,6 +281,54 @@ footer b{color:var(--gold)}
     <div class="card">
       <div class="lbl" style="margin-bottom:10px">Últimas radicadas</div>
       <div id="d-ultimas" style="font-size:13px;color:var(--muted)">—</div>
+    </div>
+  </section>
+
+  <!-- ══ CARGA POR LOTES ══ -->
+  <section class="panel" id="p-lote">
+    <div class="page-hdr">
+      <h2>Carga por <em>lotes</em></h2>
+      <p>Suelte hasta 10 archivos. El radicado sale del nombre del archivo y el resto se lee del contenido. Usted revisa y aprueba.</p>
+    </div>
+
+    <div class="card">
+      <div class="dropzone" id="lz" onclick="document.getElementById('lz-file').click()">
+        <div class="dz-t">Arrastre aquí los PDF de la tanda</div>
+        <div class="dz-s">Hasta 10 a la vez. El nombre del archivo se toma como radicado de entrada.</div>
+        <input type="file" id="lz-file" accept=".pdf,.png,.jpg,.jpeg" multiple style="display:none"
+               onchange="cargarLote(this.files)">
+        <div class="barra" id="lz-barra" style="display:none"><div id="lz-barra-in"></div></div>
+        <div class="ocr-est" id="lz-est"></div>
+      </div>
+
+      <div class="lote-hd" id="lz-ctrl" style="display:none">
+        <div class="lbl">Valores para toda la tanda</div>
+        <div style="flex:1;min-width:150px">
+          <label class="lbl">Fecha de radicación</label>
+          <input type="date" id="lz-fecha" onchange="recalcLote()">
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label class="lbl">Asignar a</label>
+          <select id="lz-asignar"></select>
+        </div>
+        <div style="flex:1;min-width:130px">
+          <label class="lbl">Canal</label>
+          <select id="lz-canal">
+            <option value="FISICO">Físico</option>
+            <option value="EMAIL">Correo</option>
+            <option value="WEB">Web</option>
+            <option value="VERBAL">Verbal</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="lz-filas"></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center" id="lz-acciones" style="display:none">
+        <button class="btn btn-primary" id="lz-btn" onclick="guardarLote()" style="display:none">Aprobar y guardar la tanda</button>
+        <button class="btn btn-ghost" id="lz-limpiar" onclick="prepararLote()" style="display:none">Descartar</button>
+        <div class="msg" id="lz-msg" style="margin:0"></div>
+      </div>
     </div>
   </section>
 
@@ -631,6 +696,8 @@ async function iniciar(){
 }
 
 function esAdmin(){ return PERFIL && (PERFIL.rol === 'admin' || PERFIL.rol === 'revisor'); }
+function puedeRadicar(){ return PERFIL && ['admin','revisor','radicador'].indexOf(PERFIL.rol) !== -1; }
+function soloRadica(){ return PERFIL && PERFIL.rol === 'radicador'; }
 
 /* Aviso flotante: confirma sin robar el foco */
 function toast(texto, tipo, segundos){
@@ -648,6 +715,7 @@ function toast(texto, tipo, segundos){
 
 /* Contadores en las pestañas */
 async function actualizarBadges(){
+  if(soloRadica()) return;
   try{
     let q = 'v_pet_cola?select=id&limit=2000';
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
@@ -691,16 +759,17 @@ function llenarFiltroCola(){
 
 function construirTabs(){
   const defs = [
-    {id:'digitar',  txt:'Radicar',  admin:true},
-    {id:'cola',     txt:'Cola de trabajo', admin:false},
-    {id:'bandeja',  txt:'Bandeja',  admin:false},
-    {id:'historicos', txt:'Resueltas', admin:false},
-    {id:'tablero',  txt:'Tablero',  admin:false}
+    {id:'digitar',    txt:'Radicar',         ver: puedeRadicar()},
+    {id:'lote',       txt:'Carga por lotes',  ver: puedeRadicar()},
+    {id:'cola',       txt:'Cola de trabajo', ver: !soloRadica()},
+    {id:'bandeja',    txt:'Bandeja',         ver: true},
+    {id:'historicos', txt:'Resueltas',       ver: !soloRadica()},
+    {id:'tablero',    txt:'Tablero',         ver: true}
   ];
   const cont = document.getElementById('tabs');
   cont.innerHTML = '';
   defs.forEach(function(d){
-    if(d.admin && !esAdmin()) return;
+    if(!d.ver) return;
     const b = document.createElement('button');
     b.className = 'tab';
     b.textContent = d.txt;
@@ -708,11 +777,11 @@ function construirTabs(){
     b.id = 'tab-' + d.id;
     cont.appendChild(b);
   });
-  irA(esAdmin() ? 'digitar' : 'cola');
+  irA(puedeRadicar() ? 'digitar' : 'cola');
 }
 
 function irA(id){
-  const paneles = ['digitar','cola','bandeja','historicos','tablero'];
+  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero'];
   paneles.forEach(function(p){
     const el = document.getElementById('p-' + p);
     const tb = document.getElementById('tab-' + p);
@@ -720,6 +789,7 @@ function irA(id){
     if(tb) tb.classList.toggle('on', p === id);
   });
   if(id === 'cola')    cargarCola();
+  if(id === 'lote') prepararLote();
   if(id === 'bandeja') cargarBandeja();
   if(id === 'historicos') cargarHistoricos();
   if(id === 'tablero') cargarTablero();
@@ -1304,6 +1374,287 @@ function quitarMarcasIA(){
   const dz = document.getElementById('dz-texto'); if(dz) dz.innerHTML = '';
   estado('');
 }
+
+/* ══════════════════════════════════════════════════════════════
+   CARGA POR LOTES — hasta 10 documentos por tanda
+   ══════════════════════════════════════════════════════════════ */
+let LOTE = [];
+const LOTE_MAX = 10;
+
+function prepararLote(){
+  LOTE = [];
+  document.getElementById('lz-filas').innerHTML = '';
+  document.getElementById('lz-ctrl').style.display = 'none';
+  document.getElementById('lz-btn').style.display = 'none';
+  document.getElementById('lz-limpiar').style.display = 'none';
+  document.getElementById('lz-msg').textContent = '';
+  document.getElementById('lz-est').textContent = '';
+  document.getElementById('lz-barra').style.display = 'none';
+  document.getElementById('lz-file').value = '';
+
+  const f = document.getElementById('lz-fecha');
+  if(!f.value) f.value = iso(new Date());
+
+  const sel = document.getElementById('lz-asignar');
+  const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
+  sel.innerHTML = '<option value="AUTO">Automático — reparto parejo</option>' +
+    abos.map(function(p){ return '<option value="' + p.id + '">' + esc(p.nombre) + '</option>'; }).join('') +
+    '<option value="">Sin asignar</option>';
+}
+
+/* El nombre del archivo es el radicado */
+function radicadoDeArchivo(nombre){
+  return nombre.replace(/\.[^.]+$/, '')
+               .replace(/\s*\(\d+\)\s*$/, '')   // quita el "(1)" de las descargas repetidas
+               .trim().toUpperCase();
+}
+
+async function cargarLote(files){
+  if(!files || !files.length) return;
+  const lista = Array.prototype.slice.call(files, 0, LOTE_MAX);
+  if(files.length > LOTE_MAX){
+    toast('Se tomaron los primeros ' + LOTE_MAX + ' archivos de ' + files.length + '.', '', 5);
+  }
+  LOTE = [];
+  document.getElementById('lz-ctrl').style.display = 'flex';
+  document.getElementById('lz-filas').innerHTML = '';
+
+  for(let i = 0; i < lista.length; i++){
+    const file = lista[i];
+    document.getElementById('lz-est').textContent =
+      'Leyendo ' + (i + 1) + ' de ' + lista.length + ': ' + file.name;
+    progresoLote((i) / lista.length * 100);
+
+    const item = {
+      archivo: file.name,
+      radicado: radicadoDeArchivo(file.name),
+      datos: {},
+      estado: 'leido',
+      nota: ''
+    };
+    try{
+      let texto = '';
+      const esPDF = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+      if(esPDF){
+        texto = await textoDePDF(file);
+        if(texto.replace(/\s/g,'').length < 180){
+          item.nota = 'Escaneado: sin texto. Complete a mano o léalo aparte.';
+          item.estado = 'aviso';
+        }
+      } else {
+        item.nota = 'Imagen: use la pestaña Radicar para reconocerla.';
+        item.estado = 'aviso';
+      }
+      if(texto) item.datos = extraerDatos(texto);
+    }catch(err){
+      item.nota = 'No se pudo leer: ' + err.message;
+      item.estado = 'aviso';
+    }
+    LOTE.push(item);
+    pintarLote();
+  }
+  progresoLote(null);
+  const leidos = LOTE.filter(function(x){ return x.datos && x.datos.nombre; }).length;
+  document.getElementById('lz-est').textContent =
+    lista.length + ' documentos cargados · ' + leidos + ' con datos reconocidos. Revise y complete lo que falte.';
+  document.getElementById('lz-btn').style.display = 'inline-block';
+  document.getElementById('lz-limpiar').style.display = 'inline-block';
+}
+
+function progresoLote(pct){
+  const b = document.getElementById('lz-barra'), i = document.getElementById('lz-barra-in');
+  if(!b) return;
+  if(pct === null){ b.style.display = 'none'; return; }
+  b.style.display = 'block'; i.style.width = Math.round(pct) + '%';
+}
+
+function pintarLote(){
+  const cont = document.getElementById('lz-filas');
+  cont.innerHTML = LOTE.map(function(it, n){
+    if(it.estado === 'guardada'){
+      return '<div class="lote-fila guardada"><div class="lote-top">' +
+        '<div class="lote-rad">' + esc(it.radicado) + '</div>' +
+        '<div class="lote-arch">' + esc(it.datos.nombre || '') + '</div>' +
+        '<div class="lote-est" style="background:rgba(74,222,128,.2);color:var(--verde)">Guardada</div>' +
+        '</div></div>';
+    }
+    if(it.estado === 'error'){
+      return '<div class="lote-fila error"><div class="lote-top">' +
+        '<div class="lote-rad">' + esc(it.radicado) + '</div>' +
+        '<div class="lote-arch">' + esc(it.nota) + '</div>' +
+        '<div class="lote-est" style="background:rgba(248,113,113,.2);color:var(--rojo)">Error</div>' +
+        '</div>' + camposLote(it, n) + '</div>';
+    }
+    const d = it.datos || {};
+    const ok = d.nombre && d.documento;
+    return '<div class="lote-fila' + (ok ? ' lista' : '') + '">' +
+      '<div class="lote-top">' +
+        '<div class="lote-rad">' + esc(it.radicado) + '</div>' +
+        '<div class="lote-arch">' + esc(it.archivo) + (it.nota ? ' · ' + esc(it.nota) : '') + '</div>' +
+        '<div class="lote-est" style="background:' +
+          (ok ? 'rgba(74,222,128,.18);color:var(--verde)' : 'rgba(232,160,32,.18);color:var(--gold)') + '">' +
+          (ok ? 'Lista' : 'Revisar') + '</div>' +
+      '</div>' + camposLote(it, n) + '</div>';
+  }).join('');
+  recalcLote();
+}
+
+function camposLote(it, n){
+  const d = it.datos || {};
+  const marca = function(v){ return v ? ' class="auto"' : ''; };
+  return '<div class="lote-campos">' +
+    '<div><div class="lbl">Radicado</div>' +
+      '<input type="text" id="l-rad-' + n + '" value="' + esc(it.radicado) + '" class="auto"></div>' +
+    '<div><div class="lbl">Peticionario</div>' +
+      '<input type="text" id="l-nom-' + n + '" value="' + esc(d.nombre || '') + '"' + marca(d.nombre) + '></div>' +
+    '<div><div class="lbl">Cédula</div>' +
+      '<input type="text" id="l-doc-' + n + '" value="' + esc(d.documento || '') + '"' + marca(d.documento) + '></div>' +
+    '<div><div class="lbl">Tipo</div>' +
+      '<select id="l-tipo-' + n + '" onchange="recalcLote()"' + marca(d.tipo) + '>' +
+        TIPOS.map(function(t){
+          return '<option value="' + esc(t.codigo) + '" data-dias="' + t.dias_termino + '"' +
+                 (d.tipo === t.codigo ? ' selected' : '') + '>' + esc(t.nombre) + '</option>';
+        }).join('') + '</select></div>' +
+    '<div><div class="lbl">Correo</div>' +
+      '<input type="email" id="l-mail-' + n + '" value="' + esc(d.email || '') + '"' + marca(d.email) + '></div>' +
+    '<div><div class="lbl">Expediente</div>' +
+      '<input type="text" id="l-exp-' + n + '" value="' + esc(d.expediente || '') + '"' + marca(d.expediente) + '></div>' +
+    '</div>' +
+    '<div class="lote-vence" id="l-vence-' + n + '"></div>';
+}
+
+function recalcLote(){
+  const f = document.getElementById('lz-fecha');
+  if(!f) return;
+  LOTE.forEach(function(it, n){
+    const el = document.getElementById('l-vence-' + n);
+    const s = document.getElementById('l-tipo-' + n);
+    if(!el || !s) return;
+    const dias = parseInt(s.selectedOptions[0].getAttribute('data-dias'), 10) || 15;
+    const lim = sumarHabiles(f.value, dias);
+    if(!lim){ el.textContent = ''; return; }
+    const rest = habilesEntre(iso(new Date()), lim);
+    el.textContent = 'Vence el ' + fmtFecha(lim) +
+      (rest < 0 ? ' · VENCIDA hace ' + Math.abs(rest) + ' días hábiles'
+                : ' · faltan ' + rest + ' días hábiles');
+    el.style.color = rest < 0 ? 'var(--rojo)' : 'var(--gold2)';
+  });
+}
+
+async function guardarLote(){
+  const msg = document.getElementById('lz-msg');
+  const btn = document.getElementById('lz-btn');
+  const fecha = document.getElementById('lz-fecha').value;
+  const canal = document.getElementById('lz-canal').value;
+  const dest  = document.getElementById('lz-asignar').value;
+
+  if(!fecha){ msg.className = 'msg err'; msg.textContent = 'Indique la fecha de radicación de la tanda.'; return; }
+
+  const pendientes = LOTE.map(function(it, n){ return {it: it, n: n}; })
+                         .filter(function(x){ return x.it.estado !== 'guardada'; });
+  if(!pendientes.length){ msg.className = 'msg'; msg.textContent = 'No hay nada pendiente por guardar.'; return; }
+
+  // Validación previa
+  for(let i = 0; i < pendientes.length; i++){
+    const n = pendientes[i].n;
+    const rad = (document.getElementById('l-rad-' + n).value || '').trim();
+    const nom = (document.getElementById('l-nom-' + n).value || '').trim();
+    if(!rad || !nom){
+      msg.className = 'msg err';
+      msg.textContent = 'Falta el radicado o el peticionario en la fila ' + (n + 1) + '.';
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  msg.className = 'msg'; msg.textContent = 'Guardando…';
+
+  const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
+  let idx = 0, ok = 0, fallos = 0;
+
+  for(let i = 0; i < pendientes.length; i++){
+    const it = pendientes[i].it, n = pendientes[i].n;
+    const reg = {
+      radicado:       (document.getElementById('l-rad-' + n).value || '').trim(),
+      fecha_radicado: fecha,
+      peticionario:   (document.getElementById('l-nom-' + n).value || '').trim(),
+      documento:      (document.getElementById('l-doc-' + n).value || '').trim() || null,
+      tipo:           document.getElementById('l-tipo-' + n).value,
+      email:          (document.getElementById('l-mail-' + n).value || '').trim() || null,
+      expediente:     (document.getElementById('l-exp-' + n).value || '').trim() || null,
+      canal:          canal,
+      resumen:        resumenLote(it.datos),
+      origen:         'LOTE'
+    };
+    if(dest === 'AUTO'){
+      if(abos.length){ reg.asignado_a = abos[idx % abos.length].id; idx++; }
+    } else if(dest){
+      reg.asignado_a = dest;
+    }
+
+    try{
+      await supaFetch('pet_peticiones', {
+        method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(reg)
+      });
+      it.estado = 'guardada';
+      it.datos = it.datos || {};
+      it.datos.nombre = reg.peticionario;
+      it.radicado = reg.radicado;
+      ok++;
+    }catch(err){
+      it.estado = 'error';
+      it.nota = /duplicat|unique/i.test(err.message) ? 'Ese radicado ya existe.' : err.message;
+      fallos++;
+    }
+    pintarLote();
+  }
+
+  btn.disabled = false;
+  CONTADOR += ok;
+  const c = document.getElementById('d-cont');
+  if(c) c.textContent = CONTADOR + ' radicadas en esta sesión';
+
+  if(fallos){
+    msg.className = 'msg err';
+    msg.textContent = ok + ' guardadas · ' + fallos + ' con problema. Corrija las marcadas y vuelva a guardar.';
+  } else {
+    msg.className = 'msg ok';
+    msg.textContent = ok + ' peticiones guardadas. Puede soltar la siguiente tanda.';
+    toast(ok + ' peticiones radicadas.', 'ok');
+    setTimeout(prepararLote, 1600);
+  }
+  cargarCargasVivas();
+}
+
+function resumenLote(d){
+  if(!d) return null;
+  const p = [];
+  if(d.tipo){
+    const t = TIPOS.find(function(x){ return x.codigo === d.tipo; });
+    if(t) p.push('Solicita ' + t.nombre.toLowerCase() + '.');
+  }
+  if(d.comparendo) p.push('Comparendo: ' + d.comparendo +
+    (d.resolucion ? ' · Resolución sanción: ' + d.resolucion : '') + '.');
+  if(d.placa) p.push('Placa: ' + d.placa + '.');
+  if(d.vigencias) p.push('Vigencias mencionadas: ' + d.vigencias + '.');
+  if(d.telefono) p.push('Tel: ' + d.telefono + '.');
+  return p.length ? p.join(' ') : null;
+}
+
+/* Arrastrar y soltar en el modo lote */
+(function(){
+  const lz = document.getElementById('lz');
+  if(!lz) return;
+  ['dragenter','dragover'].forEach(function(ev){
+    lz.addEventListener(ev, function(e){ e.preventDefault(); lz.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    lz.addEventListener(ev, function(e){ e.preventDefault(); lz.classList.remove('drag'); });
+  });
+  lz.addEventListener('drop', function(e){
+    if(e.dataTransfer.files && e.dataTransfer.files.length) cargarLote(e.dataTransfer.files);
+  });
+})();
 
 /* ══════════════════════════════════════════════════════════════
    PANEL 2 — COLA DE TRABAJO
@@ -2210,6 +2561,10 @@ async function cargarTablero(){
     }).join('') : '<tr><td colspan="9">Sin datos.</td></tr>';
 
     document.getElementById('t-reparto').style.display = esAdmin() ? 'block' : 'none';
+    if(soloRadica()){
+      const alertas = document.getElementById('t-alertas');
+      if(alertas) alertas.innerHTML = '';
+    }
 
     const todas = await supaFetch('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
       'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,' +
