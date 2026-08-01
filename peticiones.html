@@ -304,6 +304,7 @@ footer b{color:var(--gold)}
         <div class="barra" id="dz-barra" style="display:none"><div id="dz-barra-in"></div></div>
         <div class="ocr-est" id="dz-est"></div>
       </div>
+      <div id="dz-previa"></div>
       <div id="dz-texto"></div>
 
       <div class="grid">
@@ -1092,6 +1093,8 @@ function limpiarDigitar(todo){
     document.getElementById('d-msg').textContent = '';
   }
   quitarMarcasIA();
+  const pv = document.getElementById('dz-previa');
+  if(pv && todo){ pv.innerHTML = ''; ARCHIVO_UNICO = null; }
   calcLimite();
 }
 
@@ -1147,9 +1150,14 @@ function progreso(pct){
   });
 })();
 
+let ARCHIVO_UNICO = null;
+
 async function leerArchivo(file){
   if(!file) return;
+  ARCHIVO_UNICO = file;
   document.getElementById('dz-texto').innerHTML = '';
+  document.getElementById('dz-previa').innerHTML = '';
+  miniaturaUnica(file);
   const esPDF = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
   try{
     let texto = '';
@@ -1157,7 +1165,7 @@ async function leerArchivo(file){
       estado('Leyendo el PDF…');
       texto = await textoDePDF(file);
       if(texto.replace(/\s/g,'').length < 180){
-        estado('El PDF parece escaneado: no tiene texto.', 'var(--naranja)');
+        estado('Este PDF es un escaneo: no trae texto digital.', 'var(--naranja)');
         if(confirm('Este PDF no trae texto (es un escaneo).\n\n¿Intentar reconocerlo con OCR? Puede tardar entre 20 y 60 segundos por página.')){
           texto = await ocrDePDF(file);
         } else {
@@ -1187,6 +1195,87 @@ async function leerArchivo(file){
     progreso(null);
     estado('No se pudo leer el archivo: ' + err.message, 'var(--rojo)');
   }
+}
+
+/* Vista previa en el modo de a uno, igual que en el lote */
+async function miniaturaUnica(file){
+  const cont = document.getElementById('dz-previa');
+  if(!cont) return;
+  cont.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:10px 0">Generando vista previa…</div>';
+  try{
+    let url, pags = 1;
+    if(/\.pdf$/i.test(file.name) || file.type === 'application/pdf'){
+      const cv = await paginaACanvas(file, 1, 0.55);
+      pags = cv.__paginas || 1;
+      url = cv.toDataURL('image/jpeg', 0.72);
+    } else {
+      url = URL.createObjectURL(file);
+    }
+    cont.innerHTML =
+      '<div style="display:flex;gap:14px;align-items:center;background:rgba(255,255,255,.04);' +
+      'border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:14px">' +
+        '<div class="lote-thumb" style="width:88px" onclick="abrirVisorUnico()">' +
+          '<img src="' + url + '"><div class="lupa">Ampliar</div></div>' +
+        '<div style="flex:1;min-width:150px">' +
+          '<div style="font-size:13px;font-weight:600">' + esc(file.name) + '</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-top:3px">' +
+            pags + ' página(s) · ' + Math.round(file.size / 1024) + ' KB</div>' +
+          '<button class="btn btn-ghost" style="padding:7px 13px;font-size:12.5px;margin-top:9px" ' +
+            'onclick="abrirVisorUnico()">Ver el documento al lado</button>' +
+        '</div>' +
+      '</div>';
+  }catch(e){ cont.innerHTML = ''; }
+}
+
+/* Visor para el modo de a uno: documento a la izquierda, campos a la derecha */
+async function abrirVisorUnico(){
+  if(!ARCHIVO_UNICO) return;
+  VISOR = {
+    item: { archivo: ARCHIVO_UNICO.name, file: ARCHIVO_UNICO, radicado: '' },
+    pag: 1, total: 1, fila: 'unico'
+  };
+  document.getElementById('visor-tit').textContent = ARCHIVO_UNICO.name;
+  document.getElementById('visor').classList.add('on');
+  pintarFormUnico();
+  await pintarVisor();
+}
+
+/* Campos del panel, enlazados a los del formulario principal */
+function pintarFormUnico(){
+  const g = function(id){ const e = document.getElementById(id); return e ? e.value : ''; };
+  const cont = document.getElementById('visor-form');
+  cont.innerHTML =
+    '<div class="vf-hd">Datos de la petición</div>' +
+    '<div class="vf-sub">Lo que escriba aquí pasa al formulario de radicación.</div>' +
+    '<div class="fld"><label class="lbl">Radicado de entrada</label>' +
+      '<input type="text" id="vu-rad" value="' + esc(g('d-rad')) + '"></div>' +
+    '<div class="fld"><label class="lbl">Peticionario</label>' +
+      '<input type="text" id="vu-nom" value="' + esc(g('d-nom')) + '"></div>' +
+    '<div class="fld"><label class="lbl">Cédula</label>' +
+      '<input type="text" id="vu-doc" inputmode="numeric" value="' + esc(g('d-doc')) + '"></div>' +
+    '<div class="fld"><label class="lbl">Correo electrónico</label>' +
+      '<input type="email" id="vu-mail" value="' + esc(g('d-mail')) + '"></div>' +
+    '<div class="fld"><label class="lbl">Teléfono</label>' +
+      '<input type="text" id="vu-tel" value="' + esc(g('d-tel')) + '"></div>' +
+    '<div class="fld"><label class="lbl">Expediente</label>' +
+      '<input type="text" id="vu-exp" value="' + esc(g('d-exp')) + '"></div>' +
+    '<div class="vf-nav">' +
+      '<button class="btn btn-primary" style="flex:1;padding:9px 14px;font-size:13px" ' +
+        'onclick="cerrarVisor()">Listo, volver</button>' +
+    '</div>' +
+    '<div class="hint" style="margin-top:10px;text-align:center">' +
+      '<span class="kbd">Esc</span> cierra y conserva lo escrito</div>';
+}
+
+/* Devuelve al formulario principal lo digitado en el panel */
+function guardarFormUnico(){
+  const pares = [['vu-rad','d-rad'],['vu-nom','d-nom'],['vu-doc','d-doc'],
+                 ['vu-mail','d-mail'],['vu-tel','d-tel'],['vu-exp','d-exp']];
+  pares.forEach(function(p){
+    const o = document.getElementById(p[0]), d = document.getElementById(p[1]);
+    if(o && d) d.value = o.value.trim();
+  });
+  calcLimite();
 }
 
 async function textoDePDF(file){
@@ -1886,6 +1975,14 @@ function visorDoc(d){
 }
 
 function cerrarVisor(){
+  if(VISOR.fila === 'unico'){
+    guardarFormUnico();
+    document.getElementById('visor').classList.remove('on');
+    document.getElementById('visor-body').innerHTML = '';
+    document.getElementById('visor-form').innerHTML = '';
+    VISOR.fila = null;
+    return;
+  }
   guardarFormVisor();
   pintarLote();
   document.getElementById('visor').classList.remove('on');
