@@ -2735,6 +2735,14 @@ function alertaTutela(r){
           (r.tutela_responsable ? '<span class="chip">' + esc(r.tutela_responsable) + '</span>' : '') +
           (r.tutela_estado ? '<span class="chip">' + esc(r.tutela_estado) + '</span>' : '') +
         '</div>' +
+        '<div style="margin-top:11px">' +
+          '<button class="btn btn-ghost" style="padding:8px 14px;font-size:12.5px;' +
+            'border-color:rgba(248,113,113,.45);color:var(--rojo)" ' +
+            'onclick="sincronizarTutela(' + r.id + ')">Informar a Tutelas</button>' +
+          '<div class="hint" style="margin-top:5px">Escribe el radicado de respuesta en el campo ' +
+            '<b>RESPUESTA PQR</b> de la tutela y registra al abogado como encargado.</div>' +
+          '<div class="msg" id="sync-msg" style="margin-top:6px"></div>' +
+        '</div>' +
       '</div></div>';
   }
 
@@ -2750,6 +2758,47 @@ function alertaTutela(r){
         'Responder dentro del término evita una tutela más.</div></div></div>';
   }
   return '';
+}
+
+/* ── Puente hacia el módulo de Tutelas ──
+   Nunca automático: siempre lo dispara una persona. Solo escribe
+   RESPUESTA PQR y ENCARGADO PQR; no toca la gestión jurídica. */
+async function sincronizarTutela(id){
+  const msg = document.getElementById('sync-msg');
+  const r = COLA[COLA_IDX];
+  const rad = document.getElementById('k-rad');
+  const radActual = rad ? rad.value.trim() : '';
+
+  // Si aún no hay radicado de respuesta, solo se informa el encargado
+  const sinRadicado = !radActual && !(r && r.radicado_respuesta);
+  const campos = sinRadicado ? 'encargado' : 'ambos';
+
+  if(!sinRadicado && radActual && (!r.radicado_respuesta || r.radicado_respuesta !== radActual)){
+    if(msg){
+      msg.className = 'msg err';
+      msg.textContent = 'Primero guarde el caso con el radicado de respuesta, y vuelva a intentarlo.';
+    }
+    return;
+  }
+
+  const aviso = sinRadicado
+    ? 'Aún no hay radicado de respuesta. Se informará solo quién está atendiendo la petición. ¿Continuar?'
+    : 'Se escribirá el radicado ' + (r.radicado_respuesta || radActual) +
+      ' en el campo RESPUESTA PQR de la tutela. ¿Continuar?';
+  if(!confirm(aviso)) return;
+
+  if(msg){ msg.className = 'msg'; msg.textContent = 'Informando a Tutelas…'; }
+  try{
+    const n = await rpc('pet_sincronizar_tutela', { p_peticion_id: id, p_campos: campos });
+    if(msg){
+      msg.className = 'msg ok';
+      msg.textContent = n ? 'Tutela actualizada (' + n + ' campo(s)).'
+                          : 'La tutela ya tenía esa información.';
+    }
+    toast(n ? 'Módulo de Tutelas actualizado.' : 'Sin cambios: ya estaba informado.', 'ok', 4);
+  }catch(err){
+    if(msg){ msg.className = 'msg err'; msg.textContent = 'No se pudo informar: ' + err.message; }
+  }
 }
 
 /* Segundo reloj: lo que el caso lleva en manos del abogado */
@@ -3874,11 +3923,13 @@ async function cruceTutelas(){
   const cont = document.getElementById('t-tutelas');
   if(!cont) return;
   try{
-    const [costo, abiertas] = await Promise.all([
+    const [costo, abiertas, pend] = await Promise.all([
       supaFetch('v_pet_costo_represamiento?select=*'),
       supaFetch('v_pet_bandeja_tutela?select=en_tutela,tutela_desacato,persona_vigentes,estado' +
-                '&estado=in.(PENDIENTE,ASIGNADA,EN_TRAMITE,PROYECTADA)&limit=3000')
+                '&estado=in.(PENDIENTE,ASIGNADA,EN_TRAMITE,PROYECTADA)&limit=3000'),
+      supaFetch('v_pet_pendiente_sync?select=peticion_id&limit=500').catch(function(){ return []; })
     ]);
+    const pendSync = pend.length;
     const c = costo[0] || {};
     const enTutela  = abiertas.filter(function(r){ return Number(r.en_tutela || 0) > 0; }).length;
     const desacatos = abiertas.filter(function(r){ return r.tutela_desacato === true; }).length;
@@ -3902,6 +3953,13 @@ async function cruceTutelas(){
          kpiT('Escalaron a desacato', c.escalaron_a_desacato, 'var(--rojo)') +
          kpiT('% evitables', c.pct_evitables == null ? '—' : c.pct_evitables + '%', 'var(--gold)') +
        '</div>' +
+       (pendSync
+         ? '<div style="margin-top:14px;padding:11px 14px;background:rgba(232,160,32,.10);' +
+           'border:1px solid rgba(232,160,32,.34);border-radius:10px;font-size:13px">' +
+           '<b style="color:var(--gold2)">' + pendSync + ' petición(es) respondidas sin informar a Tutelas</b>' +
+           '<div class="hint" style="margin-top:4px">El campo RESPUESTA PQR de esas tutelas sigue vacío. ' +
+           'Ábralas desde la cola y use “Informar a Tutelas”.</div></div>'
+         : '') +
        (enTutela || personas
          ? '<div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--border);font-size:13px">' +
            '<b style="color:var(--rojo)">' + enTutela + '</b> petición(es) abiertas <b>ya están en tutela</b>' +
