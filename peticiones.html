@@ -2345,6 +2345,60 @@ const ICONO = {
     '<path d="M12 9v4M12 17h.01"/></svg>'
 };
 
+/* Recordatorio: respuestas proyectadas que siguen sin radicado */
+async function avisoSinRadicado(){
+  const cont = document.getElementById('c-aviso');
+  if(!cont) return;
+  try{
+    let q = 'v_pet_bandeja?select=id,dias_esperando_radicado&estado=eq.PROYECTADA&limit=500';
+    if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
+    const filas = await supaFetch(q);
+    if(!filas.length){ cont.innerHTML = ''; return; }
+    const viejas = filas.filter(function(f){ return f.dias_esperando_radicado > 5; }).length;
+    const col = viejas ? 'var(--rojo)' : 'var(--morado)';
+    cont.innerHTML =
+      '<div class="card" style="border-color:' + col + '55;padding:15px 18px;display:flex;' +
+      'gap:14px;align-items:center;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:220px">' +
+          '<div style="font-weight:700;color:' + col + ';font-size:14px">' +
+            filas.length + ' respuesta(s) suya(s) sin radicado</div>' +
+          '<div style="color:var(--muted);font-size:12.5px;margin-top:3px">' +
+            (viejas ? viejas + ' llevan más de 5 días esperando. ' : '') +
+            'Sin el radicado no se pueden cerrar en el sistema de la Alcaldía.</div>' +
+        '</div>' +
+        '<button class="btn btn-primary" onclick="irAPendientesRadicado()">Completar radicados</button>' +
+      '</div>';
+  }catch(e){ cont.innerHTML = ''; }
+}
+
+function irAPendientesRadicado(){
+  irA('historicos');
+  setTimeout(function(){
+    const s = document.getElementById('h-est');
+    if(s){ s.value = 'PROYECTADA'; renderHist(); }
+  }, 600);
+}
+
+/* Dato del encabezado del caso */
+function mi(k, v){
+  return '<div class="mi"><div class="k">' + esc(k) + '</div><div>' + esc(v) + '</div></div>';
+}
+
+/* Segundo reloj: lo que el caso lleva en manos del abogado */
+function relojAbogado(r){
+  if(r.dias_en_abogado === null || r.dias_en_abogado === undefined) return '';
+  const d = Number(r.dias_en_abogado);
+  const col = d <= 3 ? 'var(--verde)' : d <= 7 ? 'var(--gold)' : 'var(--naranja)';
+  return '<div class="reloj-b" style="padding-left:20px;border-left:1px solid var(--border)">' +
+    '<div style="font-family:\'Syne\';font-weight:800;font-size:19px;color:' + col + ';line-height:1">' +
+      d + '</div>' +
+    '<div class="dias-lbl">días hábiles con usted</div>' +
+    (r.heredado_vencido
+      ? '<div style="font-size:10.5px;color:var(--morado);margin-top:5px;max-width:140px;line-height:1.35">' +
+        'Le llegó ya vencida: el atraso no es suyo</div>' : '') +
+    '</div>';
+}
+
 /* Copiar al portapapeles: sirve para pegar en SIMIT o en gestión documental */
 function copiar(txt, etiqueta){
   const ok = function(){ toast(etiqueta + ' copiado: ' + txt, 'ok', 2); };
