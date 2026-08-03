@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- deploy: v2025-08-03-paginacion · fix truncamiento silencioso 1000 filas en Repo.listar() -->
+  <!-- deploy: v2025-08-03-ux · paginacion (fix 1000 filas) + tooltips KPI + subtitulos de pestana + leyenda de estados -->
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
   <style>
@@ -512,6 +512,7 @@ html[data-theme="light"] .gr-item .hl{background:rgba(245,158,11,.4);color:#0f2d
   <div class="ntab"        id="tab-duplicados"   onclick="goTab('duplicados')">🔍 Duplicados <span class="nbadge" id="badge-duplicados" style="background:rgba(239,68,68,.2);color:#f87171">0</span></div>
   <div class="ntab"        id="tab-estadisticas" onclick="goTab('estadisticas')">📊 Estadísticas</div>
 </div>
+<div id="tab-hint" style="padding:7px 28px;font-size:12px;color:var(--muted);background:var(--navtabs-bg);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)"></div>
 
 <div class="main">
 
@@ -520,7 +521,7 @@ html[data-theme="light"] .gr-item .hl{background:rgba(245,158,11,.4);color:#0f2d
   <div class="filtros">
     <input class="fi fi-buscar" id="fa-q" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderAdmites()"/>
     <select class="fi" id="fa-abo" onchange="renderAdmites()"><option value="">Todos los abogados</option></select>
-    <select class="fi" id="fa-est" onchange="renderAdmites()"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
+    <select class="fi" id="fa-est" onchange="renderAdmites()" title="Nuevo = sin gestión aún · En proceso = en trámite · Respondido = ya tiene radicado de respuesta · Finalizado = cerrado · Vencido = término pasado"><option value="">Todos los estados</option><option>Nuevo</option><option>En proceso</option><option>Respondido</option><option>Finalizado</option><option>Vencido</option></select>
     <button class="btn-refresh" id="btnref" onclick="cargarDatos()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Actualizar</button>
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('admites')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar</button>
     <button class="btn-refresh" style="background:rgba(232,160,32,.2);border-color:rgba(232,160,32,.4);color:#e8a020" onclick="abrirNuevaTutela()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nueva tutela</button>
@@ -1696,6 +1697,7 @@ async function cargarDatos() {
     }
     poblarSelects();
     renderAll();
+    pintarTabHint("admites");
     verificarVencidos();
     setSS("ok","Actualizado "+new Date().toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"}));
   } catch(e) {
@@ -2772,12 +2774,29 @@ function switchMTab(tab){
 }
 
 // ── Filtro rápido por urgencia (clic en tarjetas de stats) ──
+// Explicación de cada KPI (retoque UX: el tooltip dice QUÉ es el número,
+// no solo que se puede clic). Clave = label sin el ícono/emoji inicial.
+const KPI_AYUDA = {
+  "Total activos":       "Casos abiertos: todo lo que no está finalizado, respondido, anulado ni con hecho superado.",
+  "Vencidos":            "Casos cuyo término legal ya pasó (fecha límite anterior a hoy). Atención inmediata.",
+  "Urgentes ≤1d":        "Vencen hoy o mañana. Un día o menos de plazo.",
+  "Urgentes ≤3d":        "Vencen dentro de los próximos 3 días.",
+  "Próximos 2-3d":       "Vencen en 2 o 3 días. Todavía hay margen, pero conviene priorizarlos.",
+  "Con tiempo":          "Tienen más de 3 días de plazo. Sin urgencia por ahora.",
+  "Nuevas":              "Recién ingresadas, aún en estado \"Nuevo\", sin gestión registrada.",
+  "Pendientes técnicos": "Les falta un dato obligatorio (fecha, juzgado, encargado…) para poder trabajarlas."
+};
 function scardQuick(n,label,cls,tab,key){
   const cur = tab==='adm'?quickAdm : tab==='fal'?quickFal : quickOtr;
   const activoQ = key!==null && cur===key;
   const extra = activoQ ? ';outline:2px solid rgba(245,158,11,.65);outline-offset:-2px' : '';
   const kArg = key===null ? 'null' : `'${key}'`;
-  return `<div class="scard" style="cursor:pointer${extra}" title="${key===null?'Mostrar todos':'Clic para filtrar por urgencia (clic de nuevo para quitar)'}" onclick="setQuick('${tab}',${kArg})"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}${activoQ?' ✕':''} <span style="font-size:8px;opacity:.4">▶</span></div></div>`;
+  // Busca la explicación por label (quitando emojis/espacios sobrantes del inicio)
+  const labelLimpioKey = label.replace(/^[^A-Za-zÁÉÍÓÚáéíóú]+/,"").trim();
+  const explica = KPI_AYUDA[labelLimpioKey] || (key===null?"Mostrar todos":"");
+  const pista = key===null ? "" : "  ·  Clic para filtrar (clic de nuevo para quitar).";
+  const tip = escAttr(explica + pista);
+  return `<div class="scard" style="cursor:pointer${extra}" title="${tip}" onclick="setQuick('${tab}',${kArg})"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}${activoQ?' ✕':''} <span style="font-size:8px;opacity:.4">▶</span></div></div>`;
 }
 function setQuick(tab,key){
   if(tab==='adm'){ quickAdm = (quickAdm===key||key===null)?null:key; pagAdm=1; renderAdmites(); }
@@ -3503,11 +3522,31 @@ function renderDuplicados(){
   }).join("");
 }
 
+// Subtítulo contextual por pestaña (retoque UX: contexto sin abrir manual)
+const TAB_HINT = {
+  admites:      "Tutelas admitidas y activas. El semáforo marca cuánto plazo queda; clic en una tarjeta de arriba para filtrar por urgencia.",
+  mios:         "Solo los casos asignados a ti. Clic de nuevo en la estrella para ver todos.",
+  fallos:       "Fallos y sentencias en curso. Cerrar un fallo puede cerrar también su admite vinculado.",
+  otros:        "Incidentes de desacato y requerimientos. Marca el botón de notificado cuando corresponda.",
+  reparto:      "Reparto de casos entre abogados. Muestra la carga activa de cada uno para asignar de forma pareja.",
+  pqr:          "Tutelas cruzadas con una PQR. \"Sin respuesta\" son las que aún esperan que la petición se responda.",
+  historico:    "Casos ya cerrados: finalizados, respondidos, anulados o con hecho superado. Solo consulta.",
+  duplicados:   "Posibles registros repetidos (mismo radicado y mismo accionante). Revisa antes de anular.",
+  estadisticas: "Indicadores de gestión: carga por abogado, tiempos de cierre y estados. Solo lectura."
+};
+function pintarTabHint(tab){
+  const el=document.getElementById("tab-hint");
+  if(!el) return;
+  const t=TAB_HINT[tab]||"";
+  el.textContent=t;
+  el.style.display=t?"block":"none";
+}
 function goTab(tab){
   ["admites","fallos","otros","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
     document.getElementById("tab-"+t).classList.toggle("active",t===tab);
     document.getElementById("panel-"+t).classList.toggle("active",t===tab);
   });
+  pintarTabHint(tab);
   // Resetear paginación al cambiar tab
   if(tab==="admites")pagAdm=1;
   else if(tab==="fallos")pagFal=1;
