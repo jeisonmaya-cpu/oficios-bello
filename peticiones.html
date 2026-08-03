@@ -686,6 +686,40 @@ footer b{color:var(--gold)}
     </div>
   </section>
 
+  <!-- ══ PERSONAS ══ -->
+  <section class="panel" id="p-personas">
+    <div class="page-hdr">
+      <h2>Personas y <em>permisos</em></h2>
+      <p>Quién entra al módulo y qué puede hacer.</p>
+    </div>
+
+    <div class="card" style="border-color:rgba(96,165,250,.3)">
+      <div class="lbl" style="margin-bottom:6px">Para agregar a alguien nuevo</div>
+      <div style="font-size:var(--t-sm);line-height:1.65;color:#c9d5e6">
+        <b>1.</b> En Supabase → <b>Authentication → Users → Add user</b>, con su correo
+        y una contraseña temporal. Marque <b>Auto Confirm User</b>.<br>
+        <b>2.</b> Vuelva aquí y presione <b>Recargar</b>: la persona aparece abajo
+        marcada como <b>Sin perfil</b>. Póngale nombre y rol, y listo.
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="pe-q" placeholder="Buscar por nombre o correo…" oninput="renderPersonas()">
+      <select id="pe-rol" onchange="renderPersonas()">
+        <option value="">Todos los roles</option>
+        <option value="sin">Sin perfil</option>
+        <option value="admin">Administradores</option>
+        <option value="revisor">Revisores</option>
+        <option value="abogado">Abogados</option>
+        <option value="radicador">Radicadores</option>
+        <option value="consulta">Solo consulta</option>
+      </select>
+      <button class="btn btn-ghost" onclick="cargarPersonas()">Recargar</button>
+    </div>
+    <div class="msg" id="pe-msg"></div>
+    <div id="pe-lista"></div>
+  </section>
+
 </main>
 
 <footer>Desarrollado por <b>Jeison Maya</b> · 2026 · Dirección Administrativa de Ejecuciones Fiscales</footer>
@@ -985,7 +1019,8 @@ function construirTabs(){
     {id:'cola',       txt:'Cola de trabajo', ver: !soloRadica()},
     {id:'bandeja',    txt:'Bandeja',         ver: true},
     {id:'historicos', txt:'Resueltas',       ver: !soloRadica()},
-    {id:'tablero',    txt:'Tablero',         ver: true}
+    {id:'tablero',    txt:'Tablero',         ver: true},
+    {id:'personas',   txt:'Personas',        ver: esAdmin()}
   ];
   const cont = document.getElementById('tabs');
   cont.innerHTML = '';
@@ -1002,7 +1037,7 @@ function construirTabs(){
 }
 
 function irA(id){
-  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero'];
+  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero','personas'];
   paneles.forEach(function(p){
     const el = document.getElementById('p-' + p);
     const tb = document.getElementById('tab-' + p);
@@ -1014,6 +1049,7 @@ function irA(id){
   if(id === 'bandeja') cargarBandeja();
   if(id === 'historicos') cargarHistoricos();
   if(id === 'tablero') cargarTablero();
+  if(id === 'personas') cargarPersonas();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -4057,6 +4093,182 @@ async function cerrarSeleccionadas(){
     cargarHistoricos();
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'No se pudo cerrar: ' + err.message;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL — PERSONAS Y PERMISOS
+   ══════════════════════════════════════════════════════════════ */
+let PERSONAS = [];
+let CARGA_PERS = {};
+
+const ROLES = [
+  ['admin',     'Administrador', 'Radica, reparte, cierra, traslada y ve todo'],
+  ['revisor',   'Revisor',       'Igual que administrador: revisa y cierra'],
+  ['abogado',   'Abogado',       'Responde solo las peticiones que se le asignan'],
+  ['radicador', 'Radicador',     'Solo registra peticiones; no responde ni cierra'],
+  ['consulta',  'Solo consulta', 'Ve la información, no modifica nada']
+];
+
+async function cargarPersonas(){
+  const msg = document.getElementById('pe-msg');
+  const cont = document.getElementById('pe-lista');
+  msg.className = 'msg'; msg.textContent = 'Cargando…';
+  cont.innerHTML = '<div class="esq esq-card"></div><div class="esq esq-card"></div>';
+  try{
+    const [us, cargas] = await Promise.all([
+      rpc('pet_listar_usuarios', {}),
+      supaFetch('v_pet_carga_persona?select=*').catch(function(){ return []; })
+    ]);
+    PERSONAS = Array.isArray(us) ? us : [];
+    CARGA_PERS = {};
+    cargas.forEach(function(c){ CARGA_PERS[c.usuario_id] = c; });
+    const sinPerfil = PERSONAS.filter(function(p){ return !p.tiene_perfil; }).length;
+    msg.className = sinPerfil ? 'msg ok' : 'msg';
+    msg.textContent = PERSONAS.length + ' usuario(s)' +
+      (sinPerfil ? ' · ' + sinPerfil + ' sin perfil, pendiente(s) de configurar' : '');
+    renderPersonas();
+  }catch(err){
+    msg.className = 'msg err';
+    msg.textContent = 'No se pudo cargar: ' + err.message +
+      '. ¿Ejecutó pet_delta_usuarios.sql?';
+    cont.innerHTML = '';
+  }
+}
+
+function renderPersonas(){
+  const q = (document.getElementById('pe-q').value || '').trim().toLowerCase();
+  const fr = document.getElementById('pe-rol').value;
+  const cont = document.getElementById('pe-lista');
+
+  const filas = PERSONAS.filter(function(p){
+    if(fr === 'sin' && p.tiene_perfil) return false;
+    if(fr && fr !== 'sin' && p.rol !== fr) return false;
+    if(q){
+      const blob = ((p.nombre || '') + ' ' + (p.email || '') + ' ' + (p.cargo || '')).toLowerCase();
+      if(blob.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+
+  if(!filas.length){
+    cont.innerHTML = '<div class="card"><div class="vacio">' +
+      '<div class="vacio-ic">' + ICONO.vacio + '</div><h3>Nadie con ese filtro</h3>' +
+      '<p>Pruebe con otro rol o borre la búsqueda.</p></div></div>';
+    return;
+  }
+
+  cont.innerHTML = filas.map(function(p){ return tarjetaPersona(p); }).join('');
+}
+
+function tarjetaPersona(p){
+  const c = CARGA_PERS[p.usuario_id] || {};
+  const sinPerfil = !p.tiene_perfil;
+  const colRol = {admin:'var(--acento)', revisor:'var(--acento)', abogado:'var(--tramite)',
+                  radicador:'var(--atiempo)', consulta:'var(--muted)'}[p.rol] || 'var(--muted)';
+  const id = 'pe-' + p.usuario_id;
+
+  return '<div class="card" style="padding:17px 19px;margin-bottom:12px' +
+    (sinPerfil ? ';border-color:rgba(232,160,32,.45);background:rgba(232,160,32,.05)' : '') +
+    (p.tiene_perfil && !p.activo ? ';opacity:.55' : '') + '">' +
+
+    '<div style="display:flex;gap:13px;align-items:flex-start;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:210px">' +
+        '<div style="font-weight:700;font-size:var(--t-md)">' +
+          esc(p.nombre || 'Sin nombre asignado') +
+          (sinPerfil ? '<span class="pill-tut tut-si" style="background:rgba(232,160,32,.22);' +
+            'color:var(--gold2)">SIN PERFIL</span>' : '') +
+          (p.tiene_perfil && !p.activo ? '<span class="pill s-cerrada">Inactivo</span>' : '') +
+        '</div>' +
+        '<div style="font-size:var(--t-sm);color:var(--muted);margin-top:3px">' + esc(p.email) + '</div>' +
+        (p.cargo ? '<div style="font-size:var(--t-micro);color:var(--muted)">' + esc(p.cargo) + '</div>' : '') +
+        '<div style="font-size:var(--t-micro);color:var(--muted);margin-top:6px">' +
+          (p.ultimo_acceso ? 'Último ingreso: ' + fmtFecha(String(p.ultimo_acceso).slice(0,10))
+                           : 'Nunca ha ingresado') +
+          (c.casos_abiertos ? ' · <b style="color:var(--tramite)">' + c.casos_abiertos +
+             ' caso(s) abierto(s)</b>' : '') +
+          (c.casos_resueltos ? ' · ' + c.casos_resueltos + ' resuelto(s)' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="text-align:right">' +
+        (p.rol ? '<div style="font-family:\'Syne\';font-weight:800;font-size:var(--t-sm);' +
+          'color:' + colRol + '">' + esc((ROLES.find(function(x){ return x[0] === p.rol; }) || [,p.rol])[1]) +
+          '</div>' : '') +
+        '<button class="btn btn-ghost" style="padding:7px 13px;font-size:var(--t-micro);margin-top:7px" ' +
+          'onclick="plegar(\'' + id + '\')">' + (sinPerfil ? 'Configurar' : 'Editar') + '</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="pleg' + (sinPerfil ? ' on' : '') + '" id="' + id + '" style="border-top:none">' +
+      '<div class="pleg-cnt" style="padding-top:14px;border-top:1px solid var(--border);margin-top:12px">' +
+        '<div class="grid">' +
+          '<div class="fld"><label class="lbl">Nombre completo</label>' +
+            '<input type="text" id="' + id + '-nom" value="' + esc(p.nombre || '') + '" ' +
+            'placeholder="Como debe aparecer en los informes"></div>' +
+          '<div class="fld"><label class="lbl">Cargo</label>' +
+            '<input type="text" id="' + id + '-car" value="' + esc(p.cargo || '') + '" ' +
+            'placeholder="Abogada de apoyo, Contratista…"></div>' +
+          '<div class="fld"><label class="lbl">Rol</label>' +
+            '<select id="' + id + '-rol" onchange="explicarRol(\'' + id + '\')">' +
+              ROLES.map(function(x){
+                return '<option value="' + x[0] + '"' + (p.rol === x[0] ? ' selected' : '') +
+                       '>' + x[1] + '</option>';
+              }).join('') +
+            '</select>' +
+            '<div class="hint" id="' + id + '-exp">' +
+              esc((ROLES.find(function(x){ return x[0] === (p.rol || 'abogado'); }) || [,,''])[2]) +
+            '</div></div>' +
+          '<div class="fld"><label class="lbl">Estado</label>' +
+            '<select id="' + id + '-act">' +
+              '<option value="1"' + (p.activo || sinPerfil ? ' selected' : '') + '>Activo</option>' +
+              '<option value="0"' + (p.tiene_perfil && !p.activo ? ' selected' : '') + '>Inactivo</option>' +
+            '</select>' +
+            '<div class="hint">Inactivo no puede entrar, pero conserva su historial.</div></div>' +
+        '</div>' +
+        (c.casos_abiertos
+          ? '<div class="hint" style="margin-top:9px;color:var(--urgente)">' +
+            'Tiene ' + c.casos_abiertos + ' caso(s) sin resolver. Si lo desactiva, ' +
+            'trasládelos primero desde la Bandeja.</div>' : '') +
+        '<div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:14px">' +
+          '<button class="btn btn-primary" onclick="guardarPersona(\'' + p.usuario_id + '\')">' +
+            'Guardar</button>' +
+          '<div class="msg" id="' + id + '-msg" style="margin:0"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function explicarRol(id){
+  const sel = document.getElementById(id + '-rol');
+  const exp = document.getElementById(id + '-exp');
+  if(!sel || !exp) return;
+  const r = ROLES.find(function(x){ return x[0] === sel.value; });
+  exp.textContent = r ? r[2] : '';
+}
+
+async function guardarPersona(uid){
+  const id = 'pe-' + uid;
+  const msg = document.getElementById(id + '-msg');
+  const nom = (document.getElementById(id + '-nom').value || '').trim();
+  const car = (document.getElementById(id + '-car').value || '').trim();
+  const rol = document.getElementById(id + '-rol').value;
+  const act = document.getElementById(id + '-act').value === '1';
+
+  if(!nom){ msg.className = 'msg err'; msg.textContent = 'El nombre es obligatorio.'; return; }
+  msg.className = 'msg'; msg.textContent = 'Guardando…';
+  try{
+    await rpc('pet_guardar_perfil', {
+      p_usuario: uid, p_nombre: nom, p_cargo: car || null, p_rol: rol, p_activo: act
+    });
+    toast(nom + ' guardado como ' +
+      (ROLES.find(function(x){ return x[0] === rol; }) || [,rol])[1] + '.', 'ok', 4);
+    // Refresca la lista de personas que usan los demás paneles
+    PERFILES = await supaFetch('pet_perfiles?select=id,nombre,rol&activo=is.true&order=nombre.asc');
+    llenarAsignar(); llenarAbogados(); llenarFiltroCola();
+    cargarPersonas();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo guardar: ' + err.message;
   }
 }
 
