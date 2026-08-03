@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- deploy: v2025-08-03-paginacion · fix truncamiento silencioso 1000 filas en Repo.listar() -->
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
   <style>
@@ -1144,25 +1145,46 @@ function sbASheet(reg){
 const Repo = {
   // Lee una categoría desde Supabase. Devuelve registros con nombres del Sheet.
   async listar(categoria){
+    // ── Paginación obligatoria ──
+    // Supabase REST devuelve MÁXIMO 1000 filas por respuesta, en silencio (sin
+    // error). Al superar 1019 tutelas, los ~19 registros más recientes (ids más
+    // altos) dejaban de cargarse y desaparecían del dashboard: los casos nuevos
+    // de cualquier abogado quedaban invisibles. Se pagina con header Range hasta
+    // agotar la categoría. Mismo criterio que supaFetchAll() del resto del sistema.
     const base = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`
       + `?categoria=eq.${encodeURIComponent(categoria)}`
       + `&order=id.asc`;
-    // Egress mínimo: pedir solo las columnas ligeras (sin textos largos)
-    let res = await fetch(base + `&select=${SB_COLS_LISTA}`, {
-      headers: await getAuthHeaders()
-    });
-    if(res.status===400){
-      // Fallback: si alguna columna aún no existe (p.ej. falta correr el SQL de
-      // "notificado"), pedir todo para no tumbar el dashboard.
-      res = await fetch(base + `&select=*`, { headers: await getAuthHeaders() });
+    const PAGINA = 1000;
+    let selectClause = `&select=${SB_COLS_LISTA}`;
+    let todas = [];
+    let desde = 0;
+
+    while(true){
+      const hasta = desde + PAGINA - 1;
+      let res = await fetch(base + selectClause, {
+        headers: await getAuthHeaders({ Range: `${desde}-${hasta}` })
+      });
+      if(res.status===400 && selectClause !== "&select=*"){
+        // Fallback: si alguna columna aún no existe (p.ej. falta correr el SQL de
+        // "notificado"), pedir todo para no tumbar el dashboard. Reintenta la
+        // MISMA página con select=* y deja ese modo para las páginas siguientes.
+        selectClause = "&select=*";
+        continue;
+      }
+      if(!res.ok && res.status!==206) throw new Error(`Supabase HTTP ${res.status}`);
+      const lote = await res.json();
+      if(!Array.isArray(lote) || lote.length===0) break;
+      todas = todas.concat(lote);
+      if(lote.length < PAGINA) break;   // última página: vino incompleta
+      desde += PAGINA;
+      if(desde > 100000) break;         // guarda de seguridad anti-bucle
     }
-    if(!res.ok) throw new Error(`Supabase HTTP ${res.status}`);
-    const filas = await res.json();
+
     // _cat guarda la categoria REAL del registro. Antes se adivinaba comparando
     // radicados, pero tutela/fallo/incidente del mismo proceso comparten radicado
     // por diseno, asi que un admite se abria como "incidente" y los guardados
     // no refrescaban la memoria (findIndex sobre el array equivocado).
-    return filas.map(f=>{ const r=sbASheet(f); r._cat=categoria; return r; }).filter(filaValida);
+    return todas.map(f=>{ const r=sbASheet(f); r._cat=categoria; return r; }).filter(filaValida);
   },
 
   // Actualiza campos de un registro por su id de Supabase.
