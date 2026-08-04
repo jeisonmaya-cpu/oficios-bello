@@ -253,6 +253,13 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .lote-rad{font-family:'Syne';font-weight:800;color:var(--gold);font-size:15px}
 .lote-est{font-size:var(--t-micro);padding:2px 9px;border-radius:99px;font-weight:700}
 .lote-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px}
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px}
+.doc-grp{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:13px;padding:12px}
+.doc-grp-t{font-family:'Syne';font-weight:800;font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:9px;opacity:.85}
+.doc-grp .btn{display:flex;width:100%;justify-content:flex-start;text-align:left;
+  margin-bottom:7px;font-size:12.5px;padding:8px 12px}
+.doc-grp .btn:last-child{margin-bottom:0}
 .lote-campos input,.lote-campos select{padding:8px 10px;font-size:13px}
 .lote-campos .lbl{font-size:var(--t-lbl);margin-bottom:3px}
 .lote-vence{font-size:var(--t-micro);color:var(--gold2);font-weight:600;margin-top:7px}
@@ -3358,6 +3365,22 @@ const CATALOGO_RESPUESTAS = {
     ]
   },
 
+  CONCEDE_PRESCRIPCION: {
+    titulo: 'Concesión de prescripción',
+    desc: 'Oficio que acompaña la resolución: informa que se declaró la prescripción. Fundamento: art. 817 E.T.',
+    campos: [
+      { id:'OBLIGACION',     lbl:'Obligación prescrita', ph:'el comparendo 05088000000018443355' },
+      { id:'RESOLUCION_NUM', lbl:'N° de la resolución',  ph:'RES-2026-0045' },
+      { id:'FECHA_RES',      lbl:'Fecha de la resolución', ph:'DD/MM/AAAA' }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual solicita la prescripción de la acción de cobro respecto de {{OBLIGACION}}, de manera atenta le informamos lo siguiente:',
+      'Revisado el expediente se constató que, desde la exigibilidad de la obligación, transcurrió el término de **cinco (5) años** previsto en el artículo 817 del Estatuto Tributario Nacional sin que este se hubiera interrumpido por alguna de las causales del artículo 818 ibídem.',
+      'En consecuencia, esta Dirección, mediante **Resolución N° {{RESOLUCION_NUM}} del {{FECHA_RES}}**, declaró la **prescripción de la acción de cobro** respecto de {{OBLIGACION}}, ordenó la terminación del proceso administrativo de cobro coactivo, el levantamiento de las medidas cautelares a que hubiere lugar y el archivo del expediente.',
+      'Se adjunta copia de la resolución en mención, la cual se notifica en los términos previstos en la ley.'
+    ]
+  },
+
   NIEGA_PRESCRIPCION: {
     titulo: 'Negación de prescripción',
     desc: 'Niega la prescripción por interrupción del término. Fundamento: arts. 817 y 818 E.T.',
@@ -3394,7 +3417,7 @@ const CATALOGO_RESPUESTAS = {
 
 /* Respuestas sugeridas según el tipo de la petición (las demás quedan disponibles) */
 const SUGERIDOS_POR_TIPO = {
-  PRESCRIPCION: ['NIEGA_PRESCRIPCION'],
+  PRESCRIPCION: ['CONCEDE_PRESCRIPCION','NIEGA_PRESCRIPCION'],
   DESEMBARGO:   ['DESEMBARGO_ORDEN','MINIMO_VITAL'],
   EMBARGO:      ['DESEMBARGO_ORDEN','MINIMO_VITAL'],
   ACUERDO_PAGO: ['REQUISITOS_ACUERDO'],
@@ -3405,17 +3428,34 @@ const SUGERIDOS_POR_TIPO = {
 
 /* Panel "Generar documentos" de la ficha: todos los formatos para todas
    las peticiones; los sugeridos por tipo van primero y marcados con ★ */
+/* Grupos temáticos del panel de documentos.
+   '__RESOLUCION__' es la resolución de prescripción (plantilla propia). */
+const GRUPOS_DOC = [
+  { t:'Prescripción',     items:['__RESOLUCION__','CONCEDE_PRESCRIPCION','NIEGA_PRESCRIPCION'] },
+  { t:'Embargos',         items:['DESEMBARGO_ORDEN','MINIMO_VITAL'] },
+  { t:'Pagos y cartera',  items:['REQUISITOS_ACUERDO','ESTADO_CUENTA'] },
+  { t:'Trámite',          items:['REQUERIMIENTO_ART17','TRASLADO_COMPETENCIA','COPIAS'] },
+  { t:'Redacción propia', items:['OFICIO_GENERAL'] }
+];
+
 function panelDocumentos(r){
   const sug = SUGERIDOS_POR_TIPO[r.tipo] || [];
-  const todas = Object.keys(CATALOGO_RESPUESTAS);
-  const orden = sug.concat(todas.filter(function(k){ return sug.indexOf(k) === -1; }));
-  const botones = orden.map(function(k){
-    const c = CATALOGO_RESPUESTAS[k];
-    const esSug = sug.indexOf(k) !== -1;
-    return '<button class="btn btn-of btn-ic" ' +
-      (esSug ? 'style="border-color:rgba(232,160,32,.55);color:var(--gold)" ' : '') +
-      'onclick="abrirRespuesta(\'' + k + '\')">' +
-      ICONO.sobre + esc(c.titulo) + (esSug ? ' ★' : '') + '</button>';
+  const grupos = GRUPOS_DOC.map(function(gr){
+    const botones = gr.items.map(function(k){
+      if(k === '__RESOLUCION__')
+        return '<button class="btn btn-doc btn-ic" ' +
+          (r.tipo === 'PRESCRIPCION' ? 'style="border-color:rgba(232,160,32,.55)" ' : '') +
+          'onclick="abrirResolucion()">' + ICONO.doc + 'Resolución de prescripción' +
+          (r.tipo === 'PRESCRIPCION' ? ' ★' : '') + '</button>';
+      const c = CATALOGO_RESPUESTAS[k];
+      if(!c) return '';
+      const esSug = sug.indexOf(k) !== -1;
+      return '<button class="btn btn-of btn-ic" ' +
+        (esSug ? 'style="border-color:rgba(232,160,32,.55);color:var(--gold)" ' : '') +
+        'onclick="abrirRespuesta(\'' + k + '\')">' +
+        ICONO.sobre + esc(c.titulo) + (esSug ? ' ★' : '') + '</button>';
+    }).join('');
+    return '<div class="doc-grp"><div class="doc-grp-t">' + esc(gr.t) + '</div>' + botones + '</div>';
   }).join('');
   return '<div class="pleg" id="pleg-doc">' +
     '<button class="pleg-btn" onclick="plegar(\'pleg-doc\')">' +
@@ -3423,12 +3463,8 @@ function panelDocumentos(r){
       '<span class="pleg-cta">resolución y respuestas tipo</span>' +
     '</button>' +
     '<div class="pleg-cnt">' +
-      '<div class="acc-grupo">' +
-        '<button class="btn btn-doc btn-ic" onclick="abrirResolucion()">' +
-          ICONO.doc + 'Resolución de prescripción</button>' +
-        botones +
-      '</div>' +
-      '<div class="hint" style="margin-top:6px">★ Sugeridos según el tipo de esta petición. ' +
+      '<div class="doc-grid">' + grupos + '</div>' +
+      '<div class="hint" style="margin-top:8px">★ Sugeridos según el tipo de esta petición. ' +
         'Todos los formatos están disponibles para cualquier petición.</div>' +
       '<div id="k-doc"></div>' +
     '</div>' +
