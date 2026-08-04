@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- deploy: v2025-08-03-ux · paginacion (fix 1000 filas) + tooltips KPI + subtitulos de pestana + leyenda de estados -->
+  <!-- deploy: v2025-08-03-full · CONSOLIDADO: paginacion (fix 1000 filas) + tooltips KPI + subtitulos pestana + leyenda estados + selector 4 vistas grafico + proxy cierres (actualizado_en) -->
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
   <style>
@@ -1110,6 +1110,7 @@ const MAPA_SB_A_SHEET = {
   fecha_inicial:         "FECHA INICIAL",
   fecha_limite:          "FECHA LÍMITE",
   fecha_cierre:          "FECHA CIERRE",
+  actualizado_en:        "ACTUALIZADO EN",
   derecho_invocado:      "DERECHO INVOCADO",
   hechos_resumidos:      "HECHOS RESUMIDOS",
   pretensiones:          "PRETENSIONES",
@@ -2218,7 +2219,21 @@ function renderPQR(){
 // ═══ ESTADÍSTICAS — rediseño: período + KPIs + evolución + cumplimiento de términos ═══
 let _estPeriodo = "todo"; // 'mes' | 'tri' | 'anio' | 'todo'
 let _chartEvo = null;
+let _evoVista = "todo"; // 'todo' | 'admites' | 'fallos' | 'incidentes'
+// Títulos y notas por vista. Deliberadamente distintos: "entrada" NO significa
+// lo mismo en cada vista, y la nota lo aclara para que nadie sume las cuatro.
+const _EVO_META = {
+  todo:       { titulo:"Evolución mensual — procesos que entran vs procesos que cierran",
+                nota:"Cuenta <strong>procesos únicos</strong>: admite, fallo e incidente del mismo radicado cuentan una sola vez. Últimos 12 meses." },
+  admites:    { titulo:"Admites — tutelas admitidas vs finalizadas",
+                nota:"Solo la etapa de admisión. Entrada = tutela admitida; cierre = admite finalizado. Últimos 12 meses." },
+  fallos:     { titulo:"Fallos — llegadas a fallo vs fallos cerrados",
+                nota:"Un fallo es una etapa de una tutela que ya entró antes; no es un proceso nuevo. No sumar con la vista de admites. Últimos 12 meses." },
+  incidentes: { titulo:"Incidentes/Desacatos — abiertos vs resueltos",
+                nota:"Un desacato reactiva un proceso ya cerrado; su \"entrada\" es un reproceso. No sumar con las otras vistas. Últimos 12 meses." }
+};
 function setEstPeriodo(p){ _estPeriodo = p; renderEstadisticas(); }
+function setEvoVista(v){ _evoVista = v; renderEstadisticas(); }
 
 // Parsea DD/MM/YYYY o YYYY-MM-DD → Date | null (mismo criterio que calcDias)
 function parseFechaReg(s){
@@ -2229,6 +2244,19 @@ function parseFechaReg(s){
   if(!d || isNaN(d.getTime())) return null;
   const y=d.getFullYear(); if(y<2000 || y>2100) return null;
   return d;
+}
+// Fecha de cierre EFECTIVA para el gráfico de evolución.
+// Solo ~29% de los casos cerrados tienen FECHA CIERRE poblada (columna joven),
+// así que la curva de cierres subestimaba 2 de cada 3. Para los cerrados sin
+// fecha usamos ACTUALIZADO EN como proxy: la última vez que se tocó el registro
+// aproxima el mes de cierre. Cobertura verificada: 100% de los cerrados sin
+// fecha tienen actualizado_en. Es aproximación, no dato exacto — declarado en la
+// nota al pie del gráfico. Los casos NO cerrados nunca usan proxy (devuelve null).
+function fechaCierreEfectiva(r){
+  const fc = parseFechaReg(r["FECHA CIERRE"]);
+  if(fc) return fc;
+  if(EST_HIST.includes(r["ESTADO"])) return parseFechaReg(r["ACTUALIZADO EN"]);
+  return null;
 }
 // Periodos por CALENDARIO, no por dias corridos. Antes "Este mes" eran los
 // ultimos 31 dias, asi que un cierre del 30 de junio seguia contando el 28 de
@@ -2377,7 +2405,13 @@ function renderEstadisticas(){
   const perLabel = {mes:"mes en curso",tri:"últimos 3 meses",anio:"año en curso",todo:"histórico completo"}[_estPeriodo];
 
   document.getElementById("grid-est").innerHTML=
-    `<div class="est-card est-chart-card"><div class="est-title">📈 Evolución mensual — procesos que entran vs procesos que cierran</div><div style="height:210px"><canvas id="est-chart-evo"></canvas></div><div style="margin-top:8px;font-size:10px;color:var(--muted)">Cuenta <strong>procesos</strong>, no actuaciones: admite, fallo e incidente del mismo radicado cuentan una sola vez. Últimos 12 meses, independiente del período elegido arriba. Los cierres se registran desde el despliegue de la fecha de cierre.</div></div>`+
+    `<div class="est-card est-chart-card"><div class="est-title">📈 ${_EVO_META[_evoVista].titulo}</div>`+
+    `<div class="evo-vistas" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px">`+
+      [["todo","Proceso completo"],["admites","Admites"],["fallos","Fallos"],["incidentes","Incidentes"]]
+        .map(([k,l])=>`<button class="ep-btn${_evoVista===k?" on":""}" onclick="setEvoVista('${k}')">${l}</button>`).join("")+
+    `</div>`+
+    `<div style="height:210px"><canvas id="est-chart-evo"></canvas></div>`+
+    `<div style="margin-top:8px;font-size:10px;color:var(--muted)">${_EVO_META[_evoVista].nota} Los cierres sin fecha registrada se ubican por la fecha de última modificación (aproximada).</div></div>`+
     `<div class="est-card" style="border-color:rgba(74,222,128,.25)"><div class="est-title" style="color:#4ade80">⏱ Cumplimiento de términos · ${perLabel}</div>${cumplH}${cumplNota}</div>`+
     `<div class="est-card" style="border-color:rgba(34,197,94,.3)"><div class="est-title" style="color:#22c55e">🏆 Cerrados por persona · ${perLabel}${lider&&lider.n>0?` · líder: ${esc(pNom(lider.abo))}`:""}</div>${cerradosH}<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Total: <strong style="color:#22c55e">${cerradosPer.length}</strong> procesos cerrados. ⏱ = % dentro del término. ¡Gran trabajo! 💪</div></div>`+
     `<div class="est-card"><div class="est-title">Por tipo de actuación · histórico completo</div>${tiposH}</div>`+
@@ -2387,17 +2421,26 @@ function renderEstadisticas(){
     `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por estado</div>${estIncH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`+
     `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por abogado</div>${incH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`;
 
-  dibujarEvolucion(todosConInc, cerradosTodos);
+  dibujarEvolucion(tutelas, fallos, incidentes);
 }
 
 // ── Gráfico de evolución (Chart.js): últimos 12 meses ──
-function dibujarEvolucion(todosConInc, cerradosTodos){
+// Recibe las tres listas base y filtra por la vista activa (_evoVista).
+function dibujarEvolucion(tuts, falls, incs){
   const canvas=document.getElementById("est-chart-evo");
   if(!canvas) return;
   if(typeof Chart==="undefined"){
     canvas.parentElement.innerHTML='<div style="color:var(--muted);font-size:12px;padding:20px 0">No se pudo cargar la librería de gráficos (sin conexión al CDN).</div>';
     return;
   }
+  // Universo según la vista. "todo" agrupa por proceso único (radicado); las
+  // vistas por categoría cuentan filas de esa sola categoría.
+  const universo =
+      _evoVista==="admites"    ? tuts
+    : _evoVista==="fallos"     ? falls
+    : _evoVista==="incidentes" ? incs
+    : [...tuts,...falls,...incs];
+  const cerrados = universo.filter(r=>EST_HIST.includes(r["ESTADO"]));
   const hoy=new Date();
   const meses=[], claves=[];
   const NOM=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
@@ -2407,23 +2450,31 @@ function dibujarEvolucion(todosConInc, cerradosTodos){
     meses.push(NOM[d.getMonth()]+" "+String(d.getFullYear()).slice(2));
   }
   const clave=f=>f?f.getFullYear()+"-"+String(f.getMonth()+1).padStart(2,"0"):null;
-  // ── Agrupar por PROCESO antes de contar ──
-  // escalarCaso() copia FECHA INICIAL del admite al fallo y al incidente, asi que
-  // contando filas un mismo proceso aparecia 2 o 3 veces en el mismo mes y la
-  // linea de entradas salia inflada frente a la de cierres. Nos quedamos con la
-  // fecha mas temprana de cada proceso.
-  const fechasPorProceso=(regs,campo)=>{
+  // En "todo" agrupamos por proceso (radicado) para no contar 2-3 veces el mismo
+  // caso. En las vistas por categoría, cada registro es su propia unidad.
+  const agrupa = _evoVista==="todo";
+  const fechasEntrada=(regs)=>{
+    if(!agrupa) return regs.map(r=>parseFechaReg(r["FECHA INICIAL"])).filter(Boolean);
     const m=new Map();
     regs.forEach(r=>{
-      const f=parseFechaReg(r[campo]); if(!f) return;
-      const k=llaveProceso(r);
-      const prev=m.get(k);
+      const f=parseFechaReg(r["FECHA INICIAL"]); if(!f) return;
+      const k=llaveProceso(r); const prev=m.get(k);
       if(!prev || f<prev) m.set(k,f);
     });
     return [...m.values()];
   };
-  const fEntradas=fechasPorProceso(todosConInc,"FECHA INICIAL");
-  const fCierres =fechasPorProceso(cerradosTodos,"FECHA CIERRE");
+  const fechasCierre=(regs)=>{
+    if(!agrupa) return regs.map(r=>fechaCierreEfectiva(r)).filter(Boolean);
+    const m=new Map();
+    regs.forEach(r=>{
+      const f=fechaCierreEfectiva(r); if(!f) return;
+      const k=llaveProceso(r); const prev=m.get(k);
+      if(!prev || f<prev) m.set(k,f);
+    });
+    return [...m.values()];
+  };
+  const fEntradas=fechasEntrada(universo);
+  const fCierres =fechasCierre(cerrados);
   const cuenta=(arr,k)=>arr.filter(f=>clave(f)===k).length;
   const entradas=claves.map(k=>cuenta(fEntradas,k));
   const cierres =claves.map(k=>cuenta(fCierres,k));
@@ -2431,12 +2482,16 @@ function dibujarEvolucion(todosConInc, cerradosTodos){
   const claro=document.documentElement.getAttribute("data-theme")==="light";
   const cTexto  = claro ? "#475569" : "#94a3b8";
   const cRejilla= claro ? "rgba(15,45,94,.10)" : "rgba(255,255,255,.05)";
+  const lblEntrada = _evoVista==="fallos" ? "Llegadas a fallo"
+                   : _evoVista==="incidentes" ? "Desacatos abiertos"
+                   : "Entradas";
+  const lblCierre  = _evoVista==="incidentes" ? "Resueltos" : "Cierres";
   if(_chartEvo){ _chartEvo.destroy(); _chartEvo=null; }
   _chartEvo=new Chart(canvas,{
     type:"line",
     data:{labels:meses,datasets:[
-      {label:"Entradas",data:entradas,borderColor:"#3b82f6",backgroundColor:"rgba(59,130,246,.12)",fill:true,tension:.3,pointRadius:3},
-      {label:"Cierres",data:cierres,borderColor:"#e8a020",backgroundColor:"rgba(232,160,32,.12)",fill:true,tension:.3,pointRadius:3}
+      {label:lblEntrada,data:entradas,borderColor:"#3b82f6",backgroundColor:"rgba(59,130,246,.12)",fill:true,tension:.3,pointRadius:3},
+      {label:lblCierre,data:cierres,borderColor:"#e8a020",backgroundColor:"rgba(232,160,32,.12)",fill:true,tension:.3,pointRadius:3}
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
@@ -2774,8 +2829,6 @@ function switchMTab(tab){
 }
 
 // ── Filtro rápido por urgencia (clic en tarjetas de stats) ──
-// Explicación de cada KPI (retoque UX: el tooltip dice QUÉ es el número,
-// no solo que se puede clic). Clave = label sin el ícono/emoji inicial.
 const KPI_AYUDA = {
   "Total activos":       "Casos abiertos: todo lo que no está finalizado, respondido, anulado ni con hecho superado.",
   "Vencidos":            "Casos cuyo término legal ya pasó (fecha límite anterior a hoy). Atención inmediata.",
@@ -2791,7 +2844,6 @@ function scardQuick(n,label,cls,tab,key){
   const activoQ = key!==null && cur===key;
   const extra = activoQ ? ';outline:2px solid rgba(245,158,11,.65);outline-offset:-2px' : '';
   const kArg = key===null ? 'null' : `'${key}'`;
-  // Busca la explicación por label (quitando emojis/espacios sobrantes del inicio)
   const labelLimpioKey = label.replace(/^[^A-Za-zÁÉÍÓÚáéíóú]+/,"").trim();
   const explica = KPI_AYUDA[labelLimpioKey] || (key===null?"Mostrar todos":"");
   const pista = key===null ? "" : "  ·  Clic para filtrar (clic de nuevo para quitar).";
@@ -3522,7 +3574,6 @@ function renderDuplicados(){
   }).join("");
 }
 
-// Subtítulo contextual por pestaña (retoque UX: contexto sin abrir manual)
 const TAB_HINT = {
   admites:      "Tutelas admitidas y activas. El semáforo marca cuánto plazo queda; clic en una tarjeta de arriba para filtrar por urgencia.",
   mios:         "Solo los casos asignados a ti. Clic de nuevo en la estrella para ver todos.",
