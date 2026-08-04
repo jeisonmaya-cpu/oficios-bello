@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- deploy: v2025-08-03-full · CONSOLIDADO: paginacion (fix 1000 filas) + tooltips KPI + subtitulos pestana + leyenda estados + selector 4 vistas grafico + proxy cierres (actualizado_en) -->
+  <!-- deploy: v2025-08-03-full2 · CONSOLIDADO: paginacion + UX (tooltips/subtitulos/leyenda) + grafico 4 vistas · cierres SOLO con fecha real (sin proxy) + nota de cierres sin fecha + mes en curso punteado -->
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
   <style>
@@ -2220,6 +2220,8 @@ function renderPQR(){
 let _estPeriodo = "todo"; // 'mes' | 'tri' | 'anio' | 'todo'
 let _chartEvo = null;
 let _evoVista = "todo"; // 'todo' | 'admites' | 'fallos' | 'incidentes'
+let _evoCierresSinFecha = 0; // cierres sin fecha real (para la nota)
+let _evoCerradosTotal = 0;   // total de cerrados en la vista actual
 // Títulos y notas por vista. Deliberadamente distintos: "entrada" NO significa
 // lo mismo en cada vista, y la nota lo aclara para que nadie sume las cuatro.
 const _EVO_META = {
@@ -2245,18 +2247,15 @@ function parseFechaReg(s){
   const y=d.getFullYear(); if(y<2000 || y>2100) return null;
   return d;
 }
-// Fecha de cierre EFECTIVA para el gráfico de evolución.
-// Solo ~29% de los casos cerrados tienen FECHA CIERRE poblada (columna joven),
-// así que la curva de cierres subestimaba 2 de cada 3. Para los cerrados sin
-// fecha usamos ACTUALIZADO EN como proxy: la última vez que se tocó el registro
-// aproxima el mes de cierre. Cobertura verificada: 100% de los cerrados sin
-// fecha tienen actualizado_en. Es aproximación, no dato exacto — declarado en la
-// nota al pie del gráfico. Los casos NO cerrados nunca usan proxy (devuelve null).
-function fechaCierreEfectiva(r){
-  const fc = parseFechaReg(r["FECHA CIERRE"]);
-  if(fc) return fc;
-  if(EST_HIST.includes(r["ESTADO"])) return parseFechaReg(r["ACTUALIZADO EN"]);
-  return null;
+// Fecha de cierre para el gráfico: SOLO la fecha_cierre real.
+// Se descartó el proxy con ACTUALIZADO EN: esa fecha es cuándo se tocó el
+// registro, no cuándo se cerró el caso, así que amontonaba cierres históricos
+// en meses recientes y creaba una curva que nunca ocurrió. Ante una auditoría
+// eso es peor que no mostrarlos. Los cierres sin fecha real NO se grafican: se
+// cuentan y se declaran en la nota al pie. La curva es corta pero verdadera, y
+// crece sola a medida que se registran cierres con fecha de aquí en adelante.
+function fechaCierreReal(r){
+  return parseFechaReg(r["FECHA CIERRE"]);
 }
 // Periodos por CALENDARIO, no por dias corridos. Antes "Este mes" eran los
 // ultimos 31 dias, asi que un cierre del 30 de junio seguia contando el 28 de
@@ -2411,7 +2410,7 @@ function renderEstadisticas(){
         .map(([k,l])=>`<button class="ep-btn${_evoVista===k?" on":""}" onclick="setEvoVista('${k}')">${l}</button>`).join("")+
     `</div>`+
     `<div style="height:210px"><canvas id="est-chart-evo"></canvas></div>`+
-    `<div style="margin-top:8px;font-size:10px;color:var(--muted)">${_EVO_META[_evoVista].nota} Los cierres sin fecha registrada se ubican por la fecha de última modificación (aproximada).</div></div>`+
+    `<div style="margin-top:8px;font-size:10px;color:var(--muted)">${_EVO_META[_evoVista].nota} <span id="evo-nota-cierres"></span> El último mes es parcial (en curso): el tramo punteado no indica una baja real.</div></div>`+
     `<div class="est-card" style="border-color:rgba(74,222,128,.25)"><div class="est-title" style="color:#4ade80">⏱ Cumplimiento de términos · ${perLabel}</div>${cumplH}${cumplNota}</div>`+
     `<div class="est-card" style="border-color:rgba(34,197,94,.3)"><div class="est-title" style="color:#22c55e">🏆 Cerrados por persona · ${perLabel}${lider&&lider.n>0?` · líder: ${esc(pNom(lider.abo))}`:""}</div>${cerradosH}<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Total: <strong style="color:#22c55e">${cerradosPer.length}</strong> procesos cerrados. ⏱ = % dentro del término. ¡Gran trabajo! 💪</div></div>`+
     `<div class="est-card"><div class="est-title">Por tipo de actuación · histórico completo</div>${tiposH}</div>`+
@@ -2464,10 +2463,10 @@ function dibujarEvolucion(tuts, falls, incs){
     return [...m.values()];
   };
   const fechasCierre=(regs)=>{
-    if(!agrupa) return regs.map(r=>fechaCierreEfectiva(r)).filter(Boolean);
+    if(!agrupa) return regs.map(r=>fechaCierreReal(r)).filter(Boolean);
     const m=new Map();
     regs.forEach(r=>{
-      const f=fechaCierreEfectiva(r); if(!f) return;
+      const f=fechaCierreReal(r); if(!f) return;
       const k=llaveProceso(r); const prev=m.get(k);
       if(!prev || f<prev) m.set(k,f);
     });
@@ -2475,6 +2474,10 @@ function dibujarEvolucion(tuts, falls, incs){
   };
   const fEntradas=fechasEntrada(universo);
   const fCierres =fechasCierre(cerrados);
+  // Cuántos cierres NO tienen fecha real (van a la nota, no a la curva)
+  const cierresSinFecha = cerrados.filter(r=>!fechaCierreReal(r)).length;
+  _evoCierresSinFecha = cierresSinFecha;
+  _evoCerradosTotal = cerrados.length;
   const cuenta=(arr,k)=>arr.filter(f=>clave(f)===k).length;
   const entradas=claves.map(k=>cuenta(fEntradas,k));
   const cierres =claves.map(k=>cuenta(fCierres,k));
@@ -2486,12 +2489,18 @@ function dibujarEvolucion(tuts, falls, incs){
                    : _evoVista==="incidentes" ? "Desacatos abiertos"
                    : "Entradas";
   const lblCierre  = _evoVista==="incidentes" ? "Resueltos" : "Cierres";
+  // El último punto es el mes EN CURSO (parcial): pocos días contra meses
+  // completos, así que la caída es un artefacto, no una baja real. Se marca con
+  // el tramo final punteado para que se lea como "mes incompleto", no como
+  // desplome. segment.borderDash aplica solo al último segmento.
+  const ultimoIdx = claves.length-1;
+  const dashUltimo = (ctx)=> ctx.p1DataIndex===ultimoIdx ? [5,4] : undefined;
   if(_chartEvo){ _chartEvo.destroy(); _chartEvo=null; }
   _chartEvo=new Chart(canvas,{
     type:"line",
     data:{labels:meses,datasets:[
-      {label:lblEntrada,data:entradas,borderColor:"#3b82f6",backgroundColor:"rgba(59,130,246,.12)",fill:true,tension:.3,pointRadius:3},
-      {label:lblCierre,data:cierres,borderColor:"#e8a020",backgroundColor:"rgba(232,160,32,.12)",fill:true,tension:.3,pointRadius:3}
+      {label:lblEntrada,data:entradas,borderColor:"#3b82f6",backgroundColor:"rgba(59,130,246,.12)",fill:true,tension:.3,pointRadius:3,segment:{borderDash:dashUltimo}},
+      {label:lblCierre,data:cierres,borderColor:"#e8a020",backgroundColor:"rgba(232,160,32,.12)",fill:true,tension:.3,pointRadius:3,segment:{borderDash:dashUltimo}}
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
@@ -2502,6 +2511,15 @@ function dibujarEvolucion(tuts, falls, incs){
       }
     }
   });
+  // Nota honesta sobre los cierres que NO se grafican (sin fecha real registrada)
+  const spanNota=document.getElementById("evo-nota-cierres");
+  if(spanNota){
+    if(_evoCierresSinFecha>0){
+      spanNota.innerHTML=`La curva de cierres solo incluye los <strong>${_evoCerradosTotal-_evoCierresSinFecha}</strong> con fecha de cierre registrada; <strong>${_evoCierresSinFecha}</strong> cierres históricos sin fecha no se grafican (el registro de cierres es reciente).`;
+    } else {
+      spanNota.textContent="";
+    }
+  }
 }
 
 function renderAll(){renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();actualizarBadgeDuplicados();if(document.getElementById("tab-duplicados")?.classList.contains("active"))renderDuplicados();}
