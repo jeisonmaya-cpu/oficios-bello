@@ -2747,23 +2747,7 @@ function pintarCaso(){
     '</div>' +
 
     '<div class="msg" id="k-msg"></div>' +
-    '<div class="pleg" id="pleg-doc">' +
-      '<button class="pleg-btn" onclick="plegar(\'pleg-doc\')">' +
-        '<span class="pleg-fl">' + ICONO.flecha + '</span>Generar documentos' +
-        '<span class="pleg-cta">' +
-          (r.tipo === 'PRESCRIPCION' ? 'resolución y oficio' : 'oficio al usuario') + '</span>' +
-      '</button>' +
-      '<div class="pleg-cnt">' +
-        '<div class="acc-grupo">' +
-          (r.tipo === 'PRESCRIPCION'
-            ? '<button class="btn btn-doc btn-ic" onclick="abrirResolucion()">' +
-              ICONO.doc + 'Resolución de prescripción</button>' : '') +
-          '<button class="btn btn-of btn-ic" onclick="abrirOficio()">' +
-            ICONO.sobre + 'Oficio al usuario</button>' +
-        '</div>' +
-        '<div id="k-doc"></div>' +
-      '</div>' +
-    '</div>' +
+    panelDocumentos(r) +
     '<div id="k-hist"></div>' +
     '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
       '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
@@ -3247,23 +3231,248 @@ function fechaLarga(d){
          MESES_ES[d.getMonth()] + ' de ' + d.getFullYear();
 }
 
-/* ── Oficio de respuesta al peticionario ── */
-function abrirOficio(){
+/* ══════════════════════════════════════════════════════════════
+   CATÁLOGO DE RESPUESTAS TIPO
+   Una sola plantilla base (plantilla_oficio_usuario.docx) con el
+   marcador {{CUERPO}}; cada respuesta aporta sus párrafos y campos.
+   Sintaxis de los párrafos: **negrita** entre asteriscos; los que
+   empiezan con "- " se imprimen como viñeta. Los {{CAMPOS}} se
+   reemplazan con los valores del formulario.
+   ⚠ Textos jurídicos en borrador: deben ser validados por el
+   equipo jurídico antes de usarse en producción.
+   ══════════════════════════════════════════════════════════════ */
+const CIERRE_COMUN =
+  'Cualquier inquietud adicional será atendida en la Dirección Administrativa de ' +
+  'Ejecuciones Fiscales de la Alcaldía de Bello.';
+
+const CATALOGO_RESPUESTAS = {
+
+  OFICIO_GENERAL: {
+    titulo: 'Oficio libre',
+    desc: 'Respuesta con texto redactado por el abogado. Separe los párrafos con una línea en blanco; use **negrita** entre asteriscos.',
+    libre: true,
+    campos: [
+      { id:'TEXTO_LIBRE', lbl:'Texto de la respuesta', tipo:'area',
+        ph:'Escriba aquí los párrafos de la respuesta…' }
+    ]
+  },
+
+  DESEMBARGO_ORDEN: {
+    titulo: 'Orden de desembargo',
+    desc: 'Informa al ciudadano que ya se ordenó el levantamiento de la medida. Fundamento: arts. 837 y ss. E.T.',
+    campos: [
+      { id:'BANCO',        lbl:'Entidad bancaria',            ph:'Bancolombia' },
+      { id:'OFICIO_DES',   lbl:'N° del oficio de desembargo', ph:'DE-2026-0001' },
+      { id:'FECHA_OFICIO', lbl:'Fecha del oficio',            ph:'DD/MM/AAAA' }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual solicita el levantamiento de la medida cautelar de embargo que afecta sus productos financieros, de manera atenta le informamos lo siguiente:',
+      'Esta Dirección, mediante oficio N° {{OFICIO_DES}} del {{FECHA_OFICIO}}, ordenó a {{BANCO}} el **levantamiento de la medida cautelar de embargo** decretada dentro del proceso administrativo de cobro coactivo adelantado en su contra, de conformidad con los artículos 837 y siguientes del Estatuto Tributario Nacional, aplicables por remisión del artículo 5 de la Ley 1066 de 2006.',
+      'Una vez comunicada la orden, la entidad financiera cuenta con sus propios tiempos operativos para hacerla efectiva, por lo que le sugerimos verificar directamente con {{BANCO}} el estado de sus productos transcurridos algunos días hábiles.',
+      'En los anteriores términos damos respuesta de fondo a su petición, dentro de la oportunidad legal prevista en la Ley 1755 de 2015.'
+    ]
+  },
+
+  MINIMO_VITAL: {
+    titulo: 'Inembargabilidad — mínimo vital',
+    desc: 'Concede el levantamiento por afectación del mínimo vital. Fundamento: art. 594 CGP, art. 126 EOSF.',
+    campos: [
+      { id:'BANCO',        lbl:'Entidad bancaria',            ph:'Bancolombia' },
+      { id:'ORIGEN',       lbl:'Origen de los recursos',      tipo:'select',
+        op:['su salario','su pensión','un subsidio del Estado','sus prestaciones sociales'] },
+      { id:'OFICIO_DES',   lbl:'N° del oficio de desembargo', ph:'DE-2026-0001' },
+      { id:'FECHA_OFICIO', lbl:'Fecha del oficio',            ph:'DD/MM/AAAA' }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual solicita el levantamiento de la medida de embargo por afectación de su mínimo vital, de manera atenta le informamos lo siguiente:',
+      'El artículo 594 del Código General del Proceso enumera los bienes inembargables, entre ellos el salario mínimo legal y las prestaciones sociales en la proporción prevista en la ley, así como los recursos destinados a la satisfacción de las necesidades básicas. A su vez, el artículo 126 del Estatuto Orgánico del Sistema Financiero establece la inembargabilidad de las cuentas de ahorro hasta el monto señalado periódicamente por la autoridad competente. La jurisprudencia constitucional ha reiterado que las medidas cautelares no pueden comprometer el **mínimo vital** de las personas.',
+      'Verificada la información y los soportes aportados, se constató que los recursos embargados en {{BANCO}} provienen de {{ORIGEN}}, razón por la cual esta Dirección, mediante oficio N° {{OFICIO_DES}} del {{FECHA_OFICIO}}, ordenó el **levantamiento de la medida cautelar** sobre dichos recursos.',
+      'Es importante precisar que el levantamiento de la medida no extingue las obligaciones a su cargo, las cuales continúan su curso dentro del proceso de cobro coactivo. Lo invitamos a acercarse a esta Dirección para conocer las alternativas de normalización, entre ellas la suscripción de un acuerdo de pago.'
+    ]
+  },
+
+  REQUISITOS_ACUERDO: {
+    titulo: 'Requisitos para acuerdo de pago',
+    desc: 'Informa los requisitos para suscribir una facilidad de pago. Fundamento: art. 814 E.T., art. 7 Ley 1066 de 2006.',
+    campos: [
+      { id:'PORC_INICIAL', lbl:'Cuota inicial mínima (%)', def:'30' },
+      { id:'PLAZO_MAX',    lbl:'Plazo máximo',             def:'cinco (5) años' }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual solicita información sobre los requisitos para la suscripción de un acuerdo de pago, de manera atenta le informamos lo siguiente:',
+      'De conformidad con el artículo 814 del Estatuto Tributario Nacional y el artículo 7 de la Ley 1066 de 2006, esta Dirección puede conceder facilidades para el pago de las obligaciones en mora hasta por {{PLAZO_MAX}}. Para el estudio de su solicitud deberá aportar:',
+      '- Solicitud escrita dirigida a la Dirección Administrativa de Ejecuciones Fiscales, indicando las obligaciones que desea normalizar.',
+      '- Fotocopia del documento de identidad del deudor o, si actúa mediante apoderado, poder debidamente otorgado.',
+      '- Si se trata de persona jurídica, certificado de existencia y representación legal con vigencia no mayor a treinta (30) días.',
+      '- Pago de la cuota inicial, equivalente como mínimo al {{PORC_INICIAL}}% del valor total de la deuda.',
+      '- Cuando el plazo solicitado sea superior a un (1) año, constitución de las garantías previstas en el artículo 814 del Estatuto Tributario.',
+      'La suscripción del acuerdo suspende el proceso de cobro coactivo y permite el levantamiento de las medidas cautelares decretadas, en los términos que allí se pacten. El incumplimiento de las cuotas dará lugar a dejar sin efecto la facilidad y a continuar el cobro por el saldo insoluto.'
+    ]
+  },
+
+  ESTADO_CUENTA: {
+    titulo: 'Estado de cuenta',
+    desc: 'Informa las obligaciones vigentes, vigencias y valor. Fundamento: Ley 1755 de 2015.',
+    campos: [
+      { id:'CONCEPTO',    lbl:'Concepto', tipo:'select',
+        op:['Impuesto Predial Unificado','Impuesto de Industria y Comercio','Multas de Tránsito','Obligaciones Urbanísticas'] },
+      { id:'EXPEDIENTE',  lbl:'Expediente de cobro coactivo', ph:'EXP-2024-0123' },
+      { id:'VIGENCIAS',   lbl:'Vigencias en mora',            ph:'2019, 2020 y 2021' },
+      { id:'VALOR_TOTAL', lbl:'Valor total (sin el signo $)', ph:'4.850.000' },
+      { id:'FECHA_CORTE', lbl:'Fecha de corte',               ph:'DD/MM/AAAA' }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual consulta el estado de sus obligaciones con el Municipio de Bello, de manera atenta le informamos lo siguiente:',
+      'Consultado el sistema de información de esta Dirección, con corte al {{FECHA_CORTE}} usted registra obligaciones por concepto de **{{CONCEPTO}}**, correspondientes a las vigencias {{VIGENCIAS}}, por un valor total de **${{VALOR_TOTAL}}**, dentro del expediente de cobro coactivo N° {{EXPEDIENTE}}.',
+      'El valor señalado incluye capital e intereses moratorios liquidados a la fecha de corte; los intereses continúan causándose hasta el pago total, por lo que el valor definitivo debe confirmarse el día del pago.',
+      'Para normalizar su situación puede efectuar el pago total de la obligación o solicitar ante esta Dirección la suscripción de un acuerdo de pago.'
+    ]
+  },
+
+  REQUERIMIENTO_ART17: {
+    titulo: 'Requerimiento — completar petición',
+    desc: 'Pide completar la solicitud y SUSPENDE los términos. Fundamento: art. 17 Ley 1755 de 2015.',
+    campos: [
+      { id:'FALTANTES', lbl:'Información o documentos que faltan', tipo:'area',
+        ph:'Certificación bancaria donde conste que la cuenta embargada es de nómina; copia del desprendible de pago…' }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, y en cumplimiento del artículo 17 de la Ley 1755 de 2015, de manera atenta le requerimos para que complete su solicitud, toda vez que la información aportada no es suficiente para resolverla de fondo.',
+      'En concreto, deberá aportar o aclarar lo siguiente: {{FALTANTES}}',
+      'Para el efecto dispone de un término máximo de **un (1) mes**, contado a partir del recibo de esta comunicación. Vencido este plazo sin que se complete la solicitud, **se entenderá que ha desistido de ella** y se decretará el desistimiento y el archivo del expediente mediante acto administrativo, sin perjuicio de que pueda presentar nuevamente la petición con el lleno de los requisitos.',
+      'A partir del día siguiente a aquel en que aporte la información requerida, **comenzará a correr nuevamente el término** para resolver su petición.'
+    ]
+  },
+
+  TRASLADO_COMPETENCIA: {
+    titulo: 'Traslado por competencia',
+    desc: 'Remite la petición a la autoridad competente. Fundamento: art. 21 Ley 1755 de 2015.',
+    campos: [
+      { id:'ENTIDAD_DESTINO', lbl:'Autoridad competente', ph:'Secretaría de Movilidad de Bello' },
+      { id:'MOTIVO',          lbl:'Motivo (redacción corta)', ph:'el asunto corresponde a la etapa sancionatoria y no al cobro coactivo' }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, de manera atenta le informamos lo siguiente:',
+      'Revisado el contenido de su solicitud, se advierte que el asunto no es competencia de esta Dirección, por cuanto {{MOTIVO}}. En consecuencia, de conformidad con el artículo 21 de la Ley 1755 de 2015, su petición fue **remitida por competencia a {{ENTIDAD_DESTINO}}**, autoridad a quien corresponde resolverla, dentro de los cinco (5) días siguientes a su recepción.',
+      'Los términos para resolver su petición se contarán a partir del día siguiente a la recepción por parte de la autoridad competente, la cual le dará respuesta directamente.'
+    ]
+  },
+
+  NIEGA_PRESCRIPCION: {
+    titulo: 'Negación de prescripción',
+    desc: 'Niega la prescripción por interrupción del término. Fundamento: arts. 817 y 818 E.T.',
+    campos: [
+      { id:'OBLIGACION',        lbl:'Obligación solicitada', ph:'el comparendo 05088000000018443355' },
+      { id:'ACTO_INTERRUMPE',   lbl:'Acto que interrumpió el término', tipo:'select',
+        op:['la notificación del mandamiento de pago','el otorgamiento de una facilidad de pago','la admisión a un proceso concursal'] },
+      { id:'FECHA_INTERRUPCION', lbl:'Fecha de la interrupción', ph:'DD/MM/AAAA' }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual solicita la prescripción de la acción de cobro respecto de {{OBLIGACION}}, de manera atenta le informamos lo siguiente:',
+      'El artículo 817 del Estatuto Tributario Nacional dispone que la acción de cobro prescribe en el término de **cinco (5) años**, contados a partir de la exigibilidad de la obligación. Por su parte, el artículo 818 ibídem establece que dicho término **se interrumpe** por la notificación del mandamiento de pago, por el otorgamiento de facilidades para el pago, por la admisión a procesos concursales o por la declaratoria oficial de liquidación forzosa administrativa, caso en el cual el término comienza a correr de nuevo.',
+      'Revisado el expediente, se constató que el término de prescripción respecto de {{OBLIGACION}} fue interrumpido mediante **{{ACTO_INTERRUMPE}}** el día {{FECHA_INTERRUPCION}}. En consecuencia, a la fecha no ha transcurrido el término exigido por la norma y, por lo tanto, **no es procedente declarar la prescripción** solicitada.',
+      'La obligación continúa vigente y su cobro sigue su curso dentro del proceso administrativo de cobro coactivo. Lo invitamos a acercarse a esta Dirección para conocer las alternativas de normalización, entre ellas la suscripción de un acuerdo de pago.'
+    ]
+  },
+
+  COPIAS: {
+    titulo: 'Entrega de copias',
+    desc: 'Responde la solicitud de copias del expediente. Fundamento: art. 29 Ley 1755 de 2015.',
+    campos: [
+      { id:'DOCUMENTOS_SOL', lbl:'Documentos que se entregan', tipo:'area',
+        ph:'mandamiento de pago N° …, resolución sanción N° …' },
+      { id:'MEDIO', lbl:'Medio de entrega', tipo:'select',
+        op:['correo electrónico','entrega física en la Dirección'] }
+    ],
+    parrafos: [
+      'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual solicita la expedición de copias de documentos que reposan en el expediente, de manera atenta le informamos lo siguiente:',
+      'De conformidad con el artículo 29 de la Ley 1755 de 2015, procede la expedición de las copias solicitadas, a costa del interesado cuando se trate de reproducciones físicas, según las tarifas fijadas por el Municipio.',
+      'En consecuencia, se dispone la entrega de copia de los siguientes documentos: {{DOCUMENTOS_SOL}}, mediante {{MEDIO}}.'
+    ]
+  }
+};
+
+/* Respuestas sugeridas según el tipo de la petición (las demás quedan disponibles) */
+const SUGERIDOS_POR_TIPO = {
+  PRESCRIPCION: ['NIEGA_PRESCRIPCION'],
+  DESEMBARGO:   ['DESEMBARGO_ORDEN','MINIMO_VITAL'],
+  EMBARGO:      ['DESEMBARGO_ORDEN','MINIMO_VITAL'],
+  ACUERDO_PAGO: ['REQUISITOS_ACUERDO'],
+  DEVOLUCION:   ['ESTADO_CUENTA'],
+  CONSULTA:     ['ESTADO_CUENTA'],
+  DOCUMENTOS:   ['COPIAS']
+};
+
+/* Panel "Generar documentos" de la ficha: todos los formatos para todas
+   las peticiones; los sugeridos por tipo van primero y marcados con ★ */
+function panelDocumentos(r){
+  const sug = SUGERIDOS_POR_TIPO[r.tipo] || [];
+  const todas = Object.keys(CATALOGO_RESPUESTAS);
+  const orden = sug.concat(todas.filter(function(k){ return sug.indexOf(k) === -1; }));
+  const botones = orden.map(function(k){
+    const c = CATALOGO_RESPUESTAS[k];
+    const esSug = sug.indexOf(k) !== -1;
+    return '<button class="btn btn-of btn-ic" ' +
+      (esSug ? 'style="border-color:rgba(232,160,32,.55);color:var(--gold)" ' : '') +
+      'onclick="abrirRespuesta(\'' + k + '\')">' +
+      ICONO.sobre + esc(c.titulo) + (esSug ? ' ★' : '') + '</button>';
+  }).join('');
+  return '<div class="pleg" id="pleg-doc">' +
+    '<button class="pleg-btn" onclick="plegar(\'pleg-doc\')">' +
+      '<span class="pleg-fl">' + ICONO.flecha + '</span>Generar documentos' +
+      '<span class="pleg-cta">resolución y respuestas tipo</span>' +
+    '</button>' +
+    '<div class="pleg-cnt">' +
+      '<div class="acc-grupo">' +
+        '<button class="btn btn-doc btn-ic" onclick="abrirResolucion()">' +
+          ICONO.doc + 'Resolución de prescripción</button>' +
+        botones +
+      '</div>' +
+      '<div class="hint" style="margin-top:6px">★ Sugeridos según el tipo de esta petición. ' +
+        'Todos los formatos están disponibles para cualquier petición.</div>' +
+      '<div id="k-doc"></div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ── Formulario de una respuesta tipo ── */
+let RESP_ACTUAL = null;
+
+function abrirRespuesta(clave){
   const r = COLA[COLA_IDX];
   if(!r) return;
+  const c = CATALOGO_RESPUESTAS[clave];
+  if(!c) return;
   const pl = document.getElementById('pleg-doc');
   if(pl) pl.classList.add('on');
   const cont = document.getElementById('k-doc');
   if(!cont) return;
-  if(cont.getAttribute('data-modo') === 'oficio'){ cont.innerHTML = ''; cont.removeAttribute('data-modo'); return; }
-  cont.setAttribute('data-modo','oficio');
+  if(cont.getAttribute('data-modo') === clave){
+    cont.innerHTML = ''; cont.removeAttribute('data-modo'); RESP_ACTUAL = null; return;
+  }
+  cont.setAttribute('data-modo', clave);
+  RESP_ACTUAL = clave;
+
+  const propios = (c.campos || []).map(function(f){
+    if(f.tipo === 'area')
+      return '<div class="fld" style="grid-column:1/-1"><label class="lbl">' + esc(f.lbl) + '</label>' +
+        '<textarea id="rx-' + f.id + '" placeholder="' + esc(f.ph || '') + '" style="min-height:80px">' +
+        esc(f.def || '') + '</textarea></div>';
+    if(f.tipo === 'select')
+      return '<div class="fld"><label class="lbl">' + esc(f.lbl) + '</label>' +
+        '<select id="rx-' + f.id + '">' +
+        f.op.map(function(o){ return '<option>' + esc(o) + '</option>'; }).join('') +
+        '</select></div>';
+    return '<div class="fld"><label class="lbl">' + esc(f.lbl) + '</label>' +
+      '<input type="text" id="rx-' + f.id + '" value="' + esc(f.def || '') + '" ' +
+      'placeholder="' + esc(f.ph || '') + '"></div>';
+  }).join('');
 
   cont.innerHTML =
    '<div style="background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.3);' +
    'border-radius:13px;padding:18px;margin-top:16px">' +
-     '<div class="lbl" style="margin-bottom:4px">Oficio de respuesta al peticionario</div>' +
-     '<div class="hint" style="margin-bottom:14px">Acompaña el acto administrativo. ' +
-     'Se envía al correo registrado o se notifica físicamente.</div>' +
+     '<div class="lbl" style="margin-bottom:4px">' + esc(c.titulo) + '</div>' +
+     '<div class="hint" style="margin-bottom:14px">' + esc(c.desc) + '</div>' +
      '<div class="grid">' +
        '<div class="fld"><label class="lbl">Tratamiento</label>' +
          '<select id="o-trat"><option>Señor</option><option>Señora</option><option>Señores</option></select></div>' +
@@ -3277,44 +3486,156 @@ function abrirOficio(){
          '<input type="text" id="o-rad" value="' + esc(r.radicado || '') + '"></div>' +
        '<div class="fld"><label class="lbl">Proyectó</label>' +
          '<input type="text" id="o-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '"></div>' +
+       propios +
      '</div>' +
      '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
-       '<button class="btn btn-primary" onclick="generarOficio()">Descargar Word</button>' +
-       '<button class="btn btn-ghost" onclick="document.getElementById(\'k-doc\').innerHTML=\'\'">Cerrar</button>' +
-       '<div class="msg" id="o-msg" style="margin:0"></div>' +
+       '<button class="btn btn-primary" onclick="generarRespuesta()">Descargar Word</button>' +
+       '<button class="btn btn-ghost" onclick="vistaPrevia()">Vista previa</button>' +
+       '<button class="btn btn-ghost" onclick="abrirRespuesta(\'' + clave + '\')">Cerrar</button>' +
+       '<div class="msg" id="rx-msg" style="margin:0"></div>' +
      '</div>' +
+     '<div id="rx-prev"></div>' +
    '</div>';
 }
 
-async function generarOficio(){
-  const msg = document.getElementById('o-msg');
-  const r = COLA[COLA_IDX];
-  if(!r) return;
+/* Lee los campos comunes y propios de la respuesta abierta */
+function leerDatosRespuesta(){
+  const c = CATALOGO_RESPUESTAS[RESP_ACTUAL];
+  if(!c) return null;
   const hoy = new Date();
+  const g = function(id){ const e = document.getElementById(id); return e ? e.value.trim() : ''; };
   const datos = {
-    TRATAMIENTO: document.getElementById('o-trat').value,
-    NOMBRE:      (document.getElementById('o-nom').value || '').trim().toUpperCase(),
-    CEDULA:      (document.getElementById('o-ced').value || '').trim(),
-    EMAIL:       (document.getElementById('o-mail').value || '').trim(),
-    RADICADO:    (document.getElementById('o-rad').value || '').trim(),
-    PROYECTO:    (document.getElementById('o-proy').value || '').trim(),
+    TRATAMIENTO: g('o-trat'),
+    NOMBRE:      g('o-nom').toUpperCase(),
+    CEDULA:      g('o-ced'),
+    EMAIL:       g('o-mail'),
+    RADICADO:    g('o-rad'),
+    PROYECTO:    g('o-proy'),
     FECHA_LARGA: fechaLarga(hoy),
     FECHA_DOC:   fmtFecha(iso(hoy))
   };
+  (c.campos || []).forEach(function(f){ datos[f.id] = g('rx-' + f.id); });
+  return datos;
+}
+
+/* Párrafos de la respuesta abierta, con el cierre común */
+function parrafosRespuesta(c, datos){
+  let parrafos;
+  if(c.libre){
+    parrafos = String(datos.TEXTO_LIBRE || '').split(/\n\s*\n+/)
+      .map(function(p){ return p.replace(/\s*\n\s*/g, ' ').trim(); })
+      .filter(Boolean);
+  }else{
+    parrafos = c.parrafos.slice();
+    parrafos.push(CIERRE_COMUN);
+  }
+  return parrafos;
+}
+
+function vistaPrevia(){
+  const c = CATALOGO_RESPUESTAS[RESP_ACTUAL];
+  const cont = document.getElementById('rx-prev');
+  if(!c || !cont) return;
+  if(cont.innerHTML){ cont.innerHTML = ''; return; }
+  const datos = leerDatosRespuesta();
+  const html = parrafosRespuesta(c, datos).map(function(p){
+    let t = p;
+    Object.keys(datos).forEach(function(k){
+      t = t.split('{{' + k + '}}').join(datos[k] || '_____');
+    });
+    const vineta = /^-\s+/.test(t);
+    if(vineta) t = t.replace(/^-\s+/, '');
+    t = esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    return '<p style="margin:0 0 9px' + (vineta ? ';padding-left:18px' : '') + '">' +
+      (vineta ? '• ' : '') + t + '</p>';
+  }).join('');
+  cont.innerHTML =
+    '<div style="background:rgba(255,255,255,.05);border:1px solid var(--border);' +
+    'border-radius:11px;padding:14px;margin-top:12px;font-size:13px;line-height:1.55">' +
+    html + '</div>';
+}
+
+async function generarRespuesta(){
+  const msg = document.getElementById('rx-msg');
+  const r = COLA[COLA_IDX];
+  const c = CATALOGO_RESPUESTAS[RESP_ACTUAL];
+  if(!r || !c) return;
+  const datos = leerDatosRespuesta();
   if(!datos.NOMBRE || !datos.RADICADO){
     msg.className = 'msg err'; msg.textContent = 'Faltan el nombre o el radicado.';
     return;
   }
-  msg.className = 'msg'; msg.textContent = 'Armando el oficio…';
+  const vacio = (c.campos || []).filter(function(f){ return !f.opcional && !datos[f.id]; })[0];
+  if(vacio){
+    msg.className = 'msg err'; msg.textContent = 'Falta el campo: ' + vacio.lbl + '.';
+    return;
+  }
+  const parrafos = parrafosRespuesta(c, datos);
+  if(!parrafos.length){
+    msg.className = 'msg err'; msg.textContent = 'La respuesta no tiene texto.';
+    return;
+  }
+  msg.className = 'msg'; msg.textContent = 'Armando el documento…';
   try{
-    await armarDocx(URL_PLANTILLA_OFICIO, datos,
-      'Oficio_respuesta_' + datos.CEDULA.replace(/[^0-9]/g,'') + '_' + datos.RADICADO.replace(/[^\w-]/g,'') + '.docx');
+    const nombreArchivo = 'Respuesta_' + RESP_ACTUAL.toLowerCase() + '_' +
+      datos.CEDULA.replace(/[^0-9]/g, '') + '_' + datos.RADICADO.replace(/[^\w-]/g, '') + '.docx';
+    await armarDocx(URL_PLANTILLA_OFICIO, datos, nombreArchivo, function(xml){
+      return inyectarCuerpo(xml, parrafos);
+    });
+
+    try{
+      await supaFetch('pet_peticiones?id=eq.' + r.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        body: JSON.stringify({ doc_proyectado: nombreArchivo })
+      });
+    }catch(e){}
+
+    const notas = document.getElementById('k-notas');
+    if(notas && !notas.value.trim())
+      notas.value = 'Se proyecta respuesta: ' + c.titulo + '.';
+
     msg.className = 'msg ok';
-    msg.textContent = datos.EMAIL ? 'Oficio descargado. Envíelo a ' + datos.EMAIL + '.'
-                                  : 'Oficio descargado. Sin correo registrado: notificación física.';
+    msg.textContent = datos.EMAIL
+      ? 'Documento descargado. Revíselo y envíelo a ' + datos.EMAIL + '.'
+      : 'Documento descargado. Sin correo registrado: notificación física.';
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'No se pudo generar: ' + err.message;
   }
+}
+
+/* Reemplaza el párrafo que contiene {{CUERPO}} por los párrafos de la
+   respuesta. Busca el marcador en el texto plano de cada párrafo, para
+   tolerar que Word lo haya partido en varios runs. */
+function inyectarCuerpo(xml, parrafos){
+  const parras = xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
+  let objetivo = null;
+  parras.forEach(function(p){
+    if(objetivo) return;
+    if(p.replace(/<[^>]+>/g, '').indexOf('{{CUERPO}}') !== -1) objetivo = p;
+  });
+  if(!objetivo)
+    throw new Error('la plantilla no tiene el marcador {{CUERPO}}. Edite ' +
+      'plantilla_oficio_usuario.docx: borre el cuerpo del oficio y escriba {{CUERPO}} en un párrafo solo');
+  return xml.replace(objetivo, cuerpoXml(parrafos));
+}
+
+/* Convierte los párrafos del catálogo a XML de Word:
+   **negrita** entre asteriscos; "- " inicial se vuelve viñeta */
+function cuerpoXml(parrafos){
+  return parrafos.map(function(p){
+    let texto = p, ind = '';
+    if(/^-\s+/.test(texto)){
+      texto = '• ' + texto.replace(/^-\s+/, '');
+      ind = '<w:ind w:left="425"/>';
+    }
+    const runs = texto.split('**').map(function(seg, i){
+      if(!seg) return '';
+      return '<w:r>' + (i % 2 === 1 ? '<w:rPr><w:b/></w:rPr>' : '') +
+        '<w:t xml:space="preserve">' + xmlSeguro(seg) + '</w:t></w:r>';
+    }).join('');
+    return '<w:p><w:pPr><w:jc w:val="both"/>' + ind +
+      '<w:spacing w:after="160"/></w:pPr>' + runs + '</w:p>';
+  }).join('');
 }
 
 /* Motor común: descarga la plantilla, reemplaza y entrega el .docx */
