@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- deploy: v2025-08-03-full2 · CONSOLIDADO: paginacion + UX (tooltips/subtitulos/leyenda) + grafico 4 vistas · cierres SOLO con fecha real (sin proxy) + nota de cierres sin fecha + mes en curso punteado -->
+  <!-- deploy: v2025-08-03-full3 · CONSOLIDADO + leyendas de flujo (ingresados/resueltos, no abiertos) para no confundir flujo con stock activo -->
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
   <style>
@@ -2225,14 +2225,14 @@ let _evoCerradosTotal = 0;   // total de cerrados en la vista actual
 // Títulos y notas por vista. Deliberadamente distintos: "entrada" NO significa
 // lo mismo en cada vista, y la nota lo aclara para que nadie sume las cuatro.
 const _EVO_META = {
-  todo:       { titulo:"Evolución mensual — procesos que entran vs procesos que cierran",
-                nota:"Cuenta <strong>procesos únicos</strong>: admite, fallo e incidente del mismo radicado cuentan una sola vez. Últimos 12 meses." },
+  todo:       { titulo:"Evolución mensual — procesos que ingresan vs procesos que cierran",
+                nota:"Cuenta <strong>procesos únicos</strong>: admite, fallo e incidente del mismo radicado cuentan una sola vez. Mide el flujo mensual (lo que ingresa y cierra cada mes), no cuántos están activos hoy. Últimos 12 meses." },
   admites:    { titulo:"Admites — tutelas admitidas vs finalizadas",
-                nota:"Solo la etapa de admisión. Entrada = tutela admitida; cierre = admite finalizado. Últimos 12 meses." },
+                nota:"Solo la etapa de admisión. Cada mes: tutelas admitidas vs admites finalizados. Es flujo mensual, no el total abierto hoy. Últimos 12 meses." },
   fallos:     { titulo:"Fallos — llegadas a fallo vs fallos cerrados",
-                nota:"Un fallo es una etapa de una tutela que ya entró antes; no es un proceso nuevo. No sumar con la vista de admites. Últimos 12 meses." },
-  incidentes: { titulo:"Incidentes/Desacatos — abiertos vs resueltos",
-                nota:"Un desacato reactiva un proceso ya cerrado; su \"entrada\" es un reproceso. No sumar con las otras vistas. Últimos 12 meses." }
+                nota:"Un fallo es una etapa de una tutela que ya ingresó antes; no es un proceso nuevo. No sumar con la vista de admites. Últimos 12 meses." },
+  incidentes: { titulo:"Incidentes/Desacatos — ingresados vs resueltos",
+                nota:"Cada mes: desacatos que ingresaron vs desacatos resueltos. La curva azul es flujo de ingreso, no cuántos siguen abiertos hoy (ese número está en el badge de la pestaña). No sumar con las otras vistas. Últimos 12 meses." }
 };
 function setEstPeriodo(p){ _estPeriodo = p; renderEstadisticas(); }
 function setEvoVista(v){ _evoVista = v; renderEstadisticas(); }
@@ -2486,8 +2486,8 @@ function dibujarEvolucion(tuts, falls, incs){
   const cTexto  = claro ? "#475569" : "#94a3b8";
   const cRejilla= claro ? "rgba(15,45,94,.10)" : "rgba(255,255,255,.05)";
   const lblEntrada = _evoVista==="fallos" ? "Llegadas a fallo"
-                   : _evoVista==="incidentes" ? "Desacatos abiertos"
-                   : "Entradas";
+                   : _evoVista==="incidentes" ? "Desacatos ingresados"
+                   : "Ingresados";
   const lblCierre  = _evoVista==="incidentes" ? "Resueltos" : "Cierres";
   // El último punto es el mes EN CURSO (parcial): pocos días contra meses
   // completos, así que la caída es un artefacto, no una baja real. Se marca con
