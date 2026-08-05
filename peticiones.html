@@ -1583,7 +1583,7 @@ function extraerDatos(t){
   // ── Nombre del peticionario ──
   // Palabras que nunca son parte de un nombre: evitan capturar títulos,
   // encabezados institucionales y jerga jurídica.
-  const VETO = /\b(SECRETARIA|SECRETARÍA|ALCALDIA|ALCALDÍA|MOVILIDAD|TRANSITO|TRÁNSITO|BELLO|MUNICIPIO|CIUDAD|SEÑORES|SEÑOR|SEÑORA|DERECHO|PETICION|PETICIÓN|EMBARGO|DESEMBARGO|PRESCRIPCION|PRESCRIPCIÓN|COMPARENDO|MULTA|MULTAS|COACTIVO|COBRO|OFICIO|RADICADO|REFERENCIA|ASUNTO|SOLICITUD|INFORMACION|INFORMACIÓN|CORDIAL|SALUDO|BUENAS|BUENOS|GRACIAS|ATENTAMENTE|CORDIALMENTE|OUTLOOK|CORREO|DESDE|PARA|FECHA|ADJUNTO|ARCHIVO|SANCIONATORIA|NOTIFICACION|NOTIFICACIÓN|EXCEPCIONES|MANDAMIENTO|PAGO|ESTATUTO|TRIBUTARIO|CONSTITUCION|CONSTITUCIÓN|POLITICA|POLÍTICA|COLOMBIA|LEY|ARTICULO|ARTÍCULO|SIMIT|RUNT|PLACA|VEHICULO|VEHÍCULO|MOTOCICLETA|NULIDAD|DEBIDO|PROCESO|INTERES|INTERÉS|PARTICULAR|BANCO|CUENTA|NEQUI|TITULAR)\b/i;
+  const VETO = /\b(SECRETARIA|SECRETARÍA|ALCALDIA|ALCALDÍA|MOVILIDAD|TRANSITO|TRÁNSITO|BELLO|MUNICIPIO|CIUDAD|SEÑORES|SEÑOR|SEÑORA|DERECHO|PETICION|PETICIÓN|EMBARGO|DESEMBARGO|PRESCRIPCION|PRESCRIPCIÓN|COMPARENDO|MULTA|MULTAS|COACTIVO|COBRO|OFICIO|RADICADO|REFERENCIA|ASUNTO|SOLICITUD|INFORMACION|INFORMACIÓN|CORDIAL|SALUDO|BUENAS|BUENOS|GRACIAS|ATENTAMENTE|CORDIALMENTE|OUTLOOK|CORREO|DESDE|PARA|FECHA|ADJUNTO|ARCHIVO|SANCIONATORIA|NOTIFICACION|NOTIFICACIÓN|EXCEPCIONES|MANDAMIENTO|PAGO|ESTATUTO|TRIBUTARIO|CONSTITUCION|CONSTITUCIÓN|POLITICA|POLÍTICA|COLOMBIA|LEY|ARTICULO|ARTÍCULO|SIMIT|RUNT|PLACA|VEHICULO|VEHÍCULO|MOTOCICLETA|NULIDAD|DEBIDO|PROCESO|INTERES|INTERÉS|PARTICULAR|BANCO|CUENTA|NEQUI|TITULAR|NOTIFICACIONES|JUDICIALES|GESTION|DOCUMENTAL|CONTACTENOS|SOPORTE|VENTANILLA|RECEPCION|RECEPCIÓN|DESPACHO|DIRECCION|DIRECCIÓN|GOBIERNO|HACIENDA|JURIDICA|JURÍDICA)\b/i;
 
   const NOM = '[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ.]*';
   const NOMS = '(' + NOM + '(?:\\s+' + NOM + '){1,5})';
@@ -1598,6 +1598,8 @@ function extraerDatos(t){
   }
 
   const patronesNombre = [
+    // "Remitente: X" (índice documental del SIM / sello de radicación)
+    new RegExp('remitente\\s*:?\\s*' + NOMS, 'i'),
     // "mi nombre es X" · "me llamo X"
     new RegExp('(?:mi\\s+nombre\\s+es|me\\s+llamo)\\s+' + NOMS, 'i'),
     // "Peticionario: X" · "Solicitante: X"
@@ -1614,23 +1616,46 @@ function extraerDatos(t){
     new RegExp('(?:atentamente|cordialmente)\\s*[,:]?\\s*(?:\\n|\\s)+' + NOMS, 'i')
   ];
 
-  for(let i = 0; i < patronesNombre.length; i++){
+  // Correo reenviado desde Outlook: "De: Nombre Apellido <correo@...>" · "Desde Nombre <correo>"
+  // Se prueba PRIMERO porque la mayoría de radicados llegan como reenvío de correo.
+  if(!d.nombre){
+    // Recolectar TODOS los remitentes "Nombre <correo>" del hilo de correo.
+    // "De:" (con dos puntos) es el peticionario real; "Desde" suele ser la cuenta
+    // institucional que reenvía, así que se prefiere el "De:" pero se descartan
+    // los correos de dominio @bello.gov.co (institucionales).
+    const cands = [];
+    // "De: Nombre <correo>" — exige los dos puntos para no matchear dentro de "Desde"
+    let re = new RegExp('\\bde\\s*:\\s*' + NOMS + '\\s*<([^>]+)>', 'ig');
+    let mm;
+    while((mm = re.exec(txt))){ cands.push({nom:mm[1], mail:(mm[2]||'').toLowerCase(), pri:1}); }
+    // "Desde Nombre <correo>" — prioridad menor
+    re = new RegExp('desde\\s+' + NOMS + '\\s*<([^>]+)>', 'ig');
+    while((mm = re.exec(txt))){ cands.push({nom:mm[1], mail:(mm[2]||'').toLowerCase(), pri:2}); }
+    // ordenar: primero pri=1, y dentro de eso, correos NO institucionales
+    cands.sort((a,b)=> a.pri-b.pri || ((a.mail.includes('bello.gov')?1:0)-(b.mail.includes('bello.gov')?1:0)));
+    const elegido = cands.find(c => nombreValido(c.nom));
+    if(elegido) d.nombre = limpiarNombre(elegido.nom);
+  }
+
+  for(let i = 0; !d.nombre && i < patronesNombre.length; i++){
     const mm = t.match(patronesNombre[i]) || txt.match(patronesNombre[i]);
     if(mm && nombreValido(mm[1])){ d.nombre = limpiarNombre(mm[1]); break; }
   }
 
-  // Correo reenviado desde Outlook: "Desde Nombre Apellido <correo@...>"
+  // Cierre de correo: "Cordial saludo, / Quedo atento, / Gracias, [Nombre]"
   if(!d.nombre){
-    m = txt.match(new RegExp('(?:desde|de)\\s+' + NOMS + '\\s*<', 'i'));
+    m = txt.match(new RegExp('(?:cordial\\s+saludo|quedo\\s+atent[oa]|qued[óo]\\s+atent[oa]|muchas\\s+gracias|feliz\\s+(?:d[íi]a|tarde))\\s*[,.:]?\\s+' + NOMS, 'i'));
     if(m && nombreValido(m[1])) d.nombre = limpiarNombre(m[1]);
   }
 
-  // Último recurso: una línea completa en mayúsculas que parezca un nombre
+  // Último recurso: línea en mayúsculas que parezca nombre, pero NO junto a encabezados.
   if(!d.nombre){
     const lineas = t.split(/\n/);
     for(let i = 0; i < lineas.length; i++){
       const L = lineas[i].trim();
-      if(/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s.]{8,45}$/.test(L) && nombreValido(L)){
+      // debe tener 2-4 palabras (evita bloques largos institucionales) y pasar el veto
+      const pal = L.split(/\s+/).filter(p=>p.length>1);
+      if(/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s.]{8,45}$/.test(L) && pal.length>=2 && pal.length<=4 && nombreValido(L)){
         d.nombre = limpiarNombre(L); break;
       }
     }
