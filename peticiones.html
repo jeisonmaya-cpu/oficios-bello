@@ -3683,6 +3683,10 @@ function inyectarCuerpo(xml, parrafos){
 /* Convierte los párrafos del catálogo a XML de Word:
    **negrita** entre asteriscos; "- " inicial se vuelve viñeta */
 function cuerpoXml(parrafos){
+  // Fuente del oficio: sin esto el cuerpo hereda el tamaño por defecto
+  // del documento (12pt) y queda más grande que el resto (Arial 11pt).
+  const FUENTE = '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>' +
+                 '<w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="es-ES"/>';
   return parrafos.map(function(p){
     let texto = p, ind = '';
     if(/^-\s+/.test(texto)){
@@ -3691,11 +3695,11 @@ function cuerpoXml(parrafos){
     }
     const runs = texto.split('**').map(function(seg, i){
       if(!seg) return '';
-      return '<w:r>' + (i % 2 === 1 ? '<w:rPr><w:b/></w:rPr>' : '') +
+      return '<w:r><w:rPr>' + FUENTE + (i % 2 === 1 ? '<w:b/>' : '') + '</w:rPr>' +
         '<w:t xml:space="preserve">' + xmlSeguro(seg) + '</w:t></w:r>';
     }).join('');
     return '<w:p><w:pPr><w:jc w:val="both"/>' + ind +
-      '<w:spacing w:after="160"/></w:pPr>' + runs + '</w:p>';
+      '<w:spacing w:after="160"/><w:rPr>' + FUENTE + '</w:rPr></w:pPr>' + runs + '</w:p>';
   }).join('');
 }
 
