@@ -3706,7 +3706,9 @@ function cuerpoXml(parrafos){
 /* Motor común: descarga la plantilla, reemplaza y entrega el .docx */
 async function armarDocx(url, datos, nombreArchivo, transformar){
   if(!window.JSZip) throw new Error('no cargó la librería del documento');
-  const res = await fetch(url);
+  // 'no-store' evita que el navegador reutilice una plantilla vieja:
+  // así se puede actualizar el Word en Supabase sin tocar el código.
+  const res = await fetch(url, { cache: 'no-store' });
   if(!res.ok) throw new Error('no se encontró la plantilla (HTTP ' + res.status + ')');
   const zip = await window.JSZip.loadAsync(await res.arrayBuffer());
   let xml = await zip.file('word/document.xml').async('string');
