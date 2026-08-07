@@ -302,6 +302,19 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .pleg-cnt{display:none;padding-top:12px}
 .pleg.on .pleg-cnt{display:block}
 .pleg-cta{margin-left:auto;font-size:var(--t-micro);color:var(--acento);font-weight:700}
+/* Corrección de una petición */
+#editor{position:fixed;inset:0;background:rgba(4,14,28,.9);z-index:940;display:none;
+  align-items:flex-start;justify-content:center;padding:28px 20px;overflow:auto;backdrop-filter:blur(6px)}
+#editor.on{display:flex}
+.ed-caja{width:100%;max-width:720px;background:var(--navy2);border:1px solid var(--border);
+  border-radius:18px;padding:26px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.ed-hd{display:flex;align-items:flex-start;gap:13px;margin-bottom:6px}
+.ed-hd h3{font-family:'Syne';font-size:20px;flex:1}
+.ed-orig{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;
+  padding:11px 14px;font-size:var(--t-micro);color:var(--muted);margin:12px 0 18px;line-height:1.6}
+.ed-orig b{color:var(--txt)}
+.ed-aviso{background:rgba(232,160,32,.09);border:1px solid rgba(232,160,32,.32);border-radius:10px;
+  padding:11px 14px;font-size:var(--t-sm);margin-top:14px;line-height:1.55}
 /* Ficha del caso */
 .caso-id{flex:1;min-width:230px}
 .copiable{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
@@ -417,6 +430,24 @@ footer b{color:var(--gold)}
   <div class="visor-split">
     <div class="visor-doc" id="visor-body"></div>
     <div class="visor-form" id="visor-form"></div>
+  </div>
+</div>
+<div id="editor">
+  <div class="ed-caja">
+    <div class="ed-hd">
+      <h3>Corregir <em>petición</em></h3>
+      <button class="btn btn-ghost" style="padding:8px 14px;font-size:var(--t-sm)"
+        onclick="cerrarEditor()">Cerrar</button>
+    </div>
+    <div class="hint">Para arreglar errores de digitación. Todo cambio queda en la bitácora.</div>
+    <div class="ed-orig" id="ed-orig"></div>
+    <div id="ed-campos"></div>
+    <div class="ed-aviso" id="ed-recalc"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px">
+      <button class="btn btn-primary" onclick="guardarEdicion()">Guardar cambios</button>
+      <button class="btn btn-ghost" onclick="cerrarEditor()">Cancelar</button>
+      <div class="msg" id="ed-msg" style="margin:0"></div>
+    </div>
   </div>
 </div>
 <div id="toasts"></div>
@@ -650,6 +681,7 @@ footer b{color:var(--gold)}
           <th id="b-th-sel" style="display:none;width:34px"></th>
           <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Radicación</th>
           <th>Límite</th><th>Días</th><th>Estado</th><th>Abogado</th><th>Rad. respuesta</th>
+          <th id="b-th-ed" style="display:none;width:40px"></th>
         </tr></thead>
         <tbody id="b-body"><tr><td colspan="9">
           <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
@@ -4190,8 +4222,10 @@ function renderBandeja(){
   const body = document.getElementById('b-body');
   const th = document.getElementById('b-th-sel');
   if(th) th.style.display = SELECCION ? '' : 'none';
+  const thEd = document.getElementById('b-th-ed');
+  if(thEd) thEd.style.display = esAdmin() ? '' : 'none';
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="' + (SELECCION ? 10 : 9) + '">' +
+    body.innerHTML = '<tr><td colspan="' + (9 + (SELECCION ? 1 : 0) + (esAdmin() ? 1 : 0)) + '">' +
       '<div class="vacio"><div class="vacio-ic">' + ICONO.vacio + '</div>' +
       '<h3>Sin resultados</h3><p>Pruebe con otros filtros o con menos palabras en la búsqueda.</p>' +
       '</div></td></tr>';
@@ -4220,6 +4254,10 @@ function renderBandeja(){
       '<td><span class="pill s-' + esc(r.semaforo) + '">' + esc(r.estado) + '</span></td>' +
       '<td>' + esc(r.asignado_nombre || '—') + '</td>' +
       '<td>' + esc(r.radicado_respuesta || '—') + '</td>' +
+      (esAdmin()
+        ? '<td><button class="btn btn-ghost" style="padding:5px 9px;font-size:var(--t-micro)" ' +
+          'onclick="abrirEditor(' + r.id + ')" title="Corregir datos">' + ICONO.lapiz + '</button></td>'
+        : '') +
     '</tr>';
   }).join('');
 }
@@ -4299,6 +4337,153 @@ async function trasladarSeleccion(){
     msg.className = 'msg err'; msg.textContent = 'No se pudo trasladar: ' + err.message;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   CORRECCIÓN DE UNA PETICIÓN (solo admin)
+   ══════════════════════════════════════════════════════════════ */
+let EDITANDO = null;
+
+function abrirEditor(id){
+  if(!esAdmin()){ toast('Solo el administrador puede corregir.', 'err'); return; }
+  const r = BANDEJA.find(function(x){ return x.id === id; });
+  if(!r){ toast('No se encontró la petición.', 'err'); return; }
+  EDITANDO = r;
+
+  document.getElementById('ed-orig').innerHTML =
+    'Radicada el <b>' + fmtFecha(r.fecha_radicado) + '</b> · vence el <b>' + fmtFecha(r.fecha_limite) +
+    '</b> · <b>' + (r.dias_restantes === null || r.dias_restantes === undefined ? '—'
+      : (r.dias_restantes < 0 ? Math.abs(r.dias_restantes) + ' días hábiles vencida'
+                              : r.dias_restantes + ' días hábiles restantes')) + '</b>' +
+    (r.asignado_nombre ? ' · asignada a <b>' + esc(r.asignado_nombre) + '</b>' : '') +
+    (Number(r.en_tutela || 0) > 0
+      ? '<br><span style="color:var(--judicial)">Esta petición está en tutela.</span>' : '');
+
+  const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
+  document.getElementById('ed-campos').innerHTML =
+    '<div class="grid">' +
+      '<div class="fld"><label class="lbl">Radicado de entrada</label>' +
+        '<input type="text" id="ed-rad" value="' + esc(r.radicado || '') + '"></div>' +
+      '<div class="fld"><label class="lbl">Fecha de radicación</label>' +
+        '<input type="date" id="ed-fec" value="' + esc(String(r.fecha_radicado || '').slice(0,10)) +
+        '" onchange="previewLimite()"></div>' +
+      '<div class="fld"><label class="lbl">Tipo de petición</label>' +
+        '<select id="ed-tipo" onchange="previewLimite()">' +
+          TIPOS.map(function(t){
+            return '<option value="' + esc(t.codigo) + '" data-dias="' + t.dias_termino + '"' +
+                   (r.tipo === t.codigo ? ' selected' : '') + '>' + esc(t.nombre) +
+                   ' (' + t.dias_termino + ' días)</option>';
+          }).join('') + '</select></div>' +
+      '<div class="fld"><label class="lbl">Peticionario</label>' +
+        '<input type="text" id="ed-nom" value="' + esc(r.peticionario || '') + '"></div>' +
+      '<div class="fld"><label class="lbl">Cédula / NIT</label>' +
+        '<input type="text" id="ed-doc" value="' + esc(r.documento || '') + '"></div>' +
+      '<div class="fld"><label class="lbl">Correo electrónico</label>' +
+        '<input type="email" id="ed-mail" value="' + esc(r.email || '') + '"></div>' +
+      '<div class="fld"><label class="lbl">Teléfono</label>' +
+        '<input type="text" id="ed-tel" value="' + esc(r.telefono || '') + '"></div>' +
+      '<div class="fld"><label class="lbl">Expediente</label>' +
+        '<input type="text" id="ed-exp" value="' + esc(r.expediente || '') + '"></div>' +
+      '<div class="fld"><label class="lbl">Asignada a</label>' +
+        '<select id="ed-abo"><option value="">Sin asignar</option>' +
+          abos.map(function(p){
+            return '<option value="' + p.id + '"' + (r.asignado_a === p.id ? ' selected' : '') +
+                   '>' + esc(p.nombre) + '</option>';
+          }).join('') + '</select></div>' +
+      '<div class="fld full"><label class="lbl">Resumen</label>' +
+        '<textarea id="ed-res">' + esc(r.resumen || '') + '</textarea></div>' +
+      '<div class="fld full"><label class="lbl">Motivo de la corrección</label>' +
+        '<input type="text" id="ed-mot" placeholder="Ej.: error de digitación en la fecha de radicación">' +
+        '<div class="hint">Queda en las notas de gestión y en la bitácora.</div></div>' +
+    '</div>';
+
+  document.getElementById('ed-msg').textContent = '';
+  document.getElementById('editor').classList.add('on');
+  previewLimite();
+  const f = document.getElementById('ed-fec');
+  if(f) f.focus();
+}
+
+/* Muestra en vivo cómo queda el vencimiento con los datos corregidos */
+function previewLimite(){
+  const f = document.getElementById('ed-fec');
+  const s = document.getElementById('ed-tipo');
+  const el = document.getElementById('ed-recalc');
+  if(!f || !s || !el) return;
+  const op = s.selectedOptions[0];
+  const dias = op ? (parseInt(op.getAttribute('data-dias'), 10) || 15) : 15;
+  const lim = sumarHabiles(f.value, dias);
+  if(!lim){ el.innerHTML = ''; return; }
+  const rest = habilesEntre(iso(new Date()), lim);
+  el.innerHTML = 'Con estos datos vencería el <b style="color:var(--gold2)">' + fmtFecha(lim) + '</b> · ' +
+    (rest < 0
+      ? '<b style="color:var(--vencido)">vencida hace ' + Math.abs(rest) + ' días hábiles</b>'
+      : '<b style="color:var(--atiempo)">faltan ' + rest + ' días hábiles</b>') +
+    '. El sistema recalcula la fecha límite al guardar.';
+}
+
+async function guardarEdicion(){
+  const msg = document.getElementById('ed-msg');
+  const r = EDITANDO;
+  if(!r) return;
+  const g = function(id){ const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+
+  const rad = g('ed-rad'), nom = g('ed-nom'), fec = g('ed-fec');
+  if(!rad || !nom || !fec){
+    msg.className = 'msg err'; msg.textContent = 'Radicado, peticionario y fecha son obligatorios.';
+    return;
+  }
+  const motivo = g('ed-mot');
+  const cambios = [];
+  if(rad !== (r.radicado || '')) cambios.push('radicado: ' + r.radicado + ' -> ' + rad);
+  if(fec !== String(r.fecha_radicado || '').slice(0,10))
+    cambios.push('fecha de radicacion: ' + fmtFecha(r.fecha_radicado) + ' -> ' + fmtFecha(fec));
+
+  const patch = {
+    radicado: rad,
+    fecha_radicado: fec,
+    tipo: g('ed-tipo'),
+    peticionario: nom,
+    documento: g('ed-doc') || null,
+    email: g('ed-mail') || null,
+    telefono: g('ed-tel') || null,
+    expediente: g('ed-exp') || null,
+    resumen: g('ed-res') || null,
+    asignado_a: g('ed-abo') || null,
+    dias_termino: null
+  };
+  if(cambios.length || motivo){
+    patch.notas_gestion = (r.notas_gestion ? r.notas_gestion + '\n' : '') +
+      '[' + fmtFecha(iso(new Date())) + '] Corrección por ' + (PERFIL ? PERFIL.nombre : '') +
+      (motivo ? ': ' + motivo : '') +
+      (cambios.length ? ' (' + cambios.join('; ') + ')' : '') + '.';
+  }
+
+  msg.className = 'msg'; msg.textContent = 'Guardando…';
+  try{
+    await supaFetch('pet_peticiones?id=eq.' + r.id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(patch)
+    });
+    toast('Petición ' + rad + ' corregida.', 'ok', 4);
+    cerrarEditor();
+    cargarBandeja();
+  }catch(err){
+    msg.className = 'msg err';
+    msg.textContent = /duplicat|unique/i.test(err.message)
+      ? 'Ese radicado ya existe en otra petición.'
+      : 'No se pudo guardar: ' + err.message;
+  }
+}
+
+function cerrarEditor(){
+  const e = document.getElementById('editor');
+  if(e) e.classList.remove('on');
+  EDITANDO = null;
+}
+
+document.addEventListener('keydown', function(e){
+  const ed = document.getElementById('editor');
+  if(e.key === 'Escape' && ed && ed.classList.contains('on')) cerrarEditor();
+});
 
 function exportarCSV(){
   const rows = filtrarBandeja();
