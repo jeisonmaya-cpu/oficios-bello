@@ -86,6 +86,61 @@ textarea{resize:vertical;min-height:64px}
 .msg.err{color:var(--error)} .msg.ok{color:var(--verde)}
 
 /* ── LAYOUT ── */
+/* ── Barra de navegación vertical ── */
+body{display:flex}
+#lat{width:212px;flex-shrink:0;background:rgba(6,20,40,.72);border-right:1px solid var(--border);
+  position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
+  backdrop-filter:blur(12px);transition:width .22s ease;z-index:60}
+#lat.min{width:62px}
+.lat-hd{padding:16px 15px 13px;border-bottom:1px solid var(--border);display:flex;
+  align-items:center;gap:10px;min-height:60px}
+.lat-logo{width:31px;height:31px;border-radius:9px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);
+  display:flex;align-items:center;justify-content:center;font-family:'Syne';font-weight:800;font-size:14px}
+.lat-tit{font-family:'Syne';font-weight:800;font-size:13.5px;line-height:1.25;white-space:nowrap;overflow:hidden}
+.lat-tit span{color:var(--gold);display:block;font-size:11.5px;font-weight:600}
+#lat.min .lat-tit,#lat.min .nav-txt,#lat.min .lat-yo,#lat.min .lat-sec{display:none}
+#lat.min .lat-hd{justify-content:center;padding:16px 8px 13px}
+
+.lat-nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 9px}
+.lat-sec{font-size:var(--t-lbl);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  font-weight:700;padding:11px 8px 6px;white-space:nowrap}
+.nav-b{display:flex;align-items:center;gap:11px;width:100%;background:none;border:none;
+  color:var(--muted);border-radius:10px;padding:10px 11px;cursor:pointer;font-family:inherit;
+  font-size:var(--t-base);font-weight:500;text-align:left;margin-bottom:2px;
+  transition:background .15s,color .15s;position:relative}
+.nav-b:hover{background:rgba(255,255,255,.06);color:var(--txt)}
+.nav-b.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);font-weight:700}
+.nav-b svg{width:17px;height:17px;flex-shrink:0}
+.nav-txt{white-space:nowrap;overflow:hidden;flex:1}
+#lat.min .nav-b{justify-content:center;padding:11px 0}
+/* Etiqueta emergente cuando está plegada */
+#lat.min .nav-b:hover:after{content:attr(data-txt);position:absolute;left:calc(100% + 9px);
+  background:var(--navy2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;
+  font-size:var(--t-sm);white-space:nowrap;z-index:80;box-shadow:0 6px 20px rgba(0,0,0,.45);color:var(--txt)}
+.nav-b .badge{margin-left:auto}
+#lat.min .nav-b .badge{position:absolute;top:4px;right:6px;margin:0;padding:1px 5px;font-size:9.5px}
+
+.nav-ext{color:var(--muted);opacity:.82}
+.nav-ext:hover{opacity:1;background:rgba(255,255,255,.06)}
+.nav-ext .sale{width:12px;height:12px;flex-shrink:0;opacity:.5;margin-left:auto}
+#lat.min .nav-ext .sale{display:none}
+.lat-sep{height:1px;background:var(--border);margin:11px 6px}
+.lat-pie{border-top:1px solid var(--border);padding:12px 11px}
+.lat-yo{font-size:var(--t-micro);color:var(--muted);line-height:1.45;margin-bottom:9px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lat-yo b{color:var(--txt);display:block;font-size:var(--t-sm)}
+.lat-acc{display:flex;gap:6px}
+.lat-acc button{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);
+  color:var(--muted);border-radius:9px;padding:8px;cursor:pointer;font-family:inherit;
+  font-size:var(--t-micro);display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:color .15s,border-color .15s}
+.lat-acc button:hover{color:var(--txt);border-color:var(--gold)}
+.lat-acc svg{width:14px;height:14px}
+#lat.min .lat-acc{flex-direction:column}
+#lat.min .lat-acc span{display:none}
+
+#cuerpo{flex:1;min-width:0;display:flex;flex-direction:column}
 header{border-bottom:1px solid var(--border);background:rgba(10,31,61,.85);backdrop-filter:blur(12px);position:sticky;top:0;z-index:50}
 .hdr-in{max-width:1320px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .brand{font-family:'Syne';font-weight:800;font-size:16px}
@@ -95,7 +150,20 @@ header{border-bottom:1px solid var(--border);background:rgba(10,31,61,.85);backd
 .tabs{display:flex;gap:6px;flex-wrap:wrap;max-width:1320px;margin:0 auto;padding:0 20px 11px}
 .tab{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:8px 15px;cursor:pointer;font-weight:500;font-size:13px}
 .tab.on{background:var(--gold);border-color:var(--gold);color:var(--navy);font-weight:700}
-main{max-width:1320px;margin:0 auto;padding:24px 20px 60px}
+main{max-width:1320px;margin:0 auto;padding:24px 24px 60px;width:100%}
+@media(max-width:860px){
+  body{flex-direction:column}
+  #lat{width:auto;height:auto;position:sticky;top:0;flex-direction:row;
+    border-right:none;border-bottom:1px solid var(--border);align-items:center}
+  #lat.min{width:auto}
+  .lat-hd{border-bottom:none;border-right:1px solid var(--border);min-height:0}
+  .lat-nav{display:flex;padding:9px;gap:5px;flex:1}
+  .lat-sec{display:none}
+  .nav-b{width:auto;margin:0;white-space:nowrap}
+  .nav-txt{display:none}
+  .lat-pie{border-top:none;border-left:1px solid var(--border)}
+  .lat-yo{display:none}
+}
 .panel{display:none} .panel.on{display:block}
 .card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:22px;backdrop-filter:blur(10px);margin-bottom:18px}
 .page-hdr{margin-bottom:18px}
@@ -103,6 +171,25 @@ main{max-width:1320px;margin:0 auto;padding:24px 20px 60px}
 .page-hdr p{color:var(--muted);font-size:13px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px}
 .full{grid-column:1/-1}
+
+/* ── Estadísticas: mismo patrón que el módulo de Tutelas ── */
+.est-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.est-card{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:22px}
+.est-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--gold2);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.est-title svg{width:15px;height:15px}
+.est-row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.est-label{font-size:12.5px;color:var(--muted);min-width:132px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.est-bar-wrap{flex:1;height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.est-bar-fill{height:100%;border-radius:3px;transition:width .45s ease}
+.est-val{font-size:12.5px;font-weight:700;min-width:30px;text-align:right}
+.est-nota{font-size:var(--t-micro);color:var(--muted);line-height:1.55;margin-top:14px;
+  padding-top:12px;border-top:1px solid var(--border)}
+.est-pie{font-size:var(--t-micro);color:var(--muted);margin-top:13px;text-align:center}
+.est-pie b{color:var(--gold2)}
+.medalla{margin-right:5px}
+.pct-min{font-size:10.5px;color:var(--muted);margin-left:5px}
 
 /* ── KPIs ── */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
@@ -275,7 +362,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 /* Contador en las pestañas */
 .badge{display:inline-block;background:rgba(232,160,32,.22);color:var(--gold2);border-radius:99px;
   padding:1px 7px;font-size:10.5px;font-weight:700;margin-left:6px;vertical-align:middle}
-.tab.on .badge{background:rgba(10,31,61,.25);color:var(--navy)}
+.nav-b.on .badge{background:rgba(10,31,61,.28);color:var(--navy)}
 /* Avance del día */
 .hoy-box{display:flex;align-items:center;gap:13px;background:var(--glass);border:1px solid var(--border);
   border-radius:13px;padding:13px 17px;margin-bottom:14px;flex-wrap:wrap}
@@ -333,14 +420,22 @@ footer b{color:var(--gold)}
 </div>
 <div id="toasts"></div>
 <div id="app" style="display:none">
-<header>
-  <div class="hdr-in">
-    <div class="brand">TEODORO · <span>Peticiones</span></div>
-    <div class="who"><b id="u-nom">—</b><span id="u-rol">—</span> · <a href="#" onclick="salir();return false" style="color:var(--gold)">Salir</a></div>
+<nav id="lat">
+  <div class="lat-hd">
+    <div class="lat-logo">T</div>
+    <div class="lat-tit">TEODORO<span>Peticiones</span></div>
   </div>
-  <div class="tabs" id="tabs"></div>
-</header>
+  <div class="lat-nav" id="tabs"></div>
+  <div class="lat-pie">
+    <div class="lat-yo"><b id="u-nom">—</b><span id="u-rol">—</span></div>
+    <div class="lat-acc">
+      <button onclick="plegarLateral()" title="Plegar o desplegar el menú" id="btn-plegar"></button>
+      <button onclick="salir()" title="Cerrar sesión"></button>
+    </div>
+  </div>
+</nav>
 
+<div id="cuerpo">
 <main>
 
   <!-- ══ DIGITAR ══ -->
@@ -632,6 +727,8 @@ footer b{color:var(--gold)}
       <div id="t-aging"></div>
     </div>
 
+    <div class="est-grid" id="t-tarjetas" style="margin-bottom:18px"></div>
+
     <div class="card">
       <div class="lbl" style="margin-bottom:12px">Radicación — quién registra las peticiones</div>
       <div class="tbl-wrap">
@@ -730,6 +827,7 @@ footer b{color:var(--gold)}
 </main>
 
 <footer>Desarrollado por <b>Jeison Maya</b> · 2026 · Dirección Administrativa de Ejecuciones Fiscales</footer>
+</div>
 </div>
 
 <script>
@@ -1019,28 +1117,123 @@ function llenarFiltroCola(){
   if(esAdmin()) sel.value = 'todas';
 }
 
+/* Íconos de la navegación */
+const NAV_IC = {
+  digitar:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>',
+  lote:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
+  cola:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 10h8M8 14h5"/></svg>',
+  bandeja:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M22 12h-6l-2 3h-4l-2-3H2"/>' +
+    '<path d="M5.5 5.1L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.5-6.9A2 2 0 0016.8 4H7.2a2 2 0 00-1.7 1.1z"/></svg>',
+  historicos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
+  tablero:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.8L7 14.3"/></svg>',
+  personas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>' +
+    '<path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg>',
+  reloj:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  trofeo:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18"/>' +
+    '<path d="M6 4h12v5a6 6 0 01-12 0z"/><path d="M9 21h6M12 15v6"/></svg>',
+  lapiz:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>',
+  carpeta2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+  inicio:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M3 9.5L12 3l9 6.5V20a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>',
+  tutelas:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">' +
+    '<path d="M12 3v18M7 21h10"/><path d="M12 6l7 2M12 6L5 8"/>' +
+    '<path d="M5 8l-3 7a3 3 0 006 0z"/><path d="M19 8l3 7a3 3 0 01-6 0z"/></svg>',
+  sale:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sale">' +
+    '<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>' +
+    '<path d="M15 3h6v6M10 14L21 3"/></svg>',
+  plegar:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>',
+  salir:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>'
+};
+
+/* Otros módulos del sistema. Para agregar uno más, basta una línea aquí. */
+const MODULOS = [
+  {id:'home',    txt:'Inicio',  url:'home.html',       ic:'inicio',
+   desc:'Portada del sistema, con todos los módulos'},
+  {id:'tutelas', txt:'Tutelas', url:'tutelas_v2.html', ic:'tutelas',
+   desc:'Gestión de tutelas, fallos e incidentes de desacato'}
+];
+
 function construirTabs(){
   const defs = [
-    {id:'digitar',    txt:'Radicar',         ver: puedeRadicar()},
-    {id:'lote',       txt:'Carga por lotes',  ver: puedeRadicar()},
-    {id:'cola',       txt:'Cola de trabajo', ver: !soloRadica()},
-    {id:'bandeja',    txt:'Bandeja',         ver: true},
-    {id:'historicos', txt:'Resueltas',       ver: !soloRadica()},
-    {id:'tablero',    txt:'Tablero',         ver: true},
-    {id:'personas',   txt:'Personas',        ver: esAdmin()}
+    {id:'digitar',    txt:'Radicar',          sec:'Registro',   ver: puedeRadicar()},
+    {id:'lote',       txt:'Carga por lotes',  sec:null,         ver: puedeRadicar()},
+    {id:'cola',       txt:'Cola de trabajo',  sec:'Gestión',    ver: !soloRadica()},
+    {id:'bandeja',    txt:'Bandeja',          sec:null,         ver: true},
+    {id:'historicos', txt:'Resueltas',        sec:null,         ver: !soloRadica()},
+    {id:'tablero',    txt:'Tablero',          sec:'Control',    ver: true},
+    {id:'personas',   txt:'Personas',         sec:null,         ver: esAdmin()}
   ];
   const cont = document.getElementById('tabs');
   cont.innerHTML = '';
+  let ultimaSec = null;
   defs.forEach(function(d){
     if(!d.ver) return;
+    if(d.sec && d.sec !== ultimaSec){
+      const s = document.createElement('div');
+      s.className = 'lat-sec'; s.textContent = d.sec;
+      cont.appendChild(s); ultimaSec = d.sec;
+    }
     const b = document.createElement('button');
-    b.className = 'tab';
-    b.textContent = d.txt;
-    b.onclick = function(){ irA(d.id); };
+    b.className = 'nav-b';
     b.id = 'tab-' + d.id;
+    b.setAttribute('data-txt', d.txt);
+    b.innerHTML = (NAV_IC[d.id] || '') + '<span class="nav-txt">' + esc(d.txt) + '</span>';
+    b.onclick = function(){ irA(d.id); };
     cont.appendChild(b);
   });
+
+  // ── Otros módulos del sistema ──
+  const sep = document.createElement('div');
+  sep.className = 'lat-sep';
+  cont.appendChild(sep);
+
+  const sec = document.createElement('div');
+  sec.className = 'lat-sec';
+  sec.textContent = 'Sistema Teodoro';
+  cont.appendChild(sec);
+
+  MODULOS.forEach(function(m){
+    const a = document.createElement('a');
+    a.className = 'nav-b nav-ext';
+    a.href = m.url;
+    a.setAttribute('data-txt', m.txt);
+    a.title = m.desc || m.txt;
+    a.innerHTML = (NAV_IC[m.ic] || '') + '<span class="nav-txt">' + esc(m.txt) + '</span>' + NAV_IC.sale;
+    cont.appendChild(a);
+  });
+
+  // Botones del pie
+  const bp = document.getElementById('btn-plegar');
+  if(bp) bp.innerHTML = NAV_IC.plegar + '<span>Menú</span>';
+  const bs = document.querySelector('.lat-acc button[onclick="salir()"]');
+  if(bs) bs.innerHTML = NAV_IC.salir + '<span>Salir</span>';
+
+  // Recuperar si el menú estaba plegado
+  try{
+    if(localStorage.getItem('pet_menu') === 'min')
+      document.getElementById('lat').classList.add('min');
+  }catch(e){}
+
   irA(puedeRadicar() ? 'digitar' : 'cola');
+}
+
+function plegarLateral(){
+  const l = document.getElementById('lat');
+  l.classList.toggle('min');
+  try{ localStorage.setItem('pet_menu', l.classList.contains('min') ? 'min' : 'max'); }catch(e){}
 }
 
 function irA(id){
@@ -4671,6 +4864,7 @@ async function cargarTablero(){
       supaFetch('v_pet_radicacion?select=*').catch(function(){ return null; })
     ]);
     pintarRadicacion(rad);
+    pintarTarjetas(prod || [], rad || [], (res && res[0]) || {});
     const r = res[0] || {};
     const kpis = [
       ['Total registradas', r.total, 'var(--txt)'],
@@ -4715,6 +4909,108 @@ async function cargarTablero(){
   }catch(err){
     document.getElementById('t-prod').innerHTML = '<tr><td colspan="9">Error: ' + esc(err.message) + '</td></tr>';
   }
+}
+
+/* ══ Tarjetas de estadísticas, al estilo del módulo de Tutelas ══ */
+
+/* Una fila: etiqueta · barra · número */
+function estBarra(label, n, total, color, medalla, extra){
+  const pct = total ? Math.round(n / total * 100) : 0;
+  return '<div class="est-row">' +
+    '<span class="est-label" title="' + esc(label) + '">' +
+      (medalla ? '<span class="medalla">' + medalla + '</span>' : '') + esc(label) +
+      (extra ? '<span class="pct-min">' + esc(extra) + '</span>' : '') + '</span>' +
+    '<div class="est-bar-wrap"><div class="est-bar-fill" style="width:' + pct +
+      '%;background:' + color + '"></div></div>' +
+    '<span class="est-val" style="color:' + color + '">' + n + '</span></div>';
+}
+
+function estCard(titulo, icono, filas, nota, pie, borde){
+  return '<div class="est-card"' + (borde ? ' style="border-color:' + borde + '"' : '') + '>' +
+    '<div class="est-title">' + (icono || '') + titulo + '</div>' +
+    (filas || '<div class="hint">Sin datos todavía.</div>') +
+    (nota ? '<div class="est-nota">' + nota + '</div>' : '') +
+    (pie ? '<div class="est-pie">' + pie + '</div>' : '') +
+  '</div>';
+}
+
+const MEDALLAS = ['🥇','🥈','🥉'];
+
+/* Construye las tarjetas del tablero */
+function pintarTarjetas(prod, rad, res){
+  const cont = document.getElementById('t-tarjetas');
+  if(!cont) return;
+  const r = res || {};
+  let html = '';
+
+  // ── 1. Cumplimiento de términos ──
+  const aTermino = Number(r.proy_a_termino || 0);
+  const heredadas = Number(r.heredadas_vencidas || 0);
+  const medidas = prod.reduce(function(a, p){ return a + Number(p.a_termino || 0); }, 0);
+  const fuera = Math.max(
+    prod.reduce(function(a, p){ return a + Number(p.radicadas || 0) + Number(p.proyectadas || 0); }, 0)
+    - aTermino, 0);
+  const totCumpl = aTermino + fuera;
+  html += estCard('Cumplimiento de términos', ICONO.reloj,
+    (totCumpl
+      ? estBarra('Dentro del término', aTermino, totCumpl, 'var(--atiempo)') +
+        estBarra('Fuera del término', fuera, totCumpl, 'var(--vencido)')
+      : ''),
+    (heredadas
+      ? '<b style="color:var(--judicial)">' + heredadas + '</b> de esas llegaron ya vencidas ' +
+        'al abogado: son atraso heredado, no demora suya. El porcentaje justo del tablero las excluye.'
+      : 'Se mide contra la fecha límite legal, en días hábiles.'),
+    null, 'rgba(74,222,128,.25)');
+
+  // ── 2. Resueltas por persona (con liderazgo) ──
+  const orden = prod.filter(function(p){ return p.asignado_a; })
+    .map(function(p){
+      return { nom: p.abogado, n: Number(p.radicadas || 0) + Number(p.proyectadas || 0),
+               pct: p.pct_termino_justo, dias: p.dias_en_manos };
+    })
+    .sort(function(a, b){ return b.n - a.n; });
+  const totRes = orden.reduce(function(a, x){ return a + x.n; }, 0);
+  const lider = orden.length && orden[0].n ? orden[0].nom : null;
+
+  html += estCard('Resueltas por abogado' + (lider ? ' · líder: ' + esc(lider.split(' ')[0]) : ''),
+    ICONO.trofeo,
+    orden.map(function(x, i){
+      return estBarra(x.nom, x.n, orden[0].n || 1, 'var(--atiempo)',
+        (x.n && i < 3 ? MEDALLAS[i] : ''),
+        (x.pct != null ? x.pct + '%' : ''));
+    }).join(''),
+    'El porcentaje es cumplimiento del término, excluyendo lo heredado.',
+    'Total: <b>' + totRes + '</b> peticiones resueltas. ¡Gran trabajo!');
+
+  // ── 3. Radicación por persona ──
+  const rd = (rad || []).slice().sort(function(a, b){ return b.total - a.total; });
+  const totRad = rd.reduce(function(a, x){ return a + Number(x.total || 0); }, 0);
+  const liderR = rd.length && rd[0].total ? rd[0].radicador : null;
+  html += estCard('Registradas por persona' + (liderR ? ' · líder: ' + esc(liderR.split(' ')[0]) : ''),
+    ICONO.lapiz,
+    rd.map(function(x, i){
+      return estBarra(x.radicador, Number(x.total), Number(rd[0].total) || 1, 'var(--acento)',
+        (x.total && i < 3 ? MEDALLAS[i] : ''),
+        (x.promedio_por_dia != null ? x.promedio_por_dia + '/día' : ''));
+    }).join(''),
+    'El promedio se calcula sobre días con actividad real, no sobre días calendario.',
+    'Total registrado: <b>' + totRad + '</b> peticiones.');
+
+  // ── 4. Carga activa por abogado ──
+  const carga = prod.filter(function(p){ return p.asignado_a; })
+    .map(function(p){ return { nom: p.abogado, n: Number(p.pendientes || 0) + Number(p.proyectadas || 0),
+                               venc: Number(p.vencidas || 0) }; })
+    .sort(function(a, b){ return b.n - a.n; });
+  const maxC = carga.length ? Math.max.apply(null, carga.map(function(x){ return x.n; })) : 1;
+  html += estCard('Carga activa por abogado', ICONO.carpeta2,
+    carga.map(function(x){
+      return estBarra(x.nom, x.n, maxC || 1,
+        x.venc > 0 ? 'var(--vencido)' : 'var(--tramite)', '',
+        (x.venc ? x.venc + ' venc.' : ''));
+    }).join(''),
+    'Incluye asignadas, en trámite y proyectadas sin radicar. En rojo, quien tiene casos vencidos.');
+
+  cont.innerHTML = html;
 }
 
 /* ── Quién radica: volumen por persona ── */
