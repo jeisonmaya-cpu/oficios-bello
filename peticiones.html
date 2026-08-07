@@ -2850,7 +2850,7 @@ async function guardarLote(){
   msg.className = 'msg'; msg.textContent = 'Guardando…';
 
   const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
-  let idx = 0, ok = 0, fallos = 0;
+  let idx = 0, ok = 0, fallos = 0, yaEstaban = 0;
 
   for(let i = 0; i < pendientes.length; i++){
     const it = pendientes[i].it, n = pendientes[i].n;
@@ -2873,18 +2873,36 @@ async function guardarLote(){
     }
 
     try{
-      await supaFetch('pet_peticiones', {
-        method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(reg)
+      // Insert idempotente: si el radicado ya existe, Supabase lo ignora y no rompe la tanda.
+      const filas = await supaFetch('pet_peticiones', {
+        method:'POST',
+        headers:{ Prefer:'return=representation,resolution=ignore-duplicates' },
+        body: JSON.stringify(reg)
       });
-      it.estado = 'guardada';
       it.datos = it.datos || {};
       it.datos.nombre = reg.peticionario;
       it.radicado = reg.radicado;
-      ok++;
+      if(Array.isArray(filas) && filas.length === 0){
+        // No devolvió fila nueva => el radicado ya estaba en el sistema.
+        it.estado = 'yaesta';
+        it.nota = 'Ya estaba en el sistema.';
+        yaEstaban++;
+      } else {
+        it.estado = 'guardada';
+        ok++;
+      }
     }catch(err){
-      it.estado = 'error';
-      it.nota = /duplicat|unique/i.test(err.message) ? 'Ese radicado ya existe.' : err.message;
-      fallos++;
+      // Red de seguridad: si aun así llegara un duplicado, no bloquear la tanda.
+      if(/duplicat|unique|already exists|23505/i.test(err.message)){
+        it.estado = 'yaesta';
+        it.nota = 'Ya estaba en el sistema.';
+        it.radicado = reg.radicado;
+        yaEstaban++;
+      } else {
+        it.estado = 'error';
+        it.nota = err.message;
+        fallos++;
+      }
     }
     pintarLote();
   }
@@ -2899,17 +2917,20 @@ async function guardarLote(){
     return x.estado !== 'guardada' && x.estado !== 'yaesta' && x.estado !== 'error';
   }).length;
 
+  const yaTxt = yaEstaban ? ' · ' + yaEstaban + ' ya estaban' : '';
+
   if(fallos){
     msg.className = 'msg err';
-    msg.textContent = ok + ' guardadas · ' + fallos + ' con problema. Corrija las marcadas y vuelva a guardar.';
+    msg.textContent = ok + ' guardadas' + yaTxt + ' · ' + fallos +
+      ' con problema. Corrija las marcadas y vuelva a guardar.';
   } else if(PAGINA + 1 < grupos){
     msg.className = 'msg ok';
-    msg.textContent = ok + ' guardadas. Pasando al grupo ' + (PAGINA + 2) + ' de ' + grupos + '…';
-    toast(ok + ' radicadas · quedan ' + quedan + ' de la tanda', 'ok', 4);
+    msg.textContent = ok + ' guardadas' + yaTxt + '. Pasando al grupo ' + (PAGINA + 2) + ' de ' + grupos + '…';
+    toast(ok + ' radicadas' + yaTxt + ' · quedan ' + quedan + ' de la tanda', 'ok', 4);
     setTimeout(function(){ irAGrupo(PAGINA + 1); }, 900);
   } else {
     msg.className = 'msg ok';
-    msg.textContent = 'Tanda terminada: ' + ok + ' guardadas en este grupo.';
+    msg.textContent = 'Tanda terminada: ' + ok + ' guardadas' + yaTxt + ' en este grupo.';
     toast('Tanda completa. Puede cargar la siguiente.', 'ok', 5);
   }
   cargarCargasVivas();
