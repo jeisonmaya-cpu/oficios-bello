@@ -14,9 +14,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
-  --navy:#0a1f3d; --navy2:#0d2a52; --gold:#e8a020; --gold2:#f5c05a;
-  --txt:#eaf0f8; --muted:#93a3bd; --border:rgba(255,255,255,.11);
-  --glass:rgba(255,255,255,.05);
+  --navy:#0a0f1e; --navy2:#101a35; --gold:#f59e0b; --gold2:#fbbf24;
+  --cyan:#06b6d4; --blue2:#2563eb;
+  --txt:#dbe6ff; --muted:#8fa3cc; --border:rgba(96,140,220,.28);
+  --glass:rgba(17,25,48,.55);
   --rojo:#f87171; --naranja:#fb923c; --verde:#4ade80; --azul:#60a5fa; --morado:#c084fc;
 
   /* ── Significado, no color ──
@@ -28,7 +29,7 @@
   --judicial:#c084fc;     /* tutelas, desacatos, traslados */
   --tramite:#60a5fa;      /* radicado, notificación, institucional */
   --error:#fb923c;        /* fallos de formulario */
-  --acento:#e8a020;       /* acción principal */
+  --acento:#f59e0b;       /* acción principal */
 
   /* Tipografía: mínimo legible 12px */
   --t-micro:12px; --t-lbl:11px; --t-sm:13px; --t-base:14.5px; --t-md:15.5px;
@@ -58,8 +59,10 @@ button:focus-visible{outline-offset:3px}
 body{
   font-family:'DM Sans',system-ui,sans-serif;background:var(--navy);color:var(--txt);
   min-height:100vh;
-  background-image:radial-gradient(circle at 15% 0%,rgba(232,160,32,.10),transparent 45%),
-                   radial-gradient(circle at 85% 100%,rgba(96,165,250,.08),transparent 45%);
+  background-image:radial-gradient(ellipse 60% 40% at 80% -5%,rgba(37,99,235,.20),transparent),
+                   radial-gradient(ellipse 50% 35% at 10% 100%,rgba(6,182,212,.12),transparent),
+                   radial-gradient(circle,rgba(120,150,220,.10) 1px,transparent 1.5px);
+  background-size:auto,auto,26px 26px;background-attachment:fixed;
 }
 h1,h2,h3{font-family:'Syne',sans-serif;letter-spacing:-.02em}
 em{font-family:'DM Serif Display',serif;font-style:italic;color:var(--gold)}
@@ -88,7 +91,7 @@ textarea{resize:vertical;min-height:64px}
 /* ── LAYOUT ── */
 /* ── Barra de navegación vertical ── */
 #app{display:flex;min-height:100vh;align-items:stretch}
-#lat{width:212px;flex-shrink:0;background:rgba(6,20,40,.72);border-right:1px solid var(--border);
+#lat{width:212px;flex-shrink:0;background:rgba(13,20,42,.8);border-right:1px solid var(--border);
   position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
   backdrop-filter:blur(12px);transition:width .22s ease;z-index:60}
 #lat.min{width:62px}
@@ -400,6 +403,70 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 footer{text-align:center;padding:26px 20px;color:var(--muted);font-size:var(--t-micro);border-top:1px solid var(--border)}
 footer b{color:var(--gold)}
 @media(max-width:640px){table{min-width:700px}.hdr-in{gap:10px}}
+
+/* ── Respuesta combinada ── */
+.comb-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:11px}
+.doc-card{position:relative}
+.doc-card .cmk{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:6px;
+  border:1.5px solid var(--muted);display:grid;place-items:center;font-size:11px;color:var(--navy)}
+.doc-card.sel{border-color:var(--gold)!important;background:rgba(245,158,11,.10)!important;color:var(--gold2)!important}
+.doc-card.sel .cmk{background:var(--gold);border-color:var(--gold)}
+.doc-an{display:block;font-size:10px;letter-spacing:.5px;color:var(--muted);margin-top:2px}
+.doc-an b.a{color:var(--verde)} .doc-an b.n{color:var(--rojo)}
+.comb-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-top:12px;
+  border:1px solid var(--border);border-radius:13px;padding:11px 14px;background:rgba(13,20,42,.55)}
+.comb-bar .chips{display:flex;gap:6px;flex-wrap:wrap}
+.comb-chip{font-size:11px;background:rgba(37,99,235,.18);border:1px solid var(--border);
+  border-radius:99px;padding:3px 10px}
+.btn-grad{background:linear-gradient(100deg,var(--blue2),var(--cyan));color:#fff}
+.btn-grad:hover{filter:brightness(1.15)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:99px;overflow:hidden;flex:none;vertical-align:middle}
+.seg button{border:none;background:transparent;color:var(--muted);padding:5px 12px;cursor:pointer;
+  font-family:'Syne';font-size:10.5px;letter-spacing:.7px;transition:.15s}
+.seg button.a.on{background:rgba(74,222,128,.2);color:var(--verde)}
+.seg button.n.on{background:rgba(248,113,113,.2);color:var(--rojo)}
+.rep{border:1px dashed var(--border);border-radius:10px;padding:11px;margin-bottom:9px;position:relative}
+.rep-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.rep-hd .tit{font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.rep .quitar{background:none;border:none;color:var(--rojo);cursor:pointer;font-size:15px;line-height:1}
+.addrep{background:none;border:1px dashed var(--gold);color:var(--gold);border-radius:9px;
+  padding:8px 14px;cursor:pointer;font-family:'Syne';font-size:12px;letter-spacing:.4px;width:100%}
+.addrep:hover{background:rgba(245,158,11,.08)}
+.cb-blq{border:1px solid var(--border);border-radius:13px;padding:15px;margin-top:13px;background:rgba(10,18,38,.4)}
+.cb-blq-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.cb-num{width:23px;height:23px;border-radius:8px;background:linear-gradient(100deg,var(--blue2),var(--cyan));
+  display:grid;place-items:center;font-family:'Syne';font-size:12px;color:#fff;flex:none}
+.cb-tit{font-family:'Syne';font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--cyan)}
+.sug-comb{border:1px solid rgba(74,222,128,.35);background:rgba(74,222,128,.07);
+  border-radius:12px;padding:11px 14px;margin-top:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sug-comb .txt{font-size:12.5px;flex:1;min-width:200px}
+.sug-comb .txt b{color:var(--verde)}
+/* ── Editor de plantillas ── */
+.pl-grid{display:grid;grid-template-columns:290px 1fr;gap:16px;align-items:start}
+@media(max-width:900px){.pl-grid{grid-template-columns:1fr}}
+.pl-lista{background:var(--glass);border:1px solid var(--border);border-radius:15px;padding:13px;
+  backdrop-filter:blur(12px);max-height:76vh;overflow:auto}
+.pl-g{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin:12px 4px 6px}
+.pl-g:first-child{margin-top:2px}
+.pl-it{display:flex;align-items:center;gap:8px;width:100%;background:none;border:1px solid transparent;
+  color:var(--txt);border-radius:9px;padding:8px 10px;cursor:pointer;font-size:13px;text-align:left;margin-bottom:3px}
+.pl-it:hover{background:rgba(255,255,255,.05)}
+.pl-it.on{border-color:var(--gold);background:rgba(245,158,11,.09)}
+.pl-it .off{margin-left:auto;font-size:10px;color:var(--rojo)}
+.pl-ed{background:var(--glass);border:1px solid var(--border);border-radius:15px;padding:18px;backdrop-filter:blur(12px)}
+.pl-parr{border:1px dashed var(--border);border-radius:10px;padding:9px;margin-bottom:9px}
+.pl-parr textarea{min-height:74px;font-size:13px;line-height:1.5}
+.pl-parr-acc{display:flex;gap:7px;margin-top:6px}
+.pl-parr-acc button{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);
+  border-radius:7px;padding:3px 9px;cursor:pointer;font-size:11.5px}
+.pl-parr-acc button:hover{color:var(--txt)}
+.pl-campos{font-family:ui-monospace,monospace;font-size:12px;min-height:96px}
+.pl-vars{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.pl-var{background:rgba(6,182,212,.14);border:1px solid rgba(6,182,212,.4);color:var(--cyan);
+  border-radius:99px;padding:2px 9px;font-size:11px;cursor:pointer;font-family:ui-monospace,monospace}
+.pl-prev{background:#f5f2ea;color:#1d1d1d;border-radius:10px;padding:20px 24px;margin-top:13px;
+  font-family:Georgia,serif;font-size:12.5px;line-height:1.6;max-height:44vh;overflow:auto}
+
 </style>
 </head>
 <body>
@@ -824,6 +891,19 @@ footer b{color:var(--gold)}
   </section>
 
   <!-- ══ PERSONAS ══ -->
+  <section class="panel" id="p-plantillas">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div>
+        <h2 style="font-size:19px">Plantillas de <em>respuestas tipo</em></h2>
+        <div class="hint">Edite aquí los textos jurídicos sin tocar el código. Los cambios aplican
+        para todos los abogados al recargar el módulo. Use <b>{{CAMPO}}</b> para variables y
+        <b>**negrita**</b>; los párrafos que empiezan con "- " salen como viñeta.</div>
+      </div>
+      <button class="btn btn-ghost" onclick="plNueva()">+ Nueva respuesta tipo</button>
+    </div>
+    <div id="pl-wrap"><div class="hint">Cargando…</div></div>
+  </section>
+
   <section class="panel" id="p-personas">
     <div class="page-hdr">
       <h2>Personas y <em>permisos</em></h2>
@@ -1044,6 +1124,10 @@ async function iniciar(){
   TIPOS = tipos;
   PERFILES = perfiles;
 
+  cargarCatalogoDB().then(function(){
+    const r = COLA[COLA_IDX];
+    if(r && document.getElementById('doc-int')) repintarDocInt();
+  });
   llenarFiltroCola();
   construirTabs();
   actualizarBadges();
@@ -1182,6 +1266,9 @@ const NAV_IC = {
   tutelas:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">' +
     '<path d="M12 3v18M7 21h10"/><path d="M12 6l7 2M12 6L5 8"/>' +
     '<path d="M5 8l-3 7a3 3 0 006 0z"/><path d="M19 8l3 7a3 3 0 01-6 0z"/></svg>',
+  plantillas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">' +
+    '<path d="M14 3v5h5"/><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/>' +
+    '<path d="M9 13h6M9 17h4"/></svg>',
   sale:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sale">' +
     '<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>' +
     '<path d="M15 3h6v6M10 14L21 3"/></svg>',
@@ -1207,6 +1294,7 @@ function construirTabs(){
     {id:'bandeja',    txt:'Bandeja',          sec:null,         ver: true},
     {id:'historicos', txt:'Resueltas',        sec:null,         ver: !soloRadica()},
     {id:'tablero',    txt:'Tablero',          sec:'Control',    ver: true},
+    {id:'plantillas', txt:'Plantillas',       sec:null,         ver: esAdmin()},
     {id:'personas',   txt:'Personas',         sec:null,         ver: esAdmin()}
   ];
   const cont = document.getElementById('tabs');
@@ -1270,7 +1358,7 @@ function plegarLateral(){
 }
 
 function irA(id){
-  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero','personas'];
+  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero','plantillas','personas'];
   paneles.forEach(function(p){
     const el = document.getElementById('p-' + p);
     const tb = document.getElementById('tab-' + p);
@@ -1282,6 +1370,7 @@ function irA(id){
   if(id === 'bandeja') cargarBandeja();
   if(id === 'historicos') cargarHistoricos();
   if(id === 'tablero') cargarTablero();
+  if(id === 'plantillas') cargarPlantillas();
   if(id === 'personas') cargarPersonas();
 }
 
@@ -3666,6 +3755,20 @@ const CATALOGO_RESPUESTAS = {
   }
 };
 
+/* Metadatos de la matriz tema × decisión para el catálogo incrustado
+   (el catálogo de Supabase ya los trae en sus columnas) */
+(function(){
+  const M = { CONCEDE_PRESCRIPCION:['prescripcion','A'],
+              NIEGA_PRESCRIPCION:  ['prescripcion','N'],
+              MINIMO_VITAL:        ['inembargabilidad','A'] };
+  Object.keys(M).forEach(function(k){
+    if(CATALOGO_RESPUESTAS[k]){
+      CATALOGO_RESPUESTAS[k].tema = M[k][0];
+      CATALOGO_RESPUESTAS[k].decision = M[k][1];
+    }
+  });
+})();
+
 /* Respuestas sugeridas según el tipo de la petición (las demás quedan disponibles) */
 const SUGERIDOS_POR_TIPO = {
   PRESCRIPCION: ['CONCEDE_PRESCRIPCION','NIEGA_PRESCRIPCION'],
@@ -3689,37 +3792,704 @@ const GRUPOS_DOC = [
   { t:'Redacción propia', items:['OFICIO_GENERAL'] }
 ];
 
-function panelDocumentos(r){
-  const sug = SUGERIDOS_POR_TIPO[r.tipo] || [];
-  const grupos = GRUPOS_DOC.map(function(gr){
-    const botones = gr.items.map(function(k){
-      if(k === '__RESOLUCION__')
-        return '<button class="btn btn-doc btn-ic" ' +
-          (r.tipo === 'PRESCRIPCION' ? 'style="border-color:rgba(232,160,32,.55)" ' : '') +
-          'onclick="abrirResolucion()">' + ICONO.doc + 'Resolución de prescripción' +
-          (r.tipo === 'PRESCRIPCION' ? ' ★' : '') + '</button>';
-      const c = CATALOGO_RESPUESTAS[k];
-      if(!c) return '';
-      const esSug = sug.indexOf(k) !== -1;
-      return '<button class="btn btn-of btn-ic" ' +
-        (esSug ? 'style="border-color:rgba(232,160,32,.55);color:var(--gold)" ' : '') +
-        'onclick="abrirRespuesta(\'' + k + '\')">' +
-        ICONO.sobre + esc(c.titulo) + (esSug ? ' ★' : '') + '</button>';
+/* ══════════════════════════════════════════════════════════════
+   CATÁLOGO DINÁMICO — se carga de pet_respuestas_tipo (Supabase);
+   si la tabla no existe aún, se usa el catálogo incrustado.
+   ══════════════════════════════════════════════════════════════ */
+let CAT_DB = false;
+
+async function cargarCatalogoDB(){
+  try{
+    const filas = await supaFetch('pet_respuestas_tipo?select=*&activo=is.true&order=orden.asc');
+    if(!filas || !filas.length) return;
+    Object.keys(CATALOGO_RESPUESTAS).forEach(function(k){ delete CATALOGO_RESPUESTAS[k]; });
+    filas.forEach(function(f){
+      const campos = f.campos || [];
+      CATALOGO_RESPUESTAS[f.clave] = {
+        titulo: f.titulo, desc: f.descripcion || '', campos: campos,
+        parrafos: f.parrafos || [], grupo: f.grupo || 'Otros',
+        tema: f.tema || null, decision: f.decision || null,
+        libre: campos.some(function(c){ return c.id === 'TEXTO_LIBRE'; })
+      };
+    });
+    CAT_DB = true;
+  }catch(e){
+    console.warn('Catálogo incrustado (pet_respuestas_tipo no disponible):', e.message);
+  }
+}
+
+/* Grupos del panel: dinámicos si el catálogo vino de la base */
+function gruposDoc(){
+  if(!CAT_DB) return GRUPOS_DOC;
+  const orden = [], map = {};
+  Object.keys(CATALOGO_RESPUESTAS).forEach(function(k){
+    const g = CATALOGO_RESPUESTAS[k].grupo || 'Otros';
+    if(!map[g]){ map[g] = []; orden.push(g); }
+    map[g].push(k);
+  });
+  return orden.map(function(g){
+    const items = map[g].slice();
+    if(g === 'Prescripción') items.unshift('__RESOLUCION__');
+    return { t: g, items: items };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPUESTA COMBINADA — matriz tema × decisión
+   ══════════════════════════════════════════════════════════════ */
+const ORDS = ['PRIMERO','SEGUNDO','TERCERO','CUARTO','QUINTO','SEXTO','SÉPTIMO',
+              'OCTAVO','NOVENO','DÉCIMO','DÉCIMO PRIMERO','DÉCIMO SEGUNDO'];
+function ordinal(i){ return ORDS[i] || (i + 1) + '°'; }
+
+const TEMA_DEF = {
+  prescripcion:     { nombre:'Prescripción',     porItem:true,
+    filas:[{id:'num',lbl:'N° comparendo'},{id:'fecha',lbl:'Fecha',tipo:'date'},{id:'valor',lbl:'Valor (sin $)'}] },
+  caducidad:        { nombre:'Caducidad',        porItem:true,
+    filas:[{id:'num',lbl:'N° comparendo'},{id:'fecha',lbl:'Fecha',tipo:'date'}] },
+  devolucion:       { nombre:'Devolución',       porItem:false },
+  inembargabilidad: { nombre:'Inembargabilidad', porItem:false }
+};
+
+function claveTema(t, dec){
+  let out = null;
+  Object.keys(CATALOGO_RESPUESTAS).forEach(function(k){
+    const c = CATALOGO_RESPUESTAS[k];
+    if(c.tema === t && c.decision === dec) out = k;
+  });
+  return out;
+}
+function temasDisponibles(){
+  return Object.keys(TEMA_DEF).filter(function(t){
+    return claveTema(t,'A') || claveTema(t,'N');
+  });
+}
+
+let COMBINAR_ON = false, COMB_SEL = [], COMB = {}, COMB_SUG_NO = false;
+
+function toggleCombinar(){
+  COMBINAR_ON = !COMBINAR_ON;
+  COMB_SEL = []; COMB = {}; COMB_SUG_NO = false;
+  cerrarKdoc(); repintarDocInt();
+}
+function cerrarKdoc(){
+  const c = document.getElementById('k-doc');
+  if(c){ c.innerHTML = ''; c.removeAttribute('data-modo'); }
+  RESP_ACTUAL = null;
+}
+function repintarDocInt(){
+  const r = COLA[COLA_IDX];
+  const el = document.getElementById('doc-int');
+  if(r && el) el.innerHTML = docInterior(r);
+}
+function combToggle(tok){
+  const i = COMB_SEL.indexOf(tok);
+  if(i === -1) COMB_SEL.push(tok); else COMB_SEL.splice(i, 1);
+  repintarDocInt();
+}
+
+function docInterior(r){
+  if(!COMBINAR_ON){
+    const sug = SUGERIDOS_POR_TIPO[r.tipo] || [];
+    const grupos = gruposDoc().map(function(gr){
+      const botones = gr.items.map(function(k){
+        if(k === '__RESOLUCION__')
+          return '<button class="btn btn-doc btn-ic" ' +
+            (r.tipo === 'PRESCRIPCION' ? 'style="border-color:rgba(245,158,11,.55)" ' : '') +
+            'onclick="abrirResolucion()">' + ICONO.doc + 'Resolución de prescripción' +
+            (r.tipo === 'PRESCRIPCION' ? ' ★' : '') + '</button>';
+        const c = CATALOGO_RESPUESTAS[k];
+        if(!c) return '';
+        const esSug = sug.indexOf(k) !== -1;
+        return '<button class="btn btn-of btn-ic" ' +
+          (esSug ? 'style="border-color:rgba(245,158,11,.55);color:var(--gold)" ' : '') +
+          'onclick="abrirRespuesta(\'' + k + '\')">' +
+          ICONO.sobre + esc(c.titulo) + (esSug ? ' ★' : '') + '</button>';
+      }).join('');
+      return '<div class="doc-grp"><div class="doc-grp-t">' + esc(gr.t) + '</div>' + botones + '</div>';
     }).join('');
-    return '<div class="doc-grp"><div class="doc-grp-t">' + esc(gr.t) + '</div>' + botones + '</div>';
+    return '<div class="doc-grid">' + grupos + '</div>' +
+      '<div class="hint" style="margin-top:8px">★ Sugeridos según el tipo de esta petición. ' +
+      'Todos los formatos están disponibles para cualquier petición.</div>';
+  }
+
+  /* ── modo combinar: temas de fondo + complementos ── */
+  const temas = temasDisponibles();
+  const cardsTema = temas.map(function(t){
+    const tok = 'tema:' + t, sel = COMB_SEL.indexOf(tok) !== -1;
+    const d = TEMA_DEF[t];
+    return '<button class="btn btn-of btn-ic doc-card' + (sel ? ' sel' : '') + '" onclick="combToggle(\'' + tok + '\')">' +
+      '⚖ <span>' + esc(d.nombre) +
+      '<span class="doc-an"><b class="a">ACEPTADA</b> · <b class="n">NEGADA</b>' +
+      (d.porItem ? ' · por comparendo' : '') + '</span></span>' +
+      '<span class="cmk">' + (sel ? '✓' : '') + '</span></button>';
   }).join('');
+
+  const compKeys = Object.keys(CATALOGO_RESPUESTAS).filter(function(k){
+    return !CATALOGO_RESPUESTAS[k].tema;
+  });
+  const cardsComp = compKeys.map(function(k){
+    const tok = 'c:' + k, sel = COMB_SEL.indexOf(tok) !== -1;
+    return '<button class="btn btn-of btn-ic doc-card' + (sel ? ' sel' : '') + '" onclick="combToggle(\'' + tok + '\')">' +
+      ICONO.sobre + esc(CATALOGO_RESPUESTAS[k].titulo) +
+      '<span class="cmk">' + (sel ? '✓' : '') + '</span></button>';
+  }).join('');
+
+  const chips = COMB_SEL.map(function(tok){
+    return '<span class="comb-chip">' + esc(tituloToken(tok)) + '</span>';
+  }).join('');
+
+  return '<div class="doc-grid">' +
+      '<div class="doc-grp"><div class="doc-grp-t">Decisiones de fondo</div>' + cardsTema + '</div>' +
+      '<div class="doc-grp"><div class="doc-grp-t">Complementos</div>' + cardsComp + '</div>' +
+    '</div>' +
+    '<div class="comb-bar">' +
+      '<b style="font-family:Syne">' + COMB_SEL.length + '</b><span class="hint" style="margin:0">bloques</span>' +
+      '<div class="chips">' + chips + '</div>' +
+      '<button class="btn btn-grad" style="margin-left:auto" ' + (COMB_SEL.length ? '' : 'disabled ') +
+        'onclick="abrirCombinada()">Redactar oficio combinado →</button>' +
+    '</div>';
+}
+
+function tituloToken(tok){
+  if(tok.indexOf('tema:') === 0) return TEMA_DEF[tok.slice(5)].nombre;
+  const c = CATALOGO_RESPUESTAS[tok.slice(2)];
+  return c ? c.titulo : tok;
+}
+
+function panelDocumentos(r){
   return '<div class="pleg" id="pleg-doc">' +
     '<button class="pleg-btn" onclick="plegar(\'pleg-doc\')">' +
       '<span class="pleg-fl">' + ICONO.flecha + '</span>Generar documentos' +
       '<span class="pleg-cta">resolución y respuestas tipo</span>' +
     '</button>' +
     '<div class="pleg-cnt">' +
-      '<div class="doc-grid">' + grupos + '</div>' +
-      '<div class="hint" style="margin-top:8px">★ Sugeridos según el tipo de esta petición. ' +
-        'Todos los formatos están disponibles para cualquier petición.</div>' +
+      '<div class="comb-top">' +
+        '<button class="btn ' + (COMBINAR_ON ? 'btn-primary' : 'btn-ghost') + '" onclick="toggleCombinar()">🧩 Combinar respuestas</button>' +
+        (COMBINAR_ON
+          ? '<span class="hint" style="margin:0">Marque los temas de la petición; la decisión aceptada / negada se define al redactar.</span>'
+          : '<span class="hint" style="margin:0">Un documento por formato — o active «Combinar» si la petición pide varias cosas.</span>') +
+      '</div>' +
+      '<div id="doc-int">' + docInterior(r) + '</div>' +
       '<div id="k-doc"></div>' +
     '</div>' +
   '</div>';
+}
+
+/* ── Formulario combinado ── */
+function abrirCombinada(){
+  const r = COLA[COLA_IDX];
+  if(!r || !COMB_SEL.length) return;
+  COMB = {}; COMB_SUG_NO = false;
+  COMB_SEL.forEach(function(tok){
+    if(tok.indexOf('tema:') === 0){
+      const t = tok.slice(5);
+      COMB[tok] = TEMA_DEF[t].porItem ? { reps:[{dec:'A'}], f:{} } : { dec:'A', f:{} };
+    }else COMB[tok] = { f:{} };
+  });
+  pintarComb();
+  const pl = document.getElementById('pleg-doc');
+  if(pl) pl.classList.add('on');
+}
+
+function cbCampoHTML(idAttr, f, val){
+  const v = esc(val || f.def || '');
+  if(f.tipo === 'area')
+    return '<div class="fld" style="grid-column:1/-1"><label class="lbl">' + esc(f.lbl) + '</label>' +
+      '<textarea id="' + idAttr + '" placeholder="' + esc(f.ph || '') + '">' + v + '</textarea></div>';
+  if(f.tipo === 'select')
+    return '<div class="fld"><label class="lbl">' + esc(f.lbl) + '</label>' +
+      '<select id="' + idAttr + '">' + (f.op || []).map(function(o){
+        return '<option' + (val === o ? ' selected' : '') + '>' + esc(o) + '</option>';
+      }).join('') + '</select></div>';
+  return '<div class="fld"><label class="lbl">' + esc(f.lbl) + '</label>' +
+    '<input type="' + (f.tipo === 'date' ? 'date' : 'text') + '" id="' + idAttr + '" value="' + v + '" ' +
+    'placeholder="' + esc(f.ph || '') + '"></div>';
+}
+function segHTML(onA, onN, dec, mini){
+  return '<span class="seg' + (mini ? ' mini' : '') + '">' +
+    '<button type="button" class="a' + (dec !== 'N' ? ' on' : '') + '" onclick="' + onA + '">ACEPTADA</button>' +
+    '<button type="button" class="n' + (dec === 'N' ? ' on' : '') + '" onclick="' + onN + '">NEGADA</button></span>';
+}
+function camposSinOb(clave){
+  const c = CATALOGO_RESPUESTAS[clave];
+  return (c && c.campos ? c.campos : []).filter(function(f){ return f.id !== 'OBLIGACION'; });
+}
+
+function pintarComb(){
+  const r = COLA[COLA_IDX];
+  const cont = document.getElementById('k-doc');
+  if(!r || !cont) return;
+  cont.setAttribute('data-modo', '__COMBINADA__');
+  RESP_ACTUAL = null;
+
+  let html =
+   '<div style="background:rgba(37,99,235,.07);border:1px solid rgba(96,140,220,.35);' +
+   'border-radius:13px;padding:18px;margin-top:16px">' +
+     '<div class="lbl" style="margin-bottom:4px">Oficio combinado · ' + COMB_SEL.length + ' bloques</div>' +
+     '<div class="hint" style="margin-bottom:14px">' +
+       COMB_SEL.map(tituloToken).map(esc).join('  +  ') + '</div>' +
+     '<div class="grid">' +
+       '<div class="fld"><label class="lbl">Tratamiento</label>' +
+         '<select id="o-trat"><option>Señor</option><option>Señora</option><option>Señores</option></select></div>' +
+       '<div class="fld"><label class="lbl">Peticionario</label>' +
+         '<input type="text" id="o-nom" value="' + esc(r.peticionario || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Cédula</label>' +
+         '<input type="text" id="o-ced" value="' + esc(r.documento || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Correo electrónico</label>' +
+         '<input type="email" id="o-mail" value="' + esc(r.email || '') + '" placeholder="Si no tiene, se deja vacío"></div>' +
+       '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
+         '<input type="text" id="o-rad" value="' + esc(r.radicado || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Proyectó</label>' +
+         '<input type="text" id="o-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '"></div>' +
+     '</div>';
+
+  COMB_SEL.forEach(function(tok, i){
+    const st = COMB[tok];
+    html += '<div class="cb-blq"><div class="cb-blq-hd">' +
+      '<span class="cb-num">' + (i + 1) + '</span>' +
+      '<span class="cb-tit">' + esc(tituloToken(tok)) + '</span>';
+    if(tok.indexOf('tema:') === 0){
+      const t = tok.slice(5), td = TEMA_DEF[t];
+      if(!td.porItem)
+        html += segHTML("cbDec('" + tok + "','A')", "cbDec('" + tok + "','N')", st.dec);
+      html += '</div>';
+      if(td.porItem){
+        html += st.reps.map(function(rep, ri){
+          return '<div class="rep"><div class="rep-hd">' +
+            '<span class="tit">Comparendo ' + (ri + 1) + '</span>' +
+            '<span style="display:flex;gap:8px;align-items:center">' +
+              segHTML("cbDecRep('" + tok + "'," + ri + ",'A')", "cbDecRep('" + tok + "'," + ri + ",'N')", rep.dec, true) +
+              (st.reps.length > 1 ? '<button type="button" class="quitar" onclick="cbQuitarRep(\'' + tok + '\',' + ri + ')">✕</button>' : '') +
+            '</span></div><div class="grid">' +
+            td.filas.map(function(f){
+              return '<div class="fld"><label class="lbl">' + esc(f.lbl) + '</label>' +
+                '<input type="' + (f.tipo === 'date' ? 'date' : 'text') + '" value="' + esc(rep[f.id] || '') + '" ' +
+                'oninput="cbRep(\'' + tok + '\',' + ri + ',\'' + f.id + '\',this.value)"></div>';
+            }).join('') +
+            '</div></div>';
+        }).join('');
+        html += '<button type="button" class="addrep" onclick="cbAddRep(\'' + tok + '\')">+ Agregar otro comparendo</button>';
+        const hayA = st.reps.some(function(x){ return x.dec !== 'N'; });
+        const hayN = st.reps.some(function(x){ return x.dec === 'N'; });
+        const cA = claveTema(t,'A'), cN = claveTema(t,'N');
+        if(hayA && cA && camposSinOb(cA).length){
+          html += '<div class="lbl" style="margin:12px 0 6px;color:var(--verde)">Datos de las aceptadas</div><div class="grid">' +
+            camposSinOb(cA).map(function(f){
+              return cbCampoHTML('cx-' + i + '-A-' + f.id, f, st.f['A-' + f.id]);
+            }).join('') + '</div>';
+        }
+        if(hayN && cN && camposSinOb(cN).length){
+          html += '<div class="lbl" style="margin:12px 0 6px;color:var(--rojo)">Datos de las negadas</div><div class="grid">' +
+            camposSinOb(cN).map(function(f){
+              return cbCampoHTML('cx-' + i + '-N-' + f.id, f, st.f['N-' + f.id]);
+            }).join('') + '</div>';
+        }
+      }else{
+        const cl = claveTema(t, st.dec);
+        if(!cl) html += '<div class="hint" style="margin:0 0 8px">Esta variante aún no tiene texto en el catálogo — ' +
+          'créela en la pestaña Plantillas.</div>';
+        html += '<div class="grid">' +
+          (cl ? camposSinOb(cl) : []).map(function(f){
+            return cbCampoHTML('cx-' + i + '-' + f.id, f, st.f[f.id]);
+          }).join('') + '</div>';
+      }
+    }else{
+      html += '</div>';
+      const c = CATALOGO_RESPUESTAS[tok.slice(2)];
+      html += '<div class="grid">' +
+        (c && c.campos ? c.campos : []).map(function(f){
+          return cbCampoHTML('cx-' + i + '-' + f.id, f, st.f[f.id]);
+        }).join('') + '</div>';
+    }
+    html += '</div>';
+  });
+
+  /* sugerencia encadenada: prescripción / caducidad aceptada → desembargo */
+  const hayAceptadaItem = COMB_SEL.some(function(tok){
+    if(tok.indexOf('tema:') !== 0) return false;
+    const t = tok.slice(5);
+    return TEMA_DEF[t].porItem && COMB[tok].reps.some(function(x){ return x.dec !== 'N'; });
+  });
+  if(hayAceptadaItem && COMB_SEL.indexOf('c:DESEMBARGO_ORDEN') === -1 &&
+     CATALOGO_RESPUESTAS.DESEMBARGO_ORDEN && !COMB_SUG_NO){
+    html += '<div class="sug-comb"><span class="txt">💡 Hay decisiones <b>aceptadas</b> de prescripción o caducidad. ' +
+      'Si el peticionario tiene embargo vigente, lo usual es ordenar también el desembargo.</span>' +
+      '<button type="button" class="btn btn-grad" onclick="cbAgregarDesembargo()">+ Agregar desembargo</button>' +
+      '<button type="button" class="btn btn-ghost" onclick="COMB_SUG_NO=true;pintarComb()">No aplica</button></div>';
+  }
+
+  html += '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;align-items:center">' +
+      '<button class="btn btn-primary" onclick="generarCombinada()">Descargar Word</button>' +
+      '<button class="btn btn-ghost" onclick="previewCombinada()">Vista previa</button>' +
+      '<button class="btn btn-ghost" onclick="cerrarKdoc()">Cerrar</button>' +
+      '<div class="msg" id="cb-msg" style="margin:0"></div>' +
+    '</div><div id="cb-prev"></div></div>';
+
+  cont.innerHTML = html;
+}
+
+/* mutadores del estado combinado */
+function cbDec(tok, v){ guardarCamposComb(); COMB[tok].dec = v; pintarComb(); }
+function cbDecRep(tok, ri, v){ guardarCamposComb(); COMB[tok].reps[ri].dec = v; pintarComb(); }
+function cbRep(tok, ri, id, v){ COMB[tok].reps[ri][id] = v; }
+function cbAddRep(tok){ guardarCamposComb(); COMB[tok].reps.push({dec:'A'}); pintarComb(); }
+function cbQuitarRep(tok, ri){ guardarCamposComb(); COMB[tok].reps.splice(ri, 1); pintarComb(); }
+function cbAgregarDesembargo(){
+  guardarCamposComb();
+  COMB_SEL.push('c:DESEMBARGO_ORDEN');
+  COMB['c:DESEMBARGO_ORDEN'] = { f:{} };
+  repintarDocInt(); pintarComb();
+}
+/* antes de repintar, persistir lo escrito en los campos cx-* */
+function guardarCamposComb(){
+  COMB_SEL.forEach(function(tok, i){
+    const st = COMB[tok];
+    document.querySelectorAll('[id^="cx-' + i + '-"]').forEach(function(el){
+      st.f[el.id.slice(('cx-' + i + '-').length)] = el.value;
+    });
+  });
+}
+
+/* ── construcción del documento combinado ── */
+function listaOb(rows, conValor){
+  const f = function(r){
+    return 'N° ' + (r.num || '____') +
+      (r.fecha ? (' del ' + fmtFecha(r.fecha)) : '') +
+      (conValor && r.valor ? (' por valor de $' + r.valor) : '');
+  };
+  if(rows.length === 1) return 'el comparendo ' + f(rows[0]);
+  return 'los comparendos ' + rows.map(f).join('; ');
+}
+function subLocal(p, local){
+  let t = p;
+  Object.keys(local).forEach(function(k){
+    t = t.split('{{' + k + '}}').join(local[k] || '_____');
+  });
+  return t;
+}
+
+function armarCombinada(){
+  guardarCamposComb();
+  const g = function(id){ const e = document.getElementById(id); return e ? e.value.trim() : ''; };
+  const hoy = new Date();
+  const comunes = {
+    TRATAMIENTO: g('o-trat'), NOMBRE: g('o-nom').toUpperCase(), CEDULA: g('o-ced'),
+    EMAIL: g('o-mail'), RADICADO: g('o-rad'), PROYECTO: g('o-proy'),
+    FECHA_LARGA: fechaLarga(hoy), FECHA_DOC: fmtFecha(iso(hoy))
+  };
+  const bloques = [];
+  let error = null;
+
+  COMB_SEL.forEach(function(tok, i){
+    const st = COMB[tok];
+    if(tok.indexOf('tema:') === 0){
+      const t = tok.slice(5), td = TEMA_DEF[t];
+      if(td.porItem){
+        const validas = st.reps.filter(function(x){ return (x.num || '').trim(); });
+        if(!validas.length && !error) error = 'El bloque «' + td.nombre + '» no tiene comparendos con número.';
+        const A = validas.filter(function(x){ return x.dec !== 'N'; });
+        const N = validas.filter(function(x){ return x.dec === 'N'; });
+        if(A.length){
+          const cl = claveTema(t,'A');
+          if(cl){
+            const local = { OBLIGACION: listaOb(A, t === 'prescripcion') };
+            camposSinOb(cl).forEach(function(f){ local[f.id] = st.f['A-' + f.id] || ''; });
+            bloques.push({ clave: cl, local: local });
+          }
+        }
+        if(N.length){
+          const cl = claveTema(t,'N');
+          if(cl){
+            const local = { OBLIGACION: listaOb(N, t === 'prescripcion') };
+            camposSinOb(cl).forEach(function(f){ local[f.id] = st.f['N-' + f.id] || ''; });
+            bloques.push({ clave: cl, local: local });
+          }
+        }
+      }else{
+        const cl = claveTema(t, st.dec);
+        if(cl){
+          const local = {};
+          camposSinOb(cl).forEach(function(f){ local[f.id] = st.f[f.id] || ''; });
+          bloques.push({ clave: cl, local: local });
+        }
+      }
+    }else{
+      const cl = tok.slice(2), c = CATALOGO_RESPUESTAS[cl], local = {};
+      (c && c.campos ? c.campos : []).forEach(function(f){ local[f.id] = st.f[f.id] || ''; });
+      bloques.push({ clave: cl, local: local });
+    }
+  });
+
+  const parrs = ['En atención a los distintos puntos contenidos en su petición radicada bajo el número ' +
+    '{{RADICADO}}, de manera atenta esta Dirección da respuesta integral en los siguientes términos:'];
+  bloques.forEach(function(b, i){
+    const c = CATALOGO_RESPUESTAS[b.clave];
+    if(!c) return;
+    parrs.push('**' + ordinal(i) + '. ' + c.titulo.replace(/\*\*/g,'') + '.**');
+    if(c.libre){
+      String(b.local.TEXTO_LIBRE || '').split(/\n\s*\n+/)
+        .map(function(p){ return p.replace(/\s*\n\s*/g, ' ').trim(); })
+        .filter(Boolean)
+        .forEach(function(p){ parrs.push(p); });
+    }else{
+      c.parrafos.slice(1).forEach(function(p){ parrs.push(subLocal(p, b.local)); });
+    }
+  });
+  parrs.push('En los anteriores términos se da respuesta de fondo, clara y congruente a la totalidad ' +
+    'de los puntos de su petición, dentro de la oportunidad prevista en la Ley 1755 de 2015.');
+  parrs.push(CIERRE_COMUN);
+
+  return { comunes: comunes, parrs: parrs, error: error, nBloques: bloques.length };
+}
+
+function previewCombinada(){
+  const cont = document.getElementById('cb-prev');
+  if(!cont) return;
+  if(cont.innerHTML){ cont.innerHTML = ''; return; }
+  const a = armarCombinada();
+  const html = a.parrs.map(function(p){
+    let t = p;
+    Object.keys(a.comunes).forEach(function(k){
+      t = t.split('{{' + k + '}}').join(a.comunes[k] || '_____');
+    });
+    const vineta = /^-\s+/.test(t);
+    if(vineta) t = t.replace(/^-\s+/, '');
+    t = esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    return '<p style="margin:0 0 9px' + (vineta ? ';padding-left:18px' : '') + '">' +
+      (vineta ? '• ' : '') + t + '</p>';
+  }).join('');
+  cont.innerHTML =
+    '<div style="background:rgba(255,255,255,.05);border:1px solid var(--border);' +
+    'border-radius:11px;padding:14px;margin-top:12px;font-size:13px;line-height:1.55">' + html + '</div>';
+}
+
+async function generarCombinada(){
+  const msg = document.getElementById('cb-msg');
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const a = armarCombinada();
+  if(!a.comunes.NOMBRE || !a.comunes.RADICADO){
+    msg.className = 'msg err'; msg.textContent = 'Faltan el nombre o el radicado.'; return;
+  }
+  if(a.error){ msg.className = 'msg err'; msg.textContent = a.error; return; }
+  if(!a.nBloques){ msg.className = 'msg err'; msg.textContent = 'No hay bloques con contenido.'; return; }
+  msg.className = 'msg'; msg.textContent = 'Armando el documento…';
+  try{
+    const nombreArchivo = 'Respuesta_combinada_' +
+      a.comunes.CEDULA.replace(/[^0-9]/g, '') + '_' +
+      a.comunes.RADICADO.replace(/[^\w-]/g, '') + '.docx';
+    await armarDocx(URL_PLANTILLA_OFICIO, a.comunes, nombreArchivo, function(xml){
+      return inyectarCuerpo(xml, a.parrs);
+    });
+    try{
+      await supaFetch('pet_peticiones?id=eq.' + r.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        body: JSON.stringify({ doc_proyectado: nombreArchivo })
+      });
+    }catch(e){}
+    const notas = document.getElementById('k-notas');
+    if(notas && !notas.value.trim())
+      notas.value = 'Se proyecta respuesta combinada: ' + COMB_SEL.map(tituloToken).join(' + ') + '.';
+    msg.className = 'msg ok';
+    msg.textContent = a.comunes.EMAIL
+      ? 'Documento descargado. Revíselo y envíelo a ' + a.comunes.EMAIL + '.'
+      : 'Documento descargado. Sin correo registrado: notificación física.';
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo generar: ' + err.message;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EDITOR DE PLANTILLAS (pestaña Plantillas)
+   ══════════════════════════════════════════════════════════════ */
+const PL = { filas: [], sel: null, buf: null, nueva: false };
+
+async function cargarPlantillas(){
+  const w = document.getElementById('pl-wrap');
+  if(!w) return;
+  try{
+    PL.filas = await supaFetch('pet_respuestas_tipo?select=*&order=grupo.asc,orden.asc');
+  }catch(e){
+    w.innerHTML = '<div class="vacio"><h3>Falta la tabla de plantillas</h3>' +
+      '<p>Ejecute el script <b>sql_respuestas_tipo.sql</b> en Supabase para habilitar la edición ' +
+      'de los textos. Mientras tanto el módulo usa el catálogo incrustado.</p></div>';
+    return;
+  }
+  if(!PL.sel && PL.filas.length) PL.sel = PL.filas[0].clave;
+  PL.nueva = false; PL.buf = null;
+  plPintar();
+}
+
+function plFila(){ return PL.filas.filter(function(f){ return f.clave === PL.sel; })[0] || null; }
+
+function plPintar(){
+  const w = document.getElementById('pl-wrap');
+  if(!w) return;
+  const grupos = [], map = {};
+  PL.filas.forEach(function(f){
+    if(!map[f.grupo]){ map[f.grupo] = []; grupos.push(f.grupo); }
+    map[f.grupo].push(f);
+  });
+  const lista = grupos.map(function(g){
+    return '<div class="pl-g">' + esc(g) + '</div>' + map[g].map(function(f){
+      return '<button class="pl-it' + (PL.sel === f.clave && !PL.nueva ? ' on' : '') + '" ' +
+        'onclick="plSel(\'' + f.clave + '\')">' + esc(f.titulo) +
+        (f.activo ? '' : '<span class="off">inactiva</span>') + '</button>';
+    }).join('');
+  }).join('');
+
+  if(!PL.buf) plCargarBuf();
+  const b = PL.buf;
+  const vars = ['TRATAMIENTO','NOMBRE','CEDULA','RADICADO','EMAIL','PROYECTO','FECHA_LARGA','FECHA_DOC']
+    .concat((b.campos_ok ? b.campos_arr : []).map(function(c){ return c.id; }));
+
+  const parrHtml = b.parrafos.map(function(p, i){
+    return '<div class="pl-parr"><textarea oninput="PL.buf.parrafos[' + i + ']=this.value">' + esc(p) + '</textarea>' +
+      '<div class="pl-parr-acc">' +
+        '<button onclick="plMove(' + i + ',-1)">↑</button>' +
+        '<button onclick="plMove(' + i + ',1)">↓</button>' +
+        '<button onclick="plDelParr(' + i + ')">Eliminar</button>' +
+        (i === 0 ? '<span class="hint" style="margin:0;align-self:center">párrafo de apertura — se omite en el oficio combinado</span>' : '') +
+      '</div></div>';
+  }).join('');
+
+  w.innerHTML = '<div class="pl-grid"><div class="pl-lista">' + lista + '</div>' +
+    '<div class="pl-ed">' +
+      '<div class="grid">' +
+        '<div class="fld"><label class="lbl">Clave (única, MAYÚSCULAS)</label>' +
+          '<input id="pl-clave" value="' + esc(b.clave) + '" ' + (PL.nueva ? '' : 'disabled ') +
+          'oninput="PL.buf.clave=this.value.toUpperCase().replace(/[^A-Z0-9_]/g,\'_\')"></div>' +
+        '<div class="fld"><label class="lbl">Grupo</label>' +
+          '<input value="' + esc(b.grupo) + '" oninput="PL.buf.grupo=this.value"></div>' +
+        '<div class="fld"><label class="lbl">Título</label>' +
+          '<input value="' + esc(b.titulo) + '" oninput="PL.buf.titulo=this.value"></div>' +
+        '<div class="fld"><label class="lbl">Orden</label>' +
+          '<input type="number" value="' + b.orden + '" oninput="PL.buf.orden=parseInt(this.value)||0"></div>' +
+        '<div class="fld"><label class="lbl">Tema (matriz) — vacío si no aplica</label>' +
+          '<select oninput="PL.buf.tema=this.value||null">' +
+            ['','prescripcion','caducidad','devolucion','inembargabilidad'].map(function(t){
+              return '<option value="' + t + '"' + ((b.tema||'') === t ? ' selected' : '') + '>' + (t || '— ninguno —') + '</option>';
+            }).join('') + '</select></div>' +
+        '<div class="fld"><label class="lbl">Decisión</label>' +
+          '<select oninput="PL.buf.decision=this.value||null">' +
+            [['',' — ninguna —'],['A','Aceptada'],['N','Negada']].map(function(o){
+              return '<option value="' + o[0] + '"' + ((b.decision||'') === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+            }).join('') + '</select></div>' +
+        '<div class="fld" style="grid-column:1/-1"><label class="lbl">Descripción (ayuda para el abogado)</label>' +
+          '<textarea style="min-height:52px" oninput="PL.buf.descripcion=this.value">' + esc(b.descripcion) + '</textarea></div>' +
+      '</div>' +
+      '<label class="lbl" style="margin-top:12px;display:block">Variables disponibles (clic para copiar)</label>' +
+      '<div class="pl-vars">' + vars.map(function(v){
+        return '<span class="pl-var" onclick="navigator.clipboard.writeText(\'{{' + v + '}}\')">{{' + v + '}}</span>';
+      }).join('') + '</div>' +
+      '<label class="lbl" style="display:block;margin-bottom:6px">Párrafos del oficio</label>' +
+      parrHtml +
+      '<button class="addrep" onclick="plAddParr()">+ Agregar párrafo</button>' +
+      '<label class="lbl" style="margin-top:14px;display:block">Campos del formulario (JSON)</label>' +
+      '<textarea class="pl-campos" id="pl-campos" oninput="plCamposInput(this.value)">' +
+        esc(JSON.stringify(b.campos_arr, null, 1)) + '</textarea>' +
+      '<div class="hint" id="pl-campos-msg" style="margin-top:4px">' +
+        (b.campos_ok ? 'JSON válido.' : '⚠ JSON inválido — corríjalo antes de guardar.') + '</div>' +
+      '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
+        '<label style="display:flex;gap:7px;align-items:center;font-size:13px">' +
+          '<input type="checkbox" style="width:auto" ' + (b.activo ? 'checked ' : '') +
+          'onchange="PL.buf.activo=this.checked"> Activa</label>' +
+        '<button class="btn btn-primary" onclick="plGuardar()">Guardar</button>' +
+        '<button class="btn btn-ghost" onclick="plPreview()">Vista previa</button>' +
+        '<div class="msg" id="pl-msg" style="margin:0"></div>' +
+      '</div>' +
+      '<div id="pl-prev-box"></div>' +
+    '</div></div>';
+}
+
+function plCargarBuf(){
+  const f = PL.nueva ? null : plFila();
+  const base = f || { clave:'', grupo:'Otros', titulo:'', descripcion:'', campos:[],
+    parrafos:['En atención a su petición radicada bajo el número {{RADICADO}}, de manera atenta le informamos lo siguiente:'],
+    tema:null, decision:null, orden:99, activo:true };
+  PL.buf = {
+    clave: base.clave, grupo: base.grupo, titulo: base.titulo,
+    descripcion: base.descripcion || '', parrafos: (base.parrafos || []).slice(),
+    tema: base.tema || null, decision: base.decision || null,
+    orden: base.orden || 0, activo: base.activo !== false,
+    campos_arr: base.campos || [], campos_ok: true
+  };
+}
+function plSel(k){ PL.sel = k; PL.nueva = false; PL.buf = null; plPintar(); }
+function plNueva(){ PL.nueva = true; PL.buf = null; plPintar(); }
+function plAddParr(){ PL.buf.parrafos.push(''); plPintar(); }
+function plDelParr(i){ PL.buf.parrafos.splice(i, 1); plPintar(); }
+function plMove(i, d){
+  const p = PL.buf.parrafos, j2 = i + d;
+  if(j2 < 0 || j2 >= p.length) return;
+  const t = p[i]; p[i] = p[j2]; p[j2] = t; plPintar();
+}
+function plCamposInput(v){
+  const m = document.getElementById('pl-campos-msg');
+  try{
+    const arr = JSON.parse(v);
+    if(!Array.isArray(arr)) throw new Error('debe ser una lista');
+    PL.buf.campos_arr = arr; PL.buf.campos_ok = true;
+    if(m) m.textContent = 'JSON válido.';
+  }catch(e){
+    PL.buf.campos_ok = false;
+    if(m) m.textContent = '⚠ JSON inválido: ' + e.message;
+  }
+}
+function plPreview(){
+  const box = document.getElementById('pl-prev-box');
+  if(!box) return;
+  if(box.innerHTML){ box.innerHTML = ''; return; }
+  const b = PL.buf;
+  const datos = { TRATAMIENTO:'Señor', NOMBRE:'JUAN PÉREZ GÓMEZ', CEDULA:'1.234.567',
+    RADICADO:'2026-000123', EMAIL:'', PROYECTO:'—', FECHA_LARGA:fechaLarga(new Date()),
+    FECHA_DOC:fmtFecha(iso(new Date())) };
+  (b.campos_arr || []).forEach(function(f){
+    datos[f.id] = f.def || f.ph || ('[' + f.lbl + ']');
+  });
+  const html = b.parrafos.map(function(p){
+    let t = p;
+    Object.keys(datos).forEach(function(k){ t = t.split('{{' + k + '}}').join(datos[k]); });
+    const vineta = /^-\s+/.test(t);
+    if(vineta) t = t.replace(/^-\s+/, '');
+    t = esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    return '<p style="margin:0 0 9px' + (vineta ? ';padding-left:18px' : '') + '">' +
+      (vineta ? '• ' : '') + t + '</p>';
+  }).join('');
+  box.innerHTML = '<div class="pl-prev">' + html + '</div>';
+}
+async function plGuardar(){
+  const msg = document.getElementById('pl-msg');
+  const b = PL.buf;
+  if(!b.clave || !b.titulo){ msg.className = 'msg err'; msg.textContent = 'Faltan la clave o el título.'; return; }
+  if(!b.campos_ok){ msg.className = 'msg err'; msg.textContent = 'El JSON de campos es inválido.'; return; }
+  const fila = {
+    grupo: b.grupo || 'Otros', titulo: b.titulo, descripcion: b.descripcion,
+    campos: b.campos_arr, parrafos: b.parrafos.filter(function(p){ return p.trim(); }),
+    tema: b.tema, decision: b.decision, orden: b.orden, activo: b.activo,
+    actualizado_por: PERFIL ? PERFIL.nombre : null,
+    ultima_edicion: new Date().toISOString()
+  };
+  msg.className = 'msg'; msg.textContent = 'Guardando…';
+  try{
+    if(PL.nueva){
+      fila.clave = b.clave;
+      await supaFetch('pet_respuestas_tipo', {
+        method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(fila) });
+    }else{
+      await supaFetch('pet_respuestas_tipo?clave=eq.' + encodeURIComponent(b.clave), {
+        method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(fila) });
+    }
+    msg.className = 'msg ok'; msg.textContent = 'Guardado. Aplicado para todo el equipo.';
+    PL.sel = b.clave;
+    await cargarCatalogoDB();
+    await cargarPlantillas();
+  }catch(e){
+    msg.className = 'msg err';
+    msg.textContent = /security|permiso|denied|403|violates/i.test(e.message)
+      ? 'Sin permiso de edición: pida que agreguen su correo en pet_plantillas_editores.'
+      : 'No se pudo guardar: ' + e.message;
+  }
 }
 
 /* ── Formulario de una respuesta tipo ── */
