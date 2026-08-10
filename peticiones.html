@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
+<!-- build: buscador-global + control-interno + sentido(pet_docs) + prechequeo-duplicados-lote · 2026 -->
+<meta name="build" content="peticiones-controlinterno-v3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -309,6 +311,47 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 #editor{position:fixed;inset:0;background:rgba(4,14,28,.9);z-index:940;display:none;
   align-items:flex-start;justify-content:center;padding:28px 20px;overflow:auto;backdrop-filter:blur(6px)}
 #editor.on{display:flex}
+
+/* ── Buscador global (Ctrl+K) ── */
+#buscador{position:fixed;inset:0;background:rgba(4,14,28,.82);z-index:960;display:none;
+  align-items:flex-start;justify-content:center;padding:12vh 18px 20px;backdrop-filter:blur(7px)}
+#buscador.on{display:flex}
+.bg-caja{width:100%;max-width:640px;background:var(--navy2);border:1px solid var(--border);
+  border-radius:16px;box-shadow:0 22px 60px rgba(0,0,0,.6);overflow:hidden;
+  animation:bgIn .16s ease}
+@keyframes bgIn{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.bg-caja{animation:none}}
+.bg-top{display:flex;align-items:center;gap:11px;padding:15px 18px;border-bottom:1px solid var(--border)}
+.bg-top svg{width:19px;height:19px;color:var(--gold);flex:none}
+.bg-top input{flex:1;background:none;border:none;outline:none;color:var(--txt);
+  font-size:16px;font-family:inherit}
+.bg-top input::placeholder{color:var(--muted)}
+.bg-esc{font-size:10.5px;color:var(--muted);border:1px solid var(--border);border-radius:6px;
+  padding:3px 7px;letter-spacing:.5px}
+.bg-lista{max-height:52vh;overflow:auto;padding:6px}
+.bg-it{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:11px;
+  cursor:pointer;border:1px solid transparent}
+.bg-it.sel{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.32)}
+.bg-it:hover{background:rgba(255,255,255,.035)}
+.bg-punto{width:9px;height:9px;border-radius:50%;flex:none}
+.bg-cuerpo{flex:1;min-width:0}
+.bg-rad{font-weight:700;color:var(--gold);font-size:var(--t-sm);letter-spacing:.3px}
+.bg-nom{color:var(--txt);font-size:var(--t-base);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg-sub{color:var(--muted);font-size:var(--t-micro);margin-top:1px}
+.bg-meta{text-align:right;flex:none}
+.bg-dias{font-size:var(--t-sm);font-weight:700}
+.bg-est{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.bg-vacio{padding:30px 20px;text-align:center;color:var(--muted);font-size:var(--t-sm)}
+.bg-pie{display:flex;gap:16px;padding:10px 16px;border-top:1px solid var(--border);
+  font-size:10.5px;color:var(--muted)}
+.bg-pie b{color:var(--txt);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-weight:600}
+.bg-lanza{display:inline-flex;align-items:center;gap:7px;background:var(--glass);
+  border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer;
+  color:var(--muted);font-size:var(--t-micro);transition:border-color .15s}
+.bg-lanza:hover{border-color:var(--gold);color:var(--txt)}
+.bg-lanza svg{width:14px;height:14px}
+.bg-lanza b{color:var(--txt);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-weight:600}
+@media(max-width:640px){.bg-lanza .bg-lanza-txt{display:none}.bg-top input{font-size:15px}}
 .ed-caja{width:100%;max-width:720px;background:var(--navy2);border:1px solid var(--border);
   border-radius:18px;padding:26px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
 .ed-hd{display:flex;align-items:flex-start;gap:13px;margin-bottom:6px}
@@ -517,12 +560,36 @@ footer b{color:var(--gold)}
     </div>
   </div>
 </div>
+<div id="buscador" onclick="if(event.target===this)cerrarBuscador()">
+  <div class="bg-caja">
+    <div class="bg-top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="text" id="bg-q" placeholder="Radicado, nombre o cédula…" autocomplete="off"
+        oninput="debBuscador()" onkeydown="navBuscador(event)">
+      <span class="bg-esc">ESC</span>
+    </div>
+    <div class="bg-lista" id="bg-lista"></div>
+    <div class="bg-pie">
+      <span><b>↑</b> <b>↓</b> moverse</span>
+      <span><b>↵</b> abrir</span>
+      <span><b>Esc</b> cerrar</span>
+    </div>
+  </div>
+</div>
 <div id="toasts"></div>
 <div id="app" style="display:none">
 <nav id="lat">
   <div class="lat-hd">
     <div class="lat-logo">T</div>
     <div class="lat-tit">TEODORO<span>Peticiones</span></div>
+  </div>
+  <div class="bg-lanza" onclick="abrirBuscador()" title="Buscar cualquier petición (Ctrl+K)"
+    style="margin:0 12px 12px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <span class="bg-lanza-txt" style="flex:1;text-align:left">Buscar…</span>
+    <b>Ctrl K</b>
   </div>
   <div class="lat-nav" id="tabs"></div>
   <div class="lat-pie">
@@ -714,7 +781,7 @@ footer b{color:var(--gold)}
       <p>Todas las peticiones registradas, con su término legal en días hábiles.</p>
     </div>
     <div class="toolbar">
-      <input type="text" id="b-q" placeholder="Buscar por radicado, nombre o cédula…" oninput="renderBandeja()">
+      <input type="text" id="b-q" placeholder="Buscar por radicado, nombre o cédula…" oninput="debRenderBandeja()">
       <select id="b-estado" onchange="renderBandeja()">
         <option value="">Todos los estados</option>
         <option value="PENDIENTE">Sin asignar</option>
@@ -781,6 +848,8 @@ footer b{color:var(--gold)}
     </div>
 
     <div class="kpis" id="h-kpis"></div>
+
+    <div id="h-sentido"></div>
 
     <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px">
       <button class="btn btn-ghost" onclick="exportarHistCSV()">Exportar CSV</button>
@@ -890,6 +959,43 @@ footer b{color:var(--gold)}
     </div>
   </section>
 
+  <!-- ══ CONTROL INTERNO ══ -->
+  <section class="panel" id="p-controli">
+    <div class="page-hdr">
+      <h2>Control <em>Interno</em></h2>
+      <p>Sentido de las respuestas proyectadas: concedidas y negadas por tema, para los informes de auditoría. Solo lectura.</p>
+    </div>
+    <div class="toolbar">
+      <input type="date" id="ci-desde" onchange="renderControlInterno()">
+      <input type="date" id="ci-hasta" onchange="renderControlInterno()">
+      <select id="ci-tema" onchange="renderControlInterno()">
+        <option value="">Todos los temas</option>
+        <option value="prescripcion">Prescripción</option>
+        <option value="caducidad">Caducidad</option>
+        <option value="devolucion">Devolución</option>
+        <option value="inembargabilidad">Inembargabilidad</option>
+        <option value="otro">Otros</option>
+      </select>
+      <button class="btn btn-ghost" onclick="cargarControlInterno()">Recargar</button>
+      <button class="btn btn-ghost" onclick="exportarCIcsv()">Exportar CSV</button>
+    </div>
+    <div class="msg" id="ci-msg"></div>
+    <div class="kpis" id="ci-kpis"></div>
+    <div id="ci-barras" style="margin:6px 0 20px"></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Tema</th><th>Concedidas</th><th>Negadas</th><th>Informativas</th>
+          <th>Total docs</th><th>Obligaciones</th>
+        </tr></thead>
+        <tbody id="ci-body"><tr><td colspan="6">
+          <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
+          <div class="esq esq-lin" style="width:80%"></div>
+        </td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- ══ PERSONAS ══ -->
   <section class="panel" id="p-plantillas">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
@@ -921,7 +1027,7 @@ footer b{color:var(--gold)}
     </div>
 
     <div class="toolbar">
-      <input type="text" id="pe-q" placeholder="Buscar por nombre o correo…" oninput="renderPersonas()">
+      <input type="text" id="pe-q" placeholder="Buscar por nombre o correo…" oninput="debRenderPersonas()">
       <select id="pe-rol" onchange="renderPersonas()">
         <option value="">Todos los roles</option>
         <option value="sin">Sin perfil</option>
@@ -1133,9 +1239,26 @@ async function iniciar(){
   actualizarBadges();
   prepararDigitar();
   llenarAbogados();
+  registrarAtajoBuscador();
+}
+
+/* Ctrl+K / ⌘K abre el buscador global desde cualquier panel */
+let ATAJO_BG_LISTO = false;
+function registrarAtajoBuscador(){
+  if(ATAJO_BG_LISTO) return;
+  ATAJO_BG_LISTO = true;
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')){
+      e.preventDefault();
+      const ov = document.getElementById('buscador');
+      if(ov && ov.classList.contains('on')) cerrarBuscador();
+      else abrirBuscador();
+    }
+  });
 }
 
 function esAdmin(){ return PERFIL && (PERFIL.rol === 'admin' || PERFIL.rol === 'revisor'); }
+function puedeVerControl(){ return PERFIL && ['admin','revisor','consulta'].indexOf(PERFIL.rol) !== -1; }
 function puedeRadicar(){ return PERFIL && ['admin','revisor','radicador'].indexOf(PERFIL.rol) !== -1; }
 function soloRadica(){ return PERFIL && PERFIL.rol === 'radicador'; }
 
@@ -1249,6 +1372,8 @@ const NAV_IC = {
     '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
   tablero:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.8L7 14.3"/></svg>',
+  controli: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M12 2l8 3v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V5z"/><path d="M9 12l2 2 4-4"/></svg>',
   personas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>' +
     '<path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg>',
@@ -1294,6 +1419,7 @@ function construirTabs(){
     {id:'bandeja',    txt:'Bandeja',          sec:null,         ver: true},
     {id:'historicos', txt:'Resueltas',        sec:null,         ver: !soloRadica()},
     {id:'tablero',    txt:'Tablero',          sec:'Control',    ver: true},
+    {id:'controli',   txt:'Control Interno',  sec:null,         ver: puedeVerControl()},
     {id:'plantillas', txt:'Plantillas',       sec:null,         ver: esAdmin()},
     {id:'personas',   txt:'Personas',         sec:null,         ver: esAdmin()}
   ];
@@ -1348,7 +1474,7 @@ function construirTabs(){
       document.getElementById('lat').classList.add('min');
   }catch(e){}
 
-  irA(puedeRadicar() ? 'digitar' : 'cola');
+  irA(puedeRadicar() ? 'digitar' : (PERFIL && PERFIL.rol === 'consulta' ? 'tablero' : 'cola'));
 }
 
 function plegarLateral(){
@@ -1358,7 +1484,7 @@ function plegarLateral(){
 }
 
 function irA(id){
-  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero','plantillas','personas'];
+  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero','controli','plantillas','personas'];
   paneles.forEach(function(p){
     const el = document.getElementById('p-' + p);
     const tb = document.getElementById('tab-' + p);
@@ -1370,6 +1496,7 @@ function irA(id){
   if(id === 'bandeja') cargarBandeja();
   if(id === 'historicos') cargarHistoricos();
   if(id === 'tablero') cargarTablero();
+  if(id === 'controli') cargarControlInterno();
   if(id === 'plantillas') cargarPlantillas();
   if(id === 'personas') cargarPersonas();
 }
@@ -2279,8 +2406,10 @@ async function cargarLote(files){
     lista.length + ' documentos cargados · ' + leidos + ' con datos reconocidos. Revise y complete lo que falte.';
   document.getElementById('lz-btn').style.display = 'inline-block';
   document.getElementById('lz-limpiar').style.display = 'inline-block';
-  const yaest = LOTE.filter(function(x){ return x.estado === 'yaesta'; }).length;
-  if(yaest) toast(yaest + ' de esta tanda ya estaban registradas: se omiten.', '', 6);
+  const yaBase = LOTE.filter(function(x){ return x.duplicado && /sistema/.test(x.nota); }).length;
+  const yaRep  = LOTE.filter(function(x){ return x.duplicado && /tanda/.test(x.nota); }).length;
+  if(yaBase) toast(yaBase + ' ya estaban en el sistema: quedan separadas y no se cargarán.', '', 7);
+  if(yaRep)  toast(yaRep + ' venían repetidas dentro de la tanda: se deja solo una.', '', 6);
   const nEsc = LOTE.filter(function(x){ return x.escaneado && x.estado !== 'yaesta'; }).length;
   const bo = document.getElementById('lz-ocr');
   bo.style.display = nEsc ? 'inline-block' : 'none';
@@ -2595,6 +2724,43 @@ async function cruzarDatos(){
       if(p.length) it.previas = p;
     });
   }catch(e){}
+
+  // ── Radicados que YA EXISTEN en la base: se marcan y NO se cargan ──
+  try{
+    const rads = LOTE.map(function(it){ return (it.radicado || '').trim(); }).filter(Boolean);
+    const radUnicos = rads.filter(function(v, i){ return rads.indexOf(v) === i; });
+    if(radUnicos.length){
+      const listaRad = '(' + radUnicos.map(function(r){
+        return '"' + String(r).replace(/"/g,'') + '"';
+      }).join(',') + ')';
+      const existentes = await supaFetch(
+        'pet_peticiones?select=radicado,peticionario&radicado=in.' + listaRad + '&limit=500');
+      const setExist = {};
+      existentes.forEach(function(x){ setExist[String(x.radicado).trim()] = x; });
+      LOTE.forEach(function(it){
+        const k = (it.radicado || '').trim();
+        if(k && setExist[k]){
+          it.estado = 'yaesta';
+          it.duplicado = true;
+          it.nota = 'Ya está en el sistema — no se volverá a cargar.';
+        }
+      });
+    }
+  }catch(e){ /* si la columna asignado_id no existe u otro detalle, no interrumpe */ }
+
+  // ── Radicados repetidos DENTRO de la misma tanda (deja el primero, marca el resto) ──
+  const vistos = {};
+  LOTE.forEach(function(it){
+    const k = (it.radicado || '').trim();
+    if(!k) return;
+    if(vistos[k]){
+      it.estado = 'yaesta';
+      it.duplicado = true;
+      it.nota = 'Repetido dentro de esta tanda — se omite.';
+    }else{
+      vistos[k] = true;
+    }
+  });
 }
 
 function progresoLote(pct){
@@ -2620,6 +2786,15 @@ function pintarLote(){
         '<div class="lote-arch">' + esc(it.nota) + '</div>' +
         '<div class="lote-est" style="background:rgba(248,113,113,.2);color:var(--rojo)">Error</div>' +
         '</div>' + camposLote(it, n) + '</div>';
+    }
+    if(it.estado === 'yaesta'){
+      const motivo = it.nota || 'Ya está en el sistema.';
+      return '<div class="lote-fila" style="opacity:.62;border-color:var(--border)">' +
+        '<div class="lote-top">' +
+        '<div class="lote-rad" style="color:var(--muted)">' + esc(it.radicado) + '</div>' +
+        '<div class="lote-arch">' + esc(motivo) + '</div>' +
+        '<div class="lote-est" style="background:rgba(143,163,204,.16);color:var(--muted)">Ya existe</div>' +
+        '</div></div>';
     }
     const d = it.datos || {};
     const ok = d.nombre && d.documento;
@@ -2821,7 +2996,7 @@ async function guardarLote(){
   // Solo el grupo que se está revisando
   const ini = PAGINA * POR_PAGINA;
   const fin = Math.min(ini + POR_PAGINA, LOTE.length);
-  const pendientes = [];
+  let pendientes = [];
   for(let i = ini; i < fin; i++){
     if(LOTE[i].estado !== 'guardada' && LOTE[i].estado !== 'yaesta'){
       pendientes.push({it: LOTE[i], n: i});
@@ -2847,10 +3022,63 @@ async function guardarLote(){
   }
 
   btn.disabled = true;
-  msg.className = 'msg'; msg.textContent = 'Guardando…';
+  msg.className = 'msg'; msg.textContent = 'Verificando cuáles ya existen…';
+
+  // ── PRE-CHEQUEO DE DUPLICADOS ──
+  // Consultamos en la base qué radicados del grupo ya existen ANTES de intentar guardarlos.
+  // Los que ya existen se marcan 'yaesta' y se sacan de la carga (no se re-insertan).
+  let yaEstaban = 0;
+  try{
+    const rads = pendientes.map(function(p){
+      return (document.getElementById('l-rad-' + p.n).value || '').trim();
+    }).filter(Boolean);
+    if(rads.length){
+      // in.("a","b",...) — entrecomillado seguro por si el radicado trae caracteres raros
+      const lista = rads.map(function(x){ return '"' + x.replace(/"/g,'') + '"'; }).join(',');
+      const existentes = await supaFetch(
+        'pet_peticiones?select=radicado&radicado=in.(' + encodeURIComponent(lista) + ')'
+      );
+      const setEx = new Set(existentes.map(function(e){ return String(e.radicado); }));
+      if(setEx.size){
+        // Marca y descarta los repetidos
+        pendientes = pendientes.filter(function(p){
+          const rad = (document.getElementById('l-rad-' + p.n).value || '').trim();
+          if(setEx.has(rad)){
+            p.it.estado = 'yaesta';
+            p.it.nota = 'Ya existía en el sistema (no se volvió a cargar).';
+            p.it.radicado = rad;
+            yaEstaban++;
+            return false;   // fuera de la carga
+          }
+          return true;
+        });
+        pintarLote();
+      }
+    }
+  }catch(e){
+    // Si el pre-chequeo falla (red), seguimos: el insert idempotente es la red de seguridad.
+  }
+
+  if(!pendientes.length){
+    btn.disabled = false;
+    msg.className = 'msg ok';
+    msg.textContent = yaEstaban
+      ? ('Las ' + yaEstaban + ' de este grupo ya existían en el sistema. Nada nuevo por cargar.')
+      : 'Este grupo ya está resuelto.';
+    if(yaEstaban) toast(yaEstaban + ' ya estaban registradas — se omitieron', 'ok', 4);
+    const grp = Math.ceil(LOTE.length / POR_PAGINA);
+    if(PAGINA + 1 < grp) setTimeout(function(){ irAGrupo(PAGINA + 1); }, 900);
+    cargarCargasVivas();
+    return;
+  }
+
+  msg.className = 'msg';
+  msg.textContent = yaEstaban
+    ? ('Guardando… (' + yaEstaban + ' ya existían y se omitieron)')
+    : 'Guardando…';
 
   const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
-  let idx = 0, ok = 0, fallos = 0, yaEstaban = 0;
+  let idx = 0, ok = 0, fallos = 0;
 
   for(let i = 0; i < pendientes.length; i++){
     const it = pendientes[i].it, n = pendientes[i].n;
@@ -4199,6 +4427,7 @@ function armarCombinada(){
     FECHA_LARGA: fechaLarga(hoy), FECHA_DOC: fmtFecha(iso(hoy))
   };
   const bloques = [];
+  const sentidos = [];   // registro para pet_docs: {tema, sentido, tipo_doc, items}
   let error = null;
 
   COMB_SEL.forEach(function(tok, i){
@@ -4216,6 +4445,8 @@ function armarCombinada(){
             const local = { OBLIGACION: listaOb(A, t === 'prescripcion') };
             camposSinOb(cl).forEach(function(f){ local[f.id] = st.f['A-' + f.id] || ''; });
             bloques.push({ clave: cl, local: local });
+            sentidos.push({ tema: t, sentido: 'ACEPTADA',
+              tipo_doc: (t === 'prescripcion' ? 'RESOLUCION' : 'OFICIO'), items: A.length });
           }
         }
         if(N.length){
@@ -4224,6 +4455,7 @@ function armarCombinada(){
             const local = { OBLIGACION: listaOb(N, t === 'prescripcion') };
             camposSinOb(cl).forEach(function(f){ local[f.id] = st.f['N-' + f.id] || ''; });
             bloques.push({ clave: cl, local: local });
+            sentidos.push({ tema: t, sentido: 'NEGADA', tipo_doc: 'OFICIO', items: N.length });
           }
         }
       }else{
@@ -4232,12 +4464,21 @@ function armarCombinada(){
           const local = {};
           camposSinOb(cl).forEach(function(f){ local[f.id] = st.f[f.id] || ''; });
           bloques.push({ clave: cl, local: local });
+          sentidos.push({ tema: t, sentido: (st.dec === 'N' ? 'NEGADA' : 'ACEPTADA'),
+            tipo_doc: 'OFICIO', items: 1 });
         }
       }
     }else{
       const cl = tok.slice(2), c = CATALOGO_RESPUESTAS[cl], local = {};
       (c && c.campos ? c.campos : []).forEach(function(f){ local[f.id] = st.f[f.id] || ''; });
       bloques.push({ clave: cl, local: local });
+      // Bloque no temático (informativo): se registra según el tema/decisión del catálogo si los trae.
+      if(c && c.tema){
+        sentidos.push({ tema: c.tema, sentido: (c.decision === 'N' ? 'NEGADA' : 'ACEPTADA'),
+          tipo_doc: 'OFICIO', items: 1 });
+      }else{
+        sentidos.push({ tema: 'otro', sentido: 'INFORMATIVA', tipo_doc: 'OFICIO', items: 1 });
+      }
     }
   });
 
@@ -4260,7 +4501,7 @@ function armarCombinada(){
     'de los puntos de su petición, dentro de la oportunidad prevista en la Ley 1755 de 2015.');
   parrs.push(CIERRE_COMUN);
 
-  return { comunes: comunes, parrs: parrs, error: error, nBloques: bloques.length };
+  return { comunes: comunes, parrs: parrs, error: error, nBloques: bloques.length, sentidos: sentidos };
 }
 
 function previewCombinada(){
@@ -4282,6 +4523,32 @@ function previewCombinada(){
   cont.innerHTML =
     '<div style="background:rgba(255,255,255,.05);border:1px solid var(--border);' +
     'border-radius:11px;padding:14px;margin-top:12px;font-size:13px;line-height:1.55">' + html + '</div>';
+}
+
+/* Registra el sentido de cada bloque en pet_docs (para conteos de Control Interno).
+   Tolerante: si la tabla no existe o el registro del día ya está, no interrumpe. */
+async function registrarDocs(r, sentidos, nombreArchivo){
+  if(!r || !sentidos || !sentidos.length) return;
+  const filas = sentidos.map(function(s){
+    return {
+      peticion_id: r.id,
+      radicado:    r.radicado || null,
+      tema:        s.tema,
+      sentido:     s.sentido,
+      tipo_doc:    s.tipo_doc,
+      items:       s.items || 1,
+      doc_nombre:  nombreArchivo || null,
+      abogado_id:  (PERFIL && PERFIL.id) || null,
+      abogado_nom: (PERFIL && PERFIL.nombre) || null
+    };
+  });
+  try{
+    await supaFetch('pet_docs', {
+      method:'POST',
+      headers:{ Prefer:'return=minimal,resolution=ignore-duplicates' },
+      body: JSON.stringify(filas)
+    });
+  }catch(e){ /* silencioso: no debe frenar la entrega del documento */ }
 }
 
 async function generarCombinada(){
@@ -4308,6 +4575,8 @@ async function generarCombinada(){
         body: JSON.stringify({ doc_proyectado: nombreArchivo })
       });
     }catch(e){}
+    // Registrar el sentido de cada bloque para los conteos de Control Interno.
+    await registrarDocs(r, a.sentidos, nombreArchivo);
     const notas = document.getElementById('k-notas');
     if(notas && !notas.value.trim())
       notas.value = 'Se proyecta respuesta combinada: ' + COMB_SEL.map(tituloToken).join(' + ') + '.';
@@ -4672,6 +4941,15 @@ async function generarRespuesta(){
     if(notas && !notas.value.trim())
       notas.value = 'Se proyecta respuesta: ' + c.titulo + '.';
 
+    // Registro de sentido para Control Interno (si el catálogo trae tema/decisión).
+    if(c.tema){
+      await registrarDocs(r, [{
+        tema: c.tema,
+        sentido: (c.decision === 'N' ? 'NEGADA' : 'ACEPTADA'),
+        tipo_doc: 'OFICIO', items: 1
+      }], nombreArchivo);
+    }
+
     msg.className = 'msg ok';
     msg.textContent = datos.EMAIL
       ? 'Documento descargado. Revíselo y envíelo a ' + datos.EMAIL + '.'
@@ -4912,6 +5190,10 @@ async function generarResolucion(){
       notas.value = 'Se proyecta resolución que concede la prescripción de ' + lista.length +
         (lista.length === 1 ? ' comparendo.' : ' comparendos.');
     }
+    // Registro para Control Interno: prescripción concedida por resolución.
+    await registrarDocs(r, [{
+      tema: 'prescripcion', sentido: 'ACEPTADA', tipo_doc: 'RESOLUCION', items: lista.length
+    }], nombreArchivo);
     msg.className = 'msg ok';
     msg.textContent = 'Documento con ' + lista.length +
       (lista.length === 1 ? ' comparendo descargado.' : ' comparendos descargado.') +
@@ -4963,6 +5245,164 @@ function expandirTablas(xml, lista){
 /* ══════════════════════════════════════════════════════════════
    PANEL 3 — BANDEJA
    ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   DEBOUNCE — evita re-render en cada tecla
+   ══════════════════════════════════════════════════════════════ */
+function debounce(fn, ms){
+  let t;
+  return function(){
+    const args = arguments, ctx = this;
+    clearTimeout(t);
+    t = setTimeout(function(){ fn.apply(ctx, args); }, ms);
+  };
+}
+const debRenderBandeja  = debounce(function(){ renderBandeja();  }, 220);
+const debRenderPersonas = debounce(function(){ renderPersonas(); }, 220);
+
+/* ══════════════════════════════════════════════════════════════
+   BUSCADOR GLOBAL (Ctrl+K) — busca en toda la bandeja en memoria
+   ══════════════════════════════════════════════════════════════ */
+let BG_RES = [];       // resultados actuales
+let BG_SEL = 0;        // índice resaltado
+let BG_CARGANDO = false;
+
+async function abrirBuscador(){
+  const ov = document.getElementById('buscador');
+  if(!ov) return;
+  ov.classList.add('on');
+  const inp = document.getElementById('bg-q');
+  inp.value = '';
+  BG_RES = []; BG_SEL = 0;
+  // Si la bandeja aún no está en memoria, la traemos una sola vez.
+  if(!BANDEJA.length && !BG_CARGANDO){
+    BG_CARGANDO = true;
+    pintarBuscador('cargando');
+    try{
+      try{
+        BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&order=fecha_limite.asc&limit=1000');
+      }catch(e){
+        BANDEJA = await supaFetch('v_pet_bandeja?select=*&order=fecha_limite.asc&limit=1000');
+      }
+    }catch(err){}
+    BG_CARGANDO = false;
+  }
+  correrBuscador();
+  setTimeout(function(){ inp.focus(); }, 30);
+}
+
+function cerrarBuscador(){
+  const ov = document.getElementById('buscador');
+  if(ov) ov.classList.remove('on');
+}
+
+const debBuscador = debounce(function(){ correrBuscador(); }, 180);
+
+function correrBuscador(){
+  const q = (document.getElementById('bg-q').value || '').trim().toLowerCase();
+  if(!q){
+    // Sin texto: mostramos lo más urgente (primeras de la bandeja, ya viene ordenada).
+    BG_RES = BANDEJA.slice(0, 8);
+  }else{
+    const toks = q.split(/\s+/);
+    BG_RES = BANDEJA.filter(function(r){
+      const blob = [r.radicado, r.peticionario, r.documento, r.radicado_respuesta,
+                    r.expediente, r.asignado_nombre].join(' ').toLowerCase();
+      return toks.every(function(t){ return blob.indexOf(t) !== -1; });
+    }).slice(0, 40);
+  }
+  BG_SEL = 0;
+  pintarBuscador();
+}
+
+function colorSemaforo(r){
+  if(r.semaforo === 'vencida' || (r.dias_restantes !== null && r.dias_restantes < 0)) return 'var(--vencido)';
+  if(r.semaforo === 'urgente') return 'var(--urgente)';
+  if(r.semaforo === 'proxima') return 'var(--tramite)';
+  if(r.estado === 'CERRADA' || r.estado === 'RESPONDIDA') return 'var(--muted)';
+  return 'var(--atiempo)';
+}
+
+function pintarBuscador(modo){
+  const cont = document.getElementById('bg-lista');
+  if(!cont) return;
+  if(modo === 'cargando'){
+    cont.innerHTML = '<div class="bg-vacio">Cargando peticiones…</div>';
+    return;
+  }
+  if(!BG_RES.length){
+    const q = (document.getElementById('bg-q').value || '').trim();
+    cont.innerHTML = '<div class="bg-vacio">' +
+      (q ? 'Nada coincide con «' + esc(q) + '».' : 'No hay peticiones cargadas.') + '</div>';
+    return;
+  }
+  cont.innerHTML = BG_RES.map(function(r, i){
+    const d = r.dias_restantes;
+    const dTxt = d === null ? '—' : d < 0 ? 'venció ' + Math.abs(d) + 'd' : d + 'd';
+    const col = colorSemaforo(r);
+    return '<div class="bg-it' + (i === BG_SEL ? ' sel' : '') + '" ' +
+      'onmouseenter="BG_SEL=' + i + ';marcarBuscador()" onclick="abrirDesdeBuscador(' + i + ')">' +
+      '<span class="bg-punto" style="background:' + col + '"></span>' +
+      '<div class="bg-cuerpo">' +
+        '<div class="bg-rad">' + esc(r.radicado) + marcaTutela(r) + '</div>' +
+        '<div class="bg-nom">' + esc(r.peticionario || '—') + '</div>' +
+        '<div class="bg-sub">' +
+          (r.documento ? 'CC ' + esc(r.documento) + ' · ' : '') +
+          esc(r.tipo_nombre || r.tipo || '') +
+          (r.asignado_nombre ? ' · ' + esc(r.asignado_nombre) : ' · sin asignar') +
+        '</div>' +
+      '</div>' +
+      '<div class="bg-meta">' +
+        '<div class="bg-dias" style="color:' + col + '">' + dTxt + '</div>' +
+        '<div class="bg-est">' + esc(r.estado || '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  const sel = cont.querySelector('.bg-it.sel');
+  if(sel) sel.scrollIntoView({block:'nearest'});
+}
+
+function marcarBuscador(){
+  const items = document.querySelectorAll('#bg-lista .bg-it');
+  items.forEach(function(el, i){ el.classList.toggle('sel', i === BG_SEL); });
+}
+
+function navBuscador(e){
+  if(e.key === 'ArrowDown'){ e.preventDefault(); BG_SEL = Math.min(BG_SEL + 1, BG_RES.length - 1); pintarBuscador(); }
+  else if(e.key === 'ArrowUp'){ e.preventDefault(); BG_SEL = Math.max(BG_SEL - 1, 0); pintarBuscador(); }
+  else if(e.key === 'Enter'){ e.preventDefault(); abrirDesdeBuscador(BG_SEL); }
+  else if(e.key === 'Escape'){ e.preventDefault(); cerrarBuscador(); }
+}
+
+function abrirDesdeBuscador(i){
+  const r = BG_RES[i];
+  if(!r) return;
+  cerrarBuscador();
+  // Admin / revisor: abre la ficha de corrección directamente (ver + editar cualquiera).
+  if(esAdmin()){
+    abrirEditor(r.id);
+    return;
+  }
+  // Abogado: si el caso es suyo, saltar a su cola posicionado en él; si no, a la bandeja filtrada.
+  if(r.asignado_a && PERFIL && r.asignado_a === PERFIL.id){
+    irA('cola');
+    setTimeout(function(){
+      const idx = COLA.findIndex(function(x){ return x.id === r.id; });
+      if(idx !== -1){ COLA_IDX = idx; pintarCaso(); }
+      else { irABandejaCon(r.radicado); }
+    }, 400);
+  }else{
+    irABandejaCon(r.radicado);
+  }
+}
+
+function irABandejaCon(rad){
+  irA('bandeja');
+  setTimeout(function(){
+    const q = document.getElementById('b-q');
+    if(q){ q.value = rad; renderBandeja(); }
+  }, 350);
+}
+
 async function cargarBandeja(){
   const msg = document.getElementById('b-msg');
   msg.className = 'msg'; msg.textContent = 'Cargando…';
@@ -5297,6 +5737,7 @@ function exportarCSV(){
    PANEL — HISTÓRICO DE RESUELTAS E INFORMES
    ══════════════════════════════════════════════════════════════ */
 let HIST = [];
+let DOCS = [];   // registros de pet_docs para el panel de sentido
 
 async function cargarHistoricos(){
   const msg = document.getElementById('h-msg');
@@ -5316,6 +5757,12 @@ async function cargarHistoricos(){
             '&order=fecha_proyeccion.desc.nullslast&limit=3000';
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
     HIST = await supaFetch(q);
+    // Sentido de las respuestas (concedidas/negadas) para Control Interno
+    try{
+      let qd = 'pet_docs?select=tema,sentido,tipo_doc,items,creado_en,abogado_nom' +
+               '&order=creado_en.desc&limit=5000';
+      DOCS = await supaFetch(qd);
+    }catch(e){ DOCS = []; }
     msg.textContent = HIST.length + ' peticiones resueltas en el archivo.';
     renderHist();
   }catch(err){
@@ -5364,6 +5811,94 @@ function statsHist(rows){
   };
 }
 
+/* Panel de sentido (concedidas / negadas) para Control Interno.
+   Filtra pet_docs por el mismo rango de fechas y abogado del filtro de históricos. */
+const TEMA_LABEL = {
+  prescripcion:'Prescripción', caducidad:'Caducidad',
+  inembargabilidad:'Inembargabilidad', devolucion:'Devolución', otro:'Otros'
+};
+function filtrarDocs(){
+  const d = document.getElementById('h-desde').value;
+  const t = document.getElementById('h-hasta').value;
+  const a = document.getElementById('h-abo').value;
+  return DOCS.filter(function(x){
+    const ref = String(x.creado_en || '').slice(0,10);
+    if(d && (!ref || ref < d)) return false;
+    if(t && (!ref || ref > t)) return false;
+    if(a && (x.abogado_nom || '') !== a) return false;
+    return true;
+  });
+}
+function renderSentido(){
+  const cont = document.getElementById('h-sentido');
+  if(!cont) return;
+  const rows = filtrarDocs();
+  if(!rows.length){
+    cont.innerHTML = '';
+    return;
+  }
+  // Agrupar por tema → {ACEPTADA:{docs,items}, NEGADA:{...}}
+  const g = {};
+  rows.forEach(function(x){
+    const tm = x.tema || 'otro';
+    if(!g[tm]) g[tm] = { A:{d:0,i:0}, N:{d:0,i:0}, I:{d:0,i:0} };
+    const k = x.sentido === 'NEGADA' ? 'N' : x.sentido === 'INFORMATIVA' ? 'I' : 'A';
+    g[tm][k].d += 1;
+    g[tm][k].i += Number(x.items || 1);
+  });
+  let totA = 0, totN = 0;
+  Object.keys(g).forEach(function(tm){ totA += g[tm].A.i; totN += g[tm].N.i; });
+
+  const tarjetas = Object.keys(g).sort().map(function(tm){
+    const s = g[tm];
+    const filas = [];
+    if(s.A.d) filas.push('<div style="display:flex;justify-content:space-between;padding:5px 0">' +
+      '<span style="color:var(--verde)">Concedidas</span>' +
+      '<b>' + s.A.i + (s.A.i !== s.A.d ? ' <span style="color:var(--muted);font-weight:400">(' + s.A.d + ' doc)</span>' : '') + '</b></div>');
+    if(s.N.d) filas.push('<div style="display:flex;justify-content:space-between;padding:5px 0">' +
+      '<span style="color:var(--rojo)">Negadas</span>' +
+      '<b>' + s.N.i + (s.N.i !== s.N.d ? ' <span style="color:var(--muted);font-weight:400">(' + s.N.d + ' doc)</span>' : '') + '</b></div>');
+    if(s.I.d) filas.push('<div style="display:flex;justify-content:space-between;padding:5px 0">' +
+      '<span style="color:var(--muted)">Informativas</span><b>' + s.I.d + '</b></div>');
+    return '<div style="background:var(--glass);border:1px solid var(--border);border-radius:13px;padding:15px 17px">' +
+      '<div style="font-family:\'Syne\';font-size:15px;margin-bottom:8px;color:var(--gold)">' +
+        esc(TEMA_LABEL[tm] || tm) + '</div>' +
+      filas.join('') + '</div>';
+  }).join('');
+
+  cont.innerHTML =
+    '<div style="margin:6px 0 20px">' +
+      '<div class="lbl" style="margin-bottom:10px">Sentido de las respuestas · base para Control Interno' +
+        '<span class="hint" style="margin-left:8px">cuenta comparendos/obligaciones afectados</span></div>' +
+      '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px">' +
+        '<div class="kpi" style="flex:1;min-width:150px"><div class="n" style="color:var(--verde)">' + totA +
+          '</div><div class="l">Concedidas (total)</div></div>' +
+        '<div class="kpi" style="flex:1;min-width:150px"><div class="n" style="color:var(--rojo)">' + totN +
+          '</div><div class="l">Negadas (total)</div></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">' +
+        tarjetas + '</div>' +
+      '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px">' +
+        '<button class="btn btn-ghost" onclick="exportarSentidoCSV()">Exportar sentido (CSV)</button>' +
+      '</div>' +
+    '</div>';
+}
+function exportarSentidoCSV(){
+  const rows = filtrarDocs();
+  if(!rows.length){ toast('No hay registros de sentido en este período.', ''); return; }
+  const cab = ['fecha','tema','sentido','tipo_documento','items','abogado'];
+  const lin = rows.map(function(x){
+    return [String(x.creado_en||'').slice(0,10),
+            TEMA_LABEL[x.tema]||x.tema||'', x.sentido||'', x.tipo_doc||'',
+            x.items||1, (x.abogado_nom||'').replace(/[;,]/g,' ')].join(';');
+  });
+  const csv = '\ufeff' + cab.join(';') + '\n' + lin.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = 'sentido_respuestas.csv';
+  a.click();
+}
+
 function renderHist(){
   const rows = filtrarHist();
   const s = statsHist(rows);
@@ -5384,6 +5919,8 @@ function renderHist(){
     return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' + k[1] + '</div>' +
            '<div class="l">' + k[0] + '</div></div>';
   }).join('');
+
+  renderSentido();
 
   const body = document.getElementById('h-body');
   if(!rows.length){
@@ -5667,6 +6204,170 @@ const ROLES = [
   ['radicador', 'Radicador',     'Solo registra peticiones; no responde ni cierra'],
   ['consulta',  'Solo consulta', 'Ve la información, no modifica nada']
 ];
+
+/* ══════════════════════════════════════════════════════════════
+   CONTROL INTERNO — conteo de concedidas/negadas por tema (pet_docs)
+   Solo lectura. Fuente: tabla pet_docs (sentido de cada respuesta).
+   ══════════════════════════════════════════════════════════════ */
+let CI_DATOS = [];
+
+const CI_TEMA_NOMBRE = {
+  prescripcion:'Prescripción', caducidad:'Caducidad', devolucion:'Devolución',
+  inembargabilidad:'Inembargabilidad', otro:'Otros'
+};
+
+function ciRangoPorDefecto(){
+  const d = document.getElementById('ci-desde'), h = document.getElementById('ci-hasta');
+  if(d && !d.value){
+    const hoy = new Date();
+    const ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    d.value = iso(ini); h.value = iso(hoy);
+  }
+}
+
+async function cargarControlInterno(){
+  ciRangoPorDefecto();
+  const msg = document.getElementById('ci-msg');
+  msg.className = 'msg'; msg.textContent = 'Cargando…';
+  try{
+    // Traemos las filas crudas y agrupamos en el navegador (rango amplio, límite alto).
+    let q = 'pet_docs?select=tema,sentido,tipo_doc,items,creado_en,abogado_nom&order=creado_en.desc&limit=5000';
+    CI_DATOS = await supaFetch(q);
+    msg.className = 'msg ok';
+    msg.textContent = CI_DATOS.length + ' documentos registrados en total.';
+    renderControlInterno();
+  }catch(err){
+    // Si la tabla aún no existe en Supabase, avisamos con claridad.
+    CI_DATOS = [];
+    msg.className = 'msg err';
+    msg.textContent = 'No se pudo leer pet_docs (' + err.message +
+      '). Verifique que la tabla y su política RLS estén creadas.';
+    document.getElementById('ci-body').innerHTML =
+      '<tr><td colspan="6"><div class="vacio"><h3>Sin datos aún</h3>' +
+      '<p>Cuando los abogados generen respuestas con sentido (aceptada/negada), aparecerán aquí.</p></div></td></tr>';
+    document.getElementById('ci-kpis').innerHTML = '';
+    document.getElementById('ci-barras').innerHTML = '';
+  }
+}
+
+function ciFiltradas(){
+  const d = document.getElementById('ci-desde').value;
+  const h = document.getElementById('ci-hasta').value;
+  const tm = document.getElementById('ci-tema').value;
+  return CI_DATOS.filter(function(x){
+    const dia = String(x.creado_en || '').slice(0,10);
+    if(d && dia < d) return false;
+    if(h && dia > h) return false;
+    if(tm && x.tema !== tm) return false;
+    return true;
+  });
+}
+
+function renderControlInterno(){
+  const rows = ciFiltradas();
+  // Agrupar por tema
+  const porTema = {};
+  let totA = 0, totN = 0, totI = 0, totDocs = 0, totOb = 0;
+  rows.forEach(function(x){
+    const t = x.tema || 'otro';
+    if(!porTema[t]) porTema[t] = {A:0, N:0, I:0, docs:0, ob:0};
+    const g = porTema[t];
+    g.docs++; totDocs++;
+    g.ob += Number(x.items || 1); totOb += Number(x.items || 1);
+    if(x.sentido === 'ACEPTADA'){ g.A++; totA++; }
+    else if(x.sentido === 'NEGADA'){ g.N++; totN++; }
+    else { g.I++; totI++; }
+  });
+
+  // KPIs
+  const pctConc = (totA + totN) ? Math.round(totA / (totA + totN) * 100) : null;
+  document.getElementById('ci-kpis').innerHTML = [
+    ['Documentos en el período', totDocs, 'var(--txt)'],
+    ['Concedidas', totA, 'var(--verde)'],
+    ['Negadas', totN, 'var(--rojo)'],
+    ['Informativas', totI, 'var(--muted)'],
+    ['% concedidas (de las decididas)', pctConc === null ? '—' : pctConc + '%',
+      pctConc === null ? 'var(--muted)' : 'var(--gold)'],
+    ['Obligaciones afectadas', totOb, 'var(--azul)']
+  ].map(function(k){
+    return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' + k[1] + '</div>' +
+           '<div class="l">' + k[0] + '</div></div>';
+  }).join('');
+
+  // Barras honestas: ancho = % del total de documentos del período (no relativo al máximo)
+  const temas = Object.keys(porTema).sort(function(a,b){ return porTema[b].docs - porTema[a].docs; });
+  document.getElementById('ci-barras').innerHTML = temas.length
+    ? '<div class="lbl" style="margin-bottom:8px">Participación por tema (sobre el total del período)</div>' +
+      temas.map(function(t){
+        const g = porTema[t];
+        const pctA = totDocs ? (g.A / totDocs * 100) : 0;
+        const pctN = totDocs ? (g.N / totDocs * 100) : 0;
+        const pctI = totDocs ? (g.I / totDocs * 100) : 0;
+        return '<div style="margin-bottom:11px">' +
+          '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);margin-bottom:4px">' +
+            '<span>' + esc(CI_TEMA_NOMBRE[t] || t) + '</span>' +
+            '<span style="color:var(--muted)">' + g.docs + ' doc · ' +
+              '<span style="color:var(--verde)">' + g.A + ' conc.</span> · ' +
+              '<span style="color:var(--rojo)">' + g.N + ' neg.</span></span>' +
+          '</div>' +
+          '<div style="height:15px;background:rgba(255,255,255,.06);border-radius:8px;overflow:hidden;display:flex">' +
+            '<i style="width:' + pctA + '%;background:var(--verde)" title="Concedidas"></i>' +
+            '<i style="width:' + pctN + '%;background:var(--rojo)" title="Negadas"></i>' +
+            '<i style="width:' + pctI + '%;background:var(--muted)" title="Informativas"></i>' +
+          '</div></div>';
+      }).join('')
+    : '';
+
+  // Tabla
+  const body = document.getElementById('ci-body');
+  if(!temas.length){
+    body.innerHTML = '<tr><td colspan="6"><div class="vacio">' +
+      '<h3>Sin documentos en este rango</h3><p>Cambie el período o el tema.</p></div></td></tr>';
+    return;
+  }
+  body.innerHTML = temas.map(function(t){
+    const g = porTema[t];
+    return '<tr>' +
+      '<td><b>' + esc(CI_TEMA_NOMBRE[t] || t) + '</b></td>' +
+      '<td style="color:var(--verde);font-weight:700">' + g.A + '</td>' +
+      '<td style="color:var(--rojo);font-weight:700">' + g.N + '</td>' +
+      '<td style="color:var(--muted)">' + g.I + '</td>' +
+      '<td>' + g.docs + '</td>' +
+      '<td>' + g.ob + '</td>' +
+    '</tr>';
+  }).join('') +
+    '<tr style="border-top:2px solid var(--border);font-weight:700">' +
+      '<td>TOTAL</td>' +
+      '<td style="color:var(--verde)">' + totA + '</td>' +
+      '<td style="color:var(--rojo)">' + totN + '</td>' +
+      '<td style="color:var(--muted)">' + totI + '</td>' +
+      '<td>' + totDocs + '</td>' +
+      '<td>' + totOb + '</td>' +
+    '</tr>';
+}
+
+function exportarCIcsv(){
+  const rows = ciFiltradas();
+  if(!rows.length){ toast('No hay datos para exportar en este rango.', 'err'); return; }
+  const cab = ['Fecha','Tema','Sentido','Tipo documento','Obligaciones','Abogado'];
+  const lineas = rows.map(function(x){
+    return [
+      String(x.creado_en || '').slice(0,10),
+      CI_TEMA_NOMBRE[x.tema] || x.tema || '',
+      x.sentido || '',
+      x.tipo_doc || '',
+      x.items || 1,
+      x.abogado_nom || ''
+    ].map(function(c){ return '"' + String(c).replace(/"/g,'""') + '"'; }).join(',');
+  });
+  const csv = '\ufeff' + cab.join(',') + '\n' + lineas.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'control_interno_' + iso(new Date()) + '.csv';
+  a.click();
+  toast('CSV exportado.', 'ok');
+}
 
 async function cargarPersonas(){
   const msg = document.getElementById('pe-msg');
