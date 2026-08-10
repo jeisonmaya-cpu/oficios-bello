@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
 <!-- build: buscador-global + control-interno + visualizador-en-vivo + sentido(pet_docs) + prechequeo-duplicados-lote · 2026 -->
-<meta name="build" content="peticiones-visualizador-v6">
+<meta name="build" content="peticiones-visualizador-v7">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -67,16 +67,16 @@ button:focus-visible{outline-offset:3px}
   font-family:'DM Serif Display',Georgia,serif;font-size:13.5px;line-height:1.7;
   font-weight:400;text-align:justify}
 
-/* En pantallas anchas, la cola se ensancha cuando hay un documento abierto.
-   La hoja se ancla arriba a la derecha del bloque (posición absoluta) y al
-   bloque se le reserva ese espacio con padding, de modo que los campos ocupan
-   la mitad izquierda y la hoja la mitad derecha, alineadas arriba. */
+/* Dos columnas: formulario a la izquierda, hoja a la derecha.
+   En una sola columna por defecto (móvil); se divide en pantallas anchas. */
+.doc-split{display:block}
+.doc-prev{margin-top:14px}
 @media(min-width:1140px){
-  .cola-box.doc-abierto{max-width:1280px}
-  .cola-box.doc-abierto #k-doc > div{position:relative;padding-right:46%}
-  .cola-box.doc-abierto .pv-wrap{
-    position:absolute;top:18px;right:18px;width:42%;margin:0;
-    max-height:calc(100vh - 120px)}
+  .cola-box.doc-abierto{max-width:1300px}
+  .doc-split{display:flex;gap:22px;align-items:flex-start}
+  .doc-split .doc-form{flex:1 1 0;min-width:0}
+  .doc-split .doc-prev{flex:0 0 44%;margin-top:0;position:sticky;top:16px}
+  .doc-split .doc-prev .pv-wrap{margin-top:0;max-height:calc(100vh - 120px)}
 }
 .pv-hoja b{font-weight:700}
 .pv-membrete{font-family:'DM Sans',sans-serif;font-size:10.5px;letter-spacing:.4px;
@@ -4324,6 +4324,7 @@ function pintarComb(){
   let html =
    '<div style="background:rgba(37,99,235,.07);border:1px solid rgba(96,140,220,.35);' +
    'border-radius:13px;padding:18px;margin-top:16px">' +
+     '<div class="doc-split"><div class="doc-form">' +
      '<div class="lbl" style="margin-bottom:4px">Oficio combinado · ' + COMB_SEL.length + ' bloques</div>' +
      '<div class="hint" style="margin-bottom:14px">' +
        COMB_SEL.map(tituloToken).map(esc).join('  +  ') + '</div>' +
@@ -4422,7 +4423,7 @@ function pintarComb(){
       '<button class="btn btn-ghost" id="cb-btn-prev" onclick="previewCombinada()">Ocultar vista</button>' +
       '<button class="btn btn-ghost" onclick="cerrarKdoc()">Cerrar</button>' +
       '<div class="msg" id="cb-msg" style="margin:0"></div>' +
-    '</div><div id="cb-prev" data-vivo="1"></div></div>';
+    '</div></div><div id="cb-prev" class="doc-prev" data-vivo="1"></div></div></div>';
 
   cont.innerHTML = html;
   // Abrir el visualizador en vivo por defecto, igual que en la respuesta individual
@@ -4871,30 +4872,34 @@ function abrirRespuesta(clave){
   cont.innerHTML =
    '<div style="background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.3);' +
    'border-radius:13px;padding:18px;margin-top:16px">' +
-     '<div class="lbl" style="margin-bottom:4px">' + esc(c.titulo) + '</div>' +
-     '<div class="hint" style="margin-bottom:14px">' + esc(c.desc) + '</div>' +
-     '<div class="grid">' +
-       '<div class="fld"><label class="lbl">Tratamiento</label>' +
-         '<select id="o-trat" onchange="refrescarPreviaViva()"><option>Señor</option><option>Señora</option><option>Señores</option></select></div>' +
-       '<div class="fld"><label class="lbl">Peticionario</label>' +
-         '<input type="text" id="o-nom" value="' + esc(r.peticionario || '') + '" oninput="refrescarPreviaViva()"></div>' +
-       '<div class="fld"><label class="lbl">Cédula</label>' +
-         '<input type="text" id="o-ced" value="' + esc(r.documento || '') + '" oninput="refrescarPreviaViva()"></div>' +
-       '<div class="fld"><label class="lbl">Correo electrónico</label>' +
-         '<input type="email" id="o-mail" value="' + esc(r.email || '') + '" placeholder="Si no tiene, se deja vacío" oninput="refrescarPreviaViva()"></div>' +
-       '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
-         '<input type="text" id="o-rad" value="' + esc(r.radicado || '') + '" oninput="refrescarPreviaViva()"></div>' +
-       '<div class="fld"><label class="lbl">Proyectó</label>' +
-         '<input type="text" id="o-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '" oninput="refrescarPreviaViva()"></div>' +
-       propios +
+     '<div class="doc-split">' +
+       '<div class="doc-form">' +
+         '<div class="lbl" style="margin-bottom:4px">' + esc(c.titulo) + '</div>' +
+         '<div class="hint" style="margin-bottom:14px">' + esc(c.desc) + '</div>' +
+         '<div class="grid">' +
+           '<div class="fld"><label class="lbl">Tratamiento</label>' +
+             '<select id="o-trat" onchange="refrescarPreviaViva()"><option>Señor</option><option>Señora</option><option>Señores</option></select></div>' +
+           '<div class="fld"><label class="lbl">Peticionario</label>' +
+             '<input type="text" id="o-nom" value="' + esc(r.peticionario || '') + '" oninput="refrescarPreviaViva()"></div>' +
+           '<div class="fld"><label class="lbl">Cédula</label>' +
+             '<input type="text" id="o-ced" value="' + esc(r.documento || '') + '" oninput="refrescarPreviaViva()"></div>' +
+           '<div class="fld"><label class="lbl">Correo electrónico</label>' +
+             '<input type="email" id="o-mail" value="' + esc(r.email || '') + '" placeholder="Si no tiene, se deja vacío" oninput="refrescarPreviaViva()"></div>' +
+           '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
+             '<input type="text" id="o-rad" value="' + esc(r.radicado || '') + '" oninput="refrescarPreviaViva()"></div>' +
+           '<div class="fld"><label class="lbl">Proyectó</label>' +
+             '<input type="text" id="o-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '" oninput="refrescarPreviaViva()"></div>' +
+           propios +
+         '</div>' +
+         '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
+           '<button class="btn btn-primary" onclick="generarRespuesta()">Descargar Word</button>' +
+           '<button class="btn btn-ghost" id="rx-btn-prev" onclick="vistaPrevia()">Ocultar vista</button>' +
+           '<button class="btn btn-ghost" onclick="abrirRespuesta(\'' + clave + '\')">Cerrar</button>' +
+           '<div class="msg" id="rx-msg" style="margin:0"></div>' +
+         '</div>' +
+       '</div>' +
+       '<div id="rx-prev" class="doc-prev" data-vivo="1"></div>' +
      '</div>' +
-     '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
-       '<button class="btn btn-primary" onclick="generarRespuesta()">Descargar Word</button>' +
-       '<button class="btn btn-ghost" id="rx-btn-prev" onclick="vistaPrevia()">Ocultar vista</button>' +
-       '<button class="btn btn-ghost" onclick="abrirRespuesta(\'' + clave + '\')">Cerrar</button>' +
-       '<div class="msg" id="rx-msg" style="margin:0"></div>' +
-     '</div>' +
-     '<div id="rx-prev" data-vivo="1"></div>' +
    '</div>';
 
   // Abrimos la vista en vivo por defecto para guiar al abogado desde el inicio
