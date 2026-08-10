@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
 <!-- build: buscador-global + control-interno + visualizador-en-vivo + sentido(pet_docs) + prechequeo-duplicados-lote · 2026 -->
-<meta name="build" content="peticiones-visualizador-v5">
+<meta name="build" content="peticiones-visualizador-v6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -67,15 +67,16 @@ button:focus-visible{outline-offset:3px}
   font-family:'DM Serif Display',Georgia,serif;font-size:13.5px;line-height:1.7;
   font-weight:400;text-align:justify}
 
-/* En pantallas anchas, la cola se ensancha cuando hay un documento abierto,
-   y la hoja se coloca a la derecha (sticky) aprovechando el espacio libre.
-   La previa flota a la derecha; el resto del formulario fluye a su izquierda
-   sin alterar los grids internos. */
+/* En pantallas anchas, la cola se ensancha cuando hay un documento abierto.
+   La hoja se ancla arriba a la derecha del bloque (posición absoluta) y al
+   bloque se le reserva ese espacio con padding, de modo que los campos ocupan
+   la mitad izquierda y la hoja la mitad derecha, alineadas arriba. */
 @media(min-width:1140px){
-  .cola-box.doc-abierto{max-width:1260px}
-  .cola-box.doc-abierto #k-doc > div{display:flow-root}
+  .cola-box.doc-abierto{max-width:1280px}
+  .cola-box.doc-abierto #k-doc > div{position:relative;padding-right:46%}
   .cola-box.doc-abierto .pv-wrap{
-    float:right;width:44%;margin:0 0 14px 20px;max-height:80vh}
+    position:absolute;top:18px;right:18px;width:42%;margin:0;
+    max-height:calc(100vh - 120px)}
 }
 .pv-hoja b{font-weight:700}
 .pv-membrete{font-family:'DM Sans',sans-serif;font-size:10.5px;letter-spacing:.4px;
