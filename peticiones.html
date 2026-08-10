@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
 <!-- build: buscador-global + control-interno + visualizador-en-vivo + sentido(pet_docs) + prechequeo-duplicados-lote · 2026 -->
-<meta name="build" content="peticiones-visualizador-v7">
+<meta name="build" content="peticiones-archivos-v8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -408,6 +408,10 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
   color:var(--txt);text-decoration:none;transition:border-color .15s,background .15s}
 .chip:hover{border-color:var(--gold);background:rgba(232,160,32,.10)}
 .chip.vacio{color:var(--muted);border-style:dashed}
+.chip-btn{cursor:pointer;font-family:inherit;background:rgba(232,160,32,.12);
+  border-color:rgba(232,160,32,.5);color:var(--gold);font-weight:600}
+.chip-btn:hover{background:rgba(232,160,32,.20)}
+.chip-btn svg{opacity:1}
 .chip svg{width:13px;height:13px;flex-shrink:0;opacity:.75}
 .relojes{display:flex;gap:20px;align-items:flex-start}
 .reloj-b{text-align:right}
@@ -1144,6 +1148,72 @@ async function rpc(nombre, body){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   ARCHIVOS DE PETICIÓN (Supabase Storage, bucket privado 'peticiones')
+   El radicador sube el PDF; el abogado lo descarga sin correo.
+   ══════════════════════════════════════════════════════════════ */
+const BUCKET_PET = 'peticiones';
+
+/* Normaliza un radicado a un nombre de archivo seguro dentro del bucket.
+   Estructura: AÑO/RADICADO.pdf  (ej. 2026/20261034958.pdf) */
+function rutaArchivoPet(radicado, nombreOriginal){
+  const rad = String(radicado || 'sin_radicado').replace(/[^0-9A-Za-z_-]/g, '');
+  const anio = (rad.match(/^(\d{4})/) || [])[1] || String(new Date().getFullYear());
+  let ext = 'pdf';
+  const m = String(nombreOriginal || '').match(/\.([A-Za-z0-9]{1,5})$/);
+  if(m) ext = m[1].toLowerCase();
+  return anio + '/' + rad + '.' + ext;
+}
+
+/* Sube un File al bucket privado. Devuelve la ruta guardada, o lanza error.
+   upsert=true para que re-subir el mismo radicado reemplace sin fallar. */
+async function subirArchivoPet(file, radicado){
+  if(!file) return null;
+  const ruta = rutaArchivoPet(radicado, file.name);
+  const headers = await authHeaders({
+    'Content-Type': file.type || 'application/octet-stream',
+    'x-upsert': 'true'
+  });
+  const res = await fetch(
+    SUPA_URL + '/storage/v1/object/' + BUCKET_PET + '/' + encodeURI(ruta),
+    { method:'POST', headers, body: file }
+  );
+  if(!res.ok){
+    let msg = 'HTTP ' + res.status;
+    try{ const j = await res.json(); if(j && (j.message||j.error)) msg = j.message || j.error; }catch(e){}
+    throw new Error('No se pudo subir el archivo: ' + msg);
+  }
+  return ruta;
+}
+
+/* Descarga el PDF de una petición (URL firmada temporal, privada). */
+async function descargarArchivoPet(rutaOArchivo, nombreSugerido){
+  const ruta = rutaOArchivo;
+  if(!ruta){ toast('Esta petición no tiene archivo adjunto.', 'err'); return; }
+  try{
+    // Pedimos una URL firmada válida por 60 s
+    const headers = await authHeaders({'Content-Type':'application/json'});
+    const res = await fetch(
+      SUPA_URL + '/storage/v1/object/sign/' + BUCKET_PET + '/' + encodeURI(ruta),
+      { method:'POST', headers, body: JSON.stringify({ expiresIn: 60 }) }
+    );
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    const url = SUPA_URL + '/storage/v1' + j.signedURL;
+    // Descargamos el binario y forzamos "guardar como"
+    const bin = await fetch(url);
+    if(!bin.ok) throw new Error('HTTP ' + bin.status);
+    const blob = await bin.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nombreSugerido || (ruta.split('/').pop());
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+  }catch(err){
+    toast('No se pudo descargar: ' + err.message, 'err');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    DÍAS HÁBILES (cálculo en vivo, espejo del SQL)
    ══════════════════════════════════════════════════════════════ */
 function iso(d){
@@ -1687,6 +1757,24 @@ async function guardarPeticion(){
     CONTADOR++;
     document.getElementById('d-cont').textContent = CONTADOR + ' radicadas en esta sesión';
     const guardada = r && r[0] ? r[0] : reg;
+
+    // Subir el PDF a Storage (si el radicador cargó uno) y guardar su ruta.
+    if(ARCHIVO_UNICO){
+      try{
+        const ruta = await subirArchivoPet(ARCHIVO_UNICO, rad);
+        if(ruta){
+          await supaFetch('pet_peticiones?radicado=eq.' + encodeURIComponent(rad), {
+            method:'PATCH', headers:{ Prefer:'return=minimal' },
+            body: JSON.stringify({ archivo_path: ruta })
+          });
+          guardada.archivo_path = ruta;
+        }
+      }catch(eArch){
+        // El registro ya quedó; avisamos que el archivo no subió pero no bloqueamos.
+        toast('Radicó, pero el archivo no subió: ' + eArch.message, 'err', 5);
+      }
+    }
+
     ULTIMAS.unshift(guardada);
     ULTIMAS = ULTIMAS.slice(0, 8);
     pintarUltimas();
@@ -3163,6 +3251,20 @@ async function guardarLote(){
       } else {
         it.estado = 'guardada';
         ok++;
+        // Subir el PDF de esta fila a Storage y registrar su ruta.
+        if(it.file){
+          try{
+            const ruta = await subirArchivoPet(it.file, reg.radicado);
+            if(ruta){
+              await supaFetch('pet_peticiones?radicado=eq.' + encodeURIComponent(reg.radicado), {
+                method:'PATCH', headers:{ Prefer:'return=minimal' },
+                body: JSON.stringify({ archivo_path: ruta })
+              });
+            }
+          }catch(eArch){
+            it.nota = 'Radicó, pero el archivo no subió.';
+          }
+        }
       }
     }catch(err){
       // Red de seguridad: si aun así llegara un duplicado, no bloquear la tanda.
@@ -3332,6 +3434,12 @@ function pintarCaso(){
           (r.expediente
             ? '<span class="chip copiable" onclick="copiar(\'' + esc(r.expediente) + '\', \'Expediente\')">' +
               ICONO.carpeta + esc(r.expediente) + '</span>' : '') +
+          (r.archivo_path
+            ? '<button class="chip chip-btn" onclick="descargarArchivoPet(\'' +
+              esc(r.archivo_path).replace(/'/g,"\\'") + '\', \'peticion_' + esc(r.radicado) + '.pdf\')" ' +
+              'title="Descargar el PDF de la petición">' + ICONO.descarga + 'Descargar petición</button>'
+            : '<span class="chip vacio" title="El radicador no adjuntó el archivo">' +
+              ICONO.descarga + 'Sin archivo</span>') +
         '</div>' +
       '</div>' +
 
@@ -3410,6 +3518,8 @@ const ICONO = {
     '012.1-.5c.9.4 1.8.6 2.8.7a2 2 0 011.7 2z"/></svg>',
   carpeta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+  descarga: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
   doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>' +
     '<path d="M16 13H8M16 17H8M10 9H8"/></svg>',
