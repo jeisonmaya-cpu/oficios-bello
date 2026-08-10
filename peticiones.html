@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
-<!-- build: buscador-global + control-interno + sentido(pet_docs) + prechequeo-duplicados-lote · 2026 -->
-<meta name="build" content="peticiones-controlinterno-v3">
+<!-- build: buscador-global + control-interno + visualizador-en-vivo + sentido(pet_docs) + prechequeo-duplicados-lote · 2026 -->
+<meta name="build" content="peticiones-visualizador-v4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -58,6 +58,28 @@ button:focus-visible{outline-offset:3px}
 .vacio-ic{width:46px;height:46px;margin:0 auto 14px;opacity:.35}
 .vacio h3{font-size:17px;margin-bottom:6px}
 .vacio p{color:var(--muted);font-size:var(--t-sm);max-width:330px;margin:0 auto;line-height:1.55}
+
+/* ── Visualizador en vivo: hoja de oficio ── */
+.pv-wrap{margin-top:14px;background:rgba(0,0,0,.18);border:1px solid var(--border);
+  border-radius:12px;padding:16px;max-height:560px;overflow:auto}
+.pv-hoja{background:#fff;color:#1a1a1a;max-width:640px;margin:0 auto;padding:44px 46px;
+  border-radius:4px;box-shadow:0 8px 30px rgba(0,0,0,.4);
+  font-family:'DM Serif Display',Georgia,serif;font-size:13.5px;line-height:1.7;
+  font-weight:400;text-align:justify}
+.pv-hoja b{font-weight:700}
+.pv-membrete{font-family:'DM Sans',sans-serif;font-size:10.5px;letter-spacing:.4px;
+  text-transform:uppercase;color:#0a1f3d;font-weight:700;border-bottom:2px solid #e8a020;
+  padding-bottom:8px;margin-bottom:20px;text-align:center}
+.pv-fecha{text-align:right;margin-bottom:18px;font-size:12.5px}
+.pv-dest{margin-bottom:16px;line-height:1.5}
+.pv-asunto{margin-bottom:16px}
+.pv-p{margin:0 0 11px}
+.pv-vin{padding-left:18px;text-align:left}
+.pv-firma{margin-top:26px;line-height:1.4}
+.pv-falta{background:#ffe6a733;color:#b8860b;border:1px dashed #e8a020;border-radius:4px;
+  padding:0 5px;font-style:italic;font-family:'DM Sans',sans-serif;font-size:11.5px;
+  white-space:nowrap}
+@media(max-width:640px){.pv-hoja{padding:26px 22px;font-size:12.5px}}
 body{
   font-family:'DM Sans',system-ui,sans-serif;background:var(--navy);color:var(--txt);
   min-height:100vh;
@@ -1240,6 +1262,17 @@ async function iniciar(){
   prepararDigitar();
   llenarAbogados();
   registrarAtajoBuscador();
+  // Refresco en vivo del visualizador: delegado en document para sobrevivir a
+  // la recreación de #k-doc cada vez que se abre un caso.
+  if(!window.__vivoLigado){
+    window.__vivoLigado = true;
+    document.addEventListener('input', function(e){
+      const kdoc = e.target.closest ? e.target.closest('#k-doc') : null;
+      if(!kdoc) return;
+      if(kdoc.getAttribute('data-modo') === '__COMBINADA__') refrescarPreviaComb();
+      else if(RESP_ACTUAL) refrescarPreviaViva();
+    });
+  }
 }
 
 /* Ctrl+K / ⌘K abre el buscador global desde cualquier panel */
@@ -4369,7 +4402,7 @@ function pintarComb(){
 
   html += '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;align-items:center">' +
       '<button class="btn btn-primary" onclick="generarCombinada()">Descargar Word</button>' +
-      '<button class="btn btn-ghost" onclick="previewCombinada()">Vista previa</button>' +
+      '<button class="btn btn-ghost" id="cb-btn-prev" onclick="previewCombinada()">Vista previa</button>' +
       '<button class="btn btn-ghost" onclick="cerrarKdoc()">Cerrar</button>' +
       '<div class="msg" id="cb-msg" style="margin:0"></div>' +
     '</div><div id="cb-prev"></div></div>';
@@ -4507,22 +4540,21 @@ function armarCombinada(){
 function previewCombinada(){
   const cont = document.getElementById('cb-prev');
   if(!cont) return;
-  if(cont.innerHTML){ cont.innerHTML = ''; return; }
+  if(cont.getAttribute('data-vivo') === '1'){
+    cont.removeAttribute('data-vivo'); cont.innerHTML = '';
+    const b = document.getElementById('cb-btn-prev'); if(b) b.textContent = 'Vista previa';
+    return;
+  }
+  cont.setAttribute('data-vivo', '1');
+  const b = document.getElementById('cb-btn-prev'); if(b) b.textContent = 'Ocultar vista';
+  refrescarPreviaComb();
+}
+
+function refrescarPreviaComb(){
+  const cont = document.getElementById('cb-prev');
+  if(!cont || cont.getAttribute('data-vivo') !== '1') return;
   const a = armarCombinada();
-  const html = a.parrs.map(function(p){
-    let t = p;
-    Object.keys(a.comunes).forEach(function(k){
-      t = t.split('{{' + k + '}}').join(a.comunes[k] || '_____');
-    });
-    const vineta = /^-\s+/.test(t);
-    if(vineta) t = t.replace(/^-\s+/, '');
-    t = esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    return '<p style="margin:0 0 9px' + (vineta ? ';padding-left:18px' : '') + '">' +
-      (vineta ? '• ' : '') + t + '</p>';
-  }).join('');
-  cont.innerHTML =
-    '<div style="background:rgba(255,255,255,.05);border:1px solid var(--border);' +
-    'border-radius:11px;padding:14px;margin-top:12px;font-size:13px;line-height:1.55">' + html + '</div>';
+  pintarHojaPrevia(cont, a.parrs, a.comunes);
 }
 
 /* Registra el sentido de cada bloque en pet_docs (para conteos de Control Interno).
@@ -4803,16 +4835,16 @@ function abrirRespuesta(clave){
   const propios = (c.campos || []).map(function(f){
     if(f.tipo === 'area')
       return '<div class="fld" style="grid-column:1/-1"><label class="lbl">' + esc(f.lbl) + '</label>' +
-        '<textarea id="rx-' + f.id + '" placeholder="' + esc(f.ph || '') + '" style="min-height:80px">' +
-        esc(f.def || '') + '</textarea></div>';
+        '<textarea id="rx-' + f.id + '" placeholder="' + esc(f.ph || '') + '" style="min-height:80px" ' +
+        'oninput="refrescarPreviaViva()">' + esc(f.def || '') + '</textarea></div>';
     if(f.tipo === 'select')
       return '<div class="fld"><label class="lbl">' + esc(f.lbl) + '</label>' +
-        '<select id="rx-' + f.id + '">' +
+        '<select id="rx-' + f.id + '" onchange="refrescarPreviaViva()">' +
         f.op.map(function(o){ return '<option>' + esc(o) + '</option>'; }).join('') +
         '</select></div>';
     return '<div class="fld"><label class="lbl">' + esc(f.lbl) + '</label>' +
       '<input type="text" id="rx-' + f.id + '" value="' + esc(f.def || '') + '" ' +
-      'placeholder="' + esc(f.ph || '') + '"></div>';
+      'placeholder="' + esc(f.ph || '') + '" oninput="refrescarPreviaViva()"></div>';
   }).join('');
 
   cont.innerHTML =
@@ -4822,27 +4854,30 @@ function abrirRespuesta(clave){
      '<div class="hint" style="margin-bottom:14px">' + esc(c.desc) + '</div>' +
      '<div class="grid">' +
        '<div class="fld"><label class="lbl">Tratamiento</label>' +
-         '<select id="o-trat"><option>Señor</option><option>Señora</option><option>Señores</option></select></div>' +
+         '<select id="o-trat" onchange="refrescarPreviaViva()"><option>Señor</option><option>Señora</option><option>Señores</option></select></div>' +
        '<div class="fld"><label class="lbl">Peticionario</label>' +
-         '<input type="text" id="o-nom" value="' + esc(r.peticionario || '') + '"></div>' +
+         '<input type="text" id="o-nom" value="' + esc(r.peticionario || '') + '" oninput="refrescarPreviaViva()"></div>' +
        '<div class="fld"><label class="lbl">Cédula</label>' +
-         '<input type="text" id="o-ced" value="' + esc(r.documento || '') + '"></div>' +
+         '<input type="text" id="o-ced" value="' + esc(r.documento || '') + '" oninput="refrescarPreviaViva()"></div>' +
        '<div class="fld"><label class="lbl">Correo electrónico</label>' +
-         '<input type="email" id="o-mail" value="' + esc(r.email || '') + '" placeholder="Si no tiene, se deja vacío"></div>' +
+         '<input type="email" id="o-mail" value="' + esc(r.email || '') + '" placeholder="Si no tiene, se deja vacío" oninput="refrescarPreviaViva()"></div>' +
        '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
-         '<input type="text" id="o-rad" value="' + esc(r.radicado || '') + '"></div>' +
+         '<input type="text" id="o-rad" value="' + esc(r.radicado || '') + '" oninput="refrescarPreviaViva()"></div>' +
        '<div class="fld"><label class="lbl">Proyectó</label>' +
-         '<input type="text" id="o-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '"></div>' +
+         '<input type="text" id="o-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '" oninput="refrescarPreviaViva()"></div>' +
        propios +
      '</div>' +
      '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
        '<button class="btn btn-primary" onclick="generarRespuesta()">Descargar Word</button>' +
-       '<button class="btn btn-ghost" onclick="vistaPrevia()">Vista previa</button>' +
+       '<button class="btn btn-ghost" id="rx-btn-prev" onclick="vistaPrevia()">Ocultar vista</button>' +
        '<button class="btn btn-ghost" onclick="abrirRespuesta(\'' + clave + '\')">Cerrar</button>' +
        '<div class="msg" id="rx-msg" style="margin:0"></div>' +
      '</div>' +
-     '<div id="rx-prev"></div>' +
+     '<div id="rx-prev" data-vivo="1"></div>' +
    '</div>';
+
+  // Abrimos la vista en vivo por defecto para guiar al abogado desde el inicio
+  refrescarPreviaViva();
 }
 
 /* Lee los campos comunes y propios de la respuesta abierta */
@@ -4879,27 +4914,72 @@ function parrafosRespuesta(c, datos){
   return parrafos;
 }
 
+/* Convierte párrafos + datos en HTML con aspecto de hoja de oficio.
+   Resalta en ámbar los campos que aún faltan, para guiar al abogado. */
+function previaHTML(parrafos, datos){
+  const cuerpo = parrafos.map(function(p){
+    let t = p, faltan = false;
+    Object.keys(datos).forEach(function(k){
+      const v = datos[k];
+      if(t.indexOf('{{' + k + '}}') !== -1){
+        if(v){ t = t.split('{{' + k + '}}').join(v); }
+      }
+    });
+    // Lo que quede sin reemplazar => campo faltante, lo marcamos visualmente
+    t = esc(t).replace(/\{\{([A-Z_]+)\}\}/g, function(_, k){
+      faltan = true;
+      return '<span class="pv-falta" title="Falta este dato">' + k.replace(/_/g,' ').toLowerCase() + '</span>';
+    });
+    const vineta = /^-\s+/.test(p);
+    if(vineta) t = t.replace(/^-\s+/, '');
+    t = t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    return '<p class="pv-p' + (vineta ? ' pv-vin' : '') + '">' + (vineta ? '• ' : '') + t + '</p>';
+  }).join('');
+  return cuerpo;
+}
+
+function pintarHojaPrevia(cont, parrafos, datos){
+  cont.innerHTML =
+    '<div class="pv-wrap">' +
+      '<div class="pv-hoja">' +
+        '<div class="pv-membrete">ALCALDÍA DE BELLO · Dirección Administrativa de Ejecuciones Fiscales</div>' +
+        '<div class="pv-fecha">Bello, ' + esc(datos.FECHA_LARGA || '____') + '</div>' +
+        '<div class="pv-dest">' +
+          esc(datos.TRATAMIENTO || 'Señor(a)') + ' <b>' + esc(datos.NOMBRE || '_____') + '</b><br>' +
+          (datos.CEDULA ? 'C.C. ' + esc(datos.CEDULA) + '<br>' : '') +
+          (datos.EMAIL ? esc(datos.EMAIL) : '') +
+        '</div>' +
+        '<div class="pv-asunto"><b>Asunto:</b> Respuesta a petición radicado ' +
+          esc(datos.RADICADO || '_____') + '</div>' +
+        previaHTML(parrafos, datos) +
+        '<div class="pv-firma">Atentamente,<br><br><b>' +
+          esc(datos.PROYECTO || '_____') + '</b><br>Proyectó</div>' +
+      '</div>' +
+    '</div>';
+}
+
 function vistaPrevia(){
   const c = CATALOGO_RESPUESTAS[RESP_ACTUAL];
   const cont = document.getElementById('rx-prev');
   if(!c || !cont) return;
-  if(cont.innerHTML){ cont.innerHTML = ''; return; }
+  if(cont.getAttribute('data-vivo') === '1'){
+    cont.removeAttribute('data-vivo'); cont.innerHTML = '';
+    const b = document.getElementById('rx-btn-prev'); if(b) b.textContent = 'Vista previa';
+    return;
+  }
+  cont.setAttribute('data-vivo', '1');
+  const b = document.getElementById('rx-btn-prev'); if(b) b.textContent = 'Ocultar vista';
+  refrescarPreviaViva();
+}
+
+/* Se llama en cada tecla: si la previa está activa, la redibuja con los datos actuales */
+function refrescarPreviaViva(){
+  const cont = document.getElementById('rx-prev');
+  if(!cont || cont.getAttribute('data-vivo') !== '1') return;
+  const c = CATALOGO_RESPUESTAS[RESP_ACTUAL];
+  if(!c) return;
   const datos = leerDatosRespuesta();
-  const html = parrafosRespuesta(c, datos).map(function(p){
-    let t = p;
-    Object.keys(datos).forEach(function(k){
-      t = t.split('{{' + k + '}}').join(datos[k] || '_____');
-    });
-    const vineta = /^-\s+/.test(t);
-    if(vineta) t = t.replace(/^-\s+/, '');
-    t = esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    return '<p style="margin:0 0 9px' + (vineta ? ';padding-left:18px' : '') + '">' +
-      (vineta ? '• ' : '') + t + '</p>';
-  }).join('');
-  cont.innerHTML =
-    '<div style="background:rgba(255,255,255,.05);border:1px solid var(--border);' +
-    'border-radius:11px;padding:14px;margin-top:12px;font-size:13px;line-height:1.55">' +
-    html + '</div>';
+  pintarHojaPrevia(cont, parrafosRespuesta(c, datos), datos);
 }
 
 async function generarRespuesta(){
