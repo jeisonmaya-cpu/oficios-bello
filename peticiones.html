@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
 <!-- build: buscador-global + control-interno + visualizador-en-vivo + sentido(pet_docs) + prechequeo-duplicados-lote · 2026 -->
-<meta name="build" content="peticiones-visualizador-v4">
+<meta name="build" content="peticiones-visualizador-v5">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -66,6 +66,17 @@ button:focus-visible{outline-offset:3px}
   border-radius:4px;box-shadow:0 8px 30px rgba(0,0,0,.4);
   font-family:'DM Serif Display',Georgia,serif;font-size:13.5px;line-height:1.7;
   font-weight:400;text-align:justify}
+
+/* En pantallas anchas, la cola se ensancha cuando hay un documento abierto,
+   y la hoja se coloca a la derecha (sticky) aprovechando el espacio libre.
+   La previa flota a la derecha; el resto del formulario fluye a su izquierda
+   sin alterar los grids internos. */
+@media(min-width:1140px){
+  .cola-box.doc-abierto{max-width:1260px}
+  .cola-box.doc-abierto #k-doc > div{display:flow-root}
+  .cola-box.doc-abierto .pv-wrap{
+    float:right;width:44%;margin:0 0 14px 20px;max-height:80vh}
+}
 .pv-hoja b{font-weight:700}
 .pv-membrete{font-family:'DM Sans',sans-serif;font-size:10.5px;letter-spacing:.4px;
   text-transform:uppercase;color:#0a1f3d;font-weight:700;border-bottom:2px solid #e8a020;
@@ -4153,10 +4164,15 @@ function toggleCombinar(){
   COMB_SEL = []; COMB = {}; COMB_SUG_NO = false;
   cerrarKdoc(); repintarDocInt();
 }
+function marcarDocAbierto(abierto){
+  const box = document.querySelector('.cola-box');
+  if(box) box.classList.toggle('doc-abierto', !!abierto);
+}
 function cerrarKdoc(){
   const c = document.getElementById('k-doc');
   if(c){ c.innerHTML = ''; c.removeAttribute('data-modo'); }
   RESP_ACTUAL = null;
+  marcarDocAbierto(false);
 }
 function repintarDocInt(){
   const r = COLA[COLA_IDX];
@@ -4402,12 +4418,15 @@ function pintarComb(){
 
   html += '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;align-items:center">' +
       '<button class="btn btn-primary" onclick="generarCombinada()">Descargar Word</button>' +
-      '<button class="btn btn-ghost" id="cb-btn-prev" onclick="previewCombinada()">Vista previa</button>' +
+      '<button class="btn btn-ghost" id="cb-btn-prev" onclick="previewCombinada()">Ocultar vista</button>' +
       '<button class="btn btn-ghost" onclick="cerrarKdoc()">Cerrar</button>' +
       '<div class="msg" id="cb-msg" style="margin:0"></div>' +
-    '</div><div id="cb-prev"></div></div>';
+    '</div><div id="cb-prev" data-vivo="1"></div></div>';
 
   cont.innerHTML = html;
+  // Abrir el visualizador en vivo por defecto, igual que en la respuesta individual
+  marcarDocAbierto(true);
+  refrescarPreviaComb();
 }
 
 /* mutadores del estado combinado */
@@ -4827,7 +4846,8 @@ function abrirRespuesta(clave){
   const cont = document.getElementById('k-doc');
   if(!cont) return;
   if(cont.getAttribute('data-modo') === clave){
-    cont.innerHTML = ''; cont.removeAttribute('data-modo'); RESP_ACTUAL = null; return;
+    cont.innerHTML = ''; cont.removeAttribute('data-modo'); RESP_ACTUAL = null;
+    marcarDocAbierto(false); return;
   }
   cont.setAttribute('data-modo', clave);
   RESP_ACTUAL = clave;
@@ -4877,6 +4897,7 @@ function abrirRespuesta(clave){
    '</div>';
 
   // Abrimos la vista en vivo por defecto para guiar al abogado desde el inicio
+  marcarDocAbierto(true);
   refrescarPreviaViva();
 }
 
