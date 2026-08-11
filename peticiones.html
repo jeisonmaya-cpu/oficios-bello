@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
-<!-- build: buscador-global + control-interno + visualizador-en-vivo + sentido(pet_docs) + prechequeo-duplicados-lote · 2026 -->
-<meta name="build" content="peticiones-archivos-v8">
+<!-- build: archivos-peticion + limpieza-pdf-antiguos + control-interno + buscador-global + visualizador · 2026 -->
+<meta name="build" content="peticiones-pdfcmaps-v10">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -1032,6 +1032,24 @@ footer b{color:var(--gold)}
         </td></tr></tbody>
       </table>
     </div>
+
+    <!-- ── Mantenimiento: limpieza de PDFs antiguos ── -->
+    <div style="margin-top:34px;border-top:1px solid var(--border);padding-top:22px">
+      <h3 style="font-size:17px;margin-bottom:4px">Limpieza de archivos <em style="color:var(--gold);font-style:normal">antiguos</em></h3>
+      <div class="hint" style="max-width:640px">
+        Borra del almacenamiento la copia de trabajo del PDF de peticiones ya
+        <b>respondidas hace más de 3 meses</b>. El original permanece archivado en la gestión
+        de la Alcaldía; esta copia solo servía para agilizar al abogado. Libera espacio sin
+        afectar el expediente. Nada se borra sin su confirmación.
+      </div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">
+        <button class="btn btn-ghost" onclick="buscarLimpieza()">Buscar candidatos</button>
+        <button class="btn" id="lp-btn" style="display:none;background:rgba(220,38,38,.15);border-color:rgba(220,38,38,.5);color:#fca5a5"
+          onclick="confirmarLimpieza()">Borrar los archivos listados</button>
+        <div class="msg" id="lp-msg" style="margin:0"></div>
+      </div>
+      <div id="lp-lista" style="margin-top:14px"></div>
+    </div>
   </section>
 
   <!-- ══ PERSONAS ══ -->
@@ -1828,6 +1846,19 @@ function pintarUltimas(){
    ══════════════════════════════════════════════════════════════ */
 const CDN_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const CDN_PDFW  = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+// CMaps: necesarios para fuentes CID/Identity-H (PDFs de DevExpress, etc.).
+// Sin esto, pdf.js renderiza glifos incorrectos (texto en símbolos).
+// Se sirven desde jsdelivr, que expone las carpetas cmaps/ y standard_fonts/.
+const CDN_PDFCMAP = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
+const CDN_PDFFONT = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/';
+function opcionesPDF(buf){
+  return {
+    data: buf,
+    cMapUrl: CDN_PDFCMAP,
+    cMapPacked: true,
+    standardFontDataUrl: CDN_PDFFONT
+  };
+}
 const CDN_TESS  = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
 
 function cargarScript(src){
@@ -1997,7 +2028,7 @@ async function textoDePDF(file){
   await cargarScript(CDN_PDFJS);
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
   const buf = await file.arrayBuffer();
-  const pdf = await window.pdfjsLib.getDocument({data: buf}).promise;
+  const pdf = await window.pdfjsLib.getDocument(opcionesPDF(buf)).promise;
   const n = Math.min(pdf.numPages, 6);
   let out = '';
   for(let p = 1; p <= n; p++){
@@ -2059,7 +2090,7 @@ async function ocrDePDF(file){
   await cargarScript(CDN_TESS);
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
   const buf = await file.arrayBuffer();
-  const pdf = await window.pdfjsLib.getDocument({data: buf}).promise;
+  const pdf = await window.pdfjsLib.getDocument(opcionesPDF(buf)).promise;
   const n = Math.min(pdf.numPages, 3);
   let out = '';
   for(let p = 1; p <= n; p++){
@@ -2577,7 +2608,7 @@ async function paginaACanvas(file, pagina, escala){
   await cargarScript(CDN_PDFJS);
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
   const buf = await file.arrayBuffer();
-  const pdf = await window.pdfjsLib.getDocument({data: buf}).promise;
+  const pdf = await window.pdfjsLib.getDocument(opcionesPDF(buf)).promise;
   const p = Math.min(Math.max(pagina, 1), pdf.numPages);
   const pg = await pdf.getPage(p);
   const vp = pg.getViewport({scale: escala || 1});
@@ -6584,6 +6615,104 @@ function exportarCIcsv(){
   a.download = 'control_interno_' + iso(new Date()) + '.csv';
   a.click();
   toast('CSV exportado.', 'ok');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LIMPIEZA DE PDFs ANTIGUOS (copia de trabajo)
+   Candidatos: RESPONDIDA/CERRADA con archivo_path, fecha_respuesta
+   de hace más de 3 meses. Borrado supervisado, con confirmación.
+   ══════════════════════════════════════════════════════════════ */
+let LIMPIEZA_CAND = [];
+
+async function buscarLimpieza(){
+  const msg = document.getElementById('lp-msg');
+  const lista = document.getElementById('lp-lista');
+  const btn = document.getElementById('lp-btn');
+  btn.style.display = 'none';
+  msg.className = 'msg'; msg.textContent = 'Buscando…';
+  lista.innerHTML = '';
+  try{
+    // Fecha de corte: hoy menos 3 meses
+    const corte = new Date();
+    corte.setMonth(corte.getMonth() - 3);
+    const corteISO = iso(corte);
+    // Peticiones con archivo, respondidas/cerradas, respondidas antes del corte
+    const q = 'pet_peticiones?select=id,radicado,peticionario,estado,fecha_respuesta,archivo_path' +
+      '&archivo_path=not.is.null' +
+      '&estado=in.(RESPONDIDA,CERRADA)' +
+      '&fecha_respuesta=lt.' + corteISO +
+      '&order=fecha_respuesta.asc&limit=1000';
+    LIMPIEZA_CAND = await supaFetch(q);
+    if(!LIMPIEZA_CAND.length){
+      msg.className = 'msg ok';
+      msg.textContent = 'No hay archivos que limpiar. Todo está dentro de los 3 meses.';
+      return;
+    }
+    msg.className = 'msg';
+    msg.textContent = LIMPIEZA_CAND.length + ' archivo(s) candidato(s) — respondidos antes del ' +
+      fmtFecha(corteISO) + '.';
+    lista.innerHTML =
+      '<div class="tbl-wrap"><table><thead><tr>' +
+        '<th>Radicado</th><th>Peticionario</th><th>Estado</th><th>Respondida</th>' +
+      '</tr></thead><tbody>' +
+      LIMPIEZA_CAND.map(function(r){
+        return '<tr>' +
+          '<td>' + esc(r.radicado) + '</td>' +
+          '<td>' + esc(r.peticionario || '—') + '</td>' +
+          '<td>' + esc(r.estado) + '</td>' +
+          '<td>' + fmtFecha(r.fecha_respuesta) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+    btn.style.display = '';
+    btn.textContent = 'Borrar ' + LIMPIEZA_CAND.length + ' archivo(s)';
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo buscar: ' + err.message;
+  }
+}
+
+async function confirmarLimpieza(){
+  if(!LIMPIEZA_CAND.length) return;
+  if(!confirm('Se borrará la copia de trabajo de ' + LIMPIEZA_CAND.length +
+    ' archivo(s). El original sigue en la gestión de la Alcaldía. ¿Continuar?')) return;
+
+  const msg = document.getElementById('lp-msg');
+  const btn = document.getElementById('lp-btn');
+  btn.disabled = true;
+  let ok = 0, fallos = 0;
+
+  for(let i = 0; i < LIMPIEZA_CAND.length; i++){
+    const r = LIMPIEZA_CAND[i];
+    msg.className = 'msg';
+    msg.textContent = 'Borrando ' + (i + 1) + ' de ' + LIMPIEZA_CAND.length + '…';
+    try{
+      // 1) Borrar el objeto del bucket
+      const headers = await authHeaders();
+      const del = await fetch(
+        SUPA_URL + '/storage/v1/object/' + BUCKET_PET + '/' + encodeURI(r.archivo_path),
+        { method:'DELETE', headers }
+      );
+      // 404 = ya no estaba; lo tratamos como éxito
+      if(!del.ok && del.status !== 404) throw new Error('HTTP ' + del.status);
+      // 2) Limpiar la referencia en la fila
+      await supaFetch('pet_peticiones?id=eq.' + r.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        body: JSON.stringify({ archivo_path: null })
+      });
+      ok++;
+    }catch(e){
+      fallos++;
+    }
+  }
+
+  btn.disabled = false;
+  btn.style.display = 'none';
+  msg.className = fallos ? 'msg err' : 'msg ok';
+  msg.textContent = ok + ' archivo(s) liberado(s)' +
+    (fallos ? ' · ' + fallos + ' con problema (revise e intente de nuevo).' : '.');
+  document.getElementById('lp-lista').innerHTML = '';
+  LIMPIEZA_CAND = [];
+  toast(ok + ' archivos liberados del almacenamiento', 'ok', 4);
 }
 
 async function cargarPersonas(){
