@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
 <!-- build: archivos-peticion + limpieza-pdf-antiguos + control-interno + buscador-global + visualizador · 2026 -->
-<meta name="build" content="peticiones-pdfcmaps-v10">
+<meta name="build" content="peticiones-peticionario-v12">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -437,6 +437,11 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .lote-arch{font-size:var(--t-micro);color:var(--muted);flex:1;min-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lote-rad{font-family:'Syne';font-weight:800;color:var(--gold);font-size:15px}
 .lote-est{font-size:var(--t-micro);padding:2px 9px;border-radius:99px;font-weight:700}
+.lote-x{width:26px;height:26px;flex:none;border-radius:8px;border:1px solid var(--border);
+  background:rgba(248,113,113,.08);color:var(--rojo);cursor:pointer;font-size:13px;
+  line-height:1;display:inline-flex;align-items:center;justify-content:center;
+  transition:background .15s,border-color .15s}
+.lote-x:hover{background:rgba(248,113,113,.22);border-color:var(--rojo)}
 .lote-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px}
 .doc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px}
 .doc-grp{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:13px;padding:12px}
@@ -2204,65 +2209,66 @@ function extraerDatos(t){
   }
 
   const patronesNombre = [
-    // "Remitente: X" (índice documental del SIM / sello de radicación)
-    new RegExp('remitente\\s*:?\\s*' + NOMS, 'i'),
-    // "mi nombre es X" · "me llamo X"
-    new RegExp('(?:mi\\s+nombre\\s+es|me\\s+llamo)\\s+' + NOMS, 'i'),
-    // "Peticionario: X" · "Solicitante: X"
-    new RegExp('(?:peticionari[oa]|solicitante|contribuyente)\\s*:?\\s*' + NOMS, 'i'),
+    // "Peticionario: X" · "Solicitante: X" — DECLARACIÓN EXPLÍCITA, máxima prioridad.
+    // Gana sobre el remitente del correo (que puede ser un abogado o tercero).
+    new RegExp('(?:peticionari[oa]|solicitante|contribuyente|accionante)\\s*:?\\s*' + NOMS, 'i'),
     // "a nombre de X" · "a nombre del titular X"
     new RegExp('a\\s+nombre\\s+(?:de|del\\s+titular)\\s+' + NOMS, 'i'),
     // "Yo, X ... identificado/mayor/con cc"
     new RegExp('\\byo\\s*,?\\s+' + NOMS + '\\s*,?\\s*(?:mayor|identificad|con\\s+c|colombian|cc)', 'i'),
     // "X identificado con..." · "X, mayor de edad"
     new RegExp('\\b' + NOMS + '\\s*,?\\s*(?:mayor\\s+de\\s+edad|identificad[oa]\\s+con|con\\s+c\\.?\\s?c\\.?)', ''),
+    // "mi nombre es X" · "me llamo X"
+    new RegExp('(?:mi\\s+nombre\\s+es|me\\s+llamo)\\s+' + NOMS, 'i'),
     // "El suscrito X"
     new RegExp('(?:el\\s+suscrit[oa]|la\\s+suscrita)\\s+' + NOMS, 'i'),
-    // Firma final: "Atentamente, / Cordialmente, ... X"
-    new RegExp('(?:atentamente|cordialmente)\\s*[,:]?\\s*(?:\\n|\\s)+' + NOMS, 'i')
+    // "Remitente: X" (índice documental del SIM / sello de radicación)
+    new RegExp('remitente\\s*:?\\s*' + NOMS, 'i')
   ];
 
-  // Correo reenviado desde Outlook: "De: Nombre Apellido <correo@...>" · "Desde Nombre <correo>"
-  // Se prueba PRIMERO porque la mayoría de radicados llegan como reenvío de correo.
+  // 1º) DECLARACIONES EXPLÍCITAS del peticionario en el cuerpo.
+  //     Tienen prioridad sobre el remitente del correo, porque quien envía
+  //     el correo a veces es un abogado o apoderado, NO el peticionario.
+  for(let i = 0; !d.nombre && i < patronesNombre.length; i++){
+    const mm = t.match(patronesNombre[i]) || txt.match(patronesNombre[i]);
+    if(mm && nombreValido(mm[1])){ d.nombre = limpiarNombre(mm[1]); d.nombre_fuente = 'texto'; break; }
+  }
+
+  // 2º) Firma final: "Atentamente, / Cordialmente, ... X"
   if(!d.nombre){
-    // Recolectar TODOS los remitentes "Nombre <correo>" del hilo de correo.
-    // "De:" (con dos puntos) es el peticionario real; "Desde" suele ser la cuenta
-    // institucional que reenvía, así que se prefiere el "De:" pero se descartan
-    // los correos de dominio @bello.gov.co (institucionales).
+    m = (t.match(new RegExp('(?:atentamente|cordialmente)\\s*[,:]?\\s*(?:\\n|\\s)+' + NOMS, 'i')) ||
+         txt.match(new RegExp('(?:atentamente|cordialmente)\\s*[,:]?\\s*(?:\\n|\\s)+' + NOMS, 'i')));
+    if(m && nombreValido(m[1])){ d.nombre = limpiarNombre(m[1]); d.nombre_fuente = 'firma'; }
+  }
+
+  // 3º) Cierre de correo: "Cordial saludo, / Quedo atento, / Gracias, [Nombre]"
+  if(!d.nombre){
+    m = txt.match(new RegExp('(?:cordial\\s+saludo|quedo\\s+atent[oa]|qued[óo]\\s+atent[oa]|muchas\\s+gracias|feliz\\s+(?:d[íi]a|tarde))\\s*[,.:]?\\s+' + NOMS, 'i'));
+    if(m && nombreValido(m[1])){ d.nombre = limpiarNombre(m[1]); d.nombre_fuente = 'firma'; }
+  }
+
+  // 4º) FALLBACK: remitente del correo reenviado ("De: Nombre <correo>").
+  //     Solo si el cuerpo no declaró un peticionario. OJO: puede ser el abogado.
+  if(!d.nombre){
     const cands = [];
-    // "De: Nombre <correo>" — exige los dos puntos para no matchear dentro de "Desde"
     let re = new RegExp('\\bde\\s*:\\s*' + NOMS + '\\s*<([^>]+)>', 'ig');
     let mm;
     while((mm = re.exec(txt))){ cands.push({nom:mm[1], mail:(mm[2]||'').toLowerCase(), pri:1}); }
-    // "Desde Nombre <correo>" — prioridad menor
     re = new RegExp('desde\\s+' + NOMS + '\\s*<([^>]+)>', 'ig');
     while((mm = re.exec(txt))){ cands.push({nom:mm[1], mail:(mm[2]||'').toLowerCase(), pri:2}); }
-    // ordenar: primero pri=1, y dentro de eso, correos NO institucionales
     cands.sort((a,b)=> a.pri-b.pri || ((a.mail.includes('bello.gov')?1:0)-(b.mail.includes('bello.gov')?1:0)));
     const elegido = cands.find(c => nombreValido(c.nom));
-    if(elegido) d.nombre = limpiarNombre(elegido.nom);
+    if(elegido){ d.nombre = limpiarNombre(elegido.nom); d.nombre_fuente = 'remitente'; }
   }
 
-  for(let i = 0; !d.nombre && i < patronesNombre.length; i++){
-    const mm = t.match(patronesNombre[i]) || txt.match(patronesNombre[i]);
-    if(mm && nombreValido(mm[1])){ d.nombre = limpiarNombre(mm[1]); break; }
-  }
-
-  // Cierre de correo: "Cordial saludo, / Quedo atento, / Gracias, [Nombre]"
-  if(!d.nombre){
-    m = txt.match(new RegExp('(?:cordial\\s+saludo|quedo\\s+atent[oa]|qued[óo]\\s+atent[oa]|muchas\\s+gracias|feliz\\s+(?:d[íi]a|tarde))\\s*[,.:]?\\s+' + NOMS, 'i'));
-    if(m && nombreValido(m[1])) d.nombre = limpiarNombre(m[1]);
-  }
-
-  // Último recurso: línea en mayúsculas que parezca nombre, pero NO junto a encabezados.
+  // 5º) Último recurso: línea en mayúsculas que parezca nombre.
   if(!d.nombre){
     const lineas = t.split(/\n/);
     for(let i = 0; i < lineas.length; i++){
       const L = lineas[i].trim();
-      // debe tener 2-4 palabras (evita bloques largos institucionales) y pasar el veto
       const pal = L.split(/\s+/).filter(p=>p.length>1);
       if(/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s.]{8,45}$/.test(L) && pal.length>=2 && pal.length<=4 && nombreValido(L)){
-        d.nombre = limpiarNombre(L); break;
+        d.nombre = limpiarNombre(L); d.nombre_fuente = 'linea'; break;
       }
     }
   }
@@ -2338,14 +2344,19 @@ function extraerDatos(t){
 }
 
 function limpiarNombre(s){
-  // Quita conectores que se cuelan al final del nombre
-  return String(s || '')
-    .replace(/\s+(con|de|del|identificad[oa]|mayor|cc|c\.c|cedula|c[ée]dula|nit|titular|portador[a]?)\b.*$/i, '')
+  let x = String(s || '')
+    // corta en el primer punto/dos-puntos (fin de la línea del nombre)
+    .split(/[.:]/)[0]
+    // quita conectores y palabras administrativas que se cuelan al final
+    .replace(/\s+(con|de|del|identificad[oa]|mayor|cc|c\.c|cedula|c[ée]dula|nit|titular|portador[a]?|tarjeta|documento|numero|n[úu]mero|placa)\b.*$/i, '')
     .replace(/[.,;:]+$/, '')
-    .replace(/\s+/g,' ').trim()
-    .split(' ').map(function(p){
-      return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
-    }).join(' ');
+    .replace(/\s+/g,' ').trim();
+  // Corta si aún quedan >4 palabras (un nombre real rara vez pasa de 4-5)
+  const pal = x.split(' ');
+  if(pal.length > 5) x = pal.slice(0, 5).join(' ');
+  return x.split(' ').map(function(p){
+    return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+  }).join(' ');
 }
 
 /* Solo rellena lo que esté vacío; nunca pisa lo que el radicador ya escribió */
@@ -2360,6 +2371,19 @@ function aplicarDatos(d){
     puestos.push(etiqueta);
   }
   set('d-nom', d.nombre, 'nombre');
+  // Si el nombre salió del REMITENTE del correo (no de una declaración explícita),
+  // avisar al radicador para que verifique: puede ser un abogado o tercero.
+  if(d.nombre && d.nombre_fuente === 'remitente'){
+    const nomEl = document.getElementById('d-nom');
+    if(nomEl){
+      nomEl.style.borderColor = 'var(--gold)';
+      const av = document.getElementById('d-nom-aviso') || document.createElement('div');
+      av.id = 'd-nom-aviso';
+      av.style.cssText = 'font-size:11px;color:var(--gold);margin-top:4px';
+      av.textContent = '⚠ Nombre tomado de quien envió el correo. Verifique en el PDF que sea el peticionario y no un abogado o tercero.';
+      if(nomEl.parentNode && !document.getElementById('d-nom-aviso')) nomEl.parentNode.appendChild(av);
+    }
+  }
   set('d-doc', d.documento, 'cédula');
   set('d-exp', d.expediente, 'expediente');
   set('d-rad', d.radicado, 'radicado');
@@ -2779,7 +2803,8 @@ async function reconocerEscaneados(){
   const msg = document.getElementById('lz-msg');
   const pend = LOTE.map(function(it, n){ return {it: it, n: n}; })
                    .filter(function(x){
-                     return x.it.escaneado && x.it.estado !== 'guardada' && x.it.estado !== 'yaesta';
+                     return x.it.escaneado && x.it.estado !== 'guardada' &&
+                            x.it.estado !== 'yaesta' && x.it.estado !== 'descartada';
                    });
   if(!pend.length){ msg.className = 'msg'; msg.textContent = 'No hay escaneados pendientes.'; return; }
 
@@ -2960,6 +2985,15 @@ function pintarLote(){
         '<div class="lote-est" style="background:rgba(143,163,204,.16);color:var(--muted)">Ya existe</div>' +
         '</div></div>';
     }
+    if(it.estado === 'descartada'){
+      return '<div class="lote-fila" style="opacity:.5;border-style:dashed">' +
+        '<div class="lote-top">' +
+        '<div class="lote-rad" style="color:var(--muted);text-decoration:line-through">' + esc(it.radicado) + '</div>' +
+        '<div class="lote-arch">Sacada de la tanda</div>' +
+        '<button class="btn btn-ghost" style="padding:4px 12px;font-size:12px" ' +
+          'onclick="recuperarFilaLote(' + n + ')">Recuperar</button>' +
+        '</div></div>';
+    }
     const d = it.datos || {};
     const ok = d.nombre && d.documento;
     return '<div class="lote-fila' + (ok ? ' lista' : '') + '">' +
@@ -2969,6 +3003,8 @@ function pintarLote(){
         '<div class="lote-est" style="background:' +
           (ok ? 'rgba(74,222,128,.18);color:var(--verde)' : 'rgba(232,160,32,.18);color:var(--gold)') + '">' +
           (ok ? 'Lista' : 'Revisar') + '</div>' +
+        '<button class="lote-x" title="Sacar esta petición de la tanda (no se montará)" ' +
+          'onclick="descartarFilaLote(' + n + ')">✕</button>' +
       '</div>' +
       '<div class="lote-cuerpo">' +
         '<div class="lote-thumb" id="th-' + n + '" onclick="verYDigitar(' + n + ')">' +
@@ -2980,6 +3016,29 @@ function pintarLote(){
   recalcLote();
 }
 
+/* Descarta una fila de la tanda: no se montará y se puede recuperar. */
+function descartarFilaLote(n){
+  const it = LOTE[n];
+  if(!it) return;
+  if(!confirm('¿Sacar el radicado ' + (it.radicado || '(sin radicado)') +
+    ' de esta tanda? No se montará.')) return;
+  it.estado = 'descartada';
+  it.nota = 'Descartada por el radicador.';
+  pintarLote();
+  pintarAvanceTanda();
+  toast('Petición sacada de la tanda', 'ok', 3);
+}
+
+/* Vuelve a incluir una fila descartada. */
+function recuperarFilaLote(n){
+  const it = LOTE[n];
+  if(!it) return;
+  it.estado = null;
+  it.nota = '';
+  pintarLote();
+  pintarAvanceTanda();
+}
+
 /* Cabecera con el avance global de la tanda */
 function pintarAvanceTanda(){
   const cont = document.getElementById('lz-avance');
@@ -2987,19 +3046,21 @@ function pintarAvanceTanda(){
   const total  = LOTE.length;
   const guard  = LOTE.filter(function(x){ return x.estado === 'guardada'; }).length;
   const yaest  = LOTE.filter(function(x){ return x.estado === 'yaesta'; }).length;
+  const desc   = LOTE.filter(function(x){ return x.estado === 'descartada'; }).length;
   const falla  = LOTE.filter(function(x){ return x.estado === 'error'; }).length;
-  const resta  = total - guard - yaest - falla;
+  const resta  = total - guard - yaest - falla - desc;
   const p = function(n){ return (n / total * 100) + '%'; };
 
   cont.innerHTML =
     '<div class="tanda-hd">' +
       '<div class="tanda-fila">' +
-        '<div><div class="tanda-n">' + (guard + yaest) +
+        '<div><div class="tanda-n">' + (guard + yaest + desc) +
           '<span style="font-size:15px;color:var(--muted)">/' + total + '</span></div>' +
           '<div class="tanda-t">resueltas<br>de la tanda</div></div>' +
         '<div class="tanda-barra">' +
           (guard ? '<i style="width:' + p(guard) + ';background:var(--verde)"></i>' : '') +
           (yaest ? '<i style="width:' + p(yaest) + ';background:var(--muted)"></i>' : '') +
+          (desc  ? '<i style="width:' + p(desc)  + ';background:rgba(248,113,113,.5)"></i>' : '') +
           (falla ? '<i style="width:' + p(falla) + ';background:var(--rojo)"></i>' : '') +
         '</div>' +
         '<div class="tanda-t" style="text-align:right">Grupo ' + (PAGINA + 1) + ' de ' +
@@ -3008,6 +3069,7 @@ function pintarAvanceTanda(){
       '<div class="tanda-leyenda">' +
         '<span><b style="background:var(--verde)"></b>' + guard + ' guardadas</span>' +
         (yaest ? '<span><b style="background:var(--muted)"></b>' + yaest + ' ya estaban en el sistema</span>' : '') +
+        (desc ? '<span><b style="background:rgba(248,113,113,.5)"></b>' + desc + ' descartadas</span>' : '') +
         (falla ? '<span><b style="background:var(--rojo)"></b>' + falla + ' con problema</span>' : '') +
         '<span><b style="background:rgba(255,255,255,.15)"></b>' + resta + ' pendientes</span>' +
       '</div>' +
@@ -3023,7 +3085,7 @@ function navegacionTanda(){
     const desde = g * POR_PAGINA, hasta = Math.min(desde + POR_PAGINA, LOTE.length);
     const trozo = LOTE.slice(desde, hasta);
     const listo = trozo.every(function(x){
-      return x.estado === 'guardada' || x.estado === 'yaesta';
+      return x.estado === 'guardada' || x.estado === 'yaesta' || x.estado === 'descartada';
     });
     puntos += '<button class="btn ' + (g === PAGINA ? 'btn-primary' : 'btn-ghost') + '" ' +
       'style="padding:7px 13px;font-size:12.5px' + (listo && g !== PAGINA ? ';opacity:.5' : '') + '" ' +
@@ -3081,7 +3143,12 @@ function camposLote(it, n){
     '<div><div class="lbl">Radicado</div>' +
       '<input type="text" id="l-rad-' + n + '" value="' + esc(it.radicado) + '" class="auto"></div>' +
     '<div><div class="lbl">Peticionario</div>' +
-      '<input type="text" id="l-nom-' + n + '" value="' + esc(d.nombre || '') + '"' + marca(d.nombre) + '></div>' +
+      '<input type="text" id="l-nom-' + n + '" value="' + esc(d.nombre || '') + '"' +
+        (d.nombre_fuente === 'remitente' ? ' class="auto" style="border-color:var(--gold)"' : marca(d.nombre)) + '>' +
+      (d.nombre_fuente === 'remitente'
+        ? '<div style="font-size:10.5px;color:var(--gold);margin-top:3px">⚠ Del remitente del correo — verifique en el PDF</div>'
+        : '') +
+    '</div>' +
     '<div><div class="lbl">Cédula</div>' +
       '<input type="text" id="l-doc-' + n + '" value="' + esc(d.documento || '') + '"' + marca(d.documento) + '></div>' +
     '<div><div class="lbl">Tipo</div>' +
@@ -3162,7 +3229,8 @@ async function guardarLote(){
   const fin = Math.min(ini + POR_PAGINA, LOTE.length);
   let pendientes = [];
   for(let i = ini; i < fin; i++){
-    if(LOTE[i].estado !== 'guardada' && LOTE[i].estado !== 'yaesta'){
+    if(LOTE[i].estado !== 'guardada' && LOTE[i].estado !== 'yaesta' &&
+       LOTE[i].estado !== 'descartada'){
       pendientes.push({it: LOTE[i], n: i});
     }
   }
@@ -3320,7 +3388,8 @@ async function guardarLote(){
 
   const grupos = Math.ceil(LOTE.length / POR_PAGINA);
   const quedan = LOTE.filter(function(x){
-    return x.estado !== 'guardada' && x.estado !== 'yaesta' && x.estado !== 'error';
+    return x.estado !== 'guardada' && x.estado !== 'yaesta' &&
+           x.estado !== 'error' && x.estado !== 'descartada';
   }).length;
 
   const yaTxt = yaEstaban ? ' · ' + yaEstaban + ' ya estaban' : '';
