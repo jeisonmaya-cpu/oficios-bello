@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
 <!-- build: archivos-peticion + limpieza-pdf-antiguos + control-interno + buscador-global + visualizador · 2026 -->
-<meta name="build" content="peticiones-peticionario-v12">
+<meta name="build" content="peticiones-combinar-unificado-v14">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -4227,7 +4227,7 @@ const CATALOGO_RESPUESTAS = {
 
   NIEGA_PRESCRIPCION: {
     titulo: 'Negación de prescripción',
-    desc: 'Niega la prescripción por interrupción del término. Fundamento: arts. 817 y 818 E.T.',
+    desc: 'Niega la prescripción por improcedencia (excepción no formulada en oportunidad). Fundamento: art. 159 Ley 769/2002, arts. 817, 830 y 836 E.T.',
     campos: [
       { id:'OBLIGACION',        lbl:'Obligación solicitada', ph:'el comparendo 05088000000018443355' },
       { id:'ACTO_INTERRUMPE',   lbl:'Acto que interrumpió el término', tipo:'select',
@@ -4236,9 +4236,10 @@ const CATALOGO_RESPUESTAS = {
     ],
     parrafos: [
       'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual solicita la prescripción de la acción de cobro respecto de {{OBLIGACION}}, de manera atenta le informamos lo siguiente:',
-      'El artículo 817 del Estatuto Tributario Nacional dispone que la acción de cobro prescribe en el término de **cinco (5) años**, contados a partir de la exigibilidad de la obligación. Por su parte, el artículo 818 ibídem establece que dicho término **se interrumpe** por la notificación del mandamiento de pago, por el otorgamiento de facilidades para el pago, por la admisión a procesos concursales o por la declaratoria oficial de liquidación forzosa administrativa, caso en el cual el término comienza a correr de nuevo.',
-      'Revisado el expediente, se constató que el término de prescripción respecto de {{OBLIGACION}} fue interrumpido mediante **{{ACTO_INTERRUMPE}}** el día {{FECHA_INTERRUPCION}}. En consecuencia, a la fecha no ha transcurrido el término exigido por la norma y, por lo tanto, **no es procedente declarar la prescripción** solicitada.',
-      'La obligación continúa vigente y su cobro sigue su curso dentro del proceso administrativo de cobro coactivo. Lo invitamos a acercarse a esta Dirección para conocer las alternativas de normalización, entre ellas la suscripción de un acuerdo de pago.'
+      'Me permito informarle que, realizadas las validaciones dentro del expediente del proceso administrativo de cobro coactivo, se constató que a la fecha **no ha transcurrido el término de prescripción** consagrado en el artículo 159 de la Ley 769 de 2002 y el artículo 817 del Estatuto Tributario Nacional, por cuanto el término fue interrumpido mediante **{{ACTO_INTERRUMPE}}** el día {{FECHA_INTERRUPCION}}.',
+      'Así mismo, teniendo en cuenta que se encuentra notificado el mandamiento de pago y no fue formulada dentro de la oportunidad procesal la excepción de prescripción, su solicitud es **improcedente** conforme a lo señalado en el artículo 830 del Estatuto Tributario Nacional, y se ordena continuar adelante con la ejecución de la obligación adeudada.',
+      'El artículo 836 del mismo estatuto señala que, si vencido el término para excepcionar no se hubieren propuesto excepciones o el deudor no hubiere pagado, el funcionario competente proferirá resolución ordenando la ejecución y el remate de los bienes embargados y secuestrados, resolución contra la cual no procede recurso alguno.',
+      'La obligación continúa vigente y su cobro sigue su curso dentro del proceso administrativo de cobro coactivo. Lo invitamos a suscribir un acuerdo de pago para evitar molestias derivadas de la práctica de medidas cautelares, tales como la inmovilización del vehículo, el embargo de salario o la suspensión de la licencia de conducción.'
     ]
   },
 
@@ -4289,7 +4290,7 @@ const SUGERIDOS_POR_TIPO = {
 /* Grupos temáticos del panel de documentos.
    '__RESOLUCION__' es la resolución de prescripción (plantilla propia). */
 const GRUPOS_DOC = [
-  { t:'Prescripción',     items:['__RESOLUCION__','CONCEDE_PRESCRIPCION','NIEGA_PRESCRIPCION'] },
+  { t:'Prescripción',     items:['CONCEDE_PRESCRIPCION','NIEGA_PRESCRIPCION'] },
   { t:'Embargos',         items:['DESEMBARGO_ORDEN','MINIMO_VITAL'] },
   { t:'Pagos y cartera',  items:['REQUISITOS_ACUERDO','ESTADO_CUENTA'] },
   { t:'Trámite',          items:['REQUERIMIENTO_ART17','TRASLADO_COMPETENCIA','COPIAS'] },
@@ -4331,11 +4332,11 @@ function gruposDoc(){
     if(!map[g]){ map[g] = []; orden.push(g); }
     map[g].push(k);
   });
-  return orden.map(function(g){
+  const res = orden.map(function(g){
     const items = map[g].slice();
-    if(g === 'Prescripción') items.unshift('__RESOLUCION__');
     return { t: g, items: items };
   });
+  return res;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -4368,11 +4369,12 @@ function temasDisponibles(){
   });
 }
 
-let COMBINAR_ON = false, COMB_SEL = [], COMB = {}, COMB_SUG_NO = false;
+let COMBINAR_ON = true, COMB_SEL = [], COMB = {}, COMB_SUG_NO = false;
 
 function toggleCombinar(){
   COMBINAR_ON = !COMBINAR_ON;
   COMB_SEL = []; COMB = {}; COMB_SUG_NO = false;
+  const kr = document.getElementById('k-resol'); if(kr) kr.innerHTML = '';
   cerrarKdoc(); repintarDocInt();
 }
 function marcarDocAbierto(abierto){
@@ -4382,6 +4384,7 @@ function marcarDocAbierto(abierto){
 function cerrarKdoc(){
   const c = document.getElementById('k-doc');
   if(c){ c.innerHTML = ''; c.removeAttribute('data-modo'); }
+  const kr = document.getElementById('k-resol'); if(kr) kr.innerHTML = '';
   RESP_ACTUAL = null;
   marcarDocAbierto(false);
 }
@@ -4401,11 +4404,6 @@ function docInterior(r){
     const sug = SUGERIDOS_POR_TIPO[r.tipo] || [];
     const grupos = gruposDoc().map(function(gr){
       const botones = gr.items.map(function(k){
-        if(k === '__RESOLUCION__')
-          return '<button class="btn btn-doc btn-ic" ' +
-            (r.tipo === 'PRESCRIPCION' ? 'style="border-color:rgba(245,158,11,.55)" ' : '') +
-            'onclick="abrirResolucion()">' + ICONO.doc + 'Resolución de prescripción' +
-            (r.tipo === 'PRESCRIPCION' ? ' ★' : '') + '</button>';
         const c = CATALOGO_RESPUESTAS[k];
         if(!c) return '';
         const esSug = sug.indexOf(k) !== -1;
@@ -4447,12 +4445,22 @@ function docInterior(r){
     return '<span class="comb-chip">' + esc(tituloToken(tok)) + '</span>';
   }).join('');
 
+  /* Resoluciones formales: no son párrafos del oficio; abren su propio
+     formulario (plantilla propia con tablas y numeración) y se descargan
+     como un Word aparte. */
+  const cardsResol =
+    '<button class="btn btn-doc btn-ic doc-card" onclick="abrirResolucion()">' +
+      ICONO.doc + 'Resolución de prescripción</button>' +
+    '<button class="btn btn-doc btn-ic doc-card" onclick="abrirExcepciones()">' +
+      ICONO.doc + 'Resuelve excepciones</button>';
+
   return '<div class="doc-grid">' +
       '<div class="doc-grp"><div class="doc-grp-t">Decisiones de fondo</div>' + cardsTema + '</div>' +
       '<div class="doc-grp"><div class="doc-grp-t">Complementos</div>' + cardsComp + '</div>' +
+      '<div class="doc-grp"><div class="doc-grp-t">Resoluciones formales <span class="hint" style="font-weight:400">· Word aparte</span></div>' + cardsResol + '</div>' +
     '</div>' +
     '<div class="comb-bar">' +
-      '<b style="font-family:Syne">' + COMB_SEL.length + '</b><span class="hint" style="margin:0">bloques</span>' +
+      '<b style="font-family:Syne">' + COMB_SEL.length + '</b><span class="hint" style="margin:0">bloques de oficio</span>' +
       '<div class="chips">' + chips + '</div>' +
       '<button class="btn btn-grad" style="margin-left:auto" ' + (COMB_SEL.length ? '' : 'disabled ') +
         'onclick="abrirCombinada()">Redactar oficio combinado →</button>' +
@@ -4475,8 +4483,8 @@ function panelDocumentos(r){
       '<div class="comb-top">' +
         '<button class="btn ' + (COMBINAR_ON ? 'btn-primary' : 'btn-ghost') + '" onclick="toggleCombinar()">🧩 Combinar respuestas</button>' +
         (COMBINAR_ON
-          ? '<span class="hint" style="margin:0">Marque los temas de la petición; la decisión aceptada / negada se define al redactar.</span>'
-          : '<span class="hint" style="margin:0">Un documento por formato — o active «Combinar» si la petición pide varias cosas.</span>') +
+          ? '<span class="hint" style="margin:0">Marque los bloques de oficio (se unen en un solo Word). Las resoluciones formales se descargan aparte.</span>'
+          : '<span class="hint" style="margin:0">Modo simple: un documento por formato. Active «Combinar» para unir varias respuestas.</span>') +
       '</div>' +
       '<div id="doc-int">' + docInterior(r) + '</div>' +
       '<div id="k-doc"></div>' +
@@ -4633,6 +4641,12 @@ function pintarComb(){
       '<button class="btn btn-ghost" id="cb-btn-prev" onclick="previewCombinada()">Ocultar vista</button>' +
       '<button class="btn btn-ghost" onclick="cerrarKdoc()">Cerrar</button>' +
       '<div class="msg" id="cb-msg" style="margin:0"></div>' +
+    '</div>' +
+    '<div class="hint" style="margin-top:12px">¿La petición también requiere una resolución formal? ' +
+      'Se descarga como Word aparte:</div>' +
+    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:6px">' +
+      '<button class="btn btn-doc btn-ic" onclick="abrirResolucion()">' + ICONO.doc + 'Resolución de prescripción</button>' +
+      '<button class="btn btn-doc btn-ic" onclick="abrirExcepciones()">' + ICONO.doc + 'Resuelve excepciones</button>' +
     '</div></div><div id="cb-prev" class="doc-prev" data-vivo="1"></div></div></div>';
 
   cont.innerHTML = html;
@@ -5343,11 +5357,13 @@ async function armarDocx(url, datos, nombreArchivo, transformar){
 function abrirResolucion(){
   const r = COLA[COLA_IDX];
   if(!r) return;
+  const FORM_ID = 'resolucion';
   const pl = document.getElementById('pleg-doc');
   if(pl) pl.classList.add('on');
-  const cont = document.getElementById('k-doc');
+  const cont = contenedorFormularioDoc();
   if(!cont) return;
-  if(cont.innerHTML){ cont.innerHTML = ''; return; }
+  if(cont.getAttribute('data-form') === FORM_ID){ cont.innerHTML = ''; cont.removeAttribute('data-form'); return; }
+  cont.setAttribute('data-form', FORM_ID);
 
   cont.innerHTML =
    '<div style="background:rgba(232,160,32,.07);border:1px solid rgba(232,160,32,.3);' +
@@ -5373,7 +5389,7 @@ function abrirResolucion(){
      '</div>' +
      '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
        '<button class="btn btn-primary" onclick="generarResolucion()">Descargar Word</button>' +
-       '<button class="btn btn-ghost" onclick="document.getElementById(\'k-doc\').innerHTML=\'\'">Cerrar</button>' +
+       '<button class="btn btn-ghost" onclick="cerrarFormularioDoc()">Cerrar</button>' +
        '<div class="msg" id="g-msg" style="margin:0"></div>' +
      '</div>' +
    '</div>';
@@ -5558,6 +5574,596 @@ function expandirTablas(xml, lista){
   });
   return xml;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   OFICIO QUE NIEGA LA PRESCRIPCIÓN  (plantilla propia)
+   Carta al peticionario con tabla de comparendos y mandamientos.
+   Plantilla: plantilla_niega_prescripcion.docx
+   ══════════════════════════════════════════════════════════════ */
+const URL_PLANTILLA_NIEGA =
+  SUPA_URL + '/storage/v1/object/public/modelos/plantilla_niega_prescripcion.docx';
+const URL_PLANTILLA_EXCEPCIONES =
+  SUPA_URL + '/storage/v1/object/public/modelos/plantilla_excepciones.docx';
+
+/* Contenedor donde se pinta el formulario de una resolución/oficio propio.
+   En modo normal es #k-doc. En modo Combinar (que ocupa #k-doc con el
+   selector), se usa un contenedor aparte #k-resol para no borrar el
+   selector; así el oficio combinado y la resolución conviven. */
+function contenedorFormularioDoc(){
+  if(!COMBINAR_ON) return document.getElementById('k-doc');
+  let c = document.getElementById('k-resol');
+  if(!c){
+    const host = document.getElementById('k-doc');
+    if(!host) return null;
+    c = document.createElement('div');
+    c.id = 'k-resol';
+    c.style.marginTop = '10px';
+    host.parentNode.insertBefore(c, host.nextSibling);
+  }
+  return c;
+}
+function cerrarFormularioDoc(){
+  const c = COMBINAR_ON ? document.getElementById('k-resol') : document.getElementById('k-doc');
+  if(c){ c.innerHTML = ''; c.removeAttribute('data-form'); }
+}
+
+let NIEGA_FILAS = [];
+
+function abrirNiega(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const FORM_ID = 'niega';
+  const pl = document.getElementById('pleg-doc');
+  if(pl) pl.classList.add('on');
+  const cont = contenedorFormularioDoc();
+  if(!cont) return;
+  if(cont.getAttribute('data-form') === FORM_ID){ cont.innerHTML = ''; cont.removeAttribute('data-form'); return; }
+  cont.setAttribute('data-form', FORM_ID);
+
+  cont.innerHTML =
+   '<div style="background:rgba(232,160,32,.07);border:1px solid rgba(232,160,32,.3);' +
+   'border-radius:13px;padding:18px;margin-top:16px">' +
+     '<div class="lbl" style="margin-bottom:4px">Oficio que niega la prescripción</div>' +
+     '<div class="hint" style="margin-bottom:14px">Carta al peticionario. Los datos personales ' +
+     'salen del caso; complete la tabla de comparendos con su mandamiento de pago.</div>' +
+     '<div class="grid">' +
+       '<div class="fld"><label class="lbl">Peticionario</label>' +
+         '<input type="text" id="n-nom" value="' + esc(r.peticionario || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Cédula</label>' +
+         '<input type="text" id="n-ced" value="' + esc(String(r.documento || '').replace(/[^0-9]/g,'')) + '"></div>' +
+       '<div class="fld"><label class="lbl">Correo electrónico</label>' +
+         '<input type="text" id="n-mail" value="' + esc(r.email || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
+         '<input type="text" id="n-rad" value="' + esc(r.radicado || '') + '"></div>' +
+     '</div>' +
+     '<div class="lbl" style="margin:16px 0 8px">Comparendos negados</div>' +
+     '<div id="n-filas"></div>' +
+     '<button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;margin-top:4px" ' +
+       'onclick="niegaAgregar()">+ Agregar comparendo</button>' +
+     '<div class="grid" style="margin-top:14px">' +
+       '<div class="fld"><label class="lbl">Proyectó</label>' +
+         '<input type="text" id="n-proy" value="' + esc(PERFIL ? (PERFIL.nombre + '. Contratista.') : '') + '"></div>' +
+     '</div>' +
+     '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
+       '<button class="btn btn-primary" onclick="generarNiega()">Descargar Word</button>' +
+       '<button class="btn btn-ghost" onclick="cerrarFormularioDoc()">Cerrar</button>' +
+       '<div class="msg" id="n-msg" style="margin:0"></div>' +
+     '</div>' +
+   '</div>';
+  NIEGA_FILAS = [];
+  const det = (r.resumen || '').match(/Comparendo:\s*(\d{10,22})/i);
+  niegaAgregar(det ? det[1] : '', '', '', '');
+  const p = document.getElementById('n-c-0');
+  if(p) p.focus();
+}
+
+function niegaAgregar(comp, fcomp, mand, fmand){
+  NIEGA_FILAS.push({ comp: comp || '', fcomp: fcomp || '', mand: mand || '', fmand: fmand || '' });
+  niegaPintar();
+  const n = NIEGA_FILAS.length - 1;
+  const el = document.getElementById('n-c-' + n);
+  if(el && NIEGA_FILAS.length > 1) el.focus();
+}
+
+function niegaQuitar(n){
+  if(NIEGA_FILAS.length <= 1) return;
+  niegaLeer();
+  NIEGA_FILAS.splice(n, 1);
+  niegaPintar();
+}
+
+function niegaLeer(){
+  NIEGA_FILAS.forEach(function(c, n){
+    const g = function(id){ const e = document.getElementById(id + n); return e ? e.value.trim() : ''; };
+    c.comp = g('n-c-'); c.fcomp = g('n-fc-'); c.mand = g('n-m-'); c.fmand = g('n-fm-');
+  });
+}
+
+function niegaPintar(){
+  const cont = document.getElementById('n-filas');
+  if(!cont) return;
+  cont.innerHTML = NIEGA_FILAS.map(function(c, n){
+    return '<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);' +
+      'border-radius:11px;padding:12px;margin-bottom:9px">' +
+      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">' +
+        '<div style="font-family:\'Syne\';font-weight:800;color:var(--gold);font-size:13px">#' + (n + 1) + '</div>' +
+        (NIEGA_FILAS.length > 1
+          ? '<button class="btn btn-ghost" style="padding:4px 10px;font-size:11.5px;margin-left:auto" ' +
+            'onclick="niegaQuitar(' + n + ')">Quitar</button>' : '') +
+      '</div>' +
+      '<div class="lote-campos">' +
+        '<div><div class="lbl">N° de comparendo</div>' +
+          '<input type="text" id="n-c-' + n + '" value="' + esc(c.comp) + '" placeholder="05088000000014894585"></div>' +
+        '<div><div class="lbl">Fecha del comparendo</div>' +
+          '<input type="text" id="n-fc-' + n + '" value="' + esc(c.fcomp) + '" placeholder="DD/MM/AAAA"></div>' +
+        '<div><div class="lbl">Mandamiento de pago</div>' +
+          '<input type="text" id="n-m-' + n + '" value="' + esc(c.mand) + '" placeholder="00001370700"></div>' +
+        '<div><div class="lbl">Fecha del mandamiento</div>' +
+          '<input type="text" id="n-fm-' + n + '" value="' + esc(c.fmand) + '" placeholder="DD/MM/AAAA"></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+async function generarNiega(){
+  const msg = document.getElementById('n-msg');
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  niegaLeer();
+  const lista = NIEGA_FILAS.filter(function(c){ return c.comp; });
+  if(!lista.length){
+    msg.className = 'msg err'; msg.textContent = 'Indique al menos un número de comparendo.';
+    return;
+  }
+  const incompleto = lista.findIndex(function(c){ return !c.fcomp || !c.mand || !c.fmand; });
+  if(incompleto !== -1){
+    msg.className = 'msg err';
+    msg.textContent = 'Faltan datos en el comparendo #' + (incompleto + 1) + '.';
+    return;
+  }
+  const nombre = (document.getElementById('n-nom').value || '').trim().toUpperCase();
+  const cedula = (document.getElementById('n-ced').value || '').trim();
+  const rad    = (document.getElementById('n-rad').value || '').trim();
+  if(!nombre || !cedula){
+    msg.className = 'msg err'; msg.textContent = 'Faltan el nombre o la cédula.'; return;
+  }
+  const hoy = new Date();
+  const datos = {
+    NOMBRE: nombre,
+    CEDULA: formatoCedula(cedula),
+    CORREO: (document.getElementById('n-mail').value || '').trim(),
+    ASUNTO: 'Respuesta quejas y reclamos radicado ' + rad,
+    FECHA_CONSTANCIA: String(hoy.getDate()).padStart(2,'0') + '-' +
+                      String(hoy.getMonth()+1).padStart(2,'0') + '-' + hoy.getFullYear(),
+    FECHA_LARGA: String(hoy.getDate()).padStart(2,'0') + ' de ' +
+                 MESES_ES[hoy.getMonth()] + ' de ' + hoy.getFullYear(),
+    PROYECTO: (document.getElementById('n-proy').value || '').trim(),
+    FECHA_FIRMA: fmtFecha(iso(hoy)),
+    COMPARENDO: '', FECHA_COMPARENDO: '', MANDAMIENTO: '', FECHA_MANDAMIENTO: ''
+  };
+  msg.className = 'msg'; msg.textContent = 'Armando el documento…';
+  try{
+    const nombreArchivo = 'Oficio_niega_prescripcion_' +
+      cedula.replace(/[^0-9]/g,'') + '_' + (rad || '').replace(/[^\w-]/g,'') + '.docx';
+    await armarDocx(URL_PLANTILLA_NIEGA, datos, nombreArchivo, function(xml){
+      return niegaExpandir(xml, lista);
+    });
+    try{
+      await supaFetch('pet_peticiones?id=eq.' + r.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        body: JSON.stringify({ doc_proyectado: nombreArchivo })
+      });
+    }catch(e){}
+    const notas = document.getElementById('k-notas');
+    if(notas && !notas.value.trim()){
+      notas.value = 'Se proyecta oficio que niega la prescripción de ' + lista.length +
+        (lista.length === 1 ? ' comparendo.' : ' comparendos.');
+    }
+    await registrarDocs(r, [{
+      tema: 'prescripcion', sentido: 'NEGADA', tipo_doc: 'OFICIO', items: lista.length
+    }], nombreArchivo);
+    msg.className = 'msg ok';
+    msg.textContent = 'Documento con ' + lista.length +
+      (lista.length === 1 ? ' comparendo descargado.' : ' comparendos descargado.') +
+      ' Revíselo antes de radicar.';
+  }catch(err){
+    msg.className = 'msg err';
+    msg.textContent = 'No se pudo generar: ' + err.message +
+      '. Verifique que la plantilla esté cargada en Supabase Storage.';
+  }
+}
+
+/* Repite la fila que contiene {{COMPARENDO}} de la tabla del oficio. */
+function niegaExpandir(xml, lista){
+  const tablas = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/g) || [];
+  tablas.forEach(function(tabla){
+    if(tabla.indexOf('{{COMPARENDO}}') === -1) return;
+    const filas = tabla.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
+    const plantillaFila = filas.filter(function(f){ return f.indexOf('{{COMPARENDO}}') !== -1; })[0];
+    if(!plantillaFila) return;
+    const nuevas = lista.map(function(c){
+      return plantillaFila
+        .split('{{COMPARENDO}}').join(xmlSeguro(c.comp))
+        .split('{{FECHA_COMPARENDO}}').join(xmlSeguro(c.fcomp))
+        .split('{{MANDAMIENTO}}').join(xmlSeguro(c.mand))
+        .split('{{FECHA_MANDAMIENTO}}').join(xmlSeguro(c.fmand));
+    }).join('');
+    xml = xml.replace(tabla, tabla.replace(plantillaFila, nuevas));
+  });
+  return xml;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESOLUCIÓN QUE RESUELVE EXCEPCIONES AL MANDAMIENTO DE PAGO
+   Plantilla: plantilla_excepciones.docx
+   El abogado elige cuáles de las 5 excepciones aparecen; el
+   análisis y el RESUELVE se numeran dinámicamente.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Catálogo de las 5 excepciones. 'analisis' = párrafos del análisis;
+   'resuelve' = verbo/redacción del numeral resolutivo. */
+const EXCEPCIONES = [
+  { id:'falsa_motivacion',
+    titulo:'Excepción de falsa motivación del acto administrativo',
+    analisis:[
+      'Frente a esta excepción, es preciso indicar que no es procedente dentro del proceso de cobro coactivo, toda vez que la discusión sobre la legalidad del acto administrativo que dio origen a la obligación no puede surtirse en esta etapa procesal.',
+      'El proceso de cobro coactivo parte de la existencia de un título ejecutivo debidamente conformado, el cual goza de presunción de legalidad.',
+      'En ese sentido, las causales relacionadas con la validez del acto administrativo, como la falsa motivación, debieron alegarse en sede administrativa o ante la jurisdicción contencioso administrativa.',
+      'En consecuencia, esta excepción se rechaza de plano por improcedente.'
+    ],
+    resuelve:'RECHAZAR DE PLANO la excepción de falsa motivación del acto administrativo, por improcedente dentro del proceso de cobro coactivo.'
+  },
+  { id:'cobro_no_debido',
+    titulo:'Excepción de cobro de lo no debido',
+    analisis:[
+      'Respecto a esta excepción, es importante precisar que el Estatuto Tributario establece de manera expresa y taxativa las excepciones que proceden contra el mandamiento de pago.',
+      'El cobro de lo no debido no se encuentra consagrado como excepción admisible dentro de este trámite.',
+      'Adicionalmente, este tipo de alegación corresponde a una discusión sobre la existencia o cuantía de la obligación, lo cual ya fue definido en el acto administrativo que presta mérito ejecutivo.',
+      'Por lo anterior, esta excepción no es procedente y será negada.'
+    ],
+    resuelve:'NEGAR la excepción denominada cobro de lo no debido, por no encontrarse dentro de las excepciones taxativas contra el mandamiento de pago.'
+  },
+  { id:'inexistencia',
+    titulo:'Excepción de inexistencia de la obligación',
+    analisis:[
+      'En cuanto a la excepción de inexistencia de la obligación, se advierte que la misma no está llamada a prosperar, toda vez que la obligación objeto de cobro se encuentra debidamente determinada en un acto administrativo sancionatorio, el cual fue expedido por la autoridad competente.',
+      'Dicho acto administrativo fue debidamente notificado, sin que se hubieran interpuesto los recursos procedentes dentro de la oportunidad legal, quedando en firme y prestando mérito ejecutivo.',
+      'En consecuencia, la obligación es cierta, expresa y exigible, desvirtuándose la alegada inexistencia.',
+      'Por lo anterior, esta excepción será negada.'
+    ],
+    resuelve:'NEGAR la excepción de inexistencia de la obligación, conforme a lo expuesto en la parte considerativa.'
+  },
+  { id:'falta_titulo',
+    titulo:'Excepción de falta de título ejecutivo',
+    analisis:[
+      'Respecto de la excepción de falta de título ejecutivo, se observa que tampoco está llamada a prosperar, toda vez que el proceso de cobro coactivo se fundamenta en un título ejecutivo válido, consistente en el acto administrativo sancionatorio debidamente ejecutoriado.',
+      'El mencionado acto cumple con los requisitos legales para prestar mérito ejecutivo, en tanto contiene una obligación clara, expresa y exigible a cargo del deudor.',
+      'Adicionalmente, la firmeza del acto administrativo le otorga presunción de legalidad y ejecutoriedad, lo cual habilita a la administración para adelantar el proceso de cobro coactivo.',
+      'En consecuencia, no se configura la falta de título ejecutivo alegada, por lo que esta excepción será negada.'
+    ],
+    resuelve:'NEGAR la excepción de falta de título ejecutivo, conforme a lo expuesto en la parte considerativa.'
+  },
+  { id:'debido_proceso',
+    titulo:'Excepción de violación al debido proceso administrativo',
+    analisis:[
+      'En relación con la excepción de violación al debido proceso administrativo, es preciso señalar que la misma no está llamada a prosperar dentro del presente trámite de cobro coactivo.',
+      'Lo anterior, por cuanto el proceso de cobro coactivo no constituye una instancia adicional para debatir la legalidad del acto administrativo que dio origen a la obligación, sino un procedimiento encaminado exclusivamente a hacer efectiva una obligación previamente definida.',
+      'En el presente caso, se evidencia que la obligación objeto de cobro fue determinada mediante acto administrativo sancionatorio debidamente expedido por la autoridad competente, respecto del cual se surtieron las etapas propias del procedimiento administrativo, incluyendo su notificación en debida forma.',
+      'Asimismo, una vez notificado el acto, el interesado contó con la oportunidad de ejercer su derecho de defensa y contradicción mediante la interposición de los recursos procedentes, sin que estos fueran ejercidos dentro del término legal, razón por la cual el acto quedó en firme.',
+      'En consecuencia, no es posible alegar en esta etapa una presunta vulneración al debido proceso, toda vez que dicha discusión debió plantearse oportunamente en sede administrativa o ante la jurisdicción contencioso administrativa.',
+      'Por lo anterior, esta excepción será negada.'
+    ],
+    resuelve:'NEGAR la excepción de violación al debido proceso administrativo, conforme a lo expuesto en la parte considerativa.'
+  }
+];
+
+let EXC_SEL = [];      // ids de excepciones marcadas
+let EXC_T1 = [];       // tabla comparendos: {comp, fecha}
+let EXC_T2 = [];       // tabla resoluciones: {comp, resol, fecha}
+
+function abrirExcepciones(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const FORM_ID = 'excepciones';
+  const pl = document.getElementById('pleg-doc');
+  if(pl) pl.classList.add('on');
+  const cont = contenedorFormularioDoc();
+  if(!cont) return;
+  if(cont.getAttribute('data-form') === FORM_ID){ cont.innerHTML = ''; cont.removeAttribute('data-form'); return; }
+  cont.setAttribute('data-form', FORM_ID);
+
+  EXC_SEL = EXCEPCIONES.map(function(e){ return e.id; }); // por defecto todas
+  EXC_T1 = [{ comp:'', fecha:'' }];
+  EXC_T2 = [{ comp:'', resol:'', fecha:'' }];
+
+  cont.innerHTML =
+   '<div style="background:rgba(232,160,32,.07);border:1px solid rgba(232,160,32,.3);' +
+   'border-radius:13px;padding:18px;margin-top:16px">' +
+     '<div class="lbl" style="margin-bottom:4px">Resolución que resuelve excepciones</div>' +
+     '<div class="hint" style="margin-bottom:14px">Marque las excepciones que propuso el ciudadano. ' +
+     'El análisis y la parte resolutiva se numeran solos.</div>' +
+     '<div class="grid">' +
+       '<div class="fld"><label class="lbl">Peticionario</label>' +
+         '<input type="text" id="x-nom" value="' + esc(r.peticionario || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Cédula</label>' +
+         '<input type="text" id="x-ced" value="' + esc(String(r.documento || '').replace(/[^0-9]/g,'')) + '"></div>' +
+       '<div class="fld"><label class="lbl">Radicado de la petición</label>' +
+         '<input type="text" id="x-rad" value="' + esc(r.radicado || '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Fecha del radicado</label>' +
+         '<input type="text" id="x-frad" placeholder="DD/MM/AAAA"></div>' +
+     '</div>' +
+     '<div class="lbl" style="margin:16px 0 8px">Excepciones propuestas</div>' +
+     '<div id="x-checks"></div>' +
+     '<div class="lbl" style="margin:16px 0 8px">Comparendos (tabla de hechos)</div>' +
+     '<div id="x-t1"></div>' +
+     '<button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;margin-top:4px" ' +
+       'onclick="excT1Agregar()">+ Agregar comparendo</button>' +
+     '<div class="lbl" style="margin:16px 0 8px">Resoluciones sanción / mandamientos de pago</div>' +
+     '<div id="x-t2"></div>' +
+     '<button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;margin-top:4px" ' +
+       'onclick="excT2Agregar()">+ Agregar resolución</button>' +
+     '<div class="grid" style="margin-top:14px">' +
+       '<div class="fld"><label class="lbl">Proyectó (nombre)</label>' +
+         '<input type="text" id="x-proy" value="' + esc(PERFIL ? PERFIL.nombre : '') + '"></div>' +
+       '<div class="fld"><label class="lbl">Proyectó (cargo)</label>' +
+         '<input type="text" id="x-cargo" value="Abogado(a) Contratista"></div>' +
+     '</div>' +
+     '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
+       '<button class="btn btn-primary" onclick="generarExcepciones()">Descargar Word</button>' +
+       '<button class="btn btn-ghost" onclick="cerrarFormularioDoc()">Cerrar</button>' +
+       '<div class="msg" id="x-msg" style="margin:0"></div>' +
+     '</div>' +
+   '</div>';
+
+  const det = (r.resumen || '').match(/Comparendo:\s*(\d{10,22})/i);
+  if(det){ EXC_T1[0].comp = det[1]; EXC_T2[0].comp = det[1]; }
+  excChecksPintar(); excT1Pintar(); excT2Pintar();
+}
+
+function excChecksPintar(){
+  const cont = document.getElementById('x-checks');
+  if(!cont) return;
+  cont.innerHTML = EXCEPCIONES.map(function(e){
+    const on = EXC_SEL.indexOf(e.id) !== -1;
+    return '<button class="btn btn-of btn-ic doc-card' + (on ? ' sel' : '') + '" ' +
+      'style="width:100%;text-align:left;margin-bottom:7px" onclick="excToggle(\'' + e.id + '\')">' +
+      '<span>' + esc(e.titulo) + '</span>' +
+      '<span class="cmk">' + (on ? '✓' : '') + '</span></button>';
+  }).join('');
+}
+
+function excToggle(id){
+  const i = EXC_SEL.indexOf(id);
+  if(i === -1) EXC_SEL.push(id); else EXC_SEL.splice(i, 1);
+  // conservar el orden del catálogo
+  EXC_SEL = EXCEPCIONES.filter(function(e){ return EXC_SEL.indexOf(e.id) !== -1; })
+                       .map(function(e){ return e.id; });
+  excChecksPintar();
+}
+
+function excT1Agregar(){ excT1Leer(); EXC_T1.push({ comp:'', fecha:'' }); excT1Pintar(); }
+function excT1Quitar(n){ if(EXC_T1.length<=1) return; excT1Leer(); EXC_T1.splice(n,1); excT1Pintar(); }
+function excT1Leer(){
+  EXC_T1.forEach(function(c,n){
+    const g=function(id){const e=document.getElementById(id+n);return e?e.value.trim():'';};
+    c.comp=g('x1c-'); c.fecha=g('x1f-');
+  });
+}
+function excT1Pintar(){
+  const cont=document.getElementById('x-t1'); if(!cont) return;
+  cont.innerHTML=EXC_T1.map(function(c,n){
+    return '<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);' +
+      'border-radius:11px;padding:12px;margin-bottom:9px">' +
+      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">' +
+        '<div style="font-family:\'Syne\';font-weight:800;color:var(--gold);font-size:13px">#' + (n+1) + '</div>' +
+        (EXC_T1.length>1 ? '<button class="btn btn-ghost" style="padding:4px 10px;font-size:11.5px;margin-left:auto" onclick="excT1Quitar(' + n + ')">Quitar</button>' : '') +
+      '</div>' +
+      '<div class="lote-campos">' +
+        '<div><div class="lbl">N° de comparendo</div>' +
+          '<input type="text" id="x1c-' + n + '" value="' + esc(c.comp) + '" placeholder="D05088000000039681392"></div>' +
+        '<div><div class="lbl">Fecha</div>' +
+          '<input type="text" id="x1f-' + n + '" value="' + esc(c.fecha) + '" placeholder="DD/MM/AAAA"></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function excT2Agregar(){ excT2Leer(); EXC_T2.push({ comp:'', resol:'', fecha:'' }); excT2Pintar(); }
+function excT2Quitar(n){ if(EXC_T2.length<=1) return; excT2Leer(); EXC_T2.splice(n,1); excT2Pintar(); }
+function excT2Leer(){
+  EXC_T2.forEach(function(c,n){
+    const g=function(id){const e=document.getElementById(id+n);return e?e.value.trim():'';};
+    c.comp=g('x2c-'); c.resol=g('x2r-'); c.fecha=g('x2f-');
+  });
+}
+function excT2Pintar(){
+  const cont=document.getElementById('x-t2'); if(!cont) return;
+  cont.innerHTML=EXC_T2.map(function(c,n){
+    return '<div style="background:rgba(255,255,255,.04);border:1px solid var(--border);' +
+      'border-radius:11px;padding:12px;margin-bottom:9px">' +
+      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">' +
+        '<div style="font-family:\'Syne\';font-weight:800;color:var(--gold);font-size:13px">#' + (n+1) + '</div>' +
+        (EXC_T2.length>1 ? '<button class="btn btn-ghost" style="padding:4px 10px;font-size:11.5px;margin-left:auto" onclick="excT2Quitar(' + n + ')">Quitar</button>' : '') +
+      '</div>' +
+      '<div class="lote-campos">' +
+        '<div><div class="lbl">N° de comparendo</div>' +
+          '<input type="text" id="x2c-' + n + '" value="' + esc(c.comp) + '" placeholder="D05088000000039681392"></div>' +
+        '<div><div class="lbl">Resolución / mandamiento</div>' +
+          '<input type="text" id="x2r-' + n + '" value="' + esc(c.resol) + '" placeholder="2370034800"></div>' +
+        '<div><div class="lbl">Fecha</div>' +
+          '<input type="text" id="x2f-' + n + '" value="' + esc(c.fecha) + '" placeholder="DD/MM/AAAA"></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+/* Construye un párrafo Word Arial 18. bold=true para títulos. */
+function parrExc(texto, bold){
+  const b = bold ? '<w:b/><w:bCs/>' : '';
+  return '<w:p><w:pPr><w:jc w:val="both"/></w:pPr>' +
+    '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>' + b +
+    '<w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>' +
+    '<w:t xml:space="preserve">' + xmlSeguro(texto) + '</w:t></w:r></w:p>';
+}
+
+/* Expande una tabla repitiendo la fila que contiene marc[0]. */
+function excExpandirTabla(xml, lista, mapa){
+  const marc = Object.keys(mapa)[0];
+  const tablas = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>/g) || [];
+  tablas.forEach(function(tabla){
+    if(tabla.indexOf('{{' + marc + '}}') === -1) return;
+    const filas = tabla.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
+    const plantillaFila = filas.filter(function(f){ return f.indexOf('{{' + marc + '}}') !== -1; })[0];
+    if(!plantillaFila) return;
+    const nuevas = lista.map(function(c){
+      let f = plantillaFila;
+      Object.keys(mapa).forEach(function(mk){
+        f = f.split('{{' + mk + '}}').join(xmlSeguro(c[mapa[mk]]));
+      });
+      return f;
+    }).join('');
+    xml = xml.replace(tabla, tabla.replace(plantillaFila, nuevas));
+  });
+  return xml;
+}
+
+async function generarExcepciones(){
+  const msg = document.getElementById('x-msg');
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  if(!EXC_SEL.length){
+    msg.className = 'msg err'; msg.textContent = 'Marque al menos una excepción.'; return;
+  }
+  excT1Leer(); excT2Leer();
+  const t1 = EXC_T1.filter(function(c){ return c.comp; });
+  const t2 = EXC_T2.filter(function(c){ return c.comp && c.resol; });
+  if(!t1.length){ msg.className='msg err'; msg.textContent='Agregue al menos un comparendo.'; return; }
+  if(!t2.length){ msg.className='msg err'; msg.textContent='Agregue al menos una resolución sanción.'; return; }
+
+  const nombre = (document.getElementById('x-nom').value || '').trim().toUpperCase();
+  const cedula = (document.getElementById('x-ced').value || '').trim();
+  const rad    = (document.getElementById('x-rad').value || '').trim();
+  const frad   = (document.getElementById('x-frad').value || '').trim();
+  if(!nombre || !cedula){ msg.className='msg err'; msg.textContent='Faltan el nombre o la cédula.'; return; }
+
+  const cedFmt = formatoCedula(cedula);
+  // Enumeración "N° X del F, Y del G y Z del H" de las resoluciones sanción
+  const mpTexto = t2.map(function(c){ return c.resol + ' del ' + c.fecha; });
+  const mpEnum = enumerar(mpTexto);
+
+  // Bloques seleccionados en el orden del catálogo
+  const sel = EXCEPCIONES.filter(function(e){ return EXC_SEL.indexOf(e.id) !== -1; });
+
+  // {{ANALISIS_EXCEPCIONES}} → título numerado + párrafos, por cada excepción
+  const analisisXml = sel.map(function(e, i){
+    let out = parrExc((i + 1) + '. ' + e.titulo, true);
+    out += e.analisis.map(function(p){ return parrExc(p, false); }).join('');
+    return out;
+  }).join('');
+
+  // {{RESUELVE_EXCEPCIONES}} → PRIMERO..N con el verbo de cada excepción
+  const resItems = sel.map(function(e, i){
+    return parrExc(ordinal(i) + ': ' + e.resuelve, false);
+  }).join('');
+
+  // {{RESUELVE_CIERRE}} → continúa numeración: CONTINUAR, NOTIFICAR, VIGENCIA
+  const nCont = sel.length;      // índice del siguiente ordinal
+  const cierre =
+    parrExc(ordinal(nCont) + ': CONTINUAR con el procedimiento administrativo que se viene ' +
+      'adelantando para iniciar proceso de cobro coactivo en contra de ' + nombre +
+      ' identificado(a) con C.C. ' + cedFmt + ' respecto a la(s) resolución(es) sanción(es) y/o ' +
+      'mandamiento(s) de pago N° ' + mpEnum + ', por las razones expuestas en la parte ' +
+      'considerativa de este acto administrativo.', false) +
+    parrExc(ordinal(nCont + 1) + ': NOTIFICAR el presente acto administrativo de conformidad a lo ' +
+      'establecido en el artículo 565 del Estatuto Tributario Nacional.', false) +
+    parrExc(ordinal(nCont + 2) + ': VIGENCIA. La presente resolución rige a partir de la fecha de ' +
+      'su expedición.', false);
+
+  const datos = {
+    ANTECEDENTE_TEXTO: 'Que ' + nombre + ', identificado(a) con cédula de ciudadanía No. ' + cedFmt +
+      ', radicó dentro del término legal derecho de petición - Quejas y reclamos bajo el No. ' + rad +
+      (frad ? ' del ' + frad : '') + ', mediante el cual propone excepciones al mandamiento de pago ' +
+      'respecto de la sanción pecuniaria derivada de infracciones de tránsito.',
+    ANALISIS_INTRO_TEXTO: 'Que, en desarrollo de la labor de verificación y análisis integral del ' +
+      'caso concreto, esta Administración Municipal procedió a consultar los sistemas de información ' +
+      'institucionales, particularmente la plataforma QX, encontrando que ' + nombre +
+      ', identificado(a) con cédula de ciudadanía No. ' + cedFmt + ', le fueron impuestas por la ' +
+      'autoridad de tránsito de la Secretaría de Movilidad de la Alcaldía de Bello (Antioquia), las ' +
+      'siguientes órdenes de comparendos:',
+    RESOL_INTRO_TEXTO: 'Que a ' + nombre + ', identificado(a) con cédula de ciudadanía No. ' + cedFmt +
+      ', le fueron proferidas por parte del Inspector competente de la Secretaría de Movilidad de la ' +
+      'Alcaldía de Bello (Ant.) las siguientes resoluciones de sanción a través de las cuales se le ' +
+      'declaró contraventor de unas infracciones de tránsito imponiéndose una multa, decisión que le ' +
+      'fue notificada en estrados.',
+    MP_TEXTO: 'Que la Administración Municipal, en ejercicio de las facultades de cobro coactivo ' +
+      'conferidas por la normativa vigente, profirió resolución sanción y/o Mandamiento de Pago N° ' +
+      mpEnum + ', dentro del proceso administrativo de cobro coactivo adelantado en contra de ' +
+      nombre + ', identificado(a) con cédula de ciudadanía No. ' + cedFmt + '.',
+    PROYECTO_NOMBRE: (document.getElementById('x-proy').value || '').trim().toUpperCase(),
+    PROYECTO_CARGO: (document.getElementById('x-cargo').value || '').trim(),
+    // marcadores de tabla (se rellenan al expandir)
+    T1_COMPARENDO:'', T1_FECHA:'', T2_COMPARENDO:'', T2_RESOLUCION:'', T2_FECHA:''
+  };
+
+  msg.className = 'msg'; msg.textContent = 'Armando el documento…';
+  try{
+    const nombreArchivo = 'Resolucion_excepciones_' +
+      cedula.replace(/[^0-9]/g,'') + '_' + (rad || '').replace(/[^\w-]/g,'') + '.docx';
+    await armarDocx(URL_PLANTILLA_EXCEPCIONES, datos, nombreArchivo, function(xml){
+      // 1) reemplazar el PÁRRAFO CONTENEDOR de cada marcador de bloque por los
+      //    párrafos generados (así no quedan <w:p> anidados).
+      xml = reemplazarParrafoMarcador(xml, 'ANALISIS_EXCEPCIONES', analisisXml);
+      xml = reemplazarParrafoMarcador(xml, 'RESUELVE_EXCEPCIONES', resItems);
+      xml = reemplazarParrafoMarcador(xml, 'RESUELVE_CIERRE', cierre);
+      // 2) expandir tablas
+      xml = excExpandirTabla(xml, t1, { T1_COMPARENDO:'comp', T1_FECHA:'fecha' });
+      xml = excExpandirTabla(xml, t2, { T2_COMPARENDO:'comp', T2_RESOLUCION:'resol', T2_FECHA:'fecha' });
+      return xml;
+    });
+    try{
+      await supaFetch('pet_peticiones?id=eq.' + r.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        body: JSON.stringify({ doc_proyectado: nombreArchivo })
+      });
+    }catch(e){}
+    const notas = document.getElementById('k-notas');
+    if(notas && !notas.value.trim())
+      notas.value = 'Se proyecta resolución que resuelve ' + sel.length + ' excepción(es) al mandamiento de pago.';
+    await registrarDocs(r, [{
+      tema:'excepciones', sentido:'NEGADA', tipo_doc:'RESOLUCION', items: sel.length
+    }], nombreArchivo);
+    msg.className = 'msg ok';
+    msg.textContent = 'Resolución con ' + sel.length + ' excepción(es) descargada. Revísela antes de radicar.';
+  }catch(err){
+    msg.className = 'msg err';
+    msg.textContent = 'No se pudo generar: ' + err.message +
+      '. Verifique que la plantilla esté cargada en Supabase Storage.';
+  }
+}
+
+/* Reemplaza el <w:p>…{{MARC}}…</w:p> completo por 'reemplazo' (uno o más
+   <w:p>). Busca el marcador y expande hacia afuera hasta el <w:p que lo abre
+   y el </w:p> que lo cierra, evitando así párrafos anidados. */
+function reemplazarParrafoMarcador(xml, marcador, reemplazo){
+  const tok = '{{' + marcador + '}}';
+  let idx = xml.indexOf(tok);
+  while(idx !== -1){
+    // Buscar la apertura real del párrafo: '<w:p>' o '<w:p ' (con espacio),
+    // NUNCA '<w:pPr>' (que también empieza por '<w:p').
+    let ini = -1, k = idx;
+    while(k > 0){
+      const pos = xml.lastIndexOf('<w:p', k);
+      if(pos === -1) break;
+      const next = xml.charAt(pos + 4);   // carácter tras '<w:p'
+      if(next === '>' || next === ' '){ ini = pos; break; }
+      k = pos - 1;                        // era <w:pPr> u otro; seguir atrás
+    }
+    const finTag = xml.indexOf('</w:p>', idx);
+    if(ini === -1 || finTag === -1){ break; }
+    const fin = finTag + '</w:p>'.length;
+    xml = xml.slice(0, ini) + reemplazo + xml.slice(fin);
+    idx = xml.indexOf(tok);
+  }
+  return xml;
+}
+
 
 /* ══════════════════════════════════════════════════════════════
    PANEL 3 — BANDEJA
