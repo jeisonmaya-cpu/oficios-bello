@@ -869,7 +869,11 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
   <div class="card">
     <div class="card-hdr">
       <div class="card-hdr-title">📋 Registros del banco</div>
-      <button class="tb-btn" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:var(--warn-txt)">📥 Importar</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="tb-btn" id="btnExportCSV" onclick="exportarRecaudo('csv')" style="font-size:11px;padding:5px 11px;background:rgba(232,160,32,.18);border-color:rgba(232,160,32,.45);color:var(--gold,#e8a020)">⬇ CSV</button>
+        <button class="tb-btn" id="btnExportXLSX" onclick="exportarRecaudo('xlsx')" style="font-size:11px;padding:5px 11px;background:rgba(232,160,32,.18);border-color:rgba(232,160,32,.45);color:var(--gold,#e8a020)">⬇ Excel</button>
+        <button class="tb-btn" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:var(--warn-txt)">📥 Importar</button>
+      </div>
     </div>
     <div class="filtros">
       <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrarDebounced()"/>
@@ -6578,6 +6582,180 @@ function fallbackCopiar(texto,cb){
     if(cb) cb();
   }catch(e){}
 }
+
+// ════════════════════════════════════════════════════════════
+// EXPORTAR RECAUDO → CSV + Excel
+// Baja TODA la tabla `recaudo` directo de Supabase (36 columnas reales,
+// incluidos anulados) reutilizando sbFetchAll(). No usa dataBancoCompleto
+// porque ese array omite columnas (se cargan perezosamente por fila).
+// ════════════════════════════════════════════════════════════
+(function(){
+  // Todas las columnas de la tabla, en orden de export, con encabezado legible.
+  var EXPORT_COLS = [
+    ['id','ID'],
+    ['deposito_judicial','Depósito Judicial'],
+    ['fecha_emision','Fecha Emisión'],
+    ['estado_deposito','Estado Depósito'],
+    ['identificacion_demandante','Ident. Demandante'],
+    ['nombre_demandante','Nombre Demandante'],
+    ['identificacion_demandado','Ident. Demandado'],
+    ['nombre_demandado','Nombre Demandado'],
+    ['identificacion_consignante','Ident. Consignante'],
+    ['nombre_consignante','Nombre Consignante'],
+    ['concepto_deposito','Concepto'],
+    ['numero_proceso','N° Proceso (banco)'],
+    ['numero_proceso_manual','N° Proceso (manual)'],
+    ['valor_deposito','Valor'],
+    ['titulo_padre','Título Padre'],
+    ['tipo_tx_origen','Tipo TX Origen'],
+    ['tipo_impuesto','Tipo Impuesto'],
+    ['observacion','Observación'],
+    ['telefono_contacto','Teléfono'],
+    ['correo_electronico','Correo'],
+    ['direccion','Dirección'],
+    ['ciudad','Ciudad'],
+    ['ano_gestion','Año Gestión'],
+    ['responsable','Responsable'],
+    ['gestion_tesoreria','Gestión Tesorería'],
+    ['comprobante_egreso','Comprobante Egreso'],
+    ['radicado_respuesta','Radicado Respuesta'],
+    ['estado_devolucion','Estado Devolución'],
+    ['estado_aplicacion','Estado Aplicación'],
+    ['acuerdo_pago','Acuerdo Pago'],
+    ['ci_inicial','CI Inicial'],
+    ['anulado','Anulado'],
+    ['consignaciones','Consignaciones (JSON)'],
+    ['editado_por','Editado Por'],
+    ['ultima_edicion','Última Edición'],
+    ['fecha_creacion','Fecha Creación']
+  ];
+
+  // Columnas que Excel rompe si las trata como número (notación científica /
+  // ceros a la izquierda perdidos) → se fuerzan a texto en ambos formatos.
+  var FORZAR_TEXTO = {
+    deposito_judicial:1, identificacion_demandante:1, identificacion_demandado:1,
+    identificacion_consignante:1, numero_proceso:1, numero_proceso_manual:1,
+    comprobante_egreso:1, radicado_respuesta:1, ci_inicial:1, telefono_contacto:1
+  };
+
+  var SELECT_EXPORT = EXPORT_COLS.map(function(c){ return c[0]; }).join(',');
+
+  function setBusy(txt){
+    var a=document.getElementById('btnExportCSV'),
+        b=document.getElementById('btnExportXLSX');
+    if(txt){
+      if(a){ a.disabled=true; }
+      if(b){ b.disabled=true; }
+      if(a) a.textContent=txt; if(b) b.textContent='…';
+    }else{
+      if(a){ a.disabled=false; a.textContent='⬇ CSV'; }
+      if(b){ b.disabled=false; b.textContent='⬇ Excel'; }
+    }
+  }
+
+  function valorCelda(row, key){
+    var v = row[key];
+    if(v===null || v===undefined) return '';
+    if(key==='consignaciones' && typeof v==='object') return JSON.stringify(v);
+    if(typeof v==='boolean') return v ? 'SÍ' : 'NO';
+    return v;
+  }
+
+  // ---- CSV: separador ; + BOM UTF-8 (Excel español lo abre directo) ----
+  function armarCSV(filas){
+    var SEP=';';
+    function esc(s){ return '"' + String(s).replace(/"/g,'""') + '"'; }
+    var out=[ EXPORT_COLS.map(function(c){ return esc(c[1]); }).join(SEP) ];
+    for(var i=0;i<filas.length;i++){
+      var row=filas[i];
+      var celdas=EXPORT_COLS.map(function(c){
+        var key=c[0], v=valorCelda(row,key);
+        // fórmula ="..." evita que Excel convierta cédulas/depósitos a número
+        if(FORZAR_TEXTO[key] && v!=='') v='="'+String(v).replace(/"/g,'""')+'"';
+        return esc(v);
+      });
+      out.push(celdas.join(SEP));
+    }
+    return '\uFEFF' + out.join('\r\n');
+  }
+
+  function descargarBlob(blob, nombre){
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download=nombre;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  }
+
+  function nombreArchivo(ext){
+    var d=new Date(), p=function(n){ return String(n).padStart(2,'0'); };
+    return 'recaudo_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())
+         +'_'+p(d.getHours())+p(d.getMinutes())+'.'+ext;
+  }
+
+  // ---- Carga perezosa de SheetJS solo cuando se pide Excel ----
+  function cargarSheetJS(){
+    return new Promise(function(res, rej){
+      if(window.XLSX) return res(window.XLSX);
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload=function(){ res(window.XLSX); };
+      s.onerror=function(){ rej(new Error('No se pudo cargar la librería de Excel (SheetJS).')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function armarXLSX(XLSX, filas){
+    var aoa=[ EXPORT_COLS.map(function(c){ return c[1]; }) ];
+    for(var i=0;i<filas.length;i++){
+      var row=filas[i];
+      aoa.push(EXPORT_COLS.map(function(c){ return valorCelda(row,c[0]); }));
+    }
+    var ws=XLSX.utils.aoa_to_sheet(aoa);
+    // forzar texto en columnas sensibles
+    var idx=[];
+    EXPORT_COLS.forEach(function(c,i){ if(FORZAR_TEXTO[c[0]]) idx.push(i); });
+    for(var k=0;k<idx.length;k++){
+      var col=idx[k];
+      for(var r=1;r<=filas.length;r++){
+        var ref=XLSX.utils.encode_cell({r:r,c:col});
+        var cell=ws[ref];
+        if(cell && cell.v!=='' && cell.v!=null){ cell.t='s'; cell.v=String(cell.v); }
+      }
+    }
+    ws['!cols']=EXPORT_COLS.map(function(c){
+      return { wch: Math.min(Math.max(c[1].length+2,12),40) };
+    });
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Recaudo');
+    return wb;
+  }
+
+  // Función global que invocan los botones
+  window.exportarRecaudo = async function(tipo){
+    try{
+      setBusy('Descargando…');
+      // sbFetchAll pagina de a 1000 con reintentos; trae TODA la tabla.
+      var filas = await sbFetchAll('recaudo', SELECT_EXPORT, 'order=id.asc');
+      if(!filas || !filas.length){ alert('No se encontraron registros para exportar.'); setBusy(null); return; }
+
+      if(tipo==='csv'){
+        setBusy('Generando CSV…');
+        descargarBlob(new Blob([armarCSV(filas)], {type:'text/csv;charset=utf-8;'}), nombreArchivo('csv'));
+      }else{
+        setBusy('Cargando Excel…');
+        var XLSX = await cargarSheetJS();
+        setBusy('Generando Excel…');
+        XLSX.writeFile(armarXLSX(XLSX, filas), nombreArchivo('xlsx'));
+      }
+    }catch(err){
+      console.error('[exportarRecaudo]', err);
+      alert('Error al exportar: ' + (err && err.message ? err.message : err));
+    }finally{
+      setBusy(null);
+    }
+  };
+})();
 
 </script>
 </body>
