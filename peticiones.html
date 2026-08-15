@@ -845,6 +845,9 @@ footer b{color:var(--gold)}
         <option value="des">Solo con desacato</option>
         <option value="per">De personas que ya tutelaron</option>
       </select>
+      <select id="b-abo" onchange="renderBandeja()">
+        <option value="">Todos los abogados</option>
+      </select>
       <button class="btn btn-ghost" onclick="cargarBandeja()">Recargar</button>
       <button class="btn btn-ghost" onclick="exportarCSV()">Exportar CSV</button>
       <button class="btn btn-ghost" id="b-sel" onclick="modoSeleccion()"
@@ -6336,10 +6339,37 @@ async function cargarBandeja(){
       BANDEJA = await supaFetch('v_pet_bandeja?select=*&order=fecha_limite.asc&limit=1000');
     }
     msg.textContent = BANDEJA.length + ' peticiones cargadas (máx. 1000 más urgentes).';
+    poblarFiltroAbogados();
     renderBandeja();
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'Error: ' + err.message;
   }
+}
+
+/* Llena el selector de abogados de la bandeja con quienes tienen
+   peticiones cargadas, más la opción "Sin asignar". Conserva la
+   selección actual si sigue siendo válida tras recargar. */
+function poblarFiltroAbogados(){
+  const sel = document.getElementById('b-abo');
+  if(!sel) return;
+  const previo = sel.value;
+  let haySin = false;
+  const mapa = {};
+  BANDEJA.forEach(function(r){
+    if(r.asignado_a){ mapa[String(r.asignado_a)] = r.asignado_nombre || '(sin nombre)'; }
+    else { haySin = true; }
+  });
+  const abos = Object.keys(mapa).map(function(id){ return { id: id, nom: mapa[id] }; });
+  abos.sort(function(a, b){ return a.nom.localeCompare(b.nom, 'es'); });
+  let html = '<option value="">Todos los abogados</option>';
+  if(haySin) html += '<option value="sin">Sin asignar</option>';
+  html += abos.map(function(a){
+    return '<option value="' + esc(a.id) + '">' + esc(a.nom) + '</option>';
+  }).join('');
+  sel.innerHTML = html;
+  // Restaurar selección previa si todavía existe
+  const existe = Array.prototype.some.call(sel.options, function(o){ return o.value === previo; });
+  sel.value = existe ? previo : '';
 }
 
 /* Distintivo compacto para tablas y listados */
@@ -6354,9 +6384,12 @@ function filtrarBandeja(){
   const q  = document.getElementById('b-q').value.trim().toLowerCase();
   const es = document.getElementById('b-estado').value;
   const sm = document.getElementById('b-sem').value;
+  const ab = (document.getElementById('b-abo') || {}).value || '';
   return BANDEJA.filter(function(r){
     if(es && r.estado !== es) return false;
     if(sm && r.semaforo !== sm) return false;
+    if(ab === 'sin' && r.asignado_a) return false;
+    if(ab && ab !== 'sin' && String(r.asignado_a) !== ab) return false;
     const tt = document.getElementById('b-tut');
     const tv = tt ? tt.value : '';
     if(tv === 'si'  && !(Number(r.en_tutela || 0) > 0)) return false;
