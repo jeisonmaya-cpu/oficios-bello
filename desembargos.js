@@ -1203,7 +1203,7 @@ function construirDocXml(xml, d){
     '<w:tcMar><w:top w:w="40" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tcMar>'+
     '</w:tcPr>'+
     _lineaSello('Generado: '+xmlEsc(_sello))+
-    _lineaSello('Por: '+xmlEsc(_func))+
+    _lineaSello('Enviado por correo electrónico: '+xmlEsc(_func))+
     '</w:tc></w:tr>'+
     '</w:tbl>'+
     '<w:p><w:pPr><w:spacing w:after="0" w:line="120" w:lineRule="auto"/></w:pPr></w:p>';
