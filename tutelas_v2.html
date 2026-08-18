@@ -1462,8 +1462,7 @@ async function guardarNuevoIncidente(){
     "JUZGADO": document.getElementById("ni-juz").value.trim(),
     "TIPO": document.getElementById("ni-tipo").value,
     "RESPONSABLE": abo,
-    "ESTADO": "Nuevo",
-    "NOTIFICADO": ""
+    "ESTADO": "Nuevo"
   };
   btn.textContent="Creando..."; btn.style.pointerEvents="none";
   try{
@@ -1513,10 +1512,9 @@ async function escalarCaso(categoria){
     "ENCARGADO PQR":     actual["ENCARGADO PQR"]||"",
     "PQR":               actual["PQR"]||"",
     "RESPUESTA PQR":     actual["RESPUESTA PQR"]||"",
-    "SHAREPOINT":        actual["SHAREPOINT"]||"",
-    // Un incidente/fallo recién escalado nace SIN notificar; la técnica (Verónica)
-    // marca la notificación después. No hereda el valor del admite original.
-    "NOTIFICADO":        ""
+    "SHAREPOINT":        actual["SHAREPOINT"]||""
+    // NOTIFICADO no se envía al crear: la columna en Supabase tiene su default.
+    // El registro nace sin notificar y la técnica (Verónica) lo marca después.
   };
   // Título y cuerpo del modal de revisión
   document.getElementById("esc-titulo").textContent = categoria==="fallo" ? "⚖️ Crear fallo" : "⚡ Crear incidente";
