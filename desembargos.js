@@ -1145,6 +1145,13 @@ function construirDocXml(xml, d){
   _fillPara('634F9D4A', _r18(_proyN));                    // Firma
   _fillPara('00521872', _r18(xmlEsc(d.fechaAuto||'')));   // Fecha
 
+  // 6. Fila "Revisó": siempre Juan Pablo Gómez (Nombre y Firma) y fecha del día
+  const _revN = xmlEsc('Juan Pablo Gómez');
+  const _revF = xmlEsc(hoyDDMMYYYY());
+  _fillPara('2A9325BC', _r18(_revN));   // Nombre
+  _fillPara('6A1B7230', _r18(_revN));   // Firma
+  _fillPara('39F893EC', _r18(_revF));   // Fecha
+
   // 12. Recuadro de control de impresión (esquina superior derecha)
   //     Fecha/hora de generación + funcionario. Permite identificar cada
   //     oficio cuando se imprimen varios a la vez para llevar a radicar.
