@@ -1322,6 +1322,16 @@ const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incid
 const TIPOS_OTROS = ["Requerimiento","Apertura","Sanción","Impugnación","Reparto"];
 const EST_HIST    = ["Finalizado","Respondido","Anulado","Hecho superado"];
 const PER_PAGE    = 50;
+// Un incidente está notificado solo si NOTIFICADO trae un valor real (quién notificó
+// y cuándo). Los literales "false"/"no"/"0"/"null" que a veces llegan como valor por
+// defecto de la columna NO cuentan como notificado. Devuelve "" si no está notificado,
+// o el texto real de la marca si lo está.
+function estaNotificado(r){
+  const bruto=String(r&&r["NOTIFICADO"]!=null?r["NOTIFICADO"]:"").trim();
+  const v=bruto.toLowerCase();
+  if(!v||v==="false"||v==="no"||v==="0"||v==="null"||v==="undefined") return "";
+  return bruto;
+}
 
 let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
 let pagAdm=1, pagFal=1, pagHis=1, pagInc=1;
@@ -1452,7 +1462,8 @@ async function guardarNuevoIncidente(){
     "JUZGADO": document.getElementById("ni-juz").value.trim(),
     "TIPO": document.getElementById("ni-tipo").value,
     "RESPONSABLE": abo,
-    "ESTADO": "Nuevo"
+    "ESTADO": "Nuevo",
+    "NOTIFICADO": ""
   };
   btn.textContent="Creando..."; btn.style.pointerEvents="none";
   try{
@@ -1502,7 +1513,10 @@ async function escalarCaso(categoria){
     "ENCARGADO PQR":     actual["ENCARGADO PQR"]||"",
     "PQR":               actual["PQR"]||"",
     "RESPUESTA PQR":     actual["RESPUESTA PQR"]||"",
-    "SHAREPOINT":        actual["SHAREPOINT"]||""
+    "SHAREPOINT":        actual["SHAREPOINT"]||"",
+    // Un incidente/fallo recién escalado nace SIN notificar; la técnica (Verónica)
+    // marca la notificación después. No hereda el valor del admite original.
+    "NOTIFICADO":        ""
   };
   // Título y cuerpo del modal de revisión
   document.getElementById("esc-titulo").textContent = categoria==="fallo" ? "⚖️ Crear fallo" : "⚡ Crear incidente";
@@ -2007,7 +2021,7 @@ function renderOtros(){
   const activos=datos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const urg=activos.filter(r=>r._dias!==null&&r._dias<=3);
   const nuevos=activos.filter(r=>r["ESTADO"]==="Nuevo");
-  const sinNotif=activos.filter(r=>!String(r["NOTIFICADO"]||"").trim());
+  const sinNotif=activos.filter(r=>!estaNotificado(r));
   document.getElementById("stats-inc").innerHTML=
     scardQuick(activos.length,"Total activos","c-amber","otr",null)+
     scardQuick(urg.length,"Urgentes ≤3d","c-red","otr","urg3")+
@@ -2020,7 +2034,7 @@ function renderOtros(){
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagOtros=pag;
   el.innerHTML=pag.map((r,i)=>{
-    const notif=String(r["NOTIFICADO"]||"").trim();
+    const notif=estaNotificado(r);
     const btnNotif = notif
       ? `<button class="btn-notif hecho" title="Notificado: ${escAttr(notif)} — clic para quitar la marca" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">✅ Notificado</button>`
       : `<button class="btn-notif" title="Marcar que este incidente ya fue notificado" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">📣 Notificar</button>`;
@@ -2682,7 +2696,7 @@ function llenarGestionVisible(r){
   const pqr = String(r["RESPUESTA PQR"]||"").trim();
   const rad = String(r["RADICADO DE CUMPLIMIENTO"]||r["RESPUESTA RADICADO TUTELA"]||"").trim();
   const sp  = String(r["SHAREPOINT"]||"").trim();
-  const notif = String(r["NOTIFICADO"]||"").trim();
+  const notif = estaNotificado(r);
 
   const setVis=(wid,val,vid)=>{
     const w=document.getElementById(wid);
@@ -2883,7 +2897,7 @@ function aplicarQuick(arr,key){
   if(key==='ok')    return arr.filter(r=>act(r)&&r._dias!==null&&r._dias>3);
   if(key==='nuevo') return arr.filter(r=>r["ESTADO"]==="Nuevo");
   if(key==='pendtec') return arr.filter(r=>act(r)&&faltaTecnico(r));
-  if(key==='sinnotif') return arr.filter(r=>act(r)&&!String(r["NOTIFICADO"]||"").trim());
+  if(key==='sinnotif') return arr.filter(r=>act(r)&&!estaNotificado(r));
   return arr;
 }
 
@@ -3125,7 +3139,7 @@ async function toggleNotificado(arrKey, idx){
   const arr=window[arrKey]; const r=arr&&arr[idx];
   if(!r) return;
   if(!(USAR_SUPABASE && r._id)){ toast("⚠️ Este registro no tiene id de Supabase; no se puede marcar","err"); return; }
-  const ya=String(r["NOTIFICADO"]||"").trim();
+  const ya=estaNotificado(r);
   const ok = await confirmar(
     ya ? "¿Quitar la marca de notificado?" : "¿Marcar incidente como notificado?",
     ya ? `${r["ACCIONANTE"]||"Este incidente"} — actualmente: ${ya}`
@@ -3151,7 +3165,7 @@ async function toggleNotificado(arrKey, idx){
 function pintarNotifModal(){
   const est=document.getElementById("m-notif-estado"), btn=document.getElementById("m-notif-btn");
   if(!est||!btn||!actual) return;
-  const ya=String(actual["NOTIFICADO"]||"").trim();
+  const ya=estaNotificado(actual);
   est.innerHTML = ya ? `✅ Notificado: <strong>${esc(ya)}</strong>`
                      : `<span style="color:var(--muted)">Aún sin notificar</span>`;
   btn.className = "btn-notif"+(ya?" hecho":"");
