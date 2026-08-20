@@ -363,6 +363,23 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
   border-radius:99px;padding:5px 13px;font-size:var(--t-micro);cursor:pointer;font-family:inherit;font-weight:600}
 .chip-limpiar:hover{color:var(--txt);border-color:var(--gold)}
 
+/* Buscador dentro de la cola */
+.cola-busq{display:flex;gap:8px;align-items:center;flex:1;min-width:210px;position:relative}
+.cola-busq input{padding-left:34px}
+.cola-busq .lupa-ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;color:var(--muted);pointer-events:none}
+.cola-sug{position:absolute;top:calc(100% + 5px);left:0;right:0;background:var(--navy2);
+  border:1px solid var(--border);border-radius:11px;max-height:290px;overflow:auto;z-index:70;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);display:none}
+.cola-sug.on{display:block}
+.sug-it{display:flex;gap:10px;align-items:center;padding:10px 13px;cursor:pointer;
+  border-bottom:1px solid var(--border);font-size:var(--t-sm)}
+.sug-it:last-child{border-bottom:none}
+.sug-it:hover,.sug-it.sel{background:rgba(232,160,32,.13)}
+.sug-rad{font-family:'Syne';font-weight:800;color:var(--gold);font-size:var(--t-sm);min-width:98px}
+.sug-nom{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sug-pos{font-size:var(--t-micro);color:var(--muted);white-space:nowrap}
+.sug-vacio{padding:14px;text-align:center;color:var(--muted);font-size:var(--t-sm)}
 /* Ayuda de atajos */
 #ayuda{position:fixed;inset:0;background:rgba(4,14,28,.9);z-index:955;display:none;
   align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(6px)}
@@ -883,6 +900,14 @@ footer b{color:var(--gold)}
     <div class="cola-box">
       <div class="cola-top">
         <div><span id="c-pos">—</span></div>
+        <div class="cola-busq">
+          <svg class="lupa-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="c-busq" placeholder="Ir a un caso: radicado, nombre o cédula…"
+            autocomplete="off" oninput="sugerirCola()" onkeydown="teclaCola(event)"
+            onblur="setTimeout(cerrarSug, 180)">
+          <div class="cola-sug" id="c-sug"></div>
+        </div>
         <div style="display:flex;gap:8px">
           <select id="c-filtro" onchange="cargarCola()" style="width:auto">
             <option value="mias">Mis casos</option>
@@ -3989,6 +4014,10 @@ async function avanceDelDia(){
 async function avisoSinRadicado(){
   const cont = document.getElementById('c-aviso');
   if(!cont) return;
+  // Solo tiene sentido cuando revisa su propia cola: decir "suyas"
+  // mientras mira la de otro es confuso.
+  const f = document.getElementById('c-filtro');
+  if(f && f.value !== 'mias'){ cont.innerHTML = ''; return; }
   try{
     let q = 'v_pet_bandeja?select=id,dias_esperando_radicado&estado=eq.PROYECTADA&limit=500';
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
@@ -4035,18 +4064,28 @@ function alertaTutela(r){
 
   // Caso 1: la petición misma está en tutela
   if(enTut > 0){
-    const clase = desac ? 'tut-desacato' : 'tut-critico';
+    // Si la actuación judicial ya terminó, el tono no debe ser de urgencia
+    const cerrada = ['Finalizado','Respondido','Hecho superado','Anulado']
+      .indexOf(String(r.tutela_estado || '')) !== -1;
+    const clase = cerrada ? 'tut-alto' : (desac ? 'tut-desacato' : 'tut-critico');
     return '<div class="tut-alerta ' + clase + '">' +
       '<div class="tut-ic" style="color:var(--judicial)">' +
         (desac ? ICONO.martillo : ICONO.balanza) + '</div>' +
       '<div style="flex:1">' +
         '<div class="tut-tit" style="color:var(--judicial)">' +
-          (desac ? 'Esta petición tiene incidente de desacato'
-                 : 'Esta petición ya está en tutela') + '</div>' +
+          (desac ? 'Esta petición tuvo incidente de desacato'
+                 : 'Esta petición está en tutela') +
+          (cerrada ? ' · actuación finalizada' : '') + '</div>' +
         '<div style="color:var(--muted)">' +
-          (desac
-            ? 'Hay un desacato en curso por no responderla. Riesgo de sanción para la Dirección: resuélvala hoy.'
-            : 'El ciudadano tuteló por esta misma petición. Responderla es lo que cierra la tutela.') +
+          (cerrada
+            ? (desac
+               ? 'Hubo un incidente de desacato por no responderla. La actuación judicial ya terminó, ' +
+                 'pero la petición sigue abierta: respóndala para cerrar el ciclo.'
+               : 'El ciudadano tuteló por esta misma petición. La actuación judicial ya terminó, ' +
+                 'pero la petición sigue pendiente de respuesta.')
+            : (desac
+               ? 'Hay un desacato en curso por no responderla. Riesgo de sanción para la Dirección: resuélvala hoy.'
+               : 'El ciudadano tuteló por esta misma petición. Responderla es lo que cierra la tutela.')) +
         '</div>' +
         '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px">' +
           (r.tutela_radicado
@@ -4170,6 +4209,102 @@ function autoFechaResp(){
 
 function mi(k, v){
   return '<div class="mi"><div class="k">' + esc(k) + '</div><div>' + esc(v) + '</div></div>';
+}
+
+/* ── Ir directo a un caso dentro de la cola ── */
+let SUG_SEL = -1;
+
+function sugerirCola(){
+  const q = (document.getElementById('c-busq').value || '').trim().toLowerCase();
+  const cont = document.getElementById('c-sug');
+  SUG_SEL = -1;
+  if(q.length < 2){ cont.classList.remove('on'); cont.innerHTML = ''; return; }
+
+  const hits = [];
+  for(let i = 0; i < COLA.length && hits.length < 12; i++){
+    const r = COLA[i];
+    const blob = [r.radicado, r.peticionario, r.documento, r.expediente]
+      .join(' ').toLowerCase();
+    if(blob.indexOf(q) !== -1) hits.push({ r: r, i: i });
+  }
+
+  if(!hits.length){
+    cont.innerHTML = '<div class="sug-vacio">No está en esta cola.<br>' +
+      '<span style="font-size:var(--t-micro)">Puede ser de otro abogado o ya estar resuelta. ' +
+      'Búsquela con <b>Ctrl+K</b>.</span></div>';
+    cont.classList.add('on');
+    return;
+  }
+
+  cont.innerHTML = hits.map(function(x, k){
+    const d = x.r.dias_restantes;
+    const col = d === null ? 'var(--muted)' : d < 0 ? 'var(--vencido)'
+              : d <= 3 ? 'var(--urgente)' : 'var(--atiempo)';
+    return '<div class="sug-it" data-i="' + x.i + '" onmousedown="irACaso(' + x.i + ')">' +
+      '<span class="sug-rad">' + esc(x.r.radicado) + '</span>' +
+      '<span class="sug-nom">' + esc(x.r.peticionario) + '</span>' +
+      '<span class="sug-pos" style="color:' + col + '">' +
+        (d === null ? '—' : d < 0 ? 'vencida ' + Math.abs(d) : d + ' días') + '</span>' +
+      '<span class="sug-pos">#' + (x.i + 1) + '</span>' +
+    '</div>';
+  }).join('');
+  cont.classList.add('on');
+}
+
+function teclaCola(e){
+  const cont = document.getElementById('c-sug');
+  const items = cont.querySelectorAll('.sug-it');
+  if(e.key === 'Escape'){ cerrarSug(); e.target.blur(); return; }
+  if(!items.length) {
+    if(e.key === 'Enter') irAPrimeraCoincidencia();
+    return;
+  }
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    SUG_SEL = Math.min(SUG_SEL + 1, items.length - 1);
+    marcarSug(items);
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    SUG_SEL = Math.max(SUG_SEL - 1, 0);
+    marcarSug(items);
+  } else if(e.key === 'Enter'){
+    e.preventDefault();
+    const el = items[SUG_SEL >= 0 ? SUG_SEL : 0];
+    if(el) irACaso(Number(el.getAttribute('data-i')));
+  }
+}
+
+function marcarSug(items){
+  for(let i = 0; i < items.length; i++) items[i].classList.toggle('sel', i === SUG_SEL);
+  if(items[SUG_SEL]) items[SUG_SEL].scrollIntoView({block:'nearest'});
+}
+
+function irAPrimeraCoincidencia(){
+  const q = (document.getElementById('c-busq').value || '').trim().toLowerCase();
+  if(!q) return;
+  for(let i = 0; i < COLA.length; i++){
+    const blob = [COLA[i].radicado, COLA[i].peticionario, COLA[i].documento]
+      .join(' ').toLowerCase();
+    if(blob.indexOf(q) !== -1){ irACaso(i); return; }
+  }
+  toast('No está en esta cola. Búsquela con Ctrl+K.', '', 5);
+}
+
+function irACaso(i){
+  if(i < 0 || i >= COLA.length) return;
+  COLA_IDX = i;
+  cerrarSug();
+  const b = document.getElementById('c-busq');
+  if(b) b.value = '';
+  pintarCaso();
+  const c = document.getElementById('c-cont');
+  if(c) c.scrollIntoView({block:'start', behavior:'smooth'});
+}
+
+function cerrarSug(){
+  const c = document.getElementById('c-sug');
+  if(c){ c.classList.remove('on'); c.innerHTML = ''; }
+  SUG_SEL = -1;
 }
 
 function moverCaso(paso){
