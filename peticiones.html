@@ -341,6 +341,69 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .pleg-cnt{display:none;padding-top:12px}
 .pleg.on .pleg-cnt{display:block}
 .pleg-cta{margin-left:auto;font-size:var(--t-micro);color:var(--acento);font-weight:700}
+/* Confirmación propia: el confirm() del navegador rompe el ritmo de trabajo */
+#confirmar{position:fixed;inset:0;background:rgba(4,14,28,.88);z-index:960;display:none;
+  align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(5px)}
+#confirmar.on{display:flex}
+.cf-caja{width:100%;max-width:430px;background:var(--navy2);border:1px solid var(--border);
+  border-radius:16px;padding:24px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.cf-caja h3{font-family:'Syne';font-size:18px;margin-bottom:8px}
+.cf-caja p{font-size:var(--t-base);color:#c9d5e6;line-height:1.6;margin-bottom:18px}
+.cf-acc{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}
+
+/* Filtros activos: se ven y se quitan de un clic */
+.chips-f{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.chip-f{display:inline-flex;align-items:center;gap:7px;background:rgba(232,160,32,.13);
+  border:1px solid rgba(232,160,32,.36);color:var(--gold2);border-radius:99px;
+  padding:5px 8px 5px 12px;font-size:var(--t-micro);font-weight:600}
+.chip-f button{background:none;border:none;color:inherit;cursor:pointer;font-size:15px;
+  line-height:1;padding:0 3px;opacity:.65;font-family:inherit}
+.chip-f button:hover{opacity:1}
+.chip-limpiar{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);
+  border-radius:99px;padding:5px 13px;font-size:var(--t-micro);cursor:pointer;font-family:inherit;font-weight:600}
+.chip-limpiar:hover{color:var(--txt);border-color:var(--gold)}
+
+/* Ayuda de atajos */
+#ayuda{position:fixed;inset:0;background:rgba(4,14,28,.9);z-index:955;display:none;
+  align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(6px)}
+#ayuda.on{display:flex}
+.ay-caja{width:100%;max-width:560px;max-height:86vh;overflow:auto;background:var(--navy2);
+  border:1px solid var(--border);border-radius:18px;padding:26px}
+.ay-caja h3{font-family:'Syne';font-size:19px;margin-bottom:4px}
+.ay-gr{font-size:var(--t-lbl);text-transform:uppercase;letter-spacing:.09em;color:var(--gold);
+  font-weight:700;margin:18px 0 9px}
+.ay-fila{display:flex;align-items:center;gap:13px;padding:7px 0;font-size:var(--t-sm);
+  border-top:1px solid var(--border)}
+.ay-fila span{flex:1;color:#c9d5e6}
+.ay-k{background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:6px;
+  padding:3px 9px;font-family:ui-monospace,Consolas,monospace;font-size:var(--t-micro);
+  color:var(--gold2);white-space:nowrap}
+/* Filtros activos */
+.chips-f{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.chip-f{display:inline-flex;align-items:center;gap:7px;background:rgba(232,160,32,.13);
+  border:1px solid rgba(232,160,32,.36);color:var(--gold2);border-radius:99px;
+  padding:5px 8px 5px 12px;font-size:var(--t-micro);font-weight:600}
+.chip-f button{background:none;border:none;color:inherit;cursor:pointer;font-size:15px;
+  line-height:1;padding:0 3px;opacity:.65;font-family:inherit}
+.chip-f button:hover{opacity:1}
+.chip-limpiar{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);
+  border-radius:99px;padding:5px 13px;font-size:var(--t-micro);cursor:pointer;font-family:inherit;font-weight:600}
+.chip-limpiar:hover{color:var(--txt);border-color:var(--gold)}
+/* Paginación de tablas */
+.pag{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;
+  padding-top:13px;border-top:1px solid var(--border)}
+.pag-info{font-size:var(--t-sm);color:var(--muted);margin-right:auto}
+.pag-info b{color:var(--txt)}
+.pag-b{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);
+  border-radius:9px;padding:8px 13px;font-size:var(--t-sm);font-weight:600;cursor:pointer;
+  font-family:inherit;transition:all .15s;min-width:38px}
+.pag-b:hover:not(:disabled){border-color:var(--acento);color:var(--txt)}
+.pag-b:disabled{opacity:.32;cursor:not-allowed}
+.pag-b.on{background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border-color:var(--gold);color:var(--navy);font-weight:700}
+.pag-sep{color:var(--muted);padding:0 2px;font-size:var(--t-sm)}
+.pag-tam{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--txt);
+  border-radius:9px;padding:8px 10px;font-size:var(--t-sm);font-family:inherit}
 /* Corrección de una petición */
 #editor{position:fixed;inset:0;background:rgba(4,14,28,.9);z-index:940;display:none;
   align-items:flex-start;justify-content:center;padding:28px 20px;overflow:auto;backdrop-filter:blur(6px)}
@@ -620,6 +683,27 @@ footer b{color:var(--gold)}
     </div>
   </div>
 </div>
+<div id="ayuda">
+  <div class="ay-caja">
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:4px">
+      <div style="flex:1"><h3>Atajos de <em>teclado</em></h3>
+        <div class="hint">Pulse <b>?</b> en cualquier momento para volver a verlos.</div></div>
+      <button class="btn btn-ghost" style="padding:8px 14px;font-size:var(--t-sm)"
+        onclick="cerrarAyuda()">Cerrar</button>
+    </div>
+    <div id="ay-cont"></div>
+  </div>
+</div>
+<div id="confirmar">
+  <div class="cf-caja">
+    <h3 id="cf-tit">Confirmar</h3>
+    <p id="cf-txt"></p>
+    <div class="cf-acc">
+      <button class="btn btn-ghost" id="cf-no">Cancelar</button>
+      <button class="btn btn-primary" id="cf-si">Continuar</button>
+    </div>
+  </div>
+</div>
 <div id="toasts"></div>
 <div id="app" style="display:none">
 <nav id="lat">
@@ -639,6 +723,7 @@ footer b{color:var(--gold)}
     <div class="lat-yo"><b id="u-nom">—</b><span id="u-rol">—</span></div>
     <div class="lat-acc">
       <button onclick="plegarLateral()" title="Plegar o desplegar el menú" id="btn-plegar"></button>
+      <button onclick="abrirAyuda()" title="Atajos de teclado (?)" id="btn-ayuda"></button>
       <button onclick="salir()" title="Cerrar sesión"></button>
     </div>
   </div>
@@ -831,7 +916,7 @@ footer b{color:var(--gold)}
         <option value="ASIGNADA">Asignadas</option>
         <option value="PROYECTADA">Proyectadas</option>
         <option value="RESPONDIDA">Con radicado</option>
-        <option value="CERRADA">Cerradas</option>
+
       </select>
       <select id="b-sem" onchange="renderBandeja()">
         <option value="">Todo el semáforo</option>
@@ -848,12 +933,19 @@ footer b{color:var(--gold)}
       <select id="b-abo" onchange="renderBandeja()">
         <option value="">Todos los abogados</option>
       </select>
+      <select id="b-orden" onchange="renderBandeja()">
+        <option value="reciente">Últimas registradas primero</option>
+        <option value="urgencia">Más urgentes primero</option>
+        <option value="radicado">Por radicado (mayor a menor)</option>
+        <option value="nombre">Por peticionario (A–Z)</option>
+      </select>
       <button class="btn btn-ghost" onclick="cargarBandeja()">Recargar</button>
       <button class="btn btn-ghost" onclick="exportarCSV()">Exportar CSV</button>
       <button class="btn btn-ghost" id="b-sel" onclick="modoSeleccion()"
         style="border-color:rgba(192,132,252,.45);color:var(--morado)">Trasladar varias</button>
     </div>
     <div id="b-barra"></div>
+    <div class="chips-f" id="b-chips"></div>
     <div class="msg" id="b-msg"></div>
     <div class="tbl-wrap">
       <table>
@@ -870,6 +962,7 @@ footer b{color:var(--gold)}
         </td></tr></tbody>
       </table>
     </div>
+    <div id="b-pag"></div>
   </section>
 
   <!-- ══ HISTÓRICOS ══ -->
@@ -887,7 +980,7 @@ footer b{color:var(--gold)}
         <option value="">Proyectadas, radicadas y cerradas</option>
         <option value="PROYECTADA">Solo proyectadas (sin radicado)</option>
         <option value="RESPONDIDA">Solo con radicado</option>
-        <option value="CERRADA">Solo cerradas</option>
+
         <option value="SIN_ENTREGAR">Radicadas sin entregar al notificador</option>
       </select>
       <button class="btn btn-ghost" onclick="cargarHistoricos()">Recargar</button>
@@ -1058,6 +1151,46 @@ footer b{color:var(--gold)}
       </div>
       <div id="lp-lista" style="margin-top:14px"></div>
     </div>
+  </section>
+
+  <!-- ══ HISTÓRICO ══ -->
+  <section class="panel" id="p-historico">
+    <div class="page-hdr">
+      <h2>Archivo <em>histórico</em></h2>
+      <p>Peticiones cerradas y anuladas. Salen del trabajo diario, pero quedan para consulta y auditoría.</p>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="hi-q" placeholder="Buscar por radicado, nombre o cédula…" oninput="renderHistorico()">
+      <input type="date" id="hi-desde" onchange="renderHistorico()" title="Cerradas desde">
+      <input type="date" id="hi-hasta" onchange="renderHistorico()" title="Cerradas hasta">
+      <select id="hi-abo" onchange="renderHistorico()"><option value="">Todos los abogados</option></select>
+      <select id="hi-est" onchange="renderHistorico()">
+        <option value="">Cerradas y anuladas</option>
+        <option value="CERRADA">Solo cerradas</option>
+        <option value="ANULADA">Solo anuladas</option>
+      </select>
+      <button class="btn btn-ghost" onclick="cargarHistorico()">Recargar</button>
+      <button class="btn btn-ghost" onclick="exportarHistorico()">Exportar CSV</button>
+    </div>
+
+    <div class="kpis" id="hi-kpis"></div>
+    <div class="msg" id="hi-msg"></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Abogado</th>
+          <th>Radicación</th><th>Límite</th><th>Respuesta</th><th>Rad. respuesta</th>
+          <th>Cerrada</th><th>Término</th><th>Estado</th>
+        </tr></thead>
+        <tbody id="hi-body"><tr><td colspan="11">
+          <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
+          <div class="esq esq-lin" style="width:86%"></div>
+        </td></tr></tbody>
+      </table>
+    </div>
+    <div id="hi-pag"></div>
   </section>
 
   <!-- ══ PERSONAS ══ -->
@@ -1398,10 +1531,90 @@ function registrarAtajoBuscador(){
   });
 }
 
+/* ── Panel de atajos: se abre con ? ── */
+const ATAJOS = [
+  ['En cualquier pantalla', [
+    ['Ctrl + K', 'Abrir el buscador global'],
+    ['?', 'Ver esta ayuda'],
+    ['Esc', 'Cerrar lo que esté abierto']
+  ]],
+  ['Radicando', [
+    ['Enter', 'Guardar y pasar a la siguiente'],
+    ['Ctrl + Enter', 'Guardar y pasar a la siguiente'],
+    ['Tab', 'Avanzar al campo siguiente']
+  ]],
+  ['En la cola de trabajo', [
+    ['Ctrl + Enter', 'Guardar el caso y seguir'],
+    ['→', 'Siguiente caso sin guardar'],
+    ['←', 'Caso anterior']
+  ]],
+  ['Con el documento abierto', [
+    ['Ctrl + Enter', 'Guardar y pasar al documento siguiente'],
+    ['← →', 'Cambiar de página del PDF'],
+    ['Esc', 'Cerrar el visor conservando lo escrito']
+  ]]
+];
+
+function abrirAyuda(){
+  const cont = document.getElementById('ay-cont');
+  cont.innerHTML = ATAJOS.map(function(g){
+    return '<div class="ay-gr">' + esc(g[0]) + '</div>' +
+      g[1].map(function(a){
+        return '<div class="ay-fila"><span>' + esc(a[1]) + '</span>' +
+          '<span class="ay-k">' + esc(a[0]) + '</span></div>';
+      }).join('');
+  }).join('');
+  document.getElementById('ayuda').classList.add('on');
+}
+
+function cerrarAyuda(){
+  const a = document.getElementById('ayuda');
+  if(a) a.classList.remove('on');
+}
+
+document.addEventListener('keydown', function(e){
+  if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName || '')) return;
+  if(e.key === '?' || (e.shiftKey && e.key === '/')){
+    e.preventDefault();
+    const a = document.getElementById('ayuda');
+    if(a && a.classList.contains('on')) cerrarAyuda(); else abrirAyuda();
+  }
+  if(e.key === 'Escape') cerrarAyuda();
+});
+
 function esAdmin(){ return PERFIL && (PERFIL.rol === 'admin' || PERFIL.rol === 'revisor'); }
 function puedeVerControl(){ return PERFIL && ['admin','revisor','consulta'].indexOf(PERFIL.rol) !== -1; }
 function puedeRadicar(){ return PERFIL && ['admin','revisor','radicador'].indexOf(PERFIL.rol) !== -1; }
 function soloRadica(){ return PERFIL && PERFIL.rol === 'radicador'; }
+
+/* Confirmación propia, sin el diálogo gris del navegador.
+   Devuelve una promesa: await confirmar('¿Seguro?') */
+function confirmar(texto, titulo, etiquetaSi){
+  return new Promise(function(resolver){
+    const caja = document.getElementById('confirmar');
+    document.getElementById('cf-tit').textContent = titulo || 'Confirmar';
+    document.getElementById('cf-txt').textContent = texto;
+    const si = document.getElementById('cf-si');
+    const no = document.getElementById('cf-no');
+    si.textContent = etiquetaSi || 'Continuar';
+    caja.classList.add('on');
+    si.focus();
+
+    const cerrar = function(val){
+      caja.classList.remove('on');
+      si.onclick = null; no.onclick = null;
+      document.removeEventListener('keydown', tecla);
+      resolver(val);
+    };
+    const tecla = function(e){
+      if(e.key === 'Escape') cerrar(false);
+      if(e.key === 'Enter'){ e.preventDefault(); cerrar(true); }
+    };
+    si.onclick = function(){ cerrar(true); };
+    no.onclick = function(){ cerrar(false); };
+    document.addEventListener('keydown', tecla);
+  });
+}
 
 /* Aviso con opción de deshacer: 6 segundos para arrepentirse */
 function toastDeshacer(texto, registro, cambios){
@@ -1515,6 +1728,9 @@ const NAV_IC = {
     '<path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.8L7 14.3"/></svg>',
   controli: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<path d="M12 2l8 3v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V5z"/><path d="M9 12l2 2 4-4"/></svg>',
+  historico:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<path d="M3 6a2 2 0 012-2h14a2 2 0 012 2v2H3z"/>' +
+    '<path d="M4 8v10a2 2 0 002 2h12a2 2 0 002-2V8"/><path d="M10 12h4"/></svg>',
   personas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>' +
     '<path d="M23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg>',
@@ -1540,6 +1756,9 @@ const NAV_IC = {
     '<path d="M15 3h6v6M10 14L21 3"/></svg>',
   plegar:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>',
+  ayuda:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+    '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3"/>' +
+    '<path d="M12 17h.01"/></svg>',
   salir:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
     '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>'
 };
@@ -1562,7 +1781,8 @@ function construirTabs(){
     {id:'tablero',    txt:'Tablero',          sec:'Control',    ver: true},
     {id:'controli',   txt:'Control Interno',  sec:null,         ver: puedeVerControl()},
     {id:'plantillas', txt:'Plantillas',       sec:null,         ver: esAdmin()},
-    {id:'personas',   txt:'Personas',         sec:null,         ver: esAdmin()}
+    {id:'personas',   txt:'Personas',         sec:null,         ver: esAdmin()},
+    {id:'historico',  txt:'Histórico',        sec:null,         ver: true}
   ];
   const cont = document.getElementById('tabs');
   cont.innerHTML = '';
@@ -1606,6 +1826,8 @@ function construirTabs(){
   // Botones del pie
   const bp = document.getElementById('btn-plegar');
   if(bp) bp.innerHTML = NAV_IC.plegar + '<span>Menú</span>';
+  const ba = document.getElementById('btn-ayuda');
+  if(ba) ba.innerHTML = NAV_IC.ayuda + '<span>Atajos</span>';
   const bs = document.querySelector('.lat-acc button[onclick="salir()"]');
   if(bs) bs.innerHTML = NAV_IC.salir + '<span>Salir</span>';
 
@@ -1625,7 +1847,7 @@ function plegarLateral(){
 }
 
 function irA(id){
-  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero','controli','plantillas','personas'];
+  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero','controli','plantillas','personas','historico'];
   paneles.forEach(function(p){
     const el = document.getElementById('p-' + p);
     const tb = document.getElementById('tab-' + p);
@@ -1640,6 +1862,7 @@ function irA(id){
   if(id === 'controli') cargarControlInterno();
   if(id === 'plantillas') cargarPlantillas();
   if(id === 'personas') cargarPersonas();
+  if(id === 'historico') cargarHistorico();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3020,11 +3243,11 @@ function pintarLote(){
 }
 
 /* Descarta una fila de la tanda: no se montará y se puede recuperar. */
-function descartarFilaLote(n){
+async function descartarFilaLote(n){
   const it = LOTE[n];
   if(!it) return;
-  if(!confirm('¿Sacar el radicado ' + (it.radicado || '(sin radicado)') +
-    ' de esta tanda? No se montará.')) return;
+  if(!(await confirmar('¿Sacar el radicado ' + (it.radicado || '(sin radicado)') +
+    ' de esta tanda? No se montará.'))) return;
   it.estado = 'descartada';
   it.nota = 'Descartada por el radicador.';
   pintarLote();
@@ -3883,7 +4106,7 @@ async function sincronizarTutela(id){
     ? 'Aún no hay radicado de respuesta. Se informará solo quién está atendiendo la petición. ¿Continuar?'
     : 'Se escribirá el radicado ' + (r.radicado_respuesta || radActual) +
       ' en el campo RESPUESTA PQR de la tutela. ¿Continuar?';
-  if(!confirm(aviso)) return;
+  if(!(await confirmar(aviso))) return;
 
   if(msg){ msg.className = 'msg'; msg.textContent = 'Informando a Tutelas…'; }
   try{
@@ -6205,9 +6428,11 @@ async function abrirBuscador(){
     pintarBuscador('cargando');
     try{
       try{
-        BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&order=fecha_limite.asc&limit=1000');
+        BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA)' +
+        '&order=fecha_limite.asc&limit=1000');
       }catch(e){
-        BANDEJA = await supaFetch('v_pet_bandeja?select=*&order=fecha_limite.asc&limit=1000');
+        BANDEJA = await supaFetch('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA)' +
+        '&order=fecha_limite.asc&limit=1000');
       }
     }catch(err){}
     BG_CARGANDO = false;
@@ -6332,11 +6557,14 @@ function irABandejaCon(rad){
 async function cargarBandeja(){
   const msg = document.getElementById('b-msg');
   msg.className = 'msg'; msg.textContent = 'Cargando…';
+  restaurarFiltros();
   try{
     try{
-      BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&order=fecha_limite.asc&limit=1000');
+      BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA)' +
+        '&order=fecha_limite.asc&limit=1000');
     }catch(e){
-      BANDEJA = await supaFetch('v_pet_bandeja?select=*&order=fecha_limite.asc&limit=1000');
+      BANDEJA = await supaFetch('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA)' +
+        '&order=fecha_limite.asc&limit=1000');
     }
     msg.textContent = BANDEJA.length + ' peticiones cargadas (máx. 1000 más urgentes).';
     poblarFiltroAbogados();
@@ -6380,6 +6608,66 @@ function marcaTutela(r){
   return '';
 }
 
+/* Los filtros se conservan al cambiar de panel o recargar */
+const B_FILTROS = ['b-q','b-estado','b-sem','b-tut','b-abo','b-orden'];
+
+function guardarFiltros(){
+  const d = {};
+  B_FILTROS.forEach(function(id){
+    const e = document.getElementById(id);
+    if(e && e.value) d[id] = e.value;
+  });
+  try{ localStorage.setItem('pet_filtros_bandeja', JSON.stringify(d)); }catch(e){}
+}
+
+function restaurarFiltros(){
+  try{
+    const d = JSON.parse(localStorage.getItem('pet_filtros_bandeja') || '{}');
+    Object.keys(d).forEach(function(id){
+      const e = document.getElementById(id);
+      if(e) e.value = d[id];
+    });
+  }catch(e){}
+}
+
+function textoOpcion(id){
+  const e = document.getElementById(id);
+  if(!e) return '';
+  if(e.selectedOptions && e.selectedOptions[0]) return e.selectedOptions[0].textContent;
+  return e.value;
+}
+
+/* Muestra los filtros puestos, con una X para quitarlos */
+function pintarChipsFiltro(){
+  const cont = document.getElementById('b-chips');
+  if(!cont) return;
+  const visibles = ['b-q','b-estado','b-sem','b-tut','b-abo'];
+  let chips = '';
+  visibles.forEach(function(id){
+    const e = document.getElementById(id);
+    if(!e || !e.value) return;
+    const txt = (id === 'b-q') ? 'Búsqueda: ' + e.value : textoOpcion(id);
+    chips += '<span class="chip-f">' + esc(txt) +
+      '<button onclick="quitarFiltro(\'' + id + '\')" title="Quitar filtro">×</button></span>';
+  });
+  cont.innerHTML = chips
+    ? chips + '<button class="chip-limpiar" onclick="limpiarFiltros()">Quitar todos</button>'
+    : '';
+}
+
+function quitarFiltro(id){
+  const e = document.getElementById(id);
+  if(e){ e.value = ''; renderBandeja(); }
+}
+
+function limpiarFiltros(){
+  ['b-q','b-estado','b-sem','b-tut','b-abo'].forEach(function(id){
+    const e = document.getElementById(id);
+    if(e) e.value = '';
+  });
+  renderBandeja();
+}
+
 function filtrarBandeja(){
   const q  = document.getElementById('b-q').value.trim().toLowerCase();
   const es = document.getElementById('b-estado').value;
@@ -6404,8 +6692,88 @@ function filtrarBandeja(){
   });
 }
 
-function renderBandeja(){
-  const rows = filtrarBandeja();
+/* ── Paginación de la Bandeja ── */
+let B_PAG = 0;
+let B_TAM = 50;
+
+function ordenarBandeja(rows){
+  const o = document.getElementById('b-orden');
+  const v = o ? o.value : 'reciente';
+  const cp = rows.slice();
+  if(v === 'reciente'){
+    // Las últimas registradas primero: es lo que se quiere tras una carga
+    cp.sort(function(a, b){ return (b.id || 0) - (a.id || 0); });
+  } else if(v === 'urgencia'){
+    cp.sort(function(a, b){
+      const da = a.dias_restantes === null ? 9999 : a.dias_restantes;
+      const db = b.dias_restantes === null ? 9999 : b.dias_restantes;
+      return da - db;
+    });
+  } else if(v === 'radicado'){
+    cp.sort(function(a, b){ return String(b.radicado).localeCompare(String(a.radicado)); });
+  } else if(v === 'nombre'){
+    cp.sort(function(a, b){ return String(a.peticionario || '').localeCompare(String(b.peticionario || '')); });
+  }
+  return cp;
+}
+
+function irPagina(p){
+  B_PAG = p;
+  renderBandeja(true);
+  const t = document.querySelector('#p-bandeja .tbl-wrap');
+  if(t) t.scrollIntoView({block:'start', behavior:'smooth'});
+}
+
+function cambiarTam(){
+  const s = document.getElementById('b-tam');
+  B_TAM = parseInt(s.value, 10) || 50;
+  B_PAG = 0;
+  renderBandeja(true);
+}
+
+/* Barra de páginas: primera · anteriores · actual · siguientes · última */
+function barraPaginacion(total, desde, hasta){
+  const paginas = Math.max(Math.ceil(total / B_TAM), 1);
+  let botones = '';
+  const poner = function(p){
+    botones += '<button class="pag-b' + (p === B_PAG ? ' on' : '') + '" ' +
+      'onclick="irPagina(' + p + ')">' + (p + 1) + '</button>';
+  };
+  const sep = function(){ botones += '<span class="pag-sep">…</span>'; };
+
+  if(paginas <= 9){
+    for(let p = 0; p < paginas; p++) poner(p);
+  } else {
+    poner(0);
+    if(B_PAG > 3) sep();
+    for(let p = Math.max(1, B_PAG - 2); p <= Math.min(paginas - 2, B_PAG + 2); p++) poner(p);
+    if(B_PAG < paginas - 4) sep();
+    poner(paginas - 1);
+  }
+
+  return '<div class="pag">' +
+    '<div class="pag-info">Mostrando <b>' + (total ? desde + 1 : 0) + '–' + hasta +
+      '</b> de <b>' + total + '</b></div>' +
+    '<select class="pag-tam" id="b-tam" onchange="cambiarTam()">' +
+      [25,50,100,200].map(function(n){
+        return '<option value="' + n + '"' + (n === B_TAM ? ' selected' : '') + '>' + n + ' por página</option>';
+      }).join('') + '</select>' +
+    '<button class="pag-b" onclick="irPagina(0)"' + (B_PAG === 0 ? ' disabled' : '') + '>«</button>' +
+    '<button class="pag-b" onclick="irPagina(' + (B_PAG - 1) + ')"' +
+      (B_PAG === 0 ? ' disabled' : '') + '>‹</button>' +
+    botones +
+    '<button class="pag-b" onclick="irPagina(' + (B_PAG + 1) + ')"' +
+      (B_PAG >= paginas - 1 ? ' disabled' : '') + '>›</button>' +
+    '<button class="pag-b" onclick="irPagina(' + (paginas - 1) + ')"' +
+      (B_PAG >= paginas - 1 ? ' disabled' : '') + '>»</button>' +
+  '</div>';
+}
+
+function renderBandeja(conservarPagina){
+  if(!conservarPagina) B_PAG = 0;
+  guardarFiltros();
+  pintarChipsFiltro();
+  const rows = ordenarBandeja(filtrarBandeja());
   const body = document.getElementById('b-body');
   const th = document.getElementById('b-th-sel');
   if(th) th.style.display = SELECCION ? '' : 'none';
@@ -6416,9 +6784,17 @@ function renderBandeja(){
       '<div class="vacio"><div class="vacio-ic">' + ICONO.vacio + '</div>' +
       '<h3>Sin resultados</h3><p>Pruebe con otros filtros o con menos palabras en la búsqueda.</p>' +
       '</div></td></tr>';
+    const pg0 = document.getElementById('b-pag');
+    if(pg0) pg0.innerHTML = '';
     return;
   }
-  body.innerHTML = rows.slice(0, 400).map(function(r){
+  // Solo la página actual
+  const paginas = Math.max(Math.ceil(rows.length / B_TAM), 1);
+  if(B_PAG >= paginas) B_PAG = paginas - 1;
+  const desde = B_PAG * B_TAM;
+  const hasta = Math.min(desde + B_TAM, rows.length);
+
+  body.innerHTML = rows.slice(desde, hasta).map(function(r){
     const d = r.dias_restantes;
     const dTxt = d === null ? '—' : d < 0 ? 'vencida ' + Math.abs(d) : d;
     const movible = ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(r.estado) !== -1;
@@ -6447,6 +6823,9 @@ function renderBandeja(){
         : '') +
     '</tr>';
   }).join('');
+
+  const pg = document.getElementById('b-pag');
+  if(pg) pg.innerHTML = barraPaginacion(rows.length, desde, hasta);
 }
 
 /* ── Traslado en bloque desde la Bandeja ── */
@@ -6508,7 +6887,7 @@ async function trasladarSeleccion(){
   const abo = document.getElementById('bt-abo').value;
   const mot = document.getElementById('bt-mot').value;
   const nom = (PERFILES.find(function(p){ return p.id === abo; }) || {}).nombre || '';
-  if(!confirm('Se trasladarán ' + ids.length + ' petición(es) a ' + nom + '. ¿Continuar?')) return;
+  if(!(await confirmar('Se trasladarán ' + ids.length + ' petición(es) a ' + nom + '. ¿Continuar?'))) return;
 
   msg.className = 'msg'; msg.textContent = 'Trasladando…';
   try{
@@ -6523,6 +6902,174 @@ async function trasladarSeleccion(){
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'No se pudo trasladar: ' + err.message;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ARCHIVO HISTÓRICO — peticiones cerradas y anuladas
+   Salen del trabajo diario pero quedan disponibles para consulta.
+   ══════════════════════════════════════════════════════════════ */
+let HISTORICO = [];
+let HI_PAG = 0;
+const HI_TAM = 50;
+
+async function cargarHistorico(){
+  const msg = document.getElementById('hi-msg');
+  msg.className = 'msg'; msg.textContent = 'Cargando…';
+
+  const sel = document.getElementById('hi-abo');
+  if(sel && sel.options.length <= 1){
+    sel.innerHTML = '<option value="">Todos los abogados</option>' +
+      PERFILES.map(function(p){
+        return '<option value="' + esc(p.nombre) + '">' + esc(p.nombre) + '</option>';
+      }).join('');
+  }
+
+  try{
+    HISTORICO = await supaFetch(
+      'v_pet_bandeja?select=*&estado=in.(CERRADA,ANULADA)' +
+      '&order=fecha_cierre.desc.nullslast&limit=3000');
+    msg.className = 'msg';
+    msg.textContent = HISTORICO.length + ' peticiones archivadas.';
+    HI_PAG = 0;
+    renderHistorico();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo cargar: ' + err.message;
+  }
+}
+
+function filtrarHistorico(){
+  const q = (document.getElementById('hi-q').value || '').trim().toLowerCase();
+  const d = document.getElementById('hi-desde').value;
+  const t = document.getElementById('hi-hasta').value;
+  const a = document.getElementById('hi-abo').value;
+  const e = document.getElementById('hi-est').value;
+
+  return HISTORICO.filter(function(r){
+    if(e && r.estado !== e) return false;
+    if(a && (r.asignado_nombre || '') !== a) return false;
+    const ref = String(r.fecha_cierre || '').slice(0,10);
+    if(d && (!ref || ref < d)) return false;
+    if(t && (!ref || ref > t)) return false;
+    if(q){
+      const blob = [r.radicado, r.peticionario, r.documento,
+                    r.radicado_respuesta, r.expediente].join(' ').toLowerCase();
+      if(blob.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function renderHistorico(conservar){
+  if(!conservar) HI_PAG = 0;
+  const rows = filtrarHistorico();
+  const body = document.getElementById('hi-body');
+
+  // Indicadores del período consultado
+  const aTermino = rows.filter(function(r){ return r.a_termino === true; }).length;
+  const medidas  = rows.filter(function(r){ return r.a_termino !== null && r.a_termino !== undefined; }).length;
+  const conDias  = rows.filter(function(r){ return r.dias_usados !== null && r.dias_usados !== undefined; });
+  const prom = conDias.length
+    ? (conDias.reduce(function(s, r){ return s + Number(r.dias_usados); }, 0) / conDias.length) : null;
+
+  document.getElementById('hi-kpis').innerHTML = [
+    ['Archivadas', rows.length, 'var(--txt)'],
+    ['Cerradas', rows.filter(function(r){ return r.estado === 'CERRADA'; }).length, 'var(--atiempo)'],
+    ['Anuladas', rows.filter(function(r){ return r.estado === 'ANULADA'; }).length, 'var(--muted)'],
+    ['Dentro del término', medidas ? Math.round(aTermino / medidas * 100) + '%' : '—',
+      medidas && (aTermino / medidas) >= 0.9 ? 'var(--atiempo)' : 'var(--urgente)'],
+    ['Días hábiles promedio', prom === null ? '—' : prom.toFixed(1), 'var(--txt)']
+  ].map(function(k){
+    return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' + k[1] + '</div>' +
+           '<div class="l">' + k[0] + '</div></div>';
+  }).join('');
+
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="11"><div class="vacio">' +
+      '<div class="vacio-ic">' + ICONO.vacio + '</div><h3>Nada en el archivo</h3>' +
+      '<p>Aquí aparecen las peticiones una vez cerradas. Ajuste los filtros si esperaba ver algo.</p>' +
+      '</div></td></tr>';
+    const p0 = document.getElementById('hi-pag');
+    if(p0) p0.innerHTML = '';
+    return;
+  }
+
+  const paginas = Math.max(Math.ceil(rows.length / HI_TAM), 1);
+  if(HI_PAG >= paginas) HI_PAG = paginas - 1;
+  const desde = HI_PAG * HI_TAM;
+  const hasta = Math.min(desde + HI_TAM, rows.length);
+
+  body.innerHTML = rows.slice(desde, hasta).map(function(r){
+    const at = r.a_termino;
+    return '<tr>' +
+      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b>' + marcaTutela(r) + '</td>' +
+      '<td>' + esc(r.peticionario) +
+        (r.documento ? '<div style="color:var(--muted);font-size:var(--t-micro)">' +
+          esc(r.documento) + '</div>' : '') + '</td>' +
+      '<td>' + esc(r.tipo_nombre || r.tipo) + '</td>' +
+      '<td>' + esc(r.asignado_nombre || '—') + '</td>' +
+      '<td>' + fmtFecha(r.fecha_radicado) + '</td>' +
+      '<td>' + fmtFecha(r.fecha_limite) + '</td>' +
+      '<td>' + fmtFecha(r.fecha_respuesta) + '</td>' +
+      '<td>' + esc(r.radicado_respuesta || '—') + '</td>' +
+      '<td>' + fmtFecha(String(r.fecha_cierre || '').slice(0,10)) + '</td>' +
+      '<td>' + (at === true ? '<span class="pill s-a_tiempo">A término</span>'
+              : at === false ? '<span class="pill s-vencida">Fuera</span>' : '—') + '</td>' +
+      '<td><span class="pill ' + (r.estado === 'ANULADA' ? 's-cerrada' : 's-respondida') + '">' +
+        esc(r.estado) + '</span></td>' +
+    '</tr>';
+  }).join('');
+
+  const pg = document.getElementById('hi-pag');
+  if(pg) pg.innerHTML = barraPagHist(rows.length, desde, hasta, paginas);
+}
+
+function barraPagHist(total, desde, hasta, paginas){
+  let bts = '';
+  const poner = function(p){
+    bts += '<button class="pag-b' + (p === HI_PAG ? ' on' : '') + '" ' +
+      'onclick="irPagHist(' + p + ')">' + (p + 1) + '</button>';
+  };
+  if(paginas <= 9){ for(let p = 0; p < paginas; p++) poner(p); }
+  else {
+    poner(0);
+    if(HI_PAG > 3) bts += '<span class="pag-sep">…</span>';
+    for(let p = Math.max(1, HI_PAG - 2); p <= Math.min(paginas - 2, HI_PAG + 2); p++) poner(p);
+    if(HI_PAG < paginas - 4) bts += '<span class="pag-sep">…</span>';
+    poner(paginas - 1);
+  }
+  return '<div class="pag">' +
+    '<div class="pag-info">Mostrando <b>' + (total ? desde + 1 : 0) + '–' + hasta +
+      '</b> de <b>' + total + '</b></div>' +
+    '<button class="pag-b" onclick="irPagHist(' + (HI_PAG - 1) + ')"' +
+      (HI_PAG === 0 ? ' disabled' : '') + '>‹</button>' + bts +
+    '<button class="pag-b" onclick="irPagHist(' + (HI_PAG + 1) + ')"' +
+      (HI_PAG >= paginas - 1 ? ' disabled' : '') + '>›</button></div>';
+}
+
+function irPagHist(p){
+  HI_PAG = p;
+  renderHistorico(true);
+  const t = document.querySelector('#p-historico .tbl-wrap');
+  if(t) t.scrollIntoView({block:'start', behavior:'smooth'});
+}
+
+function exportarHistorico(){
+  const rows = filtrarHistorico();
+  const cab = ['Radicado','Peticionario','Documento','Tipo','Abogado','Fecha radicacion',
+               'Fecha limite','Fecha proyeccion','Fecha respuesta','Radicado respuesta',
+               'Fecha cierre','Dias habiles usados','Dentro del termino','Estado'];
+  const lin = rows.map(function(r){
+    return [r.radicado, r.peticionario, r.documento, r.tipo_nombre, r.asignado_nombre,
+            r.fecha_radicado, r.fecha_limite, r.fecha_proyeccion, r.fecha_respuesta,
+            r.radicado_respuesta, String(r.fecha_cierre || '').slice(0,10), r.dias_usados,
+            r.a_termino === true ? 'SI' : r.a_termino === false ? 'NO' : '', r.estado]
+      .map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }).join(';');
+  });
+  const csv = '\uFEFF' + cab.join(';') + '\n' + lin.join('\n');
+  const u = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  const a = document.createElement('a');
+  a.href = u; a.download = 'historico_peticiones_' + iso(new Date()) + '.csv';
+  a.click(); URL.revokeObjectURL(u);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -6709,7 +7256,7 @@ async function cargarHistoricos(){
   if(btnC) btnC.style.display = esAdmin() ? 'inline-block' : 'none';
 
   try{
-    let q = 'v_pet_bandeja?select=*&estado=in.(PROYECTADA,RESPONDIDA,CERRADA)' +
+    let q = 'v_pet_bandeja?select=*&estado=in.(PROYECTADA,RESPONDIDA)' +
             '&order=fecha_proyeccion.desc.nullslast&limit=3000';
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
     HIST = await supaFetch(q);
@@ -7136,7 +7683,7 @@ async function cerrarSeleccionadas(){
   const ids = filtrarHist().filter(function(r){ return r.estado === 'RESPONDIDA'; })
                            .map(function(r){ return r.id; });
   if(!ids.length){ msg.className = 'msg err'; msg.textContent = 'No hay peticiones con radicado pendientes de cerrar en este filtro.'; return; }
-  if(!confirm('Se cerrarán ' + ids.length + ' peticiones que ya tienen radicado de respuesta. ¿Continuar?')) return;
+  if(!(await confirmar('Se cerrarán ' + ids.length + ' peticiones que ya tienen radicado de respuesta. ¿Continuar?'))) return;
   msg.className = 'msg'; msg.textContent = 'Cerrando…';
   try{
     const n = await rpc('pet_cerrar_lote', { ids: ids });
@@ -7381,8 +7928,8 @@ async function buscarLimpieza(){
 
 async function confirmarLimpieza(){
   if(!LIMPIEZA_CAND.length) return;
-  if(!confirm('Se borrará la copia de trabajo de ' + LIMPIEZA_CAND.length +
-    ' archivo(s). El original sigue en la gestión de la Alcaldía. ¿Continuar?')) return;
+  if(!(await confirmar('Se borrará la copia de trabajo de ' + LIMPIEZA_CAND.length +
+    ' archivo(s). El original sigue en la gestión de la Alcaldía. ¿Continuar?'))) return;
 
   const msg = document.getElementById('lp-msg');
   const btn = document.getElementById('lp-btn');
