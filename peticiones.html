@@ -6559,19 +6559,94 @@ async function cargarBandeja(){
   msg.className = 'msg'; msg.textContent = 'Cargando…';
   restaurarFiltros();
   try{
+    let vista = 'v_pet_bandeja_tutela';
     try{
-      BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA)' +
-        '&order=fecha_limite.asc&limit=1000');
+      BANDEJA = await traerTodo(vista, msg);
     }catch(e){
-      BANDEJA = await supaFetch('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA)' +
-        '&order=fecha_limite.asc&limit=1000');
+      vista = 'v_pet_bandeja';
+      BANDEJA = await traerTodo(vista, msg);
     }
-    msg.textContent = BANDEJA.length + ' peticiones cargadas (máx. 1000 más urgentes).';
+    msg.className = 'msg';
+    msg.textContent = BANDEJA.length + ' peticiones abiertas cargadas.';
     poblarFiltroAbogados();
     renderBandeja();
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'Error: ' + err.message;
   }
+}
+
+/* Busca directamente en Supabase, incluidas cerradas y anuladas.
+   Sirve cuando algo no aparece: siempre hay una respuesta clara. */
+async function buscarEnBase(){
+  const q = (document.getElementById('b-q').value || '').trim();
+  const msg = document.getElementById('b-msg');
+  const body = document.getElementById('b-body');
+  if(!q) return;
+
+  const cols = 9 + (SELECCION ? 1 : 0) + (esAdmin() ? 1 : 0);
+  body.innerHTML = '<tr><td colspan="' + cols + '">' +
+    '<div class="esq esq-lin" style="width:100%;margin:8px 0"></div>' +
+    '<div class="esq esq-lin" style="width:70%"></div></td></tr>';
+  msg.className = 'msg'; msg.textContent = 'Buscando en toda la base…';
+
+  const t = q.replace(/[(),*]/g, '');
+  const filtro = 'or=(radicado.ilike.*' + t + '*,peticionario.ilike.*' + t + '*,' +
+                 'documento.ilike.*' + t + '*,radicado_respuesta.ilike.*' + t + '*,' +
+                 'expediente.ilike.*' + t + '*)';
+  try{
+    let res;
+    try{
+      res = await supaFetch('v_pet_bandeja_tutela?select=*&' + filtro + '&limit=200');
+    }catch(e){
+      res = await supaFetch('v_pet_bandeja?select=*&' + filtro + '&limit=200');
+    }
+    if(!res.length){
+      body.innerHTML = '<tr><td colspan="' + cols + '"><div class="vacio">' +
+        '<div class="vacio-ic">' + ICONO.vacio + '</div><h3>No existe en el sistema</h3>' +
+        '<p>«' + esc(q) + '» no corresponde a ninguna petición registrada. ' +
+        'Verifique el número o regístrela.</p></div></td></tr>';
+      msg.className = 'msg err';
+      msg.textContent = 'Sin coincidencias en toda la base.';
+      return;
+    }
+    // Se incorporan al listado para poder verlas y editarlas
+    res.forEach(function(r){
+      if(!BANDEJA.some(function(x){ return x.id === r.id; })) BANDEJA.push(r);
+    });
+    const cerradas = res.filter(function(r){
+      return r.estado === 'CERRADA' || r.estado === 'ANULADA';
+    }).length;
+    msg.className = 'msg ok';
+    msg.textContent = res.length + ' encontrada(s) en toda la base' +
+      (cerradas ? ' · ' + cerradas + ' ya estaban cerradas o anuladas (verlas en Histórico)' : '') + '.';
+    renderBandeja();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo buscar: ' + err.message;
+  }
+}
+
+/* Trae todas las filas por bloques: el REST de Supabase corta en 1.000
+   y hasta ahora quedaban fuera las de vencimiento más lejano. */
+async function traerTodo(vista, msg){
+  const TAM = 1000;
+  const MAX = 20;          // techo de seguridad: 20.000 filas
+  let todas = [], desde = 0;
+  for(let i = 0; i < MAX; i++){
+    const headers = await authHeaders({
+      'Content-Type':'application/json',
+      'Range-Unit':'items',
+      'Range': desde + '-' + (desde + TAM - 1)
+    });
+    const res = await fetch(SUPA_URL + '/rest/v1/' + vista +
+      '?select=*&estado=not.in.(CERRADA,ANULADA)&order=fecha_limite.asc', { headers });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const bloque = await res.json();
+    todas = todas.concat(bloque);
+    if(msg && bloque.length) msg.textContent = 'Cargando… ' + todas.length + ' peticiones';
+    if(bloque.length < TAM) break;
+    desde += TAM;
+  }
+  return todas;
 }
 
 /* Llena el selector de abogados de la bandeja con quienes tienen
@@ -6780,9 +6855,16 @@ function renderBandeja(conservarPagina){
   const thEd = document.getElementById('b-th-ed');
   if(thEd) thEd.style.display = esAdmin() ? '' : 'none';
   if(!rows.length){
+    const q = (document.getElementById('b-q').value || '').trim();
     body.innerHTML = '<tr><td colspan="' + (9 + (SELECCION ? 1 : 0) + (esAdmin() ? 1 : 0)) + '">' +
       '<div class="vacio"><div class="vacio-ic">' + ICONO.vacio + '</div>' +
-      '<h3>Sin resultados</h3><p>Pruebe con otros filtros o con menos palabras en la búsqueda.</p>' +
+      '<h3>Sin resultados</h3>' +
+      (q
+        ? '<p>Nada coincide con «' + esc(q) + '» entre las peticiones abiertas.<br>' +
+          'Puede estar cerrada, anulada, o registrada con otro dato.</p>' +
+          '<button class="btn btn-ghost" style="margin-top:14px" onclick="buscarEnBase()">' +
+            'Buscar en toda la base</button>'
+        : '<p>Pruebe con otros filtros o con menos palabras en la búsqueda.</p>') +
       '</div></td></tr>';
     const pg0 = document.getElementById('b-pag');
     if(pg0) pg0.innerHTML = '';
