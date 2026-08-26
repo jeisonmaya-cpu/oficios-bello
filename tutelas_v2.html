@@ -4388,7 +4388,24 @@ document.addEventListener("keydown", e=>{
     transition:border-color .15s
   }
   #overlay-word .mw-inp:focus{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.05)}
-  #overlay-word select.mw-inp{cursor:pointer}
+  #overlay-word select.mw-inp,
+  #overlay-word #mw-tipo{cursor:pointer}
+  /* FIX legibilidad de <option> en modo oscuro:
+     Chromium hereda el fondo del sistema (blanco) para las options,
+     y como el color de texto del select es blanco, quedan invisibles.
+     Forzamos aquí un fondo oscuro con texto claro. En modo claro
+     seguimos usando el fondo del modal (que ya es blanco). */
+  #overlay-word select.mw-inp option,
+  #overlay-word #mw-tipo option{
+    background:#111827;
+    color:#f1f5f9;
+    padding:6px 10px;
+  }
+  html[data-theme="light"] #overlay-word select.mw-inp option,
+  html[data-theme="light"] #overlay-word #mw-tipo option{
+    background:#ffffff;
+    color:#0f2d5e;
+  }
 </style>
 
 <script>
