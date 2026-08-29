@@ -12,6 +12,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="home.css" />
+<script>
+// Aplicar tema ANTES de renderizar para evitar flash — lee app_tema con fallback a tutelas_tema
+(function(){try{
+  var t=localStorage.getItem("app_tema")||localStorage.getItem("tutelas_tema")||"dark";
+  if(t==="light") document.documentElement.setAttribute("data-theme","light");
+}catch(e){}})();
+</script>
 </head>
 <body>
 <div class="bg"></div>
@@ -50,11 +57,12 @@
       <div class="header-eyebrow">Alcaldía de Bello · Antioquia</div>
       <h1>Ejecuciones <em>Fiscales</em></h1>
       <p class="header-sub">Sistema integrado de gestión documental, oficios y atención al ciudadano</p>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap">
         <div class="sys-status" id="sys-status">
           <span class="sys-dot wait" id="sys-dot"></span>
           <span id="sys-txt">Verificando sistema...</span>
         </div>
+        <button class="btn-tema" id="btn-tema" onclick="toggleTema()" aria-label="Cambiar tema claro / oscuro" title="Cambiar tema">🌙 Oscuro</button>
       </div>
     </div>
    </div>
@@ -406,6 +414,11 @@
   </div>
   <strong>Dirección Administrativa de Ejecuciones Fiscales</strong><br>
   Alcaldía de Bello · Antioquia · Colombia
+  <div class="creditos">
+    <span class="creditos-marca">Sistema Teodoro</span>
+    <span class="creditos-sep">·</span>
+    <span>Desarrollado por <strong>Jeison Maya</strong> · 2026</span>
+  </div>
 </footer>
 
 <!-- Sub-menú Notificaciones -->
@@ -468,6 +481,35 @@ var CONFIG = {
   version: "v2.9",
   modulos: 9
 };
+
+// ════════════════════════════════════════
+// TEMA CLARO / OSCURO — preferencia unificada entre módulos
+// Clave nueva: app_tema. Retro-compat: tutelas_tema.
+// ════════════════════════════════════════
+function aplicarTema(t){
+  var html=document.documentElement;
+  var btn=document.getElementById("btn-tema");
+  if(t==="light"){
+    html.setAttribute("data-theme","light");
+    if(btn) btn.textContent="☀️ Claro";
+  } else {
+    html.removeAttribute("data-theme");
+    if(btn) btn.textContent="🌙 Oscuro";
+  }
+}
+function toggleTema(){
+  var actual = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+  try{
+    localStorage.setItem("app_tema", actual);
+    localStorage.setItem("tutelas_tema", actual); // sincroniza con módulos aún no migrados
+  }catch(e){}
+  aplicarTema(actual);
+}
+(function initTema(){
+  var t="dark";
+  try{ t = localStorage.getItem("app_tema") || localStorage.getItem("tutelas_tema") || "dark"; }catch(e){}
+  aplicarTema(t);
+})();
 
 var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
