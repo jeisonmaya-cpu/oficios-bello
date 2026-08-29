@@ -318,17 +318,25 @@
       <span class="app-arrow">↗</span>
     </div>
 
-    <!-- Card Próximamente: llena la grilla 3x3 y comunica el roadmap -->
-    <div class="app-card card-soon" aria-label="Módulo en desarrollo">
-      <span class="soon-badge">🚧 Próximamente</span>
-      <div class="app-name">Panel de Recaudo en vivo</div>
-      <div class="app-desc">Indicadores del mes conectados a Supabase, directo en el home</div>
-      <div class="soon-progress-wrap">
-        <div class="soon-progress-label"><span>Avance</span><span>35%</span></div>
-        <div class="soon-progress-track"><div class="soon-progress-fill" style="width:35%"></div></div>
+    <a href="https://teodoro-57g.pages.dev/peticiones" target="_blank" rel="noopener" class="app-card card-teal" data-mod="peticiones" data-orden="9">
+      <div class="card-glow"></div>
+      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
+      <span class="app-icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="9" y1="13" x2="15" y2="13"/>
+          <line x1="9" y1="17" x2="13" y2="17"/>
+          <circle cx="17.5" cy="17.5" r="2" fill="currentColor" opacity="0.35"/>
+        </svg></span>
+      <div class="app-name">Peticiones</div>
+      <div class="app-desc">Derechos de petición, respuestas y control de términos</div>
+      <div class="card-stat">
+        <span class="cs-dot cs-teal"></span><span>Módulo externo · Teodoro</span>
       </div>
-      <div class="soon-eta">💡 ¿Ideas? Cuéntale a Teo</div>
-    </div>
+      <span class="app-badge badge-external">↗ Externo</span>
+      <span class="app-arrow">↗</span>
+    </a>
 
   </div>
 
@@ -394,7 +402,7 @@
     <span class="footer-pill" id="fp-version">v2.8</span>
     <span class="footer-pill" id="fp-actualizado">Actualizando...</span>
     <span class="footer-pill" id="fp-usuario">—</span>
-    <span class="footer-pill" id="fp-modulos">8 módulos activos</span>
+    <span class="footer-pill" id="fp-modulos">9 módulos activos</span>
   </div>
   <strong>Dirección Administrativa de Ejecuciones Fiscales</strong><br>
   Alcaldía de Bello · Antioquia · Colombia
@@ -457,8 +465,8 @@ document.addEventListener('keydown',function(e){
 // en localStorage por tutelas_v2 tras login con PIN).
 // ════════════════════════════════════════
 var CONFIG = {
-  version: "v2.8",
-  modulos: 8
+  version: "v2.9",
+  modulos: 9
 };
 
 var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -608,8 +616,6 @@ setInterval(actualizarFechaHora,30000);
       return (+a.getAttribute('data-orden'))-(+b.getAttribute('data-orden'));
     });
     cards.forEach(function(c){ grid.appendChild(c); });
-    var soon=grid.querySelector('.card-soon');
-    if(soon) grid.appendChild(soon); // "Próximamente" siempre de último
   }
 
   grid.querySelectorAll('.app-card[data-mod]').forEach(function(card){
@@ -666,7 +672,8 @@ var kpalCerrar; // expuesta para el handler global de Escape
     {n:'Recaudo Histórico',      d:'Depósitos judiciales y devoluciones',               h:'recaudo.html',     i:'💰', k:'recaudo deposito judicial devolucion aplicacion'},
     {n:'Seguimiento de Procesos',d:'Estadísticas de cobro coactivo',                    h:'seguimiento.html', i:'📊', k:'seguimiento estadistica cartera proceso cobro'},
     {n:'Central Jurídica',       d:'Paz y salvo, resoluciones y documentos',            h:'index.html',       i:'📜', k:'paz salvo resolucion juridica documento'},
-    {n:'Notificaciones',         d:'Comparendos y predial: correo y certificado',       h:'#notif',           i:'📧', k:'notificacion comparendo predial correo certificado masivo'}
+    {n:'Notificaciones',         d:'Comparendos y predial: correo y certificado',       h:'#notif',           i:'📧', k:'notificacion comparendo predial correo certificado masivo'},
+    {n:'Peticiones',             d:'Derechos de petición y control de términos',        h:'https://teodoro-57g.pages.dev/peticiones', i:'📨', k:'peticion derecho ciudadano respuesta termino pqrs'}
   ];
   var overlay=document.getElementById('kpal');
   var inp=document.getElementById('kpal-inp');
@@ -712,6 +719,7 @@ var kpalCerrar; // expuesta para el handler global de Escape
     cerrar();
     if(m.h==='#notif'){ openNotifMenu(); return; }
     try{ localStorage.setItem('home_ultimo_modulo',JSON.stringify({n:m.n,h:m.h,t:Date.now()})); }catch(e){}
+    if(/^https?:\/\//.test(m.h)){ window.open(m.h,'_blank','noopener'); return; }
     location.href=m.h;
   }
 
