@@ -1019,21 +1019,65 @@ footer b{color:var(--gold)}
       <button class="btn btn-ghost" onclick="exportarHistCSV()">Exportar CSV</button>
       <button class="btn btn-primary" onclick="informePDF()">Informe PDF</button>
       <button class="btn btn-ghost" onclick="cerrarSeleccionadas()" id="h-btn-cerrar">Cerrar las radicadas del filtro</button>
+      <button class="btn btn-ghost" onclick="alternarSelHist()" id="h-btn-sel"
+        style="border-color:rgba(232,160,32,.45);color:var(--gold)">Seleccionar para mover a Trasladadas</button>
     </div>
+
+    <div id="h-barra-sel"></div>
 
     <div class="msg" id="h-msg"></div>
 
     <div class="tbl-wrap">
       <table>
         <thead><tr>
+          <th style="width:28px"></th>
           <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Abogada</th>
           <th>Radicación</th><th>Límite</th><th>Proyectó</th><th>Días</th>
           <th>A término</th><th>Rad. respuesta</th><th>Notificador</th><th>Estado</th>
         </tr></thead>
-        <tbody id="h-body"><tr><td colspan="12">
+        <tbody id="h-body"><tr><td colspan="13">
           <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
           <div class="esq esq-lin" style="width:86%"></div>
           <div class="esq esq-lin" style="width:92%"></div>
+        </td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ TRASLADADAS ══ -->
+  <section class="panel" id="p-trasladadas">
+    <div class="page-hdr">
+      <h2>Peticiones <em>trasladadas</em></h2>
+      <p>Remitidas por competencia a otras autoridades (art. 21 Ley 1755 de 2015). No cuentan como resueltas de fondo.</p>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="tx-q" placeholder="Buscar radicado, peticionario, entidad…" oninput="renderTrasladadas()">
+      <input type="date" id="tx-desde" onchange="renderTrasladadas()">
+      <input type="date" id="tx-hasta" onchange="renderTrasladadas()">
+      <select id="tx-abo" onchange="renderTrasladadas()"><option value="">Todas las abogadas</option></select>
+      <select id="tx-ent" onchange="renderTrasladadas()"><option value="">Todas las entidades</option></select>
+      <button class="btn btn-ghost" onclick="cargarTrasladadas()">Recargar</button>
+    </div>
+
+    <div class="kpis" id="tx-kpis"></div>
+
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn btn-ghost" onclick="exportarTrasladadasCSV()">Exportar CSV</button>
+    </div>
+
+    <div class="msg" id="tx-msg"></div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Abogada</th>
+          <th>Entidad destino</th><th>Motivo</th>
+          <th>Rad. salida</th><th>Fecha traslado</th><th></th>
+        </tr></thead>
+        <tbody id="tx-body"><tr><td colspan="9">
+          <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
+          <div class="esq esq-lin" style="width:86%"></div>
         </td></tr></tbody>
       </table>
     </div>
@@ -1803,6 +1847,7 @@ function construirTabs(){
     {id:'cola',       txt:'Cola de trabajo',  sec:'Gestión',    ver: !soloRadica()},
     {id:'bandeja',    txt:'Bandeja',          sec:null,         ver: true},
     {id:'historicos', txt:'Resueltas',        sec:null,         ver: !soloRadica()},
+    {id:'trasladadas',txt:'Trasladadas',      sec:null,         ver: !soloRadica()},
     {id:'tablero',    txt:'Tablero',          sec:'Control',    ver: true},
     {id:'controli',   txt:'Control Interno',  sec:null,         ver: puedeVerControl()},
     {id:'plantillas', txt:'Plantillas',       sec:null,         ver: esAdmin()},
@@ -1872,7 +1917,7 @@ function plegarLateral(){
 }
 
 function irA(id){
-  const paneles = ['digitar','lote','cola','bandeja','historicos','tablero','controli','plantillas','personas','historico'];
+  const paneles = ['digitar','lote','cola','bandeja','historicos','trasladadas','tablero','controli','plantillas','personas','historico'];
   paneles.forEach(function(p){
     const el = document.getElementById('p-' + p);
     const tb = document.getElementById('tab-' + p);
@@ -1883,6 +1928,7 @@ function irA(id){
   if(id === 'lote') prepararLote();
   if(id === 'bandeja') cargarBandeja();
   if(id === 'historicos') cargarHistoricos();
+  if(id === 'trasladadas') cargarTrasladadas();
   if(id === 'tablero') cargarTablero();
   if(id === 'controli') cargarControlInterno();
   if(id === 'plantillas') cargarPlantillas();
@@ -3841,6 +3887,10 @@ function pintarCaso(){
         (esAdmin()
           ? '<button class="btn btn-ghost btn-ic" style="border-color:rgba(192,132,252,.45);' +
             'color:var(--morado)" onclick="abrirTraslado()">' + ICONO.traslado + 'Trasladar</button>' : '') +
+        (puedeTrasladarPorCompetencia(r)
+          ? '<button class="btn btn-ghost btn-ic" style="border-color:rgba(232,160,32,.55);' +
+            'color:var(--gold)" onclick="abrirTrasladoCompetencia()">' + ICONO.traslado +
+            'Remitir por competencia</button>' : '') +
         '<button class="btn btn-ghost btn-ic" style="margin-left:auto;border-color:rgba(251,146,60,.4);' +
           'color:var(--naranja)" onclick="marcarApoyo()">' + ICONO.alerta + 'Requiere apoyo</button>' +
       '</div>' +
@@ -3984,6 +4034,346 @@ async function hacerTraslado(){
     actualizarBadges();
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'No se pudo trasladar: ' + err.message;
+  }
+}
+
+/* ═════════════ TRASLADO POR COMPETENCIA (Ley 1755/2015, art. 21) ═════════════ */
+
+/* La abogada dueña del caso puede remitirlo; admin puede sobre todo. */
+function puedeTrasladarPorCompetencia(r){
+  if(!r || !PERFIL) return false;
+  if(esAdmin()) return true;
+  return r.asignado_a === PERFIL.id;
+}
+
+function abrirTrasladoCompetencia(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const pl = document.getElementById('pleg-doc');
+  if(pl) pl.classList.add('on');
+  const cont = document.getElementById('k-doc');
+  if(!cont) return;
+  if(cont.getAttribute('data-modo') === 'competencia'){
+    cont.innerHTML = ''; cont.removeAttribute('data-modo'); return;
+  }
+  cont.setAttribute('data-modo','competencia');
+
+  cont.innerHTML =
+    '<div style="margin-top:14px;padding:16px 18px;background:var(--glass);' +
+      'border:1px solid rgba(232,160,32,.35);border-radius:14px">' +
+     '<div style="font-family:\'Syne\';font-size:15px;color:var(--gold);margin-bottom:6px">' +
+       'Remitir por competencia</div>' +
+     '<div class="hint" style="margin-bottom:12px">' +
+       'Se registrará como <b>TRASLADADA</b> y pasará a la pestaña Trasladadas. ' +
+       'No cuenta como resuelta de fondo. Fundamento: art. 21 Ley 1755 de 2015.</div>' +
+     '<div class="grid-2">' +
+       '<div class="fld"><label class="lbl">Autoridad competente *</label>' +
+         '<input type="text" id="cx-ent" placeholder="Secretaría de Movilidad de Bello"></div>' +
+       '<div class="fld"><label class="lbl">Radicado de salida (opcional)</label>' +
+         '<input type="text" id="cx-rad" placeholder="Cuando Gestión Documental lo entregue"></div>' +
+       '<div class="fld full"><label class="lbl">Motivo (redacción corta) *</label>' +
+         '<textarea id="cx-mot" placeholder="el asunto corresponde a la etapa sancionatoria y no al cobro coactivo"></textarea>' +
+         '<div class="hint">Se guarda tal cual y también sirve para generar el oficio con la plantilla ' +
+           '<b>TRASLADO_COMPETENCIA</b>.</div></div>' +
+     '</div>' +
+     '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px;align-items:center">' +
+       '<button class="btn btn-primary" onclick="hacerTrasladoCompetencia()">Marcar como trasladada</button>' +
+       '<button class="btn btn-ghost" onclick="document.getElementById(\'k-doc\').innerHTML=\'\';' +
+         'document.getElementById(\'k-doc\').removeAttribute(\'data-modo\')">Cancelar</button>' +
+       '<div class="msg" id="cx-msg" style="margin:0"></div>' +
+     '</div>' +
+   '</div>';
+
+  setTimeout(function(){
+    const i = document.getElementById('cx-ent'); if(i) i.focus();
+  }, 60);
+}
+
+async function hacerTrasladoCompetencia(){
+  const r = COLA[COLA_IDX];
+  const msg = document.getElementById('cx-msg');
+  if(!r || !msg) return;
+  const ent = (document.getElementById('cx-ent').value || '').trim();
+  const mot = (document.getElementById('cx-mot').value || '').trim();
+  const rad = (document.getElementById('cx-rad').value || '').trim();
+  if(!ent){ msg.className = 'msg err'; msg.textContent = 'Indique la autoridad competente.'; return; }
+  if(!mot){ msg.className = 'msg err'; msg.textContent = 'Indique el motivo corto del traslado.'; return; }
+  msg.className = 'msg'; msg.textContent = 'Registrando traslado…';
+  try{
+    const n = await rpc('pet_marcar_traslado', {
+      ids: [r.id],
+      entidad: ent,
+      motivo: mot,
+      radicado_salida: rad || null
+    });
+    if(!n){ msg.className = 'msg err';
+      msg.textContent = 'No se pudo marcar (verifique estado o permisos).'; return; }
+    toast(r.radicado + ' remitida por competencia a ' + ent, 'ok', 4);
+    document.getElementById('k-doc').innerHTML = '';
+    document.getElementById('k-doc').removeAttribute('data-modo');
+    COLA.splice(COLA_IDX, 1);
+    if(COLA_IDX >= COLA.length) COLA_IDX = Math.max(COLA.length - 1, 0);
+    pintarCaso();
+    actualizarBadges();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo trasladar: ' + err.message;
+  }
+}
+
+/* ═════════ Pestaña TRASLADADAS ═════════ */
+let TRASLADADAS = [];
+
+async function cargarTrasladadas(){
+  const msg = document.getElementById('tx-msg');
+  msg.className = 'msg'; msg.textContent = 'Cargando…';
+
+  // Combos: abogadas y entidades
+  const selA = document.getElementById('tx-abo');
+  if(selA && selA.options.length <= 1){
+    selA.innerHTML = '<option value="">Todas las abogadas</option>' +
+      PERFILES.filter(function(p){ return p.rol === 'abogado'; })
+        .map(function(p){ return '<option value="' + esc(p.nombre) + '">' + esc(p.nombre) + '</option>'; }).join('');
+  }
+
+  try{
+    // Vista dedicada si existe; si no, cae a v_pet_bandeja con filtro por estado.
+    let q = 'v_pet_trasladadas?select=*&order=traslado_fecha.desc.nullslast&limit=3000';
+    if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
+    let rows;
+    try{
+      rows = await supaFetch(q);
+    }catch(e1){
+      // Fallback: la vista v_pet_trasladadas puede no existir aún — traer de v_pet_bandeja.
+      let q2 = 'v_pet_bandeja?select=*&estado=eq.TRASLADADA' +
+               '&order=traslado_fecha.desc.nullslast&limit=3000';
+      if(!esAdmin()) q2 += '&asignado_a=eq.' + PERFIL.id;
+      rows = await supaFetch(q2);
+    }
+    TRASLADADAS = rows || [];
+
+    // Combo de entidades a partir de lo que llegó
+    const selE = document.getElementById('tx-ent');
+    if(selE){
+      const set = {};
+      TRASLADADAS.forEach(function(r){
+        const k = (r.traslado_entidad || '').trim();
+        if(k) set[k] = true;
+      });
+      const ents = Object.keys(set).sort();
+      selE.innerHTML = '<option value="">Todas las entidades</option>' +
+        ents.map(function(e){ return '<option value="' + esc(e) + '">' + esc(e) + '</option>'; }).join('');
+    }
+
+    msg.textContent = TRASLADADAS.length + ' peticiones trasladadas por competencia.';
+    renderTrasladadas();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo cargar: ' + err.message;
+  }
+}
+
+function filtrarTrasladadas(){
+  const q  = (document.getElementById('tx-q').value || '').trim().toLowerCase();
+  const d  = document.getElementById('tx-desde').value;
+  const t  = document.getElementById('tx-hasta').value;
+  const a  = document.getElementById('tx-abo').value;
+  const en = document.getElementById('tx-ent').value;
+  return TRASLADADAS.filter(function(r){
+    const ref = String(r.traslado_fecha || '').slice(0,10);
+    if(d && (!ref || ref < d)) return false;
+    if(t && (!ref || ref > t)) return false;
+    if(a && (r.asignado_nombre || '') !== a) return false;
+    if(en && (r.traslado_entidad || '') !== en) return false;
+    if(q){
+      const blob = [r.radicado, r.peticionario, r.documento, r.traslado_entidad,
+                    r.traslado_motivo, r.traslado_radicado_salida].join(' ').toLowerCase();
+      if(blob.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+}
+
+function renderTrasladadas(){
+  const rows = filtrarTrasladadas();
+  const body = document.getElementById('tx-body');
+
+  // KPIs
+  const porEnt = {};
+  const porAbo = {};
+  const diasArr = [];
+  rows.forEach(function(r){
+    const e = r.traslado_entidad || '—';
+    porEnt[e] = (porEnt[e] || 0) + 1;
+    const a = r.asignado_nombre || '—';
+    porAbo[a] = (porAbo[a] || 0) + 1;
+    if(r.fecha_radicado && r.traslado_fecha){
+      const d1 = new Date(r.fecha_radicado);
+      const d2 = new Date(r.traslado_fecha);
+      if(!isNaN(d1) && !isNaN(d2)) diasArr.push((d2 - d1) / 86400000);
+    }
+  });
+  const promDias = diasArr.length
+    ? (diasArr.reduce(function(s,x){ return s+x; }, 0) / diasArr.length).toFixed(1)
+    : '—';
+  const topEnt = Object.keys(porEnt).sort(function(a,b){ return porEnt[b] - porEnt[a]; })[0] || '—';
+
+  document.getElementById('tx-kpis').innerHTML = [
+    ['Trasladadas en el período', rows.length, 'var(--txt)'],
+    ['Entidades destino', Object.keys(porEnt).length, 'var(--gold)'],
+    ['Entidad más frecuente', topEnt, 'var(--morado)'],
+    ['Días hasta el traslado (prom.)', promDias, 'var(--verde)']
+  ].map(function(k){
+    return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' + k[1] + '</div>' +
+           '<div class="l">' + k[0] + '</div></div>';
+  }).join('');
+
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="9"><div class="vacio">' +
+      '<div class="vacio-ic">' + ICONO.vacio + '</div>' +
+      '<h3>Nada trasladado en este período</h3>' +
+      '<p>Aquí aparecen las peticiones remitidas por competencia a otra autoridad.</p>' +
+      '</div></td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.slice(0, 800).map(function(r){
+    const puede = puedeTrasladarPorCompetencia(r);
+    const mot = String(r.traslado_motivo || '');
+    const motCorto = mot.length > 90 ? mot.slice(0, 87) + '…' : mot;
+    return '<tr>' +
+      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b></td>' +
+      '<td>' + esc(r.peticionario) +
+        (r.documento ? '<div style="color:var(--muted);font-size:var(--t-micro)">' +
+          esc(r.documento) + '</div>' : '') + '</td>' +
+      '<td>' + esc(r.tipo_nombre || r.tipo) + '</td>' +
+      '<td>' + esc(r.asignado_nombre || '—') + '</td>' +
+      '<td>' + esc(r.traslado_entidad || '—') + '</td>' +
+      '<td title="' + esc(mot) + '">' + esc(motCorto || '—') + '</td>' +
+      '<td>' + esc(r.traslado_radicado_salida || '—') + '</td>' +
+      '<td>' + fmtFecha(String(r.traslado_fecha || '').slice(0,10)) + '</td>' +
+      '<td>' + (puede
+          ? '<button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" ' +
+              'onclick="devolverABandejaTraslado(' + r.id + ')">Devolver a Bandeja</button>'
+          : '') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function devolverABandejaTraslado(id){
+  if(!(await confirmar('¿Devolver esta petición a Bandeja? Volverá al trámite activo.'))) return;
+  const msg = document.getElementById('tx-msg');
+  msg.className = 'msg'; msg.textContent = 'Devolviendo…';
+  try{
+    const n = await rpc('pet_devolver_a_bandeja', { ids: [id] });
+    if(!n){ msg.className = 'msg err';
+      msg.textContent = 'No se pudo devolver (permisos o estado).'; return; }
+    toast('Petición devuelta a Bandeja.', 'ok', 3);
+    TRASLADADAS = TRASLADADAS.filter(function(r){ return r.id !== id; });
+    renderTrasladadas();
+    actualizarBadges();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+function exportarTrasladadasCSV(){
+  const rows = filtrarTrasladadas();
+  if(!rows.length){ toast('No hay peticiones para exportar.', ''); return; }
+  const cab = ['Radicado','Peticionario','Documento','Tipo','Abogada',
+               'Entidad destino','Motivo','Radicado salida',
+               'Fecha radicacion','Fecha traslado','Dias hasta traslado'];
+  const lin = rows.map(function(r){
+    let dias = '';
+    if(r.fecha_radicado && r.traslado_fecha){
+      const d1 = new Date(r.fecha_radicado);
+      const d2 = new Date(r.traslado_fecha);
+      if(!isNaN(d1) && !isNaN(d2)) dias = Math.round((d2 - d1) / 86400000);
+    }
+    return [r.radicado, r.peticionario, r.documento, r.tipo_nombre || r.tipo,
+            r.asignado_nombre || '', r.traslado_entidad || '',
+            String(r.traslado_motivo || '').replace(/[\r\n;]+/g,' '),
+            r.traslado_radicado_salida || '',
+            String(r.fecha_radicado || '').slice(0,10),
+            String(r.traslado_fecha || '').slice(0,10),
+            dias]
+      .map(function(v){ return String(v == null ? '' : v).replace(/;/g,','); })
+      .join(';');
+  });
+  const csv = '﻿' + cab.join(';') + '\n' + lin.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = 'peticiones_trasladadas.csv';
+  a.click();
+}
+
+/* ═════ Selección múltiple para mover Resueltas → Trasladadas ═════ */
+let SEL_HIST = null; // Set de ids o null si no está en modo selección
+
+function alternarSelHist(){
+  SEL_HIST = SEL_HIST ? null : new Set();
+  document.getElementById('h-btn-sel').textContent =
+    SEL_HIST ? 'Cancelar selección' : 'Seleccionar para mover a Trasladadas';
+  document.getElementById('h-barra-sel').innerHTML =
+    SEL_HIST ? barraSeleccionHist() : '';
+  renderHist();
+}
+
+function barraSeleccionHist(){
+  return '<div style="background:var(--glass);border:1px solid rgba(232,160,32,.45);' +
+    'border-radius:12px;padding:12px 14px;margin:10px 0">' +
+    '<div class="lbl" style="margin-bottom:8px">Mover varias a Trasladadas</div>' +
+    '<div class="grid-2">' +
+      '<div class="fld"><label class="lbl">Autoridad competente *</label>' +
+        '<input type="text" id="hx-ent" placeholder="Secretaría de Movilidad de Bello"></div>' +
+      '<div class="fld"><label class="lbl">Radicado de salida (opcional)</label>' +
+        '<input type="text" id="hx-rad"></div>' +
+      '<div class="fld full"><label class="lbl">Motivo (redacción corta) *</label>' +
+        '<textarea id="hx-mot" placeholder="el asunto corresponde a la etapa sancionatoria y no al cobro coactivo"></textarea></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:10px;align-items:center">' +
+      '<button class="btn btn-primary" onclick="moverSeleccionATrasladadas()">Mover seleccionadas</button>' +
+      '<div class="msg" id="hx-msg" style="margin:0"></div>' +
+    '</div>' +
+    '<div class="hint" style="margin-top:8px">Marque las filas con la casilla de la izquierda. ' +
+      'Se pasan a estado <b>TRASLADADA</b> y salen de Resueltas.</div>' +
+    '</div>';
+}
+
+function toggleSelHistFila(id){
+  if(!SEL_HIST) return;
+  if(SEL_HIST.has(id)) SEL_HIST.delete(id); else SEL_HIST.add(id);
+  const m = document.getElementById('hx-msg');
+  if(m) m.textContent = SEL_HIST.size ? SEL_HIST.size + ' marcada(s).' : '';
+}
+
+async function moverSeleccionATrasladadas(){
+  const m = document.getElementById('hx-msg');
+  if(!SEL_HIST || !SEL_HIST.size){
+    if(m){ m.className='msg err'; m.textContent='Marque al menos una petición.'; }
+    return;
+  }
+  const ent = (document.getElementById('hx-ent').value || '').trim();
+  const mot = (document.getElementById('hx-mot').value || '').trim();
+  const rad = (document.getElementById('hx-rad').value || '').trim();
+  if(!ent){ m.className='msg err'; m.textContent='Indique la autoridad competente.'; return; }
+  if(!mot){ m.className='msg err'; m.textContent='Indique el motivo corto.'; return; }
+  if(!(await confirmar('Se moverán ' + SEL_HIST.size + ' petición(es) a Trasladadas. ¿Continuar?'))) return;
+  m.className='msg'; m.textContent='Moviendo…';
+  try{
+    const n = await rpc('pet_marcar_traslado', {
+      ids: Array.from(SEL_HIST),
+      entidad: ent, motivo: mot, radicado_salida: rad || null
+    });
+    m.className='msg ok'; m.textContent = n + ' petición(es) movida(s).';
+    toast(n + ' movidas a Trasladadas', 'ok', 4);
+    // Quitar del cache local de HIST
+    HIST = HIST.filter(function(r){ return !SEL_HIST.has(r.id); });
+    SEL_HIST = null;
+    document.getElementById('h-btn-sel').textContent = 'Seleccionar para mover a Trasladadas';
+    document.getElementById('h-barra-sel').innerHTML = '';
+    renderHist();
+    actualizarBadges();
+  }catch(err){
+    m.className='msg err'; m.textContent='Error: ' + err.message;
   }
 }
 
@@ -6568,10 +6958,10 @@ async function abrirBuscador(){
     pintarBuscador('cargando');
     try{
       try{
-        BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA)' +
+        BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
         '&order=fecha_limite.asc&limit=1000');
       }catch(e){
-        BANDEJA = await supaFetch('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA)' +
+        BANDEJA = await supaFetch('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
         '&order=fecha_limite.asc&limit=1000');
       }
     }catch(err){}
@@ -6778,7 +7168,7 @@ async function traerTodo(vista, msg){
       'Range': desde + '-' + (desde + TAM - 1)
     });
     const res = await fetch(SUPA_URL + '/rest/v1/' + vista +
-      '?select=*&estado=not.in.(CERRADA,ANULADA)&order=fecha_limite.asc', { headers });
+      '?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)&order=fecha_limite.asc', { headers });
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const bloque = await res.json();
     todas = todas.concat(bloque);
@@ -7649,7 +8039,7 @@ function renderHist(){
 
   const body = document.getElementById('h-body');
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="12">' +
+    body.innerHTML = '<tr><td colspan="13">' +
       '<div class="vacio"><div class="vacio-ic">' + ICONO.vacio + '</div>' +
       '<h3>Nada en este período</h3>' +
       '<p>Ajuste las fechas o el estado. Las respuestas aparecen aquí apenas se registra la proyección.</p>' +
@@ -7660,7 +8050,11 @@ function renderHist(){
     const at = r.abogado_a_termino;
     const atTxt = at === true ? '<span class="pill s-a_tiempo">Sí</span>'
                 : at === false ? '<span class="pill s-vencida">No</span>' : '—';
-    return '<tr>' +
+    const selCell = SEL_HIST
+      ? '<td><input type="checkbox" ' + (SEL_HIST.has(r.id) ? 'checked ' : '') +
+        'onchange="toggleSelHistFila(' + r.id + ')"></td>'
+      : '<td></td>';
+    return '<tr>' + selCell +
       '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b></td>' +
       '<td>' + esc(r.peticionario) + '</td>' +
       '<td>' + esc(r.tipo_nombre || r.tipo) + '</td>' +
