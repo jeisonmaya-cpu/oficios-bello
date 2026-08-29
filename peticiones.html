@@ -8753,11 +8753,24 @@ async function guardarPersona(uid){
    ══════════════════════════════════════════════════════════════ */
 async function cargarTablero(){
   try{
-    const [res, prod, rad] = await Promise.all([
+    const [res, prod, rad, tras] = await Promise.all([
       supaFetch('v_pet_resumen?select=*'),
       supaFetch('v_pet_productividad?select=*'),
-      supaFetch('v_pet_radicacion?select=*').catch(function(){ return null; })
+      supaFetch('v_pet_radicacion?select=*').catch(function(){ return null; }),
+      supaFetch('v_pet_bandeja?select=asignado_a,asignado_nombre&estado=eq.TRASLADADA&limit=5000')
+        .catch(function(){ return []; })
     ]);
+    // Contar trasladadas por abogada
+    const trMap = {};
+    (tras || []).forEach(function(r){
+      const k = r.asignado_nombre || '';
+      if(!k) return;
+      trMap[k] = (trMap[k] || 0) + 1;
+    });
+    // Inyectar en cada fila de productividad
+    (prod || []).forEach(function(p){
+      p.trasladadas = trMap[p.abogado] || 0;
+    });
     pintarRadicacion(rad);
     pintarTarjetas(prod || [], rad || [], (res && res[0]) || {});
     const r = res[0] || {};
@@ -8858,24 +8871,32 @@ function pintarTarjetas(prod, rad, res){
     null, 'rgba(74,222,128,.25)');
 
   // ── 2. Resueltas por persona (con liderazgo) ──
+  //     n = respondidas de fondo + proyectadas + trasladadas por competencia.
+  //     Se muestra el desglose "+N tr" cuando hay traslados.
   const orden = prod.filter(function(p){ return p.asignado_a; })
     .map(function(p){
-      return { nom: p.abogado, n: Number(p.radicadas || 0) + Number(p.proyectadas || 0),
+      const respo = Number(p.radicadas || 0) + Number(p.proyectadas || 0);
+      const tr    = Number(p.trasladadas || 0);
+      return { nom: p.abogado, n: respo + tr, respo: respo, tr: tr,
                pct: p.pct_termino_justo, dias: p.dias_en_manos };
     })
     .sort(function(a, b){ return b.n - a.n; });
-  const totRes = orden.reduce(function(a, x){ return a + x.n; }, 0);
+  const totRes  = orden.reduce(function(a, x){ return a + x.respo; }, 0);
+  const totTras = orden.reduce(function(a, x){ return a + x.tr; }, 0);
   const lider = orden.length && orden[0].n ? orden[0].nom : null;
 
   html += estCard('Resueltas por abogado' + (lider ? ' · líder: ' + esc(lider.split(' ')[0]) : ''),
     ICONO.trofeo,
     orden.map(function(x, i){
+      const extra = (x.pct != null ? x.pct + '%' : '') +
+        (x.tr ? (x.pct != null ? ' · ' : '') + x.respo + '+' + x.tr + ' tr' : '');
       return estBarra(x.nom, x.n, orden[0].n || 1, 'var(--atiempo)',
-        (x.n && i < 3 ? MEDALLAS[i] : ''),
-        (x.pct != null ? x.pct + '%' : ''));
+        (x.n && i < 3 ? MEDALLAS[i] : ''), extra);
     }).join(''),
-    'El porcentaje es cumplimiento del término, excluyendo lo heredado.',
-    'Total: <b>' + totRes + '</b> peticiones resueltas. ¡Gran trabajo!');
+    'El porcentaje es cumplimiento del término, excluyendo lo heredado. ' +
+      '“tr” son remitidas por competencia (no resueltas de fondo).',
+    'Total: <b>' + totRes + '</b> resueltas de fondo' +
+      (totTras ? ' · <b style="color:var(--gold)">' + totTras + '</b> trasladadas' : '') + '.');
 
   // ── 3. Radicación por persona ──
   const rd = (rad || []).slice().sort(function(a, b){ return b.total - a.total; });
