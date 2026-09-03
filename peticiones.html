@@ -1394,23 +1394,99 @@ function rutaArchivoPet(radicado, nombreOriginal){
 
 /* Sube un File al bucket privado. Devuelve la ruta guardada, o lanza error.
    upsert=true para que re-subir el mismo radicado reemplace sin fallar. */
+/* Verifica que un objeto EXISTE de verdad en el bucket, sin descargar el
+   binario. Usa el endpoint 'list' (prefix=carpeta, search=archivo), que es
+   el único fiable desde el navegador; 'info' devuelve 404 falsos.
+   Devuelve true si aparece con tamaño > 0. */
+async function existeObjetoPet(ruta){
+  const partes = ruta.split('/');
+  const archivo = partes.pop();
+  const carpeta = partes.join('/');
+  const headers = await authHeaders({'Content-Type':'application/json'});
+  const res = await fetch(
+    SUPA_URL + '/storage/v1/object/list/' + BUCKET_PET,
+    { method:'POST', headers, body: JSON.stringify({
+        prefix: carpeta, search: archivo, limit: 100
+    }) }
+  );
+  if(!res.ok) return false;
+  let lista = [];
+  try{ lista = await res.json(); }catch(e){ return false; }
+  if(!Array.isArray(lista)) return false;
+  return lista.some(function(o){
+    if(o.name !== archivo) return false;
+    // metadata.size existe cuando el objeto quedó realmente escrito
+    const tam = o.metadata && (o.metadata.size != null ? o.metadata.size : o.metadata.contentLength);
+    return tam == null ? true : Number(tam) > 0;
+  });
+}
+
+function esperar(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+/* Sube un File al bucket privado con ROBUSTEZ MÁXIMA.
+   Sube, VERIFICA que el objeto quedó escrito, y REINTENTA hasta 3 veces
+   con espera creciente. Solo devuelve la ruta si el objeto se confirmó en
+   Storage; si no lo logra, LANZA. Así es imposible guardar un archivo_path
+   sin PDF detrás (causa de las peticiones huérfanas que no descargaban). */
 async function subirArchivoPet(file, radicado){
   if(!file) return null;
   const ruta = rutaArchivoPet(radicado, file.name);
-  const headers = await authHeaders({
-    'Content-Type': file.type || 'application/octet-stream',
-    'x-upsert': 'true'
-  });
-  const res = await fetch(
-    SUPA_URL + '/storage/v1/object/' + BUCKET_PET + '/' + encodeURI(ruta),
-    { method:'POST', headers, body: file }
-  );
-  if(!res.ok){
-    let msg = 'HTTP ' + res.status;
-    try{ const j = await res.json(); if(j && (j.message||j.error)) msg = j.message || j.error; }catch(e){}
-    throw new Error('No se pudo subir el archivo: ' + msg);
+  const MAX = 3;
+  let ultimoError = '';
+  for(let intento = 1; intento <= MAX; intento++){
+    try{
+      const headers = await authHeaders({
+        'Content-Type': file.type || 'application/octet-stream',
+        'x-upsert': 'true'
+      });
+      const res = await fetch(
+        SUPA_URL + '/storage/v1/object/' + BUCKET_PET + '/' + encodeURI(ruta),
+        { method:'POST', headers, body: file }
+      );
+      if(!res.ok){
+        let msg = 'HTTP ' + res.status;
+        try{ const j = await res.json(); if(j && (j.message||j.error)) msg = j.message || j.error; }catch(e){}
+        throw new Error(msg);
+      }
+      // No confiamos en el 200: confirmamos que el objeto EXISTE de verdad.
+      if(await existeObjetoPet(ruta)) return ruta;
+      throw new Error('el archivo no quedó guardado (verificación falló)');
+    }catch(e){
+      ultimoError = e.message || String(e);
+      if(intento < MAX) await esperar(intento * 700); // 700ms, 1400ms
+    }
   }
-  return ruta;
+  throw new Error('No se pudo subir el archivo tras ' + MAX + ' intentos: ' + ultimoError);
+}
+
+/* Reintenta subir los PDF del último lote que radicaron pero cuyo archivo
+   no logró subir. El File sigue vivo en memoria mientras no se recargue la
+   página. Llamar desde consola o desde un botón: reintentarArchivosLote(). */
+async function reintentarArchivosLote(){
+  const cola = window.LOTE_ARCH_FALLIDOS || [];
+  const pend = cola.filter(function(it){ return it && it.file && it.reintentarArchivo; });
+  if(!pend.length){ toast('No hay archivos pendientes de reintento.', 'ok'); return; }
+  let ok = 0, fallan = 0;
+  for(let i = 0; i < pend.length; i++){
+    const it = pend[i];
+    try{
+      const ruta = await subirArchivoPet(it.file, it.radicado);
+      await supaFetch('pet_peticiones?radicado=eq.' + encodeURIComponent(it.radicado), {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        body: JSON.stringify({ archivo_path: ruta })
+      });
+      it.reintentarArchivo = false;
+      it.estado = 'guardada';
+      it.nota = 'PDF subido en reintento.';
+      ok++;
+    }catch(e){
+      it.nota = 'Reintento falló: ' + (e.message || e);
+      fallan++;
+    }
+  }
+  window.LOTE_ARCH_FALLIDOS = cola.filter(function(it){ return it.reintentarArchivo; });
+  toast('Reintento: ' + ok + ' subidos, ' + fallan + ' aún fallan.', fallan ? 'err' : 'ok', 6);
+  if(typeof pintarLote === 'function') pintarLote();
 }
 
 /* Descarga el PDF de una petición (URL firmada temporal, privada). */
@@ -3608,6 +3684,9 @@ async function guardarLote(){
 
   const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
   let idx = 0, ok = 0, fallos = 0;
+  // Cola de PDF que radicaron pero cuyo archivo no subió: para reintento.
+  window.LOTE_ARCH_FALLIDOS = window.LOTE_ARCH_FALLIDOS || [];
+  var LOTE_ARCH_FALLIDOS = window.LOTE_ARCH_FALLIDOS;
 
   for(let i = 0; i < pendientes.length; i++){
     const it = pendientes[i].it, n = pendientes[i].n;
@@ -3648,6 +3727,9 @@ async function guardarLote(){
         it.estado = 'guardada';
         ok++;
         // Subir el PDF de esta fila a Storage y registrar su ruta.
+        // subirArchivoPet ya CONFIRMA que el objeto quedó escrito (reintenta
+        // y verifica); solo entonces se guarda archivo_path. Si falla, la
+        // fila queda SIN archivo_path (no huérfana) y se marca para reintento.
         if(it.file){
           try{
             const ruta = await subirArchivoPet(it.file, reg.radicado);
@@ -3658,7 +3740,11 @@ async function guardarLote(){
               });
             }
           }catch(eArch){
-            it.nota = 'Radicó, pero el archivo no subió.';
+            it.estado = 'archivo_falla';
+            it.nota = 'Radicó, pero el PDF NO subió — reintentar.';
+            it.reintentarArchivo = true;
+            if(typeof LOTE_ARCH_FALLIDOS !== 'undefined') LOTE_ARCH_FALLIDOS.push(it);
+            fallos++;
           }
         }
       }
