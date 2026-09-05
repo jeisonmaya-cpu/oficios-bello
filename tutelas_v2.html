@@ -107,6 +107,8 @@
     .sem-v{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.25)}
     .sem-g{background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border)}
     .sem-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;background:currentColor}
+    /* Fecha límite estimada por el sistema (no oficial) */
+    .flim-est{color:var(--gold2);border-bottom:1px dashed var(--gold);cursor:help}
     .sem-r .sem-dot{animation:blink 1.1s infinite}
     /* BADGES */
     .bt{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
@@ -1094,10 +1096,6 @@ async function getAuthHeaders(extra){
   }catch(e){ /* si falla, usa el último conocido */ token = authToken; }
   return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer "+token }, extra||{});
 }
-// Versión síncrona (compatibilidad): usa el último token conocido.
-function authHeaders(extra){
-  return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer "+authToken }, extra||{});
-}
 
 // ── Mapa de traducción: columna Supabase (snake_case) → nombre que usa el dashboard (Sheet) ──
 const MAPA_SB_A_SHEET = {
@@ -1662,7 +1660,17 @@ async function guardarEdicionCaso(){
   };
   btn.textContent="Guardando..."; btn.style.pointerEvents="none";
   try{
-    const guardado=await Repo.actualizar(actual._id, campos);
+    let guardado;
+    try{
+      guardado=await Repo.actualizar(actual._id, campos);
+    }catch(e1){
+      // Reintento único ante sesión vencida: fuerza refresh del token y reintenta.
+      // Si aún falla, se propaga al catch externo SIN cerrar el modal (no se pierde lo escrito).
+      if(/JWT expired|401/i.test(e1.message) && sbAuth){
+        try{ await sbAuth.auth.refreshSession(); }catch(_){}
+        guardado=await Repo.actualizar(actual._id, campos);
+      } else throw e1;
+    }
     if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
     // Refresca el registro en memoria (en el array que corresponda)
     const arr = origenModal==="incidente" ? incidentes : origenModal==="fallo" ? fallos : tutelas;
@@ -1681,7 +1689,7 @@ async function guardarEdicionCaso(){
     abrirModal(encodeURIComponent(JSON.stringify(actual)), origenModal);
   }catch(e){
     if(/JWT expired|401/i.test(e.message)){
-      errBox.textContent="Tu sesión expiró. Vuelve a iniciar sesión para guardar.";
+      errBox.textContent="Tu sesión expiró. Abre otra pestaña, inicia sesión de nuevo, y vuelve aquí a Guardar — lo que escribiste sigue aquí.";
     } else {
       errBox.textContent="Error al guardar: "+e.message;
     }
@@ -1732,12 +1740,48 @@ const NORM_TIPO={
   "apertura":"Apertura","requerimiento":"Requerimiento",
   "sancion":"Sanción","sanción":"Sanción","reparto":"Reparto"
 };
+// ── Estimación de FECHA LÍMITE cuando el registro no la trae ──
+// Los plazos de tutela se cuentan en días HÁBILES (sin sábados ni domingos).
+// No se descuentan festivos: mantener esa tabla año a año es frágil, así que la
+// estimación es un apoyo, NO un dato oficial. Por eso se marca _flimEstimada
+// y la vista la muestra con "~" para que el abogado verifique el auto/fallo.
+// Plazos por tipo: Admite/Tutela 3, Fallo/Sentencia 2, Incidente/Desacato 3.
+const PLAZO_HABIL={
+  "Tutela":3,"Admite":3,
+  "Fallo de tutela":2,"Sentencia":2,
+  "Incidente":3,"Incidente de desacato":3,"Desacato":3
+};
+function sumarHabiles(fechaBase,n){
+  const d=new Date(fechaBase.getTime());
+  let restan=n;
+  while(restan>0){
+    d.setDate(d.getDate()+1);
+    const dow=d.getDay();          // 0=domingo, 6=sábado
+    if(dow!==0 && dow!==6) restan--;
+  }
+  return d;
+}
+function fmtFecha(d){
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+}
 function normalizarRegistro(r){
   if(r["TIPO"]){
     const norm=NORM_TIPO[r["TIPO"].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim()];
     if(norm)r["TIPO"]=norm;
   }
-  const flim=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
+  let flim=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
+  r._flimEstimada=false;
+  // Si no hay fecha límite real pero sí fecha inicial y un plazo conocido, estimarla.
+  if(!flim){
+    const plazo=PLAZO_HABIL[r["TIPO"]];
+    const fini=parseFechaReg(r["FECHA INICIAL"]);
+    if(plazo && fini){
+      const est=sumarHabiles(fini,plazo);
+      flim=fmtFecha(est);
+      r["FECHA LÍMITE"]=flim;   // para que semáforos, filtros y export la usen
+      r._flimEstimada=true;
+    }
+  }
   r._dias=calcDias(flim);
   return r;
 }
@@ -1853,16 +1897,20 @@ function buscarGlobal(){
   const todos=[...tutelas,...fallos,...incidentes];
   // Deduplicar por radicado — un radicado que escaló de tutela a fallo solo aparece una vez
   const vistos=new Set();
-  const res=todos.filter(r=>{
+  const resTodos=todos.filter(r=>{
     const key=r["RADICADO"]||Math.random();
     if(vistos.has(key))return false;
     vistos.add(key);
     return [r["ACCIONANTE"],r["RADICADO"],r["CC / NIT"],r["JUZGADO"]].join(" ").toLowerCase().includes(q);
-  }).slice(0,12);
+  });
+  const res=resTodos.slice(0,12);
   if(!res.length){el.innerHTML=`<div class="gr-item"><span style="color:var(--muted)">Sin resultados</span></div>`;el.classList.add("open");return;}
   // Guardar resultados para acceso seguro por índice
   window._globalResults=res;
-  el.innerHTML=res.map((r,i)=>`<div class="gr-item" onclick="cerrarGlobal();abrirModalIdx('_globalResults',${i})">${badgeTipo(r["TIPO"])}<div><div class="gr-acc">${esc(r["ACCIONANTE"]||"—")}</div><div class="gr-sub">${esc(r["RADICADO"]||"—")} · ${esc((r["JUZGADO"]||"").substring(0,40))}</div></div>${semaforo(r._dias,r["ESTADO"])}</div>`).join("");
+  const masTxt = resTodos.length>res.length
+    ? `<div class="gr-item" style="cursor:default;justify-content:center"><span style="color:var(--muted);font-size:11px">Mostrando ${res.length} de ${resTodos.length} — afina la búsqueda para ver el resto</span></div>`
+    : "";
+  el.innerHTML=res.map((r,i)=>`<div class="gr-item" onclick="cerrarGlobal();abrirModalIdx('_globalResults',${i})">${badgeTipo(r["TIPO"])}<div><div class="gr-acc">${esc(r["ACCIONANTE"]||"—")}</div><div class="gr-sub">${esc(r["RADICADO"]||"—")} · ${esc((r["JUZGADO"]||"").substring(0,40))}</div></div>${semaforo(r._dias,r["ESTADO"])}</div>`).join("")+masTxt;
   el.classList.add("open");
 }
 function cerrarGlobal(){document.getElementById("global-results").classList.remove("open");}
@@ -1874,6 +1922,14 @@ const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>
 const escAttr=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
   .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const abrev=(s,n)=>!s?"—":s.length>n?s.substring(0,n)+"…":s;
+// Texto de la FECHA LÍMITE con marca "~" cuando la estimó el sistema (no es dato oficial).
+const flimTxt=r=>{
+  const f=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
+  if(!f) return "—";
+  return r._flimEstimada
+    ? `<span class="flim-est" title="Fecha estimada por el sistema (días hábiles). Verifica el auto o fallo.">~${esc(f)}</span>`
+    : esc(f);
+};
 const pNom=s=>!s?"—":s.split(" ").slice(0,2).join(" ");
 const inic=s=>!s?"?":s.split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
 const fBusc=(r,q)=>!q?true:[r["ACCIONANTE"],r["RADICADO"],r["JUZGADO"],r["CC / NIT"]].join(" ").toLowerCase().includes(q.toLowerCase());
@@ -1969,7 +2025,7 @@ function renderAdmites(){
   el.innerHTML=pag.map((r,i)=>{
     const falta=queFaltaTecnico(r);
     const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}</div>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}</div>`;
   }).join("");
   window._exportAdmites=visiblesAdm;
 }
@@ -2002,7 +2058,7 @@ function renderFallos(){
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
   window._pagFallos=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
   window._exportFallos=visiblesFal;
 }
 
@@ -2071,7 +2127,7 @@ function renderHistorico(){
   el.innerHTML=pag.map((r,i)=>{
     const origen = r._cat || (incidentes.some(x=>x["RADICADO"]===r["RADICADO"])
       ? "incidente" : TIPOS_FALLO.includes(r["TIPO"]) ? "fallo" : "tutela");
-    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel sub">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div></div>`;
+    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel sub">${flimTxt(r)}</div></div>`;
   }).join("");
   window._exportHistorico=filtHis;
 }
@@ -2324,8 +2380,11 @@ function renderEstadisticas(){
     if(_estPeriodo==="todo") return true;
     return _enPeriodo(parseFechaReg(r["FECHA CIERRE"]));
   });
-  // Medición de términos: solo cierres con fecha de cierre Y fecha límite parseables
+  // Medición de términos: solo cierres con fecha de cierre Y fecha límite parseables.
+  // Se EXCLUYEN los registros con fecha límite estimada por el sistema: medir
+  // "a término" contra una fecha que no salió del auto/fallo falsearía el %.
   const medidos = cerradosPer.map(r=>{
+    if(r._flimEstimada) return null;
     const fc=parseFechaReg(r["FECHA CIERRE"]), fl=parseFechaReg(r["FECHA LÍMITE"]||r["FECHA LIMITE"]);
     return fc&&fl ? {r, aTermino: fc<=fl, fc, fi: parseFechaReg(r["FECHA INICIAL"])} : null;
   }).filter(Boolean);
@@ -2398,7 +2457,7 @@ function renderEstadisticas(){
   const cumplH = medidos.length
     ? barra("Dentro del término",aTermino,medidos.length,"#4ade80") + barra("Fuera del término",fueraTermino,medidos.length,"#f87171")
     : `<div style="color:var(--muted);font-size:12px">Aún no hay cierres con fecha registrada. Desde hoy, cada cierre queda medido automáticamente.</div>`;
-  const cumplNota = sinFecha>0 ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">${sinFecha} cierre(s) sin fecha de cierre o sin fecha límite registrada no se pueden medir. Se comparan días corridos, no hábiles.</div>` : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Se comparan días corridos contra la fecha límite registrada, no días hábiles.</div>`;
+  const cumplNota = sinFecha>0 ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">${sinFecha} cierre(s) no se pueden medir: sin fecha de cierre, sin fecha límite, o con fecha límite estimada por el sistema (no oficial). Se comparan días corridos, no hábiles.</div>` : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Se comparan días corridos contra la fecha límite registrada (se excluyen fechas estimadas), no días hábiles.</div>`;
 
   // ── Ranking de cerrados (período) con % a término por persona ──
   const cerradosPorAbo=ABOGADOS.map(a=>{
@@ -2587,7 +2646,7 @@ function abrirModal(da, origen){
   setEl("m-juz",esc(rVista["JUZGADO"]||"—"));
   setEl("m-cc",esc(rVista["CC / NIT"]||"—"));
   setEl("m-fini",esc(r["FECHA INICIAL"]||"—"));
-  setEl("m-flim",esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—"));
+  setEl("m-flim",flimTxt(r));
   setEl("m-resp",esc(r["RESPONSABLE"]||"—"));
   setEl("m-pqrenc",esc(r["ENCARGADO PQR"]||"—"));
   setEl("m-est-txt",badgeEst(r["ESTADO"]));
@@ -2954,7 +3013,7 @@ async function guardarEstado(){
     try{
       // Fecha de cierre automática: se llena al pasar a estado final, se limpia al reabrir
       const fCierre = EST_HIST.includes(nuevoEst) ? new Date().toISOString().slice(0,10) : null;
-      const guardado = await Repo.actualizar(actual._id, {
+      const payloadEst = {
         "ESTADO": nuevoEst,
         "RESPUESTA PQR": respPQR,
         "RADICADO DE CUMPLIMIENTO": respRad,
@@ -2962,7 +3021,17 @@ async function guardarEstado(){
         "SHAREPOINT": sharePoint,
         "PQR": radicadoPQR,
         "FECHA CIERRE": fCierre
-      });
+      };
+      let guardado;
+      try{
+        guardado = await Repo.actualizar(actual._id, payloadEst);
+      }catch(e1){
+        // Reintento único ante sesión vencida: refresca token y reintenta una vez.
+        if(/JWT expired|401/i.test(e1.message) && sbAuth){
+          try{ await sbAuth.auth.refreshSession(); }catch(_){}
+          guardado = await Repo.actualizar(actual._id, payloadEst);
+        } else throw e1;
+      }
       if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
       const idx=arr.findIndex(r=>r._id===actual._id);
       if(idx>=0){
@@ -3238,7 +3307,7 @@ function renderPQRModal(regs){
       ${chk}
       <div><div style="font-size:13px;font-weight:500">${esc(r["ACCIONANTE"]||"—")}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(r["RADICADO"]||"—")}</div></div>
       <div style="font-size:11px;color:var(--muted)">${esc(r["RESPONSABLE"]||"—")}</div>
-      <div style="font-size:11px;color:var(--muted);white-space:nowrap">${esc(r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"—")}</div>
+      <div style="font-size:11px;color:var(--muted);white-space:nowrap">${flimTxt(r)}</div>
       <div style="font-size:12px;font-weight:700;color:${dc};text-align:right">${dt}</div>
     </div>`;
   }).join("");
