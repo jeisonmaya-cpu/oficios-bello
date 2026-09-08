@@ -568,6 +568,14 @@ html[data-theme="light"] .gr-item .hl{background:rgba(245,158,11,.4);color:#0f2d
 </div>
 
 <div class="panel" id="panel-reparto">
+  <!-- ── Disponibilidad para reparto (vacaciones / incapacidad) ── -->
+  <div style="margin-bottom:26px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:16px;padding:18px 20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+      <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold2)">🌴 Disponibilidad para reparto</div>
+      <div style="font-size:11px;color:var(--muted)">Apaga a quien esté en vacaciones o incapacidad: sale del turno al instante, aquí y en el reparto automático.</div>
+    </div>
+    <div id="grid-disponibilidad" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px"></div>
+  </div>
   <div class="reparto-grid" id="grid-reparto"></div>
   <div style="margin-top:28px">
     <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold2);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)">📊 Ranking de gestión histórica — total de procesos recibidos</div>
@@ -1296,14 +1304,89 @@ async function cargarDetalleParaModal(r, origen){
   }
 }
 
-// Lista COMPLETA — incluye a Deisy y Yennifer para que sus procesos sigan
+// Lista COMPLETA — incluye a todos para que sus procesos sigan
 // apareciendo en reparto, rankings, filtros y estadísticas (y se puedan cerrar,
 // y se les puedan asignar fallos/incidentes manualmente).
 const ABOGADOS    = ["Maria Camila Uribe","Jaime Cordoba","Yennifer Chaverra","Dario Baldrich","Deisy Lopez","Juan Gomez Londoño","Anderson Correa","Camila Puerta Camargo","Oscar Perea"];
-// Lista ACTIVA para reparto — sin Deisy ni Yennifer. Solo se usa en el
-// round-robin de "Nueva tutela" para que ya NO reciban admites nuevos.
-// Camila Puerta Camargo entra como reemplazo de Yennifer en el reparto de admites.
-const ABOGADOS_RR = ABOGADOS.filter(a => a !== "Deisy Lopez" && a !== "Yennifer Chaverra");
+
+// ── Lista ACTIVA para reparto — AHORA COMPARTIDA VÍA SUPABASE ──
+// Antes esta lista estaba fija en el código y había que redesplegar para
+// activar/desactivar a alguien (vacaciones, incapacidad). Ahora se llena en
+// vivo desde la tabla public.abogados_reparto (fuente de verdad ÚNICA, la
+// misma que lee el reparto automático de correos en Apps Script).
+//
+// • ABOGADOS_RR arranca vacío y lo llena cargarRepartoDesdeSupabase() al
+//   iniciar sesión. Si la red falla, cae a un respaldo razonable para no
+//   dejar el modal de "Nueva tutela" sin opciones.
+// • REPARTO_META guarda el estado completo (disponible, motivo, orden) para
+//   pintar el panel de disponibilidad.
+let ABOGADOS_RR   = [];
+let REPARTO_META  = [];   // [{nombre, disponible, orden, motivo}]
+
+// Respaldo si Supabase no responde (mismo criterio previo: sin Yennifer).
+const ABOGADOS_RR_FALLBACK = ABOGADOS.filter(a => a !== "Yennifer Chaverra");
+
+// Reconstruye ABOGADOS_RR (solo disponibles, en orden) a partir de REPARTO_META.
+function _recomputarABOGADOS_RR(){
+  const activos = REPARTO_META
+    .filter(x => x.disponible)
+    .sort((a,b)=> (a.orden||0) - (b.orden||0))
+    .map(x => x.nombre);
+  ABOGADOS_RR = activos.length ? activos : ABOGADOS_RR_FALLBACK.slice();
+}
+
+// Carga la disponibilidad de abogados y el turno desde Supabase.
+// Se llama al iniciar sesión (dentro de cargarDatos / arranque).
+async function cargarRepartoDesdeSupabase(){
+  try{
+    const url = `${SUPABASE_URL}/rest/v1/abogados_reparto`
+      + `?select=nombre,disponible,orden,motivo&order=orden.asc`;
+    const res = await fetch(url, { headers: await getAuthHeaders() });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const filas = await res.json();
+    if(Array.isArray(filas) && filas.length){
+      REPARTO_META = filas.map(f=>({
+        nombre: String(f.nombre||"").trim(),
+        disponible: f.disponible !== false,
+        orden: Number(f.orden)||0,
+        motivo: String(f.motivo||"").trim()
+      }));
+    }else{
+      throw new Error("tabla vacía");
+    }
+  }catch(e){
+    console.warn("No se pudo cargar abogados_reparto, usando respaldo:", e.message);
+    // Respaldo: todos los del fallback como disponibles.
+    REPARTO_META = ABOGADOS.map((n,i)=>({
+      nombre:n, disponible: ABOGADOS_RR_FALLBACK.includes(n), orden:i+1, motivo:""
+    }));
+  }
+  _recomputarABOGADOS_RR();
+}
+
+// Cambia la disponibilidad de un abogado y lo persiste en Supabase (compartido).
+async function setDisponibilidadAbogado(nombre, disponible, motivo){
+  // Optimista: actualiza local y repinta, luego confirma contra Supabase.
+  const meta = REPARTO_META.find(x=>x.nombre===nombre);
+  if(meta){ meta.disponible = disponible; meta.motivo = motivo||""; }
+  _recomputarABOGADOS_RR();
+  if(typeof renderPanelDisponibilidad==="function") renderPanelDisponibilidad();
+  try{
+    const url = `${SUPABASE_URL}/rest/v1/abogados_reparto?nombre=eq.${encodeURIComponent(nombre)}`;
+    const res = await fetch(url, {
+      method:"PATCH",
+      headers: await getAuthHeaders({ "Content-Type":"application/json", Prefer:"return=minimal" }),
+      body: JSON.stringify({ disponible: disponible, motivo: motivo||"", actualizado_en: new Date().toISOString() })
+    });
+    if(!res.ok && res.status!==204) throw new Error("HTTP "+res.status);
+    if(typeof toast==="function") toast(disponible?`✅ ${nombre} vuelve al reparto`:`🌴 ${nombre} fuera del reparto`,"ok");
+  }catch(e){
+    if(typeof toast==="function") toast("⚠️ No se pudo guardar en Supabase: "+e.message,"err");
+    // Recargar del servidor para no quedar desincronizado.
+    await cargarRepartoDesdeSupabase();
+    if(typeof renderPanelDisponibilidad==="function") renderPanelDisponibilidad();
+  }
+}
 
 // ── Rol del usuario logueado → en qué pestaña abre el modal ──
 // Técnica (PQR/SharePoint): Verónica y Jeison.  Jurídica (estado): abogados.
@@ -1353,21 +1436,58 @@ let quickAdm=null, quickFal=null, quickOtr=null; // filtro rápido por urgencia 
 // El turno se persiste en localStorage: antes vivía solo en memoria y volvía a 0
 // en cada recarga, así que el primero de la lista recibía casi todos los admites
 // y los últimos (ahora Oscar Perea) casi nunca salían propuestos.
+// El turno ahora es COMPARTIDO (tabla reparto_estado, fila id=1). Antes vivía
+// solo en localStorage de un navegador; como el reparto lo comparten varias
+// personas, dos equipos descuadraban la rotación. localStorage queda como
+// respaldo/espejo por si Supabase no responde.
 const RR_KEY = "tutelas_rr_idx_v1";
+
+// Trae el contador del turno desde Supabase. Se llama junto al reparto.
+async function cargarTurnoDesdeSupabase(){
+  try{
+    const url = `${SUPABASE_URL}/rest/v1/reparto_estado?id=eq.1&select=rr_idx`;
+    const res = await fetch(url, { headers: await getAuthHeaders() });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const filas = await res.json();
+    if(Array.isArray(filas) && filas[0] && Number.isFinite(Number(filas[0].rr_idx))){
+      window._rrIdx = Number(filas[0].rr_idx);
+      try{ localStorage.setItem(RR_KEY, String(window._rrIdx)); }catch(e){}
+      return;
+    }
+    throw new Error("sin fila");
+  }catch(e){
+    console.warn("No se pudo cargar el turno de Supabase, uso local:", e.message);
+    const g = parseInt(localStorage.getItem(RR_KEY), 10);
+    window._rrIdx = (Number.isFinite(g) && g >= 0) ? g : 0;
+  }
+}
+
 function siguienteAbogadoRR(){
   if(typeof window._rrIdx === "undefined"){
     const g = parseInt(localStorage.getItem(RR_KEY), 10);
     window._rrIdx = (Number.isFinite(g) && g >= 0) ? g : 0;
   }
+  if(!ABOGADOS_RR.length) return "";
   const abo = ABOGADOS_RR[window._rrIdx % ABOGADOS_RR.length];
   return abo;
 }
-function avanzarTurnoRR(){
+
+// Avanza el turno y lo persiste en Supabase (compartido) + localStorage (espejo).
+async function avanzarTurnoRR(){
   window._rrIdx = (window._rrIdx || 0) + 1;
   try{ localStorage.setItem(RR_KEY, String(window._rrIdx)); }catch(e){}
+  try{
+    const url = `${SUPABASE_URL}/rest/v1/reparto_estado?id=eq.1`;
+    await fetch(url, {
+      method:"PATCH",
+      headers: await getAuthHeaders({ "Content-Type":"application/json", Prefer:"return=minimal" }),
+      body: JSON.stringify({ rr_idx: window._rrIdx, actualizado_en: new Date().toISOString() })
+    });
+  }catch(e){ console.warn("No se pudo guardar el turno en Supabase:", e.message); }
 }
+
 function abrirNuevaTutela(){
-  // Llenar el desplegable de abogados
+  // Llenar el desplegable de abogados (solo disponibles, en vivo)
   const sel = document.getElementById("nt-abo");
   sel.innerHTML = ABOGADOS_RR.map(a=>`<option>${a}</option>`).join("");
   // Pre-seleccionar el siguiente por turno
@@ -1412,7 +1532,7 @@ async function guardarNuevaTutela(){
   try{
     const creado = await Repo.crear(campos);
     if(!creado) throw new Error("Supabase no devolvió el registro creado");
-    avanzarTurnoRR(); // avanzar el turno (queda guardado en localStorage)
+    await avanzarTurnoRR(); // avanzar el turno (compartido en Supabase + espejo local)
     toast("✅ Tutela creada correctamente","ok");
     document.getElementById("overlay-nueva").classList.remove("open");
     await cargarDatos(); // recargar para que aparezca en la lista
@@ -2132,7 +2252,53 @@ function renderHistorico(){
   window._exportHistorico=filtHis;
 }
 
+// Pinta las tarjetas con toggle de disponibilidad. Verde = en reparto,
+// gris = fuera (vacaciones/incapacidad). El clic persiste en Supabase.
+function renderPanelDisponibilidad(){
+  const cont=document.getElementById("grid-disponibilidad");
+  if(!cont) return;
+  if(!REPARTO_META.length){
+    cont.innerHTML=`<div style="grid-column:1/-1;color:var(--muted);font-size:12px">Cargando disponibilidad…</div>`;
+    return;
+  }
+  const orden=[...REPARTO_META].sort((a,b)=>(a.orden||0)-(b.orden||0));
+  cont.innerHTML=orden.map(m=>{
+    const on=m.disponible;
+    const nom=escAttr(m.nombre);
+    const motivo = on ? "" : (m.motivo||"Fuera del reparto");
+    const bg = on ? "rgba(34,197,94,.10)" : "rgba(148,163,184,.08)";
+    const bd = on ? "rgba(34,197,94,.35)" : "var(--border)";
+    const dot= on ? "#4ade80" : "#94a3b8";
+    const txt= on ? "En reparto" : esc(motivo);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:${bg};border:1px solid ${bd};border-radius:12px;padding:11px 13px">
+      <div style="min-width:0">
+        <div style="font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(pNom(m.nombre))}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="width:7px;height:7px;border-radius:50%;background:${dot};flex:0 0 auto"></span><span style="font-size:11px;color:var(--muted)">${txt}</span></div>
+      </div>
+      <button onclick="toggleDisponibilidad(decodeURIComponent('${encodeURIComponent(m.nombre)}'))" title="${on?'Sacar del reparto (vacaciones/incapacidad)':'Reactivar en el reparto'}"
+        style="flex:0 0 auto;width:46px;height:26px;border-radius:14px;border:1px solid ${bd};background:${on?'#22c55e':'rgba(148,163,184,.25)'};position:relative;cursor:pointer;transition:background .15s">
+        <span style="position:absolute;top:2px;left:${on?'22px':'2px'};width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.4)"></span>
+      </button>
+    </div>`;
+  }).join("");
+}
+
+// Clic en el toggle: si se apaga, pide motivo (opcional); si se prende, lo reactiva.
+async function toggleDisponibilidad(nombre){
+  const meta=REPARTO_META.find(x=>x.nombre===nombre);
+  if(!meta) return;
+  if(meta.disponible){
+    // Apagar → sale del reparto. Motivo opcional.
+    let motivo=prompt(`Motivo por el que ${pNom(nombre)} sale del reparto:\n(vacaciones, incapacidad, licencia…)`,"Vacaciones");
+    if(motivo===null) return; // canceló
+    await setDisponibilidadAbogado(nombre,false,motivo.trim()||"Fuera del reparto");
+  }else{
+    await setDisponibilidadAbogado(nombre,true,"");
+  }
+}
+
 function renderReparto(){
+  renderPanelDisponibilidad();
   const todos=[...tutelas,...fallos,...incidentes];
   const activos=todos.filter(r=>!EST_HIST.includes(r["ESTADO"]));
   const cerrados=todos.filter(r=>EST_HIST.includes(r["ESTADO"]));
@@ -3813,6 +3979,14 @@ function mostrarLoginError(msg){
 }
 function entrarAlSistema(){
   document.getElementById("login-screen").style.display="none";
+  // Cargar disponibilidad de abogados y turno UNA vez al entrar (no en cada
+  // auto-refresh). Ambos vienen de Supabase = fuente de verdad compartida.
+  Promise.all([
+    cargarRepartoDesdeSupabase(),
+    cargarTurnoDesdeSupabase()
+  ]).then(()=>{
+    if(typeof renderPanelDisponibilidad==="function") renderPanelDisponibilidad();
+  }).catch(e=>console.warn("Reparto/turno inicial:", e));
   cargarDatosSafe();
 }
 async function cerrarSesion(){
