@@ -640,6 +640,37 @@ html[data-theme="light"] .sk-bar{background:linear-gradient(90deg,
 .nov-btn{width:100%;background:linear-gradient(135deg,#e8a020,#f0b840);color:#0a1f3d;border:none;border-radius:11px;padding:13px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:transform .1s}
 .nov-btn:active{transform:scale(.98)}
 
+/* ═══════════════════════════════════════════════════════════════
+   vr3 · COCKPIT "HOY"
+   ═══════════════════════════════════════════════════════════════ */
+.hoy-hd{margin-bottom:20px}
+.hoy-h1{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;letter-spacing:-.02em}
+.hoy-fecha{font-size:13px;color:var(--muted);margin-top:2px}
+.hoy-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:960px}
+@media(max-width:680px){.hoy-grid{grid-template-columns:1fr}}
+.hoy-card{position:relative;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.018));
+  border:1px solid var(--border);border-radius:16px;padding:18px 18px 8px}
+html[data-theme="light"] .hoy-card{background:linear-gradient(160deg,rgba(15,45,94,.045),rgba(15,45,94,.012))}
+.hoy-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:currentColor;opacity:.9}
+.hoy-card.rojo{color:#f87171}.hoy-card.naranja{color:#fb923c}.hoy-card.verde{color:#4ade80}
+.hoy-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.hoy-tit{display:flex;align-items:center;gap:9px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
+.hoy-num{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;
+  background:linear-gradient(180deg,#fff,currentColor);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),currentColor);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hoy-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid rgba(255,255,255,.05);cursor:pointer}
+.hoy-item:hover{background:rgba(255,255,255,.03);margin:0 -10px;padding:10px;border-radius:8px}
+.hoy-badge2{font-size:9px;font-weight:700;padding:3px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.b-tut{background:rgba(59,130,246,.15);color:#93c5fd}.b-fal{background:rgba(167,139,250,.15);color:#c4b5fd}.b-inc{background:rgba(251,146,60,.15);color:#fdba74}
+.hoy-acc{min-width:0}
+.hoy-acc .n{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hoy-acc .s{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.hoy-dias{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.d-venc{background:rgba(239,68,68,.15);color:#f87171}.d-hoy{background:rgba(251,146,60,.15);color:#fb923c}
+.hoy-ver{display:block;text-align:center;padding:11px;margin-top:6px;font-size:12px;font-weight:600;color:var(--gold2);cursor:pointer;border-top:1px solid rgba(255,255,255,.05)}
+.hoy-empty2{text-align:center;padding:26px 10px;color:var(--soft);font-size:13px}
+.hoy-empty2 .ic{font-size:32px;opacity:.55;margin-bottom:8px}
+
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -749,7 +780,8 @@ html[data-theme="light"] .sk-bar{background:linear-gradient(90deg,
 </div>
 
 <div class="nav-tabs">
-  <div class="ntab active" id="tab-admites"      onclick="goTab('admites')">📋 Admites <span class="nbadge" id="badge-admites">0</span></div>
+  <div class="ntab active" id="tab-hoy"          onclick="goTab('hoy')">🏠 Hoy</div>
+  <div class="ntab"        id="tab-admites"      onclick="goTab('admites')">📋 Admites <span class="nbadge" id="badge-admites">0</span></div>
   <div class="ntab"        id="tab-mios"         onclick="toggleMisCasos()" oncontextmenu="event.preventDefault();_menuYo()" title="Clic: filtrar mis casos · Clic derecho: cambiar de persona">⭐ Mis casos</div>
   <div class="ntab"        id="tab-fallos"       onclick="goTab('fallos')">⚖️ Fallos &amp; Sent. <span class="nbadge amber" id="badge-fallos">0</span></div>
   <div class="ntab"        id="tab-otros"        onclick="goTab('otros')">⚡ Incidentes/Desacatos <span class="nbadge amber" id="badge-otros">0</span></div>
@@ -763,7 +795,15 @@ html[data-theme="light"] .sk-bar{background:linear-gradient(90deg,
 
 <div class="main">
 
-<div class="panel active" id="panel-admites">
+<div class="panel active" id="panel-hoy">
+  <div class="hoy-hd">
+    <div class="hoy-h1" id="hoy-saludo">Hoy</div>
+    <div class="hoy-fecha" id="hoy-fecha"></div>
+  </div>
+  <div class="hoy-grid" id="hoy-grid"></div>
+</div>
+
+<div class="panel" id="panel-admites">
   <div class="stats-row" id="stats-admites"></div>
   <div class="filtros">
     <input class="fi fi-buscar" id="fa-q" placeholder="🔍 Buscar accionante, radicado, juzgado..." oninput="renderAdmites()"/>
@@ -2154,6 +2194,7 @@ function normalizarRegistro(r){
     }
   }
   r._dias=calcDias(flim);
+  r._diasHab=calcDiasHab(flim);   // vr3 · días hábiles (semáforo y cockpit)
   return r;
 }
 const filaValida=r=>(r["ACCIONANTE"]||"").trim()||(r["TIPO"]||"").trim()||(r["RADICADO"]||"").trim();
@@ -2254,6 +2295,60 @@ function calcDias(fecha){
   return Math.round((fLim-hoy)/86400000);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   vr3 · DÍAS HÁBILES (Colombia)
+   Regla acordada: se descuentan sábados, domingos y festivos
+   nacionales. HOY cuenta como día 1.
+   FESTIVOS_CO: tabla fija revisable, verificada 2025-2027 (Ley 51/1983
+   "Emiliani" + traslados a lunes). Actualízala cada año.
+   ═══════════════════════════════════════════════════════════════ */
+const FESTIVOS_CO = new Set([
+  // 2025
+  "2025-01-01","2025-01-06","2025-03-24","2025-04-17","2025-04-18","2025-05-01",
+  "2025-06-02","2025-06-23","2025-06-30","2025-07-20","2025-08-07","2025-08-18",
+  "2025-10-13","2025-11-03","2025-11-17","2025-12-08","2025-12-25",
+  // 2026
+  "2026-01-01","2026-01-12","2026-03-23","2026-04-02","2026-04-03","2026-05-01",
+  "2026-05-18","2026-06-08","2026-06-15","2026-06-29","2026-07-13","2026-07-20",
+  "2026-08-07","2026-08-17","2026-10-12","2026-11-02","2026-11-16","2026-12-08","2026-12-25",
+  // 2027
+  "2027-01-01","2027-01-11","2027-03-22","2027-03-25","2027-03-26","2027-05-01",
+  "2027-05-10","2027-05-31","2027-06-07","2027-07-05","2027-07-12","2027-07-20",
+  "2027-08-07","2027-08-16","2027-10-18","2027-11-01","2027-11-15","2027-12-08","2027-12-25"
+]);
+function _ymdLocal(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${dd}`;
+}
+function _esHabil(d){
+  const dow=d.getDay();
+  if(dow===0||dow===6) return false;              // domingo / sábado
+  if(FESTIVOS_CO.has(_ymdLocal(d))) return false; // festivo nacional
+  return true;
+}
+// Días hábiles restantes hasta la fecha límite, con HOY como día 1.
+// Positivo/0 si aún corre (incluye hoy); negativo si ya venció.
+function calcDiasHab(fecha){
+  if(!fecha) return null;
+  let p=null;
+  if(fecha.includes("/")){ p=fecha.split("/"); if(p.length!==3) return null; }
+  else if(/^\d{4}-\d{2}-\d{2}/.test(fecha)){ const q=fecha.slice(0,10).split("-"); p=[q[2],q[1],q[0]]; }
+  else return null;
+  const lim=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
+  if(isNaN(lim.getTime())) return null;
+  lim.setHours(0,0,0,0);
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  if(lim>=hoy){
+    let n=0, d=new Date(hoy);
+    while(d.getTime()<=lim.getTime()){ if(_esHabil(d)) n++; d.setDate(d.getDate()+1); }
+    return n;   // hoy cuenta como 1
+  } else {
+    let n=0, d=new Date(hoy); d.setDate(d.getDate()-1);
+    while(d.getTime()>=lim.getTime()){ if(_esHabil(d)) n--; d.setDate(d.getDate()-1); }
+    return n;    // negativo: hábiles vencidos
+  }
+}
+
 function verificarVencidos(){
   const v=[...tutelas,...fallos,...incidentes].filter(r=>r._dias!==null&&r._dias<0&&!EST_HIST.includes(r["ESTADO"]));
   const b=document.getElementById("alerta-banner");
@@ -2281,7 +2376,7 @@ function buscarGlobal(){
   const masTxt = resTodos.length>res.length
     ? `<div class="gr-item" style="cursor:default;justify-content:center"><span style="color:var(--muted);font-size:11px">Mostrando ${res.length} de ${resTodos.length} — afina la búsqueda para ver el resto</span></div>`
     : "";
-  el.innerHTML=res.map((r,i)=>`<div class="gr-item" onclick="cerrarGlobal();abrirModalIdx('_globalResults',${i})">${badgeTipo(r["TIPO"])}<div><div class="gr-acc">${esc(r["ACCIONANTE"]||"—")}</div><div class="gr-sub">${esc(r["RADICADO"]||"—")} · ${esc((r["JUZGADO"]||"").substring(0,40))}</div></div>${semaforo(r._dias,r["ESTADO"])}</div>`).join("")+masTxt;
+  el.innerHTML=res.map((r,i)=>`<div class="gr-item" onclick="cerrarGlobal();abrirModalIdx('_globalResults',${i})">${badgeTipo(r["TIPO"])}<div><div class="gr-acc">${esc(r["ACCIONANTE"]||"—")}</div><div class="gr-sub">${esc(r["RADICADO"]||"—")} · ${esc((r["JUZGADO"]||"").substring(0,40))}</div></div>${semaforo(r._diasHab,r["ESTADO"])}</div>`).join("")+masTxt;
   el.classList.add("open");
 }
 function cerrarGlobal(){document.getElementById("global-results").classList.remove("open");}
@@ -2313,11 +2408,11 @@ function semaforo(dias,estado){
   if (EST_HIST.includes(estado)) return`<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":estado==="Hecho superado"?"Superado":estado==="Anulado"?"Anulado":"Fin"}</span>`;
   if (dias===null) return`<span class="sem sem-g"><span class="sem-dot"></span>Sin fecha</span>`;
   if (dias<0)  return`<span class="sem sem-r"><span class="sem-dot"></span>Vencido</span>`;
-  if (dias===0)return`<span class="sem sem-r"><span class="sem-dot"></span>¡Hoy!</span>`;
-  if (dias<=1) return`<span class="sem sem-r"><span class="sem-dot"></span>${dias}d</span>`;
-  if (dias<=3) return`<span class="sem sem-a"><span class="sem-dot"></span>${dias}d</span>`;
-  if (dias<=7) return`<span class="sem sem-y"><span class="sem-dot"></span>${dias}d</span>`;
-  return`<span class="sem sem-v"><span class="sem-dot"></span>${dias}d</span>`;
+  if (dias<=1) return`<span class="sem sem-r"><span class="sem-dot"></span>¡Hoy!</span>`;
+  if (dias<=2) return`<span class="sem sem-r"><span class="sem-dot"></span>${dias}d háb.</span>`;
+  if (dias<=4) return`<span class="sem sem-a"><span class="sem-dot"></span>${dias}d háb.</span>`;
+  if (dias<=7) return`<span class="sem sem-y"><span class="sem-dot"></span>${dias}d háb.</span>`;
+  return`<span class="sem sem-v"><span class="sem-dot"></span>${dias}d háb.</span>`;
 }
 function badgeTipo(t){const m={"Tutela":"bt-tutela","Admite":"bt-tutela","Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Incidente":"bt-sent","Impugnación":"bt-impug","Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc","Desacato":"bt-inc","Incidente de desacato":"bt-inc"};return`<span class="bt ${m[t]||"bt-otro"}">${esc(t)||"—"}</span>`;}
 function badgeEst(e){const m={"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Vencido":"be-venc","Anulado":"be-anulado","Hecho superado":"be-superado"};return`<span class="bt ${m[e]||""}">${esc(e)||"—"}</span>`;}
@@ -2413,7 +2508,7 @@ function renderAdmites(){
   el.innerHTML=pag.map((r,i)=>{
     const falta=queFaltaTecnico(r);
     const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}</div>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}</div>`;
   }).join("");
   window._exportAdmites=visiblesAdm;
 }
@@ -2446,7 +2541,7 @@ function renderFallos(){
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty ok"><div class="empty-icon">📭</div><div class="empty-titulo">Sin fallos activos aquí</div><div class="empty-sub">No hay registros que coincidan con el filtro actual.</div></div>`;return;}
   window._pagFallos=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
   window._exportFallos=visiblesFal;
 }
 
@@ -2481,7 +2576,7 @@ function renderOtros(){
     const btnNotif = notif
       ? `<button class="btn-notif hecho" title="Notificado: ${escAttr(notif)} — clic para quitar la marca" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">✅ Notificado</button>`
       : `<button class="btn-notif" title="Marcar que este incidente ya fue notificado" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">📣 Notificar</button>`;
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel">${btnNotif}</div></div>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel">${btnNotif}</div></div>`;
   }).join("");
   window._exportOtros=visiblesOtr;
 }
@@ -3069,7 +3164,77 @@ function dibujarEvolucion(tuts, falls, incs){
   }
 }
 
-function renderAll(){renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();actualizarBadgeDuplicados();if(document.getElementById("tab-duplicados")?.classList.contains("active"))renderDuplicados();}
+function renderAll(){renderCockpit();renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();actualizarBadgeDuplicados();if(document.getElementById("tab-duplicados")?.classList.contains("active"))renderDuplicados();}
+
+/* ═══════════════════════════════════════════════════════════════
+   vr3 · COCKPIT "HOY"  ·  usa días hábiles (_diasHab)
+   Solo lee y resume datos ya cargados. No escribe nada.
+   ═══════════════════════════════════════════════════════════════ */
+function renderCockpit(){
+  const grid=document.getElementById("hoy-grid");
+  if(!grid) return;
+  // Saludo + fecha
+  const ahora=new Date();
+  const h=ahora.getHours();
+  const saludo = h<12?"Buenos días":h<19?"Buenas tardes":"Buenas noches";
+  const nom = (typeof nombreUsuarioActual==="function") ? nombreUsuarioActual() : "";
+  const elS=document.getElementById("hoy-saludo");
+  if(elS) elS.textContent = `${saludo}${nom?", "+nom.split(" ")[0]:""} 👋`;
+  const elF=document.getElementById("hoy-fecha");
+  if(elF){
+    const f=ahora.toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+    elF.textContent = f.charAt(0).toUpperCase()+f.slice(1)+" · esto es lo que necesita tu atención";
+  }
+
+  // Universo activo (excluye históricos), con días hábiles calculados
+  const universo=[...tutelas,...fallos,...incidentes].filter(r=>!EST_HIST.includes(r["ESTADO"]) && r._diasHab!==null);
+
+  const vencidos = universo.filter(r=>r._diasHab<0).sort((a,b)=>a._diasHab-b._diasHab);
+  // "Hoy o mañana" en hábiles = 1 (hoy) o 2 (próx. hábil)
+  const urgentes = universo.filter(r=>r._diasHab>=1 && r._diasHab<=2).sort((a,b)=>a._diasHab-b._diasHab);
+
+  const catBadge = r => {
+    const c=r._cat||"tutela";
+    if(c==="fallo") return `<span class="hoy-badge2 b-fal">Fallo</span>`;
+    if(c==="incidente") return `<span class="hoy-badge2 b-inc">Incid.</span>`;
+    return `<span class="hoy-badge2 b-tut">Tutela</span>`;
+  };
+  const diasChip = d => {
+    if(d<0) return `<span class="hoy-dias d-venc">${d===-1?"−1 día":d+" días"}</span>`;
+    if(d===1) return `<span class="hoy-dias d-hoy">Hoy</span>`;
+    return `<span class="hoy-dias d-hoy">${d}d háb.</span>`;
+  };
+  // idx apunta al array global correcto para reabrir el modal
+  const itemHTML = (r) => {
+    const arr = r._cat==="fallo"?"fallos":r._cat==="incidente"?"incidentes":"tutelas";
+    const idx = (window[arr]||[]).indexOf(r);
+    const juz=(r["JUZGADO"]||"").substring(0,34);
+    return `<div class="hoy-item" onclick="abrirModalIdx('${arr}',${idx})">
+      ${catBadge(r)}
+      <div class="hoy-acc"><div class="n">${esc(r["ACCIONANTE"]||"—")}</div><div class="s">${esc(r["RADICADO"]||"—")}${juz?" · "+esc(juz):""}</div></div>
+      ${diasChip(r._diasHab)}
+    </div>`;
+  };
+  const LIM=6;
+  const bloque = (clase, icono, titulo, lista, verOnclick, vacioIco, vacioTxt) => {
+    let cuerpo;
+    if(!lista.length){
+      cuerpo=`<div class="hoy-empty2"><div class="ic">${vacioIco}</div>${vacioTxt}</div>`;
+    }else{
+      cuerpo=lista.slice(0,LIM).map(itemHTML).join("");
+      if(lista.length>LIM) cuerpo+=`<div class="hoy-ver" onclick="${verOnclick}">Ver los ${lista.length} →</div>`;
+      else if(verOnclick) cuerpo+=`<div class="hoy-ver" onclick="${verOnclick}">Ir a la lista →</div>`;
+    }
+    return `<div class="hoy-card ${clase}">
+      <div class="hoy-top"><div class="hoy-tit">${icono} ${titulo}</div><div class="hoy-num">${lista.length}</div></div>
+      ${cuerpo}
+    </div>`;
+  };
+
+  grid.innerHTML =
+    bloque("rojo","🔴","Vencidos", vencidos, `goTab('admites')`, "🎉", "Sin vencidos, ¡buen trabajo!") +
+    bloque("naranja","🟠","Vencen hoy o mañana", urgentes, `goTab('admites')`, "✅", "Nada urgente para hoy o mañana.");
+}
 function actualizarBadgeDuplicados(){const b=document.getElementById("badge-duplicados");if(!b)return;const n=contarDuplicados();b.textContent=n;b.style.display=n>0?"inline-block":"none";}
 
 function poblarSelects(){
@@ -4150,6 +4315,7 @@ function renderDuplicados(){
 }
 
 const TAB_HINT = {
+  hoy:          "Tu resumen del día: lo vencido y lo que vence hoy o mañana, en días hábiles. Clic en un caso para abrirlo.",
   admites:      "Tutelas admitidas y activas. El semáforo marca cuánto plazo queda; clic en una tarjeta de arriba para filtrar por urgencia.",
   mios:         "Solo los casos asignados a ti. Clic de nuevo en la estrella para ver todos.",
   fallos:       "Fallos y sentencias en curso. Cerrar un fallo puede cerrar también su admite vinculado.",
@@ -4168,7 +4334,7 @@ function pintarTabHint(tab){
   el.style.display=t?"block":"none";
 }
 function goTab(tab){
-  ["admites","fallos","otros","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
+  ["hoy","admites","fallos","otros","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
     document.getElementById("tab-"+t).classList.toggle("active",t===tab);
     document.getElementById("panel-"+t).classList.toggle("active",t===tab);
   });
@@ -4179,6 +4345,7 @@ function goTab(tab){
   else if(tab==="otros")pagInc=1;
   else if(tab==="historico")pagHis=1;
   else if(tab==="duplicados")renderDuplicados();
+  else if(tab==="hoy")renderCockpit();
 }
 
 function setSS(estado,label){
@@ -4729,7 +4896,7 @@ window.buscarGlobal = function(){
     +   '<div><div class="gr-acc">' + resaltar(r["ACCIONANTE"], q) + '</div>'
     +   '<div class="gr-sub">' + resaltar(r["RADICADO"], q) + ' · '
     +      resaltar((r["JUZGADO"]||"").substring(0,40), q) + '</div></div>'
-    +   semaforo(r._dias, r["ESTADO"])
+    +   semaforo(r._diasHab, r["ESTADO"])
     + '</div>'
   ).join("")
   + '<div class="gr-hint"><span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>'
