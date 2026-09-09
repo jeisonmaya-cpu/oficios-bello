@@ -578,6 +578,68 @@ body.compacto .pqr-card{padding:11px 13px}
 body.compacto .est-kpi{padding:11px 13px}
 body.compacto .est-kpi .n{font-size:24px}
 
+/* ═══════════════════════════════════════════════════════════════
+   vr3 · REMATES VISUALES  (skeleton, empty, transición de pestaña)
+   Solo estético. No toca datos ni lógica.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* — Skeleton loaders (filas fantasma con shimmer) — */
+.sk-wrap{padding:4px 0}
+.sk-row{padding:12px 14px;border-top:1px solid rgba(255,255,255,.04);align-items:center}
+.sk-row:first-child{border-top:none}
+.sk-bar{height:11px;border-radius:6px;background:linear-gradient(90deg,
+   rgba(255,255,255,.06) 25%,rgba(255,255,255,.13) 37%,rgba(255,255,255,.06) 63%);
+   background-size:400% 100%;animation:skShimmer 1.4s ease infinite}
+html[data-theme="light"] .sk-bar{background:linear-gradient(90deg,
+   rgba(15,45,94,.07) 25%,rgba(15,45,94,.14) 37%,rgba(15,45,94,.07) 63%);background-size:400% 100%}
+@keyframes skShimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* — Empty states más vivos — */
+.empty{animation:fadeUp .4s ease both}
+.empty-icon{font-size:46px}
+.empty-titulo{font-size:15px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.empty-sub{font-size:12px;color:var(--soft)}
+.empty.ok .empty-icon{opacity:.6}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* — Transición suave al cambiar de pestaña — */
+.panel.active{animation:tabIn .28s cubic-bezier(.22,1,.36,1) both}
+@keyframes tabIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ═══════════════════════════════════════════════════════════════
+   vr3 · SPLASH DE MARCA + MODAL DE NOVEDADES
+   ═══════════════════════════════════════════════════════════════ */
+/* Splash */
+#splash{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  background:linear-gradient(135deg,#0a1f3d 0%,#0d2748 60%,#0a1f3d 100%);transition:opacity .5s ease}
+#splash.fade{opacity:0;pointer-events:none}
+.splash-logo{width:74px;height:74px;border-radius:18px;background:linear-gradient(135deg,#1d4ed8,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:36px;
+  box-shadow:0 12px 40px rgba(29,78,216,.45);animation:splashPop .6s cubic-bezier(.22,1.4,.4,1) both}
+.splash-t{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.01em;animation:fadeUp .5s .15s both}
+.splash-t span{background:linear-gradient(135deg,#e8a020,#f0b840);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.splash-sub{font-size:12px;color:#8da2c0;margin-top:-14px;animation:fadeUp .5s .25s both}
+.splash-spin{width:26px;height:26px;border:2.5px solid rgba(255,255,255,.15);border-top-color:#e8a020;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes splashPop{from{opacity:0;transform:scale(.7) translateY(10px)}to{opacity:1;transform:none}}
+
+/* Modal de novedades */
+.nov-back{position:fixed;inset:0;z-index:9500;background:rgba(6,12,26,.6);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:18px}
+.nov-back.open{display:flex}
+.nov-box{position:relative;width:100%;max-width:440px;background:var(--modal-bg);border:1px solid var(--border);border-radius:20px;overflow:hidden;
+  box-shadow:0 32px 64px rgba(0,0,0,.6);animation:cmdkIn .18s ease}
+.nov-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),#f0b840,var(--gold))}
+.nov-head{padding:24px 24px 14px;text-align:center}
+.nov-badge{display:inline-block;font-size:10px;font-weight:700;color:#0a1f3d;background:linear-gradient(135deg,#e8a020,#f0b840);padding:4px 12px;border-radius:20px;letter-spacing:.05em;margin-bottom:12px}
+.nov-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:4px}
+.nov-sub{font-size:12.5px;color:var(--muted)}
+.nov-list{padding:6px 22px 8px;display:flex;flex-direction:column;gap:10px}
+.nov-item{display:flex;gap:13px;align-items:flex-start;padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border)}
+.nov-ico{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.22)}
+.nov-tx b{font-size:13.5px;font-weight:600;display:block;margin-bottom:2px}
+.nov-tx span{font-size:11.5px;color:var(--muted);line-height:1.45}
+.nov-foot{padding:14px 22px 22px}
+.nov-btn{width:100%;background:linear-gradient(135deg,#e8a020,#f0b840);color:#0a1f3d;border:none;border-radius:11px;padding:13px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:transform .1s}
+.nov-btn:active{transform:scale(.98)}
+
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -600,6 +662,35 @@ body.compacto .est-kpi .n{font-size:24px}
       <span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
       <span><kbd>↵</kbd> abrir</span>
       <span><kbd>esc</kbd> cerrar</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ SPLASH DE MARCA (vr3) ════════ -->
+<div id="splash" style="display:none">
+  <div class="splash-logo">⚖️</div>
+  <div class="splash-t">Sistema de <span>Tutelas</span></div>
+  <div class="splash-sub">Dirección de Ejecuciones Fiscales · Bello</div>
+  <div class="splash-spin"></div>
+</div>
+
+<!-- ════════ MODAL DE NOVEDADES vr3 ════════ -->
+<div class="nov-back" id="nov-back" onclick="if(event.target===this)cerrarNovedades()">
+  <div class="nov-box" role="dialog" aria-label="Novedades de la versión">
+    <div class="nov-head">
+      <div class="nov-badge">NOVEDADES · VR 3</div>
+      <div class="nov-title">¿Qué hay de nuevo?</div>
+      <div class="nov-sub">Mejoras para trabajar más rápido y cómodo.</div>
+    </div>
+    <div class="nov-list">
+      <div class="nov-item"><div class="nov-ico">🔍</div><div class="nov-tx"><b>Buscador rápido (⌘K / Ctrl+K)</b><span>Abre el buscador con el teclado y salta a cualquier caso o sección al instante.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">✨</div><div class="nov-tx"><b>Nuevo diseño de tarjetas</b><span>Tarjetas con más color y jerarquía: el estado se lee de un vistazo.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">↕</div><div class="nov-tx"><b>Modo compacto</b><span>Aprieta las tablas para ver más registros sin scroll. Se activa desde la barra superior.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">⚖️</div><div class="nov-tx"><b>Tutelas por juzgado</b><span>Nueva estadística: mira de qué juzgados llegan más tutelas.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">⚡</div><div class="nov-tx"><b>Carga más fluida</b><span>Las tablas muestran un avance visual mientras cargan los datos.</span></div></div>
+    </div>
+    <div class="nov-foot">
+      <button class="nov-btn" onclick="cerrarNovedades()">Entendido, ¡a trabajar!</button>
     </div>
   </div>
 </div>
@@ -641,6 +732,7 @@ body.compacto .est-kpi .n{font-size:24px}
   <div class="topbar-right">
     <div class="sync-pill"><div class="sync-dot" id="sdot"></div><span id="slabel">—</span></div>
     <button class="btn-top cmdk-trigger" onclick="abrirCmdk()" title="Buscar y navegar (Ctrl/Cmd + K)" style="cursor:pointer;border:none;display:flex;align-items:center;gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Buscar</span><kbd class="cmdk-kbd">⌘K</kbd></button>
+    <button class="btn-top" id="btn-novedades" onclick="abrirNovedades()" title="Ver novedades de esta versión" style="cursor:pointer;border:none">✨ Novedades</button>
     <button class="btn-top" id="btn-densidad" onclick="toggleDensidad()" style="cursor:pointer;border:none" title="Densidad de las tablas (compacto / cómodo)">↕ Cómodo</button>
     <button class="btn-top" id="btn-tema" onclick="toggleTema()" style="cursor:pointer;border:none" title="Cambiar tema">🌙 Oscuro</button>
     <a href="home.html" class="btn-top">🏛️ Inicio</a>
@@ -1975,6 +2067,12 @@ async function guardarEdicionCaso(){
 async function cargarDatos() {
   setSS("loading","Actualizando...");
   document.getElementById("btnref").classList.add("spin");
+  // vr3 · pintar skeletons mientras llegan los datos (mejor percepción que el spinner)
+  try{
+    const skA=document.getElementById("body-admites");   if(skA) skA.innerHTML=skeletonFilas(7,"tcols-adm");
+    const skF=document.getElementById("body-fallos");    if(skF) skF.innerHTML=skeletonFilas(6,"tcols-fal");
+    const skO=document.getElementById("body-otros");     if(skO) skO.innerHTML=skeletonFilas(6,"tcols-otr");
+  }catch(_){}
   try {
     if(USAR_SUPABASE){
       // Tutelas, fallos e incidentes desde Supabase (ya migrados a actuaciones_tutela).
@@ -2224,6 +2322,23 @@ function semaforo(dias,estado){
 function badgeTipo(t){const m={"Tutela":"bt-tutela","Admite":"bt-tutela","Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Incidente":"bt-sent","Impugnación":"bt-impug","Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc","Desacato":"bt-inc","Incidente de desacato":"bt-inc"};return`<span class="bt ${m[t]||"bt-otro"}">${esc(t)||"—"}</span>`;}
 function badgeEst(e){const m={"Nuevo":"be-nuevo","En proceso":"be-proceso","Respondido":"be-resp","Finalizado":"be-fin","Vencido":"be-venc","Anulado":"be-anulado","Hecho superado":"be-superado"};return`<span class="bt ${m[e]||""}">${esc(e)||"—"}</span>`;}
 function scard(n,label,cls){return`<div class="scard ${cls||''}"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}</div></div>`;}
+/* Skeleton de carga: n filas fantasma con anchos variados por columna. vr3 */
+function skeletonFilas(n,colsClass){
+  n = n||6;
+  let filas="";
+  for(let i=0;i<n;i++){
+    // anchos pseudo-aleatorios pero estables para que no "salte"
+    const w=[70,55,88,64,50,72,60];
+    let celdas="";
+    for(let c=0;c<7;c++){
+      const base=w[c%w.length];
+      const ancho=Math.max(40, base - (i%3)*8);
+      celdas+=`<div><div class="sk-bar" style="width:${ancho}%"></div></div>`;
+    }
+    filas+=`<div class="sk-row ${colsClass||''}">${celdas}</div>`;
+  }
+  return `<div class="sk-wrap">${filas}</div>`;
+}
 function clsFila(dias,est){if(EST_HIST.includes(est))return"";if(dias!==null&&dias<=2)return" urgente";if(dias!==null&&dias<=5)return" proximo";return"";}
 
 function renderPag(datos,pag,infoId,btnsId,pagId){
@@ -2292,7 +2407,7 @@ function renderAdmites(){
   const visiblesAdm=aplicarQuick(filtAdm,quickAdm);
   const pag=renderPag(visiblesAdm,pagAdm,"pag-adm-info","pag-adm-btns","pag-admites");
   const el=document.getElementById("body-admites");
-  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
+  if(!pag.length){el.innerHTML=`<div class="empty ok"><div class="empty-icon">📭</div><div class="empty-titulo">Sin tutelas activas aquí</div><div class="empty-sub">No hay registros que coincidan con el filtro actual.</div></div>`;return;}
   // Guardar datos en window para acceso seguro desde onclick (evita bug de comillas en nombres)
   window._pagAdmites=pag;
   el.innerHTML=pag.map((r,i)=>{
@@ -2329,7 +2444,7 @@ function renderFallos(){
   const visiblesFal=aplicarQuick(filtFal,quickFal);
   const pag=renderPag(visiblesFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
-  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
+  if(!pag.length){el.innerHTML=`<div class="empty ok"><div class="empty-icon">📭</div><div class="empty-titulo">Sin fallos activos aquí</div><div class="empty-sub">No hay registros que coincidan con el filtro actual.</div></div>`;return;}
   window._pagFallos=pag;
   el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._dias,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
   window._exportFallos=visiblesFal;
@@ -2359,7 +2474,7 @@ function renderOtros(){
   const visiblesOtr=aplicarQuick(datos,quickOtr);
   const pag=renderPag(visiblesOtr,pagInc,"pag-inc-info","pag-inc-btns","pag-otros");
   const el=document.getElementById("body-otros");
-  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div>Sin registros activos</div>`;return;}
+  if(!pag.length){el.innerHTML=`<div class="empty ok"><div class="empty-icon">📭</div><div class="empty-titulo">Sin incidentes activos aquí</div><div class="empty-sub">No hay registros que coincidan con el filtro actual.</div></div>`;return;}
   window._pagOtros=pag;
   el.innerHTML=pag.map((r,i)=>{
     const notif=estaNotificado(r);
@@ -2395,7 +2510,7 @@ function renderHistorico(){
   if(cEl)cEl.textContent=`${filtHis.length} registro${filtHis.length!==1?"s":""} en histórico`;
   const pag=renderPag(filtHis,pagHis,"pag-his-info","pag-his-btns","pag-his");
   const el=document.getElementById("body-historico");
-  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🗂️</div>Sin registros históricos</div>`;return;}
+  if(!pag.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-titulo">Sin registros históricos</div><div class="empty-sub">Aún no hay casos finalizados que mostrar.</div></div>`;return;}
   window._pagHistorico=pag;
   el.innerHTML=pag.map((r,i)=>{
     const origen = r._cat || (incidentes.some(x=>x["RADICADO"]===r["RADICADO"])
@@ -2596,7 +2711,7 @@ function renderPQR(){
   const grpSin={};
   sinR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";if(!grpSin[e])grpSin[e]=[];grpSin[e].push(r);});
   const gSin=document.getElementById("grid-sin-pqr");
-  if(!sinR.length){gSin.innerHTML=`<div class="empty"><div class="empty-icon">✅</div>¡Todas tienen respuesta!</div>`;}
+  if(!sinR.length){gSin.innerHTML=`<div class="empty ok"><div class="empty-icon">✅</div><div class="empty-titulo">¡Todas tienen respuesta!</div><div class="empty-sub">No hay PQR pendientes por responder. 🎉</div></div>`;}
   else{window._pqrGruposSin=Object.entries(grpSin).sort((a,b)=>b[1].length-a[1].length);gSin.innerHTML=window._pqrGruposSin.map(([enc,regs],gi)=>{const urg=regs.filter(r=>r._dias!==null&&r._dias<=2);const lista=regs.slice(0,4).map(r=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">${esc(abrev(r["ACCIONANTE"],30))}${r._dias!==null?`<span style="float:right;color:${r._dias<=2?"#f87171":"#fbbf24"}">${r._dias}d</span>`:""}</div>`).join("");const mas=regs.length>4?`<div style="font-size:11px;color:#f87171;padding-top:6px;font-weight:600">Ver todas (${regs.length})</div>`:"";return`<div class="pqr-card" onclick="abrirGrupoPQRIdx('sin',${gi})"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:8px"><div class="abo-av" style="background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.3);color:#fca5a5">${inic(enc)}</div><div style="font-weight:600;font-size:13px">${esc(pNom(enc))}</div></div><div style="text-align:right"><div style="font-family:'Syne',sans-serif;font-size:24px;color:#f87171">${regs.length}</div><div style="font-size:10px;color:var(--muted)">sin respuesta</div></div></div>${urg.length?`<div style="font-size:11px;color:#f87171;margin-bottom:8px">⚠️ ${urg.length} vencen pronto</div>`:""}${lista}${mas}</div>`;}).join("");}
   const grpCon={};
   conR.forEach(r=>{const e=r["ENCARGADO PQR"]||"Sin asignar";if(!grpCon[e])grpCon[e]=[];grpCon[e].push(r);});
@@ -2673,6 +2788,16 @@ function contarProcesos(regs){ return new Set(regs.map(llaveProceso)).size; }
 function irFiltrado(tab, key){
   if(tab==='adm'){ quickAdm=key; pagAdm=1; goTab('admites'); renderAdmites(); }
   else if(tab==='fal'){ quickFal=key; pagFal=1; goTab('fallos'); renderFallos(); }
+}
+/* Salta a Admites buscando por el nombre del juzgado (vr3) */
+function filtrarPorJuzgado(nombre){
+  if(nombre==="(sin juzgado)") nombre="";
+  const inp=document.getElementById("fa-q");
+  if(inp){ inp.value=nombre; }
+  quickAdm=null; pagAdm=1;
+  goTab('admites');
+  if(typeof renderAdmites==="function") renderAdmites();
+  if(typeof toast==="function" && nombre) toast("🔍 Filtrando admites por: "+nombre,"");
 }
 
 function renderEstadisticas(){
@@ -2794,6 +2919,36 @@ function renderEstadisticas(){
   }).join("");
   const perLabel = {mes:"mes en curso",tri:"últimos 3 meses",anio:"año en curso",todo:"histórico completo"}[_estPeriodo];
 
+  // ── Tutelas por juzgado (vr3) ──
+  // Los nombres vienen escritos a mano: agrupamos por versión normalizada
+  // (sin tildes, minúsculas, espacios colapsados) y mostramos el nombre más
+  // frecuente de cada grupo. Top 12 + "Otros juzgados".
+  const juzNorm = s => String(s==null?"":s).trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ");
+  const juzMap = {}; // clave normalizada -> {total, nombres:{original:count}}
+  todosConInc.forEach(r=>{
+    const raw=(r["JUZGADO"]||"").trim();
+    const k = raw ? juzNorm(raw) : "(sin juzgado)";
+    if(!juzMap[k]) juzMap[k]={total:0,nombres:{}};
+    juzMap[k].total++;
+    const disp = raw || "(sin juzgado)";
+    juzMap[k].nombres[disp]=(juzMap[k].nombres[disp]||0)+1;
+  });
+  // Nombre representativo = el original más frecuente del grupo
+  const juzList = Object.values(juzMap).map(g=>{
+    const disp = Object.entries(g.nombres).sort((a,b)=>b[1]-a[1])[0][0];
+    return {label:disp, n:g.total};
+  }).sort((a,b)=>b.n-a.n);
+  const totJuz = todosConInc.length||1;
+  const TOP_JUZ = 12;
+  let juzTop = juzList.slice(0,TOP_JUZ);
+  const juzResto = juzList.slice(TOP_JUZ);
+  const restoN = juzResto.reduce((a,o)=>a+o.n,0);
+  let juzH = juzTop.map(o=>barra(o.label,o.n,totJuz,"#a78bfa",
+      `filtrarPorJuzgado(${JSON.stringify(o.label).replace(/"/g,'&quot;')})`)).join("");
+  if(restoN>0) juzH += barra(`Otros ${juzResto.length} juzgado(s)`,restoN,totJuz,"#6b7280");
+  const juzNota = `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">${juzList.length} juzgado(s) distinto(s) en total. Clic en una barra para ver esas tutelas. Nombres agrupados ignorando mayúsculas y tildes.</div>`;
+
   document.getElementById("grid-est").innerHTML=
     `<div class="est-card est-chart-card"><div class="est-title">📈 ${_EVO_META[_evoVista].titulo}</div>`+
     `<div class="evo-vistas" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px">`+
@@ -2805,6 +2960,7 @@ function renderEstadisticas(){
     `<div class="est-card" style="border-color:rgba(74,222,128,.25)"><div class="est-title" style="color:#4ade80">⏱ Cumplimiento de términos · ${perLabel}</div>${cumplH}${cumplNota}</div>`+
     `<div class="est-card" style="border-color:rgba(34,197,94,.3)"><div class="est-title" style="color:#22c55e">🏆 Cerrados por persona · ${perLabel}${lider&&lider.n>0?` · líder: ${esc(pNom(lider.abo))}`:""}</div>${cerradosH}<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Total: <strong style="color:#22c55e">${cerradosPer.length}</strong> procesos cerrados. ⏱ = % dentro del término. ¡Gran trabajo! 💪</div></div>`+
     `<div class="est-card"><div class="est-title">Por tipo de actuación · histórico completo</div>${tiposH}</div>`+
+    `<div class="est-card" style="border-color:rgba(167,139,250,.28)"><div class="est-title" style="color:#a78bfa">⚖️ Tutelas por juzgado · histórico completo</div>${juzH}${juzNota}</div>`+
     `<div class="est-card"><div class="est-title">Por estado registrado · tutelas y fallos</div>${estH}<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">«Vencido» aquí es el estado guardado a mano. El KPI de vencidos de arriba se calcula por fecha límite, así que los dos números no tienen por qué coincidir.</div></div>`+
     `<div class="est-card"><div class="est-title">Carga activa por abogado · todas las etapas</div>${aboH}</div>`+
     `<div class="est-card"><div class="est-title">Fallos activos por abogado</div>${falH}</div>`+
@@ -4113,6 +4269,8 @@ document.addEventListener('keydown',e=>{
     ['overlay-pqr','overlay-informe','overlay-nueva','overlay-nuevoinc','overlay-escalar','overlay-editar'].forEach(id=>{
       const o=document.getElementById(id); if(o) o.classList.remove('open');
     });
+    // vr3 · cerrar modal de novedades con Esc
+    const nb=document.getElementById('nov-back'); if(nb && nb.classList.contains('open')) cerrarNovedades();
   }
   // Ctrl+Enter (o Cmd+Enter) guarda los cambios del caso si el modal principal está abierto
   if((e.ctrlKey||e.metaKey) && e.key==='Enter'){
@@ -4154,6 +4312,7 @@ function mostrarLoginError(msg){
 }
 function entrarAlSistema(){
   document.getElementById("login-screen").style.display="none";
+  mostrarSplash();  // vr3 · splash de marca + luego novedades
   // Cargar disponibilidad de abogados y turno UNA vez al entrar (no en cada
   // auto-refresh). Ambos vienen de Supabase = fuente de verdad compartida.
   Promise.all([
@@ -4163,6 +4322,33 @@ function entrarAlSistema(){
     if(typeof renderPanelDisponibilidad==="function") renderPanelDisponibilidad();
   }).catch(e=>console.warn("Reparto/turno inicial:", e));
   cargarDatosSafe();
+}
+
+/* ── SPLASH + NOVEDADES vr3 ── */
+const NOV_VERSION = "vr3";  // súbelo (vr4…) cuando quieras que el modal reaparezca
+function mostrarSplash(){
+  const sp=document.getElementById("splash");
+  if(!sp) return;
+  sp.style.display="flex";
+  sp.classList.remove("fade");
+  setTimeout(()=>{
+    sp.classList.add("fade");
+    setTimeout(()=>{ sp.style.display="none"; verNovedadesSiToca(); }, 550);
+  }, 1400);
+}
+function verNovedadesSiToca(){
+  let visto=null;
+  try{ visto=localStorage.getItem("tutelas_novedades_vistas"); }catch(e){}
+  if(visto!==NOV_VERSION) abrirNovedades();
+}
+function abrirNovedades(){
+  const b=document.getElementById("nov-back");
+  if(b) b.classList.add("open");
+}
+function cerrarNovedades(){
+  const b=document.getElementById("nov-back");
+  if(b) b.classList.remove("open");
+  try{ localStorage.setItem("tutelas_novedades_vistas", NOV_VERSION); }catch(e){}
 }
 async function cerrarSesion(){
   await sbAuth.auth.signOut();
