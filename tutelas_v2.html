@@ -671,6 +671,24 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
 .hoy-empty2{text-align:center;padding:26px 10px;color:var(--soft);font-size:13px}
 .hoy-empty2 .ic{font-size:32px;opacity:.55;margin-bottom:8px}
 
+/* ── vr3 · Pie sticky de escalado en el modal principal ── */
+.m-escalado-sticky{
+  position:sticky;bottom:-28px;                 /* compensa el padding inferior del modal */
+  margin:16px -28px -28px;                       /* se extiende hasta los bordes del modal */
+  padding:14px 28px;
+  background:var(--modal-bg);
+  border-top:1px solid var(--border);
+  box-shadow:0 -10px 24px -8px rgba(0,0,0,.55);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  z-index:2;
+}
+.m-escalado-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;flex:0 0 auto}
+.m-escalado-btns{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+@media(max-width:560px){
+  .m-escalado-sticky{bottom:-22px;margin:14px -22px -22px;padding:12px 22px}
+  .m-escalado-lbl{width:100%}
+}
+
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -1035,12 +1053,6 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
         <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">⚖️ Gestión Jurídica →</button>
         <button class="mbtn mbtn-s" onclick="cerrarModalPrincipal()">Cerrar</button>
       </div>
-      <div id="m-escalado" class="m-actions" style="margin-top:10px;padding-top:14px;border-top:1px dashed var(--border);display:none">
-        <div style="width:100%;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Escalar este caso</div>
-        <button class="mbtn mbtn-s" style="border-color:rgba(239,68,68,.3);color:#fca5a5" onclick="escalarCaso('fallo')">⚖️ Crear fallo</button>
-        <button class="mbtn mbtn-s" style="border-color:rgba(251,146,60,.3);color:#fdba74" onclick="escalarCaso('incidente')">⚡ Crear incidente</button>
-        <button class="mbtn mbtn-s" style="border-color:rgba(34,197,94,.3);color:#86efac" onclick="marcarHechoSuperado()">✅ Hecho superado</button>
-      </div>
     </div>
 
     <!-- PESTAÑA GESTIÓN JURÍDICA -->
@@ -1137,6 +1149,15 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
       <div class="m-actions" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">← Jurídica</button>
         <button class="mbtn mbtn-s" onclick="cerrarModalPrincipal()">Cerrar</button>
+      </div>
+    </div>
+    <!-- vr3 · PIE STICKY: acciones de escalado siempre visibles -->
+    <div id="m-escalado" class="m-escalado-sticky" style="display:none">
+      <div class="m-escalado-lbl">Escalar este caso</div>
+      <div class="m-escalado-btns">
+        <button class="mbtn mbtn-s" style="border-color:rgba(239,68,68,.3);color:#fca5a5" onclick="escalarCaso('fallo')">⚖️ Crear fallo</button>
+        <button class="mbtn mbtn-s" style="border-color:rgba(251,146,60,.3);color:#fdba74" onclick="escalarCaso('incidente')">⚡ Crear incidente</button>
+        <button class="mbtn mbtn-s" style="border-color:rgba(34,197,94,.3);color:#86efac" onclick="marcarHechoSuperado()">✅ Hecho superado</button>
       </div>
     </div>
   </div>
