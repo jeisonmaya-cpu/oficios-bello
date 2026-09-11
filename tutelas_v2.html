@@ -2363,6 +2363,15 @@ function _esHabil(d){
   if(FESTIVOS_CO.has(_ymdLocal(d))) return false; // festivo nacional
   return true;
 }
+// Cuenta días hábiles entre dos fechas (ambas inclusive). vr3
+function _habilesEntre(desde, hasta){
+  const a=new Date(desde); a.setHours(0,0,0,0);
+  const b=new Date(hasta); b.setHours(0,0,0,0);
+  if(b<a) return 0;
+  let n=0, p=new Date(a);
+  while(p.getTime()<=b.getTime()){ if(_esHabil(p)) n++; p.setDate(p.getDate()+1); }
+  return n;
+}
 // Días hábiles restantes hasta la fecha límite, con HOY como día 1.
 // Positivo/0 si aún corre (incluye hoy); negativo si ya venció.
 function calcDiasHab(fecha){
@@ -3081,7 +3090,57 @@ function renderEstadisticas(){
   if(restoN>0) juzH += barra(`Otros ${juzResto.length} juzgado(s)`,restoN,totJuz,"#6b7280");
   const juzNota = `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">${juzList.length} juzgado(s) distinto(s) en total. Clic en una barra para ver esas tutelas. Nombres agrupados ignorando mayúsculas y tildes.</div>`;
 
+  // ── Informe de carga: admites recibidos en el último mes (vr3) ──
+  // Flujo de ENTRADA (cuántos admites llegan), medido por FECHA INICIAL,
+  // sobre días hábiles. Sirve para dimensionar el reparto por abogado.
+  const hoyRef=new Date(); hoyRef.setHours(0,0,0,0);
+  const desde=new Date(hoyRef); desde.setDate(desde.getDate()-30);  // último mes = 30 días atrás
+  let admitesMes=0, sinFechaCarga=0;
+  tutelas.forEach(r=>{
+    const f=parseFechaReg(r["FECHA INICIAL"]);
+    if(!f){ sinFechaCarga++; return; }
+    f.setHours(0,0,0,0);
+    if(f>=desde && f<=hoyRef) admitesMes++;
+  });
+  const habMes = _habilesEntre(desde, hoyRef);          // días hábiles en la ventana
+  const promDia = habMes>0 ? admitesMes/habMes : 0;
+  const promSem = promDia*5;                              // semana hábil
+  const promMes = admitesMes;                            // el propio mes medido
+  // Abogados activos = los del round-robin (disponibles). Fallback a 8.
+  const nActivos = (ABOGADOS_RR && ABOGADOS_RR.length) ? ABOGADOS_RR.length : 8;
+  const nMas = nActivos+1;
+  const cargaDiaAct = promDia/nActivos, cargaMesAct = promMes/nActivos;
+  const cargaDiaMas = promDia/nMas,     cargaMesMas = promMes/nMas;
+  const alivioMes = cargaMesAct>0 ? (1 - cargaMesMas/cargaMesAct)*100 : 0;
+  const f1=x=>x.toFixed(1);
+  const kpiCarga=(n,l,color)=>`<div class="est-kpi" style="color:${color}"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  const cargaH = `
+    <div class="est-kpis" style="margin-bottom:14px">
+      ${kpiCarga(admitesMes,"Admites último mes","#60a5fa")}
+      ${kpiCarga(f1(promDia),"Promedio / día hábil","#4ade80")}
+      ${kpiCarga(f1(promSem),"Promedio / semana","#fbbf24")}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);border-radius:12px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Con ${nActivos} abogados (actual)</div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#60a5fa">${f1(cargaMesAct)}<span style="font-size:12px;color:var(--muted);font-weight:400"> admites/mes c/u</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">≈ ${f1(cargaDiaAct)} por día hábil cada uno</div>
+      </div>
+      <div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);border-radius:12px;padding:14px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Con ${nMas} abogados (+1)</div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#4ade80">${f1(cargaMesMas)}<span style="font-size:12px;color:var(--muted);font-weight:400"> admites/mes c/u</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">≈ ${f1(cargaDiaMas)} por día hábil cada uno</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:12px 14px;background:rgba(232,160,32,.09);border:1px solid rgba(232,160,32,.25);border-radius:10px;font-size:13px;line-height:1.5">
+      💡 Sumar un abogado (de ${nActivos} a ${nMas}) reduce la carga de cada uno en <b style="color:var(--gold2)">${f1(alivioMes)}%</b>: de ${f1(cargaMesAct)} a ${f1(cargaMesMas)} admites al mes.
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.5">
+      Medido sobre los últimos 30 días (${habMes} días hábiles) por <b>Fecha inicial</b> del admite. Refleja el flujo de <b>entrada</b> que se reparte, no la carga acumulada de casos vivos.${sinFechaCarga>0?` ${sinFechaCarga} admite(s) sin fecha quedaron fuera del cálculo.`:""}
+    </div>`;
+
   document.getElementById("grid-est").innerHTML=
+    `<div class="est-card" style="grid-column:1/-1;border-color:rgba(232,160,32,.3)"><div class="est-title" style="color:var(--gold2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><span>📊 Carga de trabajo · ¿conviene otro abogado?</span><button onclick="generarPDFCarga()" style="padding:6px 13px;border-radius:8px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.35);color:var(--gold2);font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer">📄 Descargar PDF</button></div>${cargaH}</div>`+
     `<div class="est-card est-chart-card"><div class="est-title">📈 ${_EVO_META[_evoVista].titulo}</div>`+
     `<div class="evo-vistas" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px">`+
       [["todo","Proceso completo"],["admites","Admites"],["fallos","Fallos"],["incidentes","Incidentes"]]
@@ -4167,6 +4226,129 @@ function generarPDFPendientes(){
 
   doc.save(`Informe_PQR_pendientes_${new Date().toLocaleDateString("es-CO").replace(/\//g,"-")}.pdf`);
   toast(`📄 PDF generado: ${unicos.length} peticiones pendientes`,"ok");
+}
+
+// ── PDF del informe de carga de trabajo (vr3) ──
+function generarPDFCarga(){
+  if(typeof window.jspdf==="undefined"){ toast("⚠️ No se pudo cargar la librería de PDF (sin conexión al CDN)","err"); return; }
+  // Recalcular con la misma lógica del informe en pantalla (últimos 30 días, hábiles)
+  const hoyRef=new Date(); hoyRef.setHours(0,0,0,0);
+  const desde=new Date(hoyRef); desde.setDate(desde.getDate()-30);
+  let admitesMes=0, sinFechaCarga=0;
+  tutelas.forEach(r=>{
+    const f=parseFechaReg(r["FECHA INICIAL"]);
+    if(!f){ sinFechaCarga++; return; }
+    f.setHours(0,0,0,0);
+    if(f>=desde && f<=hoyRef) admitesMes++;
+  });
+  const habMes=_habilesEntre(desde,hoyRef);
+  const promDia=habMes>0?admitesMes/habMes:0, promSem=promDia*5;
+  const activos=(ABOGADOS_RR&&ABOGADOS_RR.length)?ABOGADOS_RR.slice():ABOGADOS_RR_FALLBACK.slice();
+  const nActivos=activos.length||8, nMas=nActivos+1;
+  const cargaMesAct=admitesMes/nActivos, cargaDiaAct=promDia/nActivos;
+  const cargaMesMas=admitesMes/nMas,    cargaDiaMas=promDia/nMas;
+  const alivio=cargaMesAct>0?(1-cargaMesMas/cargaMesAct)*100:0;
+  const f1=x=>x.toFixed(1);
+
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"letter"});
+  const W=doc.internal.pageSize.getWidth();
+  const NAVY=[10,31,61], GOLD=[232,160,32], VERDE=[22,163,74], GRIS=[107,114,128], AZUL=[37,99,235];
+  const hoy=new Date().toLocaleDateString("es-CO",{day:"2-digit",month:"long",year:"numeric"});
+  const rangoTxt=desde.toLocaleDateString("es-CO",{day:"2-digit",month:"short"})+" — "+hoyRef.toLocaleDateString("es-CO",{day:"2-digit",month:"short",year:"numeric"});
+
+  // Encabezado institucional
+  doc.setFillColor(...NAVY); doc.rect(0,0,W,30,"F");
+  doc.setFillColor(...GOLD); doc.rect(0,30,W,1.2,"F");
+  doc.setTextColor(255,255,255);
+  doc.setFont("helvetica","bold"); doc.setFontSize(14);
+  doc.text("INFORME DE CARGA DE TRABAJO — MÓDULO DE TUTELAS",W/2,13,{align:"center"});
+  doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  doc.text("Dirección Administrativa de Ejecuciones Fiscales — Alcaldía de Bello",W/2,20,{align:"center"});
+  doc.setFontSize(8); doc.setTextColor(...GOLD.map(c=>Math.min(c+40,255)));
+  doc.text("Sistema Teodoro · Corte: "+hoy,W/2,26,{align:"center"});
+
+  // Objeto
+  let y=40;
+  doc.setTextColor(...NAVY); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("Objeto del informe",14,y); y+=5;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(60,60,60);
+  const intro="Se analiza el flujo de admisiones de tutela recibidas en los últimos 30 días para dimensionar la carga por abogado y evaluar el impacto de incorporar un profesional adicional al reparto.";
+  doc.text(doc.splitTextToSize(intro,W-28),14,y); y+=16;
+
+  // KPIs
+  const kpis=[
+    [String(admitesMes),"ADMITES (ÚLT. MES)",AZUL],
+    [f1(promDia),"PROMEDIO / DÍA HÁBIL",VERDE],
+    [f1(promSem),"PROMEDIO / SEMANA",GOLD]
+  ];
+  const kw=(W-28-2*6)/3;
+  kpis.forEach(([n,l,col],i)=>{
+    const x=14+i*(kw+6);
+    doc.setDrawColor(...col); doc.setLineWidth(.4); doc.roundedRect(x,y,kw,20,2,2);
+    doc.setTextColor(...col); doc.setFont("helvetica","bold"); doc.setFontSize(16);
+    doc.text(n,x+kw/2,y+9,{align:"center"});
+    doc.setFontSize(6.5); doc.setTextColor(...GRIS); doc.setFont("helvetica","normal");
+    doc.text(l,x+kw/2,y+15,{align:"center"});
+  });
+  y+=28;
+
+  // Comparativo de escenarios
+  doc.setTextColor(...NAVY); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("Comparativo de reparto por abogado",14,y); y+=2;
+  doc.autoTable({
+    startY:y, margin:{left:14,right:14},
+    head:[["Escenario","Abogados","Admites/mes c/u","Admites/día hábil c/u"]],
+    body:[
+      ["Actual",String(nActivos),f1(cargaMesAct),f1(cargaDiaAct)],
+      ["Con un abogado más",String(nMas),f1(cargaMesMas),f1(cargaDiaMas)]
+    ],
+    theme:"grid", styles:{font:"helvetica",fontSize:9,cellPadding:2.2},
+    headStyles:{fillColor:NAVY,textColor:[255,255,255],fontSize:8.5},
+    alternateRowStyles:{fillColor:[245,247,250]},
+    didParseCell:function(d){
+      if(d.section==="body" && d.row.index===1){ d.cell.styles.textColor=VERDE; d.cell.styles.fontStyle="bold"; }
+    }
+  });
+  y=doc.lastAutoTable.finalY+8;
+
+  // Conclusión destacada
+  doc.setFillColor(255,248,230); doc.setDrawColor(...GOLD); doc.setLineWidth(.4);
+  const concl="Conclusion: incorporar un abogado adicional (de "+nActivos+" a "+nMas+") reduce la carga individual en "+f1(alivio)+"%, pasando de "+f1(cargaMesAct)+" a "+f1(cargaMesMas)+" admisiones por abogado al mes.";
+  const lineas=doc.splitTextToSize(concl.replace("Conclusion","Conclusión"),W-36);
+  const boxH=lineas.length*5+8;
+  doc.roundedRect(14,y,W-28,boxH,2,2,"FD");
+  doc.setTextColor(...NAVY); doc.setFont("helvetica","bold"); doc.setFontSize(9.5);
+  doc.text(lineas,18,y+7);
+  y+=boxH+8;
+
+  // Detalle de abogados activos
+  doc.setTextColor(...NAVY); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+  doc.text("Abogados actualmente en el reparto ("+nActivos+")",14,y); y+=2;
+  doc.autoTable({
+    startY:y, margin:{left:14,right:14},
+    head:[["#","Abogado","Admites/mes estimados"]],
+    body:activos.map((a,i)=>[String(i+1),pNom(a),f1(cargaMesAct)]),
+    theme:"striped", styles:{font:"helvetica",fontSize:8.5,cellPadding:1.8},
+    headStyles:{fillColor:NAVY,textColor:[255,255,255],fontSize:8},
+    alternateRowStyles:{fillColor:[245,247,250]}
+  });
+  y=doc.lastAutoTable.finalY+8;
+
+  // Nota metodológica
+  doc.setTextColor(...GRIS); doc.setFont("helvetica","italic"); doc.setFontSize(7.5);
+  const nota="Metodología: se contabilizan las admisiones con fecha inicial dentro del período "+rangoTxt+" ("+habMes+" días hábiles, descontando sábados, domingos y festivos nacionales). El promedio refleja el flujo de entrada que se distribuye entre los abogados, no la carga acumulada de procesos en curso."+(sinFechaCarga>0?" "+sinFechaCarga+" admisión(es) sin fecha registrada quedaron fuera del cálculo.":"");
+  doc.text(doc.splitTextToSize(nota,W-28),14,y);
+
+  // Pie
+  doc.setFont("helvetica","normal");
+  const h=doc.internal.pageSize.getHeight();
+  doc.setFontSize(7); doc.setTextColor(...GRIS);
+  doc.text("Generado por Sistema Teodoro · Desarrollado por Jeison Maya · "+hoy,14,h-8);
+  doc.text("Pág. "+doc.internal.getNumberOfPages(),W-14,h-8,{align:"right"});
+
+  doc.save(`Informe_carga_tutelas_${new Date().toLocaleDateString("es-CO").replace(/\//g,"-")}.pdf`);
+  toast("📄 Informe de carga generado","ok");
 }
 
 function exportarPQRPendientes(){
