@@ -1925,7 +1925,29 @@ async function guardarNuevoIncidente(){
 // Muestra primero un modal de revisión con la información completa
 // de la persona (heredada del admite) antes de crear.
 // ════════════════════════════════════════════════════════════
-let _escCategoria=null, _escCampos=null;
+let _escCategoria=null, _escCampos=null, _escEnCurso=false;
+
+// Verifica en Supabase si YA existe un registro de la misma categoria para
+// ese radicado que no este anulado. Evita fallos/incidentes duplicados por
+// doble clic o por reabrir la tutela y volver a escalarla.
+// Ante cualquier error de red devuelve false: no bloqueamos la creacion por
+// una consulta fallida, solo la usamos como salvaguarda cuando responde bien.
+async function yaExisteEscalado(radicado, categoria){
+  try{
+    if(!USAR_SUPABASE || !radicado) return false;
+    const rad = String(radicado).trim();
+    const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`
+              + `?select=id,radicado,categoria,estado`
+              + `&categoria=eq.${encodeURIComponent(categoria)}`
+              + `&radicado=eq.${encodeURIComponent(rad)}`
+              + `&estado=neq.Anulado`;
+    const res = await fetch(url, { headers: await getAuthHeaders() });
+    if(!res.ok) return false;
+    const arr = await res.json();
+    // Confirmamos con normRad por si el radicado guardado trae guiones/espacios distintos.
+    return Array.isArray(arr) && arr.some(x => normRad(x.radicado)===normRad(rad));
+  }catch(_){ return false; }
+}
 
 async function escalarCaso(categoria){
   if(!actual) return;
@@ -1985,12 +2007,26 @@ async function escalarCaso(categoria){
 
 async function confirmarEscalado(){
   if(!_escCategoria || !_escCampos) return;
+  // Candado a prueba de doble clic / doble Enter: si ya hay una creación en
+  // curso, ignoramos la segunda invocación por completo.
+  if(_escEnCurso) return;
+  _escEnCurso = true;
   const btn = document.getElementById("esc-confirmar");
   const errBox = document.getElementById("esc-error");
   errBox.style.display="none";
-  btn.textContent="Creando..."; btn.style.pointerEvents="none";
+  btn.disabled = true;
+  btn.textContent="Creando..."; btn.style.pointerEvents="none"; btn.style.opacity="0.6";
   const etiqueta = _escCategoria==="fallo" ? "Fallo" : "Incidente";
+  const radEsc = _escCampos && _escCampos["RADICADO"] ? _escCampos["RADICADO"] : "";
   try{
+    // Salvaguarda contra duplicados: si ya existe un registro de esta categoría
+    // para el mismo radicado (y no está anulado), no creamos otro.
+    if(await yaExisteEscalado(radEsc, _escCategoria)){
+      errBox.textContent = "Ya existe un "+etiqueta.toLowerCase()+" para el radicado "+radEsc
+                         + ". No se creó un duplicado. Ciérralo y búscalo en la pestaña correspondiente.";
+      errBox.style.display="block";
+      return;
+    }
     const creado = await Repo.crear(_escCampos, _escCategoria);
     if(!creado) throw new Error("Supabase no devolvió el registro creado");
     toast("✅ "+etiqueta+" creado correctamente","ok");
@@ -2006,7 +2042,9 @@ async function confirmarEscalado(){
     }
     errBox.style.display="block";
   }finally{
-    btn.textContent="💾 Confirmar y crear"; btn.style.pointerEvents="auto";
+    _escEnCurso = false;
+    btn.disabled = false;
+    btn.textContent="💾 Confirmar y crear"; btn.style.pointerEvents="auto"; btn.style.opacity="1";
   }
 }
 
