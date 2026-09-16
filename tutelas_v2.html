@@ -1928,24 +1928,34 @@ async function guardarNuevoIncidente(){
 let _escCategoria=null, _escCampos=null, _escEnCurso=false;
 
 // Verifica en Supabase si YA existe un registro de la misma categoria para
-// ese radicado que no este anulado. Evita fallos/incidentes duplicados por
-// doble clic o por reabrir la tutela y volver a escalarla.
+// el mismo RADICADO **y** el mismo ACCIONANTE, que no este anulado.
+// Un mismo radicado puede tener varios incidentes/desacatos legitimos a lo
+// largo del tiempo, e incluso accionantes distintos; por eso el candado exige
+// que coincidan radicado + nombre. Solo asi lo tratamos como duplicado.
+// La proteccion contra doble clic la da el candado _escEnCurso, no esta consulta.
 // Ante cualquier error de red devuelve false: no bloqueamos la creacion por
 // una consulta fallida, solo la usamos como salvaguarda cuando responde bien.
-async function yaExisteEscalado(radicado, categoria){
+async function yaExisteEscalado(radicado, categoria, accionante){
   try{
     if(!USAR_SUPABASE || !radicado) return false;
     const rad = String(radicado).trim();
     const url = `${SUPABASE_URL}/rest/v1/${SB_TABLA}`
-              + `?select=id,radicado,categoria,estado`
+              + `?select=id,radicado,accionante,categoria,estado`
               + `&categoria=eq.${encodeURIComponent(categoria)}`
               + `&radicado=eq.${encodeURIComponent(rad)}`
               + `&estado=neq.Anulado`;
     const res = await fetch(url, { headers: await getAuthHeaders() });
     if(!res.ok) return false;
     const arr = await res.json();
-    // Confirmamos con normRad por si el radicado guardado trae guiones/espacios distintos.
-    return Array.isArray(arr) && arr.some(x => normRad(x.radicado)===normRad(rad));
+    if(!Array.isArray(arr) || !arr.length) return false;
+    const kAcc = keyAcc(accionante);
+    // Duplicado solo si coincide radicado normalizado Y accionante normalizado.
+    // Si por algun registro viejo no viene el accionante, no lo contamos como
+    // duplicado (mejor permitir de mas que bloquear un incidente legitimo).
+    return arr.some(x =>
+      normRad(x.radicado)===normRad(rad) &&
+      x.accionante && keyAcc(x.accionante)===kAcc
+    );
   }catch(_){ return false; }
 }
 
@@ -2018,11 +2028,13 @@ async function confirmarEscalado(){
   btn.textContent="Creando..."; btn.style.pointerEvents="none"; btn.style.opacity="0.6";
   const etiqueta = _escCategoria==="fallo" ? "Fallo" : "Incidente";
   const radEsc = _escCampos && _escCampos["RADICADO"] ? _escCampos["RADICADO"] : "";
+  const accEsc = _escCampos && _escCampos["ACCIONANTE"] ? _escCampos["ACCIONANTE"] : "";
   try{
-    // Salvaguarda contra duplicados: si ya existe un registro de esta categoría
-    // para el mismo radicado (y no está anulado), no creamos otro.
-    if(await yaExisteEscalado(radEsc, _escCategoria)){
-      errBox.textContent = "Ya existe un "+etiqueta.toLowerCase()+" para el radicado "+radEsc
+    // Salvaguarda contra duplicados: solo si ya existe un registro de esta
+    // categoría para el mismo radicado Y el mismo accionante (no anulado).
+    if(await yaExisteEscalado(radEsc, _escCategoria, accEsc)){
+      errBox.textContent = "Ya existe un "+etiqueta.toLowerCase()+" para "+(accEsc||"este accionante")
+                         + " en el radicado "+radEsc
                          + ". No se creó un duplicado. Ciérralo y búscalo en la pestaña correspondiente.";
       errBox.style.display="block";
       return;
