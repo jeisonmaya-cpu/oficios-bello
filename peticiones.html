@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
-<!-- build: archivos-peticion + limpieza-pdf-antiguos + control-interno + buscador-global + visualizador · 2026 -->
-<meta name="build" content="peticiones-combinar-unificado-v14">
+<!-- build: archivos-peticion + limpieza-pdf-antiguos + control-interno + buscador-global + visualizador + buscador-resueltas · 2026 -->
+<meta name="build" content="peticiones-combinar-unificado-v15">
+<meta name="cache-control" content="no-cache">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
@@ -998,6 +999,7 @@ footer b{color:var(--gold)}
     </div>
 
     <div class="toolbar">
+      <input type="text" id="h-q" placeholder="Buscar por radicado, nombre o cédula…" oninput="debRenderHist()">
       <input type="date" id="h-desde" onchange="renderHist()">
       <input type="date" id="h-hasta" onchange="renderHist()">
       <select id="h-abo" onchange="renderHist()"><option value="">Todas las abogadas</option></select>
@@ -7049,6 +7051,7 @@ function debounce(fn, ms){
 }
 const debRenderBandeja  = debounce(function(){ renderBandeja();  }, 220);
 const debRenderPersonas = debounce(function(){ renderPersonas(); }, 220);
+const debRenderHist     = debounce(function(){ renderHist();     }, 220);
 
 /* ══════════════════════════════════════════════════════════════
    BUSCADOR GLOBAL (Ctrl+K) — busca en toda la bandeja en memoria
@@ -8002,6 +8005,9 @@ function filtrarHist(){
   const t = document.getElementById('h-hasta').value;
   const a = document.getElementById('h-abo').value;
   const e = document.getElementById('h-est').value;
+  // Texto libre: busca por radicado, peticionario o cédula (igual que Bandeja).
+  const qEl = document.getElementById('h-q');
+  const q = qEl ? qEl.value.trim().toLowerCase() : '';
   return HIST.filter(function(r){
     const ref = String(r.fecha_proyeccion || r.fecha_respuesta || '').slice(0,10);
     if(d && (!ref || ref < d)) return false;
@@ -8009,6 +8015,12 @@ function filtrarHist(){
     if(a && (r.asignado_nombre || '') !== a) return false;
     if(e === 'SIN_ENTREGAR'){ if(!r.pendiente_notificacion) return false; }
     else if(e && r.estado !== e) return false;
+    if(q){
+      const heno = (String(r.radicado || '') + ' ' +
+                    String(r.peticionario || '') + ' ' +
+                    String(r.documento || '')).toLowerCase();
+      if(heno.indexOf(q) === -1) return false;
+    }
     return true;
   });
 }
