@@ -11,9 +11,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root{
   --navy:#0a0f1e; --navy2:#101a35; --gold:#f59e0b; --gold2:#fbbf24;
@@ -2222,8 +2222,15 @@ function pintarUltimas(){
 /* ══════════════════════════════════════════════════════════════
    LECTURA DE DOCUMENTOS (pdf.js + Tesseract, sin costo)
    ══════════════════════════════════════════════════════════════ */
-const CDN_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const CDN_PDFW  = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+// pdf.js 3.11.174, build UMD "legacy" (expone window.pdfjsLib y es la más compatible).
+// cdnjs no espeja la carpeta legacy/ y devolvía error de carga → se usa jsdelivr, con
+// fallback a unpkg. Ambos espejan npm 1:1, donde estas rutas existen y verificamos.
+const CDN_PDFJS_LISTA = [
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js',
+  'https://unpkg.com/pdfjs-dist@3.11.174/legacy/build/pdf.min.js'
+];
+const CDN_PDFW  = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
+const CDN_PDFJS = CDN_PDFJS_LISTA[0]; // compat: por si algo aún referencia el nombre antiguo
 // CMaps: necesarios para fuentes CID/Identity-H (PDFs de DevExpress, etc.).
 // Sin esto, pdf.js renderiza glifos incorrectos (texto en símbolos).
 // Se sirven desde jsdelivr, que expone las carpetas cmaps/ y standard_fonts/.
@@ -2246,6 +2253,25 @@ function cargarScript(src){
     s.src = src; s.onload = ok; s.onerror = function(){ fail(new Error('No se pudo cargar ' + src)); };
     document.head.appendChild(s);
   });
+}
+
+// Carga pdf.js probando cada CDN de la lista en orden. Si el primero falla
+// (CDN caído, bloqueo de red), intenta el siguiente antes de rendirse.
+// Verifica además que window.pdfjsLib quedó definido: un archivo que carga
+// pero no expone el global también cuenta como fallo y pasa al siguiente.
+async function cargarPdfJs(){
+  if(window.pdfjsLib) return;
+  let ultimoError = null;
+  for(const src of CDN_PDFJS_LISTA){
+    try{
+      await cargarScript(src);
+      if(window.pdfjsLib) return;
+      ultimoError = new Error('Cargó ' + src + ' pero window.pdfjsLib no quedó definido');
+    }catch(e){
+      ultimoError = e;
+    }
+  }
+  throw ultimoError || new Error('No se pudo cargar pdf.js desde ningún CDN');
 }
 
 function estado(txt, color){
@@ -2403,7 +2429,7 @@ function guardarFormUnico(){
 }
 
 async function textoDePDF(file){
-  await cargarScript(CDN_PDFJS);
+  await cargarPdfJs();
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
   const buf = await file.arrayBuffer();
   const pdf = await window.pdfjsLib.getDocument(opcionesPDF(buf)).promise;
@@ -2464,7 +2490,7 @@ function limpiarCanvas(cv){
 }
 
 async function ocrDePDF(file){
-  await cargarScript(CDN_PDFJS);
+  await cargarPdfJs();
   await cargarScript(CDN_TESS);
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
   const buf = await file.arrayBuffer();
@@ -3002,7 +3028,7 @@ async function miniatura(item, n){
 
 /* Renderiza una página del PDF a canvas */
 async function paginaACanvas(file, pagina, escala){
-  await cargarScript(CDN_PDFJS);
+  await cargarPdfJs();
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
   const buf = await file.arrayBuffer();
   const pdf = await window.pdfjsLib.getDocument(opcionesPDF(buf)).promise;
