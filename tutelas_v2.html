@@ -705,6 +705,18 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
   .modal-foot-sticky{bottom:-22px;margin:14px -22px -22px;padding:12px 22px}
 }
 
+/* ── v5 · sanciones, barra de guardado, perfil, foco con teclado ── */
+.tcols-san{display:grid;grid-template-columns:150px 95px 1fr 1fr 150px 150px 120px}
+@media(max-width:900px){.tcols-san{grid-template-columns:120px 1fr 1fr}}
+.san-est{display:inline-block;padding:3px 9px;border-radius:7px;font-size:10.5px;font-weight:700;white-space:nowrap;border:1px solid}
+.m-savebar{position:sticky;bottom:-28px;margin:16px -28px -28px;padding:12px 28px;background:var(--modal-bg);border-top:1px solid rgba(232,160,32,.45);box-shadow:0 -10px 24px -8px rgba(0,0,0,.55);display:flex;align-items:center;gap:10px;flex-wrap:wrap;z-index:3}
+.m-savebar .lbl{font-size:12px;color:var(--gold2);font-weight:600;flex:1;min-width:150px}
+@media(max-width:900px){.m-savebar{bottom:-22px;margin:14px -22px -22px;padding:12px 22px}}
+.user-pill{display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;font-size:11.5px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--soft);white-space:nowrap}
+.user-pill b{color:var(--text);font-weight:600}
+.fila:focus-visible,.hoy-item:focus-visible,.gr-item:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.hist-item{padding:10px 12px;border-left:2px solid var(--border);margin-bottom:8px;font-size:12px;line-height:1.55}
+.hist-item .q{color:var(--muted);font-size:11px;margin-bottom:4px}
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -743,16 +755,17 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
 <div class="nov-back" id="nov-back" onclick="if(event.target===this)cerrarNovedades()">
   <div class="nov-box" role="dialog" aria-label="Novedades de la versión">
     <div class="nov-head">
-      <div class="nov-badge">NOVEDADES · VR 3</div>
+      <div class="nov-badge">NOVEDADES · VR 5</div>
       <div class="nov-title">¿Qué hay de nuevo?</div>
       <div class="nov-sub">Mejoras para trabajar más rápido y cómodo.</div>
     </div>
     <div class="nov-list">
-      <div class="nov-item"><div class="nov-ico">🔍</div><div class="nov-tx"><b>Buscador rápido (⌘K / Ctrl+K)</b><span>Abre el buscador con el teclado y salta a cualquier caso o sección al instante.</span></div></div>
-      <div class="nov-item"><div class="nov-ico">✨</div><div class="nov-tx"><b>Nuevo diseño de tarjetas</b><span>Tarjetas con más color y jerarquía: el estado se lee de un vistazo.</span></div></div>
-      <div class="nov-item"><div class="nov-ico">↕</div><div class="nov-tx"><b>Modo compacto</b><span>Aprieta las tablas para ver más registros sin scroll. Se activa desde la barra superior.</span></div></div>
-      <div class="nov-item"><div class="nov-ico">⚖️</div><div class="nov-tx"><b>Tutelas por juzgado</b><span>Nueva estadística: mira de qué juzgados llegan más tutelas.</span></div></div>
-      <div class="nov-item"><div class="nov-ico">⚡</div><div class="nov-tx"><b>Carga más fluida</b><span>Las tablas muestran un avance visual mientras cargan los datos.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">👤</div><div class="nov-tx"><b>Cada quien ve lo suyo</b><span>Los abogados ven solo sus casos. La Dirección y la administración ven todo el equipo.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">🚨</div><div class="nov-tx"><b>Tablero de sanciones</b><span>Si un desacato termina en sanción, ábrelo y pulsa «Marcar como sanción». Queda en la nueva pestaña Sanciones con su estado, multa, arresto y funcionario sancionado.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">🏠</div><div class="nov-tx"><b>«Hoy» según tu rol</b><span>Además de vencidos y urgentes, verás si falta un fallo por llegar, sanciones en curso y, para gestión técnica, pendientes de PQR/SharePoint y notificaciones.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">💾</div><div class="nov-tx"><b>Un solo botón de guardar</b><span>Cuando cambias algo aparece la barra «Guardar cambios» abajo del caso. Al cerrar un caso se pide el dato clave (radicado de respuesta o sentido del fallo).</span></div></div>
+      <div class="nov-item"><div class="nov-ico">🕘</div><div class="nov-tx"><b>Historial de cambios</b><span>En el detalle del caso puedes ver quién cambió qué y cuándo.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">📅</div><div class="nov-tx"><b>Fechas con calendario</b><span>Al crear o editar un caso eliges fechas en calendario y la fecha límite se calcula con el término que da el juez.</span></div></div>
     </div>
     <div class="nov-foot">
       <button class="nov-btn" onclick="cerrarNovedades()">Entendido, ¡a trabajar!</button>
@@ -777,6 +790,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
       <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;padding:13px 15px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box" onkeydown="if(event.key==='Enter')hacerLogin()">
     </div>
     <button id="login-btn" onclick="hacerLogin()" style="width:100%;background:linear-gradient(135deg,#e8a020,#f0b840);color:#0a1f3d;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:transform .1s">Ingresar</button>
+    <div style="text-align:center;margin-top:12px"><a href="#" onclick="event.preventDefault();recuperarClave()" style="font-size:12px;color:#8da2c0;text-decoration:underline">¿Olvidaste tu contraseña?</a></div>
     <div id="login-error" style="display:none;margin-top:16px;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:8px;font-size:13px;color:#f87171;text-align:center"></div>
     <p style="font-size:11px;color:#5a6b85;text-align:center;margin:22px 0 0;line-height:1.5">Acceso restringido al personal autorizado.<br>Si no tienes credenciales, contacta al administrador.</p>
   </div>
@@ -795,6 +809,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
     <div class="global-results" id="global-results"></div>
   </div>
   <div class="topbar-right">
+    <div class="user-pill" id="user-pill" style="display:none"></div>
     <div class="sync-pill"><div class="sync-dot" id="sdot"></div><span id="slabel">—</span></div>
     <button class="btn-top cmdk-trigger" onclick="abrirCmdk()" title="Buscar y navegar (Ctrl/Cmd + K)" style="cursor:pointer;border:none;display:flex;align-items:center;gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Buscar</span><kbd class="cmdk-kbd">⌘K</kbd></button>
     <button class="btn-top" id="btn-novedades" onclick="abrirNovedades()" title="Ver novedades de esta versión" style="cursor:pointer;border:none">✨ Novedades</button>
@@ -819,6 +834,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
   <div class="ntab"        id="tab-mios"         onclick="toggleMisCasos()" oncontextmenu="event.preventDefault();_menuYo()" title="Clic: filtrar mis casos · Clic derecho: cambiar de persona">⭐ Mis casos</div>
   <div class="ntab"        id="tab-fallos"       onclick="goTab('fallos')">⚖️ Fallos &amp; Sent. <span class="nbadge amber" id="badge-fallos">0</span></div>
   <div class="ntab"        id="tab-otros"        onclick="goTab('otros')">⚡ Incidentes/Desacatos <span class="nbadge amber" id="badge-otros">0</span></div>
+  <div class="ntab"        id="tab-sanciones"    onclick="goTab('sanciones')">🚨 Sanciones <span class="nbadge" id="badge-sanciones" style="background:rgba(239,68,68,.2);color:#f87171">0</span></div>
   <div class="ntab"        id="tab-reparto"      onclick="goTab('reparto')">👤 Por reparto</div>
   <div class="ntab"        id="tab-pqr"          onclick="goTab('pqr')">📝 PQR <span class="nbadge" id="badge-pqr">0</span></div>
   <div class="ntab"        id="tab-historico"    onclick="goTab('historico')">🗂️ Histórico</div>
@@ -911,6 +927,27 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
     <div class="pqr-header"><span style="font-size:20px">✅</span><h3 style="color:#4ade80">Con respuesta PQR</h3><span class="nbadge green" id="cnt-con" style="font-size:12px;padding:2px 10px">0</span></div>
     <div class="pqr-grid" id="grid-con-pqr"></div>
   </div>
+</div>
+
+<!-- ════════ v5 · TABLERO DE SANCIONES ════════ -->
+<div class="panel" id="panel-sanciones">
+  <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--soft);line-height:1.6">
+    🚨 <strong style="color:#f87171">Sanciones por desacato.</strong> Aquí llegan los incidentes marcados con «🚨 Marcar como sanción» en el detalle del caso. Una sanción cuenta como <b>vigente</b> mientras esté impuesta, en consulta o confirmada.
+  </div>
+  <div class="stats-row" id="stats-sanciones"></div>
+  <div class="est-grid" id="grid-sanciones" style="margin-bottom:16px"></div>
+  <div class="filtros">
+    <input class="fi fi-buscar" id="fs-q" placeholder="🔍 Buscar accionante, radicado, juzgado o sancionado..." oninput="renderSanciones()"/>
+    <select class="fi" id="fs-abo" onchange="renderSanciones()"><option value="">Todos los abogados</option></select>
+    <select class="fi" id="fs-est" onchange="renderSanciones()"><option value="">Todos los estados</option><option value="__vig">Solo vigentes</option><option>Impuesta</option><option>En consulta</option><option>Confirmada</option><option>Revocada en consulta</option><option>Levantada por cumplimiento</option><option>Cumplida</option></select>
+    <select class="fi" id="fs-anio" onchange="renderSanciones()"><option value="">Todos los años</option></select>
+    <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('sanciones')">📥 Exportar Excel</button>
+  </div>
+  <div class="twrap">
+    <div class="thead tcols-san"><div class="cel">Estado de la sanción</div><div class="cel">Fecha</div><div class="cel">Accionante</div><div class="cel">Sancionado</div><div class="cel col-hide">Sanción</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Abogado</div></div>
+    <div id="body-sanciones"></div>
+  </div>
+  <div class="pag" id="pag-san" style="display:none"><span id="pag-san-info"></span><div class="pag-btns" id="pag-san-btns"></div></div>
 </div>
 
 <div class="panel" id="panel-historico">
@@ -1059,6 +1096,11 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
         </div>
       </div>
 
+      <div id="m-docs-w" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px"></div>
+      <div id="m-hist-w" style="margin:6px 0 8px">
+        <button class="mbtn mbtn-s" id="m-hist-btn" onclick="verHistorialCaso()" style="font-size:11.5px;padding:6px 12px">🕘 Ver historial de cambios</button>
+        <div id="m-hist-body" style="display:none;margin-top:10px;max-height:260px;overflow:auto"></div>
+      </div>
       <div id="m-derecho-w" style="display:none"><div class="msec">Derecho invocado</div><div class="mtext" id="m-derecho"></div></div>
       <div id="m-hechos-w"  style="display:none"><div class="msec">Hechos resumidos</div><div class="mtext" id="m-hechos"></div></div>
       <div id="m-pret-w"    style="display:none"><div class="msec">Pretensiones</div><div class="mtext" id="m-pret"></div></div>
@@ -1066,6 +1108,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
       <div class="m-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-p" onclick="irOficio()">📄 Generar oficio de respuesta</button>
         <button class="mbtn mbtn-s" style="border-color:rgba(245,158,11,.35);color:var(--gold2)" onclick="abrirGeneradorWord()">📝 Generar Minuta Word</button>
+        <button class="mbtn mbtn-s" id="m-btn-sancion" style="display:none;border-color:rgba(239,68,68,.4);color:#fca5a5" onclick="marcarSancionDesdeInfo()">🚨 Marcar como sanción</button>
         <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">⚖️ Gestión Jurídica →</button>
         <button class="mbtn mbtn-s" onclick="cerrarModalPrincipal()">Cerrar</button>
       </div>
@@ -1083,10 +1126,54 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
         <label id="m-lbl-rad">Respuesta Radicado Tutela</label>
         <textarea id="m-resp-rad" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Ingresa el radicado de respuesta a la tutela..."></textarea>
       </div>
+      <!-- v4 · RESULTADO DEL FALLO (solo fallos / sentencias) -->
+      <div id="m-fallo-wrap" style="display:none;margin-bottom:14px;padding:12px 14px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.22);border-radius:10px">
+        <div style="font-size:11px;color:#fca5a5;font-weight:700;margin-bottom:10px">⚖️ Resultado del fallo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="mf"><label>Sentido del fallo</label>
+            <select class="esel" id="m-sentido" style="width:100%" onchange="pintarImpugModal()">
+              <option value="">— Sin registrar —</option><option>Niega</option><option>Improcedente</option><option>Carencia actual de objeto / hecho superado</option><option>Concede parcialmente</option><option>Concede</option>
+            </select></div>
+          <div class="mf"><label>Fecha de notificación del fallo</label><input type="date" id="m-fnotif" class="nt-inp" style="width:100%" onchange="pintarImpugModal()"></div>
+        </div>
+        <div class="mf full" style="margin-top:10px"><label>Qué ordena el juez</label>
+          <textarea id="m-orden" rows="2" class="nt-inp" style="width:100%;resize:vertical" placeholder="Ej.: responder de fondo el derecho de petición dentro de las 48 horas siguientes"></textarea></div>
+        <div id="m-impug-box" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(239,68,68,.18)">
+          <div id="m-impug-info" style="font-size:12px;margin-bottom:8px;line-height:1.5"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="mf"><label>¿Se impugna?</label>
+              <select class="esel" id="m-impug" style="width:100%" onchange="pintarImpugModal()"><option value="">— Pendiente de decidir —</option><option>Se impugna</option><option>No se impugna</option></select></div>
+            <div class="mf"><label>Radicado de la impugnación</label><input id="m-radimpug" type="text" class="nt-inp" style="width:100%" placeholder="Si se impugnó"></div>
+          </div>
+        </div>
+      </div>
+      <!-- v5 · SANCIÓN POR DESACATO (solo incidentes/desacatos) -->
+      <div id="m-san-wrap" style="display:none;margin-bottom:14px;padding:12px 14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.25);border-radius:10px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+          <input type="checkbox" id="m-es-sancion" onchange="toggleSancionModal()" style="width:16px;height:16px;accent-color:#f87171;cursor:pointer">
+          <span style="font-size:13px;color:var(--text)">🚨 Este desacato terminó en <strong style="color:#f87171">sanción</strong></span>
+        </label>
+        <div id="m-san-campos" style="display:none;margin-top:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="mf"><label>Fecha del auto que sanciona</label><input type="date" id="m-san-fecha" class="nt-inp" style="width:100%"></div>
+            <div class="mf"><label>Estado de la sanción</label>
+              <select class="esel" id="m-san-estado" style="width:100%"><option>Impuesta</option><option>En consulta</option><option>Confirmada</option><option>Revocada en consulta</option><option>Levantada por cumplimiento</option><option>Cumplida</option></select></div>
+            <div class="mf full" style="grid-column:1/-1"><label>Funcionario sancionado</label>
+              <input id="m-san-quien" class="nt-inp" style="width:100%" list="m-san-quien-lista" placeholder="Nombre y cargo">
+              <datalist id="m-san-quien-lista"><option value="Juan Pablo Gómez Londoño — Director Administrativo de Ejecuciones Fiscales"></option></datalist></div>
+            <div class="mf"><label>Tipo de sanción</label>
+              <select class="esel" id="m-san-tipo" style="width:100%"><option value="">— Seleccionar —</option><option>Multa</option><option>Arresto</option><option>Multa y arresto</option></select></div>
+            <div class="mf"><label>Multa (SMLMV)</label><input type="number" min="0" step="0.5" id="m-san-multa" class="nt-inp" style="width:100%" placeholder="Ej. 2"></div>
+            <div class="mf"><label>Arresto (días)</label><input type="number" min="0" step="1" id="m-san-arresto" class="nt-inp" style="width:100%" placeholder="Ej. 3"></div>
+          </div>
+          <div class="mf full" style="margin-top:10px"><label>Notas (orden pendiente, consulta, levantamiento)</label>
+            <textarea id="m-san-notas" rows="2" class="nt-inp" style="width:100%;resize:vertical" placeholder="Ej.: el juez sanciona por no responder de fondo; se envió cumplimiento para pedir el levantamiento"></textarea></div>
+        </div>
+      </div>
       <div id="m-aviso-historico" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:var(--radius-sm);font-size:12px;color:#4ade80">
         ✅ Al guardar, este proceso pasará al <strong>Histórico</strong> y saldrá de la lista activa.
       </div>
-      <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-bottom:8px">💾 Guardar cambios</button>
+      <button class="mbtn mbtn-p" onclick="guardarEstado()" data-v5="oculto" style="display:none;width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-bottom:8px">💾 Guardar cambios</button>
       <div class="m-actions" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-s" onclick="switchMTab('info')">← Información</button>
         <button class="mbtn mbtn-s" onclick="switchMTab('tecnica')">🔧 Técnica →</button>
@@ -1161,11 +1248,17 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
         <textarea id="m-sharepoint" rows="2" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:vertical;line-height:1.6" placeholder="Pega aquí el link de SharePoint o el texto de referencia..." oninput="actualizarBtnSP()"></textarea>
         <button id="m-sp-btn" style="display:none;width:100%;margin-top:6px;background:rgba(0,120,212,.15);border:1px solid rgba(0,120,212,.35);color:#60a5fa;border-radius:8px;padding:9px 16px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;transition:background .2s" onmouseover="this.style.background='rgba(0,120,212,.28)'" onmouseout="this.style.background='rgba(0,120,212,.15)'">🔗 Abrir documento en SharePoint</button>
       </div>
-      <button class="mbtn mbtn-p" onclick="guardarEstado()" style="width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-bottom:8px">💾 Guardar cambios</button>
+      <button class="mbtn mbtn-p" onclick="guardarEstado()" data-v5="oculto" style="display:none;width:100%;justify-content:center;display:flex;align-items:center;gap:8px;margin-bottom:8px">💾 Guardar cambios</button>
       <div class="m-actions" style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border)">
         <button class="mbtn mbtn-s" onclick="switchMTab('juridica')">← Jurídica</button>
         <button class="mbtn mbtn-s" onclick="cerrarModalPrincipal()">Cerrar</button>
       </div>
+    </div>
+    <!-- v5 · BARRA ÚNICA DE GUARDADO: aparece solo cuando hay cambios sin guardar -->
+    <div id="m-savebar" class="m-savebar" style="display:none">
+      <span class="lbl">● Tienes cambios sin guardar</span>
+      <button class="mbtn mbtn-s" onclick="descartarCambiosModal()">Descartar</button>
+      <button class="mbtn mbtn-p" onclick="guardarEstado()">💾 Guardar cambios</button>
     </div>
     <!-- vr3 · PIE STICKY: acciones de escalado siempre visibles -->
     <div id="m-escalado" class="m-escalado-sticky" style="display:none">
@@ -1184,7 +1277,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
   <div class="modal" style="max-width:420px;padding:28px">
     <div style="font-size:22px;margin-bottom:12px;text-align:center">💾</div>
     <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;text-align:center;margin-bottom:8px" id="confirm-titulo">¿Confirmar cambios?</div>
-    <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px;line-height:1.6" id="confirm-msg">—</div>
+    <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px;line-height:1.6;white-space:pre-line" id="confirm-msg">—</div>
     <div style="display:flex;gap:10px">
       <button id="confirm-cancel" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.14)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">Cancelar</button>
       <button id="confirm-ok" style="flex:1;padding:10px;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;color:#fff;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Guardar</button>
@@ -1220,12 +1313,17 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
         <input id="nt-juz" type="text" class="nt-inp" placeholder="Nombre del juzgado">
       </div>
       <div class="mf">
-        <label>Fecha inicial (dd/mm/aaaa)</label>
-        <input id="nt-fini" type="text" class="nt-inp" placeholder="15/06/2026">
+        <label>Fecha inicial (notificación)</label>
+        <input id="nt-fini" type="date" class="nt-inp" onchange="calcTermino('nt')">
       </div>
       <div class="mf">
-        <label>Fecha límite (dd/mm/aaaa)</label>
-        <input id="nt-flim" type="text" class="nt-inp" placeholder="29/06/2026">
+        <label>Término que da el juez</label>
+        <div style="display:flex;gap:6px"><input id="nt-term" type="number" min="1" class="nt-inp" style="width:70px" placeholder="2" oninput="calcTermino('nt')">
+        <select id="nt-term-u" class="nt-inp" style="flex:1" onchange="calcTermino('nt')"><option value="d">días hábiles</option><option value="h">horas</option></select></div>
+      </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Fecha límite <span id="nt-flim-nota" style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0"></span></label>
+        <input id="nt-flim" type="date" class="nt-inp">
       </div>
       <div class="mf full" style="grid-column:1/-1">
         <label>Abogado asignado <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(automático por turno, puedes cambiarlo)</span></label>
@@ -1343,12 +1441,12 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
         <input id="ed-juz" type="text" class="nt-inp" placeholder="Nombre del juzgado">
       </div>
       <div class="mf">
-        <label>Fecha inicial (dd/mm/aaaa)</label>
-        <input id="ed-fini" type="text" class="nt-inp" placeholder="15/06/2026">
+        <label>Fecha inicial</label>
+        <input id="ed-fini" type="date" class="nt-inp">
       </div>
       <div class="mf">
-        <label>Fecha límite (dd/mm/aaaa)</label>
-        <input id="ed-flim" type="text" class="nt-inp" placeholder="29/06/2026">
+        <label>Fecha límite</label>
+        <input id="ed-flim" type="date" class="nt-inp">
       </div>
       <div class="mf full" style="grid-column:1/-1">
         <label>Abogado responsable</label>
@@ -1366,6 +1464,10 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
         <label>Pretensiones</label>
         <textarea id="ed-pret" rows="2" class="nt-inp" style="resize:vertical"></textarea>
       </div>
+      <div class="mf full" style="grid-column:1/-1">
+        <label>Enlace al documento original (auto / fallo en Drive)</label>
+        <input id="ed-url" type="url" class="nt-inp" placeholder="https://drive.google.com/…">
+      </div>
     </div>
     <div id="ed-error" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);border-radius:8px;font-size:13px;color:#f87171"></div>
     <div style="display:flex;gap:10px">
@@ -1378,6 +1480,17 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
 
 
 
+<!-- v5 · NUEVA CONTRASEÑA (llega desde el correo de recuperación) -->
+<div class="overlay" id="overlay-clave" style="z-index:10000">
+  <div class="modal" style="max-width:400px;padding:28px">
+    <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--gold);margin-bottom:6px">🔑 Nueva contraseña</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Mínimo 8 caracteres.</div>
+    <input id="nc-1" type="password" class="nt-inp" style="width:100%;margin-bottom:10px" placeholder="Nueva contraseña" autocomplete="new-password">
+    <input id="nc-2" type="password" class="nt-inp" style="width:100%;margin-bottom:12px" placeholder="Repítela" autocomplete="new-password">
+    <div id="nc-error" style="display:none;margin-bottom:12px;font-size:12px;color:#f87171"></div>
+    <button class="mbtn mbtn-p" style="width:100%;justify-content:center" onclick="guardarNuevaClave()">Guardar contraseña</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1449,7 +1562,23 @@ const MAPA_SB_A_SHEET = {
   respuesta_pqr:         "RESPUESTA PQR",
   radicado_cumplimiento: "RADICADO DE CUMPLIMIENTO",
   sharepoint:            "SHAREPOINT",
-  notificado:            "NOTIFICADO"
+  notificado:            "NOTIFICADO",
+  // v4 · requieren correr el SQL de migración (v4_migracion.sql)
+  url_documento:         "URL DOCUMENTO",
+  sentido_fallo:         "SENTIDO FALLO",
+  fecha_notif_fallo:     "FECHA NOTIF FALLO",
+  orden_fallo:           "ORDEN FALLO",
+  impugnacion:           "IMPUGNACION",
+  radicado_impugnacion:  "RADICADO IMPUGNACION",
+  // v5 · sanciones por desacato (requieren v5_migracion.sql)
+  es_sancion:            "ES SANCION",
+  sancion_fecha:         "SANCION FECHA",
+  sancion_estado:        "SANCION ESTADO",
+  sancion_sancionado:    "SANCIONADO",
+  sancion_tipo:          "SANCION TIPO",
+  sancion_multa_smlmv:   "SANCION MULTA",
+  sancion_arresto_dias:  "SANCION ARRESTO",
+  sancion_notas:         "SANCION NOTAS"
 };
 // Mapa inverso: nombre del Sheet → columna Supabase (para guardar)
 const MAPA_SHEET_A_SB = Object.fromEntries(Object.entries(MAPA_SB_A_SHEET).map(([k,v])=>[v,k]));
@@ -1604,6 +1733,26 @@ function pintarCamposLargosModal(r, origen){
   [["DERECHO INVOCADO","m-derecho","m-derecho-w"],["HECHOS RESUMIDOS","m-hechos","m-hechos-w"],["PRETENSIONES","m-pret","m-pret-w"],["OBSERVACIONES","m-obs","m-obs-w"]].forEach(([col,id,wid])=>{
     const val=rVista[col]||"";document.getElementById(id).textContent=val||"—";document.getElementById(wid).style.display=val?"block":"none";
   });
+  pintarDocsModal(r, origen);
+}
+
+// v4 · Botones para abrir el PDF original (auto admisorio / fallo) desde el caso.
+// La URL la escribe el Apps Script al guardar el adjunto en Drive, o se pega a mano
+// en «Editar datos del caso». Solo se aceptan enlaces http(s).
+function pintarDocsModal(r, origen){
+  const w=document.getElementById("m-docs-w"); if(!w) return;
+  const ok=u=>/^https?:\/\//i.test(String(u||"").trim());
+  const links=[];
+  const propio=String(r["URL DOCUMENTO"]||"").trim();
+  const etq = origen==="fallo" ? "Ver fallo" : origen==="incidente" ? "Ver auto del incidente" : "Ver auto admisorio";
+  if(ok(propio)) links.push([etq, propio]);
+  if(origen==="fallo"||origen==="incidente"){
+    const tutOrig = tutelas.find(t => t["RADICADO"] && r["RADICADO"] && normRad(t["RADICADO"])===normRad(r["RADICADO"]));
+    if(tutOrig && ok(tutOrig["URL DOCUMENTO"])) links.push(["Ver auto admisorio", String(tutOrig["URL DOCUMENTO"]).trim()]);
+  }
+  w.innerHTML = links.length
+    ? links.map(([t,u])=>`<a href="${escAttr(u)}" target="_blank" rel="noopener" class="mbtn mbtn-s" style="text-decoration:none;border-color:rgba(96,165,250,.4);color:#60a5fa">📄 ${t}</a>`).join("")
+    : `<div style="font-size:11px;color:var(--muted)">📄 Sin documento original enlazado${(USAR_SUPABASE&&r._id)?" · puedes pegar el enlace en «✏️ Editar datos del caso»":""}</div>`;
 }
 
 // Al abrir un caso: baja sus campos largos (y los del admite original) y repinta
@@ -1720,6 +1869,8 @@ const EMAILS_TECNICA = [
 ].map(e=>e.toLowerCase());
 // Devuelve la pestaña inicial del modal según quién entró.
 function pestanaPorRol(){
+  if(PERFIL.rol==="tecnica") return "tecnica";
+  if(PERFIL.rol==="abogado") return "juridica";
   return EMAILS_TECNICA.includes((USUARIO_EMAIL||"").toLowerCase()) ? "tecnica" : "juridica";
 }
 const TIPOS_FALLO = ["Fallo de tutela","Sentencia","Incidente","Desacato","Incidente de desacato"];
@@ -1737,7 +1888,285 @@ function estaNotificado(r){
   return bruto;
 }
 
+// ════════ v4 · SENTIDO DEL FALLO E IMPUGNACIÓN ════════
+// Desfavorables para la Dirección = el juez concede (total o parcial) el amparo.
+// Término para impugnar: 3 días hábiles desde la notificación (art. 31 Decreto 2591/1991).
+const SENTIDOS_DESFAVORABLES=["Concede","Concede parcialmente"];
+const PLAZO_IMPUGNACION=3;
+function infoImpugnacion(r){
+  if(!r || r._cat!=="fallo" || r["ESTADO"]==="Anulado") return null;
+  if(!SENTIDOS_DESFAVORABLES.includes(String(r["SENTIDO FALLO"]||"").trim())) return null;
+  const pendiente=!String(r["IMPUGNACION"]||"").trim();
+  const fn=parseFechaReg(r["FECHA NOTIF FALLO"]);
+  if(!fn) return {sinFecha:true, pendiente, dias:null, limiteTxt:""};
+  const lim=sumarHabiles(fn, PLAZO_IMPUGNACION);
+  const limiteTxt=fmtFecha(lim);
+  return {sinFecha:false, pendiente, dias:diasHabilesRestantes(limiteTxt), limiteTxt};
+}
+function impugPendiente(r){ const i=infoImpugnacion(r); return !!(i && i.pendiente); }
+function chipImpug(r){
+  const i=infoImpugnacion(r); if(!i || !i.pendiente) return "";
+  const txt = i.sinFecha ? "Impugnar: falta fecha" : i.dias<0 ? "Impugnación vencida" : i.dias===0 ? "Impugnar hoy" : `Impugnar: ${i.dias}d háb.`;
+  const col = (i.sinFecha || i.dias<=1) ? "#f87171" : "#fbbf24";
+  return `<span title="Fallo desfavorable sin decisión de impugnación${i.limiteTxt?" · vence "+i.limiteTxt:""}" style="display:inline-block;margin-left:6px;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;background:${col}22;color:${col};border:1px solid ${col}55">${txt}</span>`;
+}
+// Asigna un valor a un <select>; si no existe la opción (dato antiguo o escrito por
+// el Apps Script) la agrega, para que al guardar no se borre en silencio.
+function _setSelect(id, val){
+  const el=document.getElementById(id); if(!el) return;
+  val=String(val||"").trim();
+  if(val && ![...el.options].some(o=>o.value===val)){ const o=document.createElement("option"); o.textContent=val; o.value=val; el.appendChild(o); }
+  el.value=val;
+}
+function _aISO(s){ const d=parseFechaReg(s); return d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` : ""; }
+function pintarImpugModal(){
+  const box=document.getElementById("m-impug-box"); if(!box) return;
+  const v=id=>{const el=document.getElementById(id); return el?el.value:"";};
+  const i=infoImpugnacion({_cat:"fallo", ESTADO:"", "SENTIDO FALLO":v("m-sentido"), "FECHA NOTIF FALLO":v("m-fnotif"), "IMPUGNACION":v("m-impug")});
+  box.style.display = i ? "block" : "none";
+  if(!i) return;
+  const inf=document.getElementById("m-impug-info");
+  if(i.sinFecha){ inf.innerHTML=`<span style="color:#f87171">⚠️ Fallo desfavorable. Registra la fecha de notificación para calcular el término de impugnación (${PLAZO_IMPUGNACION} días hábiles).</span>`; return; }
+  const cuando = i.dias<0 ? `venció hace ${Math.abs(i.dias)} día(s) hábil(es)` : i.dias===0 ? "vence <b>hoy</b>" : i.dias===1 ? "vence el próximo día hábil" : `quedan ${i.dias} días hábiles`;
+  const col = !i.pendiente ? "#4ade80" : (i.dias<=1 ? "#f87171" : "#fbbf24");
+  inf.innerHTML = `<span style="color:${col}">${i.pendiente?"⏳":"✅"} Término para impugnar: hasta el <b>${i.limiteTxt}</b> · ${cuando}${i.pendiente?"":" · decisión registrada"}.</span>`;
+}
+
 let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
+
+// ════════ v5 · PERFILES Y PERMISOS ════════
+// La fuente de verdad es la tabla public.perfiles + RLS en Supabase (v5_migracion.sql).
+// Este filtro del navegador es una segunda capa: la que de verdad impide ver casos
+// ajenos es la política RLS, porque el navegador se puede manipular.
+//   admin   → ve y gestiona todo (Juan Pablo, Jeison)
+//   tecnica → ve todo para la gestión PQR/SharePoint, sin funciones de administración
+//   abogado → solo los casos cuyo RESPONSABLE es él/ella
+//   legacy  → la tabla perfiles aún no existe: comportamiento anterior (ve todo)
+let PERFIL = { rol:"legacy", nombre:"", nombreAbogado:"", alias:[] };
+function veTodo(){ return ["admin","tecnica","legacy"].includes(PERFIL.rol); }
+function esAdmin(){ return PERFIL.rol==="admin" || PERFIL.rol==="legacy"; }
+async function cargarPerfil(){
+  try{
+    let uid="";
+    if(sbAuth){ const {data}=await sbAuth.auth.getSession(); uid=data&&data.session&&data.session.user?data.session.user.id:""; }
+    if(!uid) return;
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/perfiles?user_id=eq.${encodeURIComponent(uid)}&select=nombre,rol,nombre_abogado,alias,activo`,{ headers: await getAuthHeaders() });
+    if(res.status===404 || res.status===400){ console.warn("Tabla perfiles no existe todavía: modo anterior"); return; }
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const f=(await res.json())[0];
+    if(!f || f.activo===false){ PERFIL={rol:"sinperfil",nombre:"",nombreAbogado:"",alias:[]}; return; }
+    PERFIL={ rol:f.rol, nombre:f.nombre||"", nombreAbogado:f.nombre_abogado||"", alias:Array.isArray(f.alias)?f.alias:[] };
+  }catch(e){ console.warn("No se pudo leer el perfil:", e.message); }
+}
+function misNombres(){ return [PERFIL.nombreAbogado, ...PERFIL.alias].map(x=>String(x||"").trim()).filter(Boolean); }
+function esMio(r){ const ns=misNombres(); return ns.some(n=>matchAbo(r["RESPONSABLE"], n)); }
+function aplicarVisibilidad(){
+  if(veTodo()) return;
+  const f = PERFIL.rol==="sinperfil" ? (()=>false) : esMio;
+  tutelas=tutelas.filter(f); fallos=fallos.filter(f); incidentes=incidentes.filter(f);
+}
+function aplicarPermisosUI(){
+  const ocultar=(sel,oc)=>document.querySelectorAll(sel).forEach(el=>{ el.style.display = oc ? "none" : ""; });
+  const abogado = !veTodo();
+  // Pestañas que no aplican a un abogado
+  ["#tab-mios","#tab-reparto","#tab-pqr","#tab-duplicados"].forEach(id=>ocultar(id, abogado));
+  // Filtros por abogado: un abogado solo tiene sus casos
+  ["fa-abo","ff-abo","fo-abo","fh-abo","fs-abo"].forEach(id=>{ const el=document.getElementById(id); if(el){ if(abogado) el.value=""; el.style.display = abogado ? "none" : ""; } });
+  // Crear casos a mano y el informe ejecutivo: administración / técnica
+  ocultar('[onclick="abrirNuevaTutela()"],[onclick="abrirNuevoIncidente()"]', abogado);
+  ocultar('[onclick="generarInformeTutelas()"]', !esAdmin());
+  const pill=document.getElementById("user-pill");
+  if(pill){
+    const rolTxt={admin:"Administrador",tecnica:"Gestión técnica",abogado:"Abogado(a)",sinperfil:"Sin perfil"}[PERFIL.rol];
+    if(rolTxt){ pill.style.display="flex"; pill.innerHTML=`👤 <b>${esc((PERFIL.nombre||USUARIO_EMAIL||"").split(" ").slice(0,2).join(" "))}</b> · ${rolTxt}`; }
+  }
+  if(PERFIL.rol==="sinperfil") toast("⚠️ Tu usuario no tiene perfil asignado. Pide al administrador que te lo cree.","err");
+}
+
+// ════════ v5 · SANCIONES POR DESACATO ════════
+const SANCION_VIGENTE=["Impuesta","En consulta","Confirmada"];
+let pagSan=1;
+function esSancion(r){ return String(r&&r["ES SANCION"]||"").toLowerCase()==="true"; }
+function estadoSancion(r){ return String(r["SANCION ESTADO"]||"").trim() || "Impuesta"; }
+function badgeSancion(e){
+  const c={"Impuesta":"#f87171","En consulta":"#fb923c","Confirmada":"#ef4444","Revocada en consulta":"#4ade80","Levantada por cumplimiento":"#60a5fa","Cumplida":"#94a3b8"}[e]||"#a78bfa";
+  return `<span class="san-est" style="background:${c}1f;color:${c};border-color:${c}55">${esc(e)}</span>`;
+}
+function textoSancion(r){
+  const p=[]; const m=String(r["SANCION MULTA"]||"").trim(), a=String(r["SANCION ARRESTO"]||"").trim();
+  if(m && Number(m)>0) p.push(`${m} SMLMV`); if(a && Number(a)>0) p.push(`${a} día(s) de arresto`);
+  return p.join(" + ") || (r["SANCION TIPO"]||"—");
+}
+function renderSanciones(){
+  const el=document.getElementById("body-sanciones"); if(!el) return;
+  const todas=incidentes.filter(esSancion);
+  const q=(document.getElementById("fs-q").value||"").toLowerCase().trim();
+  const abo=document.getElementById("fs-abo").value;
+  const est=document.getElementById("fs-est").value;
+  const selA=document.getElementById("fs-anio");
+  const anios=[...new Set(todas.map(r=>{const d=parseFechaReg(r["SANCION FECHA"]); return d?d.getFullYear():null;}).filter(Boolean))].sort((a,b)=>b-a);
+  const vA=selA.value; selA.innerHTML=`<option value="">Todos los años</option>`+anios.map(a=>`<option>${a}</option>`).join(""); selA.value=vA;
+  if(_pagPorFiltro("san", q+"|"+abo+"|"+est+"|"+selA.value)) pagSan=1;
+  const filt=todas.filter(r=>{
+    if(abo && !matchAbo(r["RESPONSABLE"],abo)) return false;
+    if(est==="__vig" && !SANCION_VIGENTE.includes(estadoSancion(r))) return false;
+    if(est && est!=="__vig" && estadoSancion(r)!==est) return false;
+    if(selA.value){ const d=parseFechaReg(r["SANCION FECHA"]); if(!d || String(d.getFullYear())!==selA.value) return false; }
+    if(q && ![r["ACCIONANTE"],r["RADICADO"],r["JUZGADO"],r["SANCIONADO"],r["CC / NIT"]].join(" ").toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b)=>{
+    const va=SANCION_VIGENTE.includes(estadoSancion(a))?0:1, vb=SANCION_VIGENTE.includes(estadoSancion(b))?0:1;
+    if(va!==vb) return va-vb;
+    return (parseFechaReg(b["SANCION FECHA"])||0)-(parseFechaReg(a["SANCION FECHA"])||0);
+  });
+  // KPIs (sobre todas las sanciones visibles para este usuario)
+  const vig=todas.filter(r=>SANCION_VIGENTE.includes(estadoSancion(r)));
+  const cons=todas.filter(r=>estadoSancion(r)==="En consulta");
+  const lev=todas.filter(r=>["Revocada en consulta","Levantada por cumplimiento"].includes(estadoSancion(r)));
+  const multa=vig.reduce((a,r)=>a+(Number(r["SANCION MULTA"])||0),0);
+  const arresto=vig.reduce((a,r)=>a+(Number(r["SANCION ARRESTO"])||0),0);
+  const fmt=n=>Number.isInteger(n)?n:n.toFixed(1);
+  document.getElementById("stats-sanciones").innerHTML=
+    scardClick(vig.length,"Vigentes","c-red","fs-est","__vig")+
+    scardClick(cons.length,"En consulta","c-amber","fs-est","En consulta")+
+    scardClick(lev.length,"Levantadas o revocadas","c-green","","")+
+    scardClick(todas.length,"Registradas","c-blue","","")+
+    scardClick(fmt(multa),"SMLMV en multas vigentes","c-purple","","")+
+    scardClick(arresto,"Días de arresto vigentes","c-red","","");
+  const b=document.getElementById("badge-sanciones"); if(b){ b.textContent=vig.length; b.style.display=vig.length?"inline-block":"none"; }
+  // Agrupaciones
+  const agrupar=(key)=>{ const m={}; todas.forEach(r=>{ const k=String(r[key]||"Sin dato").trim()||"Sin dato"; m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6); };
+  const barraS=(label,n,total,color)=>`<div class="est-row"><span class="est-label" title="${escAttr(label)}">${esc(abrev(label,26))}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${total?Math.round(n/total*100):0}%;background:${color}"></div></div><span class="est-val" style="color:${color}">${n}</span></div>`;
+  const tarjeta=(tit,filas,color)=>`<div class="est-card"><div class="est-title" style="color:${color}">${tit}</div>${filas.length?filas.map(([k,n])=>barraS(k,n,todas.length,color)).join(""):'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`;
+  document.getElementById("grid-sanciones").innerHTML = todas.length
+    ? tarjeta("👤 Por funcionario sancionado",agrupar("SANCIONADO"),"#f87171")+tarjeta("⚖️ Por juzgado",agrupar("JUZGADO"),"#a78bfa")+(veTodo()?tarjeta("🧑‍⚖️ Por abogado a cargo",agrupar("RESPONSABLE"),"#fbbf24"):"")
+    : "";
+  window._exportSanciones=filt;
+  const pag=renderPag(filt,pagSan,"pag-san-info","pag-san-btns","pag-san");
+  if(!pag.length){
+    el.innerHTML=`<div class="empty ok"><div class="empty-icon">🛡️</div><div class="empty-titulo">${todas.length?"Ninguna sanción coincide con el filtro":"No hay sanciones registradas"}</div><div class="empty-sub">${todas.length?"Cambia o limpia los filtros.":"Cuando un desacato termine en sanción, ábrelo y usa «🚨 Marcar como sanción»."}</div></div>`;
+    return;
+  }
+  window._pagSanciones=pag;
+  el.innerHTML=pag.map((r,i)=>`<div class="fila tcols-san" onclick="abrirModalIdx('_pagSanciones',${i},'incidente')">
+    <div class="cel">${badgeSancion(estadoSancion(r))}</div>
+    <div class="cel sub">${(()=>{const fd=parseFechaReg(r["SANCION FECHA"]);return fd?fmtFecha(fd):"—";})()}</div>
+    <div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],34))}<div class="sub" style="font-size:10.5px">${esc(r["RADICADO"]||"")}</div></div>
+    <div class="cel" title="${escAttr(r["SANCIONADO"])}">${esc(abrev(r["SANCIONADO"]||"—",38))}</div>
+    <div class="cel col-hide sub">${esc(textoSancion(r))}</div>
+    <div class="cel col-hide sub" title="${escAttr(r["JUZGADO"])}">${esc(abrev(r["JUZGADO"]||"—",28))}</div>
+    <div class="cel col-hide sub">${esc(pNom(r["RESPONSABLE"]))}</div>
+  </div>`).join("");
+}
+function toggleSancionModal(){
+  const on=document.getElementById("m-es-sancion").checked;
+  document.getElementById("m-san-campos").style.display = on ? "block" : "none";
+  if(on){
+    if(!document.getElementById("m-san-fecha").value) document.getElementById("m-san-fecha").value=_hoyISO();
+    if(!document.getElementById("m-san-quien").value) document.getElementById("m-san-quien").value="Juan Pablo Gómez Londoño — Director Administrativo de Ejecuciones Fiscales";
+  }
+  actualizarSaveBar();
+}
+function marcarSancionDesdeInfo(){
+  switchMTab("juridica");
+  const chk=document.getElementById("m-es-sancion");
+  if(!chk.checked){ chk.checked=true; toggleSancionModal(); }
+  const sw=document.getElementById("m-san-wrap"); if(sw.scrollIntoView) sw.scrollIntoView({behavior:"smooth",block:"center"});
+  toast("Completa los datos de la sanción y pulsa «Guardar cambios»","");
+}
+
+// ════════ v5 · ¿LLEGÓ EL FALLO? ════════
+// Admite respondido, de los últimos 4 meses, sin ningún fallo con su radicado y con más de
+// DIAS_ESPERA_FALLO hábiles desde la fecha inicial (el juez tiene 10 hábiles para fallar).
+const DIAS_ESPERA_FALLO=15;
+function admitesSinFallo(){
+  const conFallo=new Set(fallos.map(f=>normRad(f["RADICADO"])).filter(x=>!radDebil(x)));
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  const limite=new Date(hoy); limite.setDate(limite.getDate()-120);
+  return tutelas.filter(r=>{
+    if(r["ESTADO"]!=="Respondido") return false;
+    const rad=normRad(r["RADICADO"]); if(radDebil(rad) || conFallo.has(rad)) return false;
+    const fi=parseFechaReg(r["FECHA INICIAL"]); if(!fi || fi<limite) return false;
+    return _habilesEntre(fi, hoy) > DIAS_ESPERA_FALLO;
+  }).sort((a,b)=>(parseFechaReg(a["FECHA INICIAL"])||0)-(parseFechaReg(b["FECHA INICIAL"])||0));
+}
+
+// ════════ v5 · HISTORIAL DE CAMBIOS (bitácora) ════════
+// Se consulta solo al pulsar el botón (no aumenta el tráfico de las listas).
+async function verHistorialCaso(){
+  const body=document.getElementById("m-hist-body"); if(!body || !actual) return;
+  if(body.style.display==="block"){ body.style.display="none"; return; }
+  body.style.display="block";
+  if(!actual._id){ body.innerHTML=`<div style="font-size:12px;color:var(--muted)">Este registro no tiene historial.</div>`; return; }
+  body.innerHTML=`<div style="font-size:12px;color:var(--muted)">Cargando historial…</div>`;
+  try{
+    const url=`${SUPABASE_URL}/rest/v1/actuaciones_log?actuacion_id=eq.${encodeURIComponent(actual._id)}&select=accion,usuario,cambiado_en,cambios&order=cambiado_en.desc&limit=40`;
+    const res=await fetch(url,{ headers: await getAuthHeaders() });
+    if(res.status===404){ body.innerHTML=`<div style="font-size:12px;color:var(--muted)">El historial se activa al correr la migración v5 en Supabase.</div>`; return; }
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const filas=await res.json();
+    if(!filas.length){ body.innerHTML=`<div style="font-size:12px;color:var(--muted)">Sin cambios registrados desde que se activó el historial.</div>`; return; }
+    const etq=c=>{ const k=MAPA_SB_A_SHEET[c]; return (k && ETQ_CAMPO[k]) || (k ? k.charAt(0)+k.slice(1).toLowerCase() : c); };
+    const val=v=> v===null||v===undefined||v==="" ? "(vacío)" : typeof v==="boolean" ? (v?"sí":"no") : abrev(String(v),70);
+    body.innerHTML=filas.map(f=>{
+      const quien = !f.usuario || f.usuario==="sistema" ? "Sistema (correo automático)" : f.usuario;
+      const cuando = new Date(f.cambiado_en).toLocaleString("es-CO",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+      const det = f.accion==="creado" ? "Caso creado" : Object.entries(f.cambios||{}).map(([c,par])=>`<div>• <b>${esc(etq(c))}</b>: ${esc(val(par&&par[0]))} → ${esc(val(par&&par[1]))}</div>`).join("");
+      return `<div class="hist-item"><div class="q">${esc(cuando)} · ${esc(quien)}</div>${det}</div>`;
+    }).join("");
+  }catch(e){ body.innerHTML=`<div style="font-size:12px;color:#f87171">No se pudo cargar el historial: ${esc(e.message)}</div>`; }
+}
+
+// ════════ v5 · FECHAS Y TÉRMINO ════════
+function _aDMY(v){ const d=parseFechaReg(v); return d ? fmtFecha(d) : ""; }
+// Calcula la fecha límite a partir de la fecha inicial y el término del auto.
+// Horas → días hábiles redondeando hacia arriba (48 h = 2 días hábiles).
+function calcTermino(pref){
+  const fi=parseFechaReg(document.getElementById(pref+"-fini").value);
+  const n=parseInt(document.getElementById(pref+"-term").value,10);
+  const u=document.getElementById(pref+"-term-u").value;
+  const nota=document.getElementById(pref+"-flim-nota");
+  if(!fi || !Number.isFinite(n) || n<=0){ if(nota) nota.textContent=""; return; }
+  const dias = u==="h" ? Math.max(1,Math.ceil(n/24)) : n;
+  document.getElementById(pref+"-flim").value=_aISO(fmtFecha(sumarHabiles(fi,dias)));
+  if(nota) nota.textContent = `(calculada: ${dias} día(s) hábil(es) desde la fecha inicial${u==="h"?", aprox. desde horas":""})`;
+}
+
+// ════════ v5 · RECUPERAR CONTRASEÑA ════════
+async function recuperarClave(){
+  const email=document.getElementById("login-email").value.trim();
+  if(!email){ mostrarLoginError("Escribe tu correo arriba y vuelve a pulsar «¿Olvidaste tu contraseña?»."); return; }
+  try{
+    const { error } = await sbAuth.auth.resetPasswordForEmail(email, { redirectTo: location.origin+location.pathname });
+    if(error) throw error;
+    const e=document.getElementById("login-error");
+    e.style.display="block"; e.style.color="#4ade80"; e.style.background="rgba(34,197,94,.1)"; e.style.borderColor="rgba(34,197,94,.3)";
+    e.textContent="Si el correo está registrado, te llegará un enlace para crear una nueva contraseña.";
+  }catch(err){ mostrarLoginError("No se pudo enviar el correo: "+(err.message||err)); }
+}
+function abrirNuevaClave(){ const o=document.getElementById("overlay-clave"); if(o) o.classList.add("open"); }
+async function guardarNuevaClave(){
+  const a=document.getElementById("nc-1").value, b=document.getElementById("nc-2").value, er=document.getElementById("nc-error");
+  er.style.display="none";
+  if(a.length<8){ er.textContent="La contraseña debe tener al menos 8 caracteres."; er.style.display="block"; return; }
+  if(a!==b){ er.textContent="Las contraseñas no coinciden."; er.style.display="block"; return; }
+  const { error } = await sbAuth.auth.updateUser({ password:a });
+  if(error){ er.textContent="No se pudo guardar: "+error.message; er.style.display="block"; return; }
+  document.getElementById("overlay-clave").classList.remove("open");
+  history.replaceState(null,"",location.pathname);
+  toast("✅ Contraseña actualizada","ok");
+}
+try{ if(sbAuth) sbAuth.auth.onAuthStateChange(ev=>{ if(ev==="PASSWORD_RECOVERY") setTimeout(abrirNuevaClave,400); }); }catch(e){}
+
+// ════════ v5 · NAVEGACIÓN CON TECLADO EN LISTAS ════════
+(function(){
+  const SEL=".fila, .hoy-item, .gr-item[data-i]";
+  const marcar=()=>document.querySelectorAll(SEL).forEach(el=>{ if(!el.hasAttribute("tabindex")){ el.setAttribute("tabindex","0"); el.setAttribute("role","button"); } });
+  new MutationObserver(()=>marcar()).observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener("keydown",e=>{
+    if((e.key==="Enter"||e.key===" ") && e.target && e.target.matches && e.target.matches(SEL)){ e.preventDefault(); e.target.click(); }
+  });
+})();
 let pagAdm=1, pagFal=1, pagHis=1, pagInc=1;
 // Firma de los filtros de cada pestana. Si cambia, la paginacion vuelve a la
 // pagina 1: si no, estando en la pagina 5 y filtrando a 120 resultados el slice
@@ -1808,20 +2237,40 @@ async function avanzarTurnoRR(){
   }catch(e){ console.warn("No se pudo guardar el turno en Supabase:", e.message); }
 }
 
+// v4 · Toma el turno de forma ATÓMICA en Supabase (RPC tomar_turno_reparto).
+// Devuelve el índice que le tocó a esta tutela, o null si la RPC aún no existe
+// (en ese caso se usa el mecanismo anterior, avanzarTurnoRR).
+async function tomarTurnoAtomico(){
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/rpc/tomar_turno_reparto`,{
+      method:"POST", headers: await getAuthHeaders({"Content-Type":"application/json"}), body:"{}" });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const n=Number(await res.json());
+    if(!Number.isFinite(n)) throw new Error("respuesta inválida");
+    window._rrIdx=n+1;
+    try{ localStorage.setItem(RR_KEY, String(n+1)); }catch(e){}
+    return n;
+  }catch(e){ console.warn("RPC tomar_turno_reparto no disponible:", e.message); return null; }
+}
+
 function abrirNuevaTutela(){
   // Llenar el desplegable de abogados (solo disponibles, en vivo)
   const sel = document.getElementById("nt-abo");
   sel.innerHTML = ABOGADOS_RR.map(a=>`<option>${a}</option>`).join("");
-  // Pre-seleccionar el siguiente por turno
+  // Pre-seleccionar el siguiente por turno (y refrescarlo con el turno real del servidor)
   sel.value = siguienteAbogadoRR();
+  window._rrPropuesto = sel.value;
+  cargarTurnoDesdeSupabase().then(()=>{
+    if(sel.value===window._rrPropuesto){ sel.value=siguienteAbogadoRR(); window._rrPropuesto=sel.value; }
+  }).catch(()=>{});
   // Limpiar campos
   ["nt-acc","nt-cc","nt-rad","nt-juz","nt-fini","nt-flim","nt-derecho","nt-hechos","nt-pret"].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value="";
   });
-  // Fecha inicial = hoy por defecto
-  const hoy = new Date();
-  document.getElementById("nt-fini").value =
-    String(hoy.getDate()).padStart(2,"0")+"/"+String(hoy.getMonth()+1).padStart(2,"0")+"/"+hoy.getFullYear();
+  // Fecha inicial = hoy por defecto (selector de calendario)
+  document.getElementById("nt-fini").value = _hoyISO();
+  document.getElementById("nt-term").value = "";
+  document.getElementById("nt-flim-nota").textContent = "";
   document.getElementById("nt-error").style.display="none";
   document.getElementById("overlay-nueva").classList.add("open");
 }
@@ -1844,17 +2293,27 @@ async function guardarNuevaTutela(){
     "TIPO": "Tutela",
     "RESPONSABLE": document.getElementById("nt-abo").value,
     "ESTADO": "Nuevo",
-    "FECHA INICIAL": document.getElementById("nt-fini").value.trim(),
-    "FECHA LÍMITE": document.getElementById("nt-flim").value.trim(),
+    "FECHA INICIAL": _aDMY(document.getElementById("nt-fini").value),
+    "FECHA LÍMITE": _aDMY(document.getElementById("nt-flim").value),
     "DERECHO INVOCADO": document.getElementById("nt-derecho").value.trim(),
     "HECHOS RESUMIDOS": document.getElementById("nt-hechos").value.trim(),
     "PRETENSIONES": document.getElementById("nt-pret").value.trim()
   };
   btn.textContent="Creando..."; btn.style.pointerEvents="none";
   try{
+    // v4 · el turno se toma en el servidor en un solo paso: dos personas creando a la
+    // vez (o el Apps Script repartiendo) ya no reciben el mismo índice.
+    const turnoTomado = await tomarTurnoAtomico();
+    if(turnoTomado!==null && ABOGADOS_RR.length && campos["RESPONSABLE"]===window._rrPropuesto){
+      const aboTurno = ABOGADOS_RR[turnoTomado % ABOGADOS_RR.length];
+      if(aboTurno && aboTurno!==campos["RESPONSABLE"]){
+        campos["RESPONSABLE"]=aboTurno;
+        toast(`ℹ️ El turno avanzó mientras llenabas el formulario: se asigna a ${aboTurno}`,"");
+      }
+    }
     const creado = await Repo.crear(campos);
     if(!creado) throw new Error("Supabase no devolvió el registro creado");
-    await avanzarTurnoRR(); // avanzar el turno (compartido en Supabase + espejo local)
+    if(turnoTomado===null) await avanzarTurnoRR(); // respaldo si la RPC aún no existe
     toast("✅ Tutela creada correctamente","ok");
     document.getElementById("overlay-nueva").classList.remove("open");
     await cargarDatos(); // recargar para que aparezca en la lista
@@ -2107,11 +2566,12 @@ async function abrirEditarCaso(){
   set("ed-cc",      actual["CC / NIT"]||"");
   set("ed-rad",     actual["RADICADO"]||"");
   set("ed-juz",     actual["JUZGADO"]||"");
-  set("ed-fini",    actual["FECHA INICIAL"]||"");
-  set("ed-flim",    actual["FECHA LÍMITE"]||actual["FECHA LIMITE"]||"");
+  set("ed-fini",    _aISO(actual["FECHA INICIAL"]));
+  set("ed-flim",    actual._flimEstimada ? "" : _aISO(actual["FECHA LÍMITE"]||actual["FECHA LIMITE"]));
   set("ed-derecho", actual["DERECHO INVOCADO"]||"");
   set("ed-hechos",  actual["HECHOS RESUMIDOS"]||"");
   set("ed-pret",    actual["PRETENSIONES"]||"");
+  set("ed-url",     actual["URL DOCUMENTO"]||"");
   // Selector de abogado (lista completa) con el actual preseleccionado
   const sel=document.getElementById("ed-abo");
   const actualAbo=actual["RESPONSABLE"]||"";
@@ -2119,6 +2579,8 @@ async function abrirEditarCaso(){
   sel.innerHTML=ABOGADOS.map(a=>`<option>${a}</option>`).join("")
     + (enLista?"":`<option>${esc(actualAbo)}</option>`);
   sel.value=actualAbo;
+  sel.disabled = !veTodo();   // v5 · reasignar es de admin/técnica
+  sel.title = veTodo() ? "" : "Solo el administrador puede reasignar el caso";
   document.getElementById("ed-error").style.display="none";
   document.getElementById("overlay-editar").classList.add("open");
 }
@@ -2143,13 +2605,20 @@ async function guardarEdicionCaso(){
     "CC / NIT": g("ed-cc"),
     "RADICADO": rad,
     "JUZGADO": g("ed-juz"),
-    "FECHA INICIAL": g("ed-fini"),
-    "FECHA LÍMITE": g("ed-flim"),
+    "FECHA INICIAL": _aDMY(g("ed-fini")),
+    "FECHA LÍMITE": _aDMY(g("ed-flim")),
     "RESPONSABLE": document.getElementById("ed-abo").value,
     "DERECHO INVOCADO": g("ed-derecho"),
     "HECHOS RESUMIDOS": g("ed-hechos"),
     "PRETENSIONES": g("ed-pret")
   };
+  // v4 · enlace al documento: solo se envía si cambió (y debe ser un enlace web)
+  const urlDoc=g("ed-url");
+  if(urlDoc && !/^https?:\/\//i.test(urlDoc)){
+    errBox.textContent="El enlace al documento debe empezar por https://";
+    errBox.style.display="block"; return;
+  }
+  if(urlDoc!==String(actual["URL DOCUMENTO"]||"").trim()) campos["URL DOCUMENTO"]=urlDoc;
   btn.textContent="Guardando..."; btn.style.pointerEvents="none";
   try{
     let guardado;
@@ -2239,9 +2708,8 @@ const NORM_TIPO={
   "sancion":"Sanción","sanción":"Sanción","reparto":"Reparto"
 };
 // ── Estimación de FECHA LÍMITE cuando el registro no la trae ──
-// Los plazos de tutela se cuentan en días HÁBILES (sin sábados ni domingos).
-// No se descuentan festivos: mantener esa tabla año a año es frágil, así que la
-// estimación es un apoyo, NO un dato oficial. Por eso se marca _flimEstimada
+// Los plazos de tutela se cuentan en días HÁBILES (sin sábados, domingos ni
+// festivos — tabla FESTIVOS_CO). La estimación es un apoyo, NO un dato oficial. Por eso se marca _flimEstimada
 // y la vista la muestra con "~" para que el abogado verifique el auto/fallo.
 // Plazos por tipo: Admite/Tutela 3, Fallo/Sentencia 2, Incidente/Desacato 3.
 const PLAZO_HABIL={
@@ -2250,14 +2718,34 @@ const PLAZO_HABIL={
   "Incidente":3,"Incidente de desacato":3,"Desacato":3
 };
 function sumarHabiles(fechaBase,n){
+  // v4 · descuenta sábados, domingos Y festivos (misma regla que el semáforo)
   const d=new Date(fechaBase.getTime());
   let restan=n;
   while(restan>0){
     d.setDate(d.getDate()+1);
-    const dow=d.getDay();          // 0=domingo, 6=sábado
-    if(dow!==0 && dow!==6) restan--;
+    if(_esHabil(d)) restan--;
   }
   return d;
+}
+// v4 · RELOJ ÚNICO de la app. Días hábiles que faltan, con la convención:
+//   0 = vence hoy · 1 = vence el próximo día hábil · negativo = hábiles vencidos.
+// Si la fecha límite cae en día no hábil, vence el siguiente hábil (se ve como "hoy"
+// cuando ya pasó el fin de semana/festivo). Semáforo, tarjetas, filtros, banner,
+// cockpit "Hoy" y modal usan TODOS este mismo número (r._dias === r._diasHab).
+function diasHabilesRestantes(fecha){
+  const lim=parseFechaReg(fecha);
+  if(!lim) return null;
+  lim.setHours(0,0,0,0);
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  let n=0;
+  if(lim>hoy){
+    const d=new Date(hoy);
+    while(true){ d.setDate(d.getDate()+1); if(d>lim) break; if(_esHabil(d)) n++; }
+    return n;                       // hábiles en (hoy, límite]
+  }
+  const d=new Date(lim);
+  while(d<hoy){ if(_esHabil(d)) n--; d.setDate(d.getDate()+1); }
+  return n;                         // hábiles en [límite, hoy) en negativo
 }
 function fmtFecha(d){
   return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
@@ -2280,8 +2768,10 @@ function normalizarRegistro(r){
       r._flimEstimada=true;
     }
   }
-  r._dias=calcDias(flim);
-  r._diasHab=calcDiasHab(flim);   // vr3 · días hábiles (semáforo y cockpit)
+  // v4 · un solo reloj: antes _dias era calendario y _diasHab hábiles, y cada
+  // pantalla mostraba una urgencia distinta para el mismo caso.
+  r._dias=diasHabilesRestantes(flim);
+  r._diasHab=r._dias;
   return r;
 }
 const filaValida=r=>(r["ACCIONANTE"]||"").trim()||(r["TIPO"]||"").trim()||(r["RADICADO"]||"").trim();
@@ -2504,10 +2994,10 @@ function semaforo(dias,estado){
   if (EST_HIST.includes(estado)) return`<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":estado==="Hecho superado"?"Superado":estado==="Anulado"?"Anulado":"Fin"}</span>`;
   if (dias===null) return`<span class="sem sem-g"><span class="sem-dot"></span>Sin fecha</span>`;
   if (dias<0)  return`<span class="sem sem-r"><span class="sem-dot"></span>Vencido</span>`;
-  if (dias<=1) return`<span class="sem sem-r"><span class="sem-dot"></span>¡Hoy!</span>`;
-  if (dias<=2) return`<span class="sem sem-r"><span class="sem-dot"></span>${dias}d háb.</span>`;
-  if (dias<=4) return`<span class="sem sem-a"><span class="sem-dot"></span>${dias}d háb.</span>`;
-  if (dias<=7) return`<span class="sem sem-y"><span class="sem-dot"></span>${dias}d háb.</span>`;
+  if (dias===0) return`<span class="sem sem-r"><span class="sem-dot"></span>¡Hoy!</span>`;
+  if (dias===1) return`<span class="sem sem-r"><span class="sem-dot"></span>Mañana</span>`;
+  if (dias<=3) return`<span class="sem sem-a"><span class="sem-dot"></span>${dias}d háb.</span>`;
+  if (dias<=6) return`<span class="sem sem-y"><span class="sem-dot"></span>${dias}d háb.</span>`;
   return`<span class="sem sem-v"><span class="sem-dot"></span>${dias}d háb.</span>`;
 }
 function badgeTipo(t){const m={"Tutela":"bt-tutela","Admite":"bt-tutela","Fallo de tutela":"bt-fallo","Sentencia":"bt-sent","Incidente":"bt-sent","Impugnación":"bt-impug","Apertura":"bt-aper","Requerimiento":"bt-req","Sanción":"bt-sanc","Desacato":"bt-inc","Incidente de desacato":"bt-inc"};return`<span class="bt ${m[t]||"bt-otro"}">${esc(t)||"—"}</span>`;}
@@ -2530,7 +3020,7 @@ function skeletonFilas(n,colsClass){
   }
   return `<div class="sk-wrap">${filas}</div>`;
 }
-function clsFila(dias,est){if(EST_HIST.includes(est))return"";if(dias!==null&&dias<=2)return" urgente";if(dias!==null&&dias<=5)return" proximo";return"";}
+function clsFila(dias,est){if(EST_HIST.includes(est))return"";if(dias!==null&&dias<=1)return" urgente";if(dias!==null&&dias<=3)return" proximo";return"";}
 
 function renderPag(datos,pag,infoId,btnsId,pagId){
   const total=datos.length,pages=Math.max(1,Math.ceil(total/PER_PAGE));
@@ -2559,12 +3049,14 @@ function changePagSilencioso(pagId,p){
   else if(pagId==="pag-fallos")pagFal=p;
   else if(pagId==="pag-his")pagHis=p;
   else if(pagId==="pag-otros")pagInc=p;
+  else if(pagId==="pag-san")pagSan=p;
 }
 function changePag(pagId,p){
   if(pagId==="pag-admites"){pagAdm=p;renderAdmites();}
   else if(pagId==="pag-fallos"){pagFal=p;renderFallos();}
   else if(pagId==="pag-his"){pagHis=p;renderHistorico();}
   else if(pagId==="pag-otros"){pagInc=p;renderOtros();}
+  else if(pagId==="pag-san"){pagSan=p;renderSanciones();}
 }
 
 function renderAdmites(){
@@ -2616,7 +3108,8 @@ function renderFallos(){
   const est=document.getElementById("ff-est").value;
   if(_pagPorFiltro("fal", q+"|"+tp+"|"+abo+"|"+est)) pagFal=1;
   const filtFal=byUrg(fallos.filter(r=>{
-    if(!est&&EST_HIST.includes(r["ESTADO"]))return false;
+    // v4 · un fallo cerrado puede seguir con la impugnación pendiente: no esconderlo en ese filtro
+    if(!est&&EST_HIST.includes(r["ESTADO"])&&!(quickFal==='impug'&&impugPendiente(r)))return false;
     if(tp&&r["TIPO"]!==tp)return false;
     if(abo&&!matchAbo(r["RESPONSABLE"],abo))return false;
     if(est&&r["ESTADO"]!==est)return false;
@@ -2630,14 +3123,16 @@ function renderFallos(){
     scardQuick(activos.length,"Total activos","c-blue","fal",null)+
     scardQuick(urg.length,"Urgentes ≤3d","c-red","fal","urg3")+
     scardClick(fal.length,"Fallos","c-amber","ff-tp","Fallo de tutela")+
-    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia");
+    scardClick(sent.length,"Sentencias","c-purple","ff-tp","Sentencia")+
+    scardQuick(fallos.filter(impugPendiente).length,"Impugnación pendiente","c-red","fal","impug")+
+    scardQuick(activos.filter(r=>!String(r["SENTIDO FALLO"]||"").trim()).length,"Sin sentido del fallo","c-amber","fal","sinsentido");
   document.getElementById("badge-fallos").textContent=activos.length;
   const visiblesFal=aplicarQuick(filtFal,quickFal);
   const pag=renderPag(visiblesFal,pagFal,"pag-fal-info","pag-fal-btns","pag-fallos");
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty ok"><div class="empty-icon">📭</div><div class="empty-titulo">Sin fallos activos aquí</div><div class="empty-sub">No hay registros que coincidan con el filtro actual.</div></div>`;return;}
   window._pagFallos=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}${chipImpug(r)}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
   window._exportFallos=visiblesFal;
 }
 
@@ -2870,6 +3365,7 @@ function exportarTabla(tab){
     admites:{datos:()=>window._exportAdmites||[],nombre:"Admites",cols:["ACCIONANTE","CC / NIT","RADICADO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL","RESPUESTA PQR","ENCARGADO PQR"]},
     fallos: {datos:()=>window._exportFallos||[], nombre:"Fallos_Sentencias",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL"]},
     otros:  {datos:()=>window._exportOtros||[], nombre:"Incidentes_Desacatos",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","RESPUESTA PQR","ENCARGADO PQR","NOTIFICADO"]},
+    sanciones:{datos:()=>window._exportSanciones||[],nombre:"Sanciones",cols:["ACCIONANTE","CC / NIT","RADICADO","JUZGADO","RESPONSABLE","SANCION ESTADO","SANCION FECHA","SANCIONADO","SANCION TIPO","SANCION MULTA","SANCION ARRESTO","SANCION NOTAS","ESTADO"]},
     historico:{datos:()=>window._exportHistorico||[],nombre:"Historico",cols:["ACCIONANTE","CC / NIT","RADICADO","TIPO","JUZGADO","RESPONSABLE","ESTADO","FECHA LÍMITE","FECHA INICIAL","RESPUESTA PQR","ENCARGADO PQR"]}
   };
   const m=mapas[tab];if(!m)return;
@@ -3189,6 +3685,30 @@ function renderEstadisticas(){
       Medido sobre los últimos 30 días (${habMes} días hábiles) por <b>Fecha inicial</b> del admite. Refleja el flujo de <b>entrada</b> que se reparte, no la carga acumulada de casos vivos.${sinFechaCarga>0?` ${sinFechaCarga} admite(s) sin fecha quedaron fuera del cálculo.`:""}
     </div>`;
 
+  // v4 · Resultado de los fallos (por fecha de notificación; si falta, fecha inicial)
+  const _sn=r=>String(r["SENTIDO FALLO"]||"").trim();
+  const falConSent = fallos.filter(r=>_sn(r) && r["ESTADO"]!=="Anulado" &&
+    (_estPeriodo==="todo" || _enPeriodo(parseFechaReg(r["FECHA NOTIF FALLO"]||r["FECHA INICIAL"]))));
+  const falSinSent = fallos.filter(r=>!_sn(r) && r["ESTADO"]!=="Anulado").length;
+  const ordenS=["Niega","Improcedente","Carencia actual de objeto / hecho superado","Concede parcialmente","Concede"];
+  const colS={"Niega":"#4ade80","Improcedente":"#22c55e","Carencia actual de objeto / hecho superado":"#60a5fa","Concede parcialmente":"#fbbf24","Concede":"#f87171"};
+  const cuentaS={}; falConSent.forEach(r=>{ cuentaS[_sn(r)]=(cuentaS[_sn(r)]||0)+1; });
+  const desf = falConSent.filter(r=>SENTIDOS_DESFAVORABLES.includes(_sn(r)));
+  const pctFav = falConSent.length ? Math.round((falConSent.length-desf.length)/falConSent.length*100) : null;
+  const juzDesf={}; desf.forEach(r=>{ const j=String(r["JUZGADO"]||"Sin juzgado").trim(); juzDesf[j]=(juzDesf[j]||0)+1; });
+  const topDesf=Object.entries(juzDesf).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const sentH = falConSent.length
+    ? `<div class="est-kpis" style="margin-bottom:12px">
+         <div class="est-kpi" style="color:#4ade80"><div class="n">${pctFav}%</div><div class="l">Favorables a la Dirección</div></div>
+         <div class="est-kpi" style="color:#f87171"><div class="n">${desf.length}</div><div class="l">Conceden el amparo</div></div>
+       </div>`
+      + [...ordenS, ...Object.keys(cuentaS).filter(k=>!ordenS.includes(k))].filter(k=>cuentaS[k])
+          .map(k=>barra(k,cuentaS[k],falConSent.length,colS[k]||"#a78bfa")).join("")
+      + (topDesf.length?`<div style="margin-top:12px;font-size:11px;color:var(--muted);margin-bottom:6px">Juzgados que más conceden</div>`
+          + topDesf.map(([j,n])=>barra(j,n,desf.length,"#f87171")).join(""):"")
+    : `<div style="color:var(--muted);font-size:12px;line-height:1.6">Aún no hay fallos con el sentido registrado en este período. Se llena desde la pestaña «Gestión Jurídica» de cada fallo.</div>`;
+  const sentNota = `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">${falSinSent} fallo(s) sin sentido registrado no entran en este cálculo.</div>`;
+
   document.getElementById("grid-est").innerHTML=
     `<div class="est-card" style="grid-column:1/-1;border-color:rgba(232,160,32,.3)"><div class="est-title" style="color:var(--gold2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><span>📊 Carga de trabajo · ¿conviene otro abogado?</span><button onclick="generarPDFCarga()" style="padding:6px 13px;border-radius:8px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.35);color:var(--gold2);font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer">📄 Descargar PDF</button></div>${cargaH}</div>`+
     `<div class="est-card est-chart-card"><div class="est-title">📈 ${_EVO_META[_evoVista].titulo}</div>`+
@@ -3198,6 +3718,7 @@ function renderEstadisticas(){
     `</div>`+
     `<div style="height:210px"><canvas id="est-chart-evo"></canvas></div>`+
     `<div style="margin-top:8px;font-size:10px;color:var(--muted)">${_EVO_META[_evoVista].nota} <span id="evo-nota-cierres"></span> El último mes es parcial (en curso): el tramo punteado no indica una baja real.</div></div>`+
+    `<div class="est-card" style="border-color:rgba(239,68,68,.28)"><div class="est-title" style="color:#fca5a5">⚖️ Resultado de los fallos · ${perLabel}</div>${sentH}${sentNota}</div>`+
     `<div class="est-card" style="border-color:rgba(74,222,128,.25)"><div class="est-title" style="color:#4ade80">⏱ Cumplimiento de términos · ${perLabel}</div>${cumplH}${cumplNota}</div>`+
     `<div class="est-card" style="border-color:rgba(34,197,94,.3)"><div class="est-title" style="color:#22c55e">🏆 Cerrados por persona · ${perLabel}${lider&&lider.n>0?` · líder: ${esc(pNom(lider.abo))}`:""}</div>${cerradosH}<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Total: <strong style="color:#22c55e">${cerradosPer.length}</strong> procesos cerrados. ⏱ = % dentro del término. ¡Gran trabajo! 💪</div></div>`+
     `<div class="est-card"><div class="est-title">Por tipo de actuación · histórico completo</div>${tiposH}</div>`+
@@ -3310,7 +3831,7 @@ function dibujarEvolucion(tuts, falls, incs){
   }
 }
 
-function renderAll(){renderCockpit();renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();actualizarBadgeDuplicados();if(document.getElementById("tab-duplicados")?.classList.contains("active"))renderDuplicados();}
+function renderAll(){aplicarVisibilidad();renderSanciones();renderCockpit();renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();actualizarBadgeDuplicados();if(document.getElementById("tab-duplicados")?.classList.contains("active"))renderDuplicados();}
 
 /* ═══════════════════════════════════════════════════════════════
    vr3 · COCKPIT "HOY"  ·  usa días hábiles (_diasHab)
@@ -3329,15 +3850,16 @@ function renderCockpit(){
   const elF=document.getElementById("hoy-fecha");
   if(elF){
     const f=ahora.toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-    elF.textContent = f.charAt(0).toUpperCase()+f.slice(1)+" · esto es lo que necesita tu atención";
+    const alcance = PERFIL.rol==="abogado" ? "tus casos" : PERFIL.rol==="tecnica" ? "todo el equipo · gestión técnica" : PERFIL.rol==="admin" ? "todo el equipo · administración" : "todo el equipo";
+    elF.textContent = f.charAt(0).toUpperCase()+f.slice(1)+" · "+alcance;
   }
 
   // Universo activo (excluye históricos), con días hábiles calculados
   const universo=[...tutelas,...fallos,...incidentes].filter(r=>!EST_HIST.includes(r["ESTADO"]) && r._diasHab!==null);
 
   const vencidos = universo.filter(r=>r._diasHab<0).sort((a,b)=>a._diasHab-b._diasHab);
-  // "Hoy o mañana" en hábiles = 1 (hoy) o 2 (próx. hábil)
-  const urgentes = universo.filter(r=>r._diasHab>=1 && r._diasHab<=2).sort((a,b)=>a._diasHab-b._diasHab);
+  // "Hoy o mañana" en hábiles = 0 (hoy) o 1 (próx. hábil)
+  const urgentes = universo.filter(r=>r._diasHab>=0 && r._diasHab<=1).sort((a,b)=>a._diasHab-b._diasHab);
 
   const catBadge = r => {
     const c=r._cat||"tutela";
@@ -3346,29 +3868,33 @@ function renderCockpit(){
     return `<span class="hoy-badge2 b-tut">Tutela</span>`;
   };
   const diasChip = d => {
-    if(d<0) return `<span class="hoy-dias d-venc">${d===-1?"−1 día":d+" días"}</span>`;
-    if(d===1) return `<span class="hoy-dias d-hoy">Hoy</span>`;
+    if(d<0) return `<span class="hoy-dias d-venc">${d===-1?"−1 día háb.":d+" días háb."}</span>`;
+    if(d===0) return `<span class="hoy-dias d-hoy">Hoy</span>`;
+    if(d===1) return `<span class="hoy-dias d-hoy">Mañana</span>`;
     return `<span class="hoy-dias d-hoy">${d}d háb.</span>`;
   };
-  // idx apunta al array global correcto para reabrir el modal
-  const itemHTML = (r) => {
-    const arr = r._cat==="fallo"?"fallos":r._cat==="incidente"?"incidentes":"tutelas";
-    const idx = (window[arr]||[]).indexOf(r);
+  // v4 · Antes buscaba window["tutelas"], pero esas listas se declaran con `let` y
+  // no viven en window: el clic en los casos de «Hoy» no abría nada. Ahora cada
+  // tarjeta guarda su propia lista (como el resto de tablas) y abre por índice.
+  window._hoyItems = [];
+  const itemHTML = (r, d) => {
+    const idx = window._hoyItems.push(r) - 1;
     const juz=(r["JUZGADO"]||"").substring(0,34);
-    return `<div class="hoy-item" onclick="abrirModalIdx('${arr}',${idx})">
+    return `<div class="hoy-item" onclick="abrirModalIdx('_hoyItems',${idx})">
       ${catBadge(r)}
       <div class="hoy-acc"><div class="n">${esc(r["ACCIONANTE"]||"—")}</div><div class="s">${esc(r["RADICADO"]||"—")}${juz?" · "+esc(juz):""}</div></div>
-      ${diasChip(r._diasHab)}
+      ${typeof d==="string"?`<span class="hoy-dias d-hoy">${esc(d)}</span>`:d===null||d===undefined?`<span class="hoy-dias d-venc">Sin fecha</span>`:diasChip(d)}
     </div>`;
   };
   const LIM=6;
-  const bloque = (clase, icono, titulo, lista, verOnclick, vacioIco, vacioTxt) => {
+  const bloque = (clase, icono, titulo, lista, verOnclick, vacioIco, vacioTxt, diasDe) => {
     let cuerpo;
     if(!lista.length){
       cuerpo=`<div class="hoy-empty2"><div class="ic">${vacioIco}</div>${vacioTxt}</div>`;
     }else{
-      cuerpo=lista.slice(0,LIM).map(itemHTML).join("");
-      if(lista.length>LIM) cuerpo+=`<div class="hoy-ver" onclick="${verOnclick}">Ver los ${lista.length} →</div>`;
+      cuerpo=lista.slice(0,LIM).map(r=>itemHTML(r, diasDe?diasDe(r):r._diasHab)).join("");
+      if(lista.length>LIM && verOnclick) cuerpo+=`<div class="hoy-ver" onclick="${verOnclick}">Ver los ${lista.length} →</div>`;
+      else if(lista.length>LIM) cuerpo+=`<div class="hoy-ver" style="cursor:default">y ${lista.length-LIM} más</div>`;
       else if(verOnclick) cuerpo+=`<div class="hoy-ver" onclick="${verOnclick}">Ir a la lista →</div>`;
     }
     return `<div class="hoy-card ${clase}">
@@ -3380,11 +3906,35 @@ function renderCockpit(){
   grid.innerHTML =
     bloque("rojo","🔴","Vencidos", vencidos, `goTab('admites')`, "🎉", "Sin vencidos, ¡buen trabajo!") +
     bloque("naranja","🟠","Vencen hoy o mañana", urgentes, `goTab('admites')`, "✅", "Nada urgente para hoy o mañana.");
+  // v4 · fallos desfavorables sin decisión de impugnación (solo aparece si hay alguno)
+  const impug = fallos.filter(impugPendiente).sort((a,b)=>{
+    const da=infoImpugnacion(a).dias, db=infoImpugnacion(b).dias;
+    return (da===null?-999:da)-(db===null?-999:db);
+  });
+  if(impug.length) grid.innerHTML += bloque("rojo","⚖️","Decidir impugnación", impug,
+    `goTab('fallos');quickFal='impug';pagFal=1;renderFallos()`, "", "", r=>infoImpugnacion(r).dias);
+  // v5 · Sanciones vigentes que todavía requieren acción (impuestas o en consulta)
+  const sanAct = incidentes.filter(r=>esSancion(r) && ["Impuesta","En consulta"].includes(estadoSancion(r)));
+  if(sanAct.length) grid.innerHTML += bloque("rojo","🚨","Sanciones en curso", sanAct,
+    `goTab('sanciones')`, "", "", r=>estadoSancion(r));
+  // v5 · ¿Llegó el fallo? Admites respondidos sin fallo registrado pasado el término normal
+  const sinFallo = admitesSinFallo();
+  if(sinFallo.length) grid.innerHTML += bloque("naranja","📭","¿Llegó el fallo?", sinFallo,
+    "", "", "", r=>`${_habilesEntre(parseFechaReg(r["FECHA INICIAL"]), new Date())}d háb.`);
+  // v5 · Gestión técnica (Verónica / administradores)
+  if(PERFIL.rol==="tecnica" || PERFIL.rol==="admin"){
+    const pendTec = tutelas.filter(r=>!EST_HIST.includes(r["ESTADO"]) && faltaTecnico(r)).sort((a,b)=>(a._dias??999)-(b._dias??999));
+    if(pendTec.length) grid.innerHTML += bloque("naranja","🔧","Pendientes técnicos", pendTec,
+      `goTab('admites');quickAdm='pendtec';pagAdm=1;renderAdmites()`, "", "", r=>queFaltaTecnico(r).join(", "));
+    const sinNot = incidentes.filter(r=>!EST_HIST.includes(r["ESTADO"]) && !estaNotificado(r));
+    if(sinNot.length) grid.innerHTML += bloque("naranja","📣","Incidentes sin notificar", sinNot,
+      `goTab('otros');quickOtr='sinnotif';pagInc=1;renderOtros()`, "", "", r=>r._diasHab);
+  }
 }
 function actualizarBadgeDuplicados(){const b=document.getElementById("badge-duplicados");if(!b)return;const n=contarDuplicados();b.textContent=n;b.style.display=n>0?"inline-block":"none";}
 
 function poblarSelects(){
-  ["fa-abo","ff-abo","fo-abo","fh-abo"].forEach(id=>{
+  ["fa-abo","ff-abo","fo-abo","fh-abo","fs-abo"].forEach(id=>{
     const s=document.getElementById(id);if(!s)return;
     const v=s.value;
     s.innerHTML=`<option value="">Todos los abogados</option>`+ABOGADOS.map(a=>`<option>${a}</option>`).join("");
@@ -3438,11 +3988,11 @@ function abrirModal(da, origen){
   setEl("m-est-txt",badgeEst(r["ESTADO"]));
   const dEl=document.getElementById("m-dias");
   if(dias===null){dEl.textContent="—";dEl.style.color="";}
-  else if(dias<0){dEl.textContent="Vencido hace "+Math.abs(dias)+"d";dEl.style.color="#f87171";}
+  else if(dias<0){dEl.textContent="Vencido hace "+Math.abs(dias)+(dias===-1?" día hábil":" días hábiles");dEl.style.color="#f87171";}
   else if(dias===0){dEl.textContent="¡Vence hoy!";dEl.style.color="#f87171";}
-  else if(dias<=2){dEl.textContent=dias+"d — ¡urgente!";dEl.style.color="#f87171";}
-  else if(dias<=5){dEl.textContent=dias+" días";dEl.style.color="#fbbf24";}
-  else{dEl.textContent=dias+" días";dEl.style.color="#4ade80";}
+  else if(dias===1){dEl.textContent="Vence el próximo día hábil";dEl.style.color="#f87171";}
+  else if(dias<=3){dEl.textContent=dias+" días hábiles";dEl.style.color="#fbbf24";}
+  else{dEl.textContent=dias+" días hábiles";dEl.style.color="#4ade80";}
   // Campos largos (pinta lo que haya; la versión completa llega con cargarDetalleParaModal)
   pintarCamposLargosModal(r, origenModal);
   document.getElementById("m-esel").value=r["ESTADO"]||"Nuevo";
@@ -3469,6 +4019,7 @@ function abrirModal(da, origen){
     const tipoR = (r["TIPO"]||"").toLowerCase();
     const esFalloOInc = /fallo|sentencia|incidente|desacato/.test(tipoR);
     escBox.style.display = (esTutela && !esFalloOInc) ? "flex" : "none";
+    escBox.dataset.v = escBox.style.display;
   }
   // Botón Editar: disponible para cualquier registro que venga de Supabase (_id)
   const edWrap=document.getElementById("m-editar-wrap");
@@ -3503,6 +4054,35 @@ function abrirModal(da, origen){
     spInput.value = r["SHAREPOINT"]||"";
     actualizarBtnSP();
   }
+  // v4 · Resultado del fallo (solo fallos/sentencias)
+  const falloW=document.getElementById("m-fallo-wrap");
+  if(falloW){
+    const esF = origenModal==="fallo";
+    falloW.style.display = esF ? "block" : "none";
+    _setSelect("m-sentido", esF ? r["SENTIDO FALLO"] : "");
+    document.getElementById("m-fnotif").value = esF ? _aISO(r["FECHA NOTIF FALLO"]) : "";
+    document.getElementById("m-orden").value = esF ? (r["ORDEN FALLO"]||"") : "";
+    _setSelect("m-impug", esF ? r["IMPUGNACION"] : "");
+    document.getElementById("m-radimpug").value = esF ? (r["RADICADO IMPUGNACION"]||"") : "";
+    if(esF) pintarImpugModal();
+  }
+  // v5 · Sanción por desacato (solo incidentes)
+  const sanW=document.getElementById("m-san-wrap");
+  if(sanW){
+    const esI = origenModal==="incidente";
+    sanW.style.display = esI ? "block" : "none";
+    document.getElementById("m-btn-sancion").style.display = (esI && !esSancion(r)) ? "inline-flex" : "none";
+    document.getElementById("m-es-sancion").checked = esI && esSancion(r);
+    document.getElementById("m-san-fecha").value = esI ? _aISO(r["SANCION FECHA"]) : "";
+    _setSelect("m-san-estado", (esI && r["SANCION ESTADO"]) || "Impuesta");
+    document.getElementById("m-san-quien").value = esI ? (r["SANCIONADO"]||"") : "";
+    _setSelect("m-san-tipo", esI ? r["SANCION TIPO"] : "");
+    document.getElementById("m-san-multa").value = esI ? (r["SANCION MULTA"]||"") : "";
+    document.getElementById("m-san-arresto").value = esI ? (r["SANCION ARRESTO"]||"") : "";
+    document.getElementById("m-san-notas").value = esI ? (r["SANCION NOTAS"]||"") : "";
+    document.getElementById("m-san-campos").style.display = document.getElementById("m-es-sancion").checked ? "block" : "none";
+  }
+  const hb=document.getElementById("m-hist-body"); if(hb){ hb.style.display="none"; hb.innerHTML=""; }
   // ── Gestión visible en pestaña Información (para que los abogados la vean sin entrar a Gestión) ──
   llenarGestionVisible(r);
   // Bloque de notificación (solo incidentes/desacatos)
@@ -3514,6 +4094,7 @@ function abrirModal(da, origen){
   document.getElementById("overlay").classList.add("open");
   // Snapshot de los campos editables para detectar cambios sin guardar al cerrar
   _snapshotModal = leerCamposModal();
+  actualizarSaveBar();
   // Carga diferida de los campos largos (las listas ya no los traen — ahorro de egress)
   cargarDetalleParaModal(r, origenModal);
 }
@@ -3521,11 +4102,31 @@ function abrirModal(da, origen){
 // Lee el estado actual de los campos editables del modal principal
 function leerCamposModal(){
   const v=id=>{const el=document.getElementById(id);return el?el.value:"";};
-  return [v("m-esel"),v("m-resp-pqr"),v("m-resp-rad"),v("m-pqrenc-sel"),v("m-sharepoint"),v("m-radpqr")].join("|§|");
+  return [v("m-esel"),v("m-resp-pqr"),v("m-resp-rad"),v("m-pqrenc-sel"),v("m-sharepoint"),v("m-radpqr"),
+          v("m-sentido"),v("m-fnotif"),v("m-orden"),v("m-impug"),v("m-radimpug"),
+          String(!!(document.getElementById("m-es-sancion")||{}).checked),
+          v("m-san-fecha"),v("m-san-estado"),v("m-san-quien"),v("m-san-tipo"),v("m-san-multa"),v("m-san-arresto"),v("m-san-notas")].join("|§|");
 }
 let _snapshotModal = "";
 
 // Cierre con guardia de cambios sin guardar
+document.addEventListener("input", e=>{ if(e.target.closest && e.target.closest("#overlay")) actualizarSaveBar(); });
+document.addEventListener("change",e=>{ if(e.target.closest && e.target.closest("#overlay")) actualizarSaveBar(); });
+// v5 · Barra única de guardado: aparece cuando lo escrito difiere de lo abierto
+function actualizarSaveBar(){
+  const bar=document.getElementById("m-savebar"); if(!bar) return;
+  const sucio = !!_snapshotModal && leerCamposModal()!==_snapshotModal;
+  bar.style.display = sucio ? "flex" : "none";
+  const esc=document.getElementById("m-escalado");
+  if(esc) esc.style.display = sucio ? "none" : (esc.dataset.v||"none");
+}
+function descartarCambiosModal(){
+  if(!actual) return;
+  const orig=[...tutelas,...fallos,...incidentes].find(x=>x._id && x._id===actual._id) || actual;
+  _snapshotModal="";
+  abrirModal(encodeURIComponent(JSON.stringify(orig)), origenModal);
+  toast("↩️ Cambios descartados","");
+}
 function cerrarModalPrincipal(){
   const ahora = leerCamposModal();
   if(_snapshotModal && ahora !== _snapshotModal){
@@ -3708,10 +4309,12 @@ function switchMTab(tab){
 const KPI_AYUDA = {
   "Total activos":       "Casos abiertos: todo lo que no está finalizado, respondido, anulado ni con hecho superado.",
   "Vencidos":            "Casos cuyo término legal ya pasó (fecha límite anterior a hoy). Atención inmediata.",
-  "Urgentes ≤1d":        "Vencen hoy o mañana. Un día o menos de plazo.",
-  "Urgentes ≤3d":        "Vencen dentro de los próximos 3 días.",
-  "Próximos 2-3d":       "Vencen en 2 o 3 días. Todavía hay margen, pero conviene priorizarlos.",
-  "Con tiempo":          "Tienen más de 3 días de plazo. Sin urgencia por ahora.",
+  "Urgentes ≤1d":        "Vencen hoy o el próximo día hábil (también incluye los vencidos).",
+  "Urgentes ≤3d":        "Vencen dentro de los próximos 3 días hábiles (incluye vencidos).",
+  "Próximos 2-3d":       "Vencen en 2 o 3 días hábiles. Todavía hay margen, pero conviene priorizarlos.",
+  "Con tiempo":          "Tienen más de 3 días hábiles de plazo. Sin urgencia por ahora.",
+  "Impugnación pendiente":"Fallos desfavorables notificados en los que aún no se decidió si se impugna. Término: 3 días hábiles desde la notificación (art. 31 Decreto 2591 de 1991).",
+  "Sin sentido del fallo":"Fallos a los que todavía no se les registró el sentido (niega, concede, improcedente…). Sin ese dato no hay estadística de resultados.",
   "Nuevas":              "Recién ingresadas, aún en estado \"Nuevo\", sin gestión registrada.",
   "Pendientes técnicos": "Les falta un dato obligatorio (fecha, juzgado, encargado…) para poder trabajarlas."
 };
@@ -3742,6 +4345,8 @@ function aplicarQuick(arr,key){
   if(key==='nuevo') return arr.filter(r=>r["ESTADO"]==="Nuevo");
   if(key==='pendtec') return arr.filter(r=>act(r)&&faltaTecnico(r));
   if(key==='sinnotif') return arr.filter(r=>act(r)&&!estaNotificado(r));
+  if(key==='impug') return arr.filter(impugPendiente);
+  if(key==='sinsentido') return arr.filter(r=>act(r)&&!String(r["SENTIDO FALLO"]||"").trim());
   return arr;
 }
 
@@ -3763,7 +4368,7 @@ function queFaltaTecnico(r){
 
 function scardClick(n,label,cls,filtroId,filtroVal){
   if(!filtroId) return`<div class="scard ${cls||''}"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label}</div></div>`;
-  const renderFn=filtroId==='fa-est'||filtroId==='fa-abo'?'renderAdmites':filtroId==='ff-est'||filtroId==='ff-tp'?'renderFallos':'renderOtros';
+  const renderFn=filtroId==='fa-est'||filtroId==='fa-abo'?'renderAdmites':filtroId==='ff-est'||filtroId==='ff-tp'?'renderFallos':filtroId.startsWith('fs-')?'renderSanciones':'renderOtros';
   return`<div class="scard ${cls||''}" style="cursor:pointer" title="Clic para filtrar: ${label}" onclick="filtrarDesdeCard('${filtroId}','${filtroVal}','${renderFn}')"><div class="scard-n ${cls}">${n}</div><div class="scard-l">${label} <span style="font-size:8px;opacity:.4">▶</span></div></div>`;
 }
 
@@ -3773,7 +4378,138 @@ function filtrarDesdeCard(filtroId,filtroVal,renderFn){
   el.value=filtroVal;
   if(renderFn==='renderAdmites')renderAdmites();
   else if(renderFn==='renderFallos')renderFallos();
+  else if(renderFn==='renderSanciones')renderSanciones();
   else renderOtros();
+}
+
+// ════════ v4 · GUARDADO POR CAMPOS + CONTROL DE CONCURRENCIA ════════
+const ETQ_CAMPO={
+  "ESTADO":"Estado","RESPUESTA PQR":"Respuesta PQR / observaciones","RADICADO DE CUMPLIMIENTO":"Radicado de respuesta/cumplimiento",
+  "ENCARGADO PQR":"Encargado PQR","SHAREPOINT":"SharePoint","PQR":"Radicado PQR","FECHA CIERRE":"Fecha de cierre",
+  "SENTIDO FALLO":"Sentido del fallo","FECHA NOTIF FALLO":"Fecha de notificación del fallo","ORDEN FALLO":"Orden del juez",
+  "IMPUGNACION":"Decisión de impugnar","RADICADO IMPUGNACION":"Radicado de impugnación"
+};
+const CAMPOS_FECHA_NULL=["FECHA CIERRE","FECHA NOTIF FALLO","SANCION FECHA"]; // columnas tipo fecha: vacío = null
+const CAMPOS_BOOL=["ES SANCION"];
+const CAMPOS_NUM=["SANCION MULTA","SANCION ARRESTO"];
+Object.assign(ETQ_CAMPO,{"ES SANCION":"Sanción","SANCION FECHA":"Fecha de la sanción","SANCION ESTADO":"Estado de la sanción",
+  "SANCIONADO":"Funcionario sancionado","SANCION TIPO":"Tipo de sanción","SANCION MULTA":"Multa (SMLMV)","SANCION ARRESTO":"Arresto (días)","SANCION NOTAS":"Notas de la sanción"});
+function _hoyISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function _valoresModal(){
+  const v=id=>{const el=document.getElementById(id); return el?String(el.value||"").trim():null;};
+  const out={
+    "ESTADO": v("m-esel"),
+    "RESPUESTA PQR": v("m-resp-pqr"),
+    "RADICADO DE CUMPLIMIENTO": v("m-resp-rad"),
+    "ENCARGADO PQR": v("m-pqrenc-sel") || String(actual["ENCARGADO PQR"]||"").trim(),
+    "SHAREPOINT": v("m-sharepoint"),
+    "PQR": v("m-radpqr")
+  };
+  if(origenModal==="fallo"){
+    out["SENTIDO FALLO"]=v("m-sentido");
+    out["FECHA NOTIF FALLO"]=v("m-fnotif");
+    out["ORDEN FALLO"]=v("m-orden");
+    out["IMPUGNACION"]=v("m-impug");
+    out["RADICADO IMPUGNACION"]=v("m-radimpug");
+  }
+  if(origenModal==="incidente" && document.getElementById("m-es-sancion")){
+    out["ES SANCION"]=document.getElementById("m-es-sancion").checked ? "true" : "false";
+    if(out["ES SANCION"]==="true"){
+      out["SANCION FECHA"]=v("m-san-fecha"); out["SANCION ESTADO"]=v("m-san-estado");
+      out["SANCIONADO"]=v("m-san-quien"); out["SANCION TIPO"]=v("m-san-tipo");
+      out["SANCION MULTA"]=v("m-san-multa"); out["SANCION ARRESTO"]=v("m-san-arresto");
+      out["SANCION NOTAS"]=v("m-san-notas");
+    }
+  }
+  Object.keys(out).forEach(k=>{ if(out[k]===null) delete out[k]; });
+  return out;
+}
+function _cambiosModal(orig){
+  const n=x=>String(x??"").trim();
+  const cambios={};
+  Object.entries(_valoresModal()).forEach(([k,val])=>{
+    if(CAMPOS_BOOL.includes(k)){
+      const a = n(orig[k]).toLowerCase()==="true";
+      if((val==="true")!==a) cambios[k] = (val==="true");
+      return;
+    }
+    const antes = CAMPOS_FECHA_NULL.includes(k) ? _aISO(orig[k]) : n(orig[k]);
+    if(CAMPOS_NUM.includes(k)){
+      if(val===antes || (val!=="" && antes!=="" && Number(val)===Number(antes))) return;
+      cambios[k] = val==="" ? null : Number(val);
+      return;
+    }
+    if(val!==antes) cambios[k] = (val==="" && CAMPOS_FECHA_NULL.includes(k)) ? null : val;
+  });
+  if("ESTADO" in cambios){
+    const antesHist=EST_HIST.includes(n(orig["ESTADO"])), ahoraHist=EST_HIST.includes(cambios["ESTADO"]);
+    if(ahoraHist && !antesHist) cambios["FECHA CIERRE"]=_hoyISO();   // se cierra hoy
+    else if(!ahoraHist && antesHist) cambios["FECHA CIERRE"]=null;    // se reabre
+    // cerrado → cerrado (p. ej. Respondido → Finalizado): conserva la fecha de cierre real
+  }
+  return cambios;
+}
+// v5 · Reglas de cierre. Devuelve {msg, tab, campo} si falta algo, o null.
+const EST_CIERRE_CON_DATO=["Respondido","Finalizado"];
+function _validarCierre(orig, cambios){
+  if(!("ESTADO" in cambios) || !EST_CIERRE_CON_DATO.includes(cambios["ESTADO"])) return null;
+  const val=k=> String((k in cambios ? cambios[k] : orig[k]) ?? "").trim();
+  if(origenModal==="tutela" && !val("RADICADO DE CUMPLIMIENTO"))
+    return {msg:`Para marcarla «${cambios["ESTADO"]}» registra el radicado de respuesta a la tutela.`, tab:"juridica", campo:"m-resp-rad"};
+  if(origenModal==="fallo"){
+    if(!val("SENTIDO FALLO"))
+      return {msg:"Antes de cerrar el fallo registra su sentido (niega, concede, improcedente…).", tab:"juridica", campo:"m-sentido"};
+    if(SENTIDOS_DESFAVORABLES.includes(val("SENTIDO FALLO")) && !val("RADICADO DE CUMPLIMIENTO"))
+      return {msg:"El fallo concede el amparo: registra el radicado de cumplimiento antes de cerrarlo.", tab:"juridica", campo:"m-resp-rad"};
+  }
+  return null;
+}
+function _avisoSharepoint(orig, cambios){
+  if(!("ESTADO" in cambios) || !EST_HIST.includes(cambios["ESTADO"]) || cambios["ESTADO"]==="Anulado") return "";
+  const sp=String(("SHAREPOINT" in cambios ? cambios["SHAREPOINT"] : orig["SHAREPOINT"]) ?? "").trim();
+  return sp ? "" : "\n\n⚠️ Aún no tiene documento en SharePoint.";
+}
+function _resumenCambios(orig, cambios){
+  return Object.keys(cambios).filter(k=>k!=="FECHA CIERRE").map(k=>{
+    const a=String(orig[k]??"").trim(), b=String(cambios[k]??"").trim();
+    if(k==="ESTADO") return `• Estado: ${a||"—"} → ${b||"—"}`;
+    if(k==="ES SANCION") return cambios[k] ? "• 🚨 Se marca como SANCIÓN (pasa al tablero de sanciones)" : "• Se quita la marca de sanción";
+    return `• ${ETQ_CAMPO[k]||k}: ${b?("«"+abrev(b,60)+"»"):"(se borra)"}`;
+  }).join("\n");
+}
+// PATCH condicionado a la versión leída (actualizado_en). Devuelve la fila guardada,
+// o null si la versión ya no coincide (alguien guardó antes). No reemplaza a
+// Repo.actualizar: es un camino adicional, con los mismos headers de getAuthHeaders().
+async function sbPatchVersionado(id, camposSheet, version){
+  const payload={};
+  for(const [k,v] of Object.entries(camposSheet)){ const c=MAPA_SHEET_A_SB[k]; if(c) payload[c]=v; }
+  const ver=String(version||"").trim();
+  const url=`${SUPABASE_URL}/rest/v1/${SB_TABLA}?id=eq.${encodeURIComponent(id)}`
+    + (ver ? `&actualizado_en=eq.${encodeURIComponent(ver)}` : `&actualizado_en=is.null`);
+  const hacer=async()=>fetch(url,{ method:"PATCH",
+    headers: await getAuthHeaders({"Content-Type":"application/json", Prefer:"return=representation"}),
+    body: JSON.stringify(payload) });
+  let res=await hacer();
+  if(res.status===401 && sbAuth){ try{ await sbAuth.auth.refreshSession(); }catch(_){} res=await hacer(); }
+  if(!res.ok){ const t=await res.text(); throw new Error(`Supabase HTTP ${res.status}: ${t.slice(0,160)}`); }
+  const arr=await res.json();
+  return (arr && arr.length) ? arr[0] : null;
+}
+async function sbLeerFila(id){
+  const url=`${SUPABASE_URL}/rest/v1/${SB_TABLA}?id=eq.${encodeURIComponent(id)}&select=*`;
+  const res=await fetch(url,{ headers: await getAuthHeaders() });
+  if(!res.ok) throw new Error(`Supabase HTTP ${res.status}`);
+  const a=await res.json();
+  return (a && a.length) ? a[0] : null;
+}
+// Copia un registro recién leído de Supabase sobre la memoria local y sobre `actual`.
+function _aplicarRegistroFresco(fresco){
+  if(!fresco || !actual) return;
+  const cat = actual._cat || (origenModal==="historico" ? undefined : origenModal);
+  const arr = [tutelas,fallos,incidentes].find(a=>a.some(x=>x._id===actual._id));
+  const copiar=dest=>{ const c=dest._cat; Object.assign(dest, fresco); if(c) dest._cat=c; else if(cat) dest._cat=cat; };
+  if(arr){ const idx=arr.findIndex(x=>x._id===actual._id); if(idx>=0) copiar(arr[idx]); }
+  copiar(actual);
 }
 
 async function guardarEstado(){
@@ -3784,9 +4520,27 @@ async function guardarEstado(){
   const encPQR   = document.getElementById("m-pqrenc-sel").value || actual["ENCARGADO PQR"] || "";
   const sharePoint = (document.getElementById("m-sharepoint") ? document.getElementById("m-sharepoint").value : actual["SHAREPOINT"]||"").trim();
   const radicadoPQR = (document.getElementById("m-radpqr") ? document.getElementById("m-radpqr").value : actual["PQR"]||"").trim();
+  // v4 · En Supabase solo se envían los campos que cambiaron (antes se enviaban los
+  // 7 siempre y un abogado podía borrar sin saberlo el SharePoint que Verónica acababa
+  // de guardar). La confirmación muestra exactamente qué se va a cambiar.
+  const esSB = USAR_SUPABASE && actual._id;
+  const cambiosV4 = esSB ? _cambiosModal(actual) : null;
+  if(esSB && !Object.keys(cambiosV4).length){ toast("No hay cambios para guardar",""); return; }
+  // v5 · validaciones al cerrar: no se cierra un caso sin su dato clave
+  if(esSB){
+    const errV=_validarCierre(actual, cambiosV4);
+    if(errV){
+      toast("⚠️ "+errV.msg,"err");
+      switchMTab(errV.tab);
+      const el=document.getElementById(errV.campo);
+      if(el){ el.focus(); el.style.outline="2px solid #f87171"; setTimeout(()=>{el.style.outline="";},2500); }
+      return;
+    }
+  }
   const ok = await confirmar(
     "¿Guardar cambios?",
-    `${actual["ACCIONANTE"]||"este registro"} — Estado: ${nuevoEst}`
+    esSB ? `${actual["ACCIONANTE"]||"Este registro"}\n\n${_resumenCambios(actual, cambiosV4)}${_avisoSharepoint(actual, cambiosV4)}`
+         : `${actual["ACCIONANTE"]||"este registro"} — Estado: ${nuevoEst}`
   );
   if(!ok)return;
   const esInc     = origenModal === "incidente";
@@ -3795,59 +4549,49 @@ async function guardarEstado(){
   toast("⏳ Guardando...","");
 
   // ── Camino Supabase: si el registro tiene _id, escribe directo (estable, atómico) ──
-  if(USAR_SUPABASE && actual._id){
+  if(esSB){
     try{
-      // Fecha de cierre automática: se llena al pasar a estado final, se limpia al reabrir
-      const fCierre = EST_HIST.includes(nuevoEst) ? new Date().toISOString().slice(0,10) : null;
-      const payloadEst = {
-        "ESTADO": nuevoEst,
-        "RESPUESTA PQR": respPQR,
-        "RADICADO DE CUMPLIMIENTO": respRad,
-        "ENCARGADO PQR": encPQR,
-        "SHAREPOINT": sharePoint,
-        "PQR": radicadoPQR,
-        "FECHA CIERRE": fCierre
-      };
-      let guardado;
-      try{
-        guardado = await Repo.actualizar(actual._id, payloadEst);
-      }catch(e1){
-        // Reintento único ante sesión vencida: refresca token y reintenta una vez.
-        if(/JWT expired|401/i.test(e1.message) && sbAuth){
-          try{ await sbAuth.auth.refreshSession(); }catch(_){}
-          guardado = await Repo.actualizar(actual._id, payloadEst);
-        } else throw e1;
+      const antesEst = actual["ESTADO"];
+      let fila = await sbPatchVersionado(actual._id, cambiosV4, actual["ACTUALIZADO EN"]);
+      if(!fila){
+        // La versión no coincide: alguien guardó este caso después de que lo abriste.
+        const srvRaw = await sbLeerFila(actual._id);
+        if(!srvRaw) throw new Error("El caso ya no existe o tu usuario no tiene permiso para verlo");
+        const srv = sbASheet(srvRaw);
+        if(String(srv["ACTUALIZADO EN"]||"")===String(actual["ACTUALIZADO EN"]||""))
+          throw new Error("Supabase no aplicó el cambio (revisa los permisos de tu usuario)");
+        // ¿El otro cambió ALGUNO de los mismos campos que tú? Si no, se combinan sin preguntar.
+        const n=x=>String(x??"").trim();
+        const choques = Object.keys(cambiosV4).filter(k=>k!=="FECHA CIERRE"
+          && n(srv[k])!==n(actual[k]) && n(srv[k])!==n(cambiosV4[k]));
+        if(choques.length){
+          const det = choques.map(k=>`• ${ETQ_CAMPO[k]||k}: ahora dice «${abrev(n(srv[k])||"(vacío)",70)}»`).join("\n");
+          const pisar = await confirmar("Otra persona cambió este caso",
+            `Mientras lo tenías abierto se modificó:\n${det}\n\n¿Reemplazar esos campos con lo que escribiste tú?`);
+          if(!pisar){
+            _aplicarRegistroFresco(srv);
+            toast("↩️ No se guardó. El caso se recargó con los datos actuales.","");
+            abrirModal(encodeURIComponent(JSON.stringify(actual)), origenModal);
+            return;
+          }
+        }
+        fila = await sbPatchVersionado(actual._id, cambiosV4, srv["ACTUALIZADO EN"]);
+        if(!fila) throw new Error("El caso cambió de nuevo mientras guardabas. Intenta otra vez.");
       }
-      if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
-      const idx=arr.findIndex(r=>r._id===actual._id);
-      if(idx>=0){
-        arr[idx]["ESTADO"]=nuevoEst;
-        arr[idx]["RESPUESTA PQR"]=respPQR;
-        arr[idx]["RADICADO DE CUMPLIMIENTO"]=respRad;
-        arr[idx]["ENCARGADO PQR"]=encPQR;
-        arr[idx]["SHAREPOINT"]=sharePoint;
-        arr[idx]["PQR"]=radicadoPQR;
-        arr[idx]["FECHA CIERRE"]=fCierre||"";
-      }
-      actual["ESTADO"]=nuevoEst;
-      actual["RESPUESTA PQR"]=respPQR;
-      actual["RADICADO DE CUMPLIMIENTO"]=respRad;
-      actual["ENCARGADO PQR"]=encPQR;
-      actual["SHAREPOINT"]=sharePoint;
-      actual["PQR"]=radicadoPQR;
-      actual["FECHA CIERRE"]=fCierre||"";
-      toast(EST_HIST.includes(nuevoEst)?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado en Supabase","ok");
+      _aplicarRegistroFresco(sbASheet(fila));
+      const cerro = "ESTADO" in cambiosV4 && EST_HIST.includes(cambiosV4["ESTADO"]) && !EST_HIST.includes(antesEst);
+      toast(cerro?"✅ Guardado — el proceso pasó al Histórico":"✅ Guardado","ok");
       renderAll();
       _snapshotModal = "";
       document.getElementById("overlay").classList.remove("open");
       // Cascada: si se cerró un fallo, ofrece cerrar el admite original con sus datos
-      await cerrarAdmiteEnCascada(nuevoEst);
+      if("ESTADO" in cambiosV4) await cerrarAdmiteEnCascada(cambiosV4["ESTADO"]);
     }catch(e){
       if(/JWT expired|401/i.test(e.message)){
         toast("⚠️ Tu sesión expiró. Vuelve a iniciar sesión para guardar.","err");
         setTimeout(()=>{ if(confirm("Tu sesión expiró. ¿Iniciar sesión de nuevo?")) location.reload(); }, 500);
       } else {
-        toast("❌ Error al guardar en Supabase: "+e.message+" — los cambios NO se guardaron","err");
+        toast("❌ No se guardó: "+e.message,"err");
       }
     }
     return;
@@ -3931,6 +4675,7 @@ async function cerrarAdmiteEnCascada(nuevoEst){
 // de Supabase con un solo PATCH (consumo mínimo).
 // ════════════════════════════════════════
 function nombreUsuarioActual(){
+  if(PERFIL.nombre) return PERFIL.nombre.split(" ")[0];
   const e=(USUARIO_EMAIL||"").toLowerCase();
   if(e.startsWith("verosuarez")) return "Verónica";
   if(e.startsWith("jeisonmaya")) return "Jeison";
@@ -3949,7 +4694,7 @@ function _yoGuess(){
     return nom.length>3 && e.includes(nom);
   })||"";
 }
-function yoActual(){ return localStorage.getItem(YO_KEY)||_yoGuess(); }
+function yoActual(){ return PERFIL.nombreAbogado || localStorage.getItem(YO_KEY)||_yoGuess(); }
 function toggleMisCasos(){
   if(misCasosOn){ misCasosOn=false; _setFiltrosAbo(""); _pintarMios(); return; }
   const yo=yoActual();
@@ -4589,6 +5334,7 @@ const TAB_HINT = {
   mios:         "Solo los casos asignados a ti. Clic de nuevo en la estrella para ver todos.",
   fallos:       "Fallos y sentencias en curso. Cerrar un fallo puede cerrar también su admite vinculado.",
   otros:        "Incidentes de desacato y requerimientos. Marca el botón de notificado cuando corresponda.",
+  sanciones:    "Tablero de sanciones por desacato: vigentes, en consulta, multas y arrestos. Se alimenta con «🚨 Marcar como sanción» en cada incidente.",
   reparto:      "Reparto de casos entre abogados. Muestra la carga activa de cada uno para asignar de forma pareja.",
   pqr:          "Tutelas cruzadas con una PQR. \"Sin respuesta\" son las que aún esperan que la petición se responda.",
   historico:    "Casos ya cerrados: finalizados, respondidos, anulados o con hecho superado. Solo consulta.",
@@ -4603,7 +5349,7 @@ function pintarTabHint(tab){
   el.style.display=t?"block":"none";
 }
 function goTab(tab){
-  ["hoy","admites","fallos","otros","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
+  ["hoy","admites","fallos","otros","sanciones","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
     document.getElementById("tab-"+t).classList.toggle("active",t===tab);
     document.getElementById("panel-"+t).classList.toggle("active",t===tab);
   });
@@ -4615,6 +5361,7 @@ function goTab(tab){
   else if(tab==="historico")pagHis=1;
   else if(tab==="duplicados")renderDuplicados();
   else if(tab==="hoy")renderCockpit();
+  else if(tab==="sanciones"){pagSan=1;renderSanciones();}
 }
 
 function setSS(estado,label){
@@ -4757,11 +5504,12 @@ function entrarAlSistema(){
   ]).then(()=>{
     if(typeof renderPanelDisponibilidad==="function") renderPanelDisponibilidad();
   }).catch(e=>console.warn("Reparto/turno inicial:", e));
-  cargarDatosSafe();
+  // v5 · primero el perfil (rol y nombre), luego los datos ya filtrados
+  cargarPerfil().finally(()=>{ aplicarPermisosUI(); cargarDatosSafe(); });
 }
 
 /* ── SPLASH + NOVEDADES vr3 ── */
-const NOV_VERSION = "vr3";  // súbelo (vr4…) cuando quieras que el modal reaparezca
+const NOV_VERSION = "vr5";  // súbelo (vr4…) cuando quieras que el modal reaparezca
 function mostrarSplash(){
   const sp=document.getElementById("splash");
   if(!sp) return;
