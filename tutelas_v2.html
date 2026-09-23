@@ -705,8 +705,48 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
   .modal-foot-sticky{bottom:-22px;margin:14px -22px -22px;padding:12px 22px}
 }
 
+/* ══════════ v5.2 · PULIDO VISUAL ══════════ */
+.ico{width:15px;height:15px;flex-shrink:0;opacity:.8}
+.ntab .ico{opacity:.65}.ntab.active .ico{opacity:1;color:var(--gold)}
+.btn-top{white-space:nowrap}
+.btn-top.solo-ico{padding:7px 9px}
+.pref-wrap{position:relative}
+.pref-menu{position:absolute;right:0;top:calc(100% + 8px);min-width:200px;padding:6px;border-radius:12px;background:var(--modal-bg);border:1px solid var(--border);box-shadow:0 18px 40px rgba(0,0,0,.35);display:none;flex-direction:column;gap:2px;z-index:60}
+.pref-menu.open{display:flex}
+.pref-menu .btn-top{width:100%;justify-content:flex-start;background:transparent;border:none;padding:9px 12px}
+.pref-menu .btn-top:hover{background:var(--hover)}
+.pref-sep{height:1px;background:var(--border);margin:4px 6px}
+/* Hoy: aprovecha el ancho y nombres en color de texto (el color va en el número y el chip) */
+.hoy-grid{grid-template-columns:repeat(auto-fill,minmax(400px,1fr));max-width:1400px}
+@media(max-width:680px){.hoy-grid{grid-template-columns:1fr}}
+.hoy-acc .n{color:var(--text)}
+/* Tablas: indicador técnico discreto, radicado corto */
+.modal::before{display:none!important}
+.overlay .modal{border-top:3px solid var(--gold)!important}
+.dot-tec{display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;margin-left:8px;vertical-align:middle;box-shadow:0 0 0 3px rgba(245,158,11,.18);cursor:help}
+.cel-rad .rad-txt{font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.cel.sub{font-variant-numeric:tabular-nums}
+/* Modal: una sola forma de guardar y de navegar */
+[data-v5="oculto"]{display:none!important}
+#mpanel-juridica > .m-actions,#mpanel-tecnica > .m-actions{display:none}
+#m-rad button{display:none}
+/* Sanciones */
+.san-est{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+/* Móvil */
+@media(max-width:700px){
+  .logo p,.user-pill,.sync-pill,.cmdk-trigger{display:none!important}
+  .topbar{gap:8px}
+  .topbar-right .btn-top .lbl{display:none}
+  .tcols-adm,.tcols-fal,.tcols-otr,.tcols-his,.tcols-san{grid-template-columns:104px 1fr!important}
+  .tcols-adm>.cel:not(:nth-child(1)):not(:nth-child(3)),
+  .tcols-fal>.cel:not(:nth-child(1)):not(:nth-child(4)),
+  .tcols-otr>.cel:not(:nth-child(1)):not(:nth-child(3)),
+  .tcols-his>.cel:not(:nth-child(1)):not(:nth-child(3)),
+  .tcols-san>.cel:not(:nth-child(1)):not(:nth-child(3)){display:none}
+  .stats-row{grid-template-columns:repeat(2,1fr)!important}
+}
 /* ── v5 · sanciones, barra de guardado, perfil, foco con teclado ── */
-.tcols-san{display:grid;grid-template-columns:150px 95px 1fr 1fr 150px 150px 120px}
+.tcols-san{display:grid;grid-template-columns:175px 100px 1.2fr 1fr 150px 170px 120px}
 @media(max-width:900px){.tcols-san{grid-template-columns:120px 1fr 1fr}}
 .san-est{display:inline-block;padding:3px 9px;border-radius:7px;font-size:10.5px;font-weight:700;white-space:nowrap;border:1px solid}
 .m-savebar{position:sticky;bottom:-28px;margin:16px -28px -28px;padding:12px 28px;background:var(--modal-bg);border-top:1px solid rgba(232,160,32,.45);box-shadow:0 -10px 24px -8px rgba(0,0,0,.55);display:flex;align-items:center;gap:10px;flex-wrap:wrap;z-index:3}
@@ -812,12 +852,18 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
     <div class="user-pill" id="user-pill" style="display:none"></div>
     <div class="sync-pill"><div class="sync-dot" id="sdot"></div><span id="slabel">—</span></div>
     <button class="btn-top cmdk-trigger" onclick="abrirCmdk()" title="Buscar y navegar (Ctrl/Cmd + K)" style="cursor:pointer;border:none;display:flex;align-items:center;gap:7px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Buscar</span><kbd class="cmdk-kbd">⌘K</kbd></button>
-    <button class="btn-top" id="btn-novedades" onclick="abrirNovedades()" title="Ver novedades de esta versión" style="cursor:pointer;border:none">✨ Novedades</button>
-    <button class="btn-top" id="btn-densidad" onclick="toggleDensidad()" style="cursor:pointer;border:none" title="Densidad de las tablas (compacto / cómodo)">↕ Cómodo</button>
-    <button class="btn-top" id="btn-tema" onclick="toggleTema()" style="cursor:pointer;border:none" title="Cambiar tema">🌙 Oscuro</button>
-    <a href="home.html" class="btn-top">🏛️ Inicio</a>
-    <a href="index.html" class="btn-top">📄 Oficios</a>
-    <button class="btn-top" onclick="cerrarSesion()" style="cursor:pointer;border:none">🔒 Salir</button>
+    <a href="home.html" class="btn-top" title="Inicio de la suite Teodoro"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg><span class="lbl">Inicio</span></a>
+    <a href="index.html" class="btn-top" title="Generador de oficios"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg><span class="lbl">Oficios</span></a>
+    <div class="pref-wrap">
+      <button class="btn-top solo-ico" onclick="event.stopPropagation();document.getElementById('pref-menu').classList.toggle('open')" title="Preferencias" aria-haspopup="true" style="cursor:pointer;border:none"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg></button>
+      <div class="pref-menu" id="pref-menu" onclick="event.stopPropagation()">
+        <button class="btn-top" id="btn-tema" onclick="toggleTema()" style="cursor:pointer" title="Cambiar tema">🌙 Oscuro</button>
+        <button class="btn-top" id="btn-densidad" onclick="toggleDensidad()" style="cursor:pointer" title="Densidad de las tablas (compacto / cómodo)">↕ Cómodo</button>
+        <button class="btn-top" id="btn-novedades" onclick="abrirNovedades();document.getElementById('pref-menu').classList.remove('open')" style="cursor:pointer" title="Ver novedades de esta versión">✨ Novedades</button>
+        <div class="pref-sep"></div>
+        <button class="btn-top" onclick="cerrarSesion()" style="cursor:pointer;color:#f87171"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Cerrar sesión</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -829,17 +875,17 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
 </div>
 
 <div class="nav-tabs">
-  <div class="ntab active" id="tab-hoy"          onclick="goTab('hoy')">🏠 Hoy</div>
-  <div class="ntab"        id="tab-admites"      onclick="goTab('admites')">📋 Admites <span class="nbadge" id="badge-admites">0</span></div>
-  <div class="ntab"        id="tab-mios"         onclick="toggleMisCasos()" oncontextmenu="event.preventDefault();_menuYo()" title="Clic: filtrar mis casos · Clic derecho: cambiar de persona">⭐ Mis casos</div>
-  <div class="ntab"        id="tab-fallos"       onclick="goTab('fallos')">⚖️ Fallos &amp; Sent. <span class="nbadge amber" id="badge-fallos">0</span></div>
-  <div class="ntab"        id="tab-otros"        onclick="goTab('otros')">⚡ Incidentes/Desacatos <span class="nbadge amber" id="badge-otros">0</span></div>
-  <div class="ntab"        id="tab-sanciones"    onclick="goTab('sanciones')">🚨 Sanciones <span class="nbadge" id="badge-sanciones" style="background:rgba(239,68,68,.2);color:#f87171">0</span></div>
-  <div class="ntab"        id="tab-reparto"      onclick="goTab('reparto')">👤 Por reparto</div>
-  <div class="ntab"        id="tab-pqr"          onclick="goTab('pqr')">📝 PQR <span class="nbadge" id="badge-pqr">0</span></div>
-  <div class="ntab"        id="tab-historico"    onclick="goTab('historico')">🗂️ Histórico</div>
-  <div class="ntab"        id="tab-duplicados"   onclick="goTab('duplicados')">🔍 Duplicados <span class="nbadge" id="badge-duplicados" style="background:rgba(239,68,68,.2);color:#f87171">0</span></div>
-  <div class="ntab"        id="tab-estadisticas" onclick="goTab('estadisticas')">📊 Estadísticas</div>
+  <div class="ntab active" id="tab-hoy"          onclick="goTab('hoy')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>Hoy</div>
+  <div class="ntab"        id="tab-admites"      onclick="goTab('admites')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>Admites <span class="nbadge" id="badge-admites">0</span></div>
+  <div class="ntab"        id="tab-mios"         onclick="toggleMisCasos()" oncontextmenu="event.preventDefault();_menuYo()" title="Clic: filtrar mis casos · Clic derecho: cambiar de persona"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>Mis casos</div>
+  <div class="ntab"        id="tab-fallos"       onclick="goTab('fallos')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>Fallos &amp; Sent. <span class="nbadge amber" id="badge-fallos">0</span></div>
+  <div class="ntab"        id="tab-otros"        onclick="goTab('otros')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>Incidentes/Desacatos <span class="nbadge amber" id="badge-otros">0</span></div>
+  <div class="ntab"        id="tab-sanciones"    onclick="goTab('sanciones')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Sanciones <span class="nbadge" id="badge-sanciones" style="background:rgba(239,68,68,.2);color:#f87171">0</span></div>
+  <div class="ntab"        id="tab-reparto"      onclick="goTab('reparto')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Por reparto</div>
+  <div class="ntab"        id="tab-pqr"          onclick="goTab('pqr')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>PQR <span class="nbadge" id="badge-pqr">0</span></div>
+  <div class="ntab"        id="tab-historico"    onclick="goTab('historico')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>Histórico</div>
+  <div class="ntab"        id="tab-duplicados"   onclick="goTab('duplicados')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Duplicados <span class="nbadge" id="badge-duplicados" style="background:rgba(239,68,68,.2);color:#f87171">0</span></div>
+  <div class="ntab"        id="tab-estadisticas" onclick="goTab('estadisticas')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>Estadísticas</div>
 </div>
 <div id="tab-hint" style="padding:7px 28px;font-size:12px;color:var(--muted);background:var(--navtabs-bg);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)"></div>
 
@@ -944,7 +990,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
     <button class="btn-refresh" style="background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarTabla('sanciones')">📥 Exportar Excel</button>
   </div>
   <div class="twrap">
-    <div class="thead tcols-san"><div class="cel">Estado de la sanción</div><div class="cel">Fecha</div><div class="cel">Accionante</div><div class="cel">Sancionado</div><div class="cel col-hide">Sanción</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Abogado</div></div>
+    <div class="thead tcols-san"><div class="cel">Estado</div><div class="cel">Fecha</div><div class="cel">Accionante</div><div class="cel">Sancionado</div><div class="cel col-hide">Sanción</div><div class="cel col-hide">Juzgado</div><div class="cel col-hide">Abogado</div></div>
     <div id="body-sanciones"></div>
   </div>
   <div class="pag" id="pag-san" style="display:none"><span id="pag-san-info"></span><div class="pag-btns" id="pag-san-btns"></div></div>
@@ -1128,7 +1174,8 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
       </div>
       <!-- v4 · RESULTADO DEL FALLO (solo fallos / sentencias) -->
       <div id="m-fallo-wrap" style="display:none;margin-bottom:14px;padding:12px 14px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.22);border-radius:10px">
-        <div style="font-size:11px;color:#fca5a5;font-weight:700;margin-bottom:10px">⚖️ Resultado del fallo</div>
+        <div style="font-size:11px;color:#fca5a5;font-weight:700;margin-bottom:4px">⚖️ Resultado del fallo <span style="font-weight:400;color:var(--muted)">· opcional</span></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">Sirve para saber cuántos fallos gana o pierde la Dirección. Si el juez <b>concede</b>, la app calcula el plazo para impugnar (3 días hábiles desde la notificación).</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="mf"><label>Sentido del fallo</label>
             <select class="esel" id="m-sentido" style="width:100%" onchange="pintarImpugModal()">
@@ -1492,6 +1539,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<script>document.addEventListener("click",()=>{const m=document.getElementById("pref-menu");if(m)m.classList.remove("open");});</script>
 
 <script>
 const SHEET_ID    = "1bdMQA0GDcOWVjfjAHPcxbhBu-LRr3agzPSyd-dHJDkU";
@@ -1962,6 +2010,10 @@ function misNombres(){ return [PERFIL.nombreAbogado, ...PERFIL.alias].map(x=>Str
 function esMio(r){ const ns=misNombres(); return ns.some(n=>matchAbo(r["RESPONSABLE"], n)); }
 function aplicarVisibilidad(){
   if(veTodo()) return;
+  // v5.1 · los filtros guardados en el navegador se restauran DESPUÉS de aplicar
+  // permisos: si un abogado tenía guardado el filtro de otra persona, vería todo
+  // vacío con el selector oculto. Para un abogado esos filtros siempre van vacíos.
+  ["fa-abo","ff-abo","fo-abo","fh-abo","fs-abo"].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
   const f = PERFIL.rol==="sinperfil" ? (()=>false) : esMio;
   tutelas=tutelas.filter(f); fallos=fallos.filter(f); incidentes=incidentes.filter(f);
 }
@@ -2035,11 +2087,11 @@ function renderSanciones(){
     scardClick(arresto,"Días de arresto vigentes","c-red","","");
   const b=document.getElementById("badge-sanciones"); if(b){ b.textContent=vig.length; b.style.display=vig.length?"inline-block":"none"; }
   // Agrupaciones
-  const agrupar=(key)=>{ const m={}; todas.forEach(r=>{ const k=String(r[key]||"Sin dato").trim()||"Sin dato"; m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6); };
+  const agrupar=(key,fx)=>{ const m={}; todas.forEach(r=>{ let k=String(r[key]||"").trim(); k=(fx?fx(k):k)||"Sin dato"; m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6); };
   const barraS=(label,n,total,color)=>`<div class="est-row"><span class="est-label" title="${escAttr(label)}">${esc(abrev(label,26))}</span><div class="est-bar-wrap"><div class="est-bar-fill" style="width:${total?Math.round(n/total*100):0}%;background:${color}"></div></div><span class="est-val" style="color:${color}">${n}</span></div>`;
   const tarjeta=(tit,filas,color)=>`<div class="est-card"><div class="est-title" style="color:${color}">${tit}</div>${filas.length?filas.map(([k,n])=>barraS(k,n,todas.length,color)).join(""):'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`;
   document.getElementById("grid-sanciones").innerHTML = todas.length
-    ? tarjeta("👤 Por funcionario sancionado",agrupar("SANCIONADO"),"#f87171")+tarjeta("⚖️ Por juzgado",agrupar("JUZGADO"),"#a78bfa")+(veTodo()?tarjeta("🧑‍⚖️ Por abogado a cargo",agrupar("RESPONSABLE"),"#fbbf24"):"")
+    ? tarjeta("👤 Por funcionario sancionado",agrupar("SANCIONADO",k=>k.split(" — ")[0]),"#f87171")+tarjeta("⚖️ Por juzgado",agrupar("JUZGADO",juzCorto),"#a78bfa")+(veTodo()?tarjeta("🧑‍⚖️ Por abogado a cargo",agrupar("RESPONSABLE"),"#fbbf24"):"")
     : "";
   window._exportSanciones=filt;
   const pag=renderPag(filt,pagSan,"pag-san-info","pag-san-btns","pag-san");
@@ -2051,10 +2103,10 @@ function renderSanciones(){
   el.innerHTML=pag.map((r,i)=>`<div class="fila tcols-san" onclick="abrirModalIdx('_pagSanciones',${i},'incidente')">
     <div class="cel">${badgeSancion(estadoSancion(r))}</div>
     <div class="cel sub">${(()=>{const fd=parseFechaReg(r["SANCION FECHA"]);return fd?fmtFecha(fd):"—";})()}</div>
-    <div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],34))}<div class="sub" style="font-size:10.5px">${esc(r["RADICADO"]||"")}</div></div>
-    <div class="cel" title="${escAttr(r["SANCIONADO"])}">${esc(abrev(r["SANCIONADO"]||"—",38))}</div>
+    <div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],34))}<div class="sub" style="font-size:10.5px" title="${escAttr(r["RADICADO"]||"")}">${esc(radCorto(r["RADICADO"]))}</div></div>
+    <div class="cel" title="${escAttr(r["SANCIONADO"])}">${esc(abrev(String(r["SANCIONADO"]||"—").split(" — ")[0],34))}</div>
     <div class="cel col-hide sub">${esc(textoSancion(r))}</div>
-    <div class="cel col-hide sub" title="${escAttr(r["JUZGADO"])}">${esc(abrev(r["JUZGADO"]||"—",28))}</div>
+    <div class="cel col-hide sub" title="${escAttr(r["JUZGADO"])}">${esc(abrev(juzCorto(r["JUZGADO"])||"—",30))}</div>
     <div class="cel col-hide sub">${esc(pNom(r["RESPONSABLE"]))}</div>
   </div>`).join("");
 }
@@ -2976,12 +3028,34 @@ const escAttr=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
 const abrev=(s,n)=>!s?"—":s.length>n?s.substring(0,n)+"…":s;
 // Texto de la FECHA LÍMITE con marca "~" cuando la estimó el sistema (no es dato oficial).
 const flimTxt=r=>{
-  const f=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
-  if(!f) return "—";
+  const bruto=r["FECHA LÍMITE"]||r["FECHA LIMITE"]||"";
+  if(!bruto) return "—";
+  const d=parseFechaReg(bruto);            // v5.2 · siempre dd/mm/aaaa, venga como venga
+  const f=d?fmtFecha(d):bruto;
   return r._flimEstimada
     ? `<span class="flim-est" title="Fecha estimada por el sistema (días hábiles). Verifica el auto o fallo.">~${esc(f)}</span>`
     : esc(f);
 };
+// v5.2 · Radicado de 23 dígitos → lo que se usa para reconocerlo: año-consecutivo
+function radCorto(rad){
+  const s=String(rad||"").trim();
+  const m=s.match(/(20\d{2})\D{0,3}(\d{5})(?:\D{0,3}\d{2})?\s*$/);
+  return m ? `${m[1]}-${m[2]}` : s;
+}
+// v5.2 · "JUZGADO PRIMERO CIVIL MUNICIPAL DE BELLO" → "Jdo. 1.° Civil Mpal. Bello"
+const _ORD={PRIMERO:"1.°",SEGUNDO:"2.°",TERCERO:"3.°",CUARTO:"4.°",QUINTO:"5.°",SEXTO:"6.°",SEPTIMO:"7.°",SÉPTIMO:"7.°",OCTAVO:"8.°",NOVENO:"9.°",DECIMO:"10.°",DÉCIMO:"10.°",UNICO:"Único",ÚNICO:"Único"};
+function juzCorto(j){
+  let s=String(j||"").trim(); if(!s) return "";
+  s=s.toUpperCase()
+    .replace(/\bJUZGADO\b/g,"JDO.").replace(/\bTRIBUNAL\b/g,"TRIB.")
+    .replace(/\bMUNICIPAL\b/g,"MPAL.").replace(/\bDEL CIRCUITO\b/g,"CTO.").replace(/\bCIRCUITO\b/g,"CTO.")
+    .replace(/\bADMINISTRATIVO\b/g,"ADTIVO.").replace(/\bPEQUEÑAS CAUSAS\b/g,"PEQ. CAUSAS")
+    .replace(/\bCON FUNCI[OÓ]N DE CONTROL DE GARANT[IÍ]AS\b/g,"GARANTÍAS")
+    .replace(/\b(DE|DEL)\s+(BELLO|MEDELL[IÍ]N|ANTIOQUIA|ENVIGADO|ITAG[UÜ][IÍ]|COPACABANA)\b/g," $2")
+    .replace(/\bDE\s+(FAMILIA|EJECUCI[OÓ]N)\b/g,"$1");
+  s=s.split(/\s+/).map(w=>_ORD[w] || (w.length<=3 && w!=="JDO." && w!=="CTO." ? w.toLowerCase() : w.charAt(0)+w.slice(1).toLowerCase())).join(" ");
+  return s.replace(/\bJdo\./,"Jdo.").replace(/\s+/g," ").trim();
+}
 const pNom=s=>!s?"—":s.split(" ").slice(0,2).join(" ");
 const inic=s=>!s?"?":s.split(" ").map(p=>p[0]).join("").substring(0,2).toUpperCase();
 const fBusc=(r,q)=>!q?true:[r["ACCIONANTE"],r["RADICADO"],r["JUZGADO"],r["CC / NIT"]].join(" ").toLowerCase().includes(q.toLowerCase());
@@ -3095,8 +3169,8 @@ function renderAdmites(){
   window._pagAdmites=pag;
   el.innerHTML=pag.map((r,i)=>{
     const falta=queFaltaTecnico(r);
-    const aviso=falta.length?`<span title="Falta: ${falta.join(', ')}" style="margin-left:6px;cursor:help">⚠️</span>`:"";
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}</div>`;
+    const aviso=falta.length?`<span class="dot-tec" title="Falta gestión técnica: ${escAttr(falta.join(', '))}"></span>`:"";
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-adm" onclick="abrirModalIdx('_pagAdmites',${i},'tutela')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}${aviso}</div><div class="cel sub col-hide">${esc(abrev(juzCorto(r["JUZGADO"]),30))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}</div>`;
   }).join("");
   window._exportAdmites=visiblesAdm;
 }
@@ -3132,7 +3206,7 @@ function renderFallos(){
   const el=document.getElementById("body-fallos");
   if(!pag.length){el.innerHTML=`<div class="empty ok"><div class="empty-icon">📭</div><div class="empty-titulo">Sin fallos activos aquí</div><div class="empty-sub">No hay registros que coincidan con el filtro actual.</div></div>`;return;}
   window._pagFallos=pag;
-  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}${chipImpug(r)}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
+  el.innerHTML=pag.map((r,i)=>`<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-fal" onclick="abrirModalIdx('_pagFallos',${i},'fallo')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"])}${chipImpug(r)}</div><div class="cel sub">${flimTxt(r)}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(juzCorto(r["JUZGADO"]),30))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div>${celRad(r)}</div>`).join("");
   window._exportFallos=visiblesFal;
 }
 
@@ -3167,7 +3241,7 @@ function renderOtros(){
     const btnNotif = notif
       ? `<button class="btn-notif hecho" title="Notificado: ${escAttr(notif)} — clic para quitar la marca" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">✅ Notificado</button>`
       : `<button class="btn-notif" title="Marcar que este incidente ya fue notificado" onclick="event.stopPropagation();toggleNotificado('_pagOtros',${i})">📣 Notificar</button>`;
-    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel">${btnNotif}</div></div>`;
+    return `<div class="fila${clsFila(r._dias,r["ESTADO"])} tcols-otr" onclick="abrirModalIdx('_pagOtros',${i},'incidente')"><div class="cel">${semaforo(r._diasHab,r["ESTADO"])}</div><div class="cel col-hide">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(juzCorto(r["JUZGADO"]),30))}</div><div class="cel col-hide">${badgeEst(r["ESTADO"])}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel">${btnNotif}</div></div>`;
   }).join("");
   window._exportOtros=visiblesOtr;
 }
@@ -3201,7 +3275,7 @@ function renderHistorico(){
   el.innerHTML=pag.map((r,i)=>{
     const origen = r._cat || (incidentes.some(x=>x["RADICADO"]===r["RADICADO"])
       ? "incidente" : TIPOS_FALLO.includes(r["TIPO"]) ? "fallo" : "tutela");
-    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(r["JUZGADO"],26))}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel sub">${flimTxt(r)}</div></div>`;
+    return`<div class="fila tcols-his" onclick="abrirModalIdx('_pagHistorico',${i},'${origen}')"><div class="cel">${badgeEst(r["ESTADO"])}</div><div class="cel">${badgeTipo(r["TIPO"]||"Desacato")}</div><div class="cel name" title="${escAttr(r["ACCIONANTE"])}">${esc(abrev(r["ACCIONANTE"],32))}</div><div class="cel sub col-hide">${esc(abrev(juzCorto(r["JUZGADO"]),30))}</div><div class="cel sub col-hide">${esc(pNom(r["RESPONSABLE"]))}</div>${celRad(r)}<div class="cel sub">${flimTxt(r)}</div></div>`;
   }).join("");
   window._exportHistorico=filtHis;
 }
@@ -3868,7 +3942,7 @@ function renderCockpit(){
     return `<span class="hoy-badge2 b-tut">Tutela</span>`;
   };
   const diasChip = d => {
-    if(d<0) return `<span class="hoy-dias d-venc">${d===-1?"−1 día háb.":d+" días háb."}</span>`;
+    if(d<0) return `<span class="hoy-dias d-venc">Vencido ${Math.abs(d)}d háb.</span>`;
     if(d===0) return `<span class="hoy-dias d-hoy">Hoy</span>`;
     if(d===1) return `<span class="hoy-dias d-hoy">Mañana</span>`;
     return `<span class="hoy-dias d-hoy">${d}d háb.</span>`;
@@ -3879,10 +3953,10 @@ function renderCockpit(){
   window._hoyItems = [];
   const itemHTML = (r, d) => {
     const idx = window._hoyItems.push(r) - 1;
-    const juz=(r["JUZGADO"]||"").substring(0,34);
+    const juz=juzCorto(r["JUZGADO"]);
     return `<div class="hoy-item" onclick="abrirModalIdx('_hoyItems',${idx})">
       ${catBadge(r)}
-      <div class="hoy-acc"><div class="n">${esc(r["ACCIONANTE"]||"—")}</div><div class="s">${esc(r["RADICADO"]||"—")}${juz?" · "+esc(juz):""}</div></div>
+      <div class="hoy-acc"><div class="n">${esc(r["ACCIONANTE"]||"—")}</div><div class="s">${esc(radCorto(r["RADICADO"])||"—")}${juz?" · "+esc(juz):""}</div></div>
       ${typeof d==="string"?`<span class="hoy-dias d-hoy">${esc(d)}</span>`:d===null||d===undefined?`<span class="hoy-dias d-venc">Sin fecha</span>`:diasChip(d)}
     </div>`;
   };
@@ -4457,8 +4531,7 @@ function _validarCierre(orig, cambios){
   if(origenModal==="tutela" && !val("RADICADO DE CUMPLIMIENTO"))
     return {msg:`Para marcarla «${cambios["ESTADO"]}» registra el radicado de respuesta a la tutela.`, tab:"juridica", campo:"m-resp-rad"};
   if(origenModal==="fallo"){
-    if(!val("SENTIDO FALLO"))
-      return {msg:"Antes de cerrar el fallo registra su sentido (niega, concede, improcedente…).", tab:"juridica", campo:"m-sentido"};
+    // v5.3 · el sentido del fallo ya NO es obligatorio para cerrar (solo se recuerda al confirmar)
     if(SENTIDOS_DESFAVORABLES.includes(val("SENTIDO FALLO")) && !val("RADICADO DE CUMPLIMIENTO"))
       return {msg:"El fallo concede el amparo: registra el radicado de cumplimiento antes de cerrarlo.", tab:"juridica", campo:"m-resp-rad"};
   }
@@ -4466,8 +4539,11 @@ function _validarCierre(orig, cambios){
 }
 function _avisoSharepoint(orig, cambios){
   if(!("ESTADO" in cambios) || !EST_HIST.includes(cambios["ESTADO"]) || cambios["ESTADO"]==="Anulado") return "";
-  const sp=String(("SHAREPOINT" in cambios ? cambios["SHAREPOINT"] : orig["SHAREPOINT"]) ?? "").trim();
-  return sp ? "" : "\n\n⚠️ Aún no tiene documento en SharePoint.";
+  const v=k=>String((k in cambios ? cambios[k] : orig[k]) ?? "").trim();
+  let av="";
+  if(!v("SHAREPOINT")) av+="\n\n⚠️ Aún no tiene documento en SharePoint.";
+  if(origenModal==="fallo" && !v("SENTIDO FALLO")) av+="\n\nℹ️ No registraste el sentido del fallo: este fallo no contará en la estadística de resultados.";
+  return av;
 }
 function _resumenCambios(orig, cambios){
   return Object.keys(cambios).filter(k=>k!=="FECHA CIERRE").map(k=>{
@@ -4720,7 +4796,7 @@ function _pintarMios(){
   if(!t) return;
   const yo=yoActual();
   t.classList.toggle("active",misCasosOn);
-  t.innerHTML=misCasosOn?`⭐ Míos: ${esc(pNom(yo).split(" ")[0])} ✕`:"⭐ Mis casos";
+  t.innerHTML=misCasosOn?`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>Míos: ${esc(pNom(yo).split(" ")[0])} ✕`:`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>Mis casos`;
 }
 function _menuYo(){
   const prev=document.getElementById("menu-yo"); if(prev) prev.remove();
@@ -5846,7 +5922,7 @@ window.celRad = function(r){
     ? '<button type="button" class="btn-fila-copy" title="Copiar radicado (no abre el caso)" aria-label="Copiar radicado ' + escAttr(rad) + '">⧉</button>'
     : "";
   return '<div class="cel sub cel-rad" data-rad="' + escAttr(rad) + '">'
-       +   '<span class="rad-txt">' + esc(txt) + '</span>' + btn
+       +   '<span class="rad-txt" title="' + escAttr(rad) + '">' + esc(rad ? radCorto(rad) : txt) + '</span>' + btn
        + '</div>';
 };
 
