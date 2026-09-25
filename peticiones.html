@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
 <!-- build: archivos-peticion + limpieza-pdf-antiguos + control-interno + buscador-global + visualizador + buscador-resueltas · 2026 -->
-<meta name="build" content="peticiones-combinar-unificado-v15">
+<meta name="build" content="peticiones-v2 (sin-topes + ocr-confianza + cola-riesgo + tiempo-real + borrador)">
 <meta name="cache-control" content="no-cache">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -634,6 +634,61 @@ footer b{color:var(--gold)}
 .pl-prev{background:#f5f2ea;color:#1d1d1d;border-radius:10px;padding:20px 24px;margin-top:13px;
   font-family:Georgia,serif;font-size:12.5px;line-height:1.6;max-height:44vh;overflow:auto}
 
+
+/* ── V2: confianza del OCR ── */
+.ev-ia{margin-top:6px;border-left:3px solid var(--tramite);background:rgba(96,165,250,.07);
+  border-radius:0 8px 8px 0;padding:7px 10px;font-size:var(--t-micro);line-height:1.45}
+.ev-ia .ev-tag{font-weight:700;color:var(--tramite);margin-bottom:2px}
+.ev-ia .ev-frag{color:var(--muted);word-break:break-word}
+.ev-ia mark{background:rgba(96,165,250,.28);color:var(--txt);border-radius:3px;padding:0 2px}
+.ev-ia.ev-media{border-left-color:var(--acento);background:rgba(245,158,11,.07)}
+.ev-ia.ev-media .ev-tag{color:var(--acento)} .ev-ia.ev-media mark{background:rgba(245,158,11,.3)}
+.ev-ia.ev-baja{border-left-color:var(--error);background:rgba(251,146,60,.08)}
+.ev-ia.ev-baja .ev-tag{color:var(--error)} .ev-ia.ev-baja mark{background:rgba(251,146,60,.32)}
+/* La lectura clara no estorba: aparece solo al entrar al campo */
+.ev-ia.ev-alta{display:none}
+.fld:focus-within .ev-ia.ev-alta{display:block}
+.chip-ia.ci-media{background:rgba(245,158,11,.2);color:var(--acento)}
+.chip-ia.ci-baja{background:rgba(251,146,60,.22);color:var(--error)}
+
+/* ── V2: motivo de orden en la cola ── */
+.riesgo-motivo{display:inline-block;font-size:var(--t-sm);font-weight:700;padding:5px 12px;
+  border-radius:99px;margin-bottom:12px;border:1px solid currentColor}
+.rm-vencida{color:var(--vencido);background:rgba(248,113,113,.09)}
+.rm-urgente{color:var(--urgente);background:rgba(251,146,60,.09)}
+.rm-judicial{color:var(--judicial);background:rgba(192,132,252,.09)}
+
+/* ── V2: alguien más tiene abierto el caso ── */
+.presencia{display:flex;gap:10px;align-items:flex-start;font-size:var(--t-sm);line-height:1.45;
+  background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.35);border-radius:11px;
+  padding:10px 14px;margin-bottom:14px;color:var(--txt)}
+.pres-punto{width:9px;height:9px;border-radius:50%;background:var(--tramite);margin-top:5px;flex-shrink:0;
+  box-shadow:0 0 0 0 rgba(96,165,250,.6);animation:late 1.8s ease-out infinite}
+@keyframes late{to{box-shadow:0 0 0 8px rgba(96,165,250,0)}}
+@media(prefers-reduced-motion:reduce){.pres-punto{animation:none}}
+
+/* ── Novedades de la versión ── */
+#novedades{position:fixed;inset:0;background:rgba(4,14,28,.82);z-index:970;display:none;
+  align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(6px)}
+#novedades.on{display:flex}
+.nv-caja{width:100%;max-width:470px;max-height:90vh;overflow:auto;background:var(--navy2);
+  border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:18px;padding:24px 22px 20px;
+  text-align:center;animation:sube .3s ease}
+.nv-pill{display:inline-block;background:var(--gold);color:var(--navy);font-size:var(--t-lbl);font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:99px;margin-bottom:12px}
+.nv-caja h2{font-size:26px;font-weight:800;color:#fff;margin-bottom:4px}
+.nv-sub{color:var(--muted);font-size:var(--t-sm);margin-bottom:18px}
+.nv-lista{display:flex;flex-direction:column;gap:10px;text-align:left}
+.nv-item{display:flex;gap:14px;align-items:flex-start;background:rgba(255,255,255,.035);
+  border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+.nv-ic{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:18px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:9px}
+.nv-it-tit{font-weight:700;font-size:var(--t-base);color:#fff;margin-bottom:3px}
+.nv-it-txt{font-size:var(--t-sm);color:var(--muted);line-height:1.5}
+.nv-btn{width:100%;margin-top:18px;background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--navy);
+  font-family:inherit;font-weight:700;font-size:var(--t-md);border:0;border-radius:12px;padding:14px;cursor:pointer}
+.nv-btn:hover{filter:brightness(1.06)}
+@media(prefers-reduced-motion:reduce){.nv-caja{animation:none}}
 </style>
 </head>
 <body>
@@ -705,7 +760,9 @@ footer b{color:var(--gold)}
   <div class="ay-caja">
     <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:4px">
       <div style="flex:1"><h3>Atajos de <em>teclado</em></h3>
-        <div class="hint">Pulse <b>?</b> en cualquier momento para volver a verlos.</div></div>
+        <div class="hint">Pulse <b>?</b> en cualquier momento para volver a verlos. ·
+          <a href="#" onclick="cerrarAyuda();abrirNovedades(true);return false"
+             style="color:var(--gold)">Ver novedades de la versión</a></div></div>
       <button class="btn btn-ghost" style="padding:8px 14px;font-size:var(--t-sm)"
         onclick="cerrarAyuda()">Cerrar</button>
     </div>
@@ -915,7 +972,7 @@ footer b{color:var(--gold)}
             <option value="todas">Todas</option>
           </select>
           <select id="c-orden" onchange="cargarCola()" style="width:auto">
-            <option value="urgencia">Por riesgo (tutelas primero)</option>
+            <option value="urgencia">Por riesgo (lo más urgente primero)</option>
             <option value="tipo">Agrupar por tipo</option>
             <option value="persona">Agrupar por peticionario</option>
           </select>
@@ -1594,6 +1651,7 @@ async function entrar(){
 }
 
 async function salir(){
+  borrarBorrador();
   try{ if(sbAuth) await sbAuth.auth.signOut(); }catch(e){}
   location.reload();
 }
@@ -1650,6 +1708,10 @@ async function iniciar(){
   prepararDigitar();
   llenarAbogados();
   registrarAtajoBuscador();
+  ligarBorrador();
+  setTimeout(recuperarBorrador, 400);
+  iniciarTiempoReal();
+  setTimeout(function(){ abrirNovedades(false); }, 700);
   // Refresco en vivo del visualizador: delegado en document para sobrevivir a
   // la recreación de #k-doc cada vez que se abre un caso.
   if(!window.__vivoLigado){
@@ -1820,13 +1882,11 @@ async function actualizarBadges(){
   try{
     let q = 'v_pet_cola?select=id&limit=2000';
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
-    const cola = await supaFetch(q);
-    ponerBadge('tab-cola', cola.length);
+    ponerBadge('tab-cola', await supaContar(q));
 
     let q2 = 'v_pet_bandeja?select=id&estado=eq.PROYECTADA&limit=2000';
     if(!esAdmin()) q2 += '&asignado_a=eq.' + PERFIL.id;
-    const sinRad = await supaFetch(q2);
-    ponerBadge('tab-historicos', sinRad.length);
+    ponerBadge('tab-historicos', await supaContar(q2));
   }catch(e){}
 }
 
@@ -2206,6 +2266,7 @@ function limpiarDigitar(todo){
     document.getElementById('d-msg').textContent = '';
   }
   quitarMarcasIA();
+  borrarBorrador();
   const pv = document.getElementById('dz-previa');
   if(pv && todo){ pv.innerHTML = ''; ARCHIVO_UNICO = null; }
   calcLimite();
@@ -2334,6 +2395,7 @@ async function leerArchivo(file){
       estado('No se pudo leer contenido útil. Digite los datos a mano.', 'var(--naranja)');
       return;
     }
+    TEXTO_LEIDO = texto;
     const datos = extraerDatos(texto);
     const puestos = aplicarDatos(datos);
     estado(puestos.length ? 'Se completaron: ' + puestos.join(', ') + '. Verifique antes de guardar.'
@@ -2431,6 +2493,7 @@ function guardarFormUnico(){
 }
 
 async function textoDePDF(file){
+  OCR_INFO = { nativo:true, palabras:[] };
   await cargarPdfJs();
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
   const buf = await file.arrayBuffer();
@@ -2448,7 +2511,7 @@ async function textoDePDF(file){
 
 /* Opciones que mejoran notablemente el reconocimiento en documentos oficiales */
 const TESS_OPC = {
-  tessedit_pageseg_mode: '1',        // segmentación automática con orientación
+  tessedit_pageseg_mode: '3',        // segmentación automática (la 1 exige el modelo 'osd', que no se carga)
   preserve_interword_spaces: '1',
   user_defined_dpi: '300'
 };
@@ -2493,11 +2556,11 @@ function limpiarCanvas(cv){
 
 async function ocrDePDF(file){
   await cargarPdfJs();
-  await cargarScript(CDN_TESS);
   window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFW;
   const buf = await file.arrayBuffer();
   const pdf = await window.pdfjsLib.getDocument(opcionesPDF(buf)).promise;
   const n = Math.min(pdf.numPages, 3);
+  OCR_INFO = { nativo:false, palabras:[] };
   let out = '';
   for(let p = 1; p <= n; p++){
     estado('Reconociendo página ' + p + ' de ' + n + '… no cierre esta ventana.');
@@ -2510,21 +2573,21 @@ async function ocrDePDF(file){
     ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
     await pg.render({canvasContext: ctx, viewport: vp}).promise;
     limpiarCanvas(cv);
-    const r = await window.Tesseract.recognize(cv, 'spa', Object.assign({
-      logger: function(m){ if(m.status === 'recognizing text') progreso(((p - 1) + m.progress) / n * 100); }
-    }, TESS_OPC));
+    const r = await reconocer(cv, function(x){ progreso(((p - 1) + x) / n * 100); });
+    cv.width = cv.height = 0;           // suelta la memoria de la página
+    pg.cleanup();
     out += r.data.text + '\n';
   }
+  try{ pdf.destroy(); }catch(e){}
   return out;
 }
 
 async function ocrDeImagen(file){
-  await cargarScript(CDN_TESS);
   const cv = await imagenACanvas(file);
   limpiarCanvas(cv);
-  const r = await window.Tesseract.recognize(cv, 'spa', Object.assign({
-    logger: function(m){ if(m.status === 'recognizing text') progreso(m.progress * 100); }
-  }, TESS_OPC));
+  OCR_INFO = { nativo:false, palabras:[] };
+  const r = await reconocer(cv, function(x){ progreso(x * 100); });
+  cv.width = cv.height = 0;
   return r.data.text;
 }
 
@@ -2769,6 +2832,7 @@ function aplicarDatos(d){
     if(String(el.value).trim() !== '') return;
     el.value = val;
     marcarIA(id);
+    marcarEvidencia(id, val);
     puestos.push(etiqueta);
   }
   set('d-nom', d.nombre, 'nombre');
@@ -2891,8 +2955,9 @@ function marcarIA(id){
 
 /* Al limpiar el formulario se quitan las marcas */
 function quitarMarcasIA(){
-  const chips = document.querySelectorAll('.chip-ia');
+  const chips = document.querySelectorAll('.chip-ia, .ev-ia');
   for(let i = 0; i < chips.length; i++) chips[i].remove();
+  TEXTO_LEIDO = '';
   ['d-rad','d-nom','d-doc','d-exp','d-fecha','d-tipo','d-res'].forEach(function(id){
     const el = document.getElementById(id);
     if(el) el.style.borderColor = '';
@@ -2979,7 +3044,7 @@ async function cargarLote(files){
         item.estado = 'aviso';
         item.escaneado = true;
       }
-      if(texto) item.datos = extraerDatos(texto);
+      if(texto){ item.datos = extraerDatos(texto); item.texto = texto; item.ocr = { nativo:true }; }
     }catch(err){
       item.nota = 'No se pudo leer: ' + err.message;
       item.estado = 'aviso';
@@ -3092,9 +3157,11 @@ function pintarFormVisor(n){
     '<div class="fld"><label class="lbl">Radicado de entrada</label>' +
       '<input type="text" id="vf-rad" value="' + esc(it.radicado) + '"></div>' +
     '<div class="fld"><label class="lbl">Peticionario</label>' +
-      '<input type="text" id="vf-nom" value="' + esc(d.nombre || '') + '" placeholder="Nombre completo"></div>' +
+      '<input type="text" id="vf-nom" value="' + esc(d.nombre || '') + '" placeholder="Nombre completo">' +
+      evidenciaHTML(d.nombre, it.texto, it.ocr) + '</div>' +
     '<div class="fld"><label class="lbl">Cédula</label>' +
-      '<input type="text" id="vf-doc" inputmode="numeric" value="' + esc(d.documento || '') + '"></div>' +
+      '<input type="text" id="vf-doc" inputmode="numeric" value="' + esc(d.documento || '') + '">' +
+      evidenciaHTML(d.documento, it.texto, it.ocr) + '</div>' +
     '<div class="fld"><label class="lbl">Tipo de petición</label>' +
       '<select id="vf-tipo">' + TIPOS.map(function(t){
         return '<option value="' + esc(t.codigo) + '"' + (d.tipo === t.codigo ? ' selected' : '') +
@@ -3222,6 +3289,7 @@ async function reconocerEscaneados(){
       const d = extraerDatos(texto || '');
       it.datos = Object.assign({}, d, it.datos.nombre ? it.datos : {});
       it.texto = texto;
+      it.ocr = OCR_INFO;
       const utiles = ['nombre','documento','comparendo','tipo'].filter(function(k){ return d[k]; }).length;
       if(utiles >= 2){
         it.nota = 'Reconocido: verifique los datos.';
@@ -3874,11 +3942,12 @@ async function cargarCola(){
     if(orden === 'tipo')    q += '&order=tipo.asc,fecha_limite.asc';
     if(orden === 'persona') q += '&order=documento.asc,fecha_limite.asc';
     try{
-      COLA = await supaFetch(q);
+      COLA = await supaFetchTodo(q);
     }catch(err){
       // Si aún no se ha ejecutado el delta de tutelas, cae a la vista normal
-      COLA = await supaFetch(q.replace('v_pet_cola_prioridad', 'v_pet_cola'));
+      COLA = await supaFetchTodo(q.replace('v_pet_cola_prioridad', 'v_pet_cola'));
     }
+    if(orden === 'urgencia') COLA = ordenarPorRiesgo(COLA);
     COLA_IDX = 0;
     pintarCaso();
     avisoSinRadicado();
@@ -3918,7 +3987,9 @@ function pintarCaso(){
 
   cont.innerHTML =
    '<div class="caso">' +
+    motivoRiesgo(r) +
     alertaTutela(r) +
+    '<div id="k-presencia"></div>' +
 
     // ── Encabezado: identificación y relojes ──
     '<div class="caso-hd">' +
@@ -4018,6 +4089,7 @@ function pintarCaso(){
    '</div>';
 
   historialPeticionario(r);
+  presenciaCaso(r.id);
 }
 
 /* Iconos en línea, sin librerías */
@@ -4255,13 +4327,13 @@ async function cargarTrasladadas(){
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
     let rows;
     try{
-      rows = await supaFetch(q);
+      rows = await supaFetchTodo(q);
     }catch(e1){
       // Fallback: la vista v_pet_trasladadas puede no existir aún — traer de v_pet_bandeja.
       let q2 = 'v_pet_bandeja?select=*&estado=eq.TRASLADADA' +
                '&order=traslado_fecha.desc.nullslast&limit=3000';
       if(!esAdmin()) q2 += '&asignado_a=eq.' + PERFIL.id;
-      rows = await supaFetch(q2);
+      rows = await supaFetchTodo(q2);
     }
     TRASLADADAS = rows || [];
 
@@ -4499,7 +4571,7 @@ async function avanceDelDia(){
     const hoy = iso(new Date());
     let q = 'v_pet_bandeja?select=id&fecha_proyeccion=eq.' + hoy + '&limit=500';
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
-    const hechas = await supaFetch(q);
+    const hechas = await supaFetchTodo(q);
     const n = hechas.length;
     const meta = 12;
     const pct = Math.min(n / meta * 100, 100);
@@ -4525,7 +4597,7 @@ async function avisoSinRadicado(){
   try{
     let q = 'v_pet_bandeja?select=id,dias_esperando_radicado&estado=eq.PROYECTADA&limit=500';
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
-    const filas = await supaFetch(q);
+    const filas = await supaFetchTodo(q);
     if(!filas.length){ cont.innerHTML = ''; return; }
     const viejas = filas.filter(function(f){ return f.dias_esperando_radicado > 5; }).length;
     const col = viejas ? 'var(--rojo)' : 'var(--morado)';
@@ -7073,10 +7145,10 @@ async function abrirBuscador(){
     pintarBuscador('cargando');
     try{
       try{
-        BANDEJA = await supaFetch('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
+        BANDEJA = await supaFetchTodo('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
         '&order=fecha_limite.asc&limit=1000');
       }catch(e){
-        BANDEJA = await supaFetch('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
+        BANDEJA = await supaFetchTodo('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
         '&order=fecha_limite.asc&limit=1000');
       }
     }catch(err){}
@@ -7652,7 +7724,7 @@ async function cargarHistorico(){
   }
 
   try{
-    HISTORICO = await supaFetch(
+    HISTORICO = await supaFetchTodo(
       'v_pet_bandeja?select=*&estado=in.(CERRADA,ANULADA)' +
       '&order=fecha_cierre.desc.nullslast&limit=3000');
     msg.className = 'msg';
@@ -7986,12 +8058,12 @@ async function cargarHistoricos(){
     let q = 'v_pet_bandeja?select=*&estado=in.(PROYECTADA,RESPONDIDA)' +
             '&order=fecha_proyeccion.desc.nullslast&limit=3000';
     if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
-    HIST = await supaFetch(q);
+    HIST = await supaFetchTodo(q);
     // Sentido de las respuestas (concedidas/negadas) para Control Interno
     try{
       let qd = 'pet_docs?select=tema,sentido,tipo_doc,items,creado_en,abogado_nom' +
                '&order=creado_en.desc&limit=5000';
-      DOCS = await supaFetch(qd);
+      DOCS = await supaFetchTodo(qd);
     }catch(e){ DOCS = []; }
     msg.textContent = HIST.length + ' peticiones resueltas en el archivo.';
     renderHist();
@@ -8475,7 +8547,7 @@ async function cargarControlInterno(){
   try{
     // Traemos las filas crudas y agrupamos en el navegador (rango amplio, límite alto).
     let q = 'pet_docs?select=tema,sentido,tipo_doc,items,creado_en,abogado_nom&order=creado_en.desc&limit=5000';
-    CI_DATOS = await supaFetch(q);
+    CI_DATOS = await supaFetchTodo(q);
     msg.className = 'msg ok';
     msg.textContent = CI_DATOS.length + ' documentos registrados en total.';
     renderControlInterno();
@@ -8881,7 +8953,7 @@ async function cargarTablero(){
       supaFetch('v_pet_resumen?select=*'),
       supaFetch('v_pet_productividad?select=*'),
       supaFetch('v_pet_radicacion?select=*').catch(function(){ return null; }),
-      supaFetch('v_pet_bandeja?select=asignado_a,asignado_nombre&estado=eq.TRASLADADA&limit=5000')
+      supaFetchTodo('v_pet_bandeja?select=asignado_a,asignado_nombre&estado=eq.TRASLADADA')
         .catch(function(){ return []; })
     ]);
     // Contar trasladadas por abogada
@@ -8932,7 +9004,7 @@ async function cargarTablero(){
     }
 
     cruceTutelas();
-    const todas = await supaFetch('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
+    const todas = await supaFetchTodo('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
       'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,' +
       'pendiente_notificacion,dias_sin_entregar,asignado_nombre&limit=3000');
     pintarAlertas(todas);
@@ -9113,9 +9185,9 @@ async function cruceTutelas(){
   try{
     const [costo, abiertas, pend] = await Promise.all([
       supaFetch('v_pet_costo_represamiento?select=*'),
-      supaFetch('v_pet_bandeja_tutela?select=en_tutela,tutela_desacato,persona_vigentes,estado' +
+      supaFetchTodo('v_pet_bandeja_tutela?select=en_tutela,tutela_desacato,persona_vigentes,estado' +
                 '&estado=in.(PENDIENTE,ASIGNADA,EN_TRAMITE,PROYECTADA)&limit=3000'),
-      supaFetch('v_pet_pendiente_sync?select=peticion_id&limit=500').catch(function(){ return []; })
+      supaFetchTodo('v_pet_pendiente_sync?select=peticion_id').catch(function(){ return []; })
     ]);
     const pendSync = pend.length;
     const c = costo[0] || {};
@@ -9338,6 +9410,506 @@ async function repartir(){
     msg.className = 'msg err'; msg.textContent = 'No se pudo repartir: ' + err.message;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   V2 · CONSULTAS SIN TOPE
+   Supabase corta en silencio cualquier consulta a 1000 filas
+   (max_rows de PostgREST), aunque se pida limit=3000. Estas dos
+   funciones evitan que el tablero y los archivos pierdan casos.
+   ══════════════════════════════════════════════════════════════ */
+const PAG_TAM = 1000;      // igual al max_rows por defecto de Supabase
+const PAG_MAX = 60000;     // freno de seguridad
+
+/* Trae TODAS las filas, de a 1000. Ignora el limit= que traiga la consulta.
+   Para que las páginas no se solapen, la consulta debe llevar un order estable. */
+async function supaFetchTodo(path, opts){
+  let base = String(path).replace(/&limit=\d+/g, '').replace(/&offset=\d+/g, '');
+  const sep = base.indexOf('?') === -1 ? '?' : '&';
+  // Avanza según lo que realmente llegó y para solo con una página vacía:
+  // así funciona aunque el proyecto tenga configurado un max_rows menor a 1000.
+  let todo = [];
+  let off = 0;
+  while(off < PAG_MAX){
+    const filas = await supaFetch(base + sep + 'limit=' + PAG_TAM + '&offset=' + off, opts);
+    if(!filas || !filas.length) break;
+    todo = todo.concat(filas);
+    off += filas.length;
+    if(filas.length < 50) break;        // página corta y pequeña: ya no hay más
+  }
+  return todo;
+}
+
+/* Cuenta filas sin descargarlas (HEAD + count=exact). */
+async function supaContar(path){
+  const base = String(path).replace(/&limit=\d+/g, '');
+  try{
+    const headers = await authHeaders({ Prefer:'count=exact', Range:'0-0', 'Range-Unit':'items' });
+    const res = await fetch(SUPA_URL + '/rest/v1/' + base, { method:'HEAD', headers: headers });
+    const cr = res.headers.get('content-range') || '';
+    const n = parseInt(cr.split('/')[1], 10);
+    if(res.ok && !isNaN(n)) return n;
+  }catch(e){}
+  return (await supaFetchTodo(path)).length;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   V2 · OCR CON UN SOLO MOTOR Y NIVEL DE CONFIANZA
+   Antes cada página creaba un motor Tesseract nuevo y recargaba el
+   modelo de español. Ahora se crea uno, se reutiliza en todo el lote
+   y se libera tras 90 s sin uso.
+   ══════════════════════════════════════════════════════════════ */
+let TESS_W = null, TESS_LOG = null, TESS_OCIO = null, TESS_CREANDO = null;
+let OCR_INFO = null;       // { nativo, palabras:[{t,c}] } del último documento leído
+let TEXTO_LEIDO = '';      // texto del documento en radicación rápida
+
+async function tessWorker(){
+  clearTimeout(TESS_OCIO);
+  if(TESS_W) return TESS_W;
+  if(TESS_CREANDO) return TESS_CREANDO;
+  TESS_CREANDO = (async function(){
+    await cargarScript(CDN_TESS);
+    const w = await window.Tesseract.createWorker('spa', 1, {
+      logger: function(m){ if(TESS_LOG) TESS_LOG(m); }
+    });
+    await w.setParameters(TESS_OPC);
+    TESS_W = w;
+    return w;
+  })();
+  try{ return await TESS_CREANDO; } finally { TESS_CREANDO = null; }
+}
+
+function soltarTessLuego(){
+  clearTimeout(TESS_OCIO);
+  TESS_OCIO = setTimeout(async function(){
+    if(!TESS_W) return;
+    const w = TESS_W; TESS_W = null;
+    try{ await w.terminate(); }catch(e){}
+  }, 90000);
+}
+
+async function reconocer(cv, alProgresar){
+  const w = await tessWorker();
+  TESS_LOG = function(m){
+    if(m.status === 'recognizing text' && alProgresar) alProgresar(m.progress);
+  };
+  try{
+    const r = await w.recognize(cv);
+    if(OCR_INFO && r.data && r.data.words){
+      r.data.words.forEach(function(x){
+        OCR_INFO.palabras.push({ t: x.text, c: x.confidence });
+      });
+    }
+    return r;
+  }finally{
+    TESS_LOG = null;
+    soltarTessLuego();
+  }
+}
+
+/* Confusiones típicas del OCR en números */
+const OCR_EQ = { '0':'Oo', '1':'Iil', '2':'Zz', '5':'Ss', '6':'G', '8':'B', '9':'g' };
+function escRe(x){ return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function sinTildes(x){                     // conserva la longitud: sirve para ubicar
+  return x.split('').map(function(c){ return c.normalize('NFD')[0]; }).join('');
+}
+function normTok(x){ return sinTildes(String(x || '')).replace(/[^0-9A-Za-z]/g, '').toUpperCase(); }
+
+/* Ubica el valor en el texto leído. Devuelve fragmento, posición y si hubo
+   que corregir letras por números. */
+function ubicarValor(valor, texto){
+  const v = String(valor || '').trim();
+  if(!v || !texto) return null;
+  const t = texto.replace(/\s+/g, ' ');
+  const plano = sinTildes(t);
+  let re;
+  if(/^\d+$/.test(v)){
+    re = new RegExp(v.split('').map(function(ch){
+      return '[' + ch + (OCR_EQ[ch] || '') + ']';
+    }).join('[\\s.,-]{0,2}'));
+  } else {
+    const pal = sinTildes(v).split(/\s+/).filter(Boolean).map(escRe);
+    if(!pal.length) return null;
+    re = new RegExp(pal.join('[\\s,.]+'), 'i');
+  }
+  const m = plano.match(re);
+  if(!m) return null;
+  const ini = m.index, fin = m.index + m[0].length;
+  const crudo = t.slice(ini, fin);
+  return {
+    crudo: crudo,
+    corregido: /^\d+$/.test(v) && /[A-Za-z]/.test(crudo),
+    antes: t.slice(Math.max(0, ini - 55), ini),
+    despues: t.slice(fin, fin + 55),
+    cortaIni: ini > 55, cortaFin: fin + 55 < t.length
+  };
+}
+
+/* alta · media · baja, según lo que Tesseract dijo de esas palabras */
+function nivelConfianza(ub, info){
+  if(!info || info.nativo) return { nivel:'alta', txt:'Texto digital del PDF' };
+  const toks = ub.crudo.split(/\s+/).map(normTok).filter(Boolean);
+  const pal = info.palabras || [];
+  let minimo = 100;
+  toks.forEach(function(tk){
+    let mejor = null;
+    for(let i = 0; i < pal.length; i++){
+      const p = normTok(pal[i].t);
+      if(!p) continue;
+      if(p === tk || (tk.length >= 4 && (p.indexOf(tk) !== -1 || tk.indexOf(p) !== -1) && p.length >= 3)){
+        if(mejor === null || pal[i].c > mejor) mejor = pal[i].c;
+        if(p === tk) break;
+      }
+    }
+    minimo = Math.min(minimo, mejor === null ? 50 : mejor);
+  });
+  let nivel = minimo >= 85 ? 'alta' : minimo >= 65 ? 'media' : 'baja';
+  if(ub.corregido && nivel === 'alta') nivel = 'media';
+  const txt = nivel === 'alta' ? 'Lectura clara'
+            : nivel === 'media' ? 'Lectura dudosa: compare con el documento'
+            : 'Lectura difícil: verifique contra el PDF';
+  return { nivel: nivel, txt: txt + (ub.corregido ? ' (se corrigieron letras por números)' : '') };
+}
+
+function evidenciaHTML(valor, texto, info){
+  const ub = ubicarValor(valor, texto);
+  if(!ub) return '';
+  const cf = nivelConfianza(ub, info);
+  return '<div class="ev-ia ev-' + cf.nivel + '">' +
+    '<div class="ev-tag">' + esc(cf.txt) + '</div>' +
+    '<div class="ev-frag">' + (ub.cortaIni ? '…' : '') + esc(ub.antes) +
+      '<mark>' + esc(ub.crudo) + '</mark>' + esc(ub.despues) + (ub.cortaFin ? '…' : '') +
+    '</div></div>';
+}
+
+/* Radicación rápida: muestra de dónde salió el dato y qué tan confiable es */
+function marcarEvidencia(id, valor){
+  const el = document.getElementById(id);
+  if(!el || el.tagName === 'SELECT' || id === 'd-res' || id === 'd-fecha') return;
+  const html = evidenciaHTML(valor, TEXTO_LEIDO, OCR_INFO);
+  if(!html) return;
+  const fld = el.closest('.fld') || el.parentNode;
+  const viejo = fld.querySelector('.ev-ia'); if(viejo) viejo.remove();
+  el.insertAdjacentHTML('afterend', html);
+  const ev = fld.querySelector('.ev-ia');
+  const nivel = ev.className.replace(/.*ev-(alta|media|baja).*/, '$1');
+  if(nivel === 'baja')  el.style.borderColor = 'var(--error)';
+  if(nivel === 'media') el.style.borderColor = 'var(--acento)';
+  const chip = fld.querySelector('.chip-ia');
+  if(chip){ chip.classList.add('ci-' + nivel); chip.title = ev.querySelector('.ev-tag').textContent; }
+  el.addEventListener('input', function(){ if(ev.parentNode) ev.remove(); }, { once:true });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   V2 · COLA ORDENADA POR RIESGO
+   Desacato → en tutela → vencida → persona que ya tuteló →
+   por vencer (≤ 3 días hábiles) → el resto. Dentro de cada grupo,
+   la de menos días restantes primero.
+   ══════════════════════════════════════════════════════════════ */
+function riesgoCaso(r){
+  const enTut = Number(r.en_tutela || 0) > 0;
+  const cerrada = ['Finalizado','Respondido','Hecho superado','Anulado']
+    .indexOf(String(r.tutela_estado || '')) !== -1;
+  const d = (r.dias_restantes === null || r.dias_restantes === undefined) ? 9999 : Number(r.dias_restantes);
+  const dias = function(n){ return n + (n === 1 ? ' día hábil' : ' días hábiles'); };
+  if(enTut && !cerrada && r.tutela_desacato === true) return { nivel:0, d:d, motivo:'Desacato abierto' };
+  if(enTut && !cerrada)                                return { nivel:1, d:d, motivo:'En tutela' };
+  if(d < 0)                                            return { nivel:2, d:d, motivo:'Vencida hace ' + dias(Math.abs(d)) };
+  if(Number(r.persona_vigentes || 0) > 0)              return { nivel:3, d:d, motivo:'La persona ya tuteló por otra petición' };
+  if(d <= 3)                                           return { nivel:4, d:d, motivo: d === 0 ? 'Vence hoy' : 'Vence en ' + dias(d) };
+  return { nivel:5, d:d, motivo:'' };
+}
+
+function ordenarPorRiesgo(lista){
+  return lista.map(function(r, i){ return { r:r, k:riesgoCaso(r), i:i }; })
+    .sort(function(a, b){
+      return (a.k.nivel - b.k.nivel) || (a.k.d - b.k.d) ||
+             String(a.r.fecha_radicado || '').localeCompare(String(b.r.fecha_radicado || '')) ||
+             (a.i - b.i);
+    })
+    .map(function(x){ return x.r; });
+}
+
+/* Explica en una línea por qué este caso va aquí. Las tutelas ya tienen su
+   propia alerta grande, así que solo se muestra de vencida en adelante. */
+function motivoRiesgo(r){
+  const o = document.getElementById('c-orden');
+  if(!o || o.value !== 'urgencia') return '';
+  const k = riesgoCaso(r);
+  if(k.nivel < 2 || k.nivel > 4) return '';
+  const cls = k.nivel === 2 ? 'rm-vencida' : k.nivel === 3 ? 'rm-judicial' : 'rm-urgente';
+  return '<div class="riesgo-motivo ' + cls + '">' + esc(k.motivo) + '</div>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   V2 · TIEMPO REAL (Supabase Realtime)
+   1. Aviso cuando a alguien le asignan una petición nueva.
+   2. Aviso cuando otra persona tiene abierto el mismo caso.
+   Si Realtime no está habilitado, el módulo sigue funcionando igual.
+   ══════════════════════════════════════════════════════════════ */
+let RT_ASIG = null, RT_PRES = null, RT_CASO = null, RT_PEND = 0;
+const RT_VISTOS = new Set();
+const TITULO_BASE = document.title;
+
+function iniciarTiempoReal(){
+  if(!sbAuth || typeof sbAuth.channel !== 'function' || !PERFIL) return;
+  try{
+    if(!soloRadica()){
+      RT_ASIG = sbAuth.channel('pet-asignaciones-' + PERFIL.id)
+        .on('postgres_changes',
+            { event:'*', schema:'public', table:'pet_peticiones', filter:'asignado_a=eq.' + PERFIL.id },
+            function(p){
+              const n = p.new || {};
+              if(!n.id || ['PENDIENTE','ASIGNADA'].indexOf(n.estado) === -1) return;
+              if(RT_VISTOS.has(n.id)) return;
+              if(COLA.some(function(c){ return c.id === n.id; })) return;
+              RT_VISTOS.add(n.id);
+              avisoAsignacion(n);
+            })
+        .subscribe();
+    }
+    RT_PRES = sbAuth.channel('pet-presencia', { config:{ presence:{ key: PERFIL.id } } });
+    RT_PRES.on('presence', { event:'sync' }, pintarPresencia)
+      .subscribe(function(st){ if(st === 'SUBSCRIBED') publicarPresencia(); });
+  }catch(e){ console.warn('Tiempo real no disponible:', e); }
+
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden){ RT_PEND = 0; document.title = TITULO_BASE; }
+  });
+  window.addEventListener('beforeunload', function(){ try{ if(RT_PRES) RT_PRES.untrack(); }catch(e){} });
+}
+
+function avisoAsignacion(n){
+  actualizarBadges();
+  if(document.hidden){ RT_PEND++; document.title = '(' + RT_PEND + ') Nueva petición · ' + TITULO_BASE; }
+  toastAccion('Le asignaron el radicado ' + (n.radicado || '') +
+              (n.peticionario ? ' · ' + n.peticionario : '') + '.',
+              'Ver en la cola', function(){
+                irA('cola');
+                cargarCola().then(function(){
+                  const i = COLA.findIndex(function(c){ return c.id === n.id; });
+                  if(i >= 0){ COLA_IDX = i; pintarCaso(); }
+                });
+              }, 12);
+}
+
+function publicarPresencia(){
+  if(!RT_PRES) return;
+  try{ RT_PRES.track({ nombre: PERFIL.nombre, caso: RT_CASO, en: Date.now() }); }catch(e){}
+}
+
+function presenciaCaso(id){
+  if(RT_CASO === id) { pintarPresencia(); return; }
+  RT_CASO = id;
+  publicarPresencia();
+  pintarPresencia();
+}
+
+function pintarPresencia(){
+  const cont = document.getElementById('k-presencia');
+  if(!cont) return;
+  if(!RT_PRES || !RT_CASO){ cont.innerHTML = ''; return; }
+  const estado = RT_PRES.presenceState() || {};
+  const otros = [];
+  Object.keys(estado).forEach(function(k){
+    if(k === PERFIL.id) return;
+    (estado[k] || []).forEach(function(m){
+      if(m.caso === RT_CASO && otros.indexOf(m.nombre) === -1) otros.push(m.nombre);
+    });
+  });
+  cont.innerHTML = otros.length
+    ? '<div class="presencia"><span class="pres-punto"></span><div><b>' + esc(otros.join(' y ')) + '</b> ' +
+      (otros.length > 1 ? 'también tienen' : 'también tiene') + ' abierto este caso. ' +
+      'Pónganse de acuerdo antes de proyectar para no responder dos veces.</div></div>'
+    : '';
+}
+
+/* Al salir de la cola deja de figurar "en" el caso */
+(function(){
+  const irOriginal = irA;
+  irA = function(id){
+    if(id !== 'cola' && RT_CASO){ RT_CASO = null; publicarPresencia(); }
+    return irOriginal.apply(this, arguments);
+  };
+})();
+
+/* Aviso con un botón de acción */
+function toastAccion(texto, boton, fn, segundos){
+  const cont = document.getElementById('toasts');
+  if(!cont) return;
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.setAttribute('role', 'status');
+  t.innerHTML = '<div>' + esc(texto) + '</div>' +
+    '<button class="btn btn-ghost" style="padding:6px 13px;font-size:var(--t-micro);margin-top:9px">' +
+    esc(boton) + '</button>';
+  cont.appendChild(t);
+  const quitar = function(){
+    t.style.transition = 'opacity .3s'; t.style.opacity = '0';
+    setTimeout(function(){ t.remove(); }, 320);
+  };
+  t.querySelector('button').onclick = function(){ quitar(); fn(); };
+  setTimeout(quitar, (segundos || 8) * 1000);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   V2 · BORRADOR AUTOMÁTICO DE LA RADICACIÓN
+   Si se cae la conexión o se cierra la pestaña a mitad de digitar,
+   lo escrito se recupera al volver. El PDF no se guarda (pesa demasiado
+   para el navegador): hay que volver a cargarlo. Se borra al radicar,
+   al limpiar el formulario y al cerrar sesión.
+   ══════════════════════════════════════════════════════════════ */
+const BORR_CAMPOS = ['d-rad','d-fecha','d-tipo','d-nom','d-doc','d-exp','d-mail','d-tel',
+                     'd-canal','d-reparto','d-asignar','d-res'];
+const BORR_UTILES = ['d-nom','d-doc','d-exp','d-mail','d-tel','d-res'];
+const BORR_VIDA   = 3 * 24 * 3600 * 1000;   // 3 días
+let BORR_T = null;
+
+function claveBorrador(){ return 'pet_borrador_rad_' + (PERFIL ? PERFIL.id : 'anon'); }
+
+function guardarBorrador(){
+  clearTimeout(BORR_T);
+  BORR_T = setTimeout(function(){
+    const d = {};
+    BORR_CAMPOS.forEach(function(id){ const el = document.getElementById(id); if(el) d[id] = el.value; });
+    const hay = BORR_UTILES.some(function(id){ return String(d[id] || '').trim(); });
+    try{
+      if(hay){ d._t = Date.now(); localStorage.setItem(claveBorrador(), JSON.stringify(d)); }
+      else localStorage.removeItem(claveBorrador());
+    }catch(e){}
+  }, 500);
+}
+
+function borrarBorrador(){
+  clearTimeout(BORR_T);
+  try{ localStorage.removeItem(claveBorrador()); }catch(e){}
+}
+
+function ligarBorrador(){
+  if(window.__borrLigado) return;
+  window.__borrLigado = true;
+  const al = function(e){ if(e.target && BORR_CAMPOS.indexOf(e.target.id) !== -1) guardarBorrador(); };
+  document.addEventListener('input', al);
+  document.addEventListener('change', al);
+}
+
+function recuperarBorrador(){
+  let d = null;
+  try{ d = JSON.parse(localStorage.getItem(claveBorrador()) || 'null'); }catch(e){}
+  if(!d || !d._t) return;
+  if(Date.now() - d._t > BORR_VIDA){ borrarBorrador(); return; }
+  if(!document.getElementById('d-nom')) return;
+  // No pisar lo que ya esté escrito
+  const ocupado = BORR_UTILES.some(function(id){
+    const el = document.getElementById(id); return el && el.value.trim();
+  });
+  if(ocupado) return;
+  BORR_CAMPOS.forEach(function(id){
+    const el = document.getElementById(id);
+    if(!el || d[id] === undefined || d[id] === '') return;
+    if(el.tagName === 'SELECT'){
+      const existe = Array.prototype.some.call(el.options, function(o){ return o.value === d[id]; });
+      if(!existe) return;
+    }
+    el.value = d[id];
+  });
+  try{ calcLimite(); }catch(e){}
+  const hora = new Date(d._t).toLocaleString('es-CO', { weekday:'short', hour:'numeric', minute:'2-digit' });
+  toastAccion('Se recuperó una radicación sin guardar (' + hora + ')' +
+              (d['d-rad'] ? ': ' + d['d-rad'] : '') + '. Si tenía PDF, vuelva a cargarlo.',
+              'Descartar', function(){ limpiarDigitar(true); }, 14);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NOVEDADES DE LA VERSIÓN
+   Se muestra una sola vez por usuario cada vez que cambia VERSION_APP.
+   Para la próxima versión: subir VERSION_APP y reemplazar NOVEDADES.
+   Cada novedad dice a qué roles les aplica, para no mostrarle a nadie
+   cambios de pantallas que no usa.
+   ══════════════════════════════════════════════════════════════ */
+const VERSION_APP = '2';
+const NOVEDADES = [
+  { ic:'🎯', tit:'La cola empieza por lo más urgente',
+    txt:'En «Por riesgo» primero salen los desacatos, luego las tutelas, las vencidas y las que están por vencer. ' +
+        'Cada caso dice por qué va ahí.',
+    para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } },
+  { ic:'🔔', tit:'Aviso cuando le asignan un caso',
+    txt:'Sin recargar la página: aparece un aviso con el radicado y un botón para abrirlo en la cola.',
+    para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } },
+  { ic:'👥', tit:'Sepa si alguien más está en el caso',
+    txt:'Si otra persona tiene abierto el mismo caso, se lo mostramos arriba para que no respondan dos veces.',
+    para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } },
+  { ic:'🔍', tit:'Cada dato leído muestra de dónde salió',
+    txt:'Debajo del campo verá el pedazo del documento donde se encontró. Si la lectura es dudosa, ' +
+        'el campo se pinta en dorado o naranja para que lo verifique.',
+    para: function(){ return puedeRadicar(); } },
+  { ic:'⚡', tit:'Escaneados más rápidos',
+    txt:'El reconocimiento de texto ya no se reinicia en cada página, así que los lotes de escaneados tardan menos.',
+    para: function(){ return puedeRadicar(); } },
+  { ic:'💾', tit:'Lo que digita no se pierde',
+    txt:'Si se cae internet o se cierra la pestaña a mitad de una radicación, al volver se recupera lo escrito. ' +
+        'Solo hay que volver a cargar el PDF.',
+    para: function(){ return puedeRadicar(); } },
+  { ic:'📊', tit:'Listas y tablero completos',
+    txt:'El tablero, el archivo histórico y Control Interno ahora traen todos los registros, ' +
+        'no solo los primeros mil.',
+    para: function(){ return !soloRadica(); } }
+];
+
+function claveNovedades(){ return 'pet_novedades_' + (PERFIL ? PERFIL.id : 'anon'); }
+
+function abrirNovedades(forzar){
+  if(!PERFIL) return;
+  let visto = null;
+  try{ visto = localStorage.getItem(claveNovedades()); }catch(e){}
+  if(!forzar && visto === VERSION_APP) return;
+
+  const items = NOVEDADES.filter(function(n){ try{ return n.para(); }catch(e){ return true; } });
+  if(!items.length){ marcarNovedadesVistas(); return; }
+
+  let ov = document.getElementById('novedades');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'novedades';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.setAttribute('aria-labelledby', 'nv-tit');
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML =
+    '<div class="nv-caja">' +
+      '<div class="nv-pill">Novedades · versión ' + esc(VERSION_APP) + '</div>' +
+      '<h2 id="nv-tit">¿Qué hay de nuevo?</h2>' +
+      '<p class="nv-sub">Mejoras para trabajar más rápido y con menos sustos.</p>' +
+      '<div class="nv-lista">' + items.map(function(n){
+        return '<div class="nv-item"><div class="nv-ic" aria-hidden="true">' + n.ic + '</div>' +
+          '<div><div class="nv-it-tit">' + esc(n.tit) + '</div>' +
+          '<div class="nv-it-txt">' + esc(n.txt) + '</div></div></div>';
+      }).join('') + '</div>' +
+      '<button class="nv-btn" id="nv-ok">Entendido, ¡a trabajar!</button>' +
+    '</div>';
+  ov.classList.add('on');
+  const ok = document.getElementById('nv-ok');
+  ok.onclick = cerrarNovedades;
+  ov.onclick = function(e){ if(e.target === ov) cerrarNovedades(); };
+  // Enfoca el botón sin saltar al final: primero se debe leer el encabezado
+  const caja = ov.querySelector('.nv-caja'); caja.scrollTop = 0;
+  setTimeout(function(){ ok.focus({ preventScroll:true }); }, 50);
+}
+
+function marcarNovedadesVistas(){
+  try{ localStorage.setItem(claveNovedades(), VERSION_APP); }catch(e){}
+}
+
+function cerrarNovedades(){
+  const ov = document.getElementById('novedades');
+  if(ov) ov.classList.remove('on');
+  marcarNovedadesVistas();
+}
+
+document.addEventListener('keydown', function(e){
+  const ov = document.getElementById('novedades');
+  if(ov && ov.classList.contains('on') && e.key === 'Escape'){ e.stopPropagation(); cerrarNovedades(); }
+}, true);
 
 /* ══════════════════════════════════════════════════════════════
    SESIÓN EXISTENTE
