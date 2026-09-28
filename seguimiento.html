@@ -203,6 +203,53 @@
 .ou-log-fecha{color:#8b95a7}
 .ou-log-cambios{font-size:12px;color:#cfd6e2;line-height:1.5}
 @media(max-width:560px){.ou-grid2{grid-template-columns:1fr}}
+
+/* ── ICA 2026 · Títulos remitidos a cobro coactivo ── */
+.i26-sw{display:inline-flex;gap:4px;padding:4px;margin-bottom:18px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);border-radius:12px;flex-wrap:wrap}
+.i26-sw button{background:transparent;border:none;color:#aab4c4;border-radius:9px;padding:8px 16px;font-size:12.5px;
+  font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s}
+.i26-sw button:hover{color:#fff;background:rgba(255,255,255,.06)}
+.i26-sw button.on{background:linear-gradient(135deg,var(--gold),#f0b840);color:#0a1f3d}
+.i26-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.i26-head-t{font-family:'DM Serif Display',serif;font-size:21px;color:#fff}
+.i26-head-s{font-size:12px;color:var(--muted);margin-top:2px}
+.i26-head-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.i26-vivo{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.i26-vivo.on{background:rgba(22,163,74,.16);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
+.i26-vivo.off{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid rgba(255,255,255,.1)}
+.i26-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.i26-bars{display:flex;flex-direction:column;gap:10px}
+.i26-bl{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;margin-bottom:4px}
+.i26-bl .nm{color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.i26-bl .vv{color:#fff;font-weight:600;flex:none;font-variant-numeric:tabular-nums}
+.i26-bl .pp{color:var(--gold2);font-weight:600;margin-left:6px;font-size:11px}
+.i26-track{height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+.i26-fill{height:100%;background:linear-gradient(90deg,#c98412,var(--gold));border-radius:5px;min-width:2px;transition:width .3s}
+.i26-chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.i26-chip.rec{background:rgba(22,163,74,.18);color:#4ade80}
+.i26-chip.pen{background:rgba(232,160,32,.18);color:#f5c050}
+.i26-chip.dup{background:rgba(148,163,184,.18);color:#cbd5e1}
+.i26-chip.no{background:rgba(220,38,38,.18);color:#fca5a5}
+.i26-e{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.i26-e.sin{background:rgba(255,255,255,.08);color:#c0c6d0}
+.i26-e.act{background:rgba(26,111,196,.22);color:#7db8f0}
+.i26-e.conv{background:rgba(232,160,32,.2);color:#f5c050}
+.i26-e.canc{background:rgba(22,163,74,.2);color:#86efac}
+.i26-e.term{background:rgba(124,58,237,.2);color:#c4b5fd}
+.i26-flag{color:#f5c050;font-weight:700;cursor:help;margin-left:4px}
+.i26-link{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:#93c5fd;text-decoration:none;
+  border:1px solid rgba(147,197,253,.3);border-radius:7px;padding:3px 8px;white-space:nowrap}
+.i26-link:hover{background:rgba(147,197,253,.12)}
+.i26-th{cursor:pointer;user-select:none;white-space:nowrap}
+.i26-th:hover{color:var(--gold2)}
+.i26-nota{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.25);border-radius:12px;padding:12px 15px;
+  font-size:12px;color:var(--soft);line-height:1.65;margin-bottom:18px}
+.i26-nota b{color:var(--gold2)}
+.i26-aviso{font-size:12px;color:#f5c050;margin-top:10px}
+.i26-saldo{display:flex;justify-content:space-between;gap:10px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 13px;margin-top:12px;font-size:12.5px;color:var(--soft)}
+.i26-saldo b{color:#fcd34d}
 </style>
 
 </head>
@@ -215,7 +262,7 @@
     <div class="nav-brand">📋 Seguimiento de Cartera</div>
     <div class="nav-links">
       <span class="update-pill" id="update-time"></span>
-      <button class="nav-link green" onclick="cargarDatos();cargarICA()">🔄 Actualizar</button>
+      <button class="nav-link green" onclick="cargarDatos();cargarICA();i26Refrescar()">🔄 Actualizar</button>
       <button class="nav-link gold"  onclick="exportarExcel()">⬇️ Excel</button>
       <button class="nav-link red"   onclick="generarPDF()">📄 PDF</button>
       <span class="nav-user" id="nav-usuario"></span>
@@ -444,6 +491,12 @@
 
 <!-- PANEL ICA -->
 <div class="panel" id="panel-ica">
+  <!-- Selector de vista ICA -->
+  <div class="i26-sw" role="tablist">
+    <button type="button" class="on" data-v="cartera" onclick="i26Vista('cartera')">🏭 Cartera ICA</button>
+    <button type="button" data-v="2026" onclick="i26Vista('2026')">🧾 ICA 2026 · Remitidos a coactivo</button>
+  </div>
+  <div id="ica-vista-cartera">
   <div class="loader" id="ica-loading" style="display:none">
     <div class="load-spin"></div>
     <p>Cargando cartera ICA...</p>
@@ -489,6 +542,82 @@
       <thead><tr><th>#</th><th>Radicado</th><th>Contribuyente</th><th>Vigencia</th><th>Tipo</th><th>Valor adeudado ($)</th><th>Responsable</th><th>Acción</th></tr></thead>
       <tbody id="ica-top-tramite"></tbody>
     </table>
+  </div>
+  </div><!-- /ica-vista-cartera -->
+
+  <!-- ═══ ICA 2026 · TÍTULOS REMITIDOS A COBRO COACTIVO ═══ -->
+  <div id="ica-vista-2026" style="display:none">
+    <div class="loader" id="i26-loading" style="display:none">
+      <div class="load-spin"></div>
+      <p>Cargando títulos remitidos...</p>
+    </div>
+    <div id="i26-error" style="display:none;background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.3);border-radius:14px;padding:24px;text-align:center;color:#fca5a5;margin-bottom:16px"></div>
+
+    <div id="i26-contenido" style="display:none">
+      <div class="i26-head">
+        <div>
+          <div class="i26-head-t">Recaudo coactivo · ICA 2026</div>
+          <div class="i26-head-s">Títulos remitidos a Ejecuciones Fiscales (remisiones 2025–2026) · <span id="i26-actualizado"></span></div>
+        </div>
+        <div class="i26-head-r">
+          <span class="i26-vivo off" id="i26-vivo">○ Conectando…</span>
+          <button class="cl-btn" onclick="i26Cargar()">🔄 Recargar</button>
+          <button class="cl-btn" onclick="i26Exportar()">⬇️ Excel</button>
+          <button class="cl-btn primary" onclick="i26Abrir(null)">➕ Nuevo título</button>
+        </div>
+      </div>
+
+      <div class="cartera-card" id="i26-cartera"></div>
+      <div class="stats-grid" id="i26-stats"></div>
+
+      <div class="i26-nota">
+        <b>Cómo se calcula.</b> El valor recuperable suma solo los títulos clasificados como <b>Recuperable</b>
+        (con valor cuantificado y remitido). Las filas <i>Sin valor / pendiente</i>, <i>Mismo título</i> y <i>No remitido</i>
+        no suman. Las tarjetas de estado cuentan los títulos recuperables; haz clic en una para filtrar la tabla.
+        Los títulos con <b>⚠</b> tienen una cifra por verificar contra la declaración o el estado de cuenta.
+      </div>
+
+      <div class="gr-grid">
+        <div class="gr-card">
+          <div class="gr-t">Valor recuperable por área</div>
+          <div class="i26-bars" id="i26-bar-area"></div>
+        </div>
+        <div class="gr-card">
+          <div class="gr-t">12 títulos de mayor valor</div>
+          <div class="i26-bars" id="i26-bar-top"></div>
+        </div>
+      </div>
+
+      <div class="section-title">📑 Detalle y gestión de títulos</div>
+      <div class="ou-toolbar">
+        <input type="text" id="i26-q" placeholder="🔍 Contribuyente, NIT, radicado, factura, correo…" oninput="i26Filtro('q',this.value)">
+        <select id="i26-f-area"   onchange="i26Filtro('area',this.value)"><option value="">Todas las áreas</option></select>
+        <select id="i26-f-clasif" onchange="i26Filtro('clasif',this.value)"><option value="">Toda clasificación</option></select>
+        <select id="i26-f-estado" onchange="i26Filtro('estado',this.value)"><option value="">Todo estado</option></select>
+        <select id="i26-f-resp"   onchange="i26Filtro('resp',this.value)"><option value="">Todo responsable</option></select>
+        <label class="ou-chk"><input type="checkbox" id="i26-f-alerta" onchange="i26Filtro('alerta',this.checked)"> Solo ⚠</label>
+        <span class="ou-conteo" id="i26-conteo"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="i26-th" onclick="i26Orden('n_fila')">#</th>
+            <th class="i26-th" onclick="i26Orden('contribuyente')">Contribuyente</th>
+            <th class="i26-th" onclick="i26Orden('area')">Área</th>
+            <th>Vigencia</th>
+            <th class="i26-th" onclick="i26Orden('valor')" style="text-align:right">Valor ($) ↕</th>
+            <th class="i26-th" onclick="i26Orden('valor_recaudado')" style="text-align:right">Recaudado ($)</th>
+            <th class="i26-th" onclick="i26Orden('clasificacion')">Clasificación</th>
+            <th class="i26-th" onclick="i26Orden('estado_proceso')">Proceso</th>
+            <th class="i26-th" onclick="i26Orden('responsable')">Responsable</th>
+            <th>Expediente</th>
+            <th>Acción</th>
+          </tr></thead>
+          <tbody id="i26-tbody"></tbody>
+        </table>
+      </div>
+      <div class="ou-pager" id="i26-pager"></div>
+    </div>
   </div>
 </div>
 
@@ -653,6 +782,78 @@
   </div>
 </div>
 
+
+<!-- ── MODAL ICA 2026 · GESTIÓN DE TÍTULO ── -->
+<div class="ou-modal-bg" id="i26-modal-bg" style="display:none" onclick="if(event.target===this)i26Cerrar()">
+  <div class="ou-modal">
+    <div class="ou-modal-head">
+      <div>
+        <div class="ou-modal-title" id="i26-m-titulo">Título</div>
+        <div class="ou-modal-sub" id="i26-m-sub"></div>
+      </div>
+      <button class="ou-modal-x" onclick="i26Cerrar()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="ou-modal-body">
+      <div class="ou-fgroup-title">⚖️ Gestión del proceso <span>— lo que se actualiza día a día</span></div>
+      <div class="ou-grid2">
+        <label>Estado del proceso
+          <select id="i26-f-estado-p"></select></label>
+        <label>Etapa
+          <select id="i26-f-etapa"></select></label>
+        <label>Responsable
+          <input type="text" id="i26-f-resp-p" list="i26-dl-resp" placeholder="Abogado a cargo"></label>
+        <label>Fecha última gestión
+          <input type="date" id="i26-f-fecha"></label>
+        <label>Valor recaudado ($)
+          <input type="number" id="i26-f-recaudo" min="0" step="1" oninput="i26PintarSaldo()"></label>
+        <label>Clasificación
+          <select id="i26-f-clasif-p" onchange="i26PintarSaldo()"></select></label>
+        <label class="ou-full">Observaciones
+          <textarea id="i26-f-obs" rows="3" placeholder="Actuaciones, requerimientos, pendientes…"></textarea></label>
+      </div>
+      <div class="i26-saldo" id="i26-saldo"></div>
+
+      <div class="ou-fgroup-title">🧾 Datos del título <span>— tal como se remitió</span></div>
+      <div class="ou-grid2">
+        <label>N.º (fila de la base)
+          <input type="number" id="i26-f-n" disabled></label>
+        <label>Área que remite
+          <select id="i26-f-area-p"></select></label>
+        <label class="ou-full">Contribuyente *
+          <input type="text" id="i26-f-contrib"></label>
+        <label>NIT
+          <input type="text" id="i26-f-nit"></label>
+        <label>Vigencias
+          <input type="text" id="i26-f-vig" placeholder="2020 2021 2022"></label>
+        <label>Valor remitido ($)
+          <input type="number" id="i26-f-valor" step="1" oninput="i26PintarSaldo()"></label>
+        <label>Factura
+          <input type="text" id="i26-f-factura" oninput="i26ChequearFactura()"></label>
+        <label>Radicado de remisión
+          <input type="text" id="i26-f-rad"></label>
+        <label>Remisión (carpeta)
+          <input type="text" id="i26-f-remision" list="i26-dl-rem"></label>
+        <label>Correo
+          <input type="text" id="i26-f-correo"></label>
+        <label>Alerta ⚠ (verificar)
+          <input type="text" id="i26-f-alerta-p" placeholder="Vacío si la cifra está verificada"></label>
+        <label class="ou-full">Link del expediente (Drive)
+          <input type="text" id="i26-f-url" placeholder="https://drive.google.com/…"></label>
+      </div>
+      <div class="i26-aviso" id="i26-aviso-fact"></div>
+      <div class="ou-m-msg" id="i26-m-msg"></div>
+
+      <div class="ou-fgroup-title" id="i26-log-t">🕓 Historial de cambios</div>
+      <div class="ou-log-wrap" id="i26-log"></div>
+    </div>
+    <div class="ou-modal-foot">
+      <button class="ou-btn-sec" onclick="i26Cerrar()">Cancelar</button>
+      <button class="ou-btn-pri" id="i26-btn-guardar" onclick="i26Guardar()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+<datalist id="i26-dl-resp"></datalist>
+<datalist id="i26-dl-rem"></datalist>
 
 <footer class="creditos">
   <span class="creditos-marca">Sistema Teodoro</span>
@@ -2455,7 +2656,7 @@ async function cargarICA(){
   }catch(err){
     console.warn('[ICA]',err);
     if(loader) loader.style.display='none';
-    const panel=document.getElementById('panel-ica');
+    const panel=document.getElementById('ica-vista-cartera')||document.getElementById('panel-ica');
     if(panel&&!panel.querySelector('.ica-error')){
       const div=document.createElement('div');
       div.className='ica-error';
@@ -3920,6 +4121,536 @@ function renderAnalisis(){
   graficoEvolucion();
 }
 
+</script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   TEODORO · SEGUIMIENTO → ICA 2026
+   Títulos remitidos a cobro coactivo: tablero + gestión en línea.
+   Fuente: Supabase · tabla ica_titulos_remitidos (+ ica_titulos_bitacora)
+   Reutiliza: SUPA_URL, supaHeaders, supaFetch, supaFetchAll, sbAuth,
+              nombreSesion, fmt, ouEsc (definidos en el script principal).
+   Desarrollado por Jeison Maya · 2026
+   ═══════════════════════════════════════════════════════════════════ */
+const I26_TABLA = 'ica_titulos_remitidos';
+const I26_BITA  = 'ica_titulos_bitacora';
+const I26_CLASIF = ['Recuperable','Sin valor / pendiente','Mismo título (factura repetida)','No remitido'];
+const I26_CLASIF_CSS = {'Recuperable':'rec','Sin valor / pendiente':'pen','Mismo título (factura repetida)':'dup','No remitido':'no'};
+const I26_ESTADOS = ['Sin iniciar','Activo','Convenio','Cancelado','Terminado'];
+const I26_ESTADO_CSS = {'Sin iniciar':'sin','Activo':'act','Convenio':'conv','Cancelado':'canc','Terminado':'term'};
+const I26_ESTADO_CARD = {'Sin iniciar':'navy','Activo':'blue','Convenio':'gold','Cancelado':'green','Terminado':'purple'};
+const I26_AREAS = {
+  'FISCALIZACION':'Fiscalización',
+  'TITULOS - COBRO COACTIVO':'Títulos ICA (Rentas)',
+  'JURIDICA REQUIERE':'Jurídica requiere',
+  'REQUIERE JURIDICA':'Jurídica requiere',
+  'AUTORRETENCION':'Autorretención',
+  'DECLARACIONES':'Declaraciones',
+  'PERMANENTES':'Permanentes',
+  'OCASIONALES':'Ocasionales'
+};
+// Respaldo si la tabla etapas_coactivo no responde
+const I26_ETAPAS_BASE = [
+  {codigo:'ejecutoria',           nombre:'Ejecutoria del título',   grupo:'Título'},
+  {codigo:'cobro_persuasivo',     nombre:'Cobro persuasivo',        grupo:'Persuasivo'},
+  {codigo:'mandamiento_pago',     nombre:'Mandamiento de pago',     grupo:'Persuasivo'},
+  {codigo:'investigacion_bienes', nombre:'Investigación de bienes', grupo:'Cautelar'},
+  {codigo:'medida_cautelar',      nombre:'Medida cautelar',         grupo:'Cautelar'}
+];
+const I26_POR_PAG = 50;
+
+let i26Datos = null, i26Etapas = I26_ETAPAS_BASE, i26Edit = null, i26Nuevo = false;
+let i26Canal = null, i26Guardando = false, i26Timer = null;
+const i26F = { q:'', area:'', clasif:'', estado:'', resp:'', alerta:false, pag:1, sortK:'valor', sortDir:-1 };
+
+const i26$ = id => document.getElementById(id);
+const i26Num = v => (v === null || v === undefined || v === '') ? null : Number(v);
+const i26Txt = v => (v === null || v === undefined) ? '' : String(v);
+const i26AreaLbl = a => a ? (I26_AREAS[a] || a) : 'Sin área';
+const i26NitNorm = n => i26Txt(n).replace(/[^0-9]/g, '').replace(/^0+/, '');
+function i26EtapaNombre(c){ if(!c) return ''; const e = i26Etapas.find(x => x.codigo === c); return e ? e.nombre : c; }
+function i26Saldo(r){ return Math.max(0, (r.valor || 0) - (r.valor_recaudado || 0)); }
+function i26UrlOk(u){ return /^https:\/\/[^\s"'<>]+$/i.test(i26Txt(u).trim()); }
+
+function i26Norm(r){
+  return Object.assign({}, r, {
+    valor: i26Num(r.valor),
+    valor_recaudado: i26Num(r.valor_recaudado) || 0,
+    n_fila: Number(r.n_fila)
+  });
+}
+
+/* ── Selector de vista dentro del panel ICA ── */
+function i26Vista(v){
+  i26$('ica-vista-cartera').style.display = v === 'cartera' ? '' : 'none';
+  i26$('ica-vista-2026').style.display    = v === '2026'    ? '' : 'none';
+  document.querySelectorAll('.i26-sw button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  if(v === '2026' && !i26Datos) i26Cargar();
+}
+// Botón global "Actualizar": solo recarga si la vista ya se abrió alguna vez
+function i26Refrescar(){ if(i26Datos) i26Cargar(); }
+
+/* ── Carga ── */
+async function i26Cargar(){
+  const load = i26$('i26-loading'), err = i26$('i26-error'), cont = i26$('i26-contenido');
+  load.style.display = 'block'; err.style.display = 'none';
+  if(!i26Datos) cont.style.display = 'none';
+  try{
+    const [filas, etapas] = await Promise.all([
+      supaFetchAll(I26_TABLA + '?select=*&order=n_fila.asc'),
+      supaFetch('etapas_coactivo?select=codigo,nombre,grupo,orden&activo=eq.true&order=orden.asc').catch(() => null)
+    ]);
+    if(!Array.isArray(filas) || !filas.length){
+      throw new Error('La tabla ' + I26_TABLA + ' respondió vacía. Verifica que se ejecutó la carga inicial y que tu sesión está activa (RLS solo permite usuarios autenticados).');
+    }
+    i26Datos = filas.map(i26Norm);
+    if(Array.isArray(etapas) && etapas.length) i26Etapas = etapas;
+    i26LlenarSelects();
+    i26Render();
+    cont.style.display = '';
+    i26$('i26-actualizado').textContent = 'cargado ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+    i26Suscribir();
+  }catch(e){
+    console.warn('[ICA 2026]', e);
+    err.innerHTML = '<div style="font-size:32px;margin-bottom:10px">🔌</div>'
+      + '<div style="font-size:15px;font-weight:600;margin-bottom:6px">No se pudieron cargar los títulos ICA 2026</div>'
+      + '<div style="font-size:12px;color:rgba(252,165,165,.75);margin-bottom:12px">' + ouEsc(e.message) + '</div>'
+      + '<button onclick="i26Cargar()" style="background:#2d8de8;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">Reintentar</button>';
+    err.style.display = 'block';
+  }finally{
+    load.style.display = 'none';
+  }
+}
+
+/* ── Opciones de filtros y del modal ── */
+function i26Opciones(sel, valores, primera, etiqueta){
+  const actual = sel.value;
+  sel.innerHTML = (primera != null ? '<option value="">' + ouEsc(primera) + '</option>' : '')
+    + valores.map(v => '<option value="' + ouEsc(v) + '">' + ouEsc(etiqueta ? etiqueta(v) : v) + '</option>').join('');
+  if([...sel.options].some(o => o.value === actual)) sel.value = actual;
+}
+function i26LlenarSelects(){
+  const areas = [...new Set(Object.keys(I26_AREAS).filter(a => a !== 'REQUIERE JURIDICA')
+                 .concat(i26Datos.map(r => r.area).filter(Boolean)))];
+  const areasData = [...new Set(i26Datos.map(r => r.area).filter(Boolean))].sort();
+  i26Opciones(i26$('i26-f-area'), areasData, 'Todas las áreas', i26AreaLbl);
+  i26Opciones(i26$('i26-f-clasif'), I26_CLASIF, 'Toda clasificación');
+  i26Opciones(i26$('i26-f-estado'), I26_ESTADOS, 'Todo estado');
+  const resps = [...new Set(i26Datos.map(r => i26Txt(r.responsable).trim()).filter(Boolean))].sort();
+  i26Opciones(i26$('i26-f-resp'), ['__sin'].concat(resps), 'Todo responsable', v => v === '__sin' ? 'Sin asignar' : v);
+  // Modal
+  i26Opciones(i26$('i26-f-estado-p'), I26_ESTADOS, null);
+  i26Opciones(i26$('i26-f-clasif-p'), I26_CLASIF, null);
+  i26Opciones(i26$('i26-f-area-p'), areas, '— Sin área —', i26AreaLbl);
+  const grupos = {};
+  i26Etapas.forEach(e => { const g = e.grupo || 'Otras'; (grupos[g] = grupos[g] || []).push(e); });
+  i26$('i26-f-etapa').innerHTML = '<option value="">— Sin etapa —</option>' + Object.entries(grupos).map(([g, es]) =>
+    '<optgroup label="' + ouEsc(g) + '">' + es.map(e => '<option value="' + ouEsc(e.codigo) + '">' + ouEsc(e.nombre) + '</option>').join('') + '</optgroup>').join('');
+  i26$('i26-dl-resp').innerHTML = resps.map(r => '<option value="' + ouEsc(r) + '">').join('');
+  const rems = [...new Set(i26Datos.map(r => r.remision).filter(Boolean))].sort();
+  i26$('i26-dl-rem').innerHTML = rems.map(r => '<option value="' + ouEsc(r) + '">').join('');
+}
+
+/* ── Render general ── */
+function i26Render(){
+  if(!i26Datos) return;
+  i26RenderResumen();
+  i26RenderTabla();
+}
+
+function i26RenderResumen(){
+  const todos = i26Datos;
+  const rec = todos.filter(r => r.clasificacion === 'Recuperable');
+  const total   = rec.reduce((s, r) => s + (r.valor || 0), 0);
+  const recaudo = rec.reduce((s, r) => s + (r.valor_recaudado || 0), 0);
+  const saldo   = rec.reduce((s, r) => s + i26Saldo(r), 0);
+  const nCon = new Set(rec.map(r => i26NitNorm(r.nit) || i26Txt(r.contribuyente).trim().toUpperCase()).filter(Boolean)).size;
+  const nRem = new Set(todos.map(r => r.remision).filter(Boolean)).size;
+  const pRec = total > 0 ? (recaudo / total * 100) : 0;
+
+  i26$('i26-cartera').innerHTML =
+    '<div class="cartera-main"><div class="cartera-label">Valor recuperable · ICA remitido a coactivo</div>'
+    + '<div class="cartera-value">' + fmt(total) + '</div>'
+    + '<div class="cartera-sub">' + rec.length + ' títulos recuperables de ' + todos.length + ' registros · '
+    + nCon + ' contribuyentes · ' + nRem + ' remisiones</div></div>'
+    + '<div class="cartera-recaudo"><div class="cartera-recaudo-label">Recaudado</div>'
+    + '<div class="cartera-recaudo-val">' + fmt(recaudo) + '</div>'
+    + '<div class="cartera-pct">' + pRec.toFixed(1) + '% · saldo ' + fmt(saldo) + '</div></div>';
+
+  i26$('i26-stats').innerHTML = I26_ESTADOS.map(est => {
+    const g = rec.filter(r => (r.estado_proceso || 'Sin iniciar') === est);
+    const v = g.reduce((s, r) => s + (r.valor || 0), 0);
+    const on = i26F.estado === est && i26F.clasif === 'Recuperable';
+    return '<div class="stat-card ' + I26_ESTADO_CARD[est] + ' clic' + (on ? ' on' : '') + '" onclick="i26FiltrarEstado(\'' + est + '\')">'
+      + '<div class="stat-label">' + est + '</div>'
+      + '<div class="stat-value">' + g.length.toLocaleString('es-CO') + '</div>'
+      + '<div class="stat-sub">' + fmt(v) + '</div>'
+      + '<span class="stat-ver">' + (on ? '✓ filtrando — clic para quitar' : 'Ver títulos →') + '</span></div>';
+  }).join('');
+
+  // Barras: ancho = participación en el total recuperable (no relativo al máximo)
+  const porArea = {};
+  rec.forEach(r => { const k = i26AreaLbl(r.area); porArea[k] = (porArea[k] || 0) + (r.valor || 0); });
+  i26Barras(i26$('i26-bar-area'), Object.entries(porArea).sort((a, b) => b[1] - a[1]).map(([n, v]) => ({n, v})), total);
+  const top = rec.slice().sort((a, b) => (b.valor || 0) - (a.valor || 0)).slice(0, 12)
+    .map(r => ({n: '#' + r.n_fila + '  ' + i26Txt(r.contribuyente).slice(0, 38), v: r.valor || 0}));
+  i26Barras(i26$('i26-bar-top'), top, total);
+}
+
+function i26Barras(host, filas, total){
+  if(!filas.length){ host.innerHTML = '<div class="gr-vacio">Sin títulos recuperables</div>'; return; }
+  host.innerHTML = filas.map(f => {
+    const p = total > 0 ? f.v / total * 100 : 0;
+    return '<div><div class="i26-bl"><span class="nm" title="' + ouEsc(f.n) + '">' + ouEsc(f.n) + '</span>'
+      + '<span class="vv">' + fmt(f.v) + '<span class="pp">' + p.toFixed(1) + '%</span></span></div>'
+      + '<div class="i26-track"><div class="i26-fill" style="width:' + p.toFixed(2) + '%"></div></div></div>';
+  }).join('');
+}
+
+/* ── Filtros, orden y tabla ── */
+function i26Filtro(k, v){ i26F[k] = v; i26F.pag = 1; i26RenderTabla(); if(k === 'estado' || k === 'clasif') i26RenderResumen(); }
+function i26FiltrarEstado(est){
+  const quitar = i26F.estado === est && i26F.clasif === 'Recuperable';
+  i26F.estado = quitar ? '' : est;
+  i26F.clasif = quitar ? '' : 'Recuperable';
+  i26$('i26-f-estado').value = i26F.estado;
+  i26$('i26-f-clasif').value = i26F.clasif;
+  i26F.pag = 1;
+  i26Render();
+  i26$('i26-tbody').closest('.table-wrap').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function i26Orden(k){
+  if(i26F.sortK === k) i26F.sortDir *= -1;
+  else { i26F.sortK = k; i26F.sortDir = (k === 'valor' || k === 'valor_recaudado') ? -1 : 1; }
+  i26RenderTabla();
+}
+function i26Filtrados(){
+  const t = i26F.q.toLowerCase().trim();
+  const filas = i26Datos.filter(r => {
+    if(i26F.area   && r.area !== i26F.area) return false;
+    if(i26F.clasif && r.clasificacion !== i26F.clasif) return false;
+    if(i26F.estado && (r.estado_proceso || 'Sin iniciar') !== i26F.estado) return false;
+    if(i26F.resp === '__sin' && i26Txt(r.responsable).trim()) return false;
+    if(i26F.resp && i26F.resp !== '__sin' && i26Txt(r.responsable).trim() !== i26F.resp) return false;
+    if(i26F.alerta && !i26Txt(r.alerta).trim()) return false;
+    if(t){
+      const hay = [r.contribuyente, r.nit, i26NitNorm(r.nit), r.radicado, r.factura, r.correo, r.n_fila, r.remision]
+        .map(i26Txt).join(' ').toLowerCase();
+      if(!hay.includes(t)) return false;
+    }
+    return true;
+  });
+  const k = i26F.sortK, d = i26F.sortDir, num = (k === 'valor' || k === 'valor_recaudado' || k === 'n_fila');
+  filas.sort((a, b) => {
+    let x = a[k], y = b[k];
+    if(num){ x = x || 0; y = y || 0; } else { x = i26Txt(x).toLowerCase(); y = i26Txt(y).toLowerCase(); }
+    return x < y ? -d : x > y ? d : 0;
+  });
+  return filas;
+}
+function i26RenderTabla(){
+  if(!i26Datos) return;
+  const filas = i26Filtrados();
+  const paginas = Math.max(1, Math.ceil(filas.length / I26_POR_PAG));
+  if(i26F.pag > paginas) i26F.pag = paginas;
+  const desde = (i26F.pag - 1) * I26_POR_PAG;
+  const vista = filas.slice(desde, desde + I26_POR_PAG);
+  const sumaV = filas.reduce((s, r) => s + (r.clasificacion === 'Recuperable' ? (r.valor || 0) : 0), 0);
+  i26$('i26-conteo').textContent = filas.length + ' de ' + i26Datos.length + ' títulos · recuperable filtrado ' + fmt(sumaV);
+
+  i26$('i26-tbody').innerHTML = vista.length ? vista.map(r => {
+    const est = r.estado_proceso || 'Sin iniciar';
+    const etapa = i26EtapaNombre(r.etapa);
+    const alerta = i26Txt(r.alerta).trim();
+    const link = i26UrlOk(r.expediente_url)
+      ? '<a class="i26-link" href="' + ouEsc(r.expediente_url.trim()) + '" target="_blank" rel="noopener" title="' + ouEsc(r.remision) + '">Abrir ↗</a>'
+      : '<span style="color:var(--muted)">—</span>';
+    return '<tr>'
+      + '<td class="mono" style="text-align:center;color:var(--muted)">' + r.n_fila + '</td>'
+      + '<td><div style="font-weight:600;color:#fff">' + ouEsc(r.contribuyente || '—') + '</div>'
+      +   '<div class="i26-sub">' + (r.nit ? 'NIT ' + ouEsc(r.nit) : 'Sin NIT') + (r.radicado ? ' · Rad. ' + ouEsc(r.radicado) : '') + (r.factura ? ' · Fact. ' + ouEsc(r.factura) : '') + '</div></td>'
+      + '<td style="font-size:12px">' + ouEsc(i26AreaLbl(r.area)) + '</td>'
+      + '<td style="font-size:12px">' + ouEsc(r.vigencias || '—') + '</td>'
+      + '<td style="text-align:right;white-space:nowrap;font-weight:600">' + (r.valor != null ? fmt(r.valor) : '<span style="color:var(--muted)">—</span>')
+      +   (alerta ? '<span class="i26-flag" title="' + ouEsc(alerta) + '">⚠</span>' : '') + '</td>'
+      + '<td style="text-align:right;white-space:nowrap;color:#86efac">' + (r.valor_recaudado ? fmt(r.valor_recaudado) : '<span style="color:var(--muted)">—</span>') + '</td>'
+      + '<td><span class="i26-chip ' + (I26_CLASIF_CSS[r.clasificacion] || 'dup') + '">' + ouEsc(r.clasificacion) + '</span></td>'
+      + '<td><span class="i26-e ' + (I26_ESTADO_CSS[est] || 'sin') + '">' + ouEsc(est) + '</span>'
+      +   (etapa ? '<div class="i26-sub">' + ouEsc(etapa) + '</div>' : '') + '</td>'
+      + '<td style="font-size:12px">' + (r.responsable ? ouEsc(r.responsable) : '<span style="color:var(--muted)">Sin asignar</span>') + '</td>'
+      + '<td>' + link + '</td>'
+      + '<td><button class="ou-edit-btn" onclick="i26Abrir(' + Number(r.id) + ')">✏️ Gestionar</button></td>'
+      + '</tr>';
+  }).join('') : '<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:22px">Ningún título coincide con los filtros</td></tr>';
+
+  const pg = i26$('i26-pager');
+  if(paginas <= 1){ pg.innerHTML = ''; return; }
+  let h = '<button ' + (i26F.pag === 1 ? 'disabled' : '') + ' onclick="i26Pag(' + (i26F.pag - 1) + ')">‹</button>';
+  for(let p = 1; p <= paginas; p++) h += '<button class="' + (p === i26F.pag ? 'act' : '') + '" onclick="i26Pag(' + p + ')">' + p + '</button>';
+  h += '<button ' + (i26F.pag === paginas ? 'disabled' : '') + ' onclick="i26Pag(' + (i26F.pag + 1) + ')">›</button>';
+  pg.innerHTML = h;
+}
+function i26Pag(p){ i26F.pag = p; i26RenderTabla(); i26$('i26-tbody').closest('.table-wrap').scrollIntoView({behavior:'smooth', block:'start'}); }
+
+/* ── Modal de gestión ── */
+function i26Abrir(id){
+  i26Nuevo = (id === null);
+  const r = i26Nuevo ? null : i26Datos.find(x => Number(x.id) === Number(id));
+  if(!i26Nuevo && !r) return;
+  i26Edit = r;
+  const msg = i26$('i26-m-msg'); msg.className = 'ou-m-msg'; msg.textContent = ''; delete msg.dataset.confirmado;
+  const sig = i26Datos.reduce((m, x) => Math.max(m, x.n_fila || 0), 0) + 1;
+  const v = (id, val) => { i26$(id).value = (val === null || val === undefined) ? '' : val; };
+
+  i26$('i26-m-titulo').textContent = i26Nuevo ? 'Nuevo título remitido' : ('#' + r.n_fila + ' · ' + (r.contribuyente || ''));
+  i26$('i26-m-sub').textContent = i26Nuevo ? 'Se agrega a la base ICA 2026'
+    : ((r.remision || 'Sin remisión') + (r.actualizado_por ? ' · última edición: ' + r.actualizado_por : ''));
+
+  v('i26-f-estado-p', r ? (r.estado_proceso || 'Sin iniciar') : 'Sin iniciar');
+  v('i26-f-etapa',    r ? r.etapa : '');
+  v('i26-f-resp-p',   r ? r.responsable : '');
+  v('i26-f-fecha',    r ? r.fecha_gestion : '');
+  v('i26-f-recaudo',  r ? (r.valor_recaudado || 0) : 0);
+  v('i26-f-clasif-p', r ? r.clasificacion : 'Recuperable');
+  v('i26-f-obs',      r ? r.observaciones : '');
+  v('i26-f-n',        r ? r.n_fila : sig);
+  v('i26-f-area-p',   r ? r.area : '');
+  v('i26-f-contrib',  r ? r.contribuyente : '');
+  v('i26-f-nit',      r ? r.nit : '');
+  v('i26-f-vig',      r ? r.vigencias : '');
+  v('i26-f-valor',    r ? r.valor : '');
+  v('i26-f-factura',  r ? r.factura : '');
+  v('i26-f-rad',      r ? r.radicado : '');
+  v('i26-f-remision', r ? r.remision : '');
+  v('i26-f-correo',   r ? r.correo : '');
+  v('i26-f-alerta-p', r ? r.alerta : '');
+  v('i26-f-url',      r ? r.expediente_url : '');
+  // Si la etapa guardada no existe en el catálogo, se agrega para no perderla
+  if(r && r.etapa && ![...i26$('i26-f-etapa').options].some(o => o.value === r.etapa)){
+    const o = document.createElement('option'); o.value = r.etapa; o.textContent = r.etapa; i26$('i26-f-etapa').appendChild(o);
+    i26$('i26-f-etapa').value = r.etapa;
+  }
+  i26PintarSaldo();
+  i26ChequearFactura();
+  i26$('i26-log-t').style.display = i26Nuevo ? 'none' : '';
+  i26$('i26-log').innerHTML = '';
+  i26$('i26-modal-bg').style.display = 'flex';
+  if(!i26Nuevo) i26CargarBitacora(r.id);
+}
+function i26Cerrar(){ i26$('i26-modal-bg').style.display = 'none'; i26Edit = null; i26Nuevo = false; i26Guardando = false; }
+
+function i26PintarSaldo(){
+  const valor = Number(i26$('i26-f-valor').value || 0);
+  const rec = Number(i26$('i26-f-recaudo').value || 0);
+  const saldo = Math.max(0, valor - rec);
+  const pctR = valor > 0 ? Math.min(100, rec / valor * 100) : 0;
+  let extra = '';
+  if(rec > valor && valor > 0) extra = ' <span style="color:#fca5a5">· el recaudo supera el valor remitido</span>';
+  i26$('i26-saldo').innerHTML = '<span>Recaudado <b style="color:#86efac">' + pctR.toFixed(1) + '%</b>' + extra + '</span><span>Saldo por recuperar <b>' + fmt(saldo) + '</b></span>';
+}
+function i26ChequearFactura(){
+  const f = i26$('i26-f-factura').value.trim();
+  const av = i26$('i26-aviso-fact');
+  if(!f || /^n\/?a$/i.test(f)){ av.textContent = ''; return; }
+  const otros = i26Datos.filter(x => i26Txt(x.factura).trim() === f && (!i26Edit || x.id !== i26Edit.id));
+  av.textContent = otros.length
+    ? '⚠️ La factura ' + f + ' ya está en el título #' + otros.map(o => o.n_fila).join(', #') + '. Si es el mismo título, clasifícalo como «Mismo título (factura repetida)» para no contarlo dos veces.'
+    : '';
+}
+
+function i26LeerForm(){
+  const t = id => { const s = i26$(id).value.trim(); return s === '' ? null : s; };
+  return {
+    estado_proceso:  i26$('i26-f-estado-p').value || 'Sin iniciar',
+    etapa:           t('i26-f-etapa'),
+    responsable:     t('i26-f-resp-p'),
+    fecha_gestion:   t('i26-f-fecha'),
+    valor_recaudado: Number(i26$('i26-f-recaudo').value || 0),
+    clasificacion:   i26$('i26-f-clasif-p').value,
+    observaciones:   t('i26-f-obs'),
+    area:            t('i26-f-area-p'),
+    contribuyente:   t('i26-f-contrib'),
+    nit:             t('i26-f-nit'),
+    vigencias:       t('i26-f-vig'),
+    valor:           i26$('i26-f-valor').value === '' ? null : Number(i26$('i26-f-valor').value),
+    factura:         t('i26-f-factura'),
+    radicado:        t('i26-f-rad'),
+    remision:        t('i26-f-remision'),
+    correo:          t('i26-f-correo'),
+    alerta:          t('i26-f-alerta-p'),
+    expediente_url:  t('i26-f-url')
+  };
+}
+const I26_ETIQ = {estado_proceso:'Estado', etapa:'Etapa', responsable:'Responsable', fecha_gestion:'Fecha gestión',
+  valor_recaudado:'Recaudado', clasificacion:'Clasificación', observaciones:'Observaciones', area:'Área',
+  contribuyente:'Contribuyente', nit:'NIT', vigencias:'Vigencias', valor:'Valor', factura:'Factura',
+  radicado:'Radicado', remision:'Remisión', correo:'Correo', alerta:'Alerta', expediente_url:'Link expediente'};
+function i26Mostrar(k, v){
+  if(v === null || v === undefined || v === '') return '∅';
+  if(k === 'valor' || k === 'valor_recaudado') return fmt(Number(v)) || '$0';
+  if(k === 'etapa') return i26EtapaNombre(v);
+  return String(v);
+}
+
+async function i26Guardar(){
+  const msg = i26$('i26-m-msg'), btn = i26$('i26-btn-guardar');
+  const usuario = (typeof nombreSesion === 'function') ? nombreSesion() : '';
+  const err = t => { msg.className = 'ou-m-msg err'; msg.textContent = t; };
+  if(!usuario) return err('No hay sesión activa. Vuelve a iniciar sesión.');
+  const nuevo = i26LeerForm();
+  if(!nuevo.contribuyente) return err('El contribuyente es obligatorio.');
+  if(nuevo.valor !== null && !isFinite(nuevo.valor)) return err('El valor remitido no es un número válido.');
+  if(!isFinite(nuevo.valor_recaudado) || nuevo.valor_recaudado < 0) return err('El valor recaudado debe ser un número mayor o igual a 0.');
+  if(nuevo.expediente_url && !i26UrlOk(nuevo.expediente_url)) return err('El link del expediente debe empezar por https://');
+  if(nuevo.clasificacion === 'Recuperable' && (nuevo.valor === null || nuevo.valor <= 0))
+    return err('Un título «Recuperable» necesita un valor remitido mayor a 0.');
+  if(nuevo.estado_proceso === 'Cancelado' && nuevo.valor && nuevo.valor_recaudado < nuevo.valor && !msg.dataset.confirmado){
+    msg.dataset.confirmado = '1';
+    msg.className = 'ou-m-msg err';
+    msg.textContent = '⚠️ Marcaste «Cancelado» pero el recaudo no cubre el valor. Pulsa Guardar otra vez para confirmar.';
+    return;
+  }
+  delete msg.dataset.confirmado;
+
+  btn.disabled = true; i26Guardando = true;
+  msg.className = 'ou-m-msg'; msg.textContent = 'Guardando…';
+  try{
+    let guardado, cambios = [];
+    if(i26Nuevo){
+      nuevo.n_fila = i26Datos.reduce((m, x) => Math.max(m, x.n_fila || 0), 0) + 1;
+      nuevo.actualizado_por = usuario;
+      const res = await fetch(SUPA_URL + '/rest/v1/' + I26_TABLA, { method:'POST',
+        headers: await supaHeaders({'Content-Type':'application/json', Prefer:'return=representation'}),
+        body: JSON.stringify(nuevo) });
+      if(res.status === 409) throw new Error('Otro usuario acaba de crear el título #' + nuevo.n_fila + '. Cierra, pulsa Recargar e inténtalo de nuevo.');
+      if(!res.ok) throw new Error('HTTP ' + res.status + ' · ' + (await res.text()).slice(0, 140));
+      guardado = (await res.json())[0];
+      cambios.push('Título creado: ' + nuevo.contribuyente + ' · ' + i26Mostrar('valor', nuevo.valor) + ' · ' + nuevo.clasificacion);
+    }else{
+      const r = i26Edit;
+      for(const k in nuevo){
+        const viejo = (k === 'valor' || k === 'valor_recaudado') ? i26Num(r[k]) : (r[k] === '' ? null : r[k]);
+        const nv = nuevo[k];
+        const igual = (k === 'valor' || k === 'valor_recaudado')
+          ? (viejo === null ? nv === null : nv !== null && Number(viejo) === Number(nv))
+          : i26Txt(viejo) === i26Txt(nv);
+        if(!igual) cambios.push(I26_ETIQ[k] + ': "' + i26Mostrar(k, viejo) + '" → "' + i26Mostrar(k, nv) + '"');
+      }
+      if(!cambios.length){ msg.className = 'ou-m-msg'; msg.textContent = 'No hay cambios para guardar.'; btn.disabled = false; i26Guardando = false; return; }
+      nuevo.actualizado_por = usuario;
+      // Concurrencia optimista: solo actualiza si nadie lo modificó desde que se abrió
+      const url = SUPA_URL + '/rest/v1/' + I26_TABLA + '?id=eq.' + encodeURIComponent(r.id)
+        + '&actualizado_en=eq.' + encodeURIComponent(r.actualizado_en);
+      const res = await fetch(url, { method:'PATCH',
+        headers: await supaHeaders({'Content-Type':'application/json', Prefer:'return=representation'}),
+        body: JSON.stringify(nuevo) });
+      if(!res.ok) throw new Error('HTTP ' + res.status + ' · ' + (await res.text()).slice(0, 140));
+      const arr = await res.json();
+      if(!arr.length) throw new Error('Otro usuario modificó este título mientras lo editabas. Cierra y vuelve a abrirlo para ver la versión actual (tus cambios no se guardaron).');
+      guardado = arr[0];
+    }
+
+    // Actualizar memoria y pantalla
+    const g = i26Norm(guardado);
+    const i = i26Datos.findIndex(x => x.id === g.id);
+    if(i >= 0) i26Datos[i] = g; else i26Datos.push(g);
+    i26LlenarSelects();
+    i26Render();
+
+    // Bitácora: es rastro de auditoría, si falla se avisa
+    try{
+      const rb = await fetch(SUPA_URL + '/rest/v1/' + I26_BITA, { method:'POST',
+        headers: await supaHeaders({'Content-Type':'application/json', Prefer:'return=minimal'}),
+        body: JSON.stringify({ titulo_id: g.id, n_fila: g.n_fila, usuario: usuario, cambios: cambios.join(' | ') }) });
+      if(!rb.ok) throw new Error('HTTP ' + rb.status);
+      msg.className = 'ou-m-msg ok'; msg.textContent = '✅ Guardado correctamente.';
+      setTimeout(i26Cerrar, 900);
+    }catch(eb){
+      console.warn('[bitácora ICA 2026]', eb);
+      msg.className = 'ou-m-msg err';
+      msg.textContent = '⚠️ El título se guardó, pero NO se registró en la bitácora (' + eb.message + ').';
+      i26Guardando = false;
+    }
+  }catch(e){
+    console.warn('[ICA 2026 guardar]', e);
+    err('❌ No se pudo guardar: ' + e.message);
+    i26Guardando = false;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function i26CargarBitacora(id){
+  const cont = i26$('i26-log');
+  cont.innerHTML = '<div style="font-size:11px;color:#8b95a7;padding:6px 0">Cargando historial…</div>';
+  try{
+    const rows = await supaFetch(I26_BITA + '?titulo_id=eq.' + encodeURIComponent(id) + '&order=fecha.desc&select=usuario,cambios,fecha&limit=50');
+    cont.innerHTML = rows.length ? rows.map(b =>
+      '<div class="ou-log-item"><div class="ou-log-top"><span class="ou-log-user">' + ouEsc(b.usuario) + '</span>'
+      + '<span class="ou-log-fecha">' + new Date(b.fecha).toLocaleString('es-CO', {timeZone:'America/Bogota'}) + '</span></div>'
+      + '<div class="ou-log-cambios">' + ouEsc(b.cambios).replace(/ \| /g, '<br>') + '</div></div>').join('')
+      : '<div style="font-size:11.5px;color:#8b95a7;padding:6px 0">Sin cambios registrados todavía.</div>';
+  }catch(e){
+    cont.innerHTML = '<div style="font-size:11.5px;color:#fca5a5;padding:6px 0">No se pudo cargar el historial.</div>';
+  }
+}
+
+/* ── Tiempo real: cambios de otros usuarios aparecen sin recargar ── */
+function i26Suscribir(){
+  if(i26Canal || !sbAuth || typeof sbAuth.channel !== 'function') return;
+  try{
+    i26Canal = sbAuth.channel('i26-titulos')
+      .on('postgres_changes', { event:'*', schema:'public', table:I26_TABLA }, i26Cambio)
+      .subscribe(st => {
+        const e = i26$('i26-vivo'); if(!e) return;
+        const ok = st === 'SUBSCRIBED';
+        e.className = 'i26-vivo ' + (ok ? 'on' : 'off');
+        e.textContent = ok ? '● En vivo' : '○ Sin tiempo real';
+        e.title = ok ? 'Los cambios de otros usuarios se reflejan automáticamente'
+                     : 'Usa «Recargar» para ver cambios de otros usuarios (estado: ' + st + ')';
+      });
+  }catch(e){ console.warn('[ICA 2026 realtime]', e); }
+}
+function i26Cambio(p){
+  if(!i26Datos) return;
+  if(p.eventType === 'DELETE'){
+    const id = p.old && p.old.id;
+    i26Datos = i26Datos.filter(r => r.id !== id);
+  }else if(p.new){
+    const r = i26Norm(p.new);
+    const i = i26Datos.findIndex(x => x.id === r.id);
+    if(i >= 0){
+      // Si alguien más cambió el título que tengo abierto, avisar
+      if(i26Edit && i26Edit.id === r.id && !i26Guardando && r.actualizado_en !== i26Edit.actualizado_en){
+        const msg = i26$('i26-m-msg');
+        msg.className = 'ou-m-msg err';
+        msg.textContent = '⚠️ ' + (r.actualizado_por || 'Otro usuario') + ' acaba de modificar este título. Cierra y vuelve a abrirlo antes de guardar.';
+      }
+      i26Datos[i] = r;
+    }else i26Datos.push(r);
+  }
+  clearTimeout(i26Timer);
+  i26Timer = setTimeout(() => { i26LlenarSelects(); i26Render(); }, 300);
+}
+
+/* ── Exportar a Excel lo filtrado ── */
+function i26Exportar(){
+  if(!i26Datos) return;
+  if(typeof XLSX === 'undefined'){ alert('No se pudo cargar la librería de Excel.'); return; }
+  const filas = i26Filtrados().map(r => ({
+    '#': r.n_fila, 'Contribuyente': r.contribuyente || '', 'NIT': r.nit || '', 'Área': i26AreaLbl(r.area),
+    'Vigencias': r.vigencias || '', 'Valor remitido': r.valor, 'Recaudado': r.valor_recaudado || 0,
+    'Saldo': r.clasificacion === 'Recuperable' ? i26Saldo(r) : null,
+    'Clasificación': r.clasificacion, 'Estado proceso': r.estado_proceso || 'Sin iniciar',
+    'Etapa': i26EtapaNombre(r.etapa), 'Responsable': r.responsable || '', 'Fecha gestión': r.fecha_gestion || '',
+    'Factura': r.factura || '', 'Radicado': r.radicado || '', 'Remisión': r.remision || '', 'Correo': r.correo || '',
+    'Alerta': r.alerta || '', 'Observaciones': r.observaciones || '', 'Expediente': r.expediente_url || '',
+    'Actualizado por': r.actualizado_por || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(filas);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ICA 2026');
+  XLSX.writeFile(wb, 'ICA2026_titulos_remitidos_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+}
 </script>
 </body>
 </html>
