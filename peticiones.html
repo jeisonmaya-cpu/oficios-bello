@@ -689,6 +689,36 @@ footer b{color:var(--gold)}
   font-family:inherit;font-weight:700;font-size:var(--t-md);border:0;border-radius:12px;padding:14px;cursor:pointer}
 .nv-btn:hover{filter:brightness(1.06)}
 @media(prefers-reduced-motion:reduce){.nv-caja{animation:none}}
+
+/* ── Resolución sin oficio ── */
+.ofi-falta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:rgba(245,158,11,.08);
+  border:1px solid rgba(245,158,11,.45);border-left:4px solid var(--acento);border-radius:12px;
+  padding:14px 16px;margin-bottom:14px}
+.ofi-ic{width:30px;height:30px;border-radius:50%;background:var(--acento);color:var(--navy);font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Syne',sans-serif}
+.ofi-tit{font-weight:700;color:var(--acento);font-size:var(--t-base)}
+.ofi-txt{font-size:var(--t-sm);color:var(--txt);line-height:1.45;margin-top:2px}
+.ofi-acc{display:flex;gap:8px;flex-wrap:wrap}
+.ofi-acc .btn{padding:9px 14px;font-size:var(--t-sm)}
+.ofi-lista{margin-bottom:12px;border:1px solid rgba(245,158,11,.35);border-radius:12px;overflow:hidden}
+.ofi-cab{width:100%;display:flex;align-items:center;gap:10px;background:rgba(245,158,11,.07);border:0;
+  padding:10px 14px;color:var(--txt);font-family:inherit;font-size:var(--t-sm);cursor:pointer;text-align:left}
+.ofi-num{background:var(--acento);color:var(--navy);font-weight:800;border-radius:99px;padding:1px 9px}
+.ofi-flecha{margin-left:auto;color:var(--muted)}
+.ofi-items{display:flex;flex-direction:column}
+.ofi-item{display:flex;gap:8px;align-items:baseline;background:transparent;border:0;border-top:1px solid var(--border);
+  padding:9px 14px;color:var(--txt);font-family:inherit;font-size:var(--t-sm);cursor:pointer;text-align:left}
+.ofi-item:hover{background:rgba(255,255,255,.04)}
+.ofi-item span{margin-left:auto;color:var(--muted);font-size:var(--t-micro);white-space:nowrap}
+#ofi-modal{position:fixed;inset:0;background:rgba(4,14,28,.85);z-index:965;display:none;
+  align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(5px)}
+#ofi-modal.on{display:flex}
+.ofi-caja{max-width:440px;width:100%;background:var(--navy2);border:1px solid var(--border);
+  border-top:3px solid var(--acento);border-radius:16px;padding:22px}
+.ofi-caja h3{margin-bottom:8px}
+.ofi-caja p{color:var(--muted);font-size:var(--t-sm);line-height:1.55}
+.ofi-caja p b{color:var(--txt)}
+.ofi-botones{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
 </style>
 </head>
 <body>
@@ -981,6 +1011,7 @@ footer b{color:var(--gold)}
       </div>
       <div id="c-hoy"></div>
       <div id="c-aviso"></div>
+      <div id="c-oficios"></div>
       <div id="c-cont"><div class="card">Cargando…</div></div>
     </div>
   </section>
@@ -1711,6 +1742,7 @@ async function iniciar(){
   ligarBorrador();
   setTimeout(recuperarBorrador, 400);
   iniciarTiempoReal();
+  cargarOficiosPendientes();
   setTimeout(function(){ abrirNovedades(false); }, 700);
   // Refresco en vivo del visualizador: delegado en document para sobrevivir a
   // la recreación de #k-doc cada vez que se abre un caso.
@@ -3948,6 +3980,7 @@ async function cargarCola(){
       COLA = await supaFetchTodo(q.replace('v_pet_cola_prioridad', 'v_pet_cola'));
     }
     if(orden === 'urgencia') COLA = ordenarPorRiesgo(COLA);
+    cargarOficiosPendientes();
     COLA_IDX = 0;
     pintarCaso();
     avisoSinRadicado();
@@ -3990,6 +4023,7 @@ function pintarCaso(){
     motivoRiesgo(r) +
     alertaTutela(r) +
     '<div id="k-presencia"></div>' +
+    '<div id="k-oficio"></div>' +
 
     // ── Encabezado: identificación y relojes ──
     '<div class="caso-hd">' +
@@ -4090,6 +4124,7 @@ function pintarCaso(){
 
   historialPeticionario(r);
   presenciaCaso(r.id);
+  pintarAvisoOficio();
 }
 
 /* Iconos en línea, sin librerías */
@@ -9820,6 +9855,282 @@ function recuperarBorrador(){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   V2 · RESOLUCIÓN SIN OFICIO
+   Problema: el abogado genera la resolución, guarda el caso y olvida
+   el oficio que la acompaña, así que la petición queda sin respuesta.
+   1. Al generar una resolución, el caso queda marcado "falta oficio".
+   2. Un aviso en el caso con el botón para hacer el oficio ya.
+   3. Al guardar sin oficio, se pregunta antes (no se bloquea).
+   4. Lista de pendientes arriba de la cola y alerta en el tablero.
+   La marca se quita sola al generar cualquier oficio o respuesta
+   del caso, o con «Ya lo hice por fuera».
+   Requiere pet_oficio_pendiente.sql; sin esas columnas, no hace nada.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Qué resoluciones exigen oficio y qué oficio se abre para hacerlo */
+const RESOL_CON_OFICIO = {
+  prescripcion: { nombre:'resolución de prescripción', oficio:'CONCEDE_PRESCRIPCION' },
+  excepciones:  { nombre:'resolución de excepciones',  oficio:'OFICIO_GENERAL' }
+};
+let OFI_ACTIVO = true;          // se apaga si faltan las columnas en la base
+let OFI_PEND = {};              // id → { id, radicado, peticionario, resol_tipo, resol_generada_en, asignado_nombre }
+
+function tipoDeArchivo(nombre){
+  const n = String(nombre || '');
+  if(/^Resolucion_prescripcion/i.test(n)) return { clase:'resol', tipo:'prescripcion' };
+  if(/^Resolucion_excepciones/i.test(n))  return { clase:'resol', tipo:'excepciones' };
+  if(/^Resolucion_/i.test(n))             return { clase:'resol', tipo:'otra' };
+  return { clase:'oficio' };
+}
+
+async function cargarOficiosPendientes(){
+  if(!OFI_ACTIVO || !PERFIL || soloRadica()) return;
+  let q = 'pet_peticiones?select=id,radicado,peticionario,resol_tipo,resol_generada_en,asignado_a' +
+          '&resol_generada_en=not.is.null&oficio_generado_en=is.null&order=resol_generada_en.asc';
+  if(!esJefe()) q += '&asignado_a=eq.' + PERFIL.id;
+  try{
+    const filas = await supaFetchTodo(q);
+    OFI_PEND = {};
+    filas.forEach(function(f){ OFI_PEND[f.id] = f; });
+  }catch(e){
+    if(/column|resol_generada_en|oficio_generado_en|42703|PGRST/i.test(String(e.message || e))){
+      OFI_ACTIVO = false;
+      console.warn('Resolución sin oficio: falta ejecutar pet_oficio_pendiente.sql');
+    }
+    return;
+  }
+  pintarPendientesOficio();
+  pintarAvisoOficio();
+}
+
+function esJefe(){ return PERFIL && ['admin','revisor'].indexOf(PERFIL.rol) !== -1; }
+
+/* Se llama cada vez que se descarga un Word desde un caso */
+async function registrarGeneracion(r, nombreArchivo){
+  if(!OFI_ACTIVO || !r || !r.id) return;
+  const t = tipoDeArchivo(nombreArchivo);
+  const ahora = new Date().toISOString();
+  try{
+    if(t.clase === 'resol'){
+      if(!RESOL_CON_OFICIO[t.tipo]) return;
+      await supaFetch('pet_peticiones?id=eq.' + r.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        // Si el oficio ya se hizo antes, se reinicia: la resolución nueva necesita el suyo
+        body: JSON.stringify({ resol_generada_en: ahora, resol_tipo: t.tipo,
+                               oficio_generado_en: null, oficio_por_fuera: false })
+      });
+      OFI_PEND[r.id] = { id:r.id, radicado:r.radicado, peticionario:r.peticionario,
+                         resol_tipo:t.tipo, resol_generada_en:ahora, asignado_a:r.asignado_a };
+    }else if(OFI_PEND[r.id]){
+      await supaFetch('pet_peticiones?id=eq.' + r.id, {
+        method:'PATCH', headers:{ Prefer:'return=minimal' },
+        body: JSON.stringify({ oficio_generado_en: ahora })
+      });
+      delete OFI_PEND[r.id];
+      toast('Listo: resolución y oficio del radicado ' + (r.radicado || '') + ' completos.', 'ok');
+    }
+  }catch(e){
+    if(/column|42703/i.test(String(e.message || e))) OFI_ACTIVO = false;
+    return;
+  }
+  pintarAvisoOficio();
+  pintarPendientesOficio();
+}
+
+/* Envuelve armarDocx: todas las descargas de Word pasan por aquí */
+(function(){
+  const armarOriginal = armarDocx;
+  armarDocx = async function(url, datos, nombreArchivo){
+    const out = await armarOriginal.apply(this, arguments);
+    try{ await registrarGeneracion(COLA[COLA_IDX], nombreArchivo); }catch(e){}
+    return out;
+  };
+})();
+
+/* Aviso dentro del caso abierto */
+function pintarAvisoOficio(){
+  const cont = document.getElementById('k-oficio');
+  if(!cont) return;
+  const r = COLA[COLA_IDX];
+  const p = r && OFI_PEND[r.id];
+  if(!p){ cont.innerHTML = ''; return; }
+  const def = RESOL_CON_OFICIO[p.resol_tipo] || { nombre:'resolución', oficio:'OFICIO_GENERAL' };
+  cont.innerHTML =
+    '<div class="ofi-falta" role="alert">' +
+      '<div class="ofi-ic" aria-hidden="true">!</div>' +
+      '<div style="flex:1;min-width:220px">' +
+        '<div class="ofi-tit">Falta el oficio</div>' +
+        '<div class="ofi-txt">Ya se generó la ' + esc(def.nombre) + ' (' + esc(haceCuanto(p.resol_generada_en)) +
+        '). La petición no queda respondida hasta enviar el oficio que la acompaña.</div>' +
+      '</div>' +
+      '<div class="ofi-acc">' +
+        '<button class="btn btn-primary" onclick="hacerOficioAhora()">Hacer el oficio ahora</button>' +
+        '<button class="btn btn-ghost" onclick="oficioPorFuera()">Ya lo hice por fuera</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function haceCuanto(isoTxt){
+  const d = new Date(isoTxt); if(isNaN(d)) return '';
+  const min = Math.round((Date.now() - d) / 60000);
+  if(min < 2) return 'hace un momento';
+  if(min < 60) return 'hace ' + min + ' min';
+  const h = Math.round(min / 60);
+  if(h < 24) return 'hace ' + h + (h === 1 ? ' hora' : ' horas');
+  const dd = Math.round(h / 24);
+  return 'hace ' + dd + (dd === 1 ? ' día' : ' días');
+}
+
+function hacerOficioAhora(){
+  const r = COLA[COLA_IDX];
+  const p = r && OFI_PEND[r.id];
+  if(!p) return;
+  const def = RESOL_CON_OFICIO[p.resol_tipo] || { oficio:'OFICIO_GENERAL' };
+  const cont = document.getElementById('k-doc');
+  // abrirRespuesta cierra el formulario si ya estaba abierto: solo abrir si no lo está
+  if(!cont || cont.getAttribute('data-modo') !== def.oficio) abrirRespuesta(def.oficio);
+  setTimeout(function(){
+    const el = document.getElementById('k-doc');
+    if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 80);
+}
+
+async function oficioPorFuera(){
+  const r = COLA[COLA_IDX];
+  if(!r || !OFI_PEND[r.id]) return;
+  try{
+    await supaFetch('pet_peticiones?id=eq.' + r.id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' },
+      body: JSON.stringify({ oficio_generado_en: new Date().toISOString(), oficio_por_fuera: true })
+    });
+    delete OFI_PEND[r.id];
+    pintarAvisoOficio(); pintarPendientesOficio();
+    toast('Marcado: el oficio se hizo por fuera del módulo.', 'ok');
+  }catch(e){ toast('No se pudo marcar: ' + e.message, 'err'); }
+}
+
+/* Al guardar el caso sin oficio: preguntar, no bloquear
+   (a veces el número de la resolución aún no existe). */
+(function(){
+  const guardarOriginal = guardarCaso;
+  guardarCaso = function(){
+    const r = COLA[COLA_IDX];
+    const args = arguments, self = this;
+    if(r && OFI_PEND[r.id] && !window.__ofiConfirmado){
+      preguntarSinOficio(r, function(){
+        window.__ofiConfirmado = true;
+        try{ guardarOriginal.apply(self, args); } finally { window.__ofiConfirmado = false; }
+      });
+      return;
+    }
+    return guardarOriginal.apply(this, arguments);
+  };
+})();
+
+function preguntarSinOficio(r, continuar){
+  let ov = document.getElementById('ofi-modal');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'ofi-modal';
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML =
+    '<div class="ofi-caja">' +
+      '<h3>¿Guardar sin el oficio?</h3>' +
+      '<p>El radicado <b>' + esc(r.radicado || '') + '</b> tiene la resolución lista pero todavía no tiene el oficio. ' +
+      'Si guarda ahora, el caso sale de la cola y queda en su lista de <b>resoluciones sin oficio</b> hasta que lo haga.</p>' +
+      '<div class="ofi-botones">' +
+        '<button class="btn btn-primary" id="ofi-si">Hacer el oficio ahora</button>' +
+        '<button class="btn btn-ghost" id="ofi-luego">Guardar y hacerlo después</button>' +
+      '</div>' +
+    '</div>';
+  ov.classList.add('on');
+  const cerrar = function(){ ov.classList.remove('on'); document.removeEventListener('keydown', esc_); };
+  const esc_ = function(e){ if(e.key === 'Escape'){ e.stopPropagation(); cerrar(); } };
+  document.addEventListener('keydown', esc_);
+  document.getElementById('ofi-si').onclick = function(){ cerrar(); hacerOficioAhora(); };
+  document.getElementById('ofi-luego').onclick = function(){ cerrar(); continuar(); };
+  ov.onclick = function(e){ if(e.target === ov) cerrar(); };
+  setTimeout(function(){ document.getElementById('ofi-si').focus(); }, 40);
+}
+
+/* Lista arriba de la cola */
+function pintarPendientesOficio(){
+  const cont = document.getElementById('c-oficios');
+  if(!cont) return;
+  const lista = Object.keys(OFI_PEND).map(function(k){ return OFI_PEND[k]; })
+    .sort(function(a, b){ return String(a.resol_generada_en).localeCompare(String(b.resol_generada_en)); });
+  if(!lista.length){ cont.innerHTML = ''; return; }
+  const abierto = cont.getAttribute('data-abierto') === '1';
+  cont.innerHTML =
+    '<div class="ofi-lista">' +
+      '<button class="ofi-cab" onclick="alternarPendientesOficio()" aria-expanded="' + abierto + '">' +
+        '<span class="ofi-num">' + lista.length + '</span>' +
+        '<span>' + (lista.length === 1 ? 'resolución sin oficio' : 'resoluciones sin oficio') +
+          (esJefe() ? ' en el equipo' : '') + '</span>' +
+        '<span class="ofi-flecha">' + (abierto ? '▴' : '▾') + '</span>' +
+      '</button>' +
+      (abierto ? '<div class="ofi-items">' + lista.map(function(p){
+        return '<button class="ofi-item" onclick="traerCasoOficio(\'' + p.id + '\')">' +
+          '<b>' + esc(p.radicado || '') + '</b> · ' + esc(p.peticionario || '') +
+          '<span>' + esc(haceCuanto(p.resol_generada_en)) + '</span></button>';
+      }).join('') + '</div>' : '') +
+    '</div>';
+}
+
+function alternarPendientesOficio(){
+  const cont = document.getElementById('c-oficios');
+  cont.setAttribute('data-abierto', cont.getAttribute('data-abierto') === '1' ? '0' : '1');
+  pintarPendientesOficio();
+}
+
+/* Abre el caso en la cola aunque ya haya salido de ella (proyectado) */
+async function traerCasoOficio(id){
+  let i = COLA.findIndex(function(c){ return c.id === id; });
+  if(i === -1){
+    try{
+      const filas = await supaFetch('v_pet_bandeja?select=*&id=eq.' + id + '&limit=1');
+      if(!filas.length){ toast('No se encontró el caso.', 'err'); return; }
+      COLA.splice(COLA_IDX, 0, filas[0]);
+      i = COLA_IDX;
+    }catch(e){ toast('No se pudo abrir: ' + e.message, 'err'); return; }
+  }
+  COLA_IDX = i;
+  pintarCaso();
+  const el = document.getElementById('k-oficio');
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+/* Alerta para la Dirección en el tablero */
+(function(){
+  const alertasOriginal = pintarAlertas;
+  pintarAlertas = function(){
+    alertasOriginal.apply(this, arguments);
+    const lista = Object.keys(OFI_PEND).map(function(k){ return OFI_PEND[k]; });
+    const cont = document.getElementById('t-alertas');
+    if(!cont || !lista.length) return;
+    const viejas = lista.filter(function(p){ return Date.now() - new Date(p.resol_generada_en) > 2 * 864e5; });
+    const porAbogado = {};
+    lista.forEach(function(p){
+      const pf = (typeof PERFILES !== 'undefined' ? PERFILES : []).filter(function(x){ return x.id === p.asignado_a; })[0];
+      const n = (pf && pf.nombre) || 'Sin asignar';
+      porAbogado[n] = (porAbogado[n] || 0) + 1;
+    });
+    const detalle = Object.keys(porAbogado).sort(function(a, b){ return porAbogado[b] - porAbogado[a]; })
+      .map(function(n){ return esc(n) + ' (' + porAbogado[n] + ')'; }).join(' · ');
+    const tarjeta = '<div class="card" style="border-color:rgba(245,158,11,.35);padding:14px 18px;margin-bottom:10px">' +
+      '<div style="font-weight:700;color:var(--acento);font-size:14px">' + lista.length +
+        (lista.length === 1 ? ' resolución sin oficio' : ' resoluciones sin oficio') +
+        (viejas.length ? ' · ' + viejas.length + ' con más de 2 días' : '') + '</div>' +
+      '<div style="color:var(--muted);font-size:12.5px;margin-top:3px">La resolución existe pero la petición no está respondida. ' +
+        detalle + '</div></div>';
+    if(cont.querySelector('.card') && /Sin alertas/.test(cont.textContent)) cont.innerHTML = '';
+    cont.insertAdjacentHTML('beforeend', tarjeta);
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════════
    NOVEDADES DE LA VERSIÓN
    Se muestra una sola vez por usuario cada vez que cambia VERSION_APP.
    Para la próxima versión: subir VERSION_APP y reemplazar NOVEDADES.
@@ -9849,6 +10160,10 @@ const NOVEDADES = [
     txt:'Si se cae internet o se cierra la pestaña a mitad de una radicación, al volver se recupera lo escrito. ' +
         'Solo hay que volver a cargar el PDF.',
     para: function(){ return puedeRadicar(); } },
+  { ic:'📎', tit:'Ninguna resolución sin su oficio',
+    txt:'Al generar una resolución, el caso queda marcado «Falta el oficio» con un botón para hacerlo de una vez. ' +
+        'Si guarda sin él, se lo recordamos y queda en su lista hasta que lo haga.',
+    para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } },
   { ic:'📊', tit:'Listas y tablero completos',
     txt:'El tablero, el archivo histórico y Control Interno ahora traen todos los registros, ' +
         'no solo los primeros mil.',
