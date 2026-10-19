@@ -8432,19 +8432,50 @@ const PAG_MAX = 60000;     // freno de seguridad
 
 /* Trae TODAS las filas, de a 1000. Ignora el limit= que traiga la consulta.
    Para que las páginas no se solapen, la consulta debe llevar un order estable. */
+/* Orden estable para paginar con offset: si el orden pedido no es único
+   (p. ej. fecha_proyeccion, que se repite), Postgres puede devolver la misma
+   fila en dos páginas y saltarse otra. Se añade id como desempate. */
+function conDesempate(base){
+  if(/^rpc\//.test(base)) return base;
+  const m = base.match(/([?&])order=([^&]*)/);
+  if(m){
+    if(/(^|,)id\./.test(m[2])) return base;
+    return base.replace(m[0], m[1] + 'order=' + m[2] + ',id.asc');
+  }
+  // Sin order explícito se respeta el orden propio de la vista (p. ej. la cola por urgencia)
+  return base;
+}
+
 async function supaFetchTodo(path, opts){
-  let base = String(path).replace(/&limit=\d+/g, '').replace(/&offset=\d+/g, '');
-  const sep = base.indexOf('?') === -1 ? '?' : '&';
+  const original = String(path).replace(/&limit=\d+/g, '').replace(/&offset=\d+/g, '');
+  let base = conDesempate(original);
   // Avanza según lo que realmente llegó y para solo con una página vacía:
   // así funciona aunque el proyecto tenga configurado un max_rows menor a 1000.
   let todo = [];
   let off = 0;
   while(off < PAG_MAX){
-    const filas = await supaFetch(base + sep + 'limit=' + PAG_TAM + '&offset=' + off, opts);
+    const sep = base.indexOf('?') === -1 ? '?' : '&';
+    let filas;
+    try{
+      filas = await supaFetch(base + sep + 'limit=' + PAG_TAM + '&offset=' + off, opts);
+    }catch(err){
+      // Si la vista no tiene columna id, se repite sin el desempate
+      if(off === 0 && base !== original){ base = original; continue; }
+      throw err;
+    }
     if(!filas || !filas.length) break;
     todo = todo.concat(filas);
     off += filas.length;
     if(filas.length < 50) break;        // página corta y pequeña: ya no hay más
+  }
+  // Red de seguridad: sin filas repetidas por id (inserciones durante la carga)
+  if(todo.length && todo[0] && todo[0].id !== undefined){
+    const vistos = new Set();
+    todo = todo.filter(function(f){
+      const k = String(f.id);
+      if(vistos.has(k)) return false;
+      vistos.add(k); return true;
+    });
   }
   return todo;
 }
