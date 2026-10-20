@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<title>Expedientes Digitales — Teodoro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="expedientes.css?v=3"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+</head>
+<body>
+<div class="bg"></div>
+
+<!-- ════════ PANTALLA DE LOGIN ════════ -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-head">
+      <div class="login-icon">📁</div>
+      <div class="login-title">Expedientes Digitales</div>
+      <div class="login-sub">Dirección de Ejecuciones Fiscales · Bello</div>
+    </div>
+    <label class="login-label" for="login-email">Correo</label>
+    <input id="login-email" class="login-input" type="email" autocomplete="username" placeholder="tucorreo@ejemplo.com" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    <label class="login-label" for="login-pass">Contraseña</label>
+    <input id="login-pass" class="login-input pass" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')hacerLogin()">
+    <button id="login-btn" class="login-btn" onclick="hacerLogin()">Ingresar</button>
+    <div id="login-error" class="login-error"></div>
+  </div>
+</div>
+
+<!-- ════════ NAV ════════ -->
+<nav class="nav">
+  <a href="home.html" class="nav-brand">
+    <span style="font-size:20px">🏛️</span>
+    <div>
+      <div class="nav-brand-text">Teodoro</div>
+      <div class="nav-brand-sub">Expedientes digitales</div>
+    </div>
+  </a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-buscar" onclick="irPanel('buscar')">🔍 Buscar</button>
+    <button class="nav-tab" id="tab-expediente" onclick="irPanel('expediente')" disabled>📁 Expediente</button>
+  </div>
+  <span class="nav-user" id="nav-user"></span>
+  <button class="nav-logout" onclick="cerrarSesion()">🔒 Salir</button>
+</nav>
+
+<div class="wrap">
+
+<!-- ════════ PANEL BUSCAR ════════ -->
+<div class="panel active" id="panel-buscar">
+  <div class="page-hdr">
+    <h2>Expedientes digitales</h2>
+    <p>Busca por radicado, cédula o nombre del contribuyente en Predial y Obligaciones Urbanísticas. Si el expediente aún no tiene carpeta digital, la puedes crear desde el resultado.</p>
+  </div>
+
+  <div class="card">
+    <div class="search-row">
+      <select id="f-cartera" class="sel" aria-label="Cartera">
+        <option value="">Todas las carteras</option>
+        <option value="predial">Predial</option>
+        <option value="ou">Obligaciones Urbanísticas</option>
+      </select>
+      <input id="f-q" class="inp" type="search" placeholder="FP-19279, 32526104 o PULGARIN GUERRA" aria-label="Buscar" onkeydown="if(event.key==='Enter')buscar()">
+      <button class="btn btn-gold" id="btn-buscar" onclick="buscar()">Buscar</button>
+    </div>
+    <div id="res-info" class="small muted" style="margin-top:10px"></div>
+    <div id="res-manual" class="hidden" style="margin-top:10px">
+      <button class="btn btn-sm" onclick="abrirModalManual()">➕ Crear expediente manualmente</button>
+    </div>
+  </div>
+
+  <div id="res-wrap" class="hidden" style="margin-top:16px">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr>
+          <th>Cartera</th><th>Radicado</th><th>Contribuyente</th><th>Estado cartera</th>
+          <th class="num">Valor</th><th>Expediente digital</th><th></th>
+        </tr></thead>
+        <tbody id="res-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3 class="section-title">Movidos recientemente</h3>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th>Cartera</th><th>Radicado</th><th>Contribuyente</th><th class="num">Documentos</th>
+        <th class="num">Folios</th><th>Estado</th><th>Última actualización</th><th></th>
+      </tr></thead>
+      <tbody id="rec-body"><tr><td colspan="8" class="empty">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════ PANEL EXPEDIENTE ════════ -->
+<div class="panel" id="panel-expediente">
+  <div id="exp-vacio" class="card empty">Busca un radicado y ábrelo para ver su expediente digital.</div>
+
+  <div id="exp-contenido" class="hidden">
+    <div class="card">
+      <div class="exp-head">
+        <div>
+          <div class="exp-chips" id="exp-chips"></div>
+          <div class="exp-rad" id="exp-rad"></div>
+          <div class="exp-sub" id="exp-sub"></div>
+        </div>
+        <div class="exp-kpis">
+          <div><div class="kpi-n" id="kpi-docs">0</div><div class="kpi-l">documentos</div></div>
+          <div><div class="kpi-n" id="kpi-folios">0</div><div class="kpi-l">folios</div></div>
+          <div><div class="kpi-n" id="kpi-anul">0</div><div class="kpi-l">anulados</div></div>
+        </div>
+      </div>
+      <div id="exp-aviso-cerrado" class="aviso aviso-cerrado hidden"></div>
+      <div class="exp-actions">
+        <button class="btn" id="btn-indice-pdf" onclick="descargarIndicePDF()">🧾 Índice electrónico (PDF)</button>
+        <button class="btn btn-gold" id="btn-foliado" onclick="descargarFoliado()">📚 Expediente foliado (PDF)</button>
+        <button class="btn" id="btn-estado" onclick="abrirModalEstado()"></button>
+        <button class="btn" onclick="recargarExpediente()">↻ Actualizar</button>
+      </div>
+    </div>
+
+    <div class="subtabs" role="tablist">
+      <button class="subtab active" id="st-indice" onclick="irSub('indice')">Índice</button>
+      <button class="subtab" id="st-incorporar" onclick="irSub('incorporar')">Incorporar documentos</button>
+      <button class="subtab" id="st-bitacora" onclick="irSub('bitacora')">Bitácora</button>
+    </div>
+
+    <!-- Índice -->
+    <div class="sub active" id="sub-indice">
+      <div class="toolbar">
+        <label><input type="checkbox" id="chk-anulados" checked onchange="renderIndice()"> Mostrar anulados</label>
+        <select id="f-grupo" class="sel" onchange="renderIndice()" aria-label="Filtrar por etapa">
+          <option value="">Todas las etapas</option>
+        </select>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr>
+            <th class="num">N.º</th><th>Documento</th><th>Etapa</th><th>Fecha doc.</th>
+            <th>Incorporado</th><th class="num">Págs.</th><th>Folios</th><th></th>
+          </tr></thead>
+          <tbody id="idx-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Incorporar -->
+    <div class="sub" id="sub-incorporar">
+      <div id="inc-cerrado" class="aviso aviso-cerrado hidden">Este expediente está cerrado y no admite nuevos documentos. Reábrelo si necesitas incorporar algo.</div>
+      <div id="inc-abierto">
+        <div class="dz" id="dz" tabindex="0" role="button" aria-label="Seleccionar PDFs">
+          <div class="dz-icon">📄</div>
+          <div class="dz-t">Arrastra aquí los PDF o haz clic para seleccionarlos</div>
+          <div class="dz-s">Solo PDF, máximo 50 MB cada uno. Se incorporan en el orden de la lista: ese orden define la foliación.</div>
+          <input type="file" id="dz-input" accept="application/pdf,.pdf" multiple class="hidden">
+        </div>
+        <div class="cola" id="cola"></div>
+        <div class="cola-foot hidden" id="cola-foot">
+          <button class="btn btn-sm" onclick="limpiarCola()">Quitar completados y con error</button>
+          <button class="btn btn-gold" id="btn-subir" onclick="subirCola()">Incorporar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bitácora -->
+    <div class="sub" id="sub-bitacora">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Fecha</th><th>Acción</th><th>Usuario</th><th>Detalle</th></tr></thead>
+          <tbody id="bit-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="legal">Expediente digital de trabajo y consulta de la Dirección Administrativa de Ejecuciones Fiscales. Cada documento queda registrado con su huella SHA-256, su foliación y la trazabilidad de quién lo incorporó. El repositorio oficial de la Alcaldía sigue siendo el Sistema de Gestión Documental.</p>
+</div>
+
+<div class="footer">Desarrollado por Jeison Maya · 2026</div>
+
+<!-- ════════ MODAL VISOR ════════ -->
+<div class="modal" id="m-visor" onclick="if(event.target===this)cerrarModal('m-visor')">
+  <div class="modal-box wide">
+    <div class="modal-h">
+      <div class="modal-t" id="visor-t">Documento</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <a class="btn btn-sm" id="visor-tab" href="#" target="_blank" rel="noopener">Abrir en pestaña</a>
+        <button class="modal-x" onclick="cerrarModal('m-visor')" aria-label="Cerrar">×</button>
+      </div>
+    </div>
+    <iframe class="visor" id="visor-frame" title="Visor de documento"></iframe>
+  </div>
+</div>
+
+<!-- ════════ MODAL ANULAR ════════ -->
+<div class="modal" id="m-anular" onclick="if(event.target===this)cerrarModal('m-anular')">
+  <div class="modal-box">
+    <div class="modal-h">
+      <div class="modal-t">Anular documento</div>
+      <button class="modal-x" onclick="cerrarModal('m-anular')" aria-label="Cerrar">×</button>
+    </div>
+    <p class="small muted" id="anular-info"></p>
+    <p class="small muted">El documento no se borra: queda en el índice con sus folios, marcado como anulado y con este motivo. La anulación no se puede revertir.</p>
+    <textarea class="txa" id="anular-motivo" placeholder="Motivo (mínimo 10 caracteres)"></textarea>
+    <div class="modal-f">
+      <button class="btn" onclick="cerrarModal('m-anular')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-anular-ok" onclick="confirmarAnular()">Anular documento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL ESTADO ════════ -->
+<div class="modal" id="m-estado" onclick="if(event.target===this)cerrarModal('m-estado')">
+  <div class="modal-box">
+    <div class="modal-h">
+      <div class="modal-t" id="estado-t">Cerrar expediente</div>
+      <button class="modal-x" onclick="cerrarModal('m-estado')" aria-label="Cerrar">×</button>
+    </div>
+    <p class="small muted" id="estado-info"></p>
+    <textarea class="txa" id="estado-motivo" placeholder="Motivo (mínimo 10 caracteres)"></textarea>
+    <div class="modal-f">
+      <button class="btn" onclick="cerrarModal('m-estado')">Cancelar</button>
+      <button class="btn btn-gold" id="btn-estado-ok" onclick="confirmarEstado()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL CREAR MANUAL ════════ -->
+<div class="modal" id="m-manual" onclick="if(event.target===this)cerrarModal('m-manual')">
+  <div class="modal-box">
+    <div class="modal-h">
+      <div class="modal-t">Crear expediente manualmente</div>
+      <button class="modal-x" onclick="cerrarModal('m-manual')" aria-label="Cerrar">×</button>
+    </div>
+    <p class="small muted">Úsalo cuando el radicado no aparece en la búsqueda. Escríbelo tal como figura en el expediente físico.</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <select id="man-cartera" class="sel" aria-label="Cartera">
+        <option value="predial">Predial</option>
+        <option value="ou">Obligaciones Urbanísticas</option>
+      </select>
+      <input id="man-radicado" class="inp" type="text" placeholder="Radicado, p. ej. FP-1802" aria-label="Radicado" onkeydown="if(event.key==='Enter')confirmarManual()">
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="cerrarModal('m-manual')">Cancelar</button>
+      <button class="btn btn-gold" id="btn-manual-ok" onclick="confirmarManual()">Crear expediente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ PROGRESO ════════ -->
+<div class="prog" id="prog">
+  <div class="prog-box">
+    <div class="prog-t" id="prog-t">Procesando</div>
+    <div class="prog-s" id="prog-s"></div>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="expedientes.js?v=3"></script>
+</body>
+</html>
