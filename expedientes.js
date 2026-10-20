@@ -14,7 +14,9 @@ const BUCKET        = "expedientes";
 const MAX_BYTES     = 50 * 1024 * 1024;   // igual al límite del bucket
 const URL_FIRMADA_S = 600;                // vigencia de las URL firmadas (10 min)
 
-const CARTERAS = { predial: "Predial", ou: "Obligaciones Urbanísticas" };
+// Se reemplaza con el catálogo exp_carteras al iniciar; esto es solo el respaldo
+let CARTERAS = { predial: "Predial", ou: "Obligaciones Urbanísticas", transito: "Tránsito",
+                 policia: "Sanciones de policía", acuerdos: "Acuerdos de pago" };
 const ACCIONES = {
   crear_expediente: "Creó el expediente",
   incorporar:       "Incorporó documento",
@@ -258,10 +260,15 @@ async function iniciarApp() {
   appIniciada = true;
   configurarDropzone();
   try {
-    const [tipos, etapas] = await Promise.all([
+    const [tipos, etapas, carteras] = await Promise.all([
       supaFetch("exp_tipos_documentales?select=*&activo=eq.true&order=orden.asc"),
-      supaFetch("etapas_coactivo?select=codigo,nombre,grupo,orden&activo=eq.true&order=orden.asc")
+      supaFetch("etapas_coactivo?select=codigo,nombre,grupo,orden&activo=eq.true&order=orden.asc"),
+      supaFetch("exp_carteras?select=codigo,nombre&activo=eq.true&order=orden.asc").catch(() => null)
     ]);
+    if (carteras && carteras.length) {
+      CARTERAS = {};
+      carteras.forEach(k => { CARTERAS[k.codigo] = k.nombre; });
+    }
     TIPOS = tipos || [];
     TIPOS.forEach(t => { TIPOS_MAP[t.codigo] = t; });
     ETAPAS = etapas || [];
@@ -273,6 +280,7 @@ async function iniciarApp() {
   } catch (e) {
     toast("No se pudieron cargar los catálogos: " + e.message, true);
   }
+  llenarSelectCarteras();
   cargarRecientes();
 
   // Apertura directa: expedientes.html?cartera=predial&radicado=FP-19279
@@ -280,6 +288,23 @@ async function iniciarApp() {
   const c = (qs.get("cartera") || "").toLowerCase();
   const r = qs.get("radicado");
   if (r && CARTERAS[c]) abrirPorRadicado(c, r, false);
+}
+
+function llenarSelectCarteras() {
+  const ops = Object.keys(CARTERAS).map(k => `<option value="${esc(k)}">${esc(CARTERAS[k])}</option>`).join("");
+  $("f-cartera").innerHTML = '<option value="">Todas las carteras</option>' + ops;
+  $("r-cartera").innerHTML = '<option value="">Todas las carteras</option>' + ops;
+  $("man-cartera").innerHTML = ops;
+}
+function chipCartera(c) {
+  return `<span class="chip chip-${esc(c)}">${esc(CARTERAS[c] || c)}</span>`;
+}
+function chipsSituacion(f) {
+  const out = [];
+  if (f.en_acuerdo) out.push('<span class="chip chip-acuerdo">En acuerdo de pago</span>');
+  if (f.embargos > 0) out.push(`<span class="chip chip-embargo">${f.embargos} embargo${f.embargos === 1 ? "" : "s"}</span>`);
+  if (f.origen === "manual") out.push('<span class="chip chip-manual">Manual</span>');
+  return out.join(" ");
 }
 
 // ════════════════════════════════════════════════════════════
@@ -311,8 +336,11 @@ async function buscar() {
       ? filas.length + (filas.length === 60 ? "+ resultados (afina la búsqueda si no ves el tuyo)" : " resultado(s)")
       : "Sin resultados para «" + q + "».";
     renderResultados(filas);
+    $("res-manual-t").textContent = filas.length ? "¿No es ninguno de estos?" : "¿No aparece en ninguna cartera?";
+    $("res-manual").classList.remove("hidden");
   } catch (e) {
     info.textContent = "";
+    $("res-manual").classList.remove("hidden");
     toast("Error buscando: " + e.message, true);
   } finally {
     $("btn-buscar").disabled = false;
@@ -332,10 +360,10 @@ function renderResultados(filas) {
       ? `<button class="btn btn-sm" onclick="abrirExpediente(${Number(f.exp_id)})">Abrir</button>`
       : `<button class="btn btn-sm btn-gold" onclick="crearDesdeResultado(${i})">Crear</button>`;
     return `<tr>
-      <td><span class="chip chip-${esc(f.cartera)}">${esc(CARTERAS[f.cartera] || f.cartera)}</span></td>
+      <td>${chipCartera(f.cartera)}</td>
       <td class="nowrap"><strong>${esc(f.radicado)}</strong></td>
       <td>${esc(f.contribuyente || "—")}<div class="small muted">${esc(f.id_contribuyente || "")}</div></td>
-      <td>${esc(f.estado_cartera || "—")}</td>
+      <td>${esc(f.estado_cartera || "—")}<div class="flags">${chipsSituacion(f)}</div></td>
       <td class="num nowrap">${fmtMoneda(f.valor_total)}</td>
       <td>${estadoExp}</td>
       <td class="num">${accion}</td>
@@ -345,17 +373,25 @@ function renderResultados(filas) {
 
 async function cargarRecientes() {
   try {
-    const filas = await supaFetch("v_exp_digital?select=*&order=actualizado_en.desc&limit=25") || [];
+    let path = "v_exp_digital?select=*&order=actualizado_en.desc&limit=25";
+    const rc = $("r-cartera") ? $("r-cartera").value : "";
+    const re = $("r-estado") ? $("r-estado").value : "";
+    if (rc) path += "&cartera=eq." + encodeURIComponent(rc);
+    if (re) path += "&estado=eq." + encodeURIComponent(re);
+    if ($("r-mios") && $("r-mios").checked && USUARIO_EMAIL) path += "&creado_por_email=eq." + encodeURIComponent(USUARIO_EMAIL);
+    const filtrado = rc || re || ($("r-mios") && $("r-mios").checked);
+    const filas = await supaFetch(path) || [];
     $("rec-body").innerHTML = filas.length ? filas.map(f => `<tr>
-      <td><span class="chip chip-${esc(f.cartera)}">${esc(CARTERAS[f.cartera] || f.cartera)}</span></td>
+      <td>${chipCartera(f.cartera)}</td>
       <td class="nowrap"><strong>${esc(f.radicado)}</strong></td>
-      <td>${esc(f.contribuyente || "—")}</td>
+      <td>${esc(f.contribuyente || "—")}<div class="flags">${chipsSituacion(f)}</div></td>
       <td class="num">${f.total_documentos}</td>
       <td class="num">${f.total_folios}</td>
       <td><span class="chip chip-${esc(f.estado)}">${esc(f.estado)}</span></td>
       <td class="nowrap small">${fmtFechaHora(f.actualizado_en)}</td>
       <td class="num"><button class="btn btn-sm" onclick="abrirExpediente(${Number(f.id)})">Abrir</button></td>
-    </tr>`).join("") : `<tr><td colspan="8" class="empty">Aún no hay expedientes digitales. Busca un radicado y crea el primero.</td></tr>`;
+    </tr>`).join("") : (filtrado ? `<tr><td colspan="8" class="empty">Ningún expediente coincide con estos filtros.</td></tr>`
+                : `<tr><td colspan="8" class="empty">Aún no hay expedientes digitales. Busca un radicado y crea el primero.</td></tr>`);
   } catch (e) {
     $("rec-body").innerHTML = `<tr><td colspan="8" class="empty">No se pudo cargar: ${esc(e.message)}</td></tr>`;
   }
@@ -371,6 +407,47 @@ function crearDesdeResultado(i) {
 async function crearYAbrir(cartera, radicado) {
   if (!confirm("¿Crear el expediente digital de " + radicado + " (" + (CARTERAS[cartera] || cartera) + ")?")) return;
   await abrirPorRadicado(cartera, radicado, true);
+}
+
+// ── Creación manual (radicado que no aparece en la búsqueda) ──
+function abrirModalManual() {
+  const q = $("f-q").value.trim();
+  $("man-cartera").value = $("f-cartera").value || "predial";
+  const esCedula = /^\d{5,}$/.test(q);
+  $("man-radicado").value = esCedula ? "" : q;          // si buscó una cédula, va al campo de cédula
+  $("man-cedula").value = esCedula ? q : "";
+  $("man-nombre").value = "";
+  abrirModal("m-manual");
+  setTimeout(() => $("man-radicado").focus(), 50);
+}
+async function confirmarManual() {
+  const cartera = $("man-cartera").value;
+  const radicado = $("man-radicado").value.trim().toUpperCase();
+  const cedula = $("man-cedula").value.replace(/[^0-9A-Za-z-]/g, "");
+  const nombre = $("man-nombre").value.trim();
+  if (normRad(radicado).length < 3) { toast("Escribe el radicado completo.", true); return; }
+  if (!cedula || !nombre) { toast("Escribe la cédula o NIT y el nombre del contribuyente.", true); return; }
+  const btn = $("btn-manual-ok");
+  btn.disabled = true;
+  try {
+    const ya = await supaFetch("exp_digital?select=id&cartera=eq." + cartera +
+                               "&radicado_norm=eq." + encodeURIComponent(normRad(radicado))) || [];
+    let id = ya.length ? ya[0].id : null;
+    if (!id) id = await rpc("exp_crear_expediente", {
+      p_cartera: cartera, p_radicado: radicado, p_manual: true,
+      p_id_contribuyente: cedula, p_contribuyente: nombre
+    });
+    cerrarModal("m-manual");
+    if (id) {
+      toast(ya.length ? "Ese radicado ya tenía expediente; lo abrí." : "Expediente creado.");
+      cargarRecientes();
+      await abrirExpediente(Number(id));
+    }
+  } catch (e) {
+    toast("No se pudo crear: " + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function abrirPorRadicado(cartera, radicado, crear) {
@@ -433,8 +510,8 @@ function renderCabecera() {
   $("exp-contenido").classList.remove("hidden");
   const cerrado = e.estado === "cerrado";
   $("exp-chips").innerHTML =
-    `<span class="chip chip-${esc(e.cartera)}">${esc(CARTERAS[e.cartera] || e.cartera)}</span>
-     <span class="chip chip-${esc(e.estado)}">Expediente ${esc(e.estado)}</span>`;
+    `${chipCartera(e.cartera)}
+     <span class="chip chip-${esc(e.estado)}">Expediente ${esc(e.estado)}</span> ${chipsSituacion(e)}`;
   $("exp-rad").textContent = e.radicado;
   $("exp-sub").innerHTML =
     `<strong>${esc(e.contribuyente || "Contribuyente sin nombre")}</strong>` +

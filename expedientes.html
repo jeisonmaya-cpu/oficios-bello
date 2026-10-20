@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <title>Expedientes Digitales — Teodoro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="expedientes.css?v=2"/>
+<link rel="stylesheet" href="expedientes.css?v=4"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -54,20 +54,22 @@
 <div class="panel active" id="panel-buscar">
   <div class="page-hdr">
     <h2>Expedientes digitales</h2>
-    <p>Busca por radicado, cédula o nombre del contribuyente en Predial y Obligaciones Urbanísticas. Si el expediente aún no tiene carpeta digital, la puedes crear desde el resultado.</p>
+    <p>Busca por radicado, comparendo, cédula o nombre en Predial, Obligaciones Urbanísticas y Tránsito. Si el expediente no tiene carpeta digital, créala desde el resultado; si no aparece en ninguna cartera, créala manualmente.</p>
   </div>
 
   <div class="card">
     <div class="search-row">
       <select id="f-cartera" class="sel" aria-label="Cartera">
         <option value="">Todas las carteras</option>
-        <option value="predial">Predial</option>
-        <option value="ou">Obligaciones Urbanísticas</option>
       </select>
-      <input id="f-q" class="inp" type="search" placeholder="FP-19279, 32526104 o PULGARIN GUERRA" aria-label="Buscar" onkeydown="if(event.key==='Enter')buscar()">
+      <input id="f-q" class="inp" type="search" placeholder="Radicado, comparendo, cédula o nombre" aria-label="Buscar" onkeydown="if(event.key==='Enter')buscar()">
       <button class="btn btn-gold" id="btn-buscar" onclick="buscar()">Buscar</button>
     </div>
     <div id="res-info" class="small muted" style="margin-top:10px"></div>
+    <div id="res-manual" class="hidden" style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="small muted" id="res-manual-t">¿No aparece?</span>
+      <button class="btn btn-sm" onclick="abrirModalManual()">➕ Crear expediente manualmente</button>
+    </div>
   </div>
 
   <div id="res-wrap" class="hidden" style="margin-top:16px">
@@ -82,7 +84,20 @@
     </div>
   </div>
 
-  <h3 class="section-title">Movidos recientemente</h3>
+  <div class="rec-hdr">
+    <h3 class="section-title">Movidos recientemente</h3>
+    <div class="rec-filtros">
+      <select id="r-cartera" class="sel" onchange="cargarRecientes()" aria-label="Filtrar por cartera">
+        <option value="">Todas las carteras</option>
+      </select>
+      <select id="r-estado" class="sel" onchange="cargarRecientes()" aria-label="Filtrar por estado">
+        <option value="">Todos los estados</option>
+        <option value="abierto">Abiertos</option>
+        <option value="cerrado">Cerrados</option>
+      </select>
+      <label class="small muted chk"><input type="checkbox" id="r-mios" onchange="cargarRecientes()"> Solo los que creé</label>
+    </div>
+  </div>
   <div class="tbl-wrap">
     <table class="tbl">
       <thead><tr>
@@ -228,6 +243,31 @@
   </div>
 </div>
 
+<!-- ════════ MODAL CREAR MANUAL ════════ -->
+<div class="modal" id="m-manual" onclick="if(event.target===this)cerrarModal('m-manual')">
+  <div class="modal-box">
+    <div class="modal-h">
+      <div class="modal-t">Crear expediente manualmente</div>
+      <button class="modal-x" onclick="cerrarModal('m-manual')" aria-label="Cerrar">×</button>
+    </div>
+    <p class="small muted">Para procesos que no están en ninguna cartera cargada, como sanciones de policía o acuerdos de pago. Queda marcado como creado manualmente.</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <label class="fld">Cartera
+        <select id="man-cartera" class="sel"></select></label>
+      <label class="fld">Radicado o número de proceso
+        <input id="man-radicado" class="inp" type="text" placeholder="p. ej. FP-1802 o AP-2026-015"></label>
+      <label class="fld">Cédula o NIT
+        <input id="man-cedula" class="inp" type="text" inputmode="numeric" placeholder="Sin puntos ni dígito de verificación"></label>
+      <label class="fld">Nombre del contribuyente
+        <input id="man-nombre" class="inp" type="text" placeholder="Como figura en el expediente" onkeydown="if(event.key==='Enter')confirmarManual()"></label>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="cerrarModal('m-manual')">Cancelar</button>
+      <button class="btn btn-gold" id="btn-manual-ok" onclick="confirmarManual()">Crear expediente</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════ PROGRESO ════════ -->
 <div class="prog" id="prog">
   <div class="prog-box">
@@ -239,6 +279,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="expedientes.js?v=2"></script>
+<script src="expedientes.js?v=4"></script>
 </body>
 </html>
