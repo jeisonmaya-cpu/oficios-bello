@@ -2,8 +2,9 @@
    TEODORO · NOTIFICACIONES · v1
    - Sesión con Supabase Auth (mismas cuentas de tutelas)
    - Consulta por año de notificación, renta y lote
-   - Montar lote: Excel + PDF → verificación → ZIP por radicado → Supabase
-   - Asociación de oficios en Google Drive vía Apps Script (GET)
+   - Montar lote: Excel + PDF → verificación página por persona → Supabase
+   - Un PDF por lote en Google Drive; cada notificación sabe su página
+   - Oficio individual: se extrae del PDF del lote solo cuando se necesita
    ===================================================================== */
 'use strict';
 
@@ -12,13 +13,12 @@
    ========================================================= */
 var CFG = {
   SUPA_URL: 'https://bmurdtfztsltcgwsfbgf.supabase.co',
-  SUPA_KEY: 'sb_publishable_x3Mu7phCEfpJMcKSQYkf8Q_obSOAvfL',
-  GAS_URL: 'PEGAR_AQUI_URL_EXEC_DEL_APPS_SCRIPT',
+  SUPA_KEY: 'PEGAR_AQUI_LA_PUBLISHABLE_KEY',
   SESION_KEY: 'notificaciones_sesion_v1',
   SESION_HORAS: 8,
   POR_PAGINA: 50,
   LOTE_INSERT: 500,
-  LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js', 'lib/jszip.min.js'],
+  LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js'],
   PDF_WORKER: 'lib/pdf.worker.min.js',
   PDF_CMAPS: 'lib/cmaps/'
 };
@@ -46,7 +46,8 @@ var ICONOS = {
 var ALERTAS_FILTRO = {
   correo:     { nombre: 'Correos de riesgo',              filtro: 'alerta_correo=not.is.null' },
   registro:   { nombre: 'Registros incompletos',          filtro: 'alerta_registro=not.is.null' },
-  sin_oficio: { nombre: 'Sin oficio asociado en Drive',   filtro: 'drive_id=is.null' }
+  sin_pdf:    { nombre: 'Lote sin PDF en Drive',           filtro: 'notif_lotes.drive_pdf_id=is.null' },
+  sin_pagina: { nombre: 'Sin página en el PDF',            filtro: 'pagina_inicio=is.null' }
 };
 
 /* =========================================================
@@ -75,8 +76,14 @@ function diasEntre(a, b) { return Math.round((b - a) / 864e5); }
 function tick() { return new Promise(function (r) { setTimeout(r, 0); }); }
 function renta(id) { return RENTAS[id] || { nombre: id, color: 'var(--gold)' }; }
 function rentaCorta(id) { var r = renta(id); return r.corto || r.nombre; }
-function driveArchivo(id) { return 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view'; }
-function driveCarpeta(id) { return 'https://drive.google.com/drive/folders/' + encodeURIComponent(id); }
+function driveArchivo(id, pagina) { return 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' + (pagina ? '#page=' + pagina : ''); }
+function idArchivoDrive(txt) {
+  txt = String(txt || '').trim();
+  var m = txt.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/) || txt.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+  if (m) return m[1];
+  if (/\/folders\//.test(txt)) return null;
+  return /^[A-Za-z0-9_-]{10,}$/.test(txt) ? txt : null;
+}
 
 var _toastT = null;
 function toast(msg, tipo) {
@@ -275,7 +282,7 @@ function renderHero() {
     '<div class="kpi"><b>' + pesosCorto(sumar(f, 'valor')) + '</b><small>Valor notificado</small></div>' +
     '<div class="kpi"><b>' + fmt(sumar(f, 'lotes')) + '</b><small>Lotes</small></div>' +
     '<div class="kpi warn"><b>' + fmt(riesgo) + '</b><small>Con alertas</small></div>' +
-    '<div class="kpi' + (sinArch ? ' bad' : ' ok') + '"><b>' + fmt(sinArch) + '</b><small>Sin oficio en Drive</small></div>';
+    '<div class="kpi' + (sinArch ? ' warn' : ' ok') + '"><b>' + fmt(sinArch) + '</b><small>En lotes sin PDF en Drive</small></div>';
 
   var delAnio = S.resumen.filter(function (r) { return r.anio_envio === S.anio; });
   var h = '<button type="button" class="renta' + (S.renta === 'todas' ? ' active' : '') + '" data-renta="todas" style="--cc:var(--gold)"><i></i>Todas <b>' + fmt(sumar(delAnio, 'n')) + '</b></button>';
@@ -322,11 +329,12 @@ function vistaResumen() {
   h += medioCard('mensajeria', nMsj, nMsj ? pctTxt(pct(nMsj, n)) + ' de las notificaciones' : 'Sin contrato vigente', !nMsj);
   h += '</div><div class="note">Los rebotes de correo todavía no se registran. Mientras tanto, el término se calcula desde la publicación web cuando el lote fue publicado.</div></section>';
 
-  var aC = sumar(f, 'alertas_correo'), aR = sumar(f, 'alertas_registro'), sA = sumar(f, 'sin_archivo');
+  var aC = sumar(f, 'alertas_correo'), aR = sumar(f, 'alertas_registro'), sA = sumar(f, 'sin_archivo'), sP = sumar(f, 'sin_pagina');
   h += '<section class="panel"><div class="panel-head"><h3>Calidad de los datos</h3><p>Toca una fila para ver esas notificaciones. Porcentajes sobre ' + fmt(n) + ' notificaciones.</p></div><div class="bars">' +
     barRow('correo', 'Correos de riesgo', aC, n, 'var(--warn)') +
     barRow('registro', 'Registros incompletos', aR, n, 'var(--bad)') +
-    barRow('sin_oficio', 'Sin oficio asociado en Drive', sA, n, 'var(--info)') +
+    barRow('sin_pagina', 'Sin página en el PDF', sP, n, 'var(--bad)') +
+    barRow('sin_pdf', 'En lotes sin PDF en Drive', sA, n, 'var(--info)') +
     '</div></section>';
 
   var conT = S.lotes.map(function (l) { return { l: l, t: terminoLote(l) }; }).filter(function (x) { return x.t; });
@@ -360,9 +368,8 @@ function vistaLotes() {
     return '<section class="panel"><div class="empty"><h3>No hay lotes en este filtro</h3><button class="btn btn-gold" type="button" data-vista="montar">Montar lote</button></div></section>';
   }
   var h = '<section class="panel"><div class="panel-head"><h3>Lotes de ' + S.anio + '</h3><p>Toca un lote para ver su detalle y asociar la carpeta de Drive.</p></div>' +
-    '<div class="table-wrap"><table class="data"><thead><tr><th>Lote</th><th>Renta</th><th>Medio</th><th>Mandamiento</th><th>Enviado</th><th>Publicación web</th><th class="num">Notificaciones</th><th class="num">Valor</th><th class="num">Oficios en Drive</th><th class="num">Alertas</th></tr></thead><tbody>';
+    '<div class="table-wrap"><table class="data"><thead><tr><th>Lote</th><th>Renta</th><th>Medio</th><th>Mandamiento</th><th>Enviado</th><th>Publicación web</th><th class="num">Notificaciones</th><th class="num">Valor</th><th>PDF en Drive</th><th class="num">Alertas</th></tr></thead><tbody>';
   S.lotes.forEach(function (l) {
-    var p = pct(l.con_archivo, l.n);
     h += '<tr data-lote="' + l.id + '">' +
       '<td><b>Lote ' + esc(l.numero) + '</b>' + (l.vigencia ? '<div class="sub">Vigencia ' + esc(l.vigencia) + '</div>' : '') + '</td>' +
       '<td><span class="dot" style="background:' + renta(l.renta).color + '"></span>' + esc(rentaCorta(l.renta)) + '</td>' +
@@ -371,7 +378,7 @@ function vistaLotes() {
       '<td class="mono">' + fFecha(l.fecha_envio) + '</td>' +
       '<td>' + (l.publicado_web ? '<span class="estado ok">' + fFecha(l.fecha_publicacion_web) + '</span>' : '<span class="estado mute">No</span>') + '</td>' +
       '<td class="num">' + fmt(l.n) + '</td><td class="num">' + pesosCorto(l.valor) + '</td>' +
-      '<td class="num"><div class="mini"><div class="track"><div class="fill" style="width:' + p + '%;background:' + (p === 100 ? 'var(--ok)' : 'var(--info)') + '"></div></div><span>' + pctTxt(p) + '</span></div></td>' +
+      '<td>' + (l.drive_pdf_id ? '<span class="estado ok">Cargado</span>' : '<span class="estado warn">Pendiente</span>') + '</td>' +
       '<td class="num">' + (Number(l.alertas_correo) + Number(l.alertas_registro) ? '<span class="estado warn">' + fmt(Number(l.alertas_correo) + Number(l.alertas_registro)) + '</span>' : '<span class="sub">0</span>') + '</td></tr>';
   });
   return h + '</tbody></table></div></section>';
@@ -397,8 +404,8 @@ var _busqueda = 0;
 function buscarActos() {
   if (!$('tablaActos')) return;
   var id = ++_busqueda;
-  var sel = 'radicado,consecutivo,documento,nombre,email,alerta_correo,alerta_registro,referencias,n_referencias,valor_capital,intereses,total,detalle,verificacion,drive_id,estado_correo,lote_id,' +
-    'notif_lotes!inner(id,numero,renta,medio,vigencia,mandamiento,fecha_mandamiento,fecha_envio,anio_envio,publicado_web,fecha_publicacion_web,url_publicacion_web)';
+  var sel = 'radicado,consecutivo,documento,nombre,email,alerta_correo,alerta_registro,referencias,n_referencias,valor_capital,intereses,total,detalle,verificacion,pagina_inicio,paginas,estado_correo,lote_id,' +
+    'notif_lotes!inner(id,numero,renta,medio,vigencia,mandamiento,fecha_mandamiento,fecha_envio,anio_envio,publicado_web,fecha_publicacion_web,url_publicacion_web,drive_pdf_id)';
   var q = 'notif_actos?select=' + encodeURIComponent(sel) + '&notif_lotes.anio_envio=eq.' + S.anio;
   if (S.renta !== 'todas') q += '&notif_lotes.renta=eq.' + S.renta;
   if (S.f.lote) q += '&lote_id=eq.' + encodeURIComponent(S.f.lote);
@@ -435,7 +442,7 @@ function pintarActos() {
       '<td>' + esc(a.referencias || '') + '</td>' +
       '<td class="num">' + pesos(a.total) + '</td>' +
       '<td><span class="dot" style="background:' + renta(l.renta).color + '"></span>Lote ' + esc(l.numero) + '</td>' +
-      '<td>' + (a.drive_id ? '<span class="estado ok">En Drive</span>' : '<span class="estado mute">Pendiente</span>') + '</td>' +
+      '<td>' + (a.pagina_inicio ? '<span class="estado ' + (l.drive_pdf_id ? 'ok' : 'mute') + '">Pág. ' + fmt(a.pagina_inicio) + '</span>' : '<span class="estado bad">Sin página</span>') + '</td>' +
       '<td><div class="chips">' + (al.join('') || '<span class="sub">Ninguna</span>') + '</div></td></tr>';
   });
   $('tablaActos').innerHTML = h + '</tbody>';
@@ -449,7 +456,7 @@ function pintarActos() {
 /* =========================================================
    Ficha lateral
    ========================================================= */
-var _focoPrevio = null;
+var _focoPrevio = null, _actoFicha = null;
 function abrirDrawer(html) {
   _focoPrevio = document.activeElement;
   var d = $('drawer');
@@ -493,12 +500,21 @@ function fichaActo(a) {
   if (t) h += '<div class="box info"><h4>Término: ' + fFecha(t.vence) + ' (' + t.txt.toLowerCase() + ')</h4><p>Quince días hábiles contados desde ' + esc(t.desde) + '. Cálculo aproximado, sin festivos.</p></div>';
   if (l.mandamiento || l.fecha_mandamiento) h += '<div class="box"><h4>Mandamiento de pago</h4><p>' + esc(l.mandamiento || '') + (l.fecha_mandamiento ? ' del ' + fFecha(l.fecha_mandamiento) : '') + '</p></div>';
 
-  h += '<div class="acciones">' + (a.drive_id ? '<a class="btn btn-gold" href="' + driveArchivo(a.drive_id) + '" target="_blank" rel="noopener">Abrir oficio en Drive</a>' : '<span class="estado mute">El oficio aún no está asociado en Drive</span>') + '</div>';
+  h += '<div class="section-title">Oficio</div>';
+  if (!a.pagina_inicio) {
+    h += '<div class="box bad"><h4>Sin página en el PDF del lote</h4><p>Al montar el lote no se encontró el oficio de esta persona en el PDF.</p></div>';
+  } else {
+    h += '<div class="box ' + (l.drive_pdf_id ? 'ok' : 'warn') + '"><h4>Página ' + fmt(a.pagina_inicio) + (a.paginas > 1 ? ' a ' + fmt(a.pagina_inicio + a.paginas - 1) : '') + ' del PDF del lote ' + esc(l.numero) + '</h4>' +
+      '<p>' + (l.drive_pdf_id ? 'Abre el PDF del lote y ve a esa página. Para entregar el oficio a un tercero (juez, tutela, petición) genera el oficio individual: así no se comparten los datos de las demás personas del lote.' : 'El PDF de este lote todavía no está enlazado en Drive. Puedes generar el oficio individual con el PDF del lote guardado en tu computador.') + '</p></div>' +
+      '<div class="acciones">' + (l.drive_pdf_id ? '<a class="btn" href="' + driveArchivo(l.drive_pdf_id, a.pagina_inicio) + '" target="_blank" rel="noopener">Abrir PDF del lote</a>' : '') +
+      '<button class="btn btn-gold" type="button" data-oficio="1">Generar oficio individual</button></div><div id="oficioRes"></div>';
+  }
+  _actoFicha = a;
   abrirDrawer(h);
 }
 
 function fichaLote(l) {
-  var t = terminoLote(l), p = pct(l.con_archivo, l.n);
+  var t = terminoLote(l);
   var h = '<div class="drawer-head"><div><span class="estado info"><span class="dot" style="background:' + renta(l.renta).color + '"></span>' + esc(renta(l.renta).nombre) + '</span>' +
     '<h3>Lote ' + esc(l.numero) + '</h3><div class="who">' + esc(MEDIOS[l.medio] ? MEDIOS[l.medio].nombre : l.medio) + ', enviado el ' + fFecha(l.fecha_envio) + '</div></div>' +
     '<button class="close" type="button" data-cerrar="1" aria-label="Cerrar">&times;</button></div>';
@@ -513,77 +529,103 @@ function fichaLote(l) {
   if (Number(l.alertas_correo) + Number(l.alertas_registro)) {
     h += '<div class="box warn"><h4>' + fmt(l.alertas_correo) + ' correos de riesgo y ' + fmt(l.alertas_registro) + ' registros incompletos</h4><p>Revísalos en Notificaciones con el filtro de alerta.</p></div>';
   }
-  h += '<div class="box ' + (p === 100 ? 'ok' : '') + '" id="boxDrive"><h4>Oficios en Google Drive: ' + fmt(l.con_archivo) + ' de ' + fmt(l.n) + ' (' + pctTxt(p) + ')</h4>' +
-    (l.drive_carpeta_id ? '<p><a href="' + driveCarpeta(l.drive_carpeta_id) + '" target="_blank" rel="noopener">Abrir la carpeta del lote</a></p>' : '<p>Sube a Drive la carpeta del ZIP y pega aquí su enlace. Teodoro asocia cada PDF por su radicado.</p>') +
-    '<div class="fila"><input class="input" id="driveUrl" placeholder="Enlace o ID de la carpeta en Drive" value="' + esc(l.drive_carpeta_id || '') + '">' +
-    '<button class="btn btn-gold" type="button" id="btnAsociar" data-lote-id="' + l.id + '">Asociar oficios</button></div><div id="driveRes"></div></div>';
+  h += '<div class="box ' + (l.drive_pdf_id ? 'ok' : 'warn') + '" id="boxDrive"><h4>' + (l.drive_pdf_id ? 'PDF del lote en Google Drive' : 'Falta enlazar el PDF del lote en Drive') + '</h4>' +
+    (l.drive_pdf_id ? '<p><a href="' + driveArchivo(l.drive_pdf_id) + '" target="_blank" rel="noopener">Abrir el PDF del lote</a>' + (l.archivo_pdf ? ' (' + esc(l.archivo_pdf) + ')' : '') + '</p>'
+      : '<p>Sube a Drive el PDF completo del lote' + (l.archivo_pdf ? ' (' + esc(l.archivo_pdf) + ')' : '') + ', ábrelo y copia su enlace. Pégalo aquí.</p>') +
+    '<div class="fila"><input class="input" id="drivePdf" placeholder="Enlace del PDF en Drive (…/file/d/…)" value="' + esc(l.drive_pdf_id ? driveArchivo(l.drive_pdf_id) : '') + '">' +
+    '<button class="btn btn-gold" type="button" id="btnPdfLote" data-lote-id="' + l.id + '">' + (l.drive_pdf_id ? 'Cambiar enlace' : 'Guardar enlace') + '</button></div><div id="driveRes"></div></div>';
   h += '<div class="acciones"><button class="btn" type="button" data-ver-lote="' + l.id + '">Ver notificaciones del lote</button></div>';
   abrirDrawer(h);
 }
 
 /* =========================================================
-   Asociación con Google Drive
+   PDF del lote en Google Drive
    ========================================================= */
-function idCarpeta(txt) {
-  txt = String(txt || '').trim();
-  var m = txt.match(/folders\/([A-Za-z0-9_-]{10,})/) || txt.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
-  if (m) return m[1];
-  return /^[A-Za-z0-9_-]{10,}$/.test(txt) ? txt : null;
+function guardarPdfLote(loteId) {
+  var out = $('driveRes'), btn = $('btnPdfLote');
+  var id = idArchivoDrive($('drivePdf').value);
+  if (!id) { out.innerHTML = '<div class="note bad">Pega el enlace del archivo PDF (el que contiene /file/d/). Si pegaste el de una carpeta, abre el PDF y copia el enlace del archivo.</div>'; return; }
+  btn.disabled = true;
+  supaFetch('notif_lotes?id=eq.' + loteId, { method: 'PATCH', body: { drive_pdf_id: id }, headers: { Prefer: 'return=minimal' } })
+    .then(function () {
+      toast('Enlace del PDF guardado', 'ok');
+      return Promise.all([cargarResumen(), cargarLotes()]);
+    })
+    .then(function () {
+      renderAnios(); renderHero(); renderTabs(); if (S.vista !== 'montar') renderVista();
+      var l = S.lotes.filter(function (x) { return String(x.id) === String(loteId); })[0];
+      if (l) fichaLote(l);
+      if ($('driveRes')) $('driveRes').innerHTML = '<div class="note ok">Listo. Cada notificación del lote abre este PDF y muestra en qué página está su oficio.</div>';
+    })
+    .catch(function (e) { if ($('driveRes')) $('driveRes').innerHTML = '<div class="note bad">' + esc(e.message) + '</div>'; })
+    .then(function () { if ($('btnPdfLote')) $('btnPdfLote').disabled = false; });
 }
 
-function asociarDrive(loteId) {
-  var l = S.lotes.filter(function (x) { return String(x.id) === String(loteId); })[0];
-  var carpeta = idCarpeta($('driveUrl').value);
-  var out = $('driveRes'), btn = $('btnAsociar');
-  if (!carpeta) { out.innerHTML = '<div class="note bad">Pega el enlace de la carpeta de Drive (el que contiene /folders/).</div>'; return; }
-  if (CFG.GAS_URL.indexOf('PEGAR_') === 0) { out.innerHTML = '<div class="note bad">Falta configurar la URL del Apps Script en notificaciones.js (CFG.GAS_URL).</div>'; return; }
-  btn.disabled = true;
-  out.innerHTML = '<div class="note info">Leyendo la carpeta en Drive…</div>';
-  var archivos, enLote;
-  fetch(CFG.GAS_URL + '?' + new URLSearchParams({ accion: 'listar', carpeta: carpeta }).toString())
-    .then(function (r) { return r.json(); })
-    .then(function (j) {
-      if (!j.ok) throw new Error(j.error || 'El Apps Script no pudo leer la carpeta.');
-      archivos = j.archivos || [];
-      out.innerHTML = '<div class="note info">Carpeta «' + esc(j.carpeta) + '» con ' + fmt(archivos.length) + ' PDF. Cruzando con el lote…</div>';
-      return supaFetchAll('notif_actos?select=radicado,drive_id&lote_id=eq.' + loteId + '&order=radicado.asc');
-    })
-    .then(function (filas) {
-      enLote = {};
-      filas.forEach(function (f) { enLote[f.radicado] = f; });
-      var items = [], sobran = [], repetidos = 0, vistos = {};
-      archivos.forEach(function (a) {
-        var rad = String(a.nombre || '').replace(/\.pdf$/i, '').trim();
-        if (!enLote[rad]) { sobran.push(a.nombre); return; }
-        if (vistos[rad]) { repetidos++; return; }
-        vistos[rad] = 1;
-        items.push({ radicado: rad, id: a.id });
-      });
-      var faltan = filas.filter(function (f) { return !vistos[f.radicado]; }).map(function (f) { return f.radicado; });
-      var asociados = 0, cadena = Promise.resolve();
-      for (var i = 0; i < items.length; i += 1000) {
-        (function (chunk) {
-          cadena = cadena.then(function () {
-            return supaFetch('rpc/notif_asociar_drive', { method: 'POST', body: { p_lote: Number(loteId), p_items: chunk } }).then(function (r) { asociados += Number(r.data || 0); });
-          });
-        })(items.slice(i, i + 1000));
+/* =========================================================
+   Oficio individual: se extrae del PDF del lote en el navegador
+   ========================================================= */
+var PDF_LOTES = {};   // loteId -> { bytes, nombre } mientras la página esté abierta
+function oficioIndividual() {
+  var a = _actoFicha; if (!a || !a.pagina_inicio) return;
+  var loteId = a.lote_id, out = $('oficioRes');
+  if (!PDF_LOTES[loteId] && M && M.guardado && String(M.guardado.loteId) === String(loteId) && M.pdfBytes) {
+    PDF_LOTES[loteId] = { bytes: M.pdfBytes, nombre: M.pdfNombre };
+  }
+  if (PDF_LOTES[loteId]) { extraerOficio(a, PDF_LOTES[loteId], false); return; }
+  var l = a.notif_lotes || {};
+  out.innerHTML = '<div class="note info">Selecciona el PDF completo del lote ' + esc(l.numero) + '. Si está en Drive, descárgalo primero. Se pide una sola vez por lote mientras tengas la página abierta.</div>';
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.pdf'; inp.style.display = 'none';
+  inp.addEventListener('change', function () {
+    var f = inp.files && inp.files[0]; inp.remove();
+    if (!f) return;
+    if ($('oficioRes')) $('oficioRes').innerHTML = '<div class="note info">Leyendo el PDF…</div>';
+    f.arrayBuffer().then(function (buf) {
+      return extraerOficio(a, { bytes: new Uint8Array(buf), nombre: f.name }, true);
+    }).catch(function (e) { if ($('oficioRes')) $('oficioRes').innerHTML = '<div class="note bad">' + esc(e.message || String(e)) + '</div>'; });
+  });
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+/* Antes de entregar la página, verifica que corresponda a la persona (cédula o correo) */
+function extraerOficio(a, datos, recordar) {
+  var loteId = a.lote_id;
+  var paginas = []; for (var k = 0; k < (a.paginas || 1); k++) paginas.push(a.pagina_inicio + k);
+  return cargarLibs().then(function () {
+    return pdfjsLib.getDocument({ data: datos.bytes.slice(), cMapUrl: CFG.PDF_CMAPS, cMapPacked: true }).promise;
+  }).then(function (doc) {
+    if (doc.numPages < paginas[paginas.length - 1]) {
+      doc.destroy();
+      throw new Error('Ese PDF tiene ' + fmt(doc.numPages) + ' páginas y el oficio está en la página ' + fmt(a.pagina_inicio) + '. Revisa que sea el PDF del lote correcto.');
+    }
+    return doc.getPage(a.pagina_inicio).then(function (pg) { return pg.getTextContent(); }).then(function (tc) {
+      doc.destroy();
+      var t = tc.items.map(function (i) { return i.str; }).join(' ').toLowerCase();
+      var tSin = t.replace(/[.\s]/g, '');
+      var ok = (a.email && t.indexOf(a.email.toLowerCase()) > -1) || (a.documento && tSin.indexOf(String(a.documento)) > -1);
+      if (!ok && !window.confirm('La página ' + a.pagina_inicio + ' de «' + datos.nombre + '» no muestra la cédula ni el correo de ' + a.nombre + '. Puede que no sea el PDF de este lote. ¿Generar el oficio de todos modos?')) {
+        throw new Error('CANCELADO');
       }
-      return cadena.then(function () {
-        return supaFetch('notif_lotes?id=eq.' + loteId, { method: 'PATCH', body: { drive_carpeta_id: carpeta }, headers: { Prefer: 'return=minimal' } });
-      }).then(function () {
-        var h = '<div class="note ' + (faltan.length ? '' : 'ok') + '">Se asociaron ' + fmt(asociados) + ' oficios.' +
-          (faltan.length ? ' Faltan ' + fmt(faltan.length) + ' notificaciones sin PDF en la carpeta.' : ' Todas las notificaciones del lote tienen su oficio.') +
-          (sobran.length ? ' Hay ' + fmt(sobran.length) + ' archivos que no corresponden a ningún radicado del lote.' : '') +
-          (repetidos ? ' ' + fmt(repetidos) + ' archivos repetidos se ignoraron.' : '') + '</div>';
-        if (faltan.length) h += '<div class="lista-corta"><b>Sin PDF:</b> ' + faltan.slice(0, 200).map(esc).join(', ') + (faltan.length > 200 ? '…' : '') + '</div>';
-        if (sobran.length) h += '<div class="lista-corta"><b>Archivos sin radicado en el lote:</b> ' + sobran.slice(0, 100).map(esc).join(', ') + (sobran.length > 100 ? '…' : '') + '</div>';
-        out.innerHTML = h;
-        toast('Oficios asociados: ' + fmt(asociados), 'ok');
-        return Promise.all([cargarResumen(), cargarLotes()]).then(function () { renderAnios(); renderHero(); renderTabs(); if (S.vista !== 'montar') renderVista(); });
-      });
-    })
-    .catch(function (e) { out.innerHTML = '<div class="note bad">' + esc(e.message || String(e)) + '</div>'; })
-    .then(function () { if (btn) btn.disabled = false; });
+      if (recordar && ok) PDF_LOTES[loteId] = datos;
+    });
+  }).then(function () {
+    return PDFLib.PDFDocument.load(datos.bytes, { ignoreEncryption: true });
+  }).then(function (src) {
+    return PDFLib.PDFDocument.create().then(function (nd) {
+      return nd.copyPages(src, paginas.map(function (p) { return p - 1; })).then(function (pgs) { pgs.forEach(function (p) { nd.addPage(p); }); return nd.save(); });
+    });
+  }).then(function (bytes) {
+    var blob = new Blob([bytes], { type: 'application/pdf' });
+    var el = document.createElement('a');
+    el.href = URL.createObjectURL(blob); el.download = a.radicado + '.pdf';
+    document.body.appendChild(el); el.click(); el.remove();
+    setTimeout(function () { URL.revokeObjectURL(el.href); }, 4000);
+    if ($('oficioRes')) $('oficioRes').innerHTML = '<div class="note ok">Oficio descargado como ' + esc(a.radicado) + '.pdf (' + paginas.length + (paginas.length > 1 ? ' páginas' : ' página') + ').</div>';
+  }).catch(function (e) {
+    if (!$('oficioRes')) return;
+    $('oficioRes').innerHTML = e.message === 'CANCELADO' ? '' : '<div class="note bad">' + esc(e.message || String(e)) + '</div>';
+  });
 }
 
 /* =========================================================
@@ -638,8 +680,8 @@ function vistaMontar() {
     '<div class="drop"><div>Selecciona el Excel (.xlsx)</div><input type="file" id="mExcel" accept=".xlsx,.xls"></div><div id="resExcel"></div></section>' +
   '<section class="panel paso bloqueado" id="paso3"><div class="panel-head"><h3><span class="paso-num">3</span>PDF de oficios</h3><p>Teodoro lee cada página, encuentra a quién pertenece por su cédula o correo y verifica contra el Excel.</p></div>' +
     '<div class="drop"><div>Selecciona el PDF con todos los oficios del lote</div><input type="file" id="mPdf" accept=".pdf"></div><div id="resPdf"></div></section>' +
-  '<section class="panel paso bloqueado" id="paso4"><div class="panel-head"><h3><span class="paso-num">4</span>Guardar y preparar para Drive</h3><p>Guarda las notificaciones en Teodoro y descarga el ZIP con un PDF por radicado para subirlo a Drive.</p></div>' +
-    '<div class="acciones"><button class="btn btn-gold" type="button" id="btnGuardar">Guardar lote en Teodoro</button><button class="btn" type="button" id="btnZip">Descargar ZIP para Drive</button></div>' +
+  '<section class="panel paso bloqueado" id="paso4"><div class="panel-head"><h3><span class="paso-num">4</span>Guardar</h3><p>Guarda el lote y la página de cada notificación. Después sube el PDF completo a Drive y pega su enlace en la ficha del lote.</p></div>' +
+    '<div class="acciones"><button class="btn btn-gold" type="button" id="btnGuardar">Guardar lote en Teodoro</button></div>' +
     '<div id="resFinal"></div></section>';
 }
 
@@ -941,47 +983,6 @@ function pintarResumenPdf() {
   $('resPdf').innerHTML = h;
 }
 
-/* ---------- ZIP por radicado ---------- */
-function generarZip() {
-  if (M.ocupado || !M.asign) return;
-  var d = leerFormulario(); if (!d) return;
-  M.ocupado = true;
-  var out = $('resFinal'), btn = $('btnZip'); btn.disabled = true;
-  var carpeta = rentaCorta(d.renta) + ' Lote ' + d.numero;
-  var filas = M.filas.filter(function (f) { return !f.error && f.paginas; });
-  var zip = new JSZip(), dir = zip.folder(carpeta), src;
-  progreso(out, 0, filas.length, 'Separando oficios:');
-  PDFLib.PDFDocument.load(M.pdfBytes, { ignoreEncryption: true }).then(function (doc) {
-    src = doc;
-    var i = 0;
-    function siguiente() {
-      if (i >= filas.length) return Promise.resolve();
-      var f = filas[i++], idx = [];
-      for (var k = 0; k < f.paginas; k++) idx.push(f.pagina_inicio - 1 + k);
-      return PDFLib.PDFDocument.create().then(function (nd) {
-        return nd.copyPages(src, idx).then(function (pgs) { pgs.forEach(function (p) { nd.addPage(p); }); return nd.save(); });
-      }).then(function (bytes) {
-        dir.file(f.radicado + '.pdf', bytes);
-        if (i % 20 === 0 || i === filas.length) progreso(out, i, filas.length, 'Separando oficios:');
-        return (i % 20 === 0 ? tick() : Promise.resolve()).then(siguiente);
-      });
-    }
-    return siguiente();
-  }).then(function () {
-    out.innerHTML = '<div class="note info">Comprimiendo el ZIP…</div>';
-    return zip.generateAsync({ type: 'blob', compression: 'STORE' });
-  }).then(function (blob) {
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'Notificaciones_' + d.renta + '_lote_' + d.numero + '.zip';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
-    out.innerHTML = '<div class="note ok">ZIP descargado con ' + fmt(filas.length) + ' oficios en la carpeta «' + esc(carpeta) + '». Descomprímelo y sube esa carpeta dentro de Notificaciones en Drive. Después pega su enlace en la ficha del lote.</div>' + (M.guardado ? botonIrLote() : '');
-  }).catch(function (e) {
-    out.innerHTML = '<div class="note bad">No se pudo generar el ZIP: ' + esc(e.message || String(e)) + '</div>';
-  }).then(function () { M.ocupado = false; btn.disabled = false; });
-}
-
 /* ---------- Guardar en Supabase ---------- */
 function guardarLote() {
   if (M.ocupado || !M.asign) return;
@@ -1022,7 +1023,7 @@ function guardarLote() {
     M.guardado = { loteId: loteId };
     var ya = totalReg - nuevos;
     out.innerHTML = '<div class="note ok">Lote guardado. ' + fmt(nuevos) + ' notificaciones nuevas' + (ya ? ' y ' + fmt(ya) + ' que ya existían (no se modificaron)' : '') + '.</div>' +
-      '<div class="note info">Siguiente paso: descarga el ZIP, súbelo a Drive y asocia la carpeta desde la ficha del lote.</div>' + botonIrLote();
+      '<div class="note info">Siguiente paso: sube «' + esc(M.pdfNombre) + '» a Drive (nombre sugerido: ' + esc(nombreSugerido(d)) + '), copia su enlace y pégalo en la ficha del lote.</div>' + botonIrLote();
     toast('Lote ' + d.numero + ' guardado', 'ok');
     S.anio = aFecha(d.fecha_envio).getFullYear();
     return cargarResumen().then(cargarLotes).then(function () { renderAnios(); renderHero(); renderTabs(); });
@@ -1031,6 +1032,7 @@ function guardarLote() {
     out.innerHTML = '<div class="note bad">No se pudo guardar: ' + esc(e.message) + (loteId ? ' El lote quedó creado; puedes volver a guardar y solo se agregarán las notificaciones que falten.' : '') + '</div>';
   }).then(function () { M.ocupado = false; btn.disabled = false; });
 }
+function nombreSugerido(d) { return rentaCorta(d.renta) + ' - ' + (d.mandamiento ? d.mandamiento + ' - ' : '') + 'Lote ' + d.numero + '.pdf'; }
 function botonIrLote() { return '<div class="acciones"><button class="btn btn-gold" type="button" data-abrir-lote="' + M.guardado.loteId + '">Abrir la ficha del lote</button></div>'; }
 
 /* =========================================================
@@ -1052,9 +1054,9 @@ document.addEventListener('click', function (e) {
   if ((el = e.target.closest('tr[data-lote]'))) { var lt = S.lotes.filter(function (x) { return String(x.id) === el.dataset.lote; })[0]; if (lt) fichaLote(lt); return; }
   if ((el = e.target.closest('tr[data-acto]'))) { var a = S.actos[+el.dataset.acto]; if (a) fichaActo(a); return; }
   if ((el = e.target.closest('[data-pag]'))) { if (el.disabled) return; S.pagina += +el.dataset.pag; buscarActos(); return; }
-  if (e.target.id === 'btnAsociar') { asociarDrive(e.target.dataset.loteId); return; }
+  if (e.target.id === 'btnPdfLote') { guardarPdfLote(e.target.dataset.loteId); return; }
+  if ((el = e.target.closest('[data-oficio]'))) { oficioIndividual(); return; }
   if (e.target.id === 'btnGuardar') { guardarLote(); return; }
-  if (e.target.id === 'btnZip') { generarZip(); return; }
   if (e.target.id === 'btnSalir') { Auth.salir(); mostrarLogin(); return; }
   if (e.target.id === 'btnRecargar') { recargarTodo().then(function () { toast('Datos actualizados', 'ok'); }); return; }
 });
