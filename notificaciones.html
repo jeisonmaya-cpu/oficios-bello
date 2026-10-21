@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Notificaciones | Teodoro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="notificaciones.css?v=1">
+</head>
+<body>
+
+<!-- ============ Ingreso ============ -->
+<section class="login" id="login" hidden>
+  <form class="login-box" id="loginForm" autocomplete="on">
+    <div class="brand">
+      <div class="brand-mark">T</div>
+      <div>
+        <h1>Notificaciones</h1>
+        <p>Dirección Administrativa de Ejecuciones Fiscales</p>
+      </div>
+    </div>
+    <label class="campo">
+      <span>Correo</span>
+      <input class="input" type="email" id="loginEmail" autocomplete="username" required>
+    </label>
+    <label class="campo">
+      <span>Contraseña</span>
+      <input class="input" type="password" id="loginPass" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-gold btn-full" type="submit" id="loginBtn">Ingresar</button>
+    <p class="login-msg" id="loginMsg" role="alert"></p>
+    <p class="login-nota">Usa la misma cuenta de Teodoro que tienes en tutelas.</p>
+  </form>
+</section>
+
+<!-- ============ Aplicación ============ -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark">T</div>
+      <div>
+        <h1>Notificaciones</h1>
+        <p>Dirección Administrativa de Ejecuciones Fiscales, Alcaldía de Bello</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="usuario" id="usuario"></span>
+      <button class="btn" type="button" id="btnRecargar" title="Volver a consultar los datos">Actualizar</button>
+      <button class="btn" type="button" id="btnSalir">Salir</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="years" id="years" aria-label="Año de notificación"></aside>
+    <main>
+      <section class="hero">
+        <div>
+          <h2>Notificaciones de <span id="heroYear"></span></h2>
+          <p id="heroSub"></p>
+        </div>
+        <div class="kpis" id="kpis"></div>
+      </section>
+      <div class="rentas" id="rentas" role="group" aria-label="Renta"></div>
+      <nav class="tabs" id="tabs" aria-label="Vistas"></nav>
+      <div id="vista"></div>
+    </main>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" data-cerrar="1"></div>
+<aside class="drawer" id="drawer" aria-hidden="true"></aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Las librerías pesadas (Excel, PDF, ZIP) se cargan solo al montar un lote -->
+<script src="notificaciones.js?v=1"></script>
+</body>
+</html>
