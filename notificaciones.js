@@ -2,7 +2,7 @@
    TEODORO · NOTIFICACIONES · v1
    - Sesión con Supabase Auth (mismas cuentas de tutelas)
    - Consulta por año de notificación, renta y lote
-   - Montar lote: Excel + PDF → verificación página por persona → Supabase
+   - Montar lote: Excel + PDF → verificación página por persona → Supabcase
    - Un PDF por lote en Google Drive; cada notificación sabe su página
    - Oficio individual: se extrae del PDF del lote solo cuando se necesita
    ===================================================================== */
