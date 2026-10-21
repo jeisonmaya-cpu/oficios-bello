@@ -13,7 +13,7 @@
    ========================================================= */
 var CFG = {
   SUPA_URL: 'https://bmurdtfztsltcgwsfbgf.supabase.co',
-  SUPA_KEY: 'sb_publishable_x3Mu7phCEfpJMcKSQYkf8Q_obSOAvfL',
+  SUPA_KEY: 'PEGAR_AQUI_LA_PUBLISHABLE_KEY',
   SESION_KEY: 'notificaciones_sesion_v1',
   SESION_HORAS: 8,
   POR_PAGINA: 50,
@@ -47,7 +47,8 @@ var ALERTAS_FILTRO = {
   correo:     { nombre: 'Correos de riesgo',              filtro: 'alerta_correo=not.is.null' },
   registro:   { nombre: 'Registros incompletos',          filtro: 'alerta_registro=not.is.null' },
   sin_pdf:    { nombre: 'Lote sin PDF en Drive',           filtro: 'notif_lotes.drive_pdf_id=is.null' },
-  sin_pagina: { nombre: 'Sin página en el PDF',            filtro: 'pagina_inicio=is.null' }
+  sin_pagina: { nombre: 'Sin página en el PDF',            filtro: 'pagina_inicio=is.null&notif_lotes.archivo_pdf=not.is.null' },
+  sin_guia:   { nombre: 'Mensajería sin número de guía',   filtro: 'guia=is.null&notif_lotes.medio=eq.mensajeria' }
 };
 
 /* =========================================================
@@ -100,7 +101,7 @@ function toast(msg, tipo) {
 function terminoLote(l) {
   var base, desde;
   if (l.publicado_web && l.fecha_publicacion_web) { base = aFecha(l.fecha_publicacion_web); desde = 'la publicación web'; }
-  else if (l.fecha_envio) { base = addDias(aFecha(l.fecha_envio), 5); desde = 'el envío más 5 días'; }
+  else if (l.medio === 'correo' && l.fecha_envio) { base = addDias(aFecha(l.fecha_envio), 5); desde = 'el envío más 5 días'; }
   else return null;
   var vence = addHabiles(base, 15);
   var d = diasEntre(hoy(), vence);
@@ -329,12 +330,13 @@ function vistaResumen() {
   h += medioCard('mensajeria', nMsj, nMsj ? pctTxt(pct(nMsj, n)) + ' de las notificaciones' : 'Sin contrato vigente', !nMsj);
   h += '</div><div class="note">Los rebotes de correo todavía no se registran. Mientras tanto, el término se calcula desde la publicación web cuando el lote fue publicado.</div></section>';
 
-  var aC = sumar(f, 'alertas_correo'), aR = sumar(f, 'alertas_registro'), sA = sumar(f, 'sin_archivo'), sP = sumar(f, 'sin_pagina');
+  var aC = sumar(f, 'alertas_correo'), aR = sumar(f, 'alertas_registro'), sA = sumar(f, 'sin_archivo'), sP = sumar(f, 'sin_pagina'), sG = sumar(f, 'sin_guia');
   h += '<section class="panel"><div class="panel-head"><h3>Calidad de los datos</h3><p>Toca una fila para ver esas notificaciones. Porcentajes sobre ' + fmt(n) + ' notificaciones.</p></div><div class="bars">' +
     barRow('correo', 'Correos de riesgo', aC, n, 'var(--warn)') +
     barRow('registro', 'Registros incompletos', aR, n, 'var(--bad)') +
     barRow('sin_pagina', 'Sin página en el PDF', sP, n, 'var(--bad)') +
     barRow('sin_pdf', 'En lotes sin PDF en Drive', sA, n, 'var(--info)') +
+    (sG ? barRow('sin_guia', 'Mensajería sin número de guía', sG, n, 'var(--warn)') : '') +
     '</div></section>';
 
   var conT = S.lotes.map(function (l) { return { l: l, t: terminoLote(l) }; }).filter(function (x) { return x.t; });
@@ -367,18 +369,18 @@ function vistaLotes() {
   if (!S.lotes.length) {
     return '<section class="panel"><div class="empty"><h3>No hay lotes en este filtro</h3><button class="btn btn-gold" type="button" data-vista="montar">Montar lote</button></div></section>';
   }
-  var h = '<section class="panel"><div class="panel-head"><h3>Lotes de ' + S.anio + '</h3><p>Toca un lote para ver su detalle y asociar la carpeta de Drive.</p></div>' +
-    '<div class="table-wrap"><table class="data"><thead><tr><th>Lote</th><th>Renta</th><th>Medio</th><th>Mandamiento</th><th>Enviado</th><th>Publicación web</th><th class="num">Notificaciones</th><th class="num">Valor</th><th>PDF en Drive</th><th class="num">Alertas</th></tr></thead><tbody>';
+  var h = '<section class="panel"><div class="panel-head"><h3>Lotes de ' + S.anio + '</h3><p>Toca un lote para ver su detalle y enlazar su PDF en Drive.</p></div>' +
+    '<div class="table-wrap"><table class="data"><thead><tr><th>Lote</th><th>Renta</th><th>Medio</th><th>Mandamiento o masivo</th><th>Enviado</th><th>Publicación web</th><th class="num">Notificaciones</th><th class="num">Valor</th><th>PDF en Drive</th><th class="num">Alertas</th></tr></thead><tbody>';
   S.lotes.forEach(function (l) {
     h += '<tr data-lote="' + l.id + '">' +
       '<td><b>Lote ' + esc(l.numero) + '</b>' + (l.vigencia ? '<div class="sub">Vigencia ' + esc(l.vigencia) + '</div>' : '') + '</td>' +
-      '<td><span class="dot" style="background:' + renta(l.renta).color + '"></span>' + esc(rentaCorta(l.renta)) + '</td>' +
+      '<td><span class="dot" style="background:' + renta(l.renta).color + '"></span>' + esc(rentaCorta(l.renta)) + (l.concepto ? '<div class="sub">' + esc(l.concepto) + '</div>' : '') + '</td>' +
       '<td>' + esc(MEDIOS[l.medio] ? MEDIOS[l.medio].corto : l.medio) + '</td>' +
       '<td>' + esc(l.mandamiento || '') + (l.fecha_mandamiento ? '<div class="sub">' + fFecha(l.fecha_mandamiento) + '</div>' : '') + '</td>' +
-      '<td class="mono">' + fFecha(l.fecha_envio) + '</td>' +
+      '<td class="mono">' + fFecha(l.fecha_envio) + (l.fecha_envio_aproximada ? '<div class="sub">aproximada</div>' : '') + '</td>' +
       '<td>' + (l.publicado_web ? '<span class="estado ok">' + fFecha(l.fecha_publicacion_web) + '</span>' : '<span class="estado mute">No</span>') + '</td>' +
       '<td class="num">' + fmt(l.n) + '</td><td class="num">' + pesosCorto(l.valor) + '</td>' +
-      '<td>' + (l.drive_pdf_id ? '<span class="estado ok">Cargado</span>' : '<span class="estado warn">Pendiente</span>') + '</td>' +
+      '<td>' + (!l.archivo_pdf ? '<span class="estado mute">Sin PDF</span>' : (l.drive_pdf_id ? '<span class="estado ok">Cargado</span>' : '<span class="estado warn">Pendiente</span>')) + '</td>' +
       '<td class="num">' + (Number(l.alertas_correo) + Number(l.alertas_registro) ? '<span class="estado warn">' + fmt(Number(l.alertas_correo) + Number(l.alertas_registro)) + '</span>' : '<span class="sub">0</span>') + '</td></tr>';
   });
   return h + '</tbody></table></div></section>';
@@ -392,8 +394,8 @@ function vistaNotificaciones() {
   S.lotes.forEach(function (l) { opL += '<option value="' + l.id + '"' + (String(S.f.lote) === String(l.id) ? ' selected' : '') + '>Lote ' + esc(l.numero) + ', ' + esc(rentaCorta(l.renta)) + '</option>'; });
   var opA = '<option value="">Sin filtro de alerta</option>';
   Object.keys(ALERTAS_FILTRO).forEach(function (k) { opA += '<option value="' + k + '"' + (S.f.alerta === k ? ' selected' : '') + '>' + ALERTAS_FILTRO[k].nombre + '</option>'; });
-  return '<section class="panel"><div class="panel-head"><h3>Notificaciones de ' + S.anio + '</h3><p>Busca por radicado, documento, nombre, correo o número de resolución.</p></div>' +
-    '<div class="toolbar"><input class="input" id="q" type="search" value="' + esc(S.f.q) + '" placeholder="Radicado, documento, nombre, correo o resolución">' +
+  return '<section class="panel"><div class="panel-head"><h3>Notificaciones de ' + S.anio + '</h3><p>Busca por radicado, documento, nombre, correo, guía o número de comparendo o resolución.</p></div>' +
+    '<div class="toolbar"><input class="input" id="q" type="search" value="' + esc(S.f.q) + '" placeholder="Radicado, guía, documento, nombre, correo o comparendo">' +
     '<select class="select" id="fLote" aria-label="Lote">' + opL + '</select>' +
     '<select class="select" id="fAlerta" aria-label="Alerta">' + opA + '</select></div>' +
     '<div class="table-wrap"><table class="data" id="tablaActos"><tbody><tr><td><div class="cargando">Consultando…</div></td></tr></tbody></table></div>' +
@@ -404,8 +406,8 @@ var _busqueda = 0;
 function buscarActos() {
   if (!$('tablaActos')) return;
   var id = ++_busqueda;
-  var sel = 'radicado,consecutivo,documento,nombre,email,alerta_correo,alerta_registro,referencias,n_referencias,valor_capital,intereses,total,detalle,verificacion,pagina_inicio,paginas,estado_correo,lote_id,' +
-    'notif_lotes!inner(id,numero,renta,medio,vigencia,mandamiento,fecha_mandamiento,fecha_envio,anio_envio,publicado_web,fecha_publicacion_web,url_publicacion_web,drive_pdf_id)';
+  var sel = 'radicado,consecutivo,documento,nombre,email,alerta_correo,alerta_registro,referencias,n_referencias,valor_capital,intereses,total,detalle,verificacion,pagina_inicio,paginas,estado_correo,guia,direccion,ciudad,lote_id,' +
+    'notif_lotes!inner(id,numero,renta,medio,vigencia,mandamiento,fecha_mandamiento,fecha_envio,fecha_envio_aproximada,anio_envio,concepto,publicado_web,fecha_publicacion_web,url_publicacion_web,drive_pdf_id,archivo_pdf)';
   var q = 'notif_actos?select=' + encodeURIComponent(sel) + '&notif_lotes.anio_envio=eq.' + S.anio;
   if (S.renta !== 'todas') q += '&notif_lotes.renta=eq.' + S.renta;
   if (S.f.lote) q += '&lote_id=eq.' + encodeURIComponent(S.f.lote);
@@ -413,7 +415,7 @@ function buscarActos() {
   var t = S.f.q.replace(/[^\p{L}\p{N}@._\- ]/gu, '').trim();
   if (t) {
     var c = '*' + t + '*';
-    q += '&or=' + encodeURIComponent('(radicado.ilike.' + c + ',documento.ilike.' + c + ',nombre.ilike.' + c + ',email.ilike.' + c + ',referencias.ilike.' + c + ')');
+    q += '&or=' + encodeURIComponent('(radicado.ilike.' + c + ',documento.ilike.' + c + ',nombre.ilike.' + c + ',email.ilike.' + c + ',referencias.ilike.' + c + ',guia.ilike.' + c + ')');
   }
   q += '&order=radicado.asc';
   var ini = (S.pagina - 1) * CFG.POR_PAGINA;
@@ -428,7 +430,7 @@ function buscarActos() {
 }
 
 function pintarActos() {
-  var h = '<thead><tr><th>Radicado</th><th>Notificado</th><th>Correo</th><th>Referencias</th><th class="num">Total</th><th>Lote</th><th>Oficio</th><th>Alertas</th></tr></thead><tbody>';
+  var h = '<thead><tr><th>Radicado / guía</th><th>Notificado</th><th>Correo o dirección</th><th>Referencias</th><th class="num">Total</th><th>Lote</th><th>Oficio</th><th>Alertas</th></tr></thead><tbody>';
   if (!S.actos.length) h += '<tr><td colspan="8"><div class="empty">No hay notificaciones con estos filtros.</div></td></tr>';
   S.actos.forEach(function (a, i) {
     var l = a.notif_lotes || {};
@@ -436,13 +438,13 @@ function pintarActos() {
     if (a.alerta_correo) al.push('<span class="estado warn">' + esc(a.alerta_correo) + '</span>');
     if (a.alerta_registro) al.push('<span class="estado bad">' + esc(a.alerta_registro) + '</span>');
     h += '<tr data-acto="' + i + '" tabindex="0">' +
-      '<td class="mono">' + esc(a.radicado) + '</td>' +
+      '<td class="mono">' + esc(a.radicado) + (a.guia ? '<div class="sub">Guía ' + esc(a.guia) + '</div>' : '') + '</td>' +
       '<td>' + esc(a.nombre) + '<div class="sub">' + esc(a.documento || 'Sin documento') + '</div></td>' +
-      '<td>' + esc(a.email || '') + '</td>' +
+      '<td>' + (a.email ? esc(a.email) : esc(a.direccion || '') + (a.ciudad ? '<div class="sub">' + esc(a.ciudad) + '</div>' : '')) + '</td>' +
       '<td>' + esc(a.referencias || '') + '</td>' +
       '<td class="num">' + pesos(a.total) + '</td>' +
       '<td><span class="dot" style="background:' + renta(l.renta).color + '"></span>Lote ' + esc(l.numero) + '</td>' +
-      '<td>' + (a.pagina_inicio ? '<span class="estado ' + (l.drive_pdf_id ? 'ok' : 'mute') + '">Pág. ' + fmt(a.pagina_inicio) + '</span>' : '<span class="estado bad">Sin página</span>') + '</td>' +
+      '<td>' + (!l.archivo_pdf ? '<span class="estado mute">Sin PDF</span>' : (a.pagina_inicio ? '<span class="estado ' + (l.drive_pdf_id ? 'ok' : 'mute') + '">Pág. ' + fmt(a.pagina_inicio) + '</span>' : '<span class="estado bad">Sin página</span>')) + '</td>' +
       '<td><div class="chips">' + (al.join('') || '<span class="sub">Ninguna</span>') + '</div></td></tr>';
   });
   $('tablaActos').innerHTML = h + '</tbody>';
@@ -478,7 +480,10 @@ function fichaActo(a) {
     '<h3 class="mono">' + esc(a.radicado) + '</h3><div class="who">' + esc(a.nombre) + ', ' + esc(a.documento || 'sin documento') + '</div></div>' +
     '<button class="close" type="button" data-cerrar="1" aria-label="Cerrar">&times;</button></div>';
   h += '<div class="dl">' +
-    '<div class="full"><small>Correo</small><b>' + esc(a.email || 'Sin correo') + '</b></div>' +
+    (l.medio === 'mensajeria' || a.guia ? '<div><small>Radicado de la Alcaldía</small><b class="mono">' + esc(a.radicado) + '</b></div><div><small>Guía de mensajería</small><b class="mono">' + esc(a.guia || 'Sin guía') + '</b></div>' : '') +
+    (a.email ? '<div class="full"><small>Correo</small><b>' + esc(a.email) + '</b></div>' : '') +
+    (a.direccion ? '<div class="full"><small>Dirección</small><b>' + esc(a.direccion) + (a.ciudad ? ', ' + esc(a.ciudad) : '') + '</b></div>' : '') +
+    (l.concepto ? '<div class="full"><small>Concepto</small><b>' + esc(l.concepto) + '</b></div>' : '') +
     '<div><small>Renta</small><b><span class="dot" style="background:' + renta(l.renta).color + '"></span>' + esc(renta(l.renta).nombre) + '</b></div>' +
     '<div><small>Lote</small><b>Lote ' + esc(l.numero) + (a.consecutivo ? ', n.º ' + esc(a.consecutivo) : '') + '</b></div>' +
     '<div class="full"><small>Referencias' + (a.n_referencias ? ' (' + esc(a.n_referencias) + ')' : '') + '</small><b>' + esc(a.referencias || 'Sin referencias') + '</b></div>' +
@@ -489,19 +494,25 @@ function fichaActo(a) {
   if (a.alerta_correo) h += '<div class="box warn"><h4>' + esc(a.alerta_correo) + '</h4><p>Esta dirección probablemente no sirve como correo autorizado del contribuyente. Conviene reforzar la notificación por otro medio.</p></div>';
   if (a.alerta_registro) h += '<div class="box bad"><h4>' + esc(a.alerta_registro) + '</h4><p>El registro está incompleto. Una notificación sin identificación clara del destinatario es difícil de sostener.</p></div>';
 
-  h += '<div class="section-title">Ruta de notificación</div><div class="tl">' +
-    '<div class="tl-item"><div class="tl-dot warn">' + ICONOS.correo + '</div><h5>Correo electrónico <span class="estado warn">Enviado</span></h5>' +
-    '<p>Enviado el ' + fFecha(l.fecha_envio) + '. Sin verificación de rebote.</p></div>' +
+  var fechaTxt = fFecha(l.fecha_envio) + (l.fecha_envio_aproximada ? ' (fecha aproximada)' : '');
+  var pasoMedio = l.medio === 'mensajeria'
+    ? '<div class="tl-item"><div class="tl-dot warn">' + ICONOS.mensajeria + '</div><h5>Empresa de mensajería <span class="estado warn">Enviado</span></h5>' +
+      '<p>' + (a.guia ? 'Guía ' + esc(a.guia) + '. ' : 'Sin número de guía. ') + 'Enviado el ' + fechaTxt + '. Sin soporte de entrega cargado.</p></div>'
+    : '<div class="tl-item"><div class="tl-dot warn">' + ICONOS.correo + '</div><h5>Correo electrónico <span class="estado warn">Enviado</span></h5>' +
+      '<p>Enviado el ' + fechaTxt + '. Sin verificación de rebote.</p></div>';
+  h += '<div class="section-title">Ruta de notificación</div><div class="tl">' + pasoMedio +
     '<div class="tl-item"><div class="tl-dot ' + (l.publicado_web ? 'ok' : 'mute') + '">' + ICONOS.web + '</div><h5>Publicación web ' +
     (l.publicado_web ? '<span class="estado ok">Publicada</span>' : '<span class="estado mute">No registrada</span>') + '</h5>' +
     (l.publicado_web ? '<p>Publicada el ' + fFecha(l.fecha_publicacion_web) + (l.url_publicacion_web ? '. <a href="' + esc(l.url_publicacion_web) + '" target="_blank" rel="noopener">Ver publicación</a>' : '') + '</p>' : '<p>El lote no tiene publicación web registrada.</p>') +
     '</div></div>';
 
   if (t) h += '<div class="box info"><h4>Término: ' + fFecha(t.vence) + ' (' + t.txt.toLowerCase() + ')</h4><p>Quince días hábiles contados desde ' + esc(t.desde) + '. Cálculo aproximado, sin festivos.</p></div>';
-  if (l.mandamiento || l.fecha_mandamiento) h += '<div class="box"><h4>Mandamiento de pago</h4><p>' + esc(l.mandamiento || '') + (l.fecha_mandamiento ? ' del ' + fFecha(l.fecha_mandamiento) : '') + '</p></div>';
+  if (l.mandamiento || l.fecha_mandamiento) h += '<div class="box"><h4>Mandamiento o masivo</h4><p>' + esc(l.mandamiento || '') + (l.fecha_mandamiento ? ' del ' + fFecha(l.fecha_mandamiento) : '') + '</p></div>';
 
   h += '<div class="section-title">Oficio</div>';
-  if (!a.pagina_inicio) {
+  if (!l.archivo_pdf) {
+    h += '<div class="box"><h4>Lote cargado sin PDF de oficios</h4><p>Esta notificación se registró desde la planilla' + (a.guia ? ', con su radicado y su número de guía' : '') + '. El oficio no está en Teodoro.</p></div>';
+  } else if (!a.pagina_inicio) {
     h += '<div class="box bad"><h4>Sin página en el PDF del lote</h4><p>Al montar el lote no se encontró el oficio de esta persona en el PDF.</p></div>';
   } else {
     h += '<div class="box ' + (l.drive_pdf_id ? 'ok' : 'warn') + '"><h4>Página ' + fmt(a.pagina_inicio) + (a.paginas > 1 ? ' a ' + fmt(a.pagina_inicio + a.paginas - 1) : '') + ' del PDF del lote ' + esc(l.numero) + '</h4>' +
@@ -522,6 +533,8 @@ function fichaLote(l) {
     '<div><small>Notificaciones</small><b>' + fmt(l.n) + '</b></div><div><small>Valor</small><b>' + pesos(l.valor) + '</b></div>' +
     '<div><small>Mandamiento</small><b>' + esc(l.mandamiento || 'No registrado') + '</b></div><div><small>Fecha del mandamiento</small><b>' + (l.fecha_mandamiento ? fFecha(l.fecha_mandamiento) : 'No registrada') + '</b></div>' +
     '<div><small>Vigencia</small><b>' + esc(l.vigencia || 'No registrada') + '</b></div>' +
+    '<div><small>Concepto</small><b>' + esc(l.concepto || 'No registrado') + '</b></div>' +
+    '<div><small>Fecha de envío</small><b>' + fFecha(l.fecha_envio) + (l.fecha_envio_aproximada ? ' (aproximada)' : '') + '</b></div>' +
     '<div><small>Publicación web</small><b>' + (l.publicado_web ? fFecha(l.fecha_publicacion_web) : 'No') + '</b></div>' +
     '<div class="full"><small>Archivos de origen</small><b>' + esc(l.archivo_excel || '') + (l.archivo_pdf ? ' y ' + esc(l.archivo_pdf) : '') + '</b></div>' +
     '<div class="full"><small>Montado por</small><b>' + esc(l.cargado_por || '') + ' el ' + fFecha(String(l.creado_en || '').slice(0, 10)) + '</b></div></div>';
@@ -529,7 +542,9 @@ function fichaLote(l) {
   if (Number(l.alertas_correo) + Number(l.alertas_registro)) {
     h += '<div class="box warn"><h4>' + fmt(l.alertas_correo) + ' correos de riesgo y ' + fmt(l.alertas_registro) + ' registros incompletos</h4><p>Revísalos en Notificaciones con el filtro de alerta.</p></div>';
   }
-  h += '<div class="box ' + (l.drive_pdf_id ? 'ok' : 'warn') + '" id="boxDrive"><h4>' + (l.drive_pdf_id ? 'PDF del lote en Google Drive' : 'Falta enlazar el PDF del lote en Drive') + '</h4>' +
+  if (!l.archivo_pdf) {
+    h += '<div class="box"><h4>Lote cargado sin PDF de oficios</h4><p>Las notificaciones de este lote tienen radicado' + (l.medio === 'mensajeria' ? ' y número de guía' : '') + ', pero no oficio asociado.</p></div>';
+  } else h += '<div class="box ' + (l.drive_pdf_id ? 'ok' : 'warn') + '" id="boxDrive"><h4>' + (l.drive_pdf_id ? 'PDF del lote en Google Drive' : 'Falta enlazar el PDF del lote en Drive') + '</h4>' +
     (l.drive_pdf_id ? '<p><a href="' + driveArchivo(l.drive_pdf_id) + '" target="_blank" rel="noopener">Abrir el PDF del lote</a>' + (l.archivo_pdf ? ' (' + esc(l.archivo_pdf) + ')' : '') + '</p>'
       : '<p>Sube a Drive el PDF completo del lote' + (l.archivo_pdf ? ' (' + esc(l.archivo_pdf) + ')' : '') + ', ábrelo y copia su enlace. Pégalo aquí.</p>') +
     '<div class="fila"><input class="input" id="drivePdf" placeholder="Enlace del PDF en Drive (…/file/d/…)" value="' + esc(l.drive_pdf_id ? driveArchivo(l.drive_pdf_id) : '') + '">' +
@@ -669,16 +684,18 @@ function vistaMontar() {
     '<label class="campo"><span>Medio</span><select class="select" id="mMedio"><option value="correo">Correo electrónico</option><option value="mensajeria">Empresa de mensajería</option><option value="web">Solo publicación web</option></select></label>' +
     '<label class="campo"><span>Número de lote</span><input class="input" id="mNumero" type="number" min="1" step="1" placeholder="34"></label>' +
     '<label class="campo"><span>Vigencia de la obligación</span><select class="select" id="mVigencia">' + opV + '</select></label>' +
-    '<label class="campo span2"><span>Mandamiento de pago</span><input class="input" id="mMandamiento" placeholder="M 86-2024"></label>' +
+    '<label class="campo"><span>Mandamiento o masivo</span><input class="input" id="mMandamiento" placeholder="M 86-2024"></label>' +
+    '<label class="campo"><span>Concepto</span><select class="select" id="mConcepto"><option value="">Sin especificar</option><option>Multas de tránsito</option><option>Acuerdo de pago incumplido</option><option>Impuesto predial</option><option>Industria y comercio</option><option>Obligaciones urbanísticas</option><option>Otro</option></select></label>' +
     '<label class="campo"><span>Fecha del mandamiento</span><input class="input" id="mFechaMand" type="date"></label>' +
     '<label class="campo"><span>Fecha de envío (radicado)</span><input class="input" id="mFechaEnvio" type="date"></label>' +
     '<label class="campo check span2"><input type="checkbox" id="mWeb"> El lote también se publicó en la página web</label>' +
     '<label class="campo"><span>Fecha de publicación web</span><input class="input" id="mFechaWeb" type="date" disabled></label>' +
     '<label class="campo"><span>Enlace de la publicación</span><input class="input" id="mUrlWeb" type="url" placeholder="https://" disabled></label>' +
+    '<label class="campo check span2"><input type="checkbox" id="mFechaAprox"> La fecha de envío es aproximada (no hay fecha exacta de despacho)</label>' +
   '</div></section>' +
   '<section class="panel paso" id="paso2"><div class="panel-head"><h3><span class="paso-num">2</span>Excel del lote</h3><p>Una fila por notificado, con el radicado de despacho.</p></div>' +
     '<div class="drop"><div>Selecciona el Excel (.xlsx)</div><input type="file" id="mExcel" accept=".xlsx,.xls"></div><div id="resExcel"></div></section>' +
-  '<section class="panel paso bloqueado" id="paso3"><div class="panel-head"><h3><span class="paso-num">3</span>PDF de oficios</h3><p>Teodoro lee cada página, encuentra a quién pertenece por su cédula o correo y verifica contra el Excel.</p></div>' +
+  '<section class="panel paso bloqueado" id="paso3"><div class="panel-head"><h3><span class="paso-num">3</span>PDF de oficios</h3><p>Opcional. Si lo cargas, Teodoro lee cada página, encuentra a quién pertenece por su cédula o correo y verifica contra el Excel. Las planillas de mensajería se pueden guardar sin PDF.</p></div>' +
     '<div class="drop"><div>Selecciona el PDF con todos los oficios del lote</div><input type="file" id="mPdf" accept=".pdf"></div><div id="resPdf"></div></section>' +
   '<section class="panel paso bloqueado" id="paso4"><div class="panel-head"><h3><span class="paso-num">4</span>Guardar</h3><p>Guarda el lote y la página de cada notificación. Después sube el PDF completo a Drive y pega su enlace en la ficha del lote.</p></div>' +
     '<div class="acciones"><button class="btn btn-gold" type="button" id="btnGuardar">Guardar lote en Teodoro</button></div>' +
@@ -686,7 +703,7 @@ function vistaMontar() {
 }
 
 /* Conserva lo digitado en el paso 1 si se cambia de pestaña y se vuelve */
-var CAMPOS_FORM = ['mRenta', 'mMedio', 'mNumero', 'mVigencia', 'mMandamiento', 'mFechaMand', 'mFechaEnvio', 'mWeb', 'mFechaWeb', 'mUrlWeb'];
+var CAMPOS_FORM = ['mRenta', 'mMedio', 'mNumero', 'mVigencia', 'mMandamiento', 'mConcepto', 'mFechaMand', 'mFechaEnvio', 'mFechaAprox', 'mWeb', 'mFechaWeb', 'mUrlWeb'];
 function guardarForm() {
   CAMPOS_FORM.forEach(function (id) { var el = $(id); if (el) M.form[id] = el.type === 'checkbox' ? el.checked : el.value; });
 }
@@ -704,7 +721,7 @@ function pintarMontar() {
 function actualizarPasos() {
   var p3 = $('paso3'), p4 = $('paso4');
   if (p3) p3.classList.toggle('bloqueado', !M.filas.length);
-  if (p4) p4.classList.toggle('bloqueado', !M.asign);
+  if (p4) p4.classList.toggle('bloqueado', !M.filas.length || M.ocupado && !M.asign);
 }
 
 function leerFormulario() {
@@ -714,8 +731,10 @@ function leerFormulario() {
     numero: parseInt($('mNumero').value, 10),
     vigencia: $('mVigencia').value ? parseInt($('mVigencia').value, 10) : null,
     mandamiento: $('mMandamiento').value.trim() || null,
+    concepto: $('mConcepto').value || null,
     fecha_mandamiento: $('mFechaMand').value || null,
     fecha_envio: $('mFechaEnvio').value || null,
+    fecha_envio_aproximada: $('mFechaAprox').checked,
     publicado_web: $('mWeb').checked,
     fecha_publicacion_web: $('mWeb').checked ? ($('mFechaWeb').value || null) : null,
     url_publicacion_web: $('mWeb').checked ? ($('mUrlWeb').value.trim() || null) : null
@@ -735,13 +754,16 @@ var SINONIMOS = {
   documento:     ['CEDULA', 'DOCUMENTO', 'NIT', 'IDENTIFICACION', 'CC', 'CEDULA NIT', 'NUMERO DOCUMENTO', 'CC NIT'],
   nombre:        ['NOMBRES Y APELLIDOS', 'NOMBRE', 'NOMBRES', 'CONTRIBUYENTE', 'RAZON SOCIAL', 'PROPIETARIO', 'NOMBRE O RAZON SOCIAL'],
   email:         ['EMAIL', 'CORREO', 'CORREO ELECTRONICO', 'E MAIL', 'MAIL'],
-  referencias:   ['RESOLUCIONES', 'RESOLUCION', 'COMPARENDOS', 'COMPARENDO', 'MATRICULA', 'FICHA', 'FICHA CATASTRAL', 'REFERENCIA', 'REFERENCIAS', 'EXPEDIENTE'],
+  referencias:   ['RESOLUCIONES', 'RESOLUCION', 'COMPARENDOS', 'COMPARENDO', 'MATRICULA', 'FICHA', 'FICHA CATASTRAL', 'REFERENCIA', 'REFERENCIAS', 'EXPEDIENTE', 'OBSERVACION', 'OBSERVACIONES'],
+  guia:          ['GUIA', 'N GUIA', 'NO GUIA', 'NUMERO GUIA', 'NUMERO DE GUIA', 'GUIA 472'],
+  direccion:     ['DIRECCION', 'DIRECCION NOTIFICACION', 'DIRECCION DE NOTIFICACION'],
+  ciudad:        ['CIUDAD', 'MUNICIPIO', 'NOMBRE CIUDAD'],
   n_referencias: ['N COMP', 'NO COMP', 'CANTIDAD', 'N RESOLUCIONES', 'NUMERO COMPARENDOS'],
   valor_capital: ['VALOR MULTAS', 'VALOR MULTA', 'CAPITAL', 'VALOR CAPITAL', 'VALOR IMPUESTO', 'VALOR'],
   intereses:     ['INTERESES', 'INTERES', 'INTERESES MORATORIOS'],
   total:         ['TOTAL A PAGAR', 'TOTAL', 'VALOR TOTAL', 'TOTAL DEUDA']
 };
-var CAMPO_NOMBRE = { radicado: 'Radicado', consecutivo: 'Consecutivo', documento: 'Documento', nombre: 'Nombre', email: 'Correo', referencias: 'Referencias', n_referencias: 'Cantidad de referencias', valor_capital: 'Capital', intereses: 'Intereses', total: 'Total' };
+var CAMPO_NOMBRE = { radicado: 'Radicado', consecutivo: 'Consecutivo', documento: 'Documento', nombre: 'Nombre', email: 'Correo', referencias: 'Referencias', guia: 'Guía', direccion: 'Dirección', ciudad: 'Ciudad', n_referencias: 'Cantidad de referencias', valor_capital: 'Capital', intereses: 'Intereses', total: 'Total' };
 var OBLIGATORIOS = ['radicado', 'nombre'];
 
 function normCol(s) {
@@ -777,10 +799,47 @@ function alertaCorreo(email) {
   if (DOMINIOS_COMUNES.indexOf(dom) < 0) return 'Correo corporativo o institucional';
   return null;
 }
-function alertaRegistro(f) {
+function alertaRegistro(f, medio) {
   if (!f.nombre || /SIN INFORM|SIN NOMBRE|NO REGISTRA/i.test(f.nombre)) return 'Nombre sin información';
   if (!f.documento) return 'Sin documento';
+  if (!/^\d{5,11}$/.test(f.documento)) return 'Documento dudoso';
+  if (medio === 'mensajeria' && !f.guia) return 'Sin guía';
   return null;
+}
+
+/* Arma el mapa columna → campo. En las planillas de mensajería el radicado de la
+   Alcaldía viene en la columna «Referencia»: si no hay columna «Radicado», se usa esa. */
+function mapearColumnas(headers) {
+  var normas = headers.map(normCol), mapa = {}, usadas = {};
+  var sin = {}; Object.keys(SINONIMOS).forEach(function (k) { sin[k] = SINONIMOS[k].slice(); });
+  var hayRadicado = normas.some(function (h) { return sin.radicado.indexOf(h) > -1; });
+  if (!hayRadicado && normas.indexOf('REFERENCIA') > -1) {
+    sin.radicado.push('REFERENCIA');
+    sin.referencias = sin.referencias.filter(function (x) { return x !== 'REFERENCIA'; });
+  }
+  Object.keys(sin).forEach(function (campo) {
+    for (var i = 0; i < headers.length; i++) {
+      if (usadas[headers[i]]) continue;
+      if (sin[campo].indexOf(normas[i]) > -1) { mapa[campo] = headers[i]; usadas[headers[i]] = 1; break; }
+    }
+  });
+  return { mapa: mapa, usadas: usadas };
+}
+
+/* Elige la hoja del libro: la que tenga radicado y nombre, prefiriendo la que trae
+   guía en mensajería, y luego la de más filas */
+function elegirHoja(wb, medio) {
+  var mejor = null;
+  wb.SheetNames.forEach(function (nombre) {
+    var raw = XLSX.utils.sheet_to_json(wb.Sheets[nombre], { defval: '', raw: true });
+    raw = raw.filter(function (r) { return Object.keys(r).some(function (k) { return String(r[k]).trim() !== ''; }); });
+    if (!raw.length) return;
+    var headers = Object.keys(raw[0]), m = mapearColumnas(headers);
+    var ok = OBLIGATORIOS.every(function (c) { return m.mapa[c]; });
+    var puntos = (ok ? 1000000 : 0) + (medio === 'mensajeria' && m.mapa.guia ? 100000 : 0) + (medio === 'correo' && m.mapa.email ? 100000 : 0) + raw.length;
+    if (!mejor || puntos > mejor.puntos) mejor = { nombre: nombre, raw: raw, headers: headers, m: m, ok: ok, puntos: puntos };
+  });
+  return mejor;
 }
 
 function procesarExcel(file) {
@@ -788,16 +847,11 @@ function procesarExcel(file) {
   out.innerHTML = '<div class="note info">Leyendo el Excel…</div>';
   return cargarLibs().then(function () { return file.arrayBuffer(); }).then(function (buf) {
     var wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
-    var ws = wb.Sheets[wb.SheetNames[0]];
-    var raw = XLSX.utils.sheet_to_json(ws, { defval: '', raw: true });
-    if (!raw.length) throw new Error('El Excel no tiene filas en la primera hoja.');
-    var headers = Object.keys(raw[0]), mapa = {}, usadas = {};
-    Object.keys(SINONIMOS).forEach(function (campo) {
-      for (var i = 0; i < headers.length; i++) {
-        if (usadas[headers[i]]) continue;
-        if (SINONIMOS[campo].indexOf(normCol(headers[i])) > -1) { mapa[campo] = headers[i]; usadas[headers[i]] = 1; break; }
-      }
-    });
+    var medio = $('mMedio').value;
+    var hoja = elegirHoja(wb, medio);
+    if (!hoja) throw new Error('El Excel no tiene filas con datos.');
+    var raw = hoja.raw, headers = hoja.headers, mapa = hoja.m.mapa, usadas = hoja.m.usadas;
+    M.hoja = wb.SheetNames.length > 1 ? hoja.nombre : '';
     var faltan = OBLIGATORIOS.filter(function (c) { return !mapa[c]; });
     if (faltan.length) throw new Error('El Excel no tiene la columna de ' + faltan.map(function (c) { return CAMPO_NOMBRE[c].toLowerCase(); }).join(' ni de ') + '. Columnas encontradas: ' + headers.join(', ') + '.');
     var extras = headers.filter(function (h) { return !usadas[h]; });
@@ -814,6 +868,9 @@ function procesarExcel(file) {
         valor_capital: mapa.valor_capital ? aNumero(r[mapa.valor_capital]) : null,
         intereses: mapa.intereses ? aNumero(r[mapa.intereses]) : null,
         total: mapa.total ? aNumero(r[mapa.total]) : null,
+        guia: mapa.guia ? aTexto(r[mapa.guia]).replace(/\s+/g, '').toUpperCase() : '',
+        direccion: mapa.direccion ? aTexto(r[mapa.direccion]).replace(/\s+/g, ' ') : '',
+        ciudad: mapa.ciudad ? aTexto(r[mapa.ciudad]).replace(/\s+/g, ' ').toUpperCase() : '',
         detalle: {}
       };
       f.n_referencias = mapa.n_referencias ? (aNumero(r[mapa.n_referencias]) || null) :
@@ -822,13 +879,14 @@ function procesarExcel(file) {
       if (!f.radicado) f.error = 'Sin radicado';
       else if (vistos[f.radicado]) f.error = 'Radicado repetido (fila ' + vistos[f.radicado] + ')';
       else vistos[f.radicado] = f.fila;
-      f.alerta_correo = mapa.email ? alertaCorreo(f.email) : null;
-      f.alerta_registro = alertaRegistro(f);
+      f.alerta_correo = (mapa.email && medio === 'correo') ? alertaCorreo(f.email) : null;
+      f.alerta_registro = alertaRegistro(f, medio);
       return f;
     });
     M.excelNombre = file.name; M.filas = filas; M.mapa = mapa; M.extras = extras;
-    M.asign = null; M.numPages = 0; M.textos = []; M.guardado = null;
-    if (!mapa.email && $('mMedio').value === 'correo') toast('El Excel no trae columna de correo. Revisa el medio del lote.', 'bad');
+    M.asign = null; M.numPages = 0; M.textos = []; M.guardado = null; M.pdfNombre = ''; M.pdfBytes = null;
+    if (!mapa.email && medio === 'correo') toast('El Excel no trae columna de correo. Revisa el medio del lote.', 'bad');
+    if (!mapa.guia && medio === 'mensajeria') toast('El Excel no trae columna de guía. Revisa el medio del lote.', 'bad');
     pintarResumenExcel();
     if ($('resPdf')) $('resPdf').innerHTML = '';
     if ($('resFinal')) $('resFinal').innerHTML = '';
@@ -847,7 +905,7 @@ function pintarResumenExcel() {
   var nAC = f.filter(function (x) { return x.alerta_correo; }).length, nAR = f.filter(function (x) { return x.alerta_registro; }).length;
   var total = 0; f.forEach(function (x) { total += Number(x.total || 0); });
   var h = '<div class="resumen-grid">' +
-    '<div><b>' + fmt(f.length) + '</b><small>Filas en «' + esc(M.excelNombre) + '»</small></div>' +
+    '<div><b>' + fmt(f.length) + '</b><small>Filas en «' + esc(M.excelNombre) + '»' + (M.hoja ? ', hoja «' + esc(M.hoja) + '»' : '') + '</small></div>' +
     '<div><b>' + pesosCorto(total) + '</b><small>Valor total</small></div>' +
     '<div class="' + (nAC ? 'warn' : 'ok') + '"><b>' + fmt(nAC) + '</b><small>Correos de riesgo</small></div>' +
     '<div class="' + (err.length ? 'bad' : (nAR ? 'warn' : 'ok')) + '"><b>' + fmt(err.length + nAR) + '</b><small>Errores y registros incompletos</small></div></div>';
@@ -985,28 +1043,31 @@ function pintarResumenPdf() {
 
 /* ---------- Guardar en Supabase ---------- */
 function guardarLote() {
-  if (M.ocupado || !M.asign) return;
+  if (M.ocupado || !M.filas.length) return;
   var d = leerFormulario(); if (!d) return;
+  if (!M.asign && !window.confirm('El lote se guardará sin PDF de oficios. Cada notificación quedará con su radicado' + (d.medio === 'mensajeria' ? ' y su guía' : '') + ', pero sin página asociada. ¿Continuar?')) return;
+  var anioLote = aFecha(d.fecha_envio).getFullYear();
   var out = $('resFinal'), btn = $('btnGuardar');
   var filas = M.filas.filter(function (f) { return !f.error; });
   if (!filas.length) { toast('No hay filas válidas para guardar.', 'bad'); return; }
   M.ocupado = true; btn.disabled = true;
   var loteId, nuevos = 0;
   out.innerHTML = '<div class="note info">Verificando si el lote ya existe…</div>';
-  supaFetch('notif_lotes?select=id&renta=eq.' + d.renta + '&medio=eq.' + d.medio + '&numero=eq.' + d.numero).then(function (r) {
+  supaFetch('notif_lotes?select=id&renta=eq.' + d.renta + '&medio=eq.' + d.medio + '&numero=eq.' + d.numero + '&anio_envio=eq.' + anioLote).then(function (r) {
     if (r.data && r.data.length && !window.confirm('El lote ' + d.numero + ' de ' + renta(d.renta).nombre + ' ya existe. Se actualizarán sus datos y solo se agregarán las notificaciones nuevas. ¿Continuar?')) {
       throw new Error('CANCELADO');
     }
-    var body = Object.assign({}, d, { archivo_excel: M.excelNombre, archivo_pdf: M.pdfNombre });
-    return supaFetch('notif_lotes?on_conflict=renta,medio,numero', { method: 'POST', body: [body], headers: { Prefer: 'resolution=merge-duplicates,return=representation' } });
+    var body = Object.assign({}, d, { archivo_excel: M.excelNombre, archivo_pdf: M.asign ? M.pdfNombre : null });
+    return supaFetch('notif_lotes?on_conflict=renta,medio,anio_envio,numero', { method: 'POST', body: [body], headers: { Prefer: 'resolution=merge-duplicates,return=representation' } });
   }).then(function (r) {
     loteId = r.data[0].id;
     var registros = filas.map(function (f) {
       return {
         radicado: f.radicado, lote_id: loteId, consecutivo: f.consecutivo || null, documento: f.documento || null,
-        nombre: f.nombre || 'Sin nombre', email: f.email || null, alerta_correo: f.alerta_correo, alerta_registro: f.alerta_registro || (f.paginas ? null : 'Sin oficio en el PDF'),
+        nombre: f.nombre || 'Sin nombre', email: f.email || null, alerta_correo: f.alerta_correo, alerta_registro: f.alerta_registro || (!M.asign || f.paginas ? null : 'Sin oficio en el PDF'),
+        guia: f.guia || null, direccion: f.direccion || null, ciudad: f.ciudad || null,
         referencias: f.referencias, n_referencias: f.n_referencias, valor_capital: f.valor_capital, intereses: f.intereses, total: f.total,
-        detalle: f.detalle, pagina_inicio: f.pagina_inicio, paginas: f.paginas, verificacion: f.verificacion
+        detalle: f.detalle, pagina_inicio: M.asign ? f.pagina_inicio : null, paginas: M.asign ? f.paginas : null, verificacion: M.asign ? f.verificacion : 'Lote sin PDF'
       };
     });
     var cadena = Promise.resolve(), hechos = 0;
@@ -1023,9 +1084,9 @@ function guardarLote() {
     M.guardado = { loteId: loteId };
     var ya = totalReg - nuevos;
     out.innerHTML = '<div class="note ok">Lote guardado. ' + fmt(nuevos) + ' notificaciones nuevas' + (ya ? ' y ' + fmt(ya) + ' que ya existían (no se modificaron)' : '') + '.</div>' +
-      '<div class="note info">Siguiente paso: sube «' + esc(M.pdfNombre) + '» a Drive (nombre sugerido: ' + esc(nombreSugerido(d)) + '), copia su enlace y pégalo en la ficha del lote.</div>' + botonIrLote();
+      (M.asign ? '<div class="note info">Siguiente paso: sube «' + esc(M.pdfNombre) + '» a Drive (nombre sugerido: ' + esc(nombreSugerido(d)) + '), copia su enlace y pégalo en la ficha del lote.</div>' : '<div class="note info">El lote quedó guardado sin PDF: cada notificación tiene su radicado' + (d.medio === 'mensajeria' ? ' y su número de guía' : '') + '.</div>') + botonIrLote();
     toast('Lote ' + d.numero + ' guardado', 'ok');
-    S.anio = aFecha(d.fecha_envio).getFullYear();
+    S.anio = anioLote;
     return cargarResumen().then(cargarLotes).then(function () { renderAnios(); renderHero(); renderTabs(); });
   }).catch(function (e) {
     if (e.message === 'CANCELADO') { out.innerHTML = ''; return; }
