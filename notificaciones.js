@@ -12,7 +12,7 @@
    ========================================================= */
 var CFG = {
   SUPA_URL: 'https://bmurdtfztsltcgwsfbgf.supabase.co',
-  SUPA_KEY: 'PEGAR_AQUI_LA_PUBLISHABLE_KEY',
+  SUPA_KEY: 'sb_publishable_x3Mu7phCEfpJMcKSQYkf8Q_obSOAvfL',
   GAS_URL: 'PEGAR_AQUI_URL_EXEC_DEL_APPS_SCRIPT',
   SESION_KEY: 'notificaciones_sesion_v1',
   SESION_HORAS: 8,
