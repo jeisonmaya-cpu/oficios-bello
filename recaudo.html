@@ -1102,9 +1102,13 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
           <button class="tb-btn on" id="tend-btn-valor" style="border:none;border-radius:0" onclick="cambiarModoTendencia('valor')">💰 Valor</button>
           <button class="tb-btn" id="tend-btn-cantidad" style="border:none;border-radius:0;border-left:1px solid var(--border)" onclick="cambiarModoTendencia('cantidad')">🔢 Cantidad</button>
         </div>
+        <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
+          <button class="tb-btn on" id="tend-btn-24" style="border:none;border-radius:0" onclick="cambiarRangoTendencia('24')">24 meses</button>
+          <button class="tb-btn" id="tend-btn-todo" style="border:none;border-radius:0;border-left:1px solid var(--border)" onclick="cambiarRangoTendencia('todo')">Todo (por año)</button>
+        </div>
       </div>
     </div>
-    <div style="padding:18px 18px 22px"><div style="position:relative;height:300px"><canvas id="chart-tendencia"></canvas></div></div>
+    <div style="padding:18px 18px 22px"><div style="position:relative;height:300px"><canvas id="chart-tendencia"></canvas></div><div id="tend-nota" style="font-size:11px;color:var(--soft);margin-top:10px;line-height:1.5"></div></div>
   </div>
 
   <!-- Por responsable -->
@@ -5694,6 +5698,14 @@ function renderDonaEstado(canvasId, totalId, valorPorEstado, conteo, valorTotal)
 // ── TENDENCIA mensual: emitido vs gestionado — recibe porMes ya calculado por renderDashboard ──
 var _ultimoPorMes = null;   // guardado para poder re-renderizar al cambiar de modo sin recalcular todo
 var _modoTendencia = 'valor';
+var _rangoTendencia = '24';   // '24' = últimos 24 meses · 'todo' = todo el histórico agrupado por año
+
+function cambiarRangoTendencia(r){
+  _rangoTendencia = r;
+  document.getElementById('tend-btn-24').classList.toggle('on', r==='24');
+  document.getElementById('tend-btn-todo').classList.toggle('on', r==='todo');
+  if(_ultimoPorMes) renderTendencia(_ultimoPorMes);
+}
 
 function cambiarModoTendencia(modo){
   _modoTendencia = modo;
@@ -5706,12 +5718,37 @@ function cambiarModoTendencia(modo){
 function renderTendencia(porMes){
   _ultimoPorMes = porMes;
   if(typeof Chart==='undefined') return;
-  var meses=Object.keys(porMes).sort();
-  if(meses.length>24) meses=meses.slice(-24);
+  var todos=Object.keys(porMes).sort();
   var esValor = _modoTendencia==='valor';
-  var emit = esValor ? meses.map(m=>Math.round(porMes[m].emitido))    : meses.map(m=>porMes[m].cantEmitido);
-  var gest = esValor ? meses.map(m=>Math.round(porMes[m].gestionado)) : meses.map(m=>porMes[m].cantGestionado);
-  var labels=meses.map(m=>{ var p=m.split('-'); var mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return mn[parseInt(p[1])-1]+' '+p[0].substring(2); });
+  var serie, labels;
+  if(_rangoTendencia==='todo'){
+    // Todo el histórico agrupado por año
+    var porAnio={};
+    todos.forEach(function(m){
+      var a=m.substring(0,4);
+      if(!porAnio[a]) porAnio[a]={emitido:0,gestionado:0,cantEmitido:0,cantGestionado:0};
+      ['emitido','gestionado','cantEmitido','cantGestionado'].forEach(function(k){ porAnio[a][k]+=porMes[m][k]; });
+    });
+    var anios=Object.keys(porAnio).sort();
+    serie=anios.map(function(a){ return porAnio[a]; });
+    labels=anios;
+  } else {
+    var meses=todos.length>24 ? todos.slice(-24) : todos;
+    serie=meses.map(function(m){ return porMes[m]; });
+    labels=meses.map(m=>{ var p=m.split('-'); var mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return mn[parseInt(p[1])-1]+' '+p[0].substring(2); });
+    // Nota: cuánto finalizado queda por fuera de la ventana de 24 meses
+    var fueraV=0, fueraC=0, totV=0, totC=0;
+    todos.forEach(function(m){ totV+=porMes[m].gestionado; totC+=porMes[m].cantGestionado;
+      if(meses.indexOf(m)<0){ fueraV+=porMes[m].gestionado; fueraC+=porMes[m].cantGestionado; } });
+  }
+  var emit = serie.map(o=> esValor ? Math.round(o.emitido)    : o.cantEmitido);
+  var gest = serie.map(o=> esValor ? Math.round(o.gestionado) : o.cantGestionado);
+  var nota=document.getElementById('tend-nota');
+  if(nota){
+    nota.innerHTML = (_rangoTendencia==='24' && fueraC)
+      ? 'ℹ️ Finalizados en total: <b>'+totC.toLocaleString('es-CO')+'</b> ('+fmt$(totV)+'). De ellos, <b>'+fueraC.toLocaleString('es-CO')+'</b> ('+fmt$(fueraV)+') caen antes de esta ventana — son históricos sin fecha de gestión, ubicados por su mes de emisión. Usa «Todo (por año)» para verlos.'
+      : '';
+  }
 
   if(_charts.tendencia){ _charts.tendencia.destroy(); _charts.tendencia=null; }
   var ctx=document.getElementById('chart-tendencia');
