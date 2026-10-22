@@ -1097,7 +1097,7 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
     <div class="card-hdr">
       <div class="card-hdr-title">📈 Tendencia mensual — emitido vs gestionado</div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;color:var(--soft)" id="tend-subtitulo">Valor por mes de emisión</span>
+        <span style="font-size:11px;color:var(--soft)" id="tend-subtitulo">Valor · emitido por mes de emisión, gestionado por mes de gestión</span>
         <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
           <button class="tb-btn on" id="tend-btn-valor" style="border:none;border-radius:0" onclick="cambiarModoTendencia('valor')">💰 Valor</button>
           <button class="tb-btn" id="tend-btn-cantidad" style="border:none;border-radius:0;border-left:1px solid var(--border)" onclick="cambiarModoTendencia('cantidad')">🔢 Cantidad</button>
@@ -2030,6 +2030,23 @@ var sortCol    = 'Fecha Emisión';
 var sortDir    = -1;
 var registroActivo = null;   // guarda el id técnico de Supabase de la fila abierta
 var ultimaSync = null;
+// Momento en que se abrió la página: lo que se finalice después de esto (en esta sesión)
+// todavía no trae fecha_gestion del servidor, así que se ubica por su hora de edición.
+var _sesionDesdeISO = new Date().toISOString();
+
+// Convierte una fecha ISO a 'AAAA-MM' en hora local de Colombia.
+function mesLocal(iso){
+  var d=new Date(iso); if(isNaN(d)) return '';
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+// Mes en que un depósito quedó gestionado (FINALIZADO). Orden de preferencia:
+// 1) fecha_gestion de Supabase · 2) edición hecha en esta sesión · 3) mes de emisión
+// (este último solo para históricos finalizados sin rastro de fecha).
+function mesGestion(r){
+  if(r._fechaGestion) return mesLocal(r._fechaGestion);
+  if(r._ultimaEdicionISO && r._ultimaEdicionISO >= _sesionDesdeISO) return mesLocal(r._ultimaEdicionISO);
+  return String(r['Fecha Emisión']||'').substring(0,7);
+}
 
 // Índice de expedientes prediales por cédula (se llena al cargar)
 var expedientesPorCedula = {};
@@ -2105,7 +2122,8 @@ function filaSupaAUI(r){
     'CONSIGNACIONES':           Array.isArray(r.consignaciones) ? r.consignaciones : [],
     _editadoPor:                r.editado_por || '',
     _editadoFecha:              r.ultima_edicion ? new Date(r.ultima_edicion).toLocaleString('es-CO') : '',
-    _ultimaEdicionISO:          r.ultima_edicion || null   // valor crudo, para detectar ediciones concurrentes
+    _ultimaEdicionISO:          r.ultima_edicion || null,  // valor crudo, para detectar ediciones concurrentes
+    _fechaGestion:              r.fecha_gestion || ''      // cuándo quedó FINALIZADO (lo pone un trigger en Supabase)
   };
   fila._buscable = construirBuscable(fila);
   return fila;
@@ -2171,7 +2189,7 @@ const COLUMNAS_RECAUDO_LISTA = 'id,deposito_judicial,fecha_emision,identificacio
   +'nombre_demandado,identificacion_consignante,nombre_consignante,concepto_deposito,anulado,'
   +'numero_proceso,valor_deposito,observacion,telefono_contacto,correo_electronico,direccion,'
   +'ciudad,responsable,gestion_tesoreria,comprobante_egreso,radicado_respuesta,estado_devolucion,'
-  +'estado_aplicacion,numero_proceso_manual,tipo_impuesto,ci_inicial,acuerdo_pago,consignaciones,editado_por,ultima_edicion';
+  +'estado_aplicacion,numero_proceso_manual,tipo_impuesto,ci_inicial,acuerdo_pago,consignaciones,editado_por,ultima_edicion,fecha_gestion';
 
 const ULTIMA_CARGA_KEY = 'recaudo_ultima_carga_v1';
 
@@ -5345,12 +5363,19 @@ function renderDashboard(){
       if(enCurso) o.tram++; else if(algunFin) o.fin++; else o.pen++;
     }
 
+    // Emitido: por mes de EMISIÓN del depósito. Gestionado: por mes en que se FINALIZÓ.
     var f=String(r['Fecha Emisión']||'').substring(0,7);
     if(/^\d{4}-\d{2}$/.test(f)){
       if(!porMes[f]) porMes[f]={emitido:0,gestionado:0,cantEmitido:0,cantGestionado:0};
       porMes[f].emitido+=v;
       porMes[f].cantEmitido++;
-      if(ed==='FINALIZADO'||ea==='FINALIZADO'){ porMes[f].gestionado+=v; porMes[f].cantGestionado++; }
+    }
+    if(ed==='FINALIZADO'||ea==='FINALIZADO'){
+      var fg=mesGestion(r);
+      if(/^\d{4}-\d{2}$/.test(fg)){
+        if(!porMes[fg]) porMes[fg]={emitido:0,gestionado:0,cantEmitido:0,cantGestionado:0};
+        porMes[fg].gestionado+=v; porMes[fg].cantGestionado++;
+      }
     }
 
     var kd=ed||'Sin gestionar';
@@ -5674,7 +5699,7 @@ function cambiarModoTendencia(modo){
   _modoTendencia = modo;
   document.getElementById('tend-btn-valor').classList.toggle('on', modo==='valor');
   document.getElementById('tend-btn-cantidad').classList.toggle('on', modo==='cantidad');
-  document.getElementById('tend-subtitulo').textContent = modo==='valor' ? 'Valor por mes de emisión' : 'Cantidad de depósitos por mes de emisión';
+  document.getElementById('tend-subtitulo').textContent = modo==='valor' ? 'Valor · emitido por mes de emisión, gestionado por mes de gestión' : 'Cantidad · emitido por mes de emisión, gestionado por mes de gestión';
   if(_ultimoPorMes) renderTendencia(_ultimoPorMes);
 }
 
