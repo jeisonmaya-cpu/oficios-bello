@@ -25,7 +25,8 @@ const ACCIONES = {
   reabrir:          "Reabrió el expediente",
   consultar:        "Consultó",
   descargar:        "Vio / descargó documento",
-  exportar_indice:  "Exportó"
+  exportar_indice:  "Exportó",
+  novedad:          "Registró novedad del proceso"
 };
 
 // ════════════════════════════════════════════════════════════
@@ -193,7 +194,16 @@ const SITUACIONES = {
   terminado: "Terminado",
   sin:       "Sin dato en cartera"
 };
+// Última novedad registrada por expediente (exp_novedades). Manda sobre el estado en cartera.
+let NOV = {};
+function idExpDe(f) { return f ? (("exp_id" in f) ? f.exp_id : f.id) : null; }
 function situacionDe(f) {
+  const n = f ? NOV[idExpDe(f)] : null;
+  if (n) {
+    if (n.tipo === "terminacion") return causalEsPago(n.causal) ? "cancelado" : "terminado";
+    if (n.tipo === "acuerdo_pago") return "acuerdo";
+    if (n.tipo === "acuerdo_incumplido") return "activo";
+  }
   const s = String((f && f.estado_cartera) || "").toLowerCase();
   if (/cancel/.test(s)) return "cancelado";
   if (/termin|archiv/.test(s)) return "terminado";
@@ -290,11 +300,12 @@ function irPanel(n) {
   if (n === "estadisticas") cargarEstadisticas();
 }
 function irSub(n) {
-  ["indice", "incorporar", "bitacora"].forEach(k => {
+  ["indice", "incorporar", "novedades", "bitacora"].forEach(k => {
     $("sub-" + k).classList.toggle("active", k === n);
     $("st-" + k).classList.toggle("active", k === n);
   });
   if (n === "bitacora") cargarBitacora();
+  if (n === "novedades") renderNovedades();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -352,11 +363,17 @@ function chipCartera(c) {
 }
 function chipSituacion(f) {
   const s = situacionDe(f);
-  return `<span class="chip chip-sit-${s}">${esc(SITUACIONES[s])}</span>`;
+  const n = NOV[idExpDe(f)];
+  let txt = SITUACIONES[s];
+  if (n && n.tipo === "acuerdo_pago" && n.numero) txt = "Acuerdo de pago N.º " + n.numero;
+  const tit = n ? ' title="' + esc(textoNovedad(n)) + '"' : "";
+  let extra = "";
+  if (n && n.tipo === "acuerdo_incumplido") extra = ' <span class="chip chip-embargo">Acuerdo incumplido</span>';
+  return `<span class="chip chip-sit-${s}"${tit}>${esc(txt)}</span>${extra}`;
 }
 function chipsSituacion(f) {
   const out = [];
-  if (f.estado_cartera || f.en_acuerdo) out.push(chipSituacion(f));
+  if (f.estado_cartera || f.en_acuerdo || NOV[idExpDe(f)]) out.push(chipSituacion(f));
   if (f.embargos > 0) out.push(`<span class="chip chip-embargo">${f.embargos} embargo${f.embargos === 1 ? "" : "s"}</span>`);
   if (f.origen === "manual") out.push('<span class="chip chip-manual">Manual</span>');
   return out.join(" ");
@@ -387,6 +404,7 @@ async function buscar() {
   info.textContent = "Buscando…";
   try {
     const filas = await supaFetch(path) || [];
+    await cargarNovedades(filas.map(f => f.exp_id));
     info.textContent = filas.length
       ? filas.length + (filas.length === 60 ? "+ resultados (afina la búsqueda si no ves el tuyo)" : " resultado(s)")
       : "Sin resultados para «" + q + "».";
@@ -435,12 +453,12 @@ async function cargarRecientes() {
     if (re) path += "&estado=eq." + encodeURIComponent(re);
     if ($("r-mios") && $("r-mios").checked && USUARIO_EMAIL) path += "&creado_por_email=eq." + encodeURIComponent(USUARIO_EMAIL);
     const rs = $("r-situacion") ? $("r-situacion").value : "";
-    if (rs === "cancelado") path += "&estado_cartera=ilike." + encodeURIComponent("*cancel*");
-    else if (rs === "terminado") path += "&or=" + encodeURIComponent("(estado_cartera.ilike.*termin*,estado_cartera.ilike.*archiv*)");
-    else if (rs === "acuerdo") path += "&or=" + encodeURIComponent("(en_acuerdo.is.true,estado_cartera.ilike.*convenio*,estado_cartera.ilike.*acuerdo*)");
-    else if (rs === "activo") path += "&and=" + encodeURIComponent("(estado_cartera.not.is.null,estado_cartera.not.ilike.*cancel*,estado_cartera.not.ilike.*termin*,estado_cartera.not.ilike.*archiv*,estado_cartera.not.ilike.*convenio*,estado_cartera.not.ilike.*acuerdo*,en_acuerdo.not.is.true)");
     const filtrado = rc || re || rs || ($("r-mios") && $("r-mios").checked);
-    const filas = await supaFetch(path) || [];
+    // Con filtro de situación se trae una muestra mayor y se filtra aquí: la novedad registrada manda sobre la cartera
+    if (rs) path = path.replace("&limit=25", "&limit=300");
+    let filas = await supaFetch(path) || [];
+    await cargarNovedades(filas.map(f => f.id));
+    if (rs) filas = filas.filter(f => situacionDe(f) === rs).slice(0, 25);
     $("rec-body").innerHTML = filas.length ? filas.map(f => `<tr>
       <td>${chipCartera(f.cartera)}</td>
       <td class="nowrap"><strong>${esc(f.radicado)}</strong></td>
@@ -537,6 +555,7 @@ async function abrirExpediente(id) {
     const cambio = !EXP || EXP.id !== id;
     EXP = f[0];
     INDICE = await supaFetch("v_exp_indice?select=*&expediente_id=eq." + id + "&order=consecutivo.asc") || [];
+    await cargarNovedades([id], true);
     if (cambio) { COLA = []; renderCola(); irSub("indice"); }
     renderCabecera();
     renderIndice();
@@ -555,6 +574,8 @@ async function recargarExpediente() {
     const f = await supaFetch("v_exp_digital?select=*&id=eq." + EXP.id);
     if (f && f.length) EXP = f[0];
     INDICE = await supaFetch("v_exp_indice?select=*&expediente_id=eq." + EXP.id + "&order=consecutivo.asc") || [];
+    await cargarNovedades([EXP.id], true);
+    if ($("sub-novedades").classList.contains("active")) renderNovedades();
     renderCabecera();
     renderIndice();
     renderCola();
@@ -578,7 +599,8 @@ function renderCabecera() {
     (e.id_contribuyente ? " · C.C./NIT " + esc(e.id_contribuyente) : "") +
     "<br>Estado en cartera: " + esc(e.estado_cartera || "—") +
     " · Valor: " + fmtMoneda(e.valor_total) +
-    "<br>Creado por " + esc(e.creado_por_email || "—") + " el " + fmtFechaHora(e.creado_en);
+    "<br>Creado por " + esc(e.creado_por_email || "—") + " el " + fmtFechaHora(e.creado_en) +
+    (NOV[e.id] ? '<br><span class="nov-linea">' + esc(textoNovedad(NOV[e.id])) + "</span>" : "");
   $("kpi-docs").textContent = e.total_documentos;
   $("kpi-folios").textContent = e.total_folios;
   $("kpi-anul").textContent = INDICE.filter(d => d.anulado).length;
@@ -703,19 +725,12 @@ function abrirModalEstado() {
     ? "Un expediente cerrado no admite nuevos documentos. Se puede reabrir después, dejando el motivo en la bitácora."
     : "Al reabrirlo se podrán incorporar documentos de nuevo. El motivo queda en la bitácora.";
   $("estado-motivo").value = "";
-  $("estado-causal-wrap").classList.toggle("hidden", !cerrar);
-  $("estado-causal").value = "";
   abrirModal("m-estado");
   setTimeout(() => $("estado-motivo").focus(), 50);
 }
 async function confirmarEstado() {
-  let motivo = $("estado-motivo").value.trim();
+  const motivo = $("estado-motivo").value.trim();
   if (motivo.length < 10) { toast("El motivo debe tener al menos 10 caracteres.", true); return; }
-  if (EXP.estado === "abierto") {
-    const causal = $("estado-causal").value;
-    if (!causal) { toast("Elige la causal de cierre.", true); return; }
-    motivo = "Causal: " + causal + ". " + motivo;
-  }
   const btn = $("btn-estado-ok");
   btn.disabled = true;
   try {
@@ -1783,17 +1798,19 @@ async function cargarEstadisticas(forzar) {
   if (ST && !forzar) { renderEstadisticas(); return; }
   $("st-cont").innerHTML = `<div class="card empty">Calculando estadísticas…</div>`;
   try {
-    const [exps, docs, cierres] = await Promise.all([
+    const [exps, docs, novs] = await Promise.all([
       traerTodo("v_exp_digital?select=*", "id.asc"),
       traerTodo("v_exp_indice?select=id,expediente_id,incorporado_por_email,fecha_incorporacion,paginas,anulado,tipo_nombre", "id.asc"),
-      traerTodo("exp_bitacora?select=expediente_id,fecha,detalle&accion=eq.cerrar", "fecha.desc").catch(() => [])
+      NOV_DISPONIBLE ? traerTodo("exp_novedades?select=*", "registrado_en.desc,id.desc").catch(() => []) : Promise.resolve([])
     ]);
     const cobertura = {};
     await Promise.all(Object.keys(CARTERAS).map(async c => {
       try { cobertura[c] = await contarFilas("v_exp_buscar?select=radicado&cartera=eq." + encodeURIComponent(c)); }
       catch (e) { cobertura[c] = null; }
     }));
-    ST = { exps, docs, cierres, cobertura, en: new Date() };
+    NOV = {}; const vigente = {};
+    novs.forEach(n => { if (!NOV[n.expediente_id]) { NOV[n.expediente_id] = n; vigente[n.expediente_id] = n.id; } });
+    ST = { exps, docs, novs, vigente, cobertura, en: new Date() };
     renderEstadisticas();
   } catch (e) {
     $("st-cont").innerHTML = `<div class="card empty">No se pudieron calcular: ${esc(e.message)}</div>`;
@@ -1807,13 +1824,9 @@ function stBarra(n, total) {
 function stPct(n, total) { return total ? (n / total * 100).toLocaleString("es-CO", { maximumFractionDigits: 1 }) + " %" : "—"; }
 function stNum(n) { return n === null || n === undefined ? "—" : Number(n).toLocaleString("es-CO"); }
 
-function stCausal(motivo) {
-  const m = String(motivo || "").match(/^Causal:\s*([^.]+)\./i);
-  return m ? m[1].trim() : "Sin causal registrada";
-}
 
 function renderEstadisticas() {
-  const { exps, docs, cierres, cobertura } = ST;
+  const { exps, docs, cobertura } = ST;
   const vig = docs.filter(d => !d.anulado);
   const folios = vig.reduce((a, d) => a + (Number(d.paginas) || 0), 0);
   const cerrados = exps.filter(e => e.estado === "cerrado");
@@ -1828,14 +1841,14 @@ function renderEstadisticas() {
   const sit = {};
   exps.forEach(e => { const s = situacionDe(e); sit[s] = (sit[s] || 0) + 1; });
 
-  // Causal de cierre (último cierre de cada expediente hoy cerrado)
-  const ultimo = {};
-  cierres.forEach(b => { if (!ultimo[b.expediente_id]) ultimo[b.expediente_id] = b; });
+  // Terminaciones vigentes por causal y acuerdos de pago vigentes
   const causales = {};
-  cerrados.forEach(e => {
-    const b = ultimo[e.id];
-    const c = stCausal(b && b.detalle && b.detalle.motivo);
-    causales[c] = (causales[c] || 0) + 1;
+  let terminados = 0, acuerdos = 0;
+  exps.forEach(e => {
+    const n = NOV[e.id];
+    if (!n) return;
+    if (n.tipo === "terminacion") { terminados++; causales[n.causal || "Sin causal"] = (causales[n.causal || "Sin causal"] || 0) + 1; }
+    if (n.tipo === "acuerdo_pago") acuerdos++;
   });
 
   // Incorporación por mes (últimos 12)
@@ -1900,12 +1913,12 @@ function renderEstadisticas() {
       </div>
 
       <div class="card">
-        <h3 class="st-h">Causal de cierre</h3>
-        <p class="small muted st-p">Expedientes cerrados hoy, por la causal elegida al cerrarlos.</p>
+        <h3 class="st-h">Terminaciones por causal</h3>
+        <p class="small muted st-p">${stNum(terminados)} proceso(s) terminado(s) · ${stNum(acuerdos)} acuerdo(s) de pago vigente(s), según las novedades registradas.</p>
         <table class="tbl st-tbl"><tbody>
-        ${Object.entries(causales).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<tr><td>${esc(c)}</td>
-          <td class="num">${stNum(n)}</td><td class="num nowrap">${stPct(n, cerrados.length)}</td><td class="st-bar-td">${stBarra(n, cerrados.length)}</td></tr>`).join("") ||
-          `<tr><td class="empty">Ningún expediente cerrado.</td></tr>`}
+        ${Object.entries(causales).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<tr><td>${esc(c)}${causalEsPago(c) ? ' <span class="chip chip-sit-cancelado">Cancelado</span>' : ""}</td>
+          <td class="num">${stNum(n)}</td><td class="num nowrap">${stPct(n, terminados)}</td><td class="st-bar-td">${stBarra(n, terminados)}</td></tr>`).join("") ||
+          `<tr><td class="empty">${NOV_DISPONIBLE ? "Ninguna terminación registrada." : "Falta crear la tabla de novedades (sql_exp_novedades.sql)."}</td></tr>`}
         </tbody></table>
       </div>
 
@@ -1952,6 +1965,8 @@ function stCSVExpedientes() {
     { t: "Cédula/NIT", v: "id_contribuyente" },
     { t: "Estado en cartera", v: "estado_cartera" },
     { t: "Situación", v: e => SITUACIONES[situacionDe(e)] },
+    { t: "Causal de terminación", v: e => NOV[e.id] && NOV[e.id].tipo === "terminacion" ? NOV[e.id].causal : "" },
+    { t: "N.º acuerdo de pago", v: e => NOV[e.id] && NOV[e.id].tipo === "acuerdo_pago" ? NOV[e.id].numero : "" },
     { t: "Valor", v: "valor_total" },
     { t: "Expediente", v: "estado" },
     { t: "Documentos", v: "total_documentos" },
@@ -2000,4 +2015,163 @@ function rcCSV() {
     { t: "Documentos", v: "total_documentos" },
     { t: "Folios", v: "total_folios" }
   ], RESULTADOS);
+}
+
+// ════════════════════════════════════════════════════════════
+// NOVEDADES DEL PROCESO — terminación, acuerdo de pago, incumplimiento
+// Tabla exp_novedades (historial: solo se inserta). Requiere sql_exp_novedades.sql
+// ════════════════════════════════════════════════════════════
+const CAUSALES_TERMINACION = [
+  { v: "Pago total de la obligación", pago: true },
+  { v: "Prescripción de la acción de cobro (art. 817 E.T.)" },
+  { v: "Remisión de la obligación (art. 820 E.T.)" },
+  { v: "Excepciones probadas (art. 833 E.T.)" },
+  { v: "Revocatoria o nulidad del título ejecutivo" },
+  { v: "Depuración de cartera (saneamiento contable)" },
+  { v: "Otra", otra: true }
+];
+const TIPOS_NOVEDAD = { terminacion: "Terminación", acuerdo_pago: "Acuerdo de pago", acuerdo_incumplido: "Acuerdo incumplido" };
+let NOV_HIST = [];           // historial del expediente abierto
+let NOV_DISPONIBLE = true;   // false si la tabla aún no existe en la BD
+
+function causalEsPago(c) { return /^pago total/i.test(String(c || "")); }
+function textoNovedad(n) {
+  if (!n) return "";
+  let t = TIPOS_NOVEDAD[n.tipo] || n.tipo;
+  if (n.tipo === "terminacion") t += " por " + (causalEsPago(n.causal) ? "pago total (cancelado)" : String(n.causal || "").toLowerCase());
+  if (n.numero) t += (n.tipo === "terminacion" ? " · acto N.º " : " N.º ") + n.numero;
+  if (n.fecha) t += " · " + fmtFecha(n.fecha);
+  return t;
+}
+
+// Trae la última novedad de cada expediente; con historial=true guarda todo el del expediente abierto
+async function cargarNovedades(ids, historial) {
+  const lista = [...new Set((ids || []).filter(x => x !== null && x !== undefined))];
+  if (!lista.length || !NOV_DISPONIBLE) return;
+  try {
+    for (let i = 0; i < lista.length; i += 150) {
+      const lote = lista.slice(i, i + 150);
+      const filas = await supaFetch("exp_novedades?select=*&expediente_id=in.(" + lote.map(Number).join(",") + ")&order=registrado_en.desc,id.desc") || [];
+      lote.forEach(id => { delete NOV[id]; });
+      filas.forEach(n => { if (!NOV[n.expediente_id]) NOV[n.expediente_id] = n; });
+      if (historial && lote.length === 1) NOV_HIST = filas;
+    }
+  } catch (e) {
+    if (/exp_novedades|does not exist|schema cache|404/i.test(e.message)) {
+      NOV_DISPONIBLE = false;
+      console.warn("Falta la tabla exp_novedades: ejecuta sql_exp_novedades.sql");
+    } else console.warn("Novedades:", e.message);
+  }
+}
+
+function renderNovedades() {
+  const body = $("nov-body");
+  if (!NOV_DISPONIBLE) { body.innerHTML = `<tr><td colspan="6" class="empty">Falta crear la tabla de novedades en la base de datos (sql_exp_novedades.sql).</td></tr>`; return; }
+  body.innerHTML = NOV_HIST.length ? NOV_HIST.map((n, i) => `<tr${i ? ' class="nov-vieja"' : ""}>
+    <td class="small nowrap">${fmtFechaHora(n.registrado_en)}${i ? "" : '<div class="nov-actual">Vigente</div>'}</td>
+    <td><strong>${esc(TIPOS_NOVEDAD[n.tipo] || n.tipo)}</strong>${n.causal ? `<div class="small muted">${esc(n.causal)}</div>` : ""}</td>
+    <td class="nowrap">${esc(n.numero || "—")}</td>
+    <td class="nowrap">${fmtFecha(n.fecha)}</td>
+    <td class="small">${esc(n.observacion || "—")}</td>
+    <td class="small">${esc(n.registrado_por_email || "—")}</td>
+  </tr>`).join("") : `<tr><td colspan="6" class="empty">Sin novedades. El proceso sigue su curso normal.</td></tr>`;
+}
+
+function abrirModalNovedad() {
+  if (!EXP) return;
+  if (!NOV_DISPONIBLE) { toast("Primero hay que crear la tabla exp_novedades en Supabase (sql_exp_novedades.sql).", true); return; }
+  const actual = NOV[EXP.id];
+  $("nov-info").textContent = EXP.radicado + " · " + (EXP.contribuyente || "") + (actual ? " · Vigente: " + textoNovedad(actual) : "");
+  document.querySelectorAll('input[name="nov-tipo"]').forEach(r => {
+    r.checked = false;
+    // El incumplimiento solo tiene sentido si hay un acuerdo vigente
+    if (r.value === "acuerdo_incumplido") r.closest(".nov-tipo").classList.toggle("hidden", !(actual && actual.tipo === "acuerdo_pago"));
+  });
+  $("nov-causal").innerHTML = '<option value="">— Selecciona —</option>' +
+    CAUSALES_TERMINACION.map(c => `<option value="${esc(c.v)}">${esc(c.v === "Pago total de la obligación" ? c.v + " (cancelado)" : c.v)}</option>`).join("");
+  ["nov-numero", "nov-fecha", "nov-obs"].forEach(id => { $(id).value = ""; });
+  $("nov-fecha").max = hoyISO();
+  $("nov-cerrar").checked = true;
+  $("nov-campos").classList.add("hidden");
+  $("btn-nov-ok").disabled = true;
+  abrirModal("m-novedad");
+}
+function novTipo() { const r = document.querySelector('input[name="nov-tipo"]:checked'); return r ? r.value : ""; }
+function novCambioTipo() {
+  const t = novTipo();
+  $("nov-campos").classList.toggle("hidden", !t);
+  $("btn-nov-ok").disabled = !t;
+  $("nov-causal-wrap").classList.toggle("hidden", t !== "terminacion");
+  $("nov-numero-wrap").classList.toggle("hidden", t === "acuerdo_incumplido");
+  $("nov-cerrar-wrap").classList.toggle("hidden", t !== "terminacion" || EXP.estado !== "abierto");
+  $("nov-numero-l").textContent = t === "acuerdo_pago" ? "Número del acuerdo de pago *" : "Número del auto o resolución de terminación";
+  $("nov-fecha-l").textContent = t === "acuerdo_pago" ? "Fecha del acuerdo" : t === "terminacion" ? "Fecha del auto o resolución" : "Fecha en que se declaró el incumplimiento";
+  $("nov-numero").placeholder = t === "acuerdo_pago" ? "p. ej. AP-2026-015" : "Opcional";
+  novCambioCausal();
+}
+function novCambioCausal() {
+  const c = CAUSALES_TERMINACION.find(x => x.v === $("nov-causal").value);
+  const obligatoria = novTipo() === "terminacion" && c && c.otra;
+  $("nov-obs-l").textContent = obligatoria ? "Describe la causal *" : "Observación";
+}
+
+async function confirmarNovedad() {
+  const tipo = novTipo();
+  if (!tipo || !EXP) return;
+  const causal = tipo === "terminacion" ? $("nov-causal").value : null;
+  const numero = tipo === "acuerdo_incumplido" ? "" : $("nov-numero").value.trim();
+  const fecha = $("nov-fecha").value || null;
+  const obs = $("nov-obs").value.trim();
+  if (tipo === "terminacion" && !causal) { toast("Elige la causal de terminación.", true); return; }
+  if (tipo === "terminacion" && causal === "Otra" && obs.length < 10) { toast("Describe la causal (mínimo 10 caracteres).", true); return; }
+  if (tipo === "acuerdo_pago" && !numero) { toast("Escribe el número del acuerdo de pago.", true); return; }
+  const cerrar = tipo === "terminacion" && EXP.estado === "abierto" && $("nov-cerrar").checked;
+  const resumen = textoNovedad({ tipo, causal, numero, fecha });
+  if (!confirm("Se registrará: " + resumen + (cerrar ? "\n\nY se cerrará el expediente digital." : "") +
+               "\n\nLas novedades no se editan ni se borran. ¿Continuar?")) return;
+  const btn = $("btn-nov-ok");
+  btn.disabled = true;
+  try {
+    await supaFetch("exp_novedades", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ expediente_id: EXP.id, tipo, causal, numero: numero || null, fecha, observacion: obs || null })
+    });
+    registrarEvento("novedad", null, { motivo: resumen });
+    if (cerrar) {
+      try {
+        await rpc("exp_cambiar_estado", { p_expediente_id: EXP.id, p_estado: "cerrado",
+                                          p_motivo: resumen + (obs ? ". " + obs : "") });
+      } catch (e) {
+        toast("La novedad quedó registrada, pero no se pudo cerrar el expediente: " + e.message, true);
+      }
+    }
+    cerrarModal("m-novedad");
+    toast("Novedad registrada" + (cerrar ? " y expediente cerrado." : "."));
+    await recargarExpediente();
+    if (ST) ST = null;   // las estadísticas se recalculan la próxima vez
+  } catch (e) {
+    toast("No se pudo registrar: " + e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function stCSVNovedades() {
+  if (!ST) { toast("Abre primero las estadísticas.", true); return; }
+  const rad = {}; ST.exps.forEach(e => { rad[e.id] = e; });
+  descargarCSV("Novedades_procesos_" + fechaArchivo() + ".csv", [
+    { t: "Cartera", v: n => rad[n.expediente_id] ? (CARTERAS[rad[n.expediente_id].cartera] || rad[n.expediente_id].cartera) : "" },
+    { t: "Radicado", v: n => rad[n.expediente_id] ? rad[n.expediente_id].radicado : n.expediente_id },
+    { t: "Contribuyente", v: n => rad[n.expediente_id] ? rad[n.expediente_id].contribuyente : "" },
+    { t: "Novedad", v: n => TIPOS_NOVEDAD[n.tipo] || n.tipo },
+    { t: "Causal", v: "causal" },
+    { t: "Situación resultante", v: n => n.tipo === "terminacion" ? (causalEsPago(n.causal) ? "Cancelado" : "Terminado") : n.tipo === "acuerdo_pago" ? "En acuerdo de pago" : "Activo" },
+    { t: "Número", v: "numero" },
+    { t: "Fecha del acto", v: n => fmtFecha(n.fecha) },
+    { t: "Observación", v: "observacion" },
+    { t: "Vigente", v: n => ST.vigente && ST.vigente[n.expediente_id] === n.id ? "Sí" : "No" },
+    { t: "Registró", v: "registrado_por_email" },
+    { t: "Registrada", v: n => fmtFechaHora(n.registrado_en) }
+  ], ST.novs || []);
 }

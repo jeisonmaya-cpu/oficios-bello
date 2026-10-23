@@ -142,6 +142,7 @@
         <button class="btn" id="btn-indice-pdf" onclick="descargarIndicePDF()">🧾 Índice electrónico (PDF)</button>
         <button class="btn btn-gold" id="btn-foliado" onclick="descargarFoliado()">📚 Expediente foliado (PDF)</button>
         <button class="btn" id="btn-indice-csv" onclick="descargarIndiceCSV()">⬇ Índice (CSV)</button>
+        <button class="btn" id="btn-novedad" onclick="abrirModalNovedad()">⚖ Registrar novedad</button>
         <button class="btn" id="btn-estado" onclick="abrirModalEstado()"></button>
         <button class="btn" onclick="recargarExpediente()">↻ Actualizar</button>
       </div>
@@ -150,6 +151,7 @@
     <div class="subtabs" role="tablist">
       <button class="subtab active" id="st-indice" onclick="irSub('indice')">Índice</button>
       <button class="subtab" id="st-incorporar" onclick="irSub('incorporar')">Incorporar documentos</button>
+      <button class="subtab" id="st-novedades" onclick="irSub('novedades')">Novedades del proceso</button>
       <button class="subtab" id="st-bitacora" onclick="irSub('bitacora')">Bitácora</button>
     </div>
 
@@ -187,6 +189,17 @@
           <button class="btn btn-sm" onclick="limpiarCola()">Quitar completados y con error</button>
           <button class="btn btn-gold" id="btn-subir" onclick="subirCola()">Incorporar</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Novedades -->
+    <div class="sub" id="sub-novedades">
+      <p class="small muted" style="margin:0 0 10px">Terminaciones y acuerdos de pago registrados. Es un historial: no se edita ni se borra; si algo cambia, se registra una novedad nueva.</p>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Registrada</th><th>Novedad</th><th>Número</th><th>Fecha del acto</th><th>Observación</th><th>Registró</th></tr></thead>
+          <tbody id="nov-body"></tbody>
+        </table>
       </div>
     </div>
 
@@ -288,6 +301,7 @@
     <div class="st-acciones">
       <button class="btn btn-sm" onclick="stCSVExpedientes()">⬇ Expedientes (CSV)</button>
       <button class="btn btn-sm" onclick="stCSVDocumentos()">⬇ Documentos (CSV)</button>
+      <button class="btn btn-sm" onclick="stCSVNovedades()">⬇ Novedades (CSV)</button>
       <button class="btn btn-sm" onclick="cargarEstadisticas(true)">↻ Actualizar</button>
     </div>
   </div>
@@ -338,18 +352,44 @@
       <button class="modal-x" onclick="cerrarModal('m-estado')" aria-label="Cerrar">×</button>
     </div>
     <p class="small muted" id="estado-info"></p>
-    <label class="fld hidden" id="estado-causal-wrap" style="margin-bottom:10px">Causal de cierre
-      <select id="estado-causal" class="sel">
-        <option value="">— Selecciona —</option>
-        <option value="Terminado">Terminado</option>
-        <option value="Cancelado">Cancelado (pago total)</option>
-        <option value="Acuerdo de pago">Acuerdo de pago</option>
-        <option value="Otra">Otra</option>
-      </select></label>
     <textarea class="txa" id="estado-motivo" placeholder="Motivo (mínimo 10 caracteres)"></textarea>
     <div class="modal-f">
       <button class="btn" onclick="cerrarModal('m-estado')">Cancelar</button>
       <button class="btn btn-gold" id="btn-estado-ok" onclick="confirmarEstado()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL NOVEDAD DEL PROCESO ════════ -->
+<div class="modal" id="m-novedad" onclick="if(event.target===this)cerrarModal('m-novedad')">
+  <div class="modal-box">
+    <div class="modal-h">
+      <div class="modal-t">Registrar novedad del proceso</div>
+      <button class="modal-x" onclick="cerrarModal('m-novedad')" aria-label="Cerrar">×</button>
+    </div>
+    <p class="small muted" id="nov-info"></p>
+    <div class="nov-tipos" role="radiogroup" aria-label="Tipo de novedad">
+      <label class="nov-tipo"><input type="radio" name="nov-tipo" value="terminacion" onchange="novCambioTipo()"> <span><strong>Terminación</strong><br><span class="small muted">El proceso terminó</span></span></label>
+      <label class="nov-tipo"><input type="radio" name="nov-tipo" value="acuerdo_pago" onchange="novCambioTipo()"> <span><strong>Acuerdo de pago</strong><br><span class="small muted">Se suscribió un acuerdo</span></span></label>
+      <label class="nov-tipo"><input type="radio" name="nov-tipo" value="acuerdo_incumplido" onchange="novCambioTipo()"> <span><strong>Acuerdo incumplido</strong><br><span class="small muted">Se reanuda el cobro</span></span></label>
+    </div>
+    <div id="nov-campos" class="hidden" style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+      <label class="fld" id="nov-causal-wrap">Causal de terminación *
+        <select id="nov-causal" class="sel" onchange="novCambioCausal()"></select></label>
+      <label class="fld" id="nov-numero-wrap"><span id="nov-numero-l">Número</span>
+        <input id="nov-numero" class="inp" type="text" maxlength="60"></label>
+      <label class="fld"><span id="nov-fecha-l">Fecha del acto</span>
+        <input id="nov-fecha" class="inp" type="date"></label>
+      <label class="fld"><span id="nov-obs-l">Observación</span>
+        <textarea id="nov-obs" class="txa" maxlength="1000" style="min-height:70px"></textarea></label>
+      <div id="nov-cerrar-wrap">
+        <label class="small chk"><input type="checkbox" id="nov-cerrar" checked> Cerrar también el expediente digital</label>
+        <div class="small muted" style="margin-top:4px">Un expediente cerrado no admite documentos: incorpora primero el auto o la resolución de terminación.</div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="cerrarModal('m-novedad')">Cancelar</button>
+      <button class="btn btn-gold" id="btn-nov-ok" onclick="confirmarNovedad()" disabled>Registrar</button>
     </div>
   </div>
 </div>
