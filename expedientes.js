@@ -16,7 +16,11 @@ const URL_FIRMADA_S = 600;                // vigencia de las URL firmadas (10 mi
 
 // Se reemplaza con el catálogo exp_carteras al iniciar; esto es solo el respaldo
 let CARTERAS = { predial: "Predial", ou: "Obligaciones Urbanísticas", transito: "Tránsito",
-                 policia: "Sanciones de policía", acuerdos: "Acuerdos de pago" };
+                 policia: "Sanciones de policía", acuerdos: "Acuerdos de pago",
+                 acuerdos_predial: "Acuerdos Predial", acuerdos_ica: "Acuerdos ICA" };
+// Carteras de convenios de pago sin proceso de cobro (radicado AP-<número del convenio>)
+const CARTERAS_ACUERDOS = ["acuerdos_predial", "acuerdos_ica", "acuerdos"];
+function esCarteraAcuerdos(c) { return CARTERAS_ACUERDOS.includes(c); }
 const ACCIONES = {
   crear_expediente: "Creó el expediente",
   incorporar:       "Incorporó documento",
@@ -319,7 +323,7 @@ function irPanel(n) {
   $("panel-" + n).classList.add("active");
   $("tab-" + n).classList.add("active");
   if (n === "buscar") cargarRecientes();
-  if (n === "estadisticas") cargarEstadisticas();
+  if (n === "estadisticas") { if (ST_VISTA === "acuerdos") cargarEstAcuerdos(); else cargarEstadisticas(); }
 }
 function irSub(n) {
   ["indice", "incorporar", "novedades", "bitacora"].forEach(k => {
@@ -374,8 +378,10 @@ async function iniciarApp() {
 
 function llenarSelectCarteras() {
   const ops = Object.keys(CARTERAS).map(k => `<option value="${esc(k)}">${esc(CARTERAS[k])}</option>`).join("");
-  $("f-cartera").innerHTML = '<option value="">Todas las carteras</option>' + ops;
-  $("r-cartera").innerHTML = '<option value="">Todas las carteras</option>' + ops;
+  const opsProc = Object.keys(CARTERAS).filter(k => !esCarteraAcuerdos(k))
+    .map(k => `<option value="${esc(k)}">${esc(CARTERAS[k])}</option>`).join("");
+  $("f-cartera").innerHTML = '<option value="">Todas las carteras</option>' + opsProc;
+  $("r-cartera").innerHTML = '<option value="">Todas las carteras</option>' + opsProc;
   $("man-cartera").innerHTML = ops;
   if ($("cm-cartera")) $("cm-cartera").innerHTML = ops;
   if ($("cm-cartera") && CARTERAS.predial) $("cm-cartera").value = "predial";
@@ -397,7 +403,8 @@ function chipsSituacion(f) {
   const out = [];
   if (f.estado_cartera || f.en_acuerdo || NOV[idExpDe(f)]) out.push(chipSituacion(f));
   if (f.embargos > 0) out.push(`<span class="chip chip-embargo">${f.embargos} embargo${f.embargos === 1 ? "" : "s"}</span>`);
-  if (f.origen === "manual") out.push('<span class="chip chip-manual">Manual</span>');
+  // En las carteras de acuerdos todo es manual por diseño: la etiqueta no aporta
+  if (f.origen === "manual" && !esCarteraAcuerdos(f.cartera)) out.push('<span class="chip chip-manual">Manual</span>');
   return out.join(" ");
 }
 
@@ -424,6 +431,7 @@ async function buscar() {
   let path = "v_exp_buscar?select=*&or=" + encodeURIComponent("(" + filtros.join(",") + ")") +
              "&order=radicado.asc&limit=60";
   if (cartera) path += "&cartera=eq." + cartera;
+  else path += "&cartera=not.in.(" + CARTERAS_ACUERDOS.join(",") + ")";
 
   $("btn-buscar").disabled = true;
   info.textContent = "Buscando…";
@@ -580,6 +588,7 @@ async function recientesPorRadicado(rc, re, rs) {
   const n = rs ? Math.max(300, REC_LIMITE * 4) : REC_LIMITE;
   let q = "exp_digital?select=id&order=cartera.asc,radicado_prefijo.asc,radicado_num.asc,radicado_norm.asc&limit=" + n;
   if (rc) q += "&cartera=eq." + encodeURIComponent(rc);
+  else q += "&cartera=not.in.(" + CARTERAS_ACUERDOS.join(",") + ")";
   if (re) q += "&estado=eq." + encodeURIComponent(re);
   if ($("r-mios") && $("r-mios").checked && USUARIO_EMAIL) q += "&creado_por_email=eq." + encodeURIComponent(USUARIO_EMAIL);
   let ids;
@@ -609,6 +618,7 @@ async function cargarRecientes() {
     const rc = $("r-cartera") ? $("r-cartera").value : "";
     const re = $("r-estado") ? $("r-estado").value : "";
     if (rc) path += "&cartera=eq." + encodeURIComponent(rc);
+    else path += "&cartera=not.in.(" + CARTERAS_ACUERDOS.join(",") + ")";
     if (re) path += "&estado=eq." + encodeURIComponent(re);
     if ($("r-mios") && $("r-mios").checked && USUARIO_EMAIL) path += "&creado_por_email=eq." + encodeURIComponent(USUARIO_EMAIL);
     const rs = $("r-situacion") ? $("r-situacion").value : "";
@@ -1694,7 +1704,7 @@ function cmCambioModo() {
   const conv = cmModo() === "convenio";
   $("cm-cartera").classList.toggle("hidden", conv);
   $("cm-ayuda-modo").textContent = conv
-    ? "Cada archivo se busca por su número en el reporte de acuerdos de pago (66132.pdf → convenio 66132). Con la cédula del deudor se encuentra su proceso activo en Predial; si no tiene, o si el convenio es de ICA, va a un expediente propio en la cartera Acuerdos de pago."
+    ? "Cada archivo se busca por su número en el reporte de acuerdos de pago (66132.pdf → convenio 66132). Con la cédula del deudor se encuentra su proceso activo en Predial; si no tiene, va a un expediente propio en Acuerdos Predial, y los convenios de ICA van a Acuerdos ICA."
     : "Cada archivo se asigna a su proceso por el número del nombre (FP-1212, FP1212, FP01212 o FP'1212 son el mismo); lo que sigue al número se usa como descripción.";
   $("cm-ayuda-2").textContent = conv
     ? "Todos los convenios van como un solo tipo de documento. La descripción en el índice será «Convenio de pago N.º …» y la fecha del documento, la de aprobación del convenio."
@@ -1707,10 +1717,12 @@ function cmCambioModo() {
   $("cm-resultado").classList.add("hidden");
 }
 function llaveCedula(s) { return String(s || "").split("-")[0].replace(/\D/g, ""); }
+function carteraAcuerdoDe(conv) { return conv && conv.fuente === "ica" ? "acuerdos_ica" : "acuerdos_predial"; }
 function cmProcAcuerdos(conv) {
   const k = "AP" + conv.consecutivo;
   const ya = (CM.expAcuerdos || {})[k];
-  return { cartera: "acuerdos", radicado: "AP-" + conv.consecutivo, radicado_norm: k,
+  // Si el expediente AP ya existe se respeta su cartera (también los antiguos de "acuerdos")
+  return { cartera: ya ? ya.cartera : carteraAcuerdoDe(conv), radicado: "AP-" + conv.consecutivo, radicado_norm: k,
            contribuyente: conv.nombre_deudor || "", id_contribuyente: conv.cedula_deudor || "",
            manual: true, exp_id: ya ? ya.id : null, estado_expediente: ya ? ya.estado : null };
 }
@@ -1768,7 +1780,8 @@ async function cmAnalizarConvenios(archivos) {
     // 3) Expedientes de acuerdos ya creados (para no duplicar)
     const aps = nums.map(n => "AP" + n);
     for (let i = 0; i < aps.length; i += 150) {
-      const filas = await supaFetch("exp_digital?select=id,radicado_norm,estado&cartera=eq.acuerdos&radicado_norm=in.(" + aps.slice(i, i + 150).join(",") + ")") || [];
+      const filas = await supaFetch("exp_digital?select=id,cartera,radicado_norm,estado&cartera=in.(" + CARTERAS_ACUERDOS.join(",") +
+                                    ")&radicado_norm=in.(" + aps.slice(i, i + 150).join(",") + ")") || [];
       filas.forEach(r => { CM.expAcuerdos[r.radicado_norm] = r; });
     }
   } catch (e) {
@@ -1788,7 +1801,7 @@ async function cmAnalizarConvenios(archivos) {
     if (!ESTADOS_CONVENIO[est]) { f.estado = "descartado"; f.msg = "Convenio " + f.consec + " con estado «" + est + "» sin clasificar: se ignora"; return; }
     const info = "Convenio " + f.consec + " · " + ESTADOS_CONVENIO[est] + " · " + nombrePropio(c.nombre_deudor || "");
     if (c.fuente === "ica") {
-      f.proc = cmProcAcuerdos(c); f.msg = info + " · ICA: va al expediente de acuerdos";
+      f.proc = cmProcAcuerdos(c); f.msg = info + " · convenio de ICA: va a " + (CARTERAS[f.proc.cartera] || f.proc.cartera);
     } else {
       const todos = porCed[llaveCedula(c.cedula_deudor)] || [];
       const activos = todos.filter(p => !["cancelado", "terminado"].includes(situacionDe(p)));
@@ -1798,7 +1811,8 @@ async function cmAnalizarConvenios(archivos) {
         f.msg = info + " · la cédula tiene " + activos.length + " procesos activos";
       } else {
         f.proc = cmProcAcuerdos(c);
-        f.msg = info + (todos.length ? " · sin proceso activo (terminados: " + todos.map(p => radVista(p.radicado)).join(", ") + ")" : " · sin proceso de cobro");
+        f.msg = info + (todos.length ? " · sin proceso activo (terminados: " + todos.map(p => radVista(p.radicado)).join(", ") + ")" : " · sin proceso de cobro") +
+                " · va a " + (CARTERAS[f.proc.cartera] || f.proc.cartera);
       }
     }
     if (f.proc && f.proc.estado_expediente === "cerrado") {
@@ -1819,7 +1833,7 @@ function cmSelectorDudoso(f) {
   const ops = ['<option value="">— Elige el destino —</option>']
     .concat(f.cands.map(p => `<option value="${esc(p.radicado)}"${f.eleccion === p.radicado ? " selected" : ""}>${esc(radVista(p.radicado))} · ${esc(p.estado_cartera || "")}</option>`))
     .concat([`<option value="__todos"${f.eleccion === "__todos" ? " selected" : ""}>Todos sus procesos (${f.cands.length})</option>`,
-             `<option value="__acuerdos"${f.eleccion === "__acuerdos" ? " selected" : ""}>Expediente de acuerdos (AP-${esc(f.consec)})</option>`]);
+             `<option value="__acuerdos"${f.eleccion === "__acuerdos" ? " selected" : ""}>${esc(CARTERAS[carteraAcuerdoDe(f.conv)] || "Acuerdos")} (AP-${esc(f.consec)})</option>`]);
   return `<select class="sel cm-eleccion" onchange="cmElegir('${f.uid}', this.value)" aria-label="Destino del convenio">${ops.join("")}</select>`;
 }
 function cmAplicarEleccion(f, val) {
@@ -2209,7 +2223,10 @@ function stNum(n) { return n === null || n === undefined ? "—" : Number(n).toL
 
 
 function renderEstadisticas() {
-  const { exps, docs, cobertura } = ST;
+  const { cobertura } = ST;
+  const exps = ST.exps.filter(e => !esCarteraAcuerdos(e.cartera));
+  const idsProc = new Set(exps.map(e => e.id));
+  const docs = ST.docs.filter(d => idsProc.has(d.expediente_id));
   const vig = docs.filter(d => !d.anulado);
   const folios = vig.reduce((a, d) => a + (Number(d.paginas) || 0), 0);
   const cerrados = exps.filter(e => e.estado === "cerrado");
@@ -2217,7 +2234,7 @@ function renderEstadisticas() {
   // Cobertura por cartera
   const porCartera = {};
   exps.forEach(e => { porCartera[e.cartera] = (porCartera[e.cartera] || 0) + 1; });
-  const filasCob = Object.keys(CARTERAS).map(c => ({ c, total: cobertura[c], con: porCartera[c] || 0 }))
+  const filasCob = Object.keys(CARTERAS).filter(c => !esCarteraAcuerdos(c)).map(c => ({ c, total: cobertura[c], con: porCartera[c] || 0 }))
     .filter(x => x.con || x.total);
 
   // Situación de los procesos con expediente
@@ -2558,4 +2575,273 @@ function stCSVNovedades() {
     { t: "Registró", v: "registrado_por_email" },
     { t: "Registrada", v: n => fmtFechaHora(n.registrado_en) }
   ], ST.novs || []);
+}
+
+
+// ════════════════════════════════════════════════════════════
+// ACUERDOS DE PAGO — vista propia y estadísticas
+// Fuente: v_acuerdos_pago y v_acuerdos_pago_resumen (sql_acuerdos_vistas.sql)
+// ════════════════════════════════════════════════════════════
+const ESTADO_AC = {
+  A: { t: "Vigente",        c: "vig" },
+  C: { t: "Cumplido",       c: "cum" },
+  N: { t: "Anulado",        c: "anu" },
+  E: { t: "En elaboración", c: "ela" }
+};
+const TRIBUTO_AC = { predial: "Predial", ica: "ICA" };
+let VISTA = "procesos";
+let AC_LIMITE = 24;
+let AC_LISTO = false;
+
+function irVista(v) {
+  VISTA = v;
+  $("vista-procesos").classList.toggle("hidden", v !== "procesos");
+  $("vista-acuerdos").classList.toggle("hidden", v !== "acuerdos");
+  $("vs-procesos").classList.toggle("active", v === "procesos");
+  $("vs-acuerdos").classList.toggle("active", v === "acuerdos");
+  $("vs-procesos").setAttribute("aria-selected", v === "procesos");
+  $("vs-acuerdos").setAttribute("aria-selected", v === "acuerdos");
+  $("buscar-intro").textContent = v === "acuerdos"
+    ? "Todos los convenios de pago del reporte de Recaudos desde 2020, Predial e ICA. Busca por número de convenio, cédula o nombre, y filtra por estado, año o si ya está escaneado."
+    : "Busca por radicado, comparendo, cédula o nombre en Predial, Obligaciones Urbanísticas y Tránsito. Si el expediente no tiene carpeta digital, créala desde el resultado; si no aparece en ninguna cartera, créala manualmente.";
+  if (v === "acuerdos" && !AC_LISTO) { acPrepararAnios(); acBuscar(); }
+}
+function acPrepararAnios() {
+  const sel = $("ac-anio");
+  if (sel.options.length > 1) return;
+  for (let y = new Date().getFullYear(); y >= 2020; y--) sel.insertAdjacentHTML("beforeend", `<option value="${y}">${y}</option>`);
+}
+
+// Filtros comunes (lista, conteo y CSV)
+function acFiltros() {
+  let f = "";
+  const q = $("ac-q").value.trim();
+  if (q) {
+    if (/^\d+$/.test(q)) f += "&or=" + encodeURIComponent("(consecutivo.eq." + q + ",cedula_deudor.eq." + q + ")");
+    else f += "&nombre_deudor=ilike." + encodeURIComponent("*" + q.replace(/\s+/g, "*") + "*");
+  }
+  const fu = $("ac-fuente").value, es = $("ac-estado").value, an = $("ac-anio").value, sc = $("ac-escaneo").value;
+  if (fu) f += "&fuente=eq." + fu;
+  if (es) f += "&estado=eq." + es;
+  if (an) f += "&anio=eq." + an;
+  if (sc === "si") f += "&escaneado=is.true";
+  if (sc === "no") f += "&escaneado=is.false";
+  return f;
+}
+function acOrden() {
+  return $("ac-orden").value === "numero" ? "consecutivo.desc" : "fecha_elaboracion.desc.nullslast,consecutivo.desc";
+}
+
+async function acBuscar(mas) {
+  if (!mas) AC_LIMITE = 24;
+  AC_LISTO = true;
+  const grid = $("ac-grid");
+  if (!mas) grid.innerHTML = esqueletos(8);
+  const f = acFiltros();
+  try {
+    const [filas, total, nEsc] = await Promise.all([
+      supaFetch("v_acuerdos_pago?select=*" + f + "&order=" + acOrden() + "&limit=" + AC_LIMITE),
+      contarFilas("v_acuerdos_pago?select=consecutivo" + f),
+      contarFilas("v_acuerdos_pago?select=consecutivo" + f + ($("ac-escaneo").value ? "" : "&escaneado=is.true"))
+    ]);
+    const lista = filas || [];
+    grid.innerHTML = lista.length ? lista.map(tarjetaAcuerdo).join("")
+      : `<div class="xc-vacio">Ningún convenio coincide con la búsqueda o los filtros.</div>`;
+    $("ac-mas").classList.toggle("hidden", !(total > lista.length));
+    const sc = $("ac-escaneo").value;
+    $("ac-resumen").innerHTML = total === null ? "" :
+      `<strong>${stNum(total)}</strong> convenio${total === 1 ? "" : "s"}` +
+      (sc ? "" : ` · <strong>${stNum(nEsc)}</strong> escaneado${nEsc === 1 ? "" : "s"} (${stPct(nEsc, total)})`) +
+      (total > lista.length ? ` · mostrando ${stNum(lista.length)}` : "");
+  } catch (e) {
+    const falta = /v_acuerdos_pago|does not exist|schema cache|404/i.test(e.message);
+    grid.innerHTML = `<div class="xc-vacio">${falta ? "Falta crear las vistas de acuerdos en la base de datos (sql_acuerdos_vistas.sql)." : "No se pudo cargar: " + esc(e.message)}</div>`;
+    $("ac-resumen").innerHTML = "";
+    $("ac-mas").classList.add("hidden");
+  }
+}
+function acVerMas() { AC_LIMITE += 24; acBuscar(true); }
+
+function tarjetaAcuerdo(a) {
+  const est = ESTADO_AC[a.estado] || { t: a.estado || "—", c: "ela" };
+  const trib = a.fuente === "ica"
+    ? '<span class="chip chip-acuerdos_ica">ICA</span>'
+    : a.fuente === "predial" ? '<span class="chip chip-acuerdos_predial">Predial</span>'
+    : '<span class="chip chip-sin">Sin tributo</span>';
+  const rads = String(a.radicados || "").split(",").map(r => r.trim()).filter(Boolean).map(radVista);
+  let chipEsc;
+  if (!a.escaneado) chipEsc = '<span class="chip ac-por">Por escanear</span>';
+  else if (a.ligado_proceso) chipEsc = `<span class="chip ac-esc">Escaneado · en ${esc(rads.filter(r => !/^AP-/.test(r)).join(", ") || rads.join(", "))}</span>`;
+  else chipEsc = '<span class="chip ac-esc">Escaneado</span>';
+  const fechas = [];
+  if (a.fecha_elaboracion) fechas.push("Elaborado " + fmtFecha(String(a.fecha_elaboracion).slice(0, 10)));
+  if (a.fecha_aprobacion) fechas.push("Aprobado " + fmtFecha(String(a.fecha_aprobacion).slice(0, 10)));
+  if (a.estado === "N" && a.fecha_anulacion) fechas.push("Anulado " + fmtFecha(String(a.fecha_anulacion).slice(0, 10)));
+  const abre = a.exp_id !== null && a.exp_id !== undefined;
+  return `<article class="xc ac ac-${est.c}${abre ? "" : " ac-sin"}"${abre ? ` onclick="abrirTarjeta(event, ${Number(a.exp_id)}, null)"` : ""}>
+    <div class="xc-top">${trib}<span class="xc-est"><span class="xc-dot ac-dot"></span>${esc(est.t)}</span></div>
+    <div class="xc-rad"><span class="ac-no">N.º</span> ${esc(a.consecutivo)}</div>
+    <div class="xc-nom" title="${esc(a.nombre_deudor || "")}">${esc(a.nombre_deudor ? nombrePropio(a.nombre_deudor) : "Sin nombre en el reporte")}</div>
+    <div class="xc-id">${a.cedula_deudor ? "C.C./NIT " + esc(a.cedula_deudor) : "&nbsp;"}</div>
+    <div class="xc-extra">${fechas.map(t => `<div class="xc-ids">${esc(t)}</div>`).join("")}</div>
+    <div class="xc-chips">${chipEsc}</div>
+    <div class="xc-foot">
+      <div class="xc-meta">${a.anio ? "Convenio de " + esc(a.anio) : ""}</div>
+      ${abre ? `<button class="btn btn-sm xc-btn" onclick="abrirExpediente(${Number(a.exp_id)})">Abrir</button>`
+             : '<span class="small muted">Sin PDF</span>'}
+    </div>
+  </article>`;
+}
+
+async function acCSV() {
+  const btn = $("ac-btn-csv");
+  btn.disabled = true;
+  try {
+    const filas = await traerTodo("v_acuerdos_pago?select=*" + acFiltros(), "consecutivo.desc");
+    descargarCSV("Acuerdos_de_pago_" + fechaArchivo() + ".csv", [
+      { t: "Convenio", v: "consecutivo" },
+      { t: "Tributo", v: a => TRIBUTO_AC[a.fuente] || "" },
+      { t: "Estado", v: a => (ESTADO_AC[a.estado] || {}).t || a.estado },
+      { t: "Cédula/NIT", v: "cedula_deudor" },
+      { t: "Deudor", v: "nombre_deudor" },
+      { t: "Año", v: "anio" },
+      { t: "Elaborado", v: a => fmtFecha(String(a.fecha_elaboracion || "").slice(0, 10)) },
+      { t: "Aprobado", v: a => fmtFecha(String(a.fecha_aprobacion || "").slice(0, 10)) },
+      { t: "Anulado", v: a => a.fecha_anulacion ? fmtFecha(String(a.fecha_anulacion).slice(0, 10)) : "" },
+      { t: "Escaneado", v: a => a.escaneado ? "Sí" : "No" },
+      { t: "Expedientes", v: a => String(a.radicados || "").split(",").map(r => r.trim()).filter(Boolean).map(radVista).join(", ") },
+      { t: "Ligado a proceso de cobro", v: a => a.ligado_proceso ? "Sí" : "No" }
+    ], filas);
+  } catch (e) {
+    toast("No se pudo descargar: " + e.message, true);
+  } finally { btn.disabled = false; }
+}
+
+// ── Estadísticas de acuerdos ──
+let ST_VISTA = "procesos";
+let STA = null;
+function irStVista(v) {
+  ST_VISTA = v;
+  $("st-cont").classList.toggle("hidden", v !== "procesos");
+  $("st-acu").classList.toggle("hidden", v !== "acuerdos");
+  $("st-acc-procesos").classList.toggle("hidden", v !== "procesos");
+  $("st-acc-acuerdos").classList.toggle("hidden", v !== "acuerdos");
+  $("svs-procesos").classList.toggle("active", v === "procesos");
+  $("svs-acuerdos").classList.toggle("active", v === "acuerdos");
+  if (v === "acuerdos") cargarEstAcuerdos(); else cargarEstadisticas();
+}
+async function cargarEstAcuerdos(forzar) {
+  if (STA && !forzar) { renderEstAcuerdos(); return; }
+  $("st-acu").innerHTML = `<div class="card empty">Calculando estadísticas de acuerdos…</div>`;
+  try {
+    STA = { filas: await supaFetch("v_acuerdos_pago_resumen?select=*") || [], en: new Date() };
+    renderEstAcuerdos();
+  } catch (e) {
+    const falta = /v_acuerdos_pago|does not exist|schema cache|404/i.test(e.message);
+    $("st-acu").innerHTML = `<div class="card empty">${falta ? "Falta crear las vistas de acuerdos (sql_acuerdos_vistas.sql)." : "No se pudieron calcular: " + esc(e.message)}</div>`;
+  }
+}
+function stActualizar() { if (ST_VISTA === "acuerdos") cargarEstAcuerdos(true); else cargarEstadisticas(true); }
+
+function acSumar(filas, campo) { return filas.reduce((s, r) => s + (Number(r[campo]) || 0), 0); }
+function acPorEstado(filas) {
+  const o = { A: 0, C: 0, N: 0, E: 0 };
+  filas.forEach(r => { o[r.estado] = (o[r.estado] || 0) + (Number(r.convenios) || 0); });
+  return o;
+}
+// Barra 100 % apilada: composición por estado (honesta: cada segmento es su % del total de la fila)
+function acBarraEstados(o) {
+  const t = o.A + o.C + o.N + o.E;
+  if (!t) return "";
+  const seg = (k, cls) => o[k] ? `<div class="ac-seg ${cls}" style="width:${(o[k] / t * 100).toFixed(2)}%" title="${ESTADO_AC[k].t}: ${stNum(o[k])} (${stPct(o[k], t)})"></div>` : "";
+  return `<div class="ac-stack">${seg("A", "vig")}${seg("C", "cum")}${seg("N", "anu")}${seg("E", "ela")}</div>`;
+}
+function renderEstAcuerdos() {
+  const F = STA.filas;
+  const total = acSumar(F, "convenios"), escan = acSumar(F, "escaneados"), lig = acSumar(F, "ligados_proceso");
+  const est = acPorEstado(F);
+  const leyenda = `<div class="ac-ley"><span><i class="vig"></i>Vigentes</span><span><i class="cum"></i>Cumplidos</span><span><i class="anu"></i>Anulados</span><span><i class="ela"></i>En elaboración</span></div>`;
+
+  // Por tributo
+  const trib = ["predial", "ica", null].map(fu => {
+    const sub = F.filter(r => (r.fuente || null) === fu);
+    return { fu, sub, n: acSumar(sub, "convenios"), esc: acSumar(sub, "escaneados"), est: acPorEstado(sub) };
+  }).filter(x => x.n);
+
+  // Por año
+  const anios = [...new Set(F.map(r => r.anio).filter(Boolean))].sort((a, b) => b - a).map(an => {
+    const sub = F.filter(r => r.anio === an);
+    const e = acPorEstado(sub);
+    return { an, n: acSumar(sub, "convenios"), esc: acSumar(sub, "escaneados"), e, cerrados: e.C + e.N };
+  });
+
+  $("st-acu").innerHTML = `
+    <div class="st-kpis ac-kpis">
+      <div class="card st-kpi"><div class="kpi-n">${stNum(total)}</div><div class="kpi-l">convenios desde 2020</div></div>
+      <div class="card st-kpi"><div class="kpi-n ac-k-vig">${stNum(est.A)}</div><div class="kpi-l">vigentes</div></div>
+      <div class="card st-kpi"><div class="kpi-n">${stNum(est.C)}</div><div class="kpi-l">cumplidos · ${stPct(est.C, total)}</div></div>
+      <div class="card st-kpi"><div class="kpi-n ac-k-anu">${stNum(est.N)}</div><div class="kpi-l">anulados · ${stPct(est.N, total)}</div></div>
+      <div class="card st-kpi"><div class="kpi-n">${stNum(escan)}</div><div class="kpi-l">escaneados · ${stPct(escan, total)}</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3 class="st-h">Por tributo</h3>
+      <p class="small muted st-p">Composición por estado de los convenios de cada tributo.</p>
+      <div class="tbl-wrap"><table class="tbl st-tbl"><thead><tr>
+        <th>Tributo</th><th class="num">Convenios</th><th class="num">Vigentes</th><th class="num">Cumplidos</th><th class="num">Anulados</th>
+        <th style="width:28%">Composición</th><th class="num">Escaneados</th></tr></thead><tbody>
+        ${trib.map(x => `<tr><td><strong>${x.fu ? TRIBUTO_AC[x.fu] : "Sin tributo"}</strong></td><td class="num">${stNum(x.n)}</td>
+          <td class="num">${stNum(x.est.A)}</td><td class="num">${stNum(x.est.C)}</td><td class="num">${stNum(x.est.N)}</td>
+          <td>${acBarraEstados(x.est)}</td><td class="num nowrap">${stNum(x.esc)} · ${stPct(x.esc, x.n)}</td></tr>`).join("")}
+      </tbody></table></div>
+      ${leyenda}
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="st-h-row"><h3 class="st-h">Por año de elaboración</h3><button class="btn btn-sm" onclick="acCSVAnios()">⬇ CSV</button></div>
+      <p class="small muted st-p">«Cumplidos» se calcula sobre los convenios ya cerrados de ese año (cumplidos + anulados); los vigentes todavía no tienen desenlace, por eso los años recientes tienen muchos.</p>
+      <div class="tbl-wrap"><table class="tbl st-tbl"><thead><tr>
+        <th>Año</th><th class="num">Convenios</th><th class="num">Vigentes</th><th class="num">Cumplidos</th><th class="num">Anulados</th>
+        <th style="width:26%">Composición</th><th class="num">% cumplidos de los cerrados</th><th class="num">Escaneados</th></tr></thead><tbody>
+        ${anios.map(x => `<tr><td><strong>${x.an}</strong></td><td class="num">${stNum(x.n)}</td><td class="num">${stNum(x.e.A)}</td>
+          <td class="num">${stNum(x.e.C)}</td><td class="num">${stNum(x.e.N)}</td><td>${acBarraEstados(x.e)}</td>
+          <td class="num nowrap">${x.cerrados ? stPct(x.e.C, x.cerrados) : "—"}</td><td class="num nowrap">${stNum(x.esc)} · ${stPct(x.esc, x.n)}</td></tr>`).join("")}
+      </tbody></table></div>
+      ${leyenda}
+    </div>
+
+    <div class="st-grid">
+      <div class="card">
+        <h3 class="st-h">Avance del escaneo</h3>
+        <p class="small muted st-p">Convenios del reporte con su PDF incorporado en un expediente.</p>
+        <table class="tbl st-tbl"><tbody>
+          ${trib.map(x => `<tr><td>${x.fu ? TRIBUTO_AC[x.fu] : "Sin tributo"}</td><td class="num nowrap">${stNum(x.esc)} de ${stNum(x.n)}</td>
+            <td class="num nowrap">${stPct(x.esc, x.n)}</td><td class="st-bar-td">${stBarra(x.esc, x.n)}</td></tr>`).join("")}
+          <tr><td><strong>Total</strong></td><td class="num nowrap">${stNum(escan)} de ${stNum(total)}</td><td class="num nowrap">${stPct(escan, total)}</td><td class="st-bar-td">${stBarra(escan, total)}</td></tr>
+        </tbody></table>
+      </div>
+      <div class="card">
+        <h3 class="st-h">Dónde quedaron los escaneados</h3>
+        <p class="small muted st-p">Convenios incorporados al expediente de un proceso de cobro, o a un expediente propio de acuerdos.</p>
+        <table class="tbl st-tbl"><tbody>
+          <tr><td>En un proceso de cobro (FP…)</td><td class="num">${stNum(lig)}</td><td class="num nowrap">${stPct(lig, escan)}</td><td class="st-bar-td">${stBarra(lig, escan)}</td></tr>
+          <tr><td>Solo en expediente de acuerdos (AP…)</td><td class="num">${stNum(escan - lig)}</td><td class="num nowrap">${stPct(escan - lig, escan)}</td><td class="st-bar-td">${stBarra(escan - lig, escan)}</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+    <p class="small muted" style="margin-top:12px">Fuente: reporte de acuerdos de pago (desde 2020). Datos a ${fmtFechaHora(STA.en)}. El reporte no trae valores ni cuotas, por eso aquí solo hay cantidades.</p>`;
+}
+function acCSVAnios() {
+  if (!STA) return;
+  const filas = [];
+  STA.filas.slice().sort((a, b) => (b.anio - a.anio) || String(a.fuente).localeCompare(String(b.fuente)) || String(a.estado).localeCompare(String(b.estado)))
+    .forEach(r => filas.push(r));
+  descargarCSV("Acuerdos_de_pago_resumen_" + fechaArchivo() + ".csv", [
+    { t: "Año", v: "anio" },
+    { t: "Tributo", v: r => TRIBUTO_AC[r.fuente] || "Sin tributo" },
+    { t: "Estado", v: r => (ESTADO_AC[r.estado] || {}).t || r.estado },
+    { t: "Convenios", v: "convenios" },
+    { t: "Escaneados", v: "escaneados" },
+    { t: "En proceso de cobro", v: "ligados_proceso" }
+  ], filas);
 }

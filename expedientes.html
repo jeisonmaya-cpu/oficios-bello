@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <title>Expedientes Digitales — Teodoro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="expedientes.css?v=9"/>
+<link rel="stylesheet" href="expedientes.css?v=11"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -56,9 +56,15 @@
 <div class="panel active" id="panel-buscar">
   <div class="page-hdr">
     <h2>Expedientes digitales</h2>
-    <p>Busca por radicado, comparendo, cédula o nombre en Predial, Obligaciones Urbanísticas y Tránsito. Si el expediente no tiene carpeta digital, créala desde el resultado; si no aparece en ninguna cartera, créala manualmente.</p>
+    <p id="buscar-intro">Busca por radicado, comparendo, cédula o nombre en Predial, Obligaciones Urbanísticas y Tránsito. Si el expediente no tiene carpeta digital, créala desde el resultado; si no aparece en ninguna cartera, créala manualmente.</p>
   </div>
 
+  <div class="vista-sel" role="tablist" aria-label="Qué ver">
+    <button class="vs-btn active" id="vs-procesos" role="tab" aria-selected="true" onclick="irVista('procesos')">Procesos de cobro</button>
+    <button class="vs-btn" id="vs-acuerdos" role="tab" aria-selected="false" onclick="irVista('acuerdos')">Acuerdos de pago</button>
+  </div>
+
+<div id="vista-procesos">
   <div class="card">
     <div class="search-row">
       <select id="f-cartera" class="sel" aria-label="Cartera">
@@ -106,6 +112,36 @@
   </div>
   <div class="xc-grid" id="rec-grid"></div>
   <div class="xc-mas hidden" id="rec-mas"><button class="btn" onclick="verMasRecientes()">Ver más</button></div>
+</div>
+
+<div id="vista-acuerdos" class="hidden">
+  <div class="card">
+    <div class="search-row">
+      <input id="ac-q" class="inp" type="search" placeholder="Número de convenio, cédula o nombre del deudor" aria-label="Buscar convenio" onkeydown="if(event.key==='Enter')acBuscar()">
+      <button class="btn btn-gold" onclick="acBuscar()">Buscar</button>
+    </div>
+    <div class="ac-filtros">
+      <select id="ac-fuente" class="sel" onchange="acBuscar()" aria-label="Tributo">
+        <option value="">Predial e ICA</option><option value="predial">Predial</option><option value="ica">ICA</option>
+      </select>
+      <select id="ac-estado" class="sel" onchange="acBuscar()" aria-label="Estado del convenio">
+        <option value="">Todos los estados</option><option value="A">Vigentes</option><option value="C">Cumplidos</option>
+        <option value="N">Anulados</option><option value="E">En elaboración</option>
+      </select>
+      <select id="ac-anio" class="sel" onchange="acBuscar()" aria-label="Año"><option value="">Todos los años</option></select>
+      <select id="ac-escaneo" class="sel" onchange="acBuscar()" aria-label="Escaneo">
+        <option value="">Escaneados y por escanear</option><option value="si">Escaneados</option><option value="no">Por escanear</option>
+      </select>
+      <select id="ac-orden" class="sel" onchange="acBuscar()" aria-label="Ordenar">
+        <option value="reciente">Más recientes</option><option value="numero">Por número de convenio</option>
+      </select>
+      <button class="btn btn-sm" id="ac-btn-csv" onclick="acCSV()">⬇ CSV</button>
+    </div>
+  </div>
+  <div class="ac-resumen" id="ac-resumen"></div>
+  <div class="xc-grid" id="ac-grid"></div>
+  <div class="xc-mas hidden" id="ac-mas"><button class="btn" onclick="acVerMas()">Ver más</button></div>
+</div>
 </div>
 
 <!-- ════════ PANEL EXPEDIENTE ════════ -->
@@ -265,7 +301,7 @@
       <div id="cm-dudosos" class="cm-dudosos hidden">
         <span class="small" id="cm-dudosos-n"></span>
         <button class="btn btn-sm" onclick="cmElegirDudosos('__todos')">Asignar a todos sus procesos</button>
-        <button class="btn btn-sm" onclick="cmElegirDudosos('__acuerdos')">Enviar al expediente de acuerdos</button>
+        <button class="btn btn-sm" onclick="cmElegirDudosos('__acuerdos')">Enviar a Acuerdos Predial</button>
       </div>
 
       <div id="cm-progreso" class="cm-prog hidden">
@@ -296,16 +332,26 @@
   <div class="page-hdr st-hdr">
     <div>
       <h2>Estadísticas</h2>
-      <p>Avance de la digitalización, situación de los procesos y quién está incorporando.</p>
+      <p>Avance de la digitalización, situación de los procesos, acuerdos de pago y quién está incorporando.</p>
     </div>
     <div class="st-acciones">
-      <button class="btn btn-sm" onclick="stCSVExpedientes()">⬇ Expedientes (CSV)</button>
-      <button class="btn btn-sm" onclick="stCSVDocumentos()">⬇ Documentos (CSV)</button>
-      <button class="btn btn-sm" onclick="stCSVNovedades()">⬇ Novedades (CSV)</button>
-      <button class="btn btn-sm" onclick="cargarEstadisticas(true)">↻ Actualizar</button>
+      <span id="st-acc-procesos" class="st-acciones">
+        <button class="btn btn-sm" onclick="stCSVExpedientes()">⬇ Expedientes (CSV)</button>
+        <button class="btn btn-sm" onclick="stCSVDocumentos()">⬇ Documentos (CSV)</button>
+        <button class="btn btn-sm" onclick="stCSVNovedades()">⬇ Novedades (CSV)</button>
+      </span>
+      <span id="st-acc-acuerdos" class="st-acciones hidden">
+        <button class="btn btn-sm" onclick="acCSVAnios()">⬇ Resumen (CSV)</button>
+      </span>
+      <button class="btn btn-sm" onclick="stActualizar()">↻ Actualizar</button>
     </div>
   </div>
+  <div class="vista-sel" role="tablist" aria-label="Qué estadísticas ver">
+    <button class="vs-btn active" id="svs-procesos" onclick="irStVista('procesos')">Procesos de cobro</button>
+    <button class="vs-btn" id="svs-acuerdos" onclick="irStVista('acuerdos')">Acuerdos de pago</button>
+  </div>
   <div id="st-cont"></div>
+  <div id="st-acu" class="hidden"></div>
 </div>
 
 <p class="legal">Expediente digital de trabajo y consulta de la Dirección Administrativa de Ejecuciones Fiscales. Cada documento queda registrado con su huella SHA-256, su foliación y la trazabilidad de quién lo incorporó. El repositorio oficial de la Alcaldía sigue siendo el Sistema de Gestión Documental.</p>
@@ -430,6 +476,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="expedientes.js?v=9"></script>
+<script src="expedientes.js?v=11"></script>
 </body>
 </html>
