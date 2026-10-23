@@ -180,6 +180,28 @@ function claveRadicado(s) {
   const m = n.match(/^([A-Z]*)0*(\d+)$/);
   return m ? m[1] + m[2] : n;
 }
+// Todas las formas en que puede estar guardado un radicado en radicado_norm (FP996, FP0996, FP00996…)
+function variantesRadicado(s) {
+  const n = normRad(s);
+  const m = n.match(/^([A-Z]*)0*(\d+)$/);
+  if (!m) return n ? [n] : [];
+  const out = new Set([m[1] + m[2]]);
+  for (let k = m[2].length + 1; k <= 6; k++) out.add(m[1] + m[2].padStart(k, "0"));
+  out.add(n);
+  return [...out];
+}
+// Orden natural: prefijo y luego número (FP-2 antes de FP-10, FP0996 junto a FP-996)
+function partesRad(r) {
+  const n = normRad(r);
+  const m = n.match(/^([A-Z]*)0*(\d+)/);
+  return m ? { p: m[1], n: Number(m[2]), t: n } : { p: n, n: 0, t: n };
+}
+function ordenRadicado(a, b) {
+  const x = partesRad(a), y = partesRad(b);
+  return x.p.localeCompare(y.p) || (x.n - y.n) || x.t.localeCompare(y.t);
+}
+// Radicado en formato oficial para mostrar (los datos de cartera no se modifican)
+function radVista(r) { return formatearRadicado(r); }
 // Formato oficial del radicado: FP-1212
 function formatearRadicado(s) {
   const t = String(s || "").trim().toUpperCase();
@@ -393,6 +415,9 @@ async function buscar() {
   const rn = normRad(q);
   const filtros = [];
   if (rn.length >= 2) filtros.push("radicado_norm.ilike.*" + rn + "*");
+  // FP-996 también debe encontrar FP0996 (y al revés): variantes exactas del número
+  const vars = /^[A-Z]*\d+$/.test(rn) ? variantesRadicado(rn).filter(v => v !== rn) : [];
+  if (vars.length) filtros.push("radicado_norm.in.(" + vars.join(",") + ")");
   filtros.push("id_contribuyente.ilike." + patron);
   filtros.push("contribuyente.ilike." + patron);
 
@@ -403,7 +428,8 @@ async function buscar() {
   $("btn-buscar").disabled = true;
   info.textContent = "Buscando…";
   try {
-    const filas = await supaFetch(path) || [];
+    const filas = (await supaFetch(path) || [])
+      .sort((a, b) => String(a.cartera).localeCompare(String(b.cartera)) || ordenRadicado(a.radicado, b.radicado));
     await cargarNovedades(filas.map(f => f.exp_id));
     info.textContent = filas.length
       ? filas.length + (filas.length === 60 ? "+ resultados (afina la búsqueda si no ves el tuyo)" : " resultado(s)")
@@ -423,30 +449,163 @@ async function buscar() {
 function renderResultados(filas) {
   RESULTADOS = filas;
   $("res-wrap").classList.toggle("hidden", !filas.length);
-  $("res-body").innerHTML = filas.map((f, i) => {
-    const tiene = f.exp_id !== null && f.exp_id !== undefined;
-    const estadoExp = tiene
-      ? `<span class="chip chip-${esc(f.estado_expediente)}">${esc(f.estado_expediente)}</span>
-         <span class="small muted">${f.total_documentos} doc. · ${f.total_folios} fol.</span>`
-      : `<span class="chip chip-sin">sin carpeta</span>`;
-    const accion = tiene
-      ? `<button class="btn btn-sm" onclick="abrirExpediente(${Number(f.exp_id)})">Abrir</button>`
-      : `<button class="btn btn-sm btn-gold" onclick="crearDesdeResultado(${i})">Crear</button>`;
-    return `<tr>
-      <td>${chipCartera(f.cartera)}</td>
-      <td class="nowrap"><strong>${esc(f.radicado)}</strong></td>
-      <td>${esc(f.contribuyente || "—")}<div class="small muted">${esc(f.id_contribuyente || "")}</div></td>
-      <td>${esc(f.estado_cartera || "—")}<div class="flags">${chipsSituacion(f)}</div></td>
-      <td class="num nowrap">${fmtMoneda(f.valor_total)}</td>
-      <td>${estadoExp}</td>
-      <td class="num">${accion}</td>
-    </tr>`;
-  }).join("");
+  $("res-grid").innerHTML = filas.map((f, i) => tarjetaExpediente({
+    cartera: f.cartera, radicado: f.radicado, contribuyente: f.contribuyente, id_contribuyente: f.id_contribuyente,
+    estadoExp: (f.exp_id !== null && f.exp_id !== undefined) ? f.estado_expediente : null,
+    expId: f.exp_id, docs: f.total_documentos, folios: f.total_folios, valor: f.valor_total,
+    chips: chipsSituacion(f), crearIdx: i
+  })).join("");
+  enriquecerTarjetas($("res-grid"));
+}
+
+// ── Tarjetas de expediente (búsqueda y recientes) ──
+let REC_LIMITE = 24;
+function verMasRecientes() { REC_LIMITE += 24; cargarRecientes(); }
+function filtrosRecientesCambiaron() { REC_LIMITE = 24; cargarRecientes(); }
+
+// "LUIS ALIRIO DE LA CRUZ" → "Luis Alirio de la Cruz"; siglas de empresa se respetan
+function nombrePropio(s) {
+  const menores = ["de", "del", "la", "las", "los", "y", "e", "da", "van", "von"];
+  return String(s || "").toLowerCase().replace(/\s+/g, " ").trim().split(" ").map((w, i) => {
+    if (i > 0 && menores.includes(w)) return w;
+    if (/^(s\.?a\.?s?\.?|ltda\.?|s\.?a\.?|e\.?u\.?|s\.?c\.?a\.?)$/.test(w)) return w.toUpperCase();
+    return w.replace(/(^|[-'])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+  }).join(" ");
+}
+function haceCuanto(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  if (isNaN(d)) return "";
+  const s = Math.floor((Date.now() - d) / 1000);
+  if (s < 60) return "hace un momento";
+  if (s < 3600) return "hace " + Math.floor(s / 60) + " min";
+  if (s < 86400) return "hace " + Math.floor(s / 3600) + " h";
+  const dias = Math.floor(s / 86400);
+  if (dias === 1) return "ayer";
+  if (dias < 7) return "hace " + dias + " días";
+  return fmtFecha(d.toISOString().slice(0, 10));
+}
+function abrirTarjeta(ev, expId, crearIdx) {
+  if (ev && ev.target && ev.target.closest("button, a")) return;
+  if (expId !== null && expId !== undefined && expId !== "") abrirExpediente(Number(expId));
+  else if (crearIdx !== undefined && crearIdx !== null && crearIdx !== "") crearDesdeResultado(Number(crearIdx));
+}
+function tarjetaExpediente(o) {
+  const tiene = o.expId !== null && o.expId !== undefined;
+  const est = tiene ? (o.estadoExp || "abierto") : "sin";
+  const estTxt = { abierto: "Abierto", cerrado: "Cerrado", anulado: "Anulado", sin: "Sin carpeta" }[est] || est;
+  const meta = [];
+  if (tiene) meta.push((o.docs || 0) + " doc. · " + (o.folios || 0) + " fol.");
+  if (o.valor !== undefined && o.valor !== null && o.valor !== "") meta.push(fmtMoneda(o.valor));
+  const cuando = haceCuanto(o.cuando);
+  const accion = tiene
+    ? `<button class="btn btn-sm xc-btn" onclick="abrirExpediente(${Number(o.expId)})">Abrir</button>`
+    : `<button class="btn btn-sm btn-gold xc-btn" onclick="crearDesdeResultado(${Number(o.crearIdx)})">Crear carpeta</button>`;
+  const nombre = o.contribuyente ? nombrePropio(o.contribuyente) : "Contribuyente sin nombre";
+  return `<article class="xc xc-${esc(est)}" onclick="abrirTarjeta(event, ${tiene ? Number(o.expId) : "null"}, ${tiene ? "null" : Number(o.crearIdx)})">
+    <div class="xc-top">${chipCartera(o.cartera)}<span class="xc-est"><span class="xc-dot"></span>${esc(estTxt)}</span></div>
+    <div class="xc-rad"${radVista(o.radicado) !== o.radicado ? ` title="Registrado en cartera como ${esc(o.radicado)}"` : ""}>${esc(radVista(o.radicado))}</div>
+    <div class="xc-nom" title="${esc(o.contribuyente || "")}">${esc(nombre)}</div>
+    <div class="xc-id">${o.id_contribuyente ? "C.C./NIT " + esc(o.id_contribuyente) : "&nbsp;"}</div>
+    <div class="xc-extra" data-cartera="${esc(o.cartera)}" data-rad="${esc(o.radicado)}"></div>
+    <div class="xc-chips">${o.chips || ""}</div>
+    <div class="xc-foot">
+      <div class="xc-meta">${esc(meta.join(" · "))}${cuando ? `<div class="xc-cuando">${esc(cuando)}</div>` : ""}</div>
+      ${accion}
+    </div>
+  </article>`;
+}
+// Qué se trae de cada cartera para la tarjeta. La llave es la columna que guarda el radicado.
+const EXTRA_CARTERA = {
+  predial:  { tabla: "expedientes_predial",  llave: "radicado",       campos: "radicado,matricula,num_ficha,direccion" },
+  ou:       { tabla: "expedientes_ou",       llave: "radicado",       campos: "radicado,direccion,barrio" },
+  transito: { tabla: "expedientes_transito", llave: "nro_comparendo", campos: "nro_comparendo,numero_placa,anio" }
+};
+const EXTRA_CACHE = {};          // "cartera|radicado" → html
+function htmlExtra(cartera, f) {
+  const lim = v => String(v || "").trim();
+  const linea = [];
+  if (cartera === "predial") {
+    if (lim(f.direccion)) linea.push(`<div class="xc-dir">${esc(lim(f.direccion))}</div>`);
+    const ids = [];
+    if (lim(f.matricula)) ids.push("Mat. " + esc(lim(f.matricula)));
+    if (lim(f.num_ficha)) ids.push("Ficha " + esc(lim(f.num_ficha)));
+    if (ids.length) linea.push(`<div class="xc-ids">${ids.join(" · ")}</div>`);
+  } else if (cartera === "ou") {
+    const d = [lim(f.direccion), lim(f.barrio)].filter(Boolean).map(esc).join(" · ");
+    if (d) linea.push(`<div class="xc-dir">${d}</div>`);
+  } else if (cartera === "transito") {
+    const d = [lim(f.numero_placa) ? "Placa " + esc(lim(f.numero_placa)) : "", f.anio ? "Vigencia " + esc(f.anio) : ""].filter(Boolean).join(" · ");
+    if (d) linea.push(`<div class="xc-ids">${d}</div>`);
+  }
+  return linea.join("");
+}
+async function enriquecerTarjetas(cont) {
+  if (!cont) return;
+  const nodos = [...cont.querySelectorAll(".xc-extra")];
+  const pendientes = {};
+  nodos.forEach(n => {
+    const k = n.dataset.cartera + "|" + n.dataset.rad;
+    if (k in EXTRA_CACHE) { n.innerHTML = EXTRA_CACHE[k]; return; }
+    if (!EXTRA_CARTERA[n.dataset.cartera]) return;
+    (pendientes[n.dataset.cartera] = pendientes[n.dataset.cartera] || new Set()).add(n.dataset.rad);
+  });
+  await Promise.all(Object.keys(pendientes).map(async c => {
+    const cfg = EXTRA_CARTERA[c];
+    const rads = [...pendientes[c]];
+    try {
+      const lista = rads.map(r => '"' + String(r).replace(/"/g, "") + '"').map(encodeURIComponent).join(",");
+      const filas = await supaFetch(cfg.tabla + "?select=" + cfg.campos + "&" + cfg.llave + "=in.(" + lista + ")") || [];
+      rads.forEach(r => { EXTRA_CACHE[c + "|" + r] = ""; });
+      filas.forEach(f => { EXTRA_CACHE[c + "|" + f[cfg.llave]] = htmlExtra(c, f); });
+    } catch (e) {
+      console.warn("Datos de cartera para tarjetas (" + c + "):", e.message);
+      rads.forEach(r => { EXTRA_CACHE[c + "|" + r] = ""; });
+    }
+  }));
+  nodos.forEach(n => {
+    const k = n.dataset.cartera + "|" + n.dataset.rad;
+    if (k in EXTRA_CACHE) n.innerHTML = EXTRA_CACHE[k];
+  });
+}
+
+function esqueletos(n) {
+  return Array.from({ length: n }, () => '<div class="xc xc-esq" aria-hidden="true"><div></div><div></div><div></div><div></div></div>').join("");
+}
+
+// Orden numérico real sobre todos los expedientes: se piden los id ordenados a exp_digital
+// (columnas calculadas radicado_prefijo y radicado_num) y luego sus datos a la vista.
+let ORDEN_DISPONIBLE = true;
+async function recientesPorRadicado(rc, re, rs) {
+  const n = rs ? Math.max(300, REC_LIMITE * 4) : REC_LIMITE;
+  let q = "exp_digital?select=id&order=cartera.asc,radicado_prefijo.asc,radicado_num.asc,radicado_norm.asc&limit=" + n;
+  if (rc) q += "&cartera=eq." + encodeURIComponent(rc);
+  if (re) q += "&estado=eq." + encodeURIComponent(re);
+  if ($("r-mios") && $("r-mios").checked && USUARIO_EMAIL) q += "&creado_por_email=eq." + encodeURIComponent(USUARIO_EMAIL);
+  let ids;
+  try {
+    ids = (await supaFetch(q) || []).map(x => x.id);
+  } catch (e) {
+    if (/radicado_num|radicado_prefijo|column/i.test(e.message)) {
+      ORDEN_DISPONIBLE = false;
+      $("r-orden").value = "recientes";
+      toast("Para ordenar por radicado falta ejecutar sql_exp_orden_radicado.sql en Supabase.", true);
+      return await supaFetch("v_exp_digital?select=*&order=actualizado_en.desc&limit=" + n) || [];
+    }
+    throw e;
+  }
+  if (!ids.length) return [];
+  const filas = await supaFetch("v_exp_digital?select=*&id=in.(" + ids.join(",") + ")") || [];
+  const pos = {}; ids.forEach((id, i) => { pos[id] = i; });
+  return filas.sort((a, b) => pos[a.id] - pos[b.id]);
 }
 
 async function cargarRecientes() {
+  if ($("rec-grid") && !$("rec-grid").children.length) $("rec-grid").innerHTML = esqueletos(6);
   try {
-    let path = "v_exp_digital?select=*&order=actualizado_en.desc&limit=25";
+    let path = "v_exp_digital?select=*&order=actualizado_en.desc&limit=" + REC_LIMITE;
+    const porRadicado = $("r-orden") && $("r-orden").value === "radicado";
+    if ($("rec-titulo")) $("rec-titulo").textContent = porRadicado ? "Expedientes por radicado" : "Movidos recientemente";
     const rc = $("r-cartera") ? $("r-cartera").value : "";
     const re = $("r-estado") ? $("r-estado").value : "";
     if (rc) path += "&cartera=eq." + encodeURIComponent(rc);
@@ -455,23 +614,24 @@ async function cargarRecientes() {
     const rs = $("r-situacion") ? $("r-situacion").value : "";
     const filtrado = rc || re || rs || ($("r-mios") && $("r-mios").checked);
     // Con filtro de situación se trae una muestra mayor y se filtra aquí: la novedad registrada manda sobre la cartera
-    if (rs) path = path.replace("&limit=25", "&limit=300");
-    let filas = await supaFetch(path) || [];
+    if (rs) path = path.replace("&limit=" + REC_LIMITE, "&limit=" + Math.max(300, REC_LIMITE * 4));
+    let filas;
+    if (porRadicado) filas = await recientesPorRadicado(rc, re, rs);
+    else filas = await supaFetch(path) || [];
     await cargarNovedades(filas.map(f => f.id));
-    if (rs) filas = filas.filter(f => situacionDe(f) === rs).slice(0, 25);
-    $("rec-body").innerHTML = filas.length ? filas.map(f => `<tr>
-      <td>${chipCartera(f.cartera)}</td>
-      <td class="nowrap"><strong>${esc(f.radicado)}</strong></td>
-      <td>${esc(f.contribuyente || "—")}<div class="flags">${chipsSituacion(f)}</div></td>
-      <td class="num">${f.total_documentos}</td>
-      <td class="num">${f.total_folios}</td>
-      <td><span class="chip chip-${esc(f.estado)}">${esc(f.estado)}</span></td>
-      <td class="nowrap small">${fmtFechaHora(f.actualizado_en)}</td>
-      <td class="num"><button class="btn btn-sm" onclick="abrirExpediente(${Number(f.id)})">Abrir</button></td>
-    </tr>`).join("") : (filtrado ? `<tr><td colspan="8" class="empty">Ningún expediente coincide con estos filtros.</td></tr>`
-                : `<tr><td colspan="8" class="empty">Aún no hay expedientes digitales. Busca un radicado y crea el primero.</td></tr>`);
+    const hayMas = rs ? filas.filter(f => situacionDe(f) === rs).length > REC_LIMITE : filas.length === REC_LIMITE;
+    if (rs) filas = filas.filter(f => situacionDe(f) === rs).slice(0, REC_LIMITE);
+    $("rec-grid").innerHTML = filas.length ? filas.map(f => tarjetaExpediente({
+      cartera: f.cartera, radicado: f.radicado, contribuyente: f.contribuyente, id_contribuyente: f.id_contribuyente,
+      estadoExp: f.estado, expId: f.id, docs: f.total_documentos, folios: f.total_folios,
+      cuando: f.actualizado_en, chips: chipsSituacion(f)
+    })).join("") : `<div class="xc-vacio">${filtrado ? "Ningún expediente coincide con estos filtros."
+                    : "Aún no hay expedientes digitales. Busca un radicado y crea el primero."}</div>`;
+    $("rec-mas").classList.toggle("hidden", !hayMas);
+    enriquecerTarjetas($("rec-grid"));
   } catch (e) {
-    $("rec-body").innerHTML = `<tr><td colspan="8" class="empty">No se pudo cargar: ${esc(e.message)}</td></tr>`;
+    $("rec-grid").innerHTML = `<div class="xc-vacio">No se pudo cargar: ${esc(e.message)}</div>`;
+    $("rec-mas").classList.add("hidden");
   }
 }
 
@@ -508,8 +668,8 @@ async function confirmarManual() {
   const btn = $("btn-manual-ok");
   btn.disabled = true;
   try {
-    const ya = await supaFetch("exp_digital?select=id&cartera=eq." + cartera +
-                               "&radicado_norm=eq." + encodeURIComponent(normRad(radicado))) || [];
+    const ya = await supaFetch("exp_digital?select=id,radicado&cartera=eq." + cartera +
+                               "&radicado_norm=in.(" + variantesRadicado(radicado).map(encodeURIComponent).join(",") + ")") || [];
     let id = ya.length ? ya[0].id : null;
     if (!id) id = await rpc("exp_crear_expediente", {
       p_cartera: cartera, p_radicado: radicado, p_manual: true,
@@ -517,7 +677,7 @@ async function confirmarManual() {
     });
     cerrarModal("m-manual");
     if (id) {
-      toast(ya.length ? "Ese radicado ya tenía expediente; lo abrí." : "Expediente creado.");
+      toast(ya.length ? "Ese radicado ya tenía expediente (registrado como " + ya[0].radicado + "); lo abrí." : "Expediente creado.");
       cargarRecientes();
       await abrirExpediente(Number(id));
     }
@@ -535,7 +695,7 @@ async function abrirPorRadicado(cartera, radicado, crear) {
       id = await rpc("exp_crear_expediente", { p_cartera: cartera, p_radicado: radicado });
     } else {
       const f = await supaFetch("exp_digital?select=id&cartera=eq." + cartera +
-                                "&radicado_norm=eq." + encodeURIComponent(normRad(radicado))) || [];
+                                "&radicado_norm=in.(" + variantesRadicado(radicado).map(encodeURIComponent).join(",") + ")") || [];
       if (f.length) id = f[0].id;
       else if (confirm("El radicado " + radicado + " no tiene expediente digital. ¿Crearlo ahora?")) {
         id = await rpc("exp_crear_expediente", { p_cartera: cartera, p_radicado: radicado });
@@ -593,7 +753,8 @@ function renderCabecera() {
   $("exp-chips").innerHTML =
     `${chipCartera(e.cartera)}
      <span class="chip chip-${esc(e.estado)}">Expediente ${esc(e.estado)}</span> ${chipsSituacion(e)}`;
-  $("exp-rad").textContent = e.radicado;
+  $("exp-rad").textContent = radVista(e.radicado);
+  $("exp-rad").title = radVista(e.radicado) !== e.radicado ? "Registrado en cartera como " + e.radicado : "";
   $("exp-sub").innerHTML =
     `<strong>${esc(e.contribuyente || "Contribuyente sin nombre")}</strong>` +
     (e.id_contribuyente ? " · C.C./NIT " + esc(e.id_contribuyente) : "") +
@@ -676,7 +837,7 @@ async function descargarDocumento(id) {
   const d = docPorId(id);
   if (!d || !sbAuth) return;
   try {
-    const nombre = nombreArchivoSeguro(EXP.radicado) + "_" + String(d.consecutivo).padStart(3, "0") + "_" +
+    const nombre = nombreArchivoSeguro(radVista(EXP.radicado)) + "_" + String(d.consecutivo).padStart(3, "0") + "_" +
                    nombreArchivoSeguro(d.descripcion).slice(0, 60) + ".pdf";
     const { data, error } = await sbAuth.storage.from(BUCKET).createSignedUrl(d.storage_path, URL_FIRMADA_S, { download: nombre });
     if (error) throw error;
@@ -1120,7 +1281,7 @@ function construirIndice(pdf, F, meta) {
       page.drawText(latin("ÍNDICE ELECTRÓNICO DEL EXPEDIENTE"), { x: MARGEN, y: y - 14, size: 16, font: F.bold, color: NAVY });
       y -= 30;
       const datos = [
-        ["Radicado", e.radicado],
+        ["Radicado", radVista(e.radicado)],
         ["Cartera", CARTERAS[e.cartera] || e.cartera],
         ["Contribuyente", (e.contribuyente || "-") + (e.id_contribuyente ? "  ·  C.C./NIT " + e.id_contribuyente : "")],
         ["Estado del expediente", e.estado + (e.cerrado_en ? " (cerrado el " + fmtFechaHora(e.cerrado_en) + ")" : "")],
@@ -1206,7 +1367,7 @@ function construirIndice(pdf, F, meta) {
   // Pie en cada página del índice
   const total = paginas.length;
   paginas.forEach((p, i) => {
-    const pie = latin("Índice electrónico · " + e.radicado + " · Página " + (i + 1) + " de " + total);
+    const pie = latin("Índice electrónico · " + radVista(e.radicado) + " · Página " + (i + 1) + " de " + total);
     p.drawText(pie, { x: MARGEN, y: MARGEN - 14, size: 7, font: F.reg, color: GRIS });
     const nota = latin("La huella SHA-256 permite verificar que cada documento no ha sido alterado desde su incorporación.");
     p.drawText(nota, { x: W - MARGEN - F.reg.widthOfTextAtSize(nota, 6.5), y: MARGEN - 14, size: 6.5, font: F.reg, color: GRIS });
@@ -1262,12 +1423,12 @@ async function descargarIndicePDF() {
   if (!window.PDFLib) { toast("No cargó la librería pdf-lib. Recarga la página.", true); return; }
   try {
     const pdf = await window.PDFLib.PDFDocument.create();
-    pdf.setTitle("Índice electrónico " + EXP.radicado);
+    pdf.setTitle("Índice electrónico " + radVista(EXP.radicado));
     pdf.setProducer("Teodoro · Ejecuciones Fiscales Bello");
     const F = await cargarFuentes(pdf);
     construirIndice(pdf, F, { exp: EXP, docs: INDICE, generadoPor: USUARIO_EMAIL, generadoEn: new Date() });
     const bytes = await pdf.save();
-    descargarBlob(bytes, "Indice_" + nombreArchivoSeguro(EXP.radicado) + ".pdf");
+    descargarBlob(bytes, "Indice_" + nombreArchivoSeguro(radVista(EXP.radicado)) + ".pdf");
     registrarEvento("exportar_indice", null, { tipo: "indice" });
   } catch (e) {
     console.error(e);
@@ -1283,7 +1444,7 @@ async function descargarFoliado() {
   try {
     progreso(true, "Armando expediente foliado", "Preparando…", 0);
     const pdf = await PDFDocument.create();
-    pdf.setTitle("Expediente " + EXP.radicado);
+    pdf.setTitle("Expediente " + radVista(EXP.radicado));
     pdf.setProducer("Teodoro · Ejecuciones Fiscales Bello");
     const F = await cargarFuentes(pdf);
 
@@ -1326,7 +1487,7 @@ async function descargarFoliado() {
         if (paginas.length !== d.paginas) alertas.push("N.º " + d.consecutivo + ": " + paginas.length + " págs. leídas vs " + d.paginas + " registradas");
         paginas.forEach((p, k) => {
           pdf.addPage(p);
-          sellarFolio(p, latin(EXP.radicado + " · Folio " + (d.folio_inicial + k)), F);
+          sellarFolio(p, latin(radVista(EXP.radicado) + " · Folio " + (d.folio_inicial + k)), F);
         });
       } catch (e) {
         alertas.push("N.º " + d.consecutivo + ": no se pudo incrustar");
@@ -1341,7 +1502,7 @@ async function descargarFoliado() {
     construirIndice(pdf, F, { exp: EXP, docs: INDICE, generadoPor: USUARIO_EMAIL, generadoEn: new Date() });
     const salida = await pdf.save();
     progreso(false);
-    descargarBlob(salida, "Expediente_" + nombreArchivoSeguro(EXP.radicado) + "_foliado.pdf");
+    descargarBlob(salida, "Expediente_" + nombreArchivoSeguro(radVista(EXP.radicado)) + "_foliado.pdf");
     registrarEvento("exportar_indice", null, { tipo: "foliado", alertas: alertas.length ? alertas : undefined });
     if (alertas.length) toast("Generado con alertas: " + alertas.join("; "), true);
     else toast("Expediente foliado generado. Integridad verificada en todos los documentos.");
@@ -1357,7 +1518,7 @@ async function descargarFoliado() {
 // ════════════════════════════════════════════════════════════
 function descargarIndiceCSV() {
   if (!EXP || !INDICE.length) return;
-  descargarCSV("Indice_" + nombreArchivoSeguro(EXP.radicado) + "_" + fechaArchivo() + ".csv", [
+  descargarCSV("Indice_" + nombreArchivoSeguro(radVista(EXP.radicado)) + "_" + fechaArchivo() + ".csv", [
     { t: "N.º", v: "consecutivo" },
     { t: "Descripción", v: "descripcion" },
     { t: "Tipo documental", v: "tipo_nombre" },
@@ -1960,7 +2121,8 @@ function stCSVExpedientes() {
   if (!ST) { toast("Abre primero las estadísticas.", true); return; }
   descargarCSV("Expedientes_digitales_" + fechaArchivo() + ".csv", [
     { t: "Cartera", v: e => CARTERAS[e.cartera] || e.cartera },
-    { t: "Radicado", v: "radicado" },
+    { t: "Radicado", v: e => radVista(e.radicado) },
+    { t: "Radicado en cartera", v: "radicado" },
     { t: "Contribuyente", v: "contribuyente" },
     { t: "Cédula/NIT", v: "id_contribuyente" },
     { t: "Estado en cartera", v: "estado_cartera" },
@@ -1975,7 +2137,7 @@ function stCSVExpedientes() {
     { t: "Creado por", v: "creado_por_email" },
     { t: "Creado", v: e => fmtFechaHora(e.creado_en) },
     { t: "Última actualización", v: e => fmtFechaHora(e.actualizado_en) }
-  ], ST.exps);
+  ], ST.exps.slice().sort((a, b) => String(a.cartera).localeCompare(String(b.cartera)) || ordenRadicado(a.radicado, b.radicado)));
 }
 function stCSVDocumentos() {
   if (!ST) { toast("Abre primero las estadísticas.", true); return; }
@@ -2081,7 +2243,7 @@ function abrirModalNovedad() {
   if (!EXP) return;
   if (!NOV_DISPONIBLE) { toast("Primero hay que crear la tabla exp_novedades en Supabase (sql_exp_novedades.sql).", true); return; }
   const actual = NOV[EXP.id];
-  $("nov-info").textContent = EXP.radicado + " · " + (EXP.contribuyente || "") + (actual ? " · Vigente: " + textoNovedad(actual) : "");
+  $("nov-info").textContent = radVista(EXP.radicado) + " · " + (EXP.contribuyente || "") + (actual ? " · Vigente: " + textoNovedad(actual) : "");
   document.querySelectorAll('input[name="nov-tipo"]').forEach(r => {
     r.checked = false;
     // El incumplimiento solo tiene sentido si hay un acuerdo vigente

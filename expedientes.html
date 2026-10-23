@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <title>Expedientes Digitales — Teodoro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="expedientes.css?v=5"/>
+<link rel="stylesheet" href="expedientes.css?v=7"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -76,47 +76,36 @@
   </div>
 
   <div id="res-wrap" class="hidden" style="margin-top:16px">
-    <div class="tbl-wrap">
-      <table class="tbl">
-        <thead><tr>
-          <th>Cartera</th><th>Radicado</th><th>Contribuyente</th><th>Estado cartera</th>
-          <th class="num">Valor</th><th>Expediente digital</th><th></th>
-        </tr></thead>
-        <tbody id="res-body"></tbody>
-      </table>
-    </div>
+    <div class="xc-grid" id="res-grid"></div>
   </div>
 
   <div class="rec-hdr">
-    <h3 class="section-title">Movidos recientemente</h3>
+    <h3 class="section-title" id="rec-titulo">Movidos recientemente</h3>
     <div class="rec-filtros">
-      <select id="r-cartera" class="sel" onchange="cargarRecientes()" aria-label="Filtrar por cartera">
+      <select id="r-cartera" class="sel" onchange="filtrosRecientesCambiaron()" aria-label="Filtrar por cartera">
         <option value="">Todas las carteras</option>
       </select>
-      <select id="r-estado" class="sel" onchange="cargarRecientes()" aria-label="Filtrar por estado">
+      <select id="r-estado" class="sel" onchange="filtrosRecientesCambiaron()" aria-label="Filtrar por estado">
         <option value="">Todos los estados</option>
         <option value="abierto">Abiertos</option>
         <option value="cerrado">Cerrados</option>
       </select>
-      <select id="r-situacion" class="sel" onchange="cargarRecientes()" aria-label="Filtrar por situación del proceso">
+      <select id="r-situacion" class="sel" onchange="filtrosRecientesCambiaron()" aria-label="Filtrar por situación del proceso">
         <option value="">Toda situación</option>
         <option value="activo">Activos</option>
         <option value="acuerdo">En acuerdo de pago</option>
         <option value="cancelado">Cancelados</option>
         <option value="terminado">Terminados</option>
       </select>
-      <label class="small muted chk"><input type="checkbox" id="r-mios" onchange="cargarRecientes()"> Solo los que creé</label>
+      <select id="r-orden" class="sel" onchange="filtrosRecientesCambiaron()" aria-label="Ordenar">
+        <option value="recientes">Más recientes</option>
+        <option value="radicado">Por radicado</option>
+      </select>
+      <label class="small muted chk"><input type="checkbox" id="r-mios" onchange="filtrosRecientesCambiaron()"> Solo los que creé</label>
     </div>
   </div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr>
-        <th>Cartera</th><th>Radicado</th><th>Contribuyente</th><th class="num">Documentos</th>
-        <th class="num">Folios</th><th>Estado</th><th>Última actualización</th><th></th>
-      </tr></thead>
-      <tbody id="rec-body"><tr><td colspan="8" class="empty">Cargando…</td></tr></tbody>
-    </table>
-  </div>
+  <div class="xc-grid" id="rec-grid"></div>
+  <div class="xc-mas hidden" id="rec-mas"><button class="btn" onclick="verMasRecientes()">Ver más</button></div>
 </div>
 
 <!-- ════════ PANEL EXPEDIENTE ════════ -->
@@ -430,6 +419,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="expedientes.js?v=5"></script>
+<script src="expedientes.js?v=7"></script>
 </body>
 </html>
