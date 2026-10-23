@@ -101,7 +101,7 @@ async function entrarAlSistema() {
   iniciarApp();
 }
 async function cerrarSesion() {
-  if (COLA.some(q => q.estado === "subiendo")) {
+  if (COLA.some(q => q.estado === "subiendo") || (typeof CM !== "undefined" && CM.corriendo)) {
     if (!confirm("Hay documentos incorporándose. ¿Salir de todos modos?")) return;
   }
   if (sbAuth) { try { await sbAuth.auth.signOut(); } catch (e) {} }
@@ -173,6 +173,50 @@ function esc(s) {
     .replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 function normRad(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+// Clave de cruce: letras + número sin ceros a la izquierda (FP-003, FP003 y FP3 → FP3)
+function claveRadicado(s) {
+  const n = normRad(s);
+  const m = n.match(/^([A-Z]*)0*(\d+)$/);
+  return m ? m[1] + m[2] : n;
+}
+// Formato oficial del radicado: FP-1212
+function formatearRadicado(s) {
+  const t = String(s || "").trim().toUpperCase();
+  const m = t.match(/^([A-Z]{1,5})[^A-Z0-9]*0*(\d+)$/);
+  return m ? m[1] + "-" + m[2] : t;
+}
+// Situación del proceso a partir del estado en cartera
+const SITUACIONES = {
+  activo:    "Activo",
+  acuerdo:   "En acuerdo de pago",
+  cancelado: "Cancelado",
+  terminado: "Terminado",
+  sin:       "Sin dato en cartera"
+};
+function situacionDe(f) {
+  const s = String((f && f.estado_cartera) || "").toLowerCase();
+  if (/cancel/.test(s)) return "cancelado";
+  if (/termin|archiv/.test(s)) return "terminado";
+  if ((f && f.en_acuerdo) || /convenio|acuerdo/.test(s)) return "acuerdo";
+  if (s) return "activo";
+  return "sin";
+}
+// CSV para Excel en español: separador ; y BOM UTF-8
+function descargarCSV(nombre, cols, filas) {
+  const celda = v => {
+    const t = v === null || v === undefined ? "" : String(v);
+    return /[";\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  };
+  const lineas = [cols.map(c => celda(c.t)).join(";")]
+    .concat(filas.map(f => cols.map(c => celda(typeof c.v === "function" ? c.v(f) : f[c.v])).join(";")));
+  const blob = new Blob(["\uFEFF" + lineas.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function fechaArchivo() { return hoyISO().replace(/-/g, ""); }
 function fmtFecha(d) {
   if (!d) return "—";
   const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -231,7 +275,7 @@ function descargarBlob(bytes, nombre) {
 function nombreArchivoSeguro(s) { return String(s || "").replace(/[^A-Za-z0-9_-]+/g, "_"); }
 
 window.addEventListener("beforeunload", function (e) {
-  if (COLA.some(q => q.estado === "subiendo")) { e.preventDefault(); e.returnValue = ""; }
+  if (COLA.some(q => q.estado === "subiendo") || (typeof CM !== "undefined" && CM.corriendo)) { e.preventDefault(); e.returnValue = ""; }
 });
 
 // ════════════════════════════════════════════════════════════
@@ -243,6 +287,7 @@ function irPanel(n) {
   $("panel-" + n).classList.add("active");
   $("tab-" + n).classList.add("active");
   if (n === "buscar") cargarRecientes();
+  if (n === "estadisticas") cargarEstadisticas();
 }
 function irSub(n) {
   ["indice", "incorporar", "bitacora"].forEach(k => {
@@ -259,6 +304,7 @@ async function iniciarApp() {
   if (appIniciada) return;
   appIniciada = true;
   configurarDropzone();
+  configurarCargaMasiva();
   try {
     const [tipos, etapas, carteras] = await Promise.all([
       supaFetch("exp_tipos_documentales?select=*&activo=eq.true&order=orden.asc"),
@@ -288,6 +334,9 @@ async function iniciarApp() {
   const c = (qs.get("cartera") || "").toLowerCase();
   const r = qs.get("radicado");
   if (r && CARTERAS[c]) abrirPorRadicado(c, r, false);
+  // Búsqueda directa desde el home: expedientes.html?buscar=FP-1212
+  const qb = (qs.get("buscar") || "").trim();
+  if (!r && qb) { $("f-q").value = qb; buscar(); }
 }
 
 function llenarSelectCarteras() {
@@ -295,13 +344,19 @@ function llenarSelectCarteras() {
   $("f-cartera").innerHTML = '<option value="">Todas las carteras</option>' + ops;
   $("r-cartera").innerHTML = '<option value="">Todas las carteras</option>' + ops;
   $("man-cartera").innerHTML = ops;
+  if ($("cm-cartera")) $("cm-cartera").innerHTML = ops;
+  if ($("cm-cartera") && CARTERAS.predial) $("cm-cartera").value = "predial";
 }
 function chipCartera(c) {
   return `<span class="chip chip-${esc(c)}">${esc(CARTERAS[c] || c)}</span>`;
 }
+function chipSituacion(f) {
+  const s = situacionDe(f);
+  return `<span class="chip chip-sit-${s}">${esc(SITUACIONES[s])}</span>`;
+}
 function chipsSituacion(f) {
   const out = [];
-  if (f.en_acuerdo) out.push('<span class="chip chip-acuerdo">En acuerdo de pago</span>');
+  if (f.estado_cartera || f.en_acuerdo) out.push(chipSituacion(f));
   if (f.embargos > 0) out.push(`<span class="chip chip-embargo">${f.embargos} embargo${f.embargos === 1 ? "" : "s"}</span>`);
   if (f.origen === "manual") out.push('<span class="chip chip-manual">Manual</span>');
   return out.join(" ");
@@ -379,7 +434,12 @@ async function cargarRecientes() {
     if (rc) path += "&cartera=eq." + encodeURIComponent(rc);
     if (re) path += "&estado=eq." + encodeURIComponent(re);
     if ($("r-mios") && $("r-mios").checked && USUARIO_EMAIL) path += "&creado_por_email=eq." + encodeURIComponent(USUARIO_EMAIL);
-    const filtrado = rc || re || ($("r-mios") && $("r-mios").checked);
+    const rs = $("r-situacion") ? $("r-situacion").value : "";
+    if (rs === "cancelado") path += "&estado_cartera=ilike." + encodeURIComponent("*cancel*");
+    else if (rs === "terminado") path += "&or=" + encodeURIComponent("(estado_cartera.ilike.*termin*,estado_cartera.ilike.*archiv*)");
+    else if (rs === "acuerdo") path += "&or=" + encodeURIComponent("(en_acuerdo.is.true,estado_cartera.ilike.*convenio*,estado_cartera.ilike.*acuerdo*)");
+    else if (rs === "activo") path += "&and=" + encodeURIComponent("(estado_cartera.not.is.null,estado_cartera.not.ilike.*cancel*,estado_cartera.not.ilike.*termin*,estado_cartera.not.ilike.*archiv*,estado_cartera.not.ilike.*convenio*,estado_cartera.not.ilike.*acuerdo*,en_acuerdo.not.is.true)");
+    const filtrado = rc || re || rs || ($("r-mios") && $("r-mios").checked);
     const filas = await supaFetch(path) || [];
     $("rec-body").innerHTML = filas.length ? filas.map(f => `<tr>
       <td>${chipCartera(f.cartera)}</td>
@@ -422,7 +482,7 @@ function abrirModalManual() {
 }
 async function confirmarManual() {
   const cartera = $("man-cartera").value;
-  const radicado = $("man-radicado").value.trim().toUpperCase();
+  const radicado = formatearRadicado($("man-radicado").value);
   const cedula = $("man-cedula").value.replace(/[^0-9A-Za-z-]/g, "");
   const nombre = $("man-nombre").value.trim();
   if (normRad(radicado).length < 3) { toast("Escribe el radicado completo.", true); return; }
@@ -532,6 +592,7 @@ function renderCabecera() {
   const sinDocs = !INDICE.length;
   $("btn-indice-pdf").disabled = sinDocs;
   $("btn-foliado").disabled = sinDocs;
+  $("btn-indice-csv").disabled = sinDocs;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -642,12 +703,19 @@ function abrirModalEstado() {
     ? "Un expediente cerrado no admite nuevos documentos. Se puede reabrir después, dejando el motivo en la bitácora."
     : "Al reabrirlo se podrán incorporar documentos de nuevo. El motivo queda en la bitácora.";
   $("estado-motivo").value = "";
+  $("estado-causal-wrap").classList.toggle("hidden", !cerrar);
+  $("estado-causal").value = "";
   abrirModal("m-estado");
   setTimeout(() => $("estado-motivo").focus(), 50);
 }
 async function confirmarEstado() {
-  const motivo = $("estado-motivo").value.trim();
+  let motivo = $("estado-motivo").value.trim();
   if (motivo.length < 10) { toast("El motivo debe tener al menos 10 caracteres.", true); return; }
+  if (EXP.estado === "abierto") {
+    const causal = $("estado-causal").value;
+    if (!causal) { toast("Elige la causal de cierre.", true); return; }
+    motivo = "Causal: " + causal + ". " + motivo;
+  }
   const btn = $("btn-estado-ok");
   btn.disabled = true;
   try {
@@ -872,6 +940,59 @@ function limpiarCola() {
   renderCola();
 }
 
+// ── Incorporación de un documento: la usan la pestaña manual y la carga masiva ──
+// Sube el PDF al bucket y lo registra en exp_documentos (la BD asigna consecutivo y folios).
+let CANAL_MASIVO = "masivo";   // si la BD no acepta este canal, se registra como "manual"
+async function incorporarDocumento(p) {
+  const ruta = p.cartera + "/" + p.radicadoNorm + "/" + p.sha + "-" + Date.now() + ".pdf";
+  try {
+    const { error } = await sbAuth.storage.from(BUCKET).upload(ruta, p.file, {
+      contentType: "application/pdf", upsert: false, cacheControl: "3600"
+    });
+    if (error) throw error;
+  } catch (e) {
+    throw new Error("No se pudo subir el archivo: " + (e.message || e));
+  }
+  if (p.alRegistrar) p.alRegistrar();
+  const fila = {
+    expediente_id: p.expedienteId,
+    tipo_documental: p.tipo,
+    etapa_codigo: p.etapa || null,
+    descripcion: String(p.descripcion || "").trim(),
+    fecha_documento: p.fecha || null,
+    origen: p.origen,
+    paginas: p.paginas,
+    tamano_bytes: p.tamano,
+    sha256: p.sha,
+    storage_path: ruta,
+    nombre_original: p.nombre,
+    canal_ingreso: p.canal || "manual",
+    observaciones: String(p.obs || "").trim() || null
+  };
+  const insertar = () => supaFetch("exp_documentos", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(fila)
+  });
+  try {
+    const r = await insertar();
+    return r && r[0];
+  } catch (e) {
+    // Si la BD solo admite ciertos canales, se reintenta como "manual" dejando constancia
+    if (fila.canal_ingreso !== "manual" && /canal|check/i.test(e.message)) {
+      CANAL_MASIVO = "manual";
+      fila.canal_ingreso = "manual";
+      fila.observaciones = ((fila.observaciones || "") + " (carga masiva)").trim();
+      try {
+        const r2 = await insertar();
+        return r2 && r2[0];
+      } catch (e2) { e = e2; }
+    }
+    console.warn("Archivo sin registrar en el índice:", ruta);
+    throw new Error(e.message + " (el archivo quedó en el repositorio pero NO entró al índice).");
+  }
+}
+
 async function subirCola() {
   if (!EXP || !sbAuth) return;
   const pendientes = itemsPendientes();
@@ -888,50 +1009,21 @@ async function subirCola() {
   for (const q of pendientes) {
     q.estado = "subiendo"; q.msg = "Subiendo archivo…";
     renderCola();
-    const ruta = EXP.cartera + "/" + EXP.radicado_norm + "/" + q.sha + "-" + Date.now() + ".pdf";
     try {
-      const { error } = await sbAuth.storage.from(BUCKET).upload(ruta, q.file, {
-        contentType: "application/pdf", upsert: false, cacheControl: "3600"
+      const d = await incorporarDocumento({
+        expedienteId: EXP.id, cartera: EXP.cartera, radicadoNorm: EXP.radicado_norm,
+        file: q.file, nombre: q.nombre, tamano: q.tamano, sha: q.sha, paginas: q.paginas,
+        tipo: q.tipo, etapa: q.etapa, descripcion: q.descripcion, fecha: q.fecha,
+        origen: q.origen, obs: q.obs, canal: "manual",
+        alRegistrar: () => { q.msg = "Registrando en el índice…"; renderCola(); }
       });
-      if (error) throw new Error("No se pudo subir el archivo: " + (error.message || error));
-    } catch (e) {
-      q.estado = "error"; q.msg = e.message; fallos++;
-      continue;
-    }
-    q.msg = "Registrando en el índice…";
-    renderCola();
-    try {
-      const fila = {
-        expediente_id: EXP.id,
-        tipo_documental: q.tipo,
-        etapa_codigo: q.etapa || null,
-        descripcion: q.descripcion.trim(),
-        fecha_documento: q.fecha || null,
-        origen: q.origen,
-        paginas: q.paginas,
-        tamano_bytes: q.tamano,
-        sha256: q.sha,
-        storage_path: ruta,
-        nombre_original: q.nombre,
-        canal_ingreso: "manual",
-        observaciones: q.obs.trim() || null
-      };
-      const r = await supaFetch("exp_documentos", {
-        method: "POST",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify(fila)
-      });
-      const d = r && r[0];
       q.estado = "ok";
       q.msg = d ? "Incorporado como N.º " + d.consecutivo + " · folios " + d.folio_inicial + " a " + d.folio_final : "Incorporado.";
       ok++;
       // Refresca totales para que la vista previa del resto sea exacta
       if (d) { EXP.total_documentos = d.consecutivo; EXP.total_folios = d.folio_final; }
     } catch (e) {
-      q.estado = "error";
-      q.msg = e.message + " (el archivo quedó en el repositorio pero NO entró al índice).";
-      console.warn("Archivo sin registrar en el índice:", ruta);
-      fallos++;
+      q.estado = "error"; q.msg = e.message; fallos++;
     }
   }
   renderCola();
@@ -1243,4 +1335,669 @@ async function descargarFoliado() {
     console.error(e);
     toast("No se pudo generar el expediente foliado: " + e.message, true);
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// CSV DEL ÍNDICE DEL EXPEDIENTE ABIERTO
+// ════════════════════════════════════════════════════════════
+function descargarIndiceCSV() {
+  if (!EXP || !INDICE.length) return;
+  descargarCSV("Indice_" + nombreArchivoSeguro(EXP.radicado) + "_" + fechaArchivo() + ".csv", [
+    { t: "N.º", v: "consecutivo" },
+    { t: "Descripción", v: "descripcion" },
+    { t: "Tipo documental", v: "tipo_nombre" },
+    { t: "Etapa", v: "etapa_nombre" },
+    { t: "Grupo de etapa", v: "etapa_grupo" },
+    { t: "Fecha del documento", v: d => fmtFecha(d.fecha_documento) },
+    { t: "Origen", v: d => d.origen === "externo" ? "Aportado por tercero" : "Producido por la Dirección" },
+    { t: "Páginas", v: "paginas" },
+    { t: "Folio inicial", v: "folio_inicial" },
+    { t: "Folio final", v: "folio_final" },
+    { t: "Incorporado", v: d => fmtFechaHora(d.fecha_incorporacion) },
+    { t: "Incorporado por", v: "incorporado_por_email" },
+    { t: "Anulado", v: d => d.anulado ? "Sí" : "No" },
+    { t: "Motivo de anulación", v: "anulado_motivo" },
+    { t: "Huella SHA-256", v: "sha256" }
+  ], INDICE);
+  registrarEvento("exportar_indice", null, { tipo: "indice_csv" });
+}
+
+// ════════════════════════════════════════════════════════════
+// CARGA MASIVA — una carpeta de PDF nombrados por radicado
+// (FP-1212.pdf, FP1212-TUTELA.pdf, FP01212 RTA 2023….pdf …)
+// ════════════════════════════════════════════════════════════
+const CM_CLASE_BASE = "";            // archivo que solo trae el número: el expediente escaneado
+const CM_HILOS = 3;                  // expedientes procesados en paralelo (dentro de cada uno, en orden)
+const CM_MAX_FILAS_VISTA = 400;
+let CM = { cartera: "predial", filas: [], clases: {}, corriendo: false, detener: false, iniciado: false };
+
+function configurarCargaMasiva() {
+  const inpC = $("cm-input-carpeta"), inpA = $("cm-input-archivos");
+  if (!inpC) return;
+  inpC.addEventListener("change", () => { cmAnalizar(inpC.files); inpC.value = ""; });
+  inpA.addEventListener("change", () => { cmAnalizar(inpA.files); inpA.value = ""; });
+  const dz = $("cm-dz");
+  ["dragenter", "dragover"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove("over"); }));
+  dz.addEventListener("drop", e => cmAnalizar(e.dataTransfer.files));
+}
+
+// Interpreta el nombre del archivo
+function cmParsear(nombre) {
+  const base = String(nombre).replace(/\.pdf$/i, "");
+  const m = base.match(/^\s*([A-Za-z]{0,5})[^A-Za-z0-9]*(\d+)(.*)$/);
+  if (!m) return null;
+  const prefijo = m[1].toUpperCase();
+  const numero = m[2].replace(/^0+(?=\d)/, "");
+  const esCopia = /copia/i.test(m[3]);
+  let resto = m[3]
+    .replace(/^[\s\-_.,'’´`]+/, "")
+    .replace(/\s*[-_]?\s*\(?\s*copia\s*\)?\s*(\(\d+\))?\s*$/i, "")
+    .replace(/\s*\(\d+\)\s*$/, "")
+    .replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+  const clase = resto
+    ? (resto.toUpperCase().replace(/\d{6,}/g, " ").replace(/[^A-ZÁÉÍÓÚÑÜ ]+/g, " ").replace(/\s+/g, " ").trim() || "OTROS")
+    : CM_CLASE_BASE;
+  return { clave: prefijo + numero, prefijo, numero, resto, clase, esCopia };
+}
+
+// Variantes de radicado_norm para buscar en la BD (con y sin ceros a la izquierda)
+function cmVariantes(p) {
+  const out = new Set([p.prefijo + p.numero]);
+  for (let k = p.numero.length + 1; k <= 6; k++) out.add(p.prefijo + p.numero.padStart(k, "0"));
+  return [...out];
+}
+
+function cmNorm(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+// Tipo documental sugerido según la clase del archivo
+function cmSugerirTipo(clase) {
+  const c = cmNorm(clase);
+  const reglas = clase === CM_CLASE_BASE
+    ? [/expediente/, /escane|digitaliz/, /antecedente/, /mandamiento/]
+    : /tutela/.test(c) ? [/tutela/]
+    : /rta|respuesta/.test(c) ? [/respuesta/, /peticion/]
+    : /peticion/.test(c) ? [/peticion/, /solicitud/]
+    : /hecho cumplido/.test(c) ? [/hecho cumplido/, /tutela/, /fallo/]
+    : /auto/.test(c) ? [/auto/]
+    : /resolucion/.test(c) ? [/resolucion/]
+    : [];
+  for (const r of reglas) {
+    const t = TIPOS.find(x => r.test(cmNorm(x.nombre)));
+    if (t) return t.codigo;
+  }
+  return "";
+}
+function cmSugerirOrigen(clase) {
+  const c = cmNorm(clase);
+  if (/rta|respuesta/.test(c)) return "interno";
+  if (/tutela|peticion|hecho cumplido|admision/.test(c)) return "externo";
+  return "interno";
+}
+
+async function cmAnalizar(lista) {
+  if (CM.corriendo) { toast("Hay una carga en curso. Espera a que termine o detenla.", true); return; }
+  const archivos = Array.from(lista || []);
+  if (!archivos.length) return;
+  CM.cartera = $("cm-cartera").value || "predial";
+  CM.filas = []; CM.clases = {}; CM.iniciado = false;
+  $("cm-resultado").classList.add("hidden");
+  progreso(true, "Leyendo nombres", archivos.length + " archivo(s)", 5);
+
+  // 1) Nombres
+  for (const file of archivos) {
+    const f = { uid: Math.random().toString(36).slice(2, 10), file, nombre: file.name, ruta: file.webkitRelativePath || file.name,
+                tamano: file.size, mod: file.lastModified || 0, p: null, proc: null, estado: "listo", msg: "", descripcion: "" };
+    const esPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!esPdf) { f.estado = "descartado"; f.msg = "No es PDF"; }
+    else if (file.size === 0) { f.estado = "descartado"; f.msg = "Archivo vacío"; }
+    else if (file.size > MAX_BYTES) { f.estado = "descartado"; f.msg = "Supera 50 MB (" + fmtBytes(file.size) + ")"; }
+    else {
+      f.p = cmParsear(file.name);
+      if (!f.p) { f.estado = "descartado"; f.msg = "El nombre no empieza por un número de proceso"; }
+    }
+    CM.filas.push(f);
+  }
+
+  // 2) Cruce con la cartera, por lotes de claves
+  const conClave = CM.filas.filter(f => f.p);
+  const claves = [...new Set(conClave.map(f => f.p.clave))];
+  const porClave = {};          // clave → [filas de v_exp_buscar]
+  const variantesDe = {};
+  conClave.forEach(f => { variantesDe[f.p.clave] = cmVariantes(f.p); });
+  const LOTE = 80;
+  try {
+    for (let i = 0; i < claves.length; i += LOTE) {
+      progreso(true, "Buscando los procesos en la cartera", (i + 1) + " a " + Math.min(i + LOTE, claves.length) + " de " + claves.length, 10 + i / claves.length * 85);
+      const vals = [];
+      claves.slice(i, i + LOTE).forEach(k => vals.push(...variantesDe[k]));
+      const filas = await supaFetch("v_exp_buscar?select=cartera,radicado,radicado_norm,contribuyente,id_contribuyente,estado_cartera,exp_id,estado_expediente,total_documentos" +
+        "&cartera=eq." + encodeURIComponent(CM.cartera) +
+        "&radicado_norm=in.(" + vals.map(encodeURIComponent).join(",") + ")") || [];
+      filas.forEach(r => {
+        const k = claveRadicado(r.radicado_norm || r.radicado);
+        (porClave[k] = porClave[k] || []);
+        if (!porClave[k].some(x => x.radicado === r.radicado)) porClave[k].push(r);
+      });
+    }
+  } catch (e) {
+    progreso(false);
+    toast("No se pudo consultar la cartera: " + e.message, true);
+    return;
+  }
+  progreso(false);
+
+  // 3) Asignación, clases y descripciones
+  conClave.forEach(f => {
+    const c = porClave[f.p.clave] || [];
+    if (!c.length) { f.estado = "sinproceso"; f.msg = "No está en la cartera de " + (CARTERAS[CM.cartera] || CM.cartera); return; }
+    if (c.length > 1) { f.estado = "ambiguo"; f.msg = "Coincide con varios procesos: " + c.map(x => x.radicado).join(", "); return; }
+    f.proc = c[0];
+    if (f.proc.estado_expediente === "cerrado") { f.estado = "cerrado"; f.msg = "El expediente digital está cerrado"; return; }
+    if (!CM.clases[f.p.clase]) {
+      CM.clases[f.p.clase] = {
+        n: 0, ejemplo: f.nombre, tipo: cmSugerirTipo(f.p.clase), etapa: "", origen: cmSugerirOrigen(f.p.clase),
+        desc: f.p.clase === CM_CLASE_BASE ? "Expediente digitalizado (escaneo)" : ""
+      };
+    }
+    CM.clases[f.p.clase].n++;
+  });
+  cmRender();
+  $("cm-paso2").classList.remove("hidden");
+  $("cm-paso2").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function cmDescripcion(f) {
+  const cl = CM.clases[f.p.clase];
+  if (f.p.clase === CM_CLASE_BASE) return (cl && cl.desc) || "Expediente digitalizado (escaneo)";
+  return f.p.resto || f.p.clase;
+}
+
+const CM_ETIQUETAS = {
+  listo: "Listo", sinproceso: "Sin proceso", ambiguo: "Ambiguo", cerrado: "Expediente cerrado", descartado: "Descartado",
+  ok: "Incorporado", omitido: "Omitido", error: "Error", subiendo: "En curso", pendiente: "Pendiente"
+};
+
+function cmResumen() {
+  const listos = CM.filas.filter(f => f.estado === "listo");
+  const procesos = new Set(listos.map(f => f.proc.radicado));
+  const crear = new Set(listos.filter(f => !f.proc.exp_id).map(f => f.proc.radicado));
+  const cuenta = e => CM.filas.filter(f => f.estado === e).length;
+  return { total: CM.filas.length, listos: listos.length, procesos: procesos.size, crear: crear.size,
+           sinproceso: cuenta("sinproceso") + cuenta("ambiguo"), cerrados: cuenta("cerrado"), descartados: cuenta("descartado") };
+}
+
+function cmRender() {
+  const r = cmResumen();
+  $("cm-kpis").innerHTML = [
+    [r.total, "archivos"], [r.listos, "listos para cargar"], [r.procesos, "procesos"],
+    [r.crear, "expedientes por crear"], [r.sinproceso, "sin proceso"], [r.cerrados + r.descartados, "descartados o cerrados"]
+  ].map(k => `<div class="cm-kpi"><div class="kpi-n">${k[0]}</div><div class="kpi-l">${k[1]}</div></div>`).join("");
+
+  // Clases de archivo → tipo documental
+  const claves = Object.keys(CM.clases).sort((a, b) => (a === CM_CLASE_BASE ? -1 : b === CM_CLASE_BASE ? 1 : CM.clases[b].n - CM.clases[a].n));
+  const bloqueado = CM.corriendo || CM.iniciado;
+  $("cm-clases").innerHTML = claves.length ? claves.map(k => {
+    const c = CM.clases[k];
+    const kid = encodeURIComponent(k);
+    return `<tr>
+      <td><strong>${k === CM_CLASE_BASE ? "Solo el número" : esc(k)}</strong>
+        <div class="small muted">${c.n} archivo${c.n === 1 ? "" : "s"} · p. ej. ${esc(c.ejemplo)}</div>
+        ${k === CM_CLASE_BASE ? `<input class="inp cm-desc" maxlength="200" value="${esc(c.desc)}" ${bloqueado ? "disabled" : ""}
+            oninput="cmEditarClase('${kid}','desc',this.value)" aria-label="Descripción en el índice">` : ""}</td>
+      <td><select class="sel" ${bloqueado ? "disabled" : ""} onchange="cmEditarClase('${kid}','tipo',this.value)">${opcionesTipos(c.tipo)}</select></td>
+      <td><select class="sel" ${bloqueado ? "disabled" : ""} onchange="cmEditarClase('${kid}','etapa',this.value)">${opcionesEtapas(c.tipo, c.etapa)}</select></td>
+      <td><select class="sel" ${bloqueado ? "disabled" : ""} onchange="cmEditarClase('${kid}','origen',this.value)">
+        <option value="interno"${c.origen === "interno" ? " selected" : ""}>Dirección</option>
+        <option value="externo"${c.origen === "externo" ? " selected" : ""}>Tercero</option></select></td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="4" class="empty">Ningún archivo encontró su proceso.</td></tr>`;
+
+  cmRenderFilas();
+  const btn = $("cm-btn-iniciar");
+  btn.disabled = CM.corriendo || !r.listos;
+  btn.textContent = r.listos ? "Cargar " + r.listos + " archivo" + (r.listos === 1 ? "" : "s") + " en " + r.procesos + " expediente" + (r.procesos === 1 ? "" : "s") : "Nada por cargar";
+}
+
+function cmRenderFilas() {
+  const filtro = $("cm-filtro").value;
+  const filas = CM.filas.filter(f => {
+    if (!filtro) return true;
+    if (filtro === "problemas") return ["sinproceso", "ambiguo", "cerrado", "descartado", "error"].includes(f.estado);
+    return f.estado === filtro;
+  }).sort((a, b) => (a.proc ? a.proc.radicado : "~").localeCompare(b.proc ? b.proc.radicado : "~", "es", { numeric: true }) || a.nombre.localeCompare(b.nombre, "es", { numeric: true }));
+  const vista = filas.slice(0, CM_MAX_FILAS_VISTA);
+  $("cm-filas").innerHTML = vista.length ? vista.map(f => `<tr>
+    <td class="small" style="word-break:break-all">${esc(f.nombre)}<div class="muted">${fmtBytes(f.tamano)}</div></td>
+    <td class="nowrap">${f.proc ? `<strong>${esc(f.proc.radicado)}</strong>${f.proc.exp_id ? "" : '<div class="small muted">se creará</div>'}` : "—"}</td>
+    <td class="small">${f.proc ? esc(f.proc.contribuyente || "—") : "—"}</td>
+    <td class="small">${f.p && f.estado !== "descartado" ? esc(cmDescripcion(f)) : "—"}</td>
+    <td><span class="chip cm-st-${f.estado}">${esc(CM_ETIQUETAS[f.estado] || f.estado)}</span>${f.msg ? `<div class="small muted" style="margin-top:3px">${esc(f.msg)}</div>` : ""}</td>
+  </tr>`).join("") : `<tr><td colspan="5" class="empty">Ningún archivo con ese filtro.</td></tr>`;
+  $("cm-filas-info").textContent = filas.length > CM_MAX_FILAS_VISTA
+    ? "Mostrando " + CM_MAX_FILAS_VISTA + " de " + filas.length + ". Descarga el CSV para ver todos." : filas.length + " archivo(s).";
+}
+
+function cmEditarClase(kid, campo, valor) {
+  const c = CM.clases[decodeURIComponent(kid)];
+  if (!c) return;
+  c[campo] = valor;
+  if (campo === "tipo" || campo === "desc") cmRender();
+}
+
+function cmCSV() {
+  if (!CM.filas.length) return;
+  descargarCSV("Carga_masiva_" + (CM.cartera || "") + "_" + fechaArchivo() + ".csv", [
+    { t: "Archivo", v: "ruta" },
+    { t: "Tamaño (bytes)", v: "tamano" },
+    { t: "Proceso", v: f => f.proc ? f.proc.radicado : "" },
+    { t: "Contribuyente", v: f => f.proc ? f.proc.contribuyente : "" },
+    { t: "Cédula/NIT", v: f => f.proc ? f.proc.id_contribuyente : "" },
+    { t: "Clase", v: f => f.p ? (f.p.clase || "Solo el número") : "" },
+    { t: "Descripción", v: f => f.p && f.proc ? cmDescripcion(f) : "" },
+    { t: "Resultado", v: f => CM_ETIQUETAS[f.estado] || f.estado },
+    { t: "Detalle", v: "msg" },
+    { t: "N.º en el índice", v: f => f.consecutivo || "" },
+    { t: "Folios", v: f => f.folios || "" }
+  ], CM.filas);
+}
+
+async function cmIniciar() {
+  if (CM.corriendo || !sbAuth) return;
+  const listos = CM.filas.filter(f => f.estado === "listo");
+  if (!listos.length) return;
+  const clasesUsadas = [...new Set(listos.map(f => f.p.clase))];
+  const sinTipo = clasesUsadas.filter(k => !CM.clases[k].tipo);
+  if (sinTipo.length) {
+    toast("Falta el tipo documental para: " + sinTipo.map(k => k === CM_CLASE_BASE ? "Solo el número" : k).join(", "), true);
+    return;
+  }
+  const base = CM.clases[CM_CLASE_BASE];
+  if (base && String(base.desc || "").trim().length < 3) { toast("Escribe la descripción para los archivos que solo traen el número.", true); return; }
+  const crearExp = $("cm-crear").checked;
+
+  // Agrupar por proceso; dentro de cada uno: primero el escaneo base, luego por fecha del archivo y nombre
+  const grupos = {};
+  listos.forEach(f => { (grupos[f.proc.radicado] = grupos[f.proc.radicado] || { proc: f.proc, archivos: [] }).archivos.push(f); });
+  const cola = Object.values(grupos);
+  cola.forEach(g => g.archivos.sort((a, b) =>
+    (a.p.clase === CM_CLASE_BASE ? 0 : 1) - (b.p.clase === CM_CLASE_BASE ? 0 : 1) ||
+    (a.mod - b.mod) || a.nombre.localeCompare(b.nombre, "es", { numeric: true })));
+  const r = cmResumen();
+  if (!confirm("Se cargarán " + listos.length + " archivo(s) en " + cola.length + " expediente(s)" +
+      (crearExp && r.crear ? ", creando " + r.crear + " expediente(s) nuevo(s)" : "") +
+      ".\n\nLos documentos quedan incorporados con su huella y foliación: después solo se pueden anular. " +
+      "Lo que ya esté incorporado se omite automáticamente.\n\n¿Continuar?")) return;
+
+  CM.corriendo = true; CM.detener = false; CM.iniciado = true;
+  CM.shaGlobal = {};
+  CM.t0 = Date.now();
+  listos.forEach(f => { f.estado = "pendiente"; f.msg = ""; });
+  $("cm-progreso").classList.remove("hidden");
+  $("cm-btn-detener").disabled = false;
+  cmRender(); cmProgreso();
+  const total = cola.length;
+
+  const hilo = async () => {
+    let g;
+    while ((g = cola.shift())) {
+      await cmProcesarGrupo(g, crearExp);
+      cmProgreso((total - cola.length) + " de " + total + " expedientes");
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CM_HILOS, cola.length) }, hilo));
+
+  CM.corriendo = false;
+  $("cm-btn-detener").disabled = true;
+  CM.filas.filter(f => f.estado === "pendiente").forEach(f => { f.msg = "No se procesó (carga detenida)"; });
+  cmRender(); cmProgreso();
+  cmMostrarResultado();
+  cargarRecientes();
+}
+
+async function cmProcesarGrupo(g, crearExp) {
+  const marcar = (estado, msg) => g.archivos.forEach(f => { if (f.estado === "pendiente") { f.estado = estado; f.msg = msg; } });
+  if (CM.detener) return;
+  let expId = g.proc.exp_id;
+  try {
+    if (!expId) {
+      if (!crearExp) { marcar("omitido", "El proceso no tiene expediente digital y elegiste no crearlo"); return; }
+      expId = await rpc("exp_crear_expediente", { p_cartera: CM.cartera, p_radicado: g.proc.radicado });
+      if (!expId) throw new Error("La base de datos no devolvió el expediente creado");
+      g.proc.exp_id = expId;
+    }
+  } catch (e) {
+    marcar("error", "No se pudo crear el expediente: " + e.message);
+    return;
+  }
+  let shas;
+  try {
+    const idx = await supaFetch("v_exp_indice?select=sha256,anulado,consecutivo&expediente_id=eq." + Number(expId)) || [];
+    shas = {};
+    idx.filter(d => !d.anulado).forEach(d => { shas[d.sha256] = d.consecutivo; });
+  } catch (e) {
+    marcar("error", "No se pudo leer el índice del expediente: " + e.message);
+    return;
+  }
+  const radNorm = g.proc.radicado_norm || normRad(g.proc.radicado);
+  for (const f of g.archivos) {
+    if (CM.detener) return;
+    f.estado = "subiendo"; f.msg = "Leyendo…"; cmProgreso();
+    try {
+      const buf = await f.file.arrayBuffer();
+      const sha = await sha256Hex(buf);
+      if (shas[sha]) { f.estado = "omitido"; f.msg = "Ya estaba incorporado como N.º " + shas[sha]; cmProgreso(); continue; }
+      let paginas;
+      try { paginas = await contarPaginas(buf); }
+      catch (e) { throw new Error("PDF dañado o protegido con contraseña; no se pudo leer."); }
+      const otro = CM.shaGlobal[sha];
+      f.msg = "Subiendo…"; cmProgreso();
+      const d = await incorporarDocumento({
+        expedienteId: Number(expId), cartera: CM.cartera, radicadoNorm: radNorm,
+        file: f.file, nombre: f.nombre, tamano: f.tamano, sha, paginas,
+        tipo: CM.clases[f.p.clase].tipo, etapa: CM.clases[f.p.clase].etapa,
+        descripcion: cmDescripcion(f), fecha: null, origen: CM.clases[f.p.clase].origen,
+        obs: "Carga masiva desde " + (f.ruta || f.nombre), canal: CANAL_MASIVO
+      });
+      shas[sha] = d ? d.consecutivo : "?";
+      CM.shaGlobal[sha] = g.proc.radicado;
+      f.estado = "ok";
+      f.consecutivo = d ? d.consecutivo : "";
+      f.folios = d ? d.folio_inicial + " a " + d.folio_final : "";
+      f.msg = (d ? "N.º " + d.consecutivo + " · folios " + d.folio_inicial + " a " + d.folio_final : "Incorporado") +
+              (otro && otro !== g.proc.radicado ? " · el mismo archivo también se cargó en " + otro : "");
+    } catch (e) {
+      f.estado = "error"; f.msg = e.message;
+    }
+    cmProgreso();
+  }
+}
+
+function cmProgreso(sub) {
+  const enJuego = CM.filas.filter(f => ["pendiente", "subiendo", "ok", "omitido", "error"].includes(f.estado) && f.p && f.proc);
+  const hechos = enJuego.filter(f => ["ok", "omitido", "error"].includes(f.estado));
+  const ok = hechos.filter(f => f.estado === "ok").length;
+  const om = hechos.filter(f => f.estado === "omitido").length;
+  const er = hechos.filter(f => f.estado === "error").length;
+  const pct = enJuego.length ? hechos.length / enJuego.length * 100 : 0;
+  $("cm-prog-fill").style.width = pct.toFixed(1) + "%";
+  let resto = "";
+  if (CM.corriendo && hechos.length > 3) {
+    const seg = (Date.now() - CM.t0) / 1000 / hechos.length * (enJuego.length - hechos.length);
+    resto = " · faltan unos " + (seg < 90 ? Math.max(1, Math.round(seg)) + " s" : Math.round(seg / 60) + " min");
+  }
+  $("cm-prog-t").textContent = CM.corriendo
+    ? (CM.detener ? "Deteniendo al terminar el archivo en curso…" : "Cargando " + hechos.length + " de " + enJuego.length + resto)
+    : "Carga terminada: " + hechos.length + " de " + enJuego.length + " archivos procesados";
+  $("cm-prog-s").textContent = ok + " incorporados · " + om + " omitidos (ya estaban) · " + er + " con error" + (sub ? " · " + sub : "");
+  clearTimeout(cmProgreso._t);
+  cmProgreso._t = setTimeout(cmRenderFilas, 400);
+}
+
+function cmDetener() {
+  if (!CM.corriendo) return;
+  CM.detener = true;
+  $("cm-btn-detener").disabled = true;
+  cmProgreso();
+}
+
+function cmMostrarResultado() {
+  const ok = CM.filas.filter(f => f.estado === "ok").length;
+  const er = CM.filas.filter(f => f.estado === "error").length;
+  const pend = CM.filas.filter(f => f.estado === "pendiente").length;
+  const box = $("cm-resultado");
+  box.classList.remove("hidden");
+  box.className = "aviso " + (er || pend ? "aviso-warn" : "aviso-ok");
+  box.textContent = ok + " documento(s) incorporado(s)." +
+    (er ? " " + er + " con error: filtra por «Con problemas» y vuelve a cargar la carpeta para reintentarlos; lo ya incorporado se omite solo." : "") +
+    (pend ? " " + pend + " sin procesar porque detuviste la carga." : "") +
+    " Descarga el reporte CSV para el registro.";
+  toast(er ? "Carga terminada con " + er + " error(es)." : "Carga terminada.", !!er);
+}
+
+// ════════════════════════════════════════════════════════════
+// ESTADÍSTICAS
+// ════════════════════════════════════════════════════════════
+let ST = null;
+
+async function traerTodo(path, orden, alAvanzar) {
+  const out = [], paso = 1000;
+  for (let off = 0; ; off += paso) {
+    const lote = await supaFetch(path + "&order=" + orden + "&limit=" + paso + "&offset=" + off) || [];
+    out.push(...lote);
+    if (alAvanzar) alAvanzar(out.length);
+    if (lote.length < paso) break;
+  }
+  return out;
+}
+async function contarFilas(path) {
+  const headers = await getAuthHeaders({ Prefer: "count=exact", Range: "0-0" });
+  const res = await fetch(SUPABASE_URL + "/rest/v1/" + path, { headers });
+  if (!res.ok && res.status !== 206) throw new Error("HTTP " + res.status);
+  const cr = res.headers.get("content-range") || "";
+  const m = cr.match(/\/(\d+)$/);
+  return m ? Number(m[1]) : null;
+}
+
+async function cargarEstadisticas(forzar) {
+  if (ST && !forzar) { renderEstadisticas(); return; }
+  $("st-cont").innerHTML = `<div class="card empty">Calculando estadísticas…</div>`;
+  try {
+    const [exps, docs, cierres] = await Promise.all([
+      traerTodo("v_exp_digital?select=*", "id.asc"),
+      traerTodo("v_exp_indice?select=id,expediente_id,incorporado_por_email,fecha_incorporacion,paginas,anulado,tipo_nombre", "id.asc"),
+      traerTodo("exp_bitacora?select=expediente_id,fecha,detalle&accion=eq.cerrar", "fecha.desc").catch(() => [])
+    ]);
+    const cobertura = {};
+    await Promise.all(Object.keys(CARTERAS).map(async c => {
+      try { cobertura[c] = await contarFilas("v_exp_buscar?select=radicado&cartera=eq." + encodeURIComponent(c)); }
+      catch (e) { cobertura[c] = null; }
+    }));
+    ST = { exps, docs, cierres, cobertura, en: new Date() };
+    renderEstadisticas();
+  } catch (e) {
+    $("st-cont").innerHTML = `<div class="card empty">No se pudieron calcular: ${esc(e.message)}</div>`;
+  }
+}
+
+function stBarra(n, total) {
+  const pct = total ? n / total * 100 : 0;
+  return `<div class="st-track" aria-hidden="true"><div class="st-fill" style="width:${pct.toFixed(1)}%"></div></div>`;
+}
+function stPct(n, total) { return total ? (n / total * 100).toLocaleString("es-CO", { maximumFractionDigits: 1 }) + " %" : "—"; }
+function stNum(n) { return n === null || n === undefined ? "—" : Number(n).toLocaleString("es-CO"); }
+
+function stCausal(motivo) {
+  const m = String(motivo || "").match(/^Causal:\s*([^.]+)\./i);
+  return m ? m[1].trim() : "Sin causal registrada";
+}
+
+function renderEstadisticas() {
+  const { exps, docs, cierres, cobertura } = ST;
+  const vig = docs.filter(d => !d.anulado);
+  const folios = vig.reduce((a, d) => a + (Number(d.paginas) || 0), 0);
+  const cerrados = exps.filter(e => e.estado === "cerrado");
+
+  // Cobertura por cartera
+  const porCartera = {};
+  exps.forEach(e => { porCartera[e.cartera] = (porCartera[e.cartera] || 0) + 1; });
+  const filasCob = Object.keys(CARTERAS).map(c => ({ c, total: cobertura[c], con: porCartera[c] || 0 }))
+    .filter(x => x.con || x.total);
+
+  // Situación de los procesos con expediente
+  const sit = {};
+  exps.forEach(e => { const s = situacionDe(e); sit[s] = (sit[s] || 0) + 1; });
+
+  // Causal de cierre (último cierre de cada expediente hoy cerrado)
+  const ultimo = {};
+  cierres.forEach(b => { if (!ultimo[b.expediente_id]) ultimo[b.expediente_id] = b; });
+  const causales = {};
+  cerrados.forEach(e => {
+    const b = ultimo[e.id];
+    const c = stCausal(b && b.detalle && b.detalle.motivo);
+    causales[c] = (causales[c] || 0) + 1;
+  });
+
+  // Incorporación por mes (últimos 12)
+  const meses = [];
+  const hoy = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    meses.push({ k: d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"),
+                 t: d.toLocaleDateString("es-CO", { month: "short", year: "numeric" }), docs: 0, folios: 0 });
+  }
+  const idxMes = {}; meses.forEach((m, i) => { idxMes[m.k] = i; });
+  vig.forEach(d => {
+    const k = String(d.fecha_incorporacion || "").slice(0, 7);
+    if (k in idxMes) { meses[idxMes[k]].docs++; meses[idxMes[k]].folios += Number(d.paginas) || 0; }
+  });
+  const maxMes = Math.max(1, ...meses.map(m => m.docs));
+
+  // Por funcionario
+  const func = {};
+  vig.forEach(d => {
+    const u = d.incorporado_por_email || "Sin usuario";
+    const f = func[u] = func[u] || { usuario: u, docs: 0, folios: 0, exps: new Set(), ultimo: "" };
+    f.docs++; f.folios += Number(d.paginas) || 0; f.exps.add(d.expediente_id);
+    if (String(d.fecha_incorporacion) > f.ultimo) f.ultimo = String(d.fecha_incorporacion);
+  });
+  const funcs = Object.values(func).sort((a, b) => b.docs - a.docs);
+  ST.funcs = funcs;
+
+  // Tipos documentales
+  const tipos = {};
+  vig.forEach(d => { const t = d.tipo_nombre || "Sin tipo"; tipos[t] = (tipos[t] || 0) + 1; });
+  const tiposOrd = Object.entries(tipos).sort((a, b) => b[1] - a[1]);
+
+  const ordenSit = ["activo", "acuerdo", "cancelado", "terminado", "sin"];
+  $("st-cont").innerHTML = `
+    <div class="st-kpis">
+      <div class="card st-kpi"><div class="kpi-n">${stNum(exps.length)}</div><div class="kpi-l">expedientes digitales</div></div>
+      <div class="card st-kpi"><div class="kpi-n">${stNum(vig.length)}</div><div class="kpi-l">documentos vigentes</div></div>
+      <div class="card st-kpi"><div class="kpi-n">${stNum(folios)}</div><div class="kpi-l">folios</div></div>
+      <div class="card st-kpi"><div class="kpi-n">${stNum(cerrados.length)}</div><div class="kpi-l">expedientes cerrados</div></div>
+    </div>
+
+    <div class="st-grid">
+      <div class="card">
+        <h3 class="st-h">Cobertura por cartera</h3>
+        <p class="small muted st-p">Procesos de cada cartera que ya tienen carpeta digital.</p>
+        <table class="tbl st-tbl"><thead><tr><th>Cartera</th><th class="num">Procesos</th><th class="num">Con expediente</th><th class="num">%</th><th></th></tr></thead><tbody>
+        ${filasCob.map(x => `<tr><td>${chipCartera(x.c)}</td><td class="num">${stNum(x.total)}</td><td class="num">${stNum(x.con)}</td>
+          <td class="num nowrap">${x.total ? stPct(x.con, x.total) : "—"}</td><td class="st-bar-td">${x.total ? stBarra(x.con, x.total) : ""}</td></tr>`).join("") ||
+          `<tr><td colspan="5" class="empty">Sin datos.</td></tr>`}
+        </tbody></table>
+      </div>
+
+      <div class="card">
+        <h3 class="st-h">Situación de los procesos</h3>
+        <p class="small muted st-p">Según el estado en cartera de los procesos con expediente digital.</p>
+        <table class="tbl st-tbl"><tbody>
+        ${ordenSit.filter(s => sit[s]).map(s => `<tr><td><span class="chip chip-sit-${s}">${SITUACIONES[s]}</span></td>
+          <td class="num">${stNum(sit[s])}</td><td class="num nowrap">${stPct(sit[s], exps.length)}</td><td class="st-bar-td">${stBarra(sit[s], exps.length)}</td></tr>`).join("") ||
+          `<tr><td class="empty">Sin datos.</td></tr>`}
+        </tbody></table>
+      </div>
+
+      <div class="card">
+        <h3 class="st-h">Causal de cierre</h3>
+        <p class="small muted st-p">Expedientes cerrados hoy, por la causal elegida al cerrarlos.</p>
+        <table class="tbl st-tbl"><tbody>
+        ${Object.entries(causales).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<tr><td>${esc(c)}</td>
+          <td class="num">${stNum(n)}</td><td class="num nowrap">${stPct(n, cerrados.length)}</td><td class="st-bar-td">${stBarra(n, cerrados.length)}</td></tr>`).join("") ||
+          `<tr><td class="empty">Ningún expediente cerrado.</td></tr>`}
+        </tbody></table>
+      </div>
+
+      <div class="card">
+        <h3 class="st-h">Tipos documentales</h3>
+        <p class="small muted st-p">Documentos vigentes por tipo.</p>
+        <table class="tbl st-tbl"><tbody>
+        ${tiposOrd.slice(0, 10).map(([t, n]) => `<tr><td>${esc(t)}</td><td class="num">${stNum(n)}</td>
+          <td class="num nowrap">${stPct(n, vig.length)}</td><td class="st-bar-td">${stBarra(n, vig.length)}</td></tr>`).join("") ||
+          `<tr><td class="empty">Sin documentos.</td></tr>`}
+        </tbody></table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3 class="st-h">Documentos incorporados por mes</h3>
+      <div class="st-meses">
+        ${meses.map(m => `<div class="st-mes" title="${m.docs} documentos · ${m.folios} folios">
+          <div class="st-mes-n">${m.docs || ""}</div>
+          <div class="st-mes-col"><div class="st-mes-fill" style="height:${(m.docs / maxMes * 100).toFixed(1)}%"></div></div>
+          <div class="st-mes-t">${esc(m.t)}</div></div>`).join("")}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="st-h-row"><h3 class="st-h">Por funcionario</h3>
+        <button class="btn btn-sm" onclick="stCSVFuncionarios()">⬇ CSV</button></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Funcionario</th><th class="num">Documentos</th><th class="num">Folios</th>
+        <th class="num">Expedientes</th><th>Última incorporación</th></tr></thead><tbody>
+        ${funcs.map(f => `<tr><td>${esc(f.usuario)}</td><td class="num">${stNum(f.docs)}</td><td class="num">${stNum(f.folios)}</td>
+          <td class="num">${stNum(f.exps.size)}</td><td class="small nowrap">${fmtFechaHora(f.ultimo)}</td></tr>`).join("") ||
+          `<tr><td colspan="5" class="empty">Sin incorporaciones.</td></tr>`}
+      </tbody></table></div>
+    </div>
+    <p class="small muted" style="margin-top:12px">Datos a ${fmtFechaHora(ST.en)}.</p>`;
+}
+
+function stCSVExpedientes() {
+  if (!ST) { toast("Abre primero las estadísticas.", true); return; }
+  descargarCSV("Expedientes_digitales_" + fechaArchivo() + ".csv", [
+    { t: "Cartera", v: e => CARTERAS[e.cartera] || e.cartera },
+    { t: "Radicado", v: "radicado" },
+    { t: "Contribuyente", v: "contribuyente" },
+    { t: "Cédula/NIT", v: "id_contribuyente" },
+    { t: "Estado en cartera", v: "estado_cartera" },
+    { t: "Situación", v: e => SITUACIONES[situacionDe(e)] },
+    { t: "Valor", v: "valor_total" },
+    { t: "Expediente", v: "estado" },
+    { t: "Documentos", v: "total_documentos" },
+    { t: "Folios", v: "total_folios" },
+    { t: "Origen", v: e => e.origen === "manual" ? "Creado manualmente" : "Cartera" },
+    { t: "Creado por", v: "creado_por_email" },
+    { t: "Creado", v: e => fmtFechaHora(e.creado_en) },
+    { t: "Última actualización", v: e => fmtFechaHora(e.actualizado_en) }
+  ], ST.exps);
+}
+function stCSVDocumentos() {
+  if (!ST) { toast("Abre primero las estadísticas.", true); return; }
+  const rad = {}; ST.exps.forEach(e => { rad[e.id] = e; });
+  descargarCSV("Documentos_expedientes_" + fechaArchivo() + ".csv", [
+    { t: "Cartera", v: d => rad[d.expediente_id] ? (CARTERAS[rad[d.expediente_id].cartera] || rad[d.expediente_id].cartera) : "" },
+    { t: "Radicado", v: d => rad[d.expediente_id] ? rad[d.expediente_id].radicado : d.expediente_id },
+    { t: "Tipo documental", v: "tipo_nombre" },
+    { t: "Páginas", v: "paginas" },
+    { t: "Incorporado", v: d => fmtFechaHora(d.fecha_incorporacion) },
+    { t: "Incorporado por", v: "incorporado_por_email" },
+    { t: "Anulado", v: d => d.anulado ? "Sí" : "No" }
+  ], ST.docs);
+}
+function stCSVFuncionarios() {
+  if (!ST || !ST.funcs) return;
+  descargarCSV("Incorporacion_por_funcionario_" + fechaArchivo() + ".csv", [
+    { t: "Funcionario", v: "usuario" },
+    { t: "Documentos", v: "docs" },
+    { t: "Folios", v: "folios" },
+    { t: "Expedientes", v: f => f.exps.size },
+    { t: "Última incorporación", v: f => fmtFechaHora(f.ultimo) }
+  ], ST.funcs);
+}
+function rcCSV() {
+  // Resultados de la búsqueda actual
+  if (!RESULTADOS.length) { toast("Haz primero una búsqueda.", true); return; }
+  descargarCSV("Busqueda_expedientes_" + fechaArchivo() + ".csv", [
+    { t: "Cartera", v: f => CARTERAS[f.cartera] || f.cartera },
+    { t: "Radicado", v: "radicado" },
+    { t: "Contribuyente", v: "contribuyente" },
+    { t: "Cédula/NIT", v: "id_contribuyente" },
+    { t: "Estado en cartera", v: "estado_cartera" },
+    { t: "Situación", v: f => SITUACIONES[situacionDe(f)] },
+    { t: "Valor", v: "valor_total" },
+    { t: "Expediente digital", v: f => f.exp_id ? f.estado_expediente : "Sin carpeta" },
+    { t: "Documentos", v: "total_documentos" },
+    { t: "Folios", v: "total_folios" }
+  ], RESULTADOS);
 }
