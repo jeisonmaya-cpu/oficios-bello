@@ -1615,6 +1615,7 @@ async function cmAnalizar(lista) {
   if (CM.corriendo) { toast("Hay una carga en curso. Espera a que termine o detenla.", true); return; }
   const archivos = Array.from(lista || []);
   if (!archivos.length) return;
+  if (cmModo() === "convenio") return cmAnalizarConvenios(archivos);
   CM.cartera = $("cm-cartera").value || "predial";
   CM.filas = []; CM.clases = {}; CM.iniciado = false;
   $("cm-resultado").classList.add("hidden");
@@ -1683,7 +1684,210 @@ async function cmAnalizar(lista) {
   $("cm-paso2").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// ════════ MODO CONVENIOS DE PAGO ════════
+// El nombre del PDF es el número del convenio (CONSECUTIVO del reporte de acuerdos de pago).
+const CM_CLASE_CONVENIO = "CONVENIO";
+const ESTADOS_CONVENIO = { A: "vigente", C: "cumplido", N: "anulado", E: "en elaboración" };   // B, X, T se ignoran
+function cmModo() { return $("cm-modo") ? $("cm-modo").value : "radicado"; }
+function cmCambioModo() {
+  if (CM.corriendo) return;
+  const conv = cmModo() === "convenio";
+  $("cm-cartera").classList.toggle("hidden", conv);
+  $("cm-ayuda-modo").textContent = conv
+    ? "Cada archivo se busca por su número en el reporte de acuerdos de pago (66132.pdf → convenio 66132). Con la cédula del deudor se encuentra su proceso activo en Predial; si no tiene, o si el convenio es de ICA, va a un expediente propio en la cartera Acuerdos de pago."
+    : "Cada archivo se asigna a su proceso por el número del nombre (FP-1212, FP1212, FP01212 o FP'1212 son el mismo); lo que sigue al número se usa como descripción.";
+  $("cm-ayuda-2").textContent = conv
+    ? "Todos los convenios van como un solo tipo de documento. La descripción en el índice será «Convenio de pago N.º …» y la fecha del documento, la de aprobación del convenio."
+    : "Agrupé los archivos por lo que dice el nombre después del número. Elige el tipo documental una sola vez por grupo.";
+  $("cm-ayuda-3").textContent = conv
+    ? "Los convenios vigentes registran además la novedad «Acuerdo de pago N.º …» en el expediente. Lo que ya esté incorporado se reconoce por su huella y se omite, así que puedes repetir la carga sin duplicar."
+    : "En cada expediente se incorpora primero el archivo que solo trae el número y después los demás por fecha. Lo que ya esté incorporado se reconoce por su huella y se omite, así que puedes repetir la carga sin duplicar.";
+  CM.filas = []; CM.clases = {}; CM.iniciado = false;
+  $("cm-paso2").classList.add("hidden");
+  $("cm-resultado").classList.add("hidden");
+}
+function llaveCedula(s) { return String(s || "").split("-")[0].replace(/\D/g, ""); }
+function cmProcAcuerdos(conv) {
+  const k = "AP" + conv.consecutivo;
+  const ya = (CM.expAcuerdos || {})[k];
+  return { cartera: "acuerdos", radicado: "AP-" + conv.consecutivo, radicado_norm: k,
+           contribuyente: conv.nombre_deudor || "", id_contribuyente: conv.cedula_deudor || "",
+           manual: true, exp_id: ya ? ya.id : null, estado_expediente: ya ? ya.estado : null };
+}
+function cmSugerirTipoConvenio() {
+  for (const r of [/acuerdo de pago|convenio de pago/, /convenio/, /acuerdo/]) {
+    const t = TIPOS.find(x => r.test(cmNorm(x.nombre)));
+    if (t) return t.codigo;
+  }
+  return "";
+}
+
+async function cmAnalizarConvenios(archivos) {
+  CM.cartera = "predial"; CM.filas = []; CM.clases = {}; CM.iniciado = false; CM.expAcuerdos = {};
+  $("cm-resultado").classList.add("hidden");
+  progreso(true, "Leyendo nombres", archivos.length + " archivo(s)", 5);
+  for (const file of archivos) {
+    const f = { uid: Math.random().toString(36).slice(2, 10), file, nombre: file.name, ruta: file.webkitRelativePath || file.name,
+                tamano: file.size, mod: file.lastModified || 0, p: null, proc: null, estado: "listo", msg: "" };
+    const esPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const m = file.name.replace(/\.pdf$/i, "").match(/^\s*0*(\d{3,10})(?!\d)/);
+    if (!esPdf) { f.estado = "descartado"; f.msg = "No es PDF"; }
+    else if (file.size === 0) { f.estado = "descartado"; f.msg = "Archivo vacío"; }
+    else if (file.size > MAX_BYTES) { f.estado = "descartado"; f.msg = "Supera 50 MB (" + fmtBytes(file.size) + ")"; }
+    else if (!m) { f.estado = "descartado"; f.msg = "El nombre no empieza por el número del convenio"; }
+    else { f.consec = m[1]; f.p = { clase: CM_CLASE_CONVENIO, resto: "", clave: m[1] }; }
+    CM.filas.push(f);
+  }
+
+  const nums = [...new Set(CM.filas.filter(f => f.consec).map(f => f.consec))];
+  const convs = {};
+  const porCed = {};
+  try {
+    // 1) Convenios en el reporte
+    for (let i = 0; i < nums.length; i += 150) {
+      progreso(true, "Buscando los convenios en el reporte", (i + 1) + " a " + Math.min(i + 150, nums.length) + " de " + nums.length, 10 + i / Math.max(1, nums.length) * 40);
+      const filas = await supaFetch("acuerdos_pago?select=consecutivo,estado,fuente,cedula_deudor,nombre_deudor,fecha_aprobacion" +
+                                    "&consecutivo=in.(" + nums.slice(i, i + 150).join(",") + ")") || [];
+      filas.forEach(r => { convs[String(r.consecutivo)] = r; });
+    }
+    // 2) Procesos de Predial de esas cédulas
+    const ceds = [...new Set(Object.values(convs).filter(c => c.fuente !== "ica").map(c => llaveCedula(c.cedula_deudor)).filter(Boolean))];
+    for (let i = 0; i < ceds.length; i += 60) {
+      progreso(true, "Buscando procesos por cédula", (i + 1) + " a " + Math.min(i + 60, ceds.length) + " de " + ceds.length, 50 + i / Math.max(1, ceds.length) * 40);
+      const lote = ceds.slice(i, i + 60);
+      const conds = ["id_contribuyente.in.(" + lote.join(",") + ")"]
+        .concat(lote.filter(c => c.length >= 9 && /^[89]/.test(c)).map(c => "id_contribuyente.like." + c + "-*"));
+      const filas = await supaFetch("v_exp_buscar?select=cartera,radicado,radicado_norm,contribuyente,id_contribuyente,estado_cartera,exp_id,estado_expediente,total_documentos" +
+                                    "&cartera=eq.predial&or=" + encodeURIComponent("(" + conds.join(",") + ")")) || [];
+      filas.forEach(r => {
+        const k = llaveCedula(r.id_contribuyente);
+        porCed[k] = porCed[k] || [];
+        if (!porCed[k].some(x => x.radicado === r.radicado)) porCed[k].push(r);
+      });
+    }
+    // 3) Expedientes de acuerdos ya creados (para no duplicar)
+    const aps = nums.map(n => "AP" + n);
+    for (let i = 0; i < aps.length; i += 150) {
+      const filas = await supaFetch("exp_digital?select=id,radicado_norm,estado&cartera=eq.acuerdos&radicado_norm=in.(" + aps.slice(i, i + 150).join(",") + ")") || [];
+      filas.forEach(r => { CM.expAcuerdos[r.radicado_norm] = r; });
+    }
+  } catch (e) {
+    progreso(false);
+    if (/acuerdos_pago|does not exist|schema cache|404/i.test(e.message)) toast("Primero hay que importar el reporte de acuerdos (archivos acuerdos_pago_*.sql).", true);
+    else toast("No se pudo consultar: " + e.message, true);
+    return;
+  }
+  progreso(false);
+
+  // 4) Destino de cada archivo
+  CM.filas.filter(f => f.consec).forEach(f => {
+    const c = convs[f.consec];
+    if (!c) { f.estado = "sinproceso"; f.msg = "El convenio " + f.consec + " no está en el reporte de acuerdos (solo se importaron los elaborados desde 2020)"; return; }
+    f.conv = c;
+    const est = String(c.estado || "").toUpperCase();
+    if (!ESTADOS_CONVENIO[est]) { f.estado = "descartado"; f.msg = "Convenio " + f.consec + " con estado «" + est + "» sin clasificar: se ignora"; return; }
+    const info = "Convenio " + f.consec + " · " + ESTADOS_CONVENIO[est] + " · " + nombrePropio(c.nombre_deudor || "");
+    if (c.fuente === "ica") {
+      f.proc = cmProcAcuerdos(c); f.msg = info + " · ICA: va al expediente de acuerdos";
+    } else {
+      const todos = porCed[llaveCedula(c.cedula_deudor)] || [];
+      const activos = todos.filter(p => !["cancelado", "terminado"].includes(situacionDe(p)));
+      if (activos.length === 1) { f.proc = activos[0]; f.msg = info; }
+      else if (activos.length > 1) {
+        f.estado = "ambiguo"; f.cands = activos.sort((a, b) => ordenRadicado(a.radicado, b.radicado));
+        f.msg = info + " · la cédula tiene " + activos.length + " procesos activos";
+      } else {
+        f.proc = cmProcAcuerdos(c);
+        f.msg = info + (todos.length ? " · sin proceso activo (terminados: " + todos.map(p => radVista(p.radicado)).join(", ") + ")" : " · sin proceso de cobro");
+      }
+    }
+    if (f.proc && f.proc.estado_expediente === "cerrado") {
+      f.estado = "cerrado"; f.msg = info + " · el expediente " + radVista(f.proc.radicado) + " está cerrado";
+    }
+  });
+  const usados = CM.filas.filter(f => f.conv && ["listo", "ambiguo"].includes(f.estado));
+  if (usados.length) {
+    CM.clases[CM_CLASE_CONVENIO] = { n: usados.length, ejemplo: usados[0].nombre, tipo: cmSugerirTipoConvenio(), etapa: "", origen: "interno", desc: "" };
+  }
+  cmRender();
+  $("cm-paso2").classList.remove("hidden");
+  $("cm-paso2").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function cmSelectorDudoso(f) {
+  if (!f.cands || CM.iniciado || CM.corriendo) return "";
+  const ops = ['<option value="">— Elige el destino —</option>']
+    .concat(f.cands.map(p => `<option value="${esc(p.radicado)}"${f.eleccion === p.radicado ? " selected" : ""}>${esc(radVista(p.radicado))} · ${esc(p.estado_cartera || "")}</option>`))
+    .concat([`<option value="__todos"${f.eleccion === "__todos" ? " selected" : ""}>Todos sus procesos (${f.cands.length})</option>`,
+             `<option value="__acuerdos"${f.eleccion === "__acuerdos" ? " selected" : ""}>Expediente de acuerdos (AP-${esc(f.consec)})</option>`]);
+  return `<select class="sel cm-eleccion" onchange="cmElegir('${f.uid}', this.value)" aria-label="Destino del convenio">${ops.join("")}</select>`;
+}
+function cmAplicarEleccion(f, val) {
+  f.todos = false; f.eleccion = val;
+  if (!val) { f.estado = "ambiguo"; f.proc = null; return; }
+  f.estado = "listo";
+  if (val === "__todos") { f.proc = f.cands[0]; f.todos = true; }
+  else if (val === "__acuerdos") f.proc = cmProcAcuerdos(f.conv);
+  else f.proc = f.cands.find(p => p.radicado === val) || null;
+  if (!f.proc) f.estado = "ambiguo";
+}
+function cmElegir(uid, val) {
+  const f = CM.filas.find(x => x.uid === uid);
+  if (!f || !f.cands) return;
+  cmAplicarEleccion(f, val);
+  cmRender();
+}
+function cmElegirDudosos(val) {
+  CM.filas.filter(f => f.cands && f.estado === "ambiguo").forEach(f => cmAplicarEleccion(f, val));
+  cmRender();
+}
+// "Todos sus procesos": una fila por cada proceso, con el mismo archivo
+function cmExpandirTodos() {
+  const nuevos = [];
+  CM.filas.forEach(f => {
+    if (f.estado === "listo" && f.todos && f.cands) {
+      f.cands.slice(1).forEach(p => nuevos.push(Object.assign({}, f, {
+        uid: Math.random().toString(36).slice(2, 10), proc: p, todos: false, cands: null, eleccion: p.radicado })));
+      f.proc = f.cands[0]; f.todos = false; f.cands = null;
+    }
+  });
+  CM.filas.push(...nuevos);
+}
+
+// Novedad "Acuerdo de pago N.º …" para convenios vigentes (estado A), sin repetir
+async function cmNovedadesConvenio(g, expId) {
+  if (!NOV_DISPONIBLE || !expId) return;
+  const vistos = {};
+  const vigentes = g.archivos.filter(f => f.conv && String(f.conv.estado).toUpperCase() === "A" &&
+    ["ok", "omitido"].includes(f.estado) && !vistos[f.conv.consecutivo] && (vistos[f.conv.consecutivo] = true));
+  if (!vigentes.length) return;
+  try {
+    const hist = await supaFetch("exp_novedades?select=tipo,numero&expediente_id=eq." + Number(expId) + "&order=registrado_en.desc,id.desc") || [];
+    for (const f of vigentes) {
+      const num = String(f.conv.consecutivo);
+      if (hist.some(n => n.tipo === "acuerdo_pago" && String(n.numero) === num)) { f.msg += " · la novedad del acuerdo ya estaba"; continue; }
+      if (hist[0] && hist[0].tipo === "terminacion") { f.msg += " · no registré el acuerdo: el proceso tiene una terminación registrada"; continue; }
+      await supaFetch("exp_novedades", {
+        method: "POST", headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ expediente_id: Number(expId), tipo: "acuerdo_pago", numero: num,
+          fecha: f.conv.fecha_aprobacion ? String(f.conv.fecha_aprobacion).slice(0, 10) : null,
+          observacion: "Registrado por la carga masiva de convenios (reporte de acuerdos de pago)" })
+      });
+      hist.unshift({ tipo: "acuerdo_pago", numero: num });
+      f.novedad = true;
+      f.msg += " · novedad «Acuerdo de pago N.º " + num + "» registrada";
+    }
+  } catch (e) {
+    if (/exp_novedades|does not exist|schema cache|404/i.test(e.message)) NOV_DISPONIBLE = false;
+    vigentes.forEach(f => { if (!f.novedad) f.msg += " · no se pudo registrar la novedad: " + e.message; });
+  }
+}
+
 function cmDescripcion(f) {
+  if (f.conv) {
+    const est = String(f.conv.estado || "").toUpperCase();
+    return "Convenio de pago N.º " + f.conv.consecutivo + (est === "C" ? " (cumplido)" : est === "N" ? " (anulado)" : "");
+  }
   const cl = CM.clases[f.p.clase];
   if (f.p.clase === CM_CLASE_BASE) return (cl && cl.desc) || "Expediente digitalizado (escaneo)";
   return f.p.resto || f.p.clase;
@@ -1696,8 +1900,10 @@ const CM_ETIQUETAS = {
 
 function cmResumen() {
   const listos = CM.filas.filter(f => f.estado === "listo");
-  const procesos = new Set(listos.map(f => f.proc.radicado));
-  const crear = new Set(listos.filter(f => !f.proc.exp_id).map(f => f.proc.radicado));
+  const destinos = listos.flatMap(f => f.todos && f.cands ? f.cands : [f.proc]);
+  const clave = p => (p.cartera || CM.cartera) + "|" + p.radicado;
+  const procesos = new Set(destinos.map(clave));
+  const crear = new Set(destinos.filter(p => !p.exp_id).map(clave));
   const cuenta = e => CM.filas.filter(f => f.estado === e).length;
   return { total: CM.filas.length, listos: listos.length, procesos: procesos.size, crear: crear.size,
            sinproceso: cuenta("sinproceso") + cuenta("ambiguo"), cerrados: cuenta("cerrado"), descartados: cuenta("descartado") };
@@ -1717,7 +1923,7 @@ function cmRender() {
     const c = CM.clases[k];
     const kid = encodeURIComponent(k);
     return `<tr>
-      <td><strong>${k === CM_CLASE_BASE ? "Solo el número" : esc(k)}</strong>
+      <td><strong>${k === CM_CLASE_BASE ? "Solo el número" : k === CM_CLASE_CONVENIO ? "Convenios de pago" : esc(k)}</strong>
         <div class="small muted">${c.n} archivo${c.n === 1 ? "" : "s"} · p. ej. ${esc(c.ejemplo)}</div>
         ${k === CM_CLASE_BASE ? `<input class="inp cm-desc" maxlength="200" value="${esc(c.desc)}" ${bloqueado ? "disabled" : ""}
             oninput="cmEditarClase('${kid}','desc',this.value)" aria-label="Descripción en el índice">` : ""}</td>
@@ -1730,6 +1936,9 @@ function cmRender() {
   }).join("") : `<tr><td colspan="4" class="empty">Ningún archivo encontró su proceso.</td></tr>`;
 
   cmRenderFilas();
+  const dudosos = CM.filas.filter(f => f.cands && f.estado === "ambiguo").length;
+  $("cm-dudosos").classList.toggle("hidden", !dudosos || CM.iniciado);
+  $("cm-dudosos-n").textContent = dudosos + " convenio" + (dudosos === 1 ? "" : "s") + " con varios procesos activos:";
   const btn = $("cm-btn-iniciar");
   btn.disabled = CM.corriendo || !r.listos;
   btn.textContent = r.listos ? "Cargar " + r.listos + " archivo" + (r.listos === 1 ? "" : "s") + " en " + r.procesos + " expediente" + (r.procesos === 1 ? "" : "s") : "Nada por cargar";
@@ -1745,10 +1954,10 @@ function cmRenderFilas() {
   const vista = filas.slice(0, CM_MAX_FILAS_VISTA);
   $("cm-filas").innerHTML = vista.length ? vista.map(f => `<tr>
     <td class="small" style="word-break:break-all">${esc(f.nombre)}<div class="muted">${fmtBytes(f.tamano)}</div></td>
-    <td class="nowrap">${f.proc ? `<strong>${esc(f.proc.radicado)}</strong>${f.proc.exp_id ? "" : '<div class="small muted">se creará</div>'}` : "—"}</td>
+    <td class="nowrap">${f.proc ? `<strong>${esc(radVista(f.proc.radicado))}</strong>${f.todos && f.cands ? `<div class="small muted">y ${f.cands.length - 1} más</div>` : ""}${f.proc.exp_id ? "" : '<div class="small muted">se creará</div>'}` : "—"}</td>
     <td class="small">${f.proc ? esc(f.proc.contribuyente || "—") : "—"}</td>
-    <td class="small">${f.p && f.estado !== "descartado" ? esc(cmDescripcion(f)) : "—"}</td>
-    <td><span class="chip cm-st-${f.estado}">${esc(CM_ETIQUETAS[f.estado] || f.estado)}</span>${f.msg ? `<div class="small muted" style="margin-top:3px">${esc(f.msg)}</div>` : ""}</td>
+    <td class="small">${f.p && (f.proc || f.conv) && f.estado !== "descartado" ? esc(cmDescripcion(f)) : "—"}</td>
+    <td><span class="chip cm-st-${f.estado}">${esc(CM_ETIQUETAS[f.estado] || f.estado)}</span>${f.msg ? `<div class="small muted" style="margin-top:3px">${esc(f.msg)}</div>` : ""}${cmSelectorDudoso(f)}</td>
   </tr>`).join("") : `<tr><td colspan="5" class="empty">Ningún archivo con ese filtro.</td></tr>`;
   $("cm-filas-info").textContent = filas.length > CM_MAX_FILAS_VISTA
     ? "Mostrando " + CM_MAX_FILAS_VISTA + " de " + filas.length + ". Descarga el CSV para ver todos." : filas.length + " archivo(s).";
@@ -1766,10 +1975,13 @@ function cmCSV() {
   descargarCSV("Carga_masiva_" + (CM.cartera || "") + "_" + fechaArchivo() + ".csv", [
     { t: "Archivo", v: "ruta" },
     { t: "Tamaño (bytes)", v: "tamano" },
-    { t: "Proceso", v: f => f.proc ? f.proc.radicado : "" },
+    { t: "Proceso", v: f => f.proc ? radVista(f.proc.radicado) : "" },
     { t: "Contribuyente", v: f => f.proc ? f.proc.contribuyente : "" },
     { t: "Cédula/NIT", v: f => f.proc ? f.proc.id_contribuyente : "" },
-    { t: "Clase", v: f => f.p ? (f.p.clase || "Solo el número") : "" },
+    { t: "Convenio", v: f => f.conv ? f.conv.consecutivo : "" },
+    { t: "Estado del convenio", v: f => f.conv ? (ESTADOS_CONVENIO[String(f.conv.estado).toUpperCase()] || f.conv.estado) : "" },
+    { t: "Cartera destino", v: f => f.proc ? (CARTERAS[f.proc.cartera || CM.cartera] || f.proc.cartera || CM.cartera) : "" },
+    { t: "Clase", v: f => f.p ? (f.p.clase === CM_CLASE_CONVENIO ? "Convenio de pago" : (f.p.clase || "Solo el número")) : "" },
     { t: "Descripción", v: f => f.p && f.proc ? cmDescripcion(f) : "" },
     { t: "Resultado", v: f => CM_ETIQUETAS[f.estado] || f.estado },
     { t: "Detalle", v: "msg" },
@@ -1780,6 +1992,7 @@ function cmCSV() {
 
 async function cmIniciar() {
   if (CM.corriendo || !sbAuth) return;
+  cmExpandirTodos();
   const listos = CM.filas.filter(f => f.estado === "listo");
   if (!listos.length) return;
   const clasesUsadas = [...new Set(listos.map(f => f.p.clase))];
@@ -1794,7 +2007,10 @@ async function cmIniciar() {
 
   // Agrupar por proceso; dentro de cada uno: primero el escaneo base, luego por fecha del archivo y nombre
   const grupos = {};
-  listos.forEach(f => { (grupos[f.proc.radicado] = grupos[f.proc.radicado] || { proc: f.proc, archivos: [] }).archivos.push(f); });
+  listos.forEach(f => {
+    const k = (f.proc.cartera || CM.cartera) + "|" + f.proc.radicado;
+    (grupos[k] = grupos[k] || { proc: f.proc, archivos: [] }).archivos.push(f);
+  });
   const cola = Object.values(grupos);
   cola.forEach(g => g.archivos.sort((a, b) =>
     (a.p.clase === CM_CLASE_BASE ? 0 : 1) - (b.p.clase === CM_CLASE_BASE ? 0 : 1) ||
@@ -1838,7 +2054,10 @@ async function cmProcesarGrupo(g, crearExp) {
   try {
     if (!expId) {
       if (!crearExp) { marcar("omitido", "El proceso no tiene expediente digital y elegiste no crearlo"); return; }
-      expId = await rpc("exp_crear_expediente", { p_cartera: CM.cartera, p_radicado: g.proc.radicado });
+      const params = { p_cartera: g.proc.cartera || CM.cartera, p_radicado: g.proc.radicado };
+      if (g.proc.manual) Object.assign(params, { p_manual: true, p_id_contribuyente: g.proc.id_contribuyente || "",
+                                                 p_contribuyente: g.proc.contribuyente || "" });
+      expId = await rpc("exp_crear_expediente", params);
       if (!expId) throw new Error("La base de datos no devolvió el expediente creado");
       g.proc.exp_id = expId;
     }
@@ -1869,10 +2088,12 @@ async function cmProcesarGrupo(g, crearExp) {
       const otro = CM.shaGlobal[sha];
       f.msg = "Subiendo…"; cmProgreso();
       const d = await incorporarDocumento({
-        expedienteId: Number(expId), cartera: CM.cartera, radicadoNorm: radNorm,
+        expedienteId: Number(expId), cartera: g.proc.cartera || CM.cartera, radicadoNorm: radNorm,
         file: f.file, nombre: f.nombre, tamano: f.tamano, sha, paginas,
         tipo: CM.clases[f.p.clase].tipo, etapa: CM.clases[f.p.clase].etapa,
-        descripcion: cmDescripcion(f), fecha: null, origen: CM.clases[f.p.clase].origen,
+        descripcion: cmDescripcion(f),
+        fecha: f.conv && f.conv.fecha_aprobacion ? String(f.conv.fecha_aprobacion).slice(0, 10) : null,
+        origen: CM.clases[f.p.clase].origen,
         obs: "Carga masiva desde " + (f.ruta || f.nombre), canal: CANAL_MASIVO
       });
       shas[sha] = d ? d.consecutivo : "?";
@@ -1887,6 +2108,7 @@ async function cmProcesarGrupo(g, crearExp) {
     }
     cmProgreso();
   }
+  if (!CM.detener && g.archivos.some(f => f.conv)) await cmNovedadesConvenio(g, expId);
 }
 
 function cmProgreso(sub) {

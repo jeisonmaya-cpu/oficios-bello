@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <title>Expedientes Digitales — Teodoro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="expedientes.css?v=7"/>
+<link rel="stylesheet" href="expedientes.css?v=9"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -208,12 +208,17 @@
 <div class="panel" id="panel-carga">
   <div class="page-hdr">
     <h2>Carga masiva</h2>
-    <p>Sube una carpeta de PDF escaneados nombrados por radicado. Cada archivo se asigna a su proceso por el número del nombre (FP-1212, FP1212, FP01212 o FP'1212 son el mismo); lo que sigue al número se usa como descripción, por ejemplo «TUTELA» o «RTA 20231078887».</p>
+    <p>Sube una carpeta de PDF escaneados: expedientes nombrados por radicado o convenios de pago nombrados por su número.</p>
   </div>
 
   <div class="card">
-    <div class="cm-paso"><span class="cm-n">1</span><strong>Elige la cartera y la carpeta</strong></div>
+    <div class="cm-paso"><span class="cm-n">1</span><strong>Elige qué vas a cargar y la carpeta</strong></div>
+    <p class="small muted" id="cm-ayuda-modo" style="margin:6px 0 0">Cada archivo se asigna a su proceso por el número del nombre (FP-1212, FP1212, FP01212 o FP'1212 son el mismo); lo que sigue al número se usa como descripción.</p>
     <div class="search-row" style="margin-top:12px;align-items:center">
+      <select id="cm-modo" class="sel" onchange="cmCambioModo()" aria-label="Tipo de carga">
+        <option value="radicado">Expedientes escaneados (el nombre es el radicado)</option>
+        <option value="convenio">Convenios de pago (el nombre es el número del convenio)</option>
+      </select>
       <select id="cm-cartera" class="sel" aria-label="Cartera de los archivos"></select>
       <button class="btn btn-gold" onclick="document.getElementById('cm-input-carpeta').click()">📂 Seleccionar carpeta</button>
       <button class="btn" onclick="document.getElementById('cm-input-archivos').click()">📄 Seleccionar archivos</button>
@@ -230,7 +235,7 @@
 
     <div class="card" style="margin-top:16px">
       <div class="cm-paso"><span class="cm-n">2</span><strong>Revisa cómo se clasifica cada tipo de archivo</strong></div>
-      <p class="small muted" style="margin:6px 0 12px">Agrupé los archivos por lo que dice el nombre después del número. Elige el tipo documental una sola vez por grupo.</p>
+      <p class="small muted" id="cm-ayuda-2" style="margin:6px 0 12px">Agrupé los archivos por lo que dice el nombre después del número. Elige el tipo documental una sola vez por grupo.</p>
       <div class="tbl-wrap">
         <table class="tbl">
           <thead><tr><th>Archivos</th><th>Tipo documental *</th><th>Etapa</th><th>Origen</th></tr></thead>
@@ -255,7 +260,13 @@
           <button class="btn btn-sm" onclick="cmCSV()">⬇ Reporte CSV</button>
         </div>
       </div>
-      <p class="small muted" style="margin:6px 0 12px">En cada expediente se incorpora primero el archivo que solo trae el número y después los demás por fecha. Lo que ya esté incorporado se reconoce por su huella y se omite, así que puedes repetir la carga sin duplicar.</p>
+      <p class="small muted" id="cm-ayuda-3" style="margin:6px 0 12px">En cada expediente se incorpora primero el archivo que solo trae el número y después los demás por fecha. Lo que ya esté incorporado se reconoce por su huella y se omite, así que puedes repetir la carga sin duplicar.</p>
+
+      <div id="cm-dudosos" class="cm-dudosos hidden">
+        <span class="small" id="cm-dudosos-n"></span>
+        <button class="btn btn-sm" onclick="cmElegirDudosos('__todos')">Asignar a todos sus procesos</button>
+        <button class="btn btn-sm" onclick="cmElegirDudosos('__acuerdos')">Enviar al expediente de acuerdos</button>
+      </div>
 
       <div id="cm-progreso" class="cm-prog hidden">
         <div class="cm-prog-row">
@@ -419,6 +430,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="expedientes.js?v=7"></script>
+<script src="expedientes.js?v=9"></script>
 </body>
 </html>
