@@ -3,375 +3,627 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Sistema integrado de gestión documental, oficios y atención al ciudadano — Dirección de Ejecuciones Fiscales, Alcaldía de Bello" />
+<meta name="description" content="Sistema Teodoro — Dirección Administrativa de Ejecuciones Fiscales, Alcaldía de Bello" />
 <meta name="theme-color" content="#0a1f3d" />
-<title>Ejecuciones Fiscales — Alcaldía de Bello</title>
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
+<title>Teodoro · Ejecuciones Fiscales — Alcaldía de Bello</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="favicon.ico" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="home.css" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet" />
 <script>
-// Aplicar tema ANTES de renderizar para evitar flash — lee app_tema con fallback a tutelas_tema
+// Tema antes de pintar (evita destello). Clave compartida con los demás módulos.
 (function(){try{
   var t=localStorage.getItem("app_tema")||localStorage.getItem("tutelas_tema")||"dark";
   if(t==="light") document.documentElement.setAttribute("data-theme","light");
 }catch(e){}})();
 </script>
+<style>
+/* ═══════════════════════════════════════════
+   TOKENS — Teodoro (navy + dorado)
+═══════════════════════════════════════════ */
+:root{
+  --bg:#0a1f3d;
+  --bg-deep:#06152b;
+  --glass:rgba(255,255,255,.045);
+  --glass-hi:rgba(255,255,255,.08);
+  --line:rgba(255,255,255,.10);
+  --line-hi:rgba(232,160,32,.45);
+  --ink:#eef2f8;
+  --muted:#a7b6cc;
+  --faint:#7f91ab;
+  --gold:#e8a020;
+  --gold-soft:#f5c050;
+  --gold-wash:rgba(232,160,32,.12);
+  --on-gold:#1b1205;
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --err:#f87171;
+  --shadow:0 18px 40px -18px rgba(0,0,0,.55);
+  --r-lg:20px;
+  --r-md:14px;
+  --r-sm:9px;
+  --f-ui:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --f-display:"DM Serif Display",Georgia,"Times New Roman",serif;
+  --f-num:"Syne","DM Sans",system-ui,sans-serif;
+  color-scheme:dark;
+}
+[data-theme="light"]{
+  --bg:#eef2f7;
+  --bg-deep:#e2e8f1;
+  --glass:rgba(255,255,255,.78);
+  --glass-hi:#ffffff;
+  --line:rgba(10,31,61,.11);
+  --line-hi:rgba(184,119,10,.55);
+  --ink:#0a1f3d;
+  --muted:#43536b;
+  --faint:#66768e;
+  --gold:#b8770a;
+  --gold-soft:#9a6205;
+  --gold-wash:rgba(184,119,10,.10);
+  --on-gold:#ffffff;
+  --ok:#047857;
+  --warn:#b45309;
+  --err:#c62828;
+  --shadow:0 16px 34px -20px rgba(10,31,61,.35);
+  color-scheme:light;
+}
+
+*{box-sizing:border-box}
+html{margin:0;min-height:100%;background:var(--bg-deep)}
+body{margin:0}
+body{
+  min-height:100vh;
+  font-family:var(--f-ui);
+  font-size:15px;
+  line-height:1.5;
+  color:var(--ink);
+  background:
+    radial-gradient(1100px 620px at 92% -12%, rgba(26,111,196,.30), transparent 62%),
+    radial-gradient(760px 520px at -8% 28%, rgba(232,160,32,.07), transparent 60%),
+    linear-gradient(180deg,var(--bg) 0%,var(--bg-deep) 100%);
+  -webkit-font-smoothing:antialiased;
+}
+[data-theme="light"] body{
+  background:
+    radial-gradient(1000px 560px at 92% -12%, rgba(26,111,196,.12), transparent 62%),
+    radial-gradient(700px 480px at -8% 28%, rgba(232,160,32,.08), transparent 60%),
+    linear-gradient(180deg,var(--bg) 0%,var(--bg-deep) 100%);
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px);
+  background-size:22px 22px;
+  mask-image:linear-gradient(180deg,#000 0%,transparent 70%);
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,transparent 70%);
+}
+[data-theme="light"] body::before{background-image:radial-gradient(rgba(10,31,61,.07) 1px,transparent 1px)}
+
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 28px}
+
+/* ═══════ BARRA SUPERIOR ═══════ */
+.topbar{
+  display:flex;align-items:center;gap:14px;
+  padding:18px 0 14px;
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;min-width:0}
+.brand svg{width:34px;height:38px;flex:none}
+.brand-txt{line-height:1.2;min-width:0}
+.brand-name{font-weight:700;font-size:15px;letter-spacing:.01em}
+.brand-sub{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pill{
+  display:inline-flex;align-items:center;gap:7px;
+  height:32px;padding:0 12px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--line);
+  font-size:12.5px;color:var(--muted);white-space:nowrap;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+button.pill{cursor:pointer}
+button.pill:hover{color:var(--ink);border-color:var(--line-hi)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.dot.ok{background:var(--ok);box-shadow:0 0 0 3px rgba(52,211,153,.18)}
+.dot.warn{background:var(--warn)}
+.dot.err{background:var(--err)}
+.pill-user strong{color:var(--ink);font-weight:600}
+
+/* ═══════ HERO ═══════ */
+.hero{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;align-items:end;
+  padding:42px 0 30px;
+}
+.hello{
+  font-family:var(--f-display);font-weight:400;
+  font-size:clamp(34px,5.2vw,56px);line-height:1.04;letter-spacing:-.01em;
+  margin:0;max-width:16ch;
+}
+.hello-name{color:var(--gold-soft)}
+.today{margin:12px 0 0;color:var(--muted);font-size:15.5px}
+
+/* Buscador del hero */
+.search{position:relative;margin-top:26px;max-width:640px}
+.search-box{
+  display:flex;align-items:center;gap:10px;
+  height:54px;padding:0 10px 0 18px;border-radius:var(--r-md);
+  background:var(--glass);border:1px solid var(--line);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:var(--shadow);
+  transition:border-color .15s;
+}
+.search-box:focus-within{border-color:var(--line-hi)}
+.search-box svg{flex:none;color:var(--faint)}
+.search-box input{
+  flex:1;min-width:0;height:100%;border:0;background:transparent;outline:none;
+  font:inherit;font-size:15.5px;color:var(--ink);
+}
+.search-box input::placeholder{color:var(--faint)}
+.kbd{display:inline-flex;gap:4px;flex:none}
+.kbd kbd{
+  font-family:var(--f-ui);font-size:11.5px;color:var(--muted);
+  padding:3px 7px;border-radius:6px;border:1px solid var(--line);background:var(--glass-hi);
+}
+.results{
+  position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:30;
+  margin:0;padding:6px;list-style:none;
+  border-radius:var(--r-md);border:1px solid var(--line);
+  background:var(--bg);box-shadow:0 24px 60px -20px rgba(0,0,0,.6);
+  max-height:380px;overflow:auto;display:none;
+}
+[data-theme="light"] .results{background:#fff}
+.results.open{display:block}
+.res{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-sm);
+  cursor:pointer;
+}
+.res[aria-selected="true"]{background:var(--gold-wash)}
+.res-ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--glass-hi);color:var(--gold-soft);flex:none}
+.res-ico svg{width:17px;height:17px}
+.res-name{font-weight:600;font-size:14.5px}
+.res-desc{font-size:12.5px;color:var(--muted)}
+.res-go{margin-left:auto;font-size:12px;color:var(--faint)}
+.res-empty{padding:14px 12px;color:var(--muted);font-size:13.5px}
+
+/* Teo en el hero */
+.mascot{display:flex;flex-direction:column;align-items:center;gap:10px;padding-right:6px}
+.robot{position:relative;cursor:pointer;border:0;background:none;padding:0}
+.robot-aura{
+  position:absolute;inset:-18px;border-radius:50%;
+  background:radial-gradient(circle,rgba(99,102,241,.28) 0%,transparent 70%);
+  transition:background .4s;pointer-events:none;
+}
+.robot svg{position:relative;display:block;transition:transform .2s}
+.bubble{
+  max-width:220px;text-align:center;
+  font-size:13px;color:var(--muted);
+  padding:8px 14px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--line);
+}
+
+/* ═══════ PARA HOY ═══════ */
+.today-strip{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;
+  margin:4px 0 0;padding:0;list-style:none;
+}
+.ti{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;border-radius:var(--r-md);
+  background:var(--glass);border:1px solid var(--line);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  text-decoration:none;min-height:76px;
+}
+a.ti:hover{border-color:var(--line-hi)}
+.ti-num{
+  font-family:var(--f-num);font-weight:700;font-size:26px;line-height:1;
+  color:var(--gold-soft);min-width:34px;
+}
+.ti-num.alert{color:var(--err)}
+.ti-ico{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--gold-wash);color:var(--gold-soft)}
+.ti-ico svg{width:18px;height:18px}
+.ti-body{min-width:0}
+.ti-title{font-size:13.5px;font-weight:600;line-height:1.3}
+.ti-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+/* Fijados */
+.pinned{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.pinned[hidden]{display:none}
+.pinned-label{font-size:12.5px;color:var(--faint);margin-right:2px}
+.chip{
+  display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:999px;
+  background:var(--gold-wash);border:1px solid var(--line-hi);color:var(--ink);
+  text-decoration:none;font-size:13px;font-weight:500;
+}
+.chip:hover{background:var(--gold);color:var(--on-gold)}
+
+/* ═══════ GRUPOS DE MÓDULOS ═══════ */
+.groups{padding:34px 0 10px;display:grid;gap:34px}
+.group-row{display:grid;grid-template-columns:1fr 1fr;gap:34px}
+.group-head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px}
+.group-title{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0;line-height:1.1}
+.group-desc{margin:0;color:var(--muted);font-size:13.5px}
+.cards{display:grid;gap:12px}
+.cards-3{grid-template-columns:1.35fr 1fr 1fr}
+.cards-2{grid-template-columns:1fr 1fr}
+
+.mod{
+  position:relative;display:flex;flex-direction:column;
+  padding:20px 20px 18px;border-radius:var(--r-lg);
+  background:var(--glass);border:1px solid var(--line);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  min-height:188px;
+  transition:border-color .15s,background .15s,transform .15s;
+}
+.mod:hover{border-color:var(--line-hi);background:var(--glass-hi)}
+.mod:hover .mod-ico{background:var(--gold);color:var(--on-gold)}
+.mod:focus-within{border-color:var(--line-hi)}
+.mod-ico{
+  width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+  background:var(--gold-wash);color:var(--gold-soft);margin-bottom:14px;
+  transition:background .15s,color .15s;
+}
+.mod-ico svg{width:22px;height:22px}
+.mod-name{margin:0;font-size:17px;font-weight:700;line-height:1.25;padding-right:34px}
+.mod-link{text-decoration:none}
+.mod-link::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:1}
+.mod-link:focus-visible{outline:none}
+.mod-link:focus-visible::after{outline:2px solid var(--gold);outline-offset:2px}
+.mod-desc{margin:6px 0 0;color:var(--muted);font-size:13.5px;max-width:42ch}
+.mod-stat{margin:auto 0 0;padding-top:14px;font-size:12.5px;color:var(--faint);display:flex;align-items:center;gap:7px}
+.mod-stat.alert{color:var(--err)}
+.mod-tag{
+  display:inline-block;margin-left:8px;vertical-align:2px;
+  font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;
+  background:var(--gold);color:var(--on-gold);
+}
+.mod-sub{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.mod-sub a{
+  font-size:12.5px;text-decoration:none;color:var(--muted);
+  padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--glass);
+}
+.mod-sub a:hover{color:var(--ink);border-color:var(--line-hi)}
+.fav{
+  position:absolute;top:14px;right:14px;z-index:2;
+  width:32px;height:32px;border-radius:9px;border:1px solid transparent;background:none;
+  cursor:pointer;color:var(--faint);font-size:17px;line-height:1;
+}
+.fav:hover{color:var(--gold-soft);border-color:var(--line)}
+.fav[aria-pressed="true"]{color:var(--gold)}
+
+/* Expedientes: tarjeta principal del grupo */
+.mod-lead{background:linear-gradient(160deg,rgba(232,160,32,.10),var(--glass) 55%)}
+.mod-lead .mod-name{font-size:20px}
+
+.retired{
+  margin:6px 0 0;padding:14px 18px;border-radius:var(--r-md);
+  border:1px dashed var(--line);color:var(--muted);font-size:13px;
+}
+.retired strong{color:var(--ink);font-weight:600}
+
+/* ═══════ PIE ═══════ */
+footer{
+  position:relative;z-index:1;max-width:1180px;margin:40px auto 0;padding:22px 28px 40px;
+  border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;justify-content:space-between;
+  color:var(--faint);font-size:12.5px;
+}
+footer strong{color:var(--muted);font-weight:600}
+.credit{color:var(--muted)}
+.credit strong{color:var(--gold-soft)}
+
+/* ═══════ TEO CHAT ═══════ */
+.teo-fab{
+  position:fixed;right:22px;bottom:22px;z-index:50;
+  width:58px;height:58px;border-radius:50%;cursor:pointer;
+  border:1px solid rgba(129,140,248,.5);background:#141238;
+  box-shadow:0 12px 30px -8px rgba(0,0,0,.6);
+  display:grid;place-items:center;padding:6px;
+}
+.teo-fab svg{width:100%;height:100%}
+.teo-fab[aria-expanded="true"]{border-color:var(--gold)}
+.teo-badge{
+  position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;border-radius:999px;
+  background:var(--gold);color:var(--on-gold);font-size:11px;font-weight:700;
+  display:none;place-items:center;padding:0 5px;
+}
+.teo-badge.show{display:grid}
+.teo-panel{
+  position:fixed;right:22px;bottom:92px;z-index:50;
+  width:min(380px,calc(100vw - 32px));height:min(520px,calc(100vh - 130px));
+  display:flex;flex-direction:column;border-radius:var(--r-lg);overflow:hidden;
+  background:var(--bg);border:1px solid var(--line);
+  box-shadow:0 30px 70px -20px rgba(0,0,0,.7);
+  opacity:0;transform:translateY(12px) scale(.98);pointer-events:none;
+  transition:opacity .2s,transform .2s;
+}
+[data-theme="light"] .teo-panel{background:#fff}
+.teo-panel.open{opacity:1;transform:none;pointer-events:auto}
+.teo-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.teo-head-dot{width:9px;height:9px;border-radius:50%;background:var(--ok)}
+.teo-head-title{font-weight:700;font-size:14px}
+.teo-head-sub{font-size:12px;color:var(--muted)}
+.teo-close{margin-left:auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:none;cursor:pointer;color:var(--muted)}
+.teo-msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.teo-bbl{max-width:88%;padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.5}
+.teo-bbl.bot{background:var(--glass-hi);border:1px solid var(--line);border-bottom-left-radius:4px}
+.teo-bbl.usr{align-self:flex-end;background:var(--gold);color:var(--on-gold);border-bottom-right-radius:4px}
+.teo-bbl a{color:var(--gold-soft);font-weight:600}
+.teo-bbl.usr a{color:inherit}
+.teo-dots{display:flex;gap:4px}
+.teo-dots span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:dot 1s infinite}
+.teo-dots span:nth-child(2){animation-delay:.15s}
+.teo-dots span:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{opacity:.25}50%{opacity:1}}
+.teo-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}
+.teo-chip{
+  font-size:12px;padding:6px 10px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--glass);color:var(--muted);text-align:left;
+}
+.teo-chip:hover{color:var(--ink);border-color:var(--line-hi)}
+.teo-input{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.teo-input input{
+  flex:1;min-width:0;height:40px;padding:0 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--glass);color:var(--ink);font:inherit;font-size:13.5px;outline:none;
+}
+.teo-input input:focus{border-color:var(--line-hi)}
+.teo-input button{width:40px;height:40px;border-radius:10px;border:0;background:var(--gold);color:var(--on-gold);cursor:pointer;font-size:15px}
+
+/* ═══════ RESPONSIVE ═══════ */
+@media (max-width:1020px){
+  .today-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .group-row{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .wrap{padding:0 18px}
+  .hero{grid-template-columns:1fr;padding-top:30px}
+  .mascot{display:none}
+  .cards-3,.cards-2{grid-template-columns:1fr}
+  .mod{min-height:0}
+  .group-head{flex-direction:column;gap:4px}
+  .brand-sub{display:none}
+  .kbd{display:none}
+  .pill-user{display:none}
+  footer{padding:20px 18px 96px}
+}
+@media (max-width:460px){
+  .today-strip{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
 </head>
 <body>
-<div class="bg"></div>
 
 <div class="wrap">
 
-  <!-- ── HERO: header + robot lado a lado ── -->
-  <section class="hero">
-   <div class="hero-copy">
-    <!-- ── HEADER ── -->
-    <div class="header">
-      <div class="logo-shield">
-        <svg viewBox="0 0 72 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M36 2L68 14V40C68 57 53 70 36 78C19 70 4 57 4 40V14L36 2Z"
-                fill="url(#shieldGrad)" stroke="rgba(232,160,32,0.5)" stroke-width="1.5"/>
-          <path d="M36 10L60 20V40C60 53 49 63 36 70C23 63 12 53 12 40V20L36 10Z"
-                fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-          <!-- Edificio institucional vectorial (reemplaza al emoji: se ve igual en todos los sistemas) -->
-          <g stroke="rgba(255,255,255,0.88)" stroke-width="2" stroke-linecap="round" fill="none">
-            <path d="M25 31 L36 24 L47 31"/>
-            <line x1="26" y1="34.5" x2="46" y2="34.5"/>
-            <line x1="28.5" y1="39" x2="28.5" y2="50"/>
-            <line x1="36"   y1="39" x2="36"   y2="50"/>
-            <line x1="43.5" y1="39" x2="43.5" y2="50"/>
-            <line x1="25" y1="54" x2="47" y2="54"/>
-          </g>
-          <circle cx="36" cy="27.5" r="1.4" fill="rgba(245,192,80,0.9)"/>
-          <defs>
-            <linearGradient id="shieldGrad" x1="36" y1="2" x2="36" y2="78" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#1a6fc4" stop-opacity="0.7"/>
-              <stop offset="100%" stop-color="#0a1f3d" stop-opacity="0.9"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      <div class="header-eyebrow">Alcaldía de Bello · Antioquia</div>
-      <h1>Ejecuciones <em>Fiscales</em></h1>
-      <p class="header-sub">Sistema integrado de gestión documental, oficios y atención al ciudadano</p>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap">
-        <div class="sys-status" id="sys-status">
-          <span class="sys-dot wait" id="sys-dot"></span>
-          <span id="sys-txt">Verificando sistema...</span>
-        </div>
-        <button class="btn-tema" id="btn-tema" onclick="toggleTema()" aria-label="Cambiar tema claro / oscuro" title="Cambiar tema">🌙 Oscuro</button>
-      </div>
-    </div>
-   </div>
-
-   <div class="hero-mascot saludo-wrap">
-    <!-- Robot Teo — Cuerpo completo con emociones -->
-    <div class="teodoro-robot" id="teodoro-robot">
-      <div class="teo-b-aura" id="teo-aura"></div>
-      <svg class="robot-svg" id="tsv" width="150" height="200" viewBox="0 0 190 240">
+  <!-- ═══════ BARRA SUPERIOR ═══════ -->
+  <header class="topbar">
+    <a class="brand" href="home.html" aria-label="Teodoro, inicio">
+      <svg viewBox="0 0 72 80" fill="none" aria-hidden="true">
+        <path d="M36 2L68 14V40C68 57 53 70 36 78C19 70 4 57 4 40V14L36 2Z" fill="url(#shieldGrad)" stroke="rgba(232,160,32,.6)" stroke-width="2"/>
+        <g stroke="rgba(255,255,255,.9)" stroke-width="2.4" stroke-linecap="round" fill="none">
+          <path d="M25 31 L36 24 L47 31"/>
+          <line x1="26" y1="34.5" x2="46" y2="34.5"/>
+          <line x1="28.5" y1="39" x2="28.5" y2="50"/>
+          <line x1="36" y1="39" x2="36" y2="50"/>
+          <line x1="43.5" y1="39" x2="43.5" y2="50"/>
+          <line x1="25" y1="54" x2="47" y2="54"/>
+        </g>
         <defs>
-          <radialGradient id="fg" cx="50%" cy="35%" r="60%">
-            <stop offset="0%" stop-color="#312e81"/>
-            <stop offset="100%" stop-color="#07091a"/>
-          </radialGradient>
-          <radialGradient id="bg2" cx="50%" cy="30%" r="60%">
-            <stop offset="0%" stop-color="#1e1b4b"/>
-            <stop offset="100%" stop-color="#050714"/>
-          </radialGradient>
+          <linearGradient id="shieldGrad" x1="36" y1="2" x2="36" y2="78" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1a6fc4"/>
+            <stop offset="100%" stop-color="#0a1f3d"/>
+          </linearGradient>
         </defs>
-        <!-- PIERNAS -->
-        <rect x="65" y="188" width="22" height="36" rx="11" fill="#1e1b4b" stroke="#4338ca" stroke-width="1"/>
-        <rect x="103" y="188" width="22" height="36" rx="11" fill="#1e1b4b" stroke="#4338ca" stroke-width="1"/>
-        <rect x="58" y="214" width="34" height="14" rx="7" fill="#312e81" stroke="#4f46e5" stroke-width="1"/>
-        <rect x="97" y="214" width="34" height="14" rx="7" fill="#312e81" stroke="#4f46e5" stroke-width="1"/>
-        <!-- CUERPO -->
-        <rect x="48" y="118" width="94" height="74" rx="20" fill="url(#bg2)" stroke="#4f46e5" stroke-width="1.5"/>
-        <rect x="63" y="130" width="64" height="40" rx="9" fill="rgba(99,102,241,.12)" stroke="rgba(129,140,248,.3)" stroke-width="1"/>
-        <circle cx="75" cy="143" r="5" fill="#4f46e5" stroke="#818cf8" stroke-width="0.5">
-          <animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite"/>
-        </circle>
-        <circle cx="95" cy="143" r="5" id="led-mid" fill="#6366f1" stroke="#818cf8" stroke-width="0.5">
-          <animate attributeName="opacity" values="0.3;1;0.3" dur="1.8s" repeatCount="indefinite"/>
-        </circle>
-        <circle cx="115" cy="143" r="5" fill="#4f46e5" stroke="#818cf8" stroke-width="0.5">
-          <animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite" begin=".6s"/>
-        </circle>
-        <rect x="67" y="158" width="56" height="5" rx="2.5" fill="rgba(255,255,255,.06)"/>
-        <rect x="67" y="158" width="32" height="5" rx="2.5" fill="#6366f1">
-          <animate attributeName="width" values="20;50;20" dur="3s" repeatCount="indefinite"/>
-        </rect>
-        <!-- BRAZO IZQUIERDO -->
-        <g id="arm-l" style="transform-origin:48px 128px">
-          <rect x="22" y="120" width="24" height="56" rx="12" fill="url(#bg2)" stroke="#4338ca" stroke-width="1.2"/>
-          <circle cx="34" cy="182" r="11" fill="#1e1b4b" stroke="#4f46e5" stroke-width="1"/>
-          <rect x="28" y="176" width="13" height="5" rx="2.5" fill="#312e81"/>
-          <rect x="28" y="182" width="13" height="5" rx="2.5" fill="#312e81"/>
-        </g>
-        <!-- BRAZO DERECHO -->
-        <g id="arm-r" style="transform-origin:142px 128px">
-          <rect x="144" y="120" width="24" height="56" rx="12" fill="url(#bg2)" stroke="#4338ca" stroke-width="1.2"/>
-          <circle cx="156" cy="182" r="11" fill="#1e1b4b" stroke="#4f46e5" stroke-width="1"/>
-          <rect x="149" y="176" width="13" height="5" rx="2.5" fill="#312e81"/>
-          <rect x="149" y="182" width="13" height="5" rx="2.5" fill="#312e81"/>
-        </g>
-        <!-- CUELLO -->
-        <rect x="82" y="107" width="26" height="15" rx="7" fill="#1e1b4b" stroke="#4338ca" stroke-width="1"/>
-        <rect x="87" y="111" width="16" height="3" rx="1.5" fill="#4338ca" opacity="0.5"/>
-        <!-- CABEZA -->
-        <circle cx="95" cy="68" r="56" fill="url(#fg)" stroke="#4f46e5" stroke-width="1.5"/>
-        <path d="M45 68 A50 50 0 0 1 145 68" fill="none" stroke="#4338ca" stroke-width="0.5" opacity="0.5"/>
-        <line x1="38" y1="58" x2="48" y2="58" stroke="#4338ca" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="38" y1="68" x2="46" y2="68" stroke="#4338ca" stroke-width="1" stroke-linecap="round"/>
-        <line x1="142" y1="58" x2="152" y2="58" stroke="#4338ca" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="144" y1="68" x2="152" y2="68" stroke="#4338ca" stroke-width="1" stroke-linecap="round"/>
-        <!-- ANTENA -->
-        <line x1="95" y1="12" x2="95" y2="25" stroke="#818cf8" stroke-width="1.5"/>
-        <rect x="87" y="6" width="16" height="8" rx="4" fill="#4f46e5" stroke="#818cf8" stroke-width="1"/>
-        <circle cx="95" cy="10" r="3" fill="#fbbf24">
-          <animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/>
-          <animate attributeName="r" values="2;3.5;2" dur="1.6s" repeatCount="indefinite"/>
-        </circle>
-        <!-- OJOS -->
-        <rect id="el" x="60" y="48" width="26" height="26" rx="7" fill="#4f46e5" stroke="#818cf8" stroke-width="1"/>
-        <rect id="er" x="104" y="48" width="26" height="26" rx="7" fill="#4f46e5" stroke="#818cf8" stroke-width="1"/>
-        <rect id="pl" x="66" y="54" width="14" height="14" rx="4" fill="white"/>
-        <rect id="pr" x="110" y="54" width="14" height="14" rx="4" fill="white"/>
-        <circle cx="68" cy="56" r="3" fill="white" opacity="0.45"/>
-        <circle cx="112" cy="56" r="3" fill="white" opacity="0.45"/>
-        <!-- CEJAS -->
-        <rect id="bl" x="60" y="39" width="26" height="6" rx="3" fill="#818cf8" opacity="0"/>
-        <rect id="br" x="104" y="39" width="26" height="6" rx="3" fill="#818cf8" opacity="0"/>
-        <!-- BOCA LEDs -->
-        <rect id="m1" x="68"  y="86" width="9" height="9" rx="4.5" fill="#818cf8"/>
-        <rect id="m2" x="80"  y="86" width="9" height="9" rx="4.5" fill="#6366f1">
-          <animate attributeName="opacity" values="1;0.2;1" dur="1.1s" repeatCount="indefinite"/>
-        </rect>
-        <rect id="m3" x="92"  y="86" width="9" height="9" rx="4.5" fill="#818cf8"/>
-        <rect id="m4" x="104" y="86" width="9" height="9" rx="4.5" fill="#6366f1">
-          <animate attributeName="opacity" values="0.2;1;0.2" dur="1.1s" repeatCount="indefinite"/>
-        </rect>
-        <rect id="m5" x="116" y="86" width="9" height="9" rx="4.5" fill="#818cf8"/>
-        <!-- Punto IA -->
-        <circle cx="95" cy="74" r="4.5" fill="#3730a3" stroke="#818cf8" stroke-width="0.5">
-          <animate attributeName="r" values="3.5;5.5;3.5" dur="2s" repeatCount="indefinite"/>
-        </circle>
-        <circle cx="95" cy="74" r="2.2" fill="#a5b4fc"/>
       </svg>
+      <span class="brand-txt">
+        <span class="brand-name">Teodoro</span><br>
+        <span class="brand-sub">Ejecuciones Fiscales · Alcaldía de Bello</span>
+      </span>
+    </a>
+    <div class="top-actions">
+      <span class="pill" id="sys" role="status" aria-live="polite"><span class="dot" id="sys-dot"></span><span id="sys-txt">Comprobando conexión…</span></span>
+      <button class="pill" id="btn-tema" type="button" aria-label="Cambiar entre modo claro y oscuro">Modo claro</button>
+      <span class="pill pill-user" id="user-pill">Sin sesión</span>
     </div>
-    <!-- Pill de saludo -->
-    <div class="saludo">
-      <span class="saludo-emoji" id="saludo-emoji">👋</span>
-      <span class="saludo-text typing" id="saludo-text"></span>
+  </header>
+
+  <!-- ═══════ HERO ═══════ -->
+  <section class="hero" aria-labelledby="hello">
+    <div>
+      <h1 class="hello" id="hello">Hola</h1>
+      <p class="today" id="today">—</p>
+
+      <div class="search" id="search">
+        <div class="search-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" autocomplete="off" spellcheck="false"
+                 placeholder="Módulo, radicado, cédula o nombre"
+                 role="combobox" aria-expanded="false" aria-controls="q-list" aria-autocomplete="list"
+                 aria-label="Buscar módulo o expediente" />
+          <span class="kbd" aria-hidden="true"><kbd>Ctrl</kbd><kbd>K</kbd></span>
+        </div>
+        <ul class="results" id="q-list" role="listbox" aria-label="Resultados"></ul>
+      </div>
     </div>
-   </div>
+
+    <div class="mascot">
+      <button class="robot" id="robot" type="button" aria-label="Teo, la mascota del sistema. Haz clic para cambiar su expresión">
+        <span class="robot-aura" id="robot-aura"></span>
+        <svg id="tsv" width="128" height="162" viewBox="0 0 190 240" aria-hidden="true">
+          <defs>
+            <radialGradient id="fg" cx="50%" cy="35%" r="60%"><stop offset="0%" stop-color="#312e81"/><stop offset="100%" stop-color="#07091a"/></radialGradient>
+            <radialGradient id="bg2" cx="50%" cy="30%" r="60%"><stop offset="0%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#050714"/></radialGradient>
+          </defs>
+          <rect x="65" y="188" width="22" height="36" rx="11" fill="#1e1b4b" stroke="#4338ca"/>
+          <rect x="103" y="188" width="22" height="36" rx="11" fill="#1e1b4b" stroke="#4338ca"/>
+          <rect x="58" y="214" width="34" height="14" rx="7" fill="#312e81" stroke="#4f46e5"/>
+          <rect x="97" y="214" width="34" height="14" rx="7" fill="#312e81" stroke="#4f46e5"/>
+          <rect x="48" y="118" width="94" height="74" rx="20" fill="url(#bg2)" stroke="#4f46e5" stroke-width="1.5"/>
+          <rect x="63" y="130" width="64" height="40" rx="9" fill="rgba(99,102,241,.12)" stroke="rgba(129,140,248,.3)"/>
+          <circle cx="75" cy="143" r="5" fill="#4f46e5"><animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite"/></circle>
+          <circle cx="95" cy="143" r="5" id="led-mid" fill="#6366f1"><animate attributeName="opacity" values="0.3;1;0.3" dur="1.8s" repeatCount="indefinite"/></circle>
+          <circle cx="115" cy="143" r="5" fill="#4f46e5"><animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite" begin=".6s"/></circle>
+          <rect x="67" y="158" width="56" height="5" rx="2.5" fill="rgba(255,255,255,.06)"/>
+          <rect x="67" y="158" width="32" height="5" rx="2.5" fill="#6366f1"><animate attributeName="width" values="20;50;20" dur="3s" repeatCount="indefinite"/></rect>
+          <g id="arm-l" style="transform-origin:48px 128px">
+            <rect x="22" y="120" width="24" height="56" rx="12" fill="url(#bg2)" stroke="#4338ca" stroke-width="1.2"/>
+            <circle cx="34" cy="182" r="11" fill="#1e1b4b" stroke="#4f46e5"/>
+          </g>
+          <g id="arm-r" style="transform-origin:142px 128px">
+            <rect x="144" y="120" width="24" height="56" rx="12" fill="url(#bg2)" stroke="#4338ca" stroke-width="1.2"/>
+            <circle cx="156" cy="182" r="11" fill="#1e1b4b" stroke="#4f46e5"/>
+          </g>
+          <rect x="82" y="107" width="26" height="15" rx="7" fill="#1e1b4b" stroke="#4338ca"/>
+          <circle cx="95" cy="68" r="56" fill="url(#fg)" stroke="#4f46e5" stroke-width="1.5"/>
+          <line x1="38" y1="58" x2="48" y2="58" stroke="#4338ca" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="142" y1="58" x2="152" y2="58" stroke="#4338ca" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="95" y1="12" x2="95" y2="25" stroke="#818cf8" stroke-width="1.5"/>
+          <rect x="87" y="6" width="16" height="8" rx="4" fill="#4f46e5" stroke="#818cf8"/>
+          <circle cx="95" cy="10" r="3" fill="#fbbf24"><animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/></circle>
+          <rect id="el" x="60" y="48" width="26" height="26" rx="7" fill="#4f46e5" stroke="#818cf8"/>
+          <rect id="er" x="104" y="48" width="26" height="26" rx="7" fill="#4f46e5" stroke="#818cf8"/>
+          <rect id="pl" x="66" y="54" width="14" height="14" rx="4" fill="white"/>
+          <rect id="pr" x="110" y="54" width="14" height="14" rx="4" fill="white"/>
+          <rect id="bl" x="60" y="39" width="26" height="6" rx="3" fill="#818cf8" opacity="0"/>
+          <rect id="br" x="104" y="39" width="26" height="6" rx="3" fill="#818cf8" opacity="0"/>
+          <rect id="m1" x="68" y="86" width="9" height="9" rx="4.5" fill="#818cf8"/>
+          <rect id="m2" x="80" y="86" width="9" height="9" rx="4.5" fill="#6366f1"/>
+          <rect id="m3" x="92" y="86" width="9" height="9" rx="4.5" fill="#818cf8"/>
+          <rect id="m4" x="104" y="86" width="9" height="9" rx="4.5" fill="#6366f1"/>
+          <rect id="m5" x="116" y="86" width="9" height="9" rx="4.5" fill="#818cf8"/>
+        </svg>
+      </button>
+      <div class="bubble" id="bubble">Listo para ayudarte</div>
+    </div>
   </section>
 
-  <!-- ══════════════════════════════
-       RESUMEN DEL DÍA
-  ══════════════════════════════ -->
-  <div class="resumen-dia" id="resumen-dia">
-    <div class="resumen-header">
-      <div class="resumen-titulo">
-        <span class="resumen-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Resumen del día
-      </div>
-      <span class="resumen-fecha" id="resumen-fecha">—</span>
+  <!-- ═══════ PARA HOY ═══════ -->
+  <section aria-label="Para hoy">
+    <ul class="today-strip" id="today-strip"></ul>
+    <div class="pinned" id="pinned" hidden>
+      <span class="pinned-label">Fijados</span>
     </div>
-    <div class="resumen-skeleton" id="resumen-skeleton">
-      <div class="sk-line" style="width:75%"></div>
-      <div class="sk-line" style="width:55%"></div>
-      <div class="sk-line" style="width:65%"></div>
-      <div class="sk-line" style="width:45%"></div>
-    </div>
-    <div class="resumen-items" id="resumen-items" style="display:none"></div>
-  </div>
+  </section>
 
-<!-- ══════════════════════════════
-     MÓDULOS — grilla unificada con favoritos
-══════════════════════════════ -->
-  <div class="section-label">
-    <span class="section-label-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
-    Módulos del sistema
-    <span class="sl-line"></span>
-    <span class="kbd-hint" title="Búsqueda rápida de módulos"><kbd>Ctrl</kbd>+<kbd>K</kbd> buscar</span>
-  </div>
+  <!-- ═══════ MÓDULOS POR PROCESO ═══════ -->
+  <main class="groups" id="groups">
 
-  <div class="grid-modulos" id="grid-modulos">
-
-    <a href="desembargos.html" class="app-card card-blue" data-mod="desembargos" data-orden="1">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 10v11M12 10v11M16 10v11"/>
-        </svg></span>
-      <div class="app-name">Desembargos y Embargos</div>
-      <div class="app-desc">Oficios bancarios, mandamientos y órdenes de embargo</div>
-      <div class="card-stat" id="cs-cola">
-        <span class="cs-dot cs-blue"></span><span id="cs-cola-txt">Cargando cola...</span>
+    <section aria-labelledby="g-cartera">
+      <div class="group-head">
+        <h2 class="group-title" id="g-cartera">Cartera y cobro</h2>
+        <p class="group-desc">Cada proceso, cómo va y cuánto se ha recaudado.</p>
       </div>
-      <span class="app-badge badge-demand">⚡ Alta demanda</span>
-      <span class="app-arrow">↗</span>
-    </a>
+      <div class="cards cards-3">
 
-    <a href="buscador.html" class="app-card card-gold" data-mod="buscador" data-orden="2">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>
-          <path d="M11 8v6M8 11h6" stroke-width="1.2"/>
-        </svg></span>
-      <div class="app-name">Buscador de Guías</div>
-      <div class="app-desc">Consulta contribuyentes, radicados y expedientes</div>
-      <div class="card-stat">
-        <span class="cs-dot cs-gold"></span><span>Búsqueda en tiempo real</span>
+        <article class="mod mod-lead" data-mod="expedientes">
+          <span class="mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 13h8M8 16h5"/></svg></span>
+          <h3 class="mod-name"><a class="mod-link" href="expedientes.html">Expedientes</a><span class="mod-tag">Nuevo</span></h3>
+          <p class="mod-desc">La carpeta digital de cada proceso: documentos incorporados, foliación, índice electrónico y bitácora.</p>
+          <p class="mod-stat">Predial, Obligaciones Urbanísticas y Tránsito</p>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Fijar Expedientes">☆</button>
+        </article>
+
+        <article class="mod" data-mod="seguimiento">
+          <span class="mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6M2 20h20"/></svg></span>
+          <h3 class="mod-name"><a class="mod-link" href="seguimiento.html">Seguimiento de cartera</a></h3>
+          <p class="mod-desc">Estado de los procesos por tributo, morosidad y control de legalidad de títulos.</p>
+          <p class="mod-stat">Predial, ICA, Urbanísticas y Tránsito</p>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Fijar Seguimiento de cartera">☆</button>
+        </article>
+
+        <article class="mod" data-mod="recaudo">
+          <span class="mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1M12 6v2M12 16v2"/></svg></span>
+          <h3 class="mod-name"><a class="mod-link" href="recaudo.html">Recaudo</a></h3>
+          <p class="mod-desc">Depósitos judiciales, aplicaciones a la deuda y devoluciones.</p>
+          <p class="mod-stat">Histórico consolidado</p>
+          <button class="fav" type="button" aria-pressed="false" aria-label="Fijar Recaudo">☆</button>
+        </article>
+
       </div>
-      <span class="app-arrow">↗</span>
-    </a>
+    </section>
 
-    <a href="tutelas_v2.html" class="app-card card-cyan" data-mod="tutelas" data-orden="3">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3v18M3 6l9-3 9 3M6 10l-3 6h6L6 10zM18 10l-3 6h6l-3-6zM5 21h14"/>
-        </svg></span>
-      <div class="app-name">Sistema de Tutelas</div>
-      <div class="app-desc">Términos procesales y semáforo de vencimientos</div>
-      <div class="card-stat" id="cs-tutelas">
-        <span class="cs-dot cs-cyan"></span><span id="cs-tutelas-txt">Cargando...</span>
-      </div>
-      <span class="app-arrow">↗</span>
-    </a>
+    <div class="group-row">
 
-    <a href="acuerdos.html" class="app-card card-green" data-mod="acuerdos" data-orden="4">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-        </svg></span>
-      <div class="app-name">Acuerdos de Pago</div>
-      <div class="app-desc">Proyección de cuotas, formulario F-GAF-68 y convenios</div>
-      <div class="card-stat" id="cs-acuerdos">
-        <span class="cs-dot cs-green"></span><span id="cs-acuerdos-txt">Cargando acuerdos...</span>
-      </div>
-      <span class="app-arrow">↗</span>
-    </a>
+      <section aria-labelledby="g-actuaciones">
+        <div class="group-head">
+          <h2 class="group-title" id="g-actuaciones">Actuaciones</h2>
+          <p class="group-desc">Lo que sale de la Dirección hacia bancos y contribuyentes.</p>
+        </div>
+        <div class="cards cards-2">
 
-    <a href="recaudo.html" class="app-card card-orange" data-mod="recaudo" data-orden="5">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="9"/>
-          <path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1"/>
-          <line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/>
-        </svg></span>
-      <div class="app-name">Recaudo Histórico</div>
-      <div class="app-desc">Depósitos judiciales, aplicaciones y devoluciones</div>
-      <div class="card-stat">
-        <span class="cs-dot cs-orange"></span><span>Histórico consolidado</span>
-      </div>
-      <span class="app-arrow">↗</span>
-    </a>
+          <article class="mod" data-mod="desembargos">
+            <span class="mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M5 10v11M19 10v11M9.5 10v11M14.5 10v11"/></svg></span>
+            <h3 class="mod-name"><a class="mod-link" href="desembargos.html">Embargos y desembargos</a></h3>
+            <p class="mod-desc">Oficios a entidades bancarias y órdenes de embargo.</p>
+            <p class="mod-stat" id="st-desembargos">—</p>
+            <button class="fav" type="button" aria-pressed="false" aria-label="Fijar Embargos y desembargos">☆</button>
+          </article>
 
-    <a href="seguimiento.html" class="app-card card-green" data-mod="seguimiento" data-orden="6">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-          <line x1="6" y1="20" x2="6" y2="14"/>
-          <path d="M2 20h20"/>
-        </svg></span>
-      <div class="app-name">Seguimiento de Procesos</div>
-      <div class="app-desc">Estadísticas de expedientes y cobro coactivo</div>
-      <span class="app-arrow">↗</span>
-    </a>
+          <article class="mod" data-mod="notificaciones">
+            <span class="mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg></span>
+            <h3 class="mod-name"><a class="mod-link" href="notificaciones.html">Notificaciones</a></h3>
+            <p class="mod-desc">Lotes enviados por correo, mensajería y web, por año y cartera.</p>
+            <nav class="mod-sub" aria-label="Generar lote">
+              <a href="con_correo.html">Generar con correo</a>
+              <a href="certificado.html">Certificado</a>
+              <a href="predial.html">Predial</a>
+              <a href="buscador.html">Guías anteriores</a>
+            </nav>
+            <button class="fav" type="button" aria-pressed="false" aria-label="Fijar Notificaciones">☆</button>
+          </article>
 
-    <a href="index.html" class="app-card card-purple" data-mod="juridica" data-orden="7">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/>
-          <line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/>
-        </svg></span>
-      <div class="app-name">Central Jurídica</div>
-      <div class="app-desc">Paz y salvo, resoluciones y documentos jurídicos</div>
-      <div class="card-stat">
-        <span class="cs-dot cs-purple"></span><span>Word + Sheets integrado</span>
-      </div>
-      <span class="app-arrow">↗</span>
-    </a>
+        </div>
+      </section>
 
-    <div class="app-card card-notif" data-mod="notificaciones" data-orden="8" onclick="openNotifMenu()" style="cursor:pointer" tabindex="0" role="button" aria-label="Abrir menú de notificaciones" onkeydown="if(event.key==='Enter')openNotifMenu()">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-          <polyline points="22,6 12,13 2,6"/>
-        </svg></span>
-      <div class="app-name">Notificaciones</div>
-      <div class="app-desc">Comparendos 2024 y predial: correo, certificado y web</div>
-      <div class="card-stat">
-        <span class="cs-dot cs-rose"></span><span>Con correo · Certificado · Predial</span>
-      </div>
-      <span class="app-arrow">↗</span>
+      <section aria-labelledby="g-ciudadano">
+        <div class="group-head">
+          <h2 class="group-title" id="g-ciudadano">Atención al ciudadano</h2>
+          <p class="group-desc">Solicitudes con término legal de respuesta.</p>
+        </div>
+        <div class="cards cards-2">
+
+          <article class="mod" data-mod="tutelas">
+            <span class="mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 6l9-3 9 3M6 10l-3 6h6zM18 10l-3 6h6zM6 21h12"/></svg></span>
+            <h3 class="mod-name"><a class="mod-link" href="tutelas_v2.html">Tutelas</a></h3>
+            <p class="mod-desc">Términos procesales, fallos, incidentes y vencimientos.</p>
+            <p class="mod-stat" id="st-tutelas">—</p>
+            <button class="fav" type="button" aria-pressed="false" aria-label="Fijar Tutelas">☆</button>
+          </article>
+
+          <article class="mod" data-mod="peticiones">
+            <span class="mod-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></span>
+            <h3 class="mod-name"><a class="mod-link" href="peticiones.html">Peticiones</a></h3>
+            <p class="mod-desc">Derechos de petición: reparto, respuestas tipo y control de términos.</p>
+            <p class="mod-stat">Respuestas en Word desde plantillas</p>
+            <button class="fav" type="button" aria-pressed="false" aria-label="Fijar Peticiones">☆</button>
+          </article>
+
+        </div>
+      </section>
+
     </div>
 
-    <a href="https://teodoro-57g.pages.dev/peticiones" target="_blank" rel="noopener" class="app-card card-teal" data-mod="peticiones" data-orden="9">
-      <div class="card-glow"></div>
-      <span class="fav-btn" tabindex="0" role="button" aria-label="Fijar como favorito">☆</span>
-      <span class="app-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="9" y1="13" x2="15" y2="13"/>
-          <line x1="9" y1="17" x2="13" y2="17"/>
-          <circle cx="17.5" cy="17.5" r="2" fill="currentColor" opacity="0.35"/>
-        </svg></span>
-      <div class="app-name">Peticiones</div>
-      <div class="app-desc">Derechos de petición, respuestas y control de términos</div>
-      <div class="card-stat">
-        <span class="cs-dot cs-teal"></span><span>Módulo externo · Teodoro</span>
-      </div>
-      <span class="app-badge badge-external">↗ Externo</span>
-      <span class="app-arrow">↗</span>
-    </a>
+    <p class="retired"><strong>Acuerdos de pago y Central Jurídica están en reconstrucción.</strong> La proyección de cuotas, el F-GAF-68 y los documentos jurídicos se van a generar desde cada expediente.</p>
 
-  </div>
-
-  <!-- ── STATS (se construye por JS según sesión y caché) ── -->
-  <div class="stats-row" id="stats-row"></div>
-
-</div><!-- /wrap -->
-
-<!-- ══ PALETA DE COMANDOS (Ctrl+K) ══ -->
-<div class="kpal" id="kpal" role="dialog" aria-label="Búsqueda rápida de módulos">
-  <div class="kpal-box">
-    <div class="kpal-inp-wrap">
-      <span class="kpal-lupa" aria-hidden="true">🔎</span>
-      <input id="kpal-inp" placeholder="Buscar módulo... (tutelas, embargo, acuerdo...)" autocomplete="off" aria-label="Buscar módulo" />
-      <span class="kpal-esc">ESC</span>
-    </div>
-    <div class="kpal-list" id="kpal-list"></div>
-  </div>
+  </main>
 </div>
 
-<!-- ══ TEO — CHAT FLOTANTE ══ -->
-<button class="teo-fab" id="teo-fab" onclick="teoToggle()" aria-label="Abrir chat con Teo, asistente del sistema">
-  <svg viewBox="30 4 130 110" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<footer>
+  <div><strong>Dirección Administrativa de Ejecuciones Fiscales</strong><br>Alcaldía de Bello, Antioquia</div>
+  <div class="credit">Sistema Teodoro <span id="fp-version"></span> · Desarrollado por <strong>Jeison Maya</strong> · 2026</div>
+</footer>
+
+<!-- ═══════ TEO — CHAT ═══════ -->
+<button class="teo-fab" id="teo-fab" type="button" aria-expanded="false" aria-controls="teo-panel" aria-label="Abrir chat con Teo">
+  <svg viewBox="30 4 130 110" fill="none" aria-hidden="true">
     <line x1="95" y1="14" x2="95" y2="24" stroke="#818cf8" stroke-width="2"/>
-    <circle cx="95" cy="11" r="4" fill="#fbbf24">
-      <animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/>
-    </circle>
+    <circle cx="95" cy="11" r="4" fill="#fbbf24"/>
     <circle cx="95" cy="68" r="44" fill="#1e1b4b" stroke="#4f46e5" stroke-width="2"/>
     <rect x="66" y="52" width="20" height="20" rx="6" fill="#4f46e5"/>
     <rect x="104" y="52" width="20" height="20" rx="6" fill="#4f46e5"/>
@@ -388,869 +640,579 @@
   <div class="teo-head">
     <span class="teo-head-dot"></span>
     <div>
-      <div class="teo-head-title">Teo · Asistente IA</div>
-      <div class="teo-head-sub">Ejecuciones Fiscales — Bello</div>
+      <div class="teo-head-title">Teo</div>
+      <div class="teo-head-sub">Asistente de Ejecuciones Fiscales</div>
     </div>
+    <button class="teo-close" id="teo-close" type="button" aria-label="Cerrar chat">✕</button>
   </div>
-  <div class="teo-msgs" id="teo-msgs"></div>
+  <div class="teo-msgs" id="teo-msgs" aria-live="polite"></div>
   <div class="teo-chips" id="teo-chips">
-    <span class="teo-chip" onclick="teoChip(this)">¿Cómo genero un oficio de desembargo?</span>
-    <span class="teo-chip" onclick="teoChip(this)">¿Dónde busco un expediente?</span>
-    <span class="teo-chip" onclick="teoChip(this)">¿Cómo hago un acuerdo de pago?</span>
-    <span class="teo-chip" onclick="teoChip(this)">¿Qué hay urgente hoy?</span>
+    <button class="teo-chip" type="button">¿Dónde busco un expediente?</button>
+    <button class="teo-chip" type="button">¿Cómo genero un oficio de desembargo?</button>
+    <button class="teo-chip" type="button">¿Dónde registro una notificación?</button>
+    <button class="teo-chip" type="button">¿Qué pasó con acuerdos de pago?</button>
   </div>
   <div class="teo-input">
-    <input id="teo-inp" placeholder="Escríbele a Teo..." onkeydown="if(event.key==='Enter')teoEnviar()" aria-label="Mensaje para Teo"/>
-    <button onclick="teoEnviar()" aria-label="Enviar mensaje">➤</button>
-  </div>
-</div>
-
-<footer>
-  <div class="footer-info">
-    <span class="footer-pill" id="fp-version">v2.8</span>
-    <span class="footer-pill" id="fp-actualizado">Actualizando...</span>
-    <span class="footer-pill" id="fp-usuario">—</span>
-    <span class="footer-pill" id="fp-modulos">9 módulos activos</span>
-  </div>
-  <strong>Dirección Administrativa de Ejecuciones Fiscales</strong><br>
-  Alcaldía de Bello · Antioquia · Colombia
-  <div class="creditos">
-    <span class="creditos-marca">Sistema Teodoro</span>
-    <span class="creditos-sep">·</span>
-    <span>Desarrollado por <strong>Jeison Maya</strong> · 2026</span>
-  </div>
-</footer>
-
-<!-- Sub-menú Notificaciones -->
-<div id="notifMenu" class="notif-overlay" onclick="if(event.target.id==='notifMenu')closeNotifMenu()" role="dialog" aria-modal="true" aria-label="Tipos de notificación">
-  <div class="notif-box">
-    <div class="notif-head">
-      <div>
-        <div class="notif-eyebrow">Notificaciones · Comparendos 2024</div>
-        <div class="notif-title">Elige el tipo de notificación</div>
-      </div>
-      <button class="notif-close" onclick="closeNotifMenu()" aria-label="Cerrar menú">×</button>
-    </div>
-    <div class="notif-list">
-      <a href="con_correo.html" class="notif-item ni-blue">
-        <span class="ni-icon">📧</span>
-        <div>
-          <div class="ni-name">Con correo</div>
-          <div class="ni-desc">Genera notificaciones (Word) y mandamientos (PDF). Divide el PDF radicado por persona.</div>
-        </div>
-      </a>
-      <a href="certificado.html" class="notif-item ni-gold">
-        <span class="ni-icon">📭</span>
-        <div>
-          <div class="ni-name">Sin correo (certificado)</div>
-          <div class="ni-desc">Listados para correo certificado por zona, resumen geográfico y notificación web.</div>
-        </div>
-      </a>
-      <a href="predial.html" class="notif-item ni-green">
-        <span class="ni-icon">🏠</span>
-        <div>
-          <div class="ni-name">Predial (con correo)</div>
-          <div class="ni-desc">Mandamientos de pago de predial por radicado, en Word y PDF, para envío por correo.</div>
-        </div>
-      </a>
-    </div>
+    <input id="teo-inp" placeholder="Escríbele a Teo…" aria-label="Mensaje para Teo" />
+    <button id="teo-send" type="button" aria-label="Enviar mensaje">➤</button>
   </div>
 </div>
 
 <script>
-function openNotifMenu(){document.getElementById('notifMenu').classList.add('open');}
-function closeNotifMenu(){document.getElementById('notifMenu').classList.remove('open');}
-// Escape cierra en orden: paleta → Teo → menú de notificaciones
-document.addEventListener('keydown',function(e){
-  if(e.key!=='Escape')return;
-  var kpal=document.getElementById('kpal');
-  if(kpal&&kpal.classList.contains('open')){kpalCerrar();return;}
-  if(typeof teoAbierto!=='undefined'&&teoAbierto){teoToggle();return;}
-  closeNotifMenu();
-});
-</script>
-
-<script>
-// ════════════════════════════════════════
-// CONFIG GENERAL
-// Nota: el ID del Sheet de tutelas NO se expone aquí.
-// Todo acceso a datos pasa por el Apps Script (URL guardada
-// en localStorage por tutelas_v2 tras login con PIN).
-// ════════════════════════════════════════
+// ═══════════════════════════════════════════
+// CONFIGURACIÓN
+// ═══════════════════════════════════════════
 var CONFIG = {
-  version: "v2.9",
-  modulos: 9
+  version: "v3.0",
+  supaUrl: "https://bmurdtfztsltcgwsfbgf.supabase.co",
+  supaRef: "bmurdtfztsltcgwsfbgf"
 };
+var REDUCED_MOTION = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+// Módulos retirados del home: se ignoran en favoritos y en "continuar"
+var RETIRADOS = ["acuerdos.html", "index.html", "acuerdos", "juridica", "buscador"];
 
-// ════════════════════════════════════════
-// TEMA CLARO / OSCURO — preferencia unificada entre módulos
-// Clave nueva: app_tema. Retro-compat: tutelas_tema.
-// ════════════════════════════════════════
+function $(id){ return document.getElementById(id); }
+function leerJSON(clave, defecto){
+  try { var v = localStorage.getItem(clave); return v ? JSON.parse(v) : defecto; }
+  catch(e){ return defecto; }
+}
+function guardarJSON(clave, valor){
+  try { localStorage.setItem(clave, JSON.stringify(valor)); } catch(e){}
+}
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+
+// ═══════════════════════════════════════════
+// TEMA CLARO / OSCURO (clave compartida app_tema)
+// ═══════════════════════════════════════════
 function aplicarTema(t){
-  var html=document.documentElement;
-  var btn=document.getElementById("btn-tema");
-  if(t==="light"){
-    html.setAttribute("data-theme","light");
-    if(btn) btn.textContent="☀️ Claro";
-  } else {
-    html.removeAttribute("data-theme");
-    if(btn) btn.textContent="🌙 Oscuro";
-  }
+  var btn = $("btn-tema");
+  if (t === "light") { document.documentElement.setAttribute("data-theme","light"); if (btn) btn.textContent = "Modo oscuro"; }
+  else { document.documentElement.removeAttribute("data-theme"); if (btn) btn.textContent = "Modo claro"; }
 }
-function toggleTema(){
-  var actual = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
-  try{
-    localStorage.setItem("app_tema", actual);
-    localStorage.setItem("tutelas_tema", actual); // sincroniza con módulos aún no migrados
-  }catch(e){}
-  aplicarTema(actual);
-}
-(function initTema(){
-  var t="dark";
-  try{ t = localStorage.getItem("app_tema") || localStorage.getItem("tutelas_tema") || "dark"; }catch(e){}
-  aplicarTema(t);
-})();
+$("btn-tema").addEventListener("click", function(){
+  var nuevo = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  try { localStorage.setItem("app_tema", nuevo); localStorage.setItem("tutelas_tema", nuevo); } catch(e){}
+  aplicarTema(nuevo);
+});
+aplicarTema(document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark");
 
-var REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-// Stats cacheadas (opcional) — tutelas_v2.html puede escribirlas tras login:
-// localStorage.setItem("tutelas_stats_cache",
-//   JSON.stringify({tutelas:N, urgentes:N, fallos:N, ts:Date.now()}));
-// Si existen y tienen menos de 6 horas, alimentan a Teo, las cards y la fila de stats.
-try {
-  var _statsCache = JSON.parse(localStorage.getItem("tutelas_stats_cache")||"null");
-  if (_statsCache && Date.now() - (_statsCache.ts||0) < 6*3600*1000) {
-    window._homeStats = _statsCache;
-  }
-} catch(e){}
-
-// ── SALUDO TEODORO — typewriter ──
-(function() {
-  var h = new Date().getHours();
-  var emoji  = h<12?'☀️':h<18?'🌤️':'🌙';
-  var saludo = h<12?'Buenos días':h<18?'Buenas tardes':'Buenas noches';
-  var frases = ['· Teodoro te saluda','· Teodoro a tu servicio','· Teodoro listo para trabajar'];
-  var frase  = frases[Math.floor(Math.random()*frases.length)];
-  var nombre = null;
+// ═══════════════════════════════════════════
+// SESIÓN — Supabase Auth primero, claves viejas como respaldo
+// ═══════════════════════════════════════════
+function capitalizar(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ""; }
+function leerSesion(){
+  // 1) Supabase Auth (supabase-js guarda sb-<ref>-auth-token)
   try {
-    var sess = JSON.parse(localStorage.getItem('tutelas_sesion_v2')||'null')
-            || JSON.parse(localStorage.getItem('oficios_session')||'null')
-            || JSON.parse(localStorage.getItem('buscador_session')||'null');
-    if (sess && sess.expira > Date.now() && sess.usuario) nombre = sess.usuario.split(' ')[0];
-    else if (sess && sess.expira > Date.now() && sess.nombre) nombre = sess.nombre.split(' ')[0];
-  } catch(e){}
-  var textoBase = saludo + (nombre ? ', ' + nombre : '');
-  var textoFull = textoBase + ' ' + frase;
-  var emojiEl = document.getElementById('saludo-emoji');
-  var textEl  = document.getElementById('saludo-text');
-  if (!emojiEl||!textEl) return;
-  emojiEl.textContent = emoji;
-  if (REDUCED_MOTION) { textEl.textContent = textoFull; textEl.classList.remove('typing'); return; }
-  var i=0;
-  function typeWriter(){
-    if(i<=textoFull.length){
-      textEl.textContent=textoFull.slice(0,i); i++;
-      setTimeout(typeWriter, i>textoBase.length+1?55:32);
-    } else { setTimeout(function(){textEl.classList.remove('typing');},2000); }
-  }
-  setTimeout(typeWriter,900);
-})();
-
-// ── FECHA Y HORA ──
-function actualizarFechaHora(){
-  var now=new Date();
-  var fEl=document.getElementById('stat-fecha'), hEl=document.getElementById('stat-hora');
-  if(fEl) fEl.textContent=now.toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
-  if(hEl) hEl.textContent=now.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-}
-setInterval(actualizarFechaHora,30000);
-
-// ── TEO — CUERPO COMPLETO CON EMOCIONES Y BRAZOS ──
-(function(){
-  var robot = document.getElementById('teodoro-robot');
-  if(!robot) return;
-
-  var ks=document.createElement('style');
-  ks.textContent=
-    '@keyframes wave-l{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(-42deg)}}'+
-    '@keyframes wave-r{0%,100%{transform:rotate(20deg)}50%{transform:rotate(46deg)}}'+
-    '@keyframes alarm{0%,100%{transform:rotate(-32deg)}50%{transform:rotate(-54deg)}}'+
-    '@keyframes think{0%,100%{transform:rotate(18deg)}50%{transform:rotate(30deg)}}';
-  document.head.appendChild(ks);
-
-  var E={
-    normal:  {ec:'#4f46e5',pc:'white',  lc:'#818cf8',bop:0,  mid:'#6366f1',aura:'rgba(99,102,241,.3)',  armL:null,    armR:null,    tL:'rotate(0deg)', tR:'rotate(0deg)', frases:['Listo para ayudarte','Sistema operativo','En que te ayudo?']},
-    feliz:   {ec:'#7c3aed',pc:'#fde68a',lc:'#a78bfa',bop:0,  mid:'#fbbf24',aura:'rgba(250,204,21,.25)', armL:'wave-l',armR:'wave-r',tL:null,           tR:null,           frases:['Todo va genial!','A trabajar con energia','Que buen dia!']},
-    alerta:  {ec:'#dc2626',pc:'white',  lc:'#f87171',bop:1,  mid:'#ef4444',aura:'rgba(239,68,68,.3)',   armL:null,    armR:'alarm', tL:'rotate(0deg)', tR:null,           frases:['Hay urgentes ahora!','Atencion requerida','Revisa tutelas']},
-    pensando:{ec:'#0891b2',pc:'#bae6fd',lc:'#67e8f9',bop:0.5,mid:'#22d3ee',aura:'rgba(6,182,212,.25)', armL:'think', armR:null,    tL:null,           tR:'rotate(0deg)', frases:['Hmm... analizando...','Procesando datos','Calculando...']},
-    triste:  {ec:'#374151',pc:'#d1d5db',lc:'#6b7280',bop:0.7,mid:'#9ca3af',aura:'rgba(100,116,139,.2)',armL:null,    armR:null,    tL:'rotate(18deg)',tR:'rotate(18deg)',frases:['Hay algo que revisar...','Verificando el sistema...']},
-  };
-
-  var orden=['normal','feliz','alerta','pensando','triste'];
-  var idx=0;
-
-  function aplicarEmocion(nombre){
-    var e=E[nombre]; if(!e) return;
-    ['el','er'].forEach(function(id){var x=document.getElementById(id);if(x)x.setAttribute('fill',e.ec);});
-    ['pl','pr'].forEach(function(id){var x=document.getElementById(id);if(x)x.setAttribute('fill',e.pc);});
-    ['m1','m2','m3','m4','m5'].forEach(function(id){var x=document.getElementById(id);if(x)x.setAttribute('fill',e.lc);});
-    var lm=document.getElementById('led-mid');if(lm)lm.setAttribute('fill',e.mid);
-    ['bl','br'].forEach(function(id){var x=document.getElementById(id);if(x)x.setAttribute('opacity',e.bop);});
-    var aura=document.getElementById('teo-aura');
-    if(aura) aura.style.background='radial-gradient(circle,'+e.aura+' 0%,transparent 70%)';
-    var al=document.getElementById('arm-l');
-    var ar=document.getElementById('arm-r');
-    if(al){al.style.animation='none';void al.offsetWidth;
-      if(e.armL){al.style.animation=e.armL+' .65s ease-in-out infinite';}
-      else if(e.tL){al.style.transform=e.tL;}}
-    if(ar){ar.style.animation='none';void ar.offsetWidth;
-      if(e.armR){ar.style.animation=e.armR+' .65s ease-in-out infinite';}
-      else if(e.tR){ar.style.transform=e.tR;}}
-    var pill=document.getElementById('saludo-text');
-    if(pill){
-      var orig=pill.textContent;
-      pill.textContent=e.frases[Math.floor(Math.random()*e.frases.length)];
-      setTimeout(function(){pill.textContent=orig;},2600);
+    var claves = ["sb-" + CONFIG.supaRef + "-auth-token"];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && /^sb-.*-auth-token$/.test(k) && claves.indexOf(k) < 0) claves.push(k);
     }
-  }
-
-  robot.addEventListener('click',function(){
-    idx=(idx+1)%orden.length;
-    aplicarEmocion(orden[idx]);
-    var sv=document.getElementById('tsv');
-    if(sv){sv.style.transform='scale(1.1) rotate(-3deg)';setTimeout(function(){sv.style.transform='';},210);}
-  });
-
-  setTimeout(function(){
-    if(window._homeStats&&window._homeStats.urgentes>0){
-      aplicarEmocion('alerta');idx=orden.indexOf('alerta');
-    }
-  },2000);
-
-  function parpadear(){
-    ['pl','pr'].forEach(function(id){
-      var el=document.getElementById(id);if(!el)return;
-      var oy=parseFloat(el.getAttribute('y')||54);
-      var oh=el.getAttribute('height')||'14';
-      el.setAttribute('height','1.5');el.setAttribute('y',oy+6.5);
-      setTimeout(function(){el.setAttribute('height',oh);el.setAttribute('y',oy);},115);
-    });
-  }
-  setInterval(function(){parpadear();setTimeout(parpadear,175);},2600+Math.random()*1800);
-})();
-
-// ════════════════════════════════════════
-// FAVORITOS — fija tus módulos más usados de primeros
-// ════════════════════════════════════════
-(function(){
-  var grid=document.getElementById('grid-modulos'); if(!grid)return;
-  var favs=[];
-  try{ favs=JSON.parse(localStorage.getItem('home_favoritos')||'[]'); }catch(e){}
-
-  function guardar(){ try{ localStorage.setItem('home_favoritos',JSON.stringify(favs)); }catch(e){} }
-
-  function ordenar(){
-    var cards=Array.prototype.slice.call(grid.querySelectorAll('.app-card[data-mod]'));
-    cards.sort(function(a,b){
-      var fa=favs.indexOf(a.getAttribute('data-mod'))>-1?0:1;
-      var fb=favs.indexOf(b.getAttribute('data-mod'))>-1?0:1;
-      if(fa!==fb) return fa-fb;
-      return (+a.getAttribute('data-orden'))-(+b.getAttribute('data-orden'));
-    });
-    cards.forEach(function(c){ grid.appendChild(c); });
-  }
-
-  grid.querySelectorAll('.app-card[data-mod]').forEach(function(card){
-    var btn=card.querySelector('.fav-btn'); if(!btn)return;
-    var id=card.getAttribute('data-mod');
-    function pintar(){
-      var on=favs.indexOf(id)>-1;
-      btn.classList.toggle('active',on);
-      btn.textContent=on?'★':'☆';
-      btn.setAttribute('aria-label',on?'Quitar de favoritos':'Fijar como favorito');
-      btn.title=on?'Quitar de favoritos':'Fijar como favorito';
-    }
-    pintar();
-    function toggle(ev){
-      ev.preventDefault(); ev.stopPropagation();
-      var i=favs.indexOf(id);
-      if(i>-1) favs.splice(i,1); else favs.unshift(id);
-      guardar(); pintar(); ordenar();
-    }
-    btn.addEventListener('click',toggle);
-    btn.addEventListener('keydown',function(ev){ if(ev.key==='Enter'||ev.key===' ') toggle(ev); });
-  });
-
-  ordenar();
-
-  // Registrar el último módulo visitado (para "Continuar donde quedaste")
-  grid.addEventListener('click',function(ev){
-    var a=ev.target.closest('a.app-card'); if(!a)return;
-    var nom=a.querySelector('.app-name');
-    try{
-      localStorage.setItem('home_ultimo_modulo',JSON.stringify({
-        n:nom?nom.textContent:'', h:a.getAttribute('href'), t:Date.now()
-      }));
-    }catch(e){}
-  });
-
-  // Animación de entrada (después de ordenar, para respetar el orden final)
-  grid.querySelectorAll('.app-card').forEach(function(card,ci){
-    card.style.animationDelay=(0.20+ci*0.045)+'s';
-    card.style.animationName='fadeUp'; card.style.animationDuration='0.6s'; card.style.animationFillMode='both';
-  });
-})();
-
-// ════════════════════════════════════════
-// PALETA DE COMANDOS — Ctrl+K o "/"
-// ════════════════════════════════════════
-var kpalCerrar; // expuesta para el handler global de Escape
-(function(){
-  var MODS=[
-    {n:'Desembargos y Embargos', d:'Oficios bancarios y órdenes de embargo',            h:'desembargos.html', i:'🏦', k:'oficio embargo desembargo banco mandamiento'},
-    {n:'Buscador de Guías',      d:'Contribuyentes, radicados y expedientes',           h:'buscador.html',    i:'🔎', k:'buscar contribuyente radicado expediente guia cedula'},
-    {n:'Sistema de Tutelas',     d:'Términos procesales y semáforo de vencimientos',    h:'tutelas_v2.html',  i:'⚖️', k:'tutela fallo incidente urgente juzgado termino'},
-    {n:'Acuerdos de Pago',       d:'Cuotas, convenios y F-GAF-68',                      h:'acuerdos.html',    i:'🤝', k:'acuerdo cuota convenio pago facilidad fgaf'},
-    {n:'Recaudo Histórico',      d:'Depósitos judiciales y devoluciones',               h:'recaudo.html',     i:'💰', k:'recaudo deposito judicial devolucion aplicacion'},
-    {n:'Seguimiento de Procesos',d:'Estadísticas de cobro coactivo',                    h:'seguimiento.html', i:'📊', k:'seguimiento estadistica cartera proceso cobro'},
-    {n:'Central Jurídica',       d:'Paz y salvo, resoluciones y documentos',            h:'index.html',       i:'📜', k:'paz salvo resolucion juridica documento'},
-    {n:'Notificaciones',         d:'Comparendos y predial: correo y certificado',       h:'#notif',           i:'📧', k:'notificacion comparendo predial correo certificado masivo'},
-    {n:'Peticiones',             d:'Derechos de petición y control de términos',        h:'https://teodoro-57g.pages.dev/peticiones', i:'📨', k:'peticion derecho ciudadano respuesta termino pqrs'}
-  ];
-  var overlay=document.getElementById('kpal');
-  var inp=document.getElementById('kpal-inp');
-  var list=document.getElementById('kpal-list');
-  if(!overlay||!inp||!list) return;
-  var sel=0, filtrados=MODS;
-
-  function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
-
-  function render(){
-    if(filtrados.length===0){
-      list.innerHTML='<div class="kpal-empty">Sin resultados. Prueba con "tutela", "embargo", "predial"...</div>';
-      return;
-    }
-    list.innerHTML=filtrados.map(function(m,i){
-      return '<div class="kpal-item'+(i===sel?' sel':'')+'" data-i="'+i+'">'+
-        '<span class="kpal-ico">'+m.i+'</span>'+
-        '<span class="kpal-txt"><div class="kpal-nom">'+m.n+'</div><div class="kpal-des">'+m.d+'</div></span>'+
-        '<span class="kpal-go">Enter ↵</span></div>';
-    }).join('');
-    list.querySelectorAll('.kpal-item').forEach(function(el){
-      el.addEventListener('click',function(){ ir(filtrados[+el.getAttribute('data-i')]); });
-      el.addEventListener('mousemove',function(){
-        var i=+el.getAttribute('data-i');
-        if(i!==sel){ sel=i; render(); }
-      });
-    });
-    var s=list.querySelector('.kpal-item.sel');
-    if(s) s.scrollIntoView({block:'nearest'});
-  }
-
-  function filtrar(){
-    var q=norm(inp.value.trim());
-    sel=0;
-    filtrados=!q?MODS:MODS.filter(function(m){
-      return norm(m.n).indexOf(q)>-1||norm(m.d).indexOf(q)>-1||norm(m.k).indexOf(q)>-1;
-    });
-    render();
-  }
-
-  function ir(m){
-    if(!m) return;
-    cerrar();
-    if(m.h==='#notif'){ openNotifMenu(); return; }
-    try{ localStorage.setItem('home_ultimo_modulo',JSON.stringify({n:m.n,h:m.h,t:Date.now()})); }catch(e){}
-    if(/^https?:\/\//.test(m.h)){ window.open(m.h,'_blank','noopener'); return; }
-    location.href=m.h;
-  }
-
-  function abrir(){
-    overlay.classList.add('open');
-    inp.value=''; filtrar();
-    setTimeout(function(){ inp.focus(); },50);
-  }
-  function cerrar(){ overlay.classList.remove('open'); }
-  kpalCerrar=cerrar;
-
-  inp.addEventListener('input',filtrar);
-  inp.addEventListener('keydown',function(e){
-    if(e.key==='ArrowDown'){ e.preventDefault(); sel=Math.min(sel+1,filtrados.length-1); render(); }
-    else if(e.key==='ArrowUp'){ e.preventDefault(); sel=Math.max(sel-1,0); render(); }
-    else if(e.key==='Enter'){ e.preventDefault(); ir(filtrados[sel]); }
-  });
-  overlay.addEventListener('click',function(e){ if(e.target===overlay) cerrar(); });
-
-  document.addEventListener('keydown',function(e){
-    if((e.ctrlKey||e.metaKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); abrir(); return; }
-    if(e.key==='/'&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){ e.preventDefault(); abrir(); }
-  });
-})();
-
-// ════════════════════════════════════════
-// ESTADO DEL SISTEMA — verificar si Apps Script responde
-// ════════════════════════════════════════
-async function verificarSistema(){
-  var dot=document.getElementById('sys-dot');
-  var txt=document.getElementById('sys-txt');
-  // Leer APPS_URL guardada de tutelas
-  var url="";
-  try{ url=localStorage.getItem("tutelas_apps_url")||""; }catch(e){}
-  if(!url){
-    if(dot) dot.className="sys-dot warn";
-    if(txt) txt.textContent="Sin configurar · datos locales";
-    return;
-  }
-  try{
-    var ctrl=new AbortController();
-    var timer=setTimeout(function(){ctrl.abort();},5000);
-    var res=await fetch(url,{method:"GET",signal:ctrl.signal});
-    clearTimeout(timer);
-    var d=await res.json();
-    if(d.ok){
-      if(dot) dot.className="sys-dot ok";
-      if(txt) txt.textContent="Sistema operativo · "+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-    } else { throw new Error("err"); }
-  }catch(e){
-    if(e.name==="AbortError"){
-      if(dot) dot.className="sys-dot warn";
-      if(txt) txt.textContent="Respuesta lenta · reintentando";
-    } else {
-      if(dot) dot.className="sys-dot err";
-      if(txt) txt.textContent="Sin conexión con el servidor";
-    }
-  }
-}
-
-// ════════════════════════════════════════
-// CONEXIÓN — aviso inmediato si el equipo queda offline
-// (eventos del navegador: no hace ninguna llamada externa)
-// ════════════════════════════════════════
-window.addEventListener('offline', function(){
-  var dot=document.getElementById('sys-dot'), txt=document.getElementById('sys-txt');
-  if(dot) dot.className='sys-dot err';
-  if(txt) txt.textContent='Sin conexión a internet';
-});
-window.addEventListener('online', function(){
-  var txt=document.getElementById('sys-txt');
-  if(txt) txt.textContent='Conexión restablecida · verificando...';
-  verificarSistema();
-});
-
-// ════════════════════════════════════════
-// CARD STATS — datos contextuales por módulo
-// ════════════════════════════════════════
-function actualizarCardStats(stats){
-  // Card tutelas
-  var ct=document.getElementById('cs-tutelas-txt');
-  if(ct){
-    if(stats.tutelas!==undefined){
-      var urgStr=stats.urgentes>0?' · ⚠️ '+stats.urgentes+' urgentes':'';
-      ct.textContent=stats.tutelas+' activas'+urgStr;
-      if(stats.urgentes>0) ct.style.color='#f87171';
-    } else { ct.textContent="Entra para ver el estado"; }
-  }
-  // Card cola desembargos — desde localStorage
-  var cola=[];
-  try{ cola=JSON.parse(localStorage.getItem('cola_local_desem')||localStorage.getItem('cola_local')||'[]'); }catch(e){}
-  var colaHoy=cola.filter(function(x){
-    var hoy=new Date().toLocaleDateString('es-CO');
-    return x['Fecha']===hoy||x.fecha===hoy;
-  });
-  var colaEl=document.getElementById('cs-cola-txt');
-  if(colaEl){
-    if(colaHoy.length>0) colaEl.textContent=colaHoy.length+' oficios generados hoy';
-    else colaEl.textContent='Sin oficios generados hoy';
-  }
-  // Card acuerdos — desde localStorage
-  var acuerdos=[];
-  try{ acuerdos=JSON.parse(localStorage.getItem('acuerdos_pendientes_v3')||localStorage.getItem('pendientes_acuerdos')||'[]'); }catch(e){}
-  var acEl=document.getElementById('cs-acuerdos-txt');
-  if(acEl){
-    if(acuerdos.length>0) acEl.textContent=acuerdos.length+' acuerdo(s) pendiente(s)';
-    else acEl.textContent='Sin acuerdos pendientes';
-  }
-}
-
-// ════════════════════════════════════════
-// FILA DE STATS — inteligente según sesión y caché
-// ════════════════════════════════════════
-function construirStatsRow(){
-  var row=document.getElementById('stats-row'); if(!row)return;
-  var s=window._homeStats;
-  var html='';
-  if(s && s.tutelas!==undefined){
-    var mins=Math.max(1,Math.round((Date.now()-(s.ts||Date.now()))/60000));
-    var edad=mins<60?('hace '+mins+' min'):('hace '+Math.round(mins/60)+' h');
-    html+='<a class="stat" href="tutelas_v2.html" title="Datos de tu última sesión">'+
-      '<div class="stat-num">'+s.tutelas+'</div><div class="stat-label">Tutelas activas</div>'+
-      '<div class="stat-cache">🔒 '+edad+'</div></a>';
-    html+='<a class="stat" href="tutelas_v2.html">'+
-      '<div class="stat-num'+(s.urgentes>0?' stat-alerta':'')+'">'+s.urgentes+'</div>'+
-      '<div class="stat-label">Urgentes hoy</div></a>';
-    html+='<a class="stat" href="tutelas_v2.html">'+
-      '<div class="stat-num">'+(s.fallos!==undefined?s.fallos:'—')+'</div>'+
-      '<div class="stat-label">Fallos activos</div></a>';
-  } else {
-    html+='<a class="stat stat-cta" href="tutelas_v2.html">'+
-      '<div class="stat-num" style="font-size:14px">🔒 Entra con tu PIN</div>'+
-      '<div class="stat-label">para ver tutelas, urgentes y fallos</div></a>';
-  }
-  html+='<div class="stat"><div class="stat-num" id="stat-fecha">—</div><div class="stat-label">Hoy</div></div>';
-  html+='<div class="stat"><div class="stat-num" id="stat-hora">—</div><div class="stat-label">Hora</div></div>';
-  row.innerHTML=html;
-  actualizarFechaHora();
-}
-
-// ════════════════════════════════════════
-// CARD NOVEDADES — Teo las cuenta al abrirse
-// ════════════════════════════════════════
-var NOVEDADES=[
-  {icono:'🔎',txt:'Búsqueda rápida de módulos con Ctrl+K'},
-  {icono:'⭐',txt:'Fija tus módulos favoritos con la estrella de cada card'},
-  {icono:'🔐',txt:'Login con PIN activado en Tutelas V2'},
-  {icono:'🤖',txt:'Teo IA disponible en Tutelas V2'},
-  {icono:'📊',txt:'Estadísticas con % de resolución'},
-  {icono:'⚠️',txt:'Alertas de vencimiento activas'},
-  {icono:'📧',txt:'Módulo de Notificaciones: comparendos y predial'},
-  {icono:'🗓️',txt:'El resumen del día muestra el próximo festivo'},
-  {icono:'📡',txt:'Aviso inmediato si el equipo queda sin internet'},
-];
-function novedadDelDia(){
-  var idx=new Date().getDate()%NOVEDADES.length;
-  return NOVEDADES[idx];
-}
-
-// ════════════════════════════════════════
-// FOOTER — usuario activo y timestamp
-// ════════════════════════════════════════
-function actualizarFooter(){
-  var upd=document.getElementById('fp-actualizado');
-  var usr=document.getElementById('fp-usuario');
-  if(upd) upd.textContent='Actualizado '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-  var nombre="";
-  try{
-    var s=JSON.parse(localStorage.getItem('tutelas_sesion_v2')||'null')
-       ||JSON.parse(localStorage.getItem('buscador_session')||'null')
-       ||JSON.parse(localStorage.getItem('oficios_session')||'null');
-    if(s&&s.expira>Date.now()) nombre=s.usuario||s.nombre||"";
-  }catch(e){}
-  if(usr) usr.textContent=nombre?'👤 '+nombre.split(' ')[0]:'Sin sesión activa';
-}
-
-// ════════════════════════════════════════
-// INIT — ejecutar todo al cargar
-// ════════════════════════════════════════
-verificarSistema();
-actualizarFooter();
-actualizarCardStats(window._homeStats || {});
-construirStatsRow();
-
-// Footer desde CONFIG (una sola fuente de verdad)
-(function(){
-  var v=document.getElementById('fp-version');
-  var m=document.getElementById('fp-modulos');
-  if(v) v.textContent = CONFIG.version;
-  if(m) m.textContent = CONFIG.modulos + ' módulos activos';
-})();
-
-// Badge de Teo: invitar al chat si nunca se ha abierto en esta sesión
-setTimeout(function(){
-  if(!teoAbierto && teoHistorial.length===0){
-    var b=document.getElementById('teo-badge');
-    if(b) b.classList.add('show');
-  }
-}, 4000);
-
-// ════════════════════════════════════════
-// RESUMEN DEL DÍA
-// ════════════════════════════════════════
-function tiempoRelativo(ts){
-  var s=Math.floor((Date.now()-ts)/1000);
-  if(s<3600) return 'hace '+Math.max(1,Math.floor(s/60))+' min';
-  if(s<86400) return 'hace '+Math.floor(s/3600)+' h';
-  var d=Math.floor(s/86400);
-  return d===1?'ayer':'hace '+d+' días';
-}
-
-function buildResumenDia(){
-  var ahora = new Date();
-  var el = function(id){ return document.getElementById(id); };
-  // Fecha
-  var opcFecha = {weekday:'long', day:'numeric', month:'long'};
-  var fechaStr = ahora.toLocaleDateString('es-CO', opcFecha);
-  fechaStr = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
-  if(el('resumen-fecha')) el('resumen-fecha').textContent = fechaStr;
-
-  // Oficios generados hoy (localStorage)
-  var colaHoy = 0;
-  try{
-    var cola = JSON.parse(localStorage.getItem('cola_local_desem')||localStorage.getItem('cola_local')||'[]');
-    var hoyStr = ahora.toLocaleDateString('es-CO');
-    colaHoy = cola.filter(function(x){ return x['Fecha']===hoyStr||x.fecha===hoyStr; }).length;
-  }catch(e){}
-
-  // Acuerdos pendientes (localStorage)
-  var acuerdosPend = 0;
-  try{ acuerdosPend = JSON.parse(localStorage.getItem('acuerdos_pendientes_v3')||localStorage.getItem('pendientes_acuerdos')||'[]').length; }catch(e){}
-
-  var items = [];
-
-  // 0. Continuar donde quedaste
-  var ult=null;
-  try{ ult=JSON.parse(localStorage.getItem('home_ultimo_modulo')||'null'); }catch(e){}
-  if(ult && ult.t && ult.h && Date.now()-ult.t < 7*86400000){
-    items.push({
-      icono:'↩️',
-      txt:'Continuar en <strong>'+ult.n+'</strong> · última visita '+tiempoRelativo(ult.t),
-      tag:{txt:'Reciente', cls:'azul'},
-      clickable:true,
-      href:ult.h
-    });
-  }
-
-  // 1. Oficios hoy
-  items.push({
-    icono: '📄',
-    txt: colaHoy > 0
-      ? '<strong>'+colaHoy+'</strong> oficio(s) generado(s) hoy en este equipo'
-      : 'Sin oficios generados hoy en este equipo',
-    tag: colaHoy > 0
-      ? {txt: colaHoy+' hoy', cls:'azul'}
-      : {txt: 'Sin actividad', cls:'gris'},
-    clickable: colaHoy > 0,
-    href: 'desembargos.html'
-  });
-
-  // 2. Acuerdos pendientes
-  if(acuerdosPend > 0){
-    items.push({
-      icono: '🤝',
-      txt: '<strong>'+acuerdosPend+'</strong> acuerdo(s) pendiente(s) de firma',
-      tag: {txt:'Pendiente', cls:'ambar'},
-      clickable: true,
-      href: 'acuerdos.html'
-    });
-  } else {
-    items.push({
-      icono: '✅',
-      txt: 'Sin acuerdos de pago pendientes',
-      tag: {txt:'Al día', cls:'verde'}
-    });
-  }
-
-  // 3. Acceso a tutelas (sin mostrar datos sensibles)
-  items.push({
-    icono: '⚖️',
-    txt: 'Para ver tutelas urgentes y vencimientos, entra al módulo con tu PIN',
-    tag: {txt:'Requiere acceso', cls:'gris'},
-    clickable: true,
-    href: 'tutelas_v2.html'
-  });
-
-  // 4. Próximo festivo — calendario oficial (calculado localmente, sin consumir red ni cuota)
-  var FESTIVOS = [
-    ['2026-07-20','Independencia de Colombia'],
-    ['2026-08-07','Batalla de Boyacá'],
-    ['2026-08-17','Asunción de la Virgen'],
-    ['2026-10-12','Día de la Raza'],
-    ['2026-11-02','Todos los Santos'],
-    ['2026-11-16','Independencia de Cartagena'],
-    ['2026-12-08','Inmaculada Concepción'],
-    ['2026-12-25','Navidad'],
-    ['2027-01-01','Año Nuevo'],
-    ['2027-01-11','Reyes Magos'],
-    ['2027-03-22','San José'],
-    ['2027-03-25','Jueves Santo'],
-    ['2027-03-26','Viernes Santo'],
-    ['2027-05-01','Día del Trabajo']
-  ];
-  function isoLocal(d){
-    var m=d.getMonth()+1, dd=d.getDate();
-    return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd;
-  }
-  var hoyISO = isoLocal(ahora), proxFest = null;
-  for(var fi2=0; fi2<FESTIVOS.length; fi2++){
-    if(FESTIVOS[fi2][0] >= hoyISO){ proxFest = FESTIVOS[fi2]; break; }
-  }
-  if(proxFest){
-    var pf = new Date(proxFest[0]+'T00:00:00');
-    var diasFest = Math.round((pf - new Date(hoyISO+'T00:00:00'))/86400000);
-    var pfStr = pf.toLocaleDateString('es-CO',{weekday:'long', day:'numeric', month:'long'});
-    items.push({
-      icono:'🗓️',
-      txt: diasFest===0
-        ? 'Hoy es festivo: <strong>'+proxFest[1]+'</strong>'
-        : 'Próximo festivo: <strong>'+pfStr+'</strong> · '+proxFest[1],
-      tag:{ txt: diasFest===0 ? 'Hoy' : 'En '+diasFest+' día'+(diasFest===1?'':'s'), cls: diasFest<=3 ? 'ambar' : 'gris' }
-    });
-  }
-
-  // Renderizar (sin onclick inline: data-href + listeners, accesible por teclado)
-  var html = items.map(function(item){
-    var cls = 'ri' + (item.clickable?' clickable':'');
-    var attrs = item.clickable
-      ? ' data-href="'+(item.href||'#')+'" tabindex="0" role="link"'
-      : '';
-    var tag = item.tag
-      ? '<span class="ri-tag '+item.tag.cls+'">'+item.tag.txt+'</span>'
-      : '';
-    return '<div class="'+cls+'"'+attrs+'>'+
-      '<span class="ri-icon" aria-hidden="true">'+item.icono+'</span>'+
-      '<span class="ri-txt">'+item.txt+'</span>'+
-      tag+'</div>';
-  }).join('');
-
-  if(el('resumen-skeleton')) el('resumen-skeleton').style.display='none';
-  if(el('resumen-items')){
-    el('resumen-items').style.display='flex';
-    el('resumen-items').innerHTML = html;
-    el('resumen-items').querySelectorAll('.ri.clickable').forEach(function(ri){
-      function ir(){ location.href = ri.getAttribute('data-href'); }
-      ri.addEventListener('click', ir);
-      ri.addEventListener('keydown', function(ev){ if(ev.key==='Enter') ir(); });
-    });
-  }
-}
-
-buildResumenDia();
-
-// ════════════════════════════════════════
-// TEO — CHAT IA (con memoria de sesión)
-// ════════════════════════════════════════
-var teoAbierto=false, teoRendered=false, teoHistorial=[];
-try{ teoHistorial=JSON.parse(sessionStorage.getItem('teo_hist')||'[]'); }catch(e){}
-function teoGuardar(){ try{ sessionStorage.setItem('teo_hist',JSON.stringify(teoHistorial.slice(-20))); }catch(e){} }
-
-function teoToggle(){
-  teoAbierto=!teoAbierto;
-  document.getElementById('teo-panel').classList.toggle('open',teoAbierto);
-  document.getElementById('teo-fab').classList.toggle('open',teoAbierto);
-  document.getElementById('teo-badge').classList.remove('show');
-  if(teoAbierto){
-    if(!teoRendered){
-      teoRendered=true;
-      if(teoHistorial.length===0){
-        teoSaludo();
-      } else {
-        // Restaurar conversación previa de esta sesión (sobrevive navegación entre módulos)
-        teoHistorial.forEach(function(m){ teoAddMsg(m.content, m.role==='user'?'usr':'bot'); });
-        document.getElementById('teo-chips').style.display='none';
+    for (var j = 0; j < claves.length; j++) {
+      var s = leerJSON(claves[j], null);
+      if (s && s.currentSession) s = s.currentSession;
+      if (s && s.user) {
+        var md = s.user.user_metadata || {};
+        var nombre = md.nombre || md.full_name || md.name || "";
+        if (!nombre && s.user.email) nombre = s.user.email.split("@")[0].split(/[._-]/)[0];
+        var vigente = !s.expires_at || (s.expires_at * 1000 > Date.now()) || !!s.refresh_token;
+        return { nombre: capitalizar(String(nombre).trim().split(/\s+/)[0]), vigente: vigente };
       }
     }
-    setTimeout(function(){ var i=document.getElementById('teo-inp'); if(i)i.focus(); },260);
+  } catch(e){}
+  // 2) Sesiones antiguas por PIN
+  var viejas = ["tutelas_sesion_v2", "oficios_session", "buscador_session"];
+  for (var n = 0; n < viejas.length; n++) {
+    var v = leerJSON(viejas[n], null);
+    if (v && v.expira > Date.now() && (v.usuario || v.nombre)) {
+      return { nombre: capitalizar(String(v.usuario || v.nombre).trim().split(/\s+/)[0]), vigente: true };
+    }
+  }
+  return null;
+}
+var SESION = leerSesion();
+
+// ═══════════════════════════════════════════
+// SALUDO Y FECHA
+// ═══════════════════════════════════════════
+(function(){
+  var h = new Date().getHours();
+  var saludo = h < 12 ? "Buenos días" : (h < 19 ? "Buenas tardes" : "Buenas noches");
+  var hello = $("hello");
+  if (SESION && SESION.nombre) hello.innerHTML = esc(saludo) + ",<br><span class=\"hello-name\">" + esc(SESION.nombre) + "</span>";
+  else hello.textContent = saludo;
+  var f = new Date().toLocaleDateString("es-CO", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+  $("today").textContent = f.charAt(0).toUpperCase() + f.slice(1);
+  var up = $("user-pill");
+  if (SESION && SESION.nombre) up.innerHTML = "<span class=\"dot ok\"></span><strong>" + esc(SESION.nombre) + "</strong>";
+  else up.textContent = "Sin sesión en este equipo";
+  $("fp-version").textContent = CONFIG.version;
+})();
+
+// ═══════════════════════════════════════════
+// FESTIVOS DE COLOMBIA — Ley 51 de 1983 (Ley Emiliani)
+// Se calculan para cualquier año; no hay que actualizar listas.
+// ═══════════════════════════════════════════
+function pascua(y){
+  var a=y%19, b=Math.floor(y/100), c=y%100, d=Math.floor(b/4), e=b%4,
+      f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30,
+      i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7, m=Math.floor((a+11*h+22*l)/451),
+      mes=Math.floor((h+l-7*m+114)/31), dia=((h+l-7*m+114)%31)+1;
+  return new Date(y, mes-1, dia);
+}
+function masDias(d, n){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate()+n); return x; }
+function alLunes(d){ var dow = d.getDay(); return dow === 1 ? d : masDias(d, (8 - dow) % 7); }
+function festivosDelAnio(y){
+  var P = pascua(y), L = [];
+  function fijo(m, d, n){ L.push([new Date(y, m-1, d), n]); }
+  function emiliani(m, d, n){ L.push([alLunes(new Date(y, m-1, d)), n]); }
+  fijo(1,1,"Año Nuevo");
+  emiliani(1,6,"Reyes Magos");
+  emiliani(3,19,"San José");
+  L.push([masDias(P,-3),"Jueves Santo"]);
+  L.push([masDias(P,-2),"Viernes Santo"]);
+  fijo(5,1,"Día del Trabajo");
+  L.push([alLunes(masDias(P,39)),"Ascensión del Señor"]);
+  L.push([alLunes(masDias(P,60)),"Corpus Christi"]);
+  L.push([alLunes(masDias(P,68)),"Sagrado Corazón"]);
+  emiliani(6,29,"San Pedro y San Pablo");
+  fijo(7,20,"Independencia de Colombia");
+  fijo(8,7,"Batalla de Boyacá");
+  emiliani(8,15,"Asunción de la Virgen");
+  emiliani(10,12,"Día de la Raza");
+  emiliani(11,1,"Todos los Santos");
+  emiliani(11,11,"Independencia de Cartagena");
+  fijo(12,8,"Inmaculada Concepción");
+  fijo(12,25,"Navidad");
+  return L.sort(function(a,b){ return a[0]-b[0]; });
+}
+function proximoFestivo(){
+  var hoy = new Date(); hoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  var lista = festivosDelAnio(hoy.getFullYear()).concat(festivosDelAnio(hoy.getFullYear()+1));
+  for (var i = 0; i < lista.length; i++) {
+    if (lista[i][0] >= hoy) return { fecha: lista[i][0], nombre: lista[i][1], dias: Math.round((lista[i][0]-hoy)/86400000) };
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════
+// DATOS LOCALES (sin consumo de red)
+// ═══════════════════════════════════════════
+function oficiosHoy(){
+  var cola = leerJSON("cola_local_desem", null) || leerJSON("cola_local", []) || [];
+  var hoy = new Date().toLocaleDateString("es-CO");
+  return cola.filter(function(x){ return x && (x["Fecha"] === hoy || x.fecha === hoy); }).length;
+}
+function statsTutelas(){
+  // tutelas_v2 puede escribir {tutelas, urgentes, fallos, ts}; vale 6 horas
+  var s = leerJSON("tutelas_stats_cache", null);
+  return (s && Date.now() - (s.ts || 0) < 6*3600*1000) ? s : null;
+}
+function tiempoRelativo(ts){
+  var s = Math.floor((Date.now()-ts)/1000);
+  if (s < 3600) return "hace " + Math.max(1, Math.floor(s/60)) + " min";
+  if (s < 86400) return "hace " + Math.floor(s/3600) + " h";
+  var d = Math.floor(s/86400);
+  return d === 1 ? "ayer" : "hace " + d + " días";
+}
+var ICONOS = {
+  volver:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  balanza:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 6l9-3 9 3M6 10l-3 6h6zM18 10l-3 6h6z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
+  carpeta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  buscar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'
+};
+
+// ═══════════════════════════════════════════
+// PARA HOY
+// ═══════════════════════════════════════════
+function construirParaHoy(){
+  var items = [];
+
+  // Continuar donde quedaste
+  var ult = leerJSON("home_ultimo_modulo", null);
+  if (ult && ult.h && ult.t && Date.now() - ult.t < 7*86400000 && RETIRADOS.indexOf(ult.h) < 0) {
+    items.push({ href: ult.h, ico: ICONOS.volver, title: "Continuar en " + ult.n, sub: "Última visita " + tiempoRelativo(ult.t) });
+  } else {
+    items.push({ href: "expedientes.html", ico: ICONOS.carpeta, title: "Abrir un expediente", sub: "Busca por radicado, cédula o nombre" });
+  }
+
+  // Oficios generados hoy
+  var n = oficiosHoy();
+  items.push({ href: "desembargos.html", num: String(n), title: n === 1 ? "Oficio generado hoy" : "Oficios generados hoy", sub: "En este equipo" });
+
+  // Tutelas
+  var t = statsTutelas();
+  if (t && t.tutelas !== undefined) {
+    items.push({ href: "tutelas_v2.html", num: String(t.urgentes || 0), alert: t.urgentes > 0,
+      title: t.urgentes === 1 ? "Tutela urgente" : "Tutelas urgentes",
+      sub: t.tutelas + " activas · datos " + tiempoRelativo(t.ts) });
+  } else {
+    items.push({ href: "tutelas_v2.html", ico: ICONOS.balanza, title: "Tutelas", sub: "Entra para ver urgentes y vencimientos" });
+  }
+
+  // Próximo festivo
+  var pf = proximoFestivo();
+  if (pf) {
+    var fstr = pf.fecha.toLocaleDateString("es-CO", { weekday:"long", day:"numeric", month:"long" });
+    items.push({ num: pf.dias === 0 ? "Hoy" : String(pf.dias), alert: false,
+      title: pf.dias === 0 ? "Hoy es festivo" : (pf.dias === 1 ? "Día para el festivo" : "Días para el festivo"),
+      sub: pf.nombre + " · " + fstr });
+  }
+
+  $("today-strip").innerHTML = items.map(function(it){
+    var lead = it.num !== undefined
+      ? '<span class="ti-num' + (it.alert ? " alert" : "") + '">' + esc(it.num) + '</span>'
+      : '<span class="ti-ico" aria-hidden="true">' + it.ico + '</span>';
+    var body = '<span class="ti-body"><span class="ti-title" style="display:block">' + esc(it.title) + '</span><span class="ti-sub" style="display:block">' + esc(it.sub) + '</span></span>';
+    return it.href
+      ? '<li><a class="ti" href="' + esc(it.href) + '">' + lead + body + '</a></li>'
+      : '<li><div class="ti">' + lead + body + '</div></li>';
+  }).join("");
+}
+
+// ═══════════════════════════════════════════
+// ESTADO EN LAS TARJETAS
+// ═══════════════════════════════════════════
+function estadoTarjetas(){
+  var n = oficiosHoy();
+  $("st-desembargos").textContent = n > 0 ? (n + (n === 1 ? " oficio generado hoy" : " oficios generados hoy")) : "Sin oficios generados hoy";
+  var t = statsTutelas(), el = $("st-tutelas");
+  if (t && t.tutelas !== undefined) {
+    el.textContent = t.tutelas + " activas" + (t.urgentes > 0 ? " · " + t.urgentes + " urgentes" : " · sin urgencias");
+    el.classList.toggle("alert", t.urgentes > 0);
+  } else {
+    el.textContent = "Entra para ver el estado";
   }
 }
 
-function teoSaludo(){
-  var stats=window._homeStats||{};
-  var msg='¡Hola! Soy Teo 🤖, el asistente del sistema.<br><br>Puedo ayudarte a navegar entre los módulos, responder preguntas sobre tutelas y cobro coactivo, o contarte el estado del día.<br><br><span style="color:#a5b4fc">💡 Tip: presiona <strong>Ctrl+K</strong> para buscar módulos al instante.</span>';
-  if(stats.urgentes>0) msg+='<br><br><span style="color:#f87171">⚠️ Hay <strong>'+stats.urgentes+'</strong> proceso(s) urgentes hoy.</span>';
-  try{
-    var nov=novedadDelDia();
-    if(nov) msg+='<br><br><span style="color:#7dd3fc">📣 <strong>Novedad:</strong> '+nov.icono+' '+nov.txt+'</span>';
-  }catch(e){}
-  teoAddMsg(msg,'bot');
+// ═══════════════════════════════════════════
+// FAVORITOS (home_favoritos) Y ÚLTIMO MÓDULO
+// ═══════════════════════════════════════════
+var favs = (leerJSON("home_favoritos", []) || []).filter(function(id){ return RETIRADOS.indexOf(id) < 0; });
+function pintarFavoritos(){
+  var cont = $("pinned");
+  cont.querySelectorAll(".chip").forEach(function(c){ c.remove(); });
+  var hay = 0;
+  favs.forEach(function(id){
+    var card = document.querySelector('.mod[data-mod="' + id + '"]');
+    if (!card) return;
+    var link = card.querySelector(".mod-link");
+    var a = document.createElement("a");
+    a.className = "chip"; a.href = link.getAttribute("href");
+    a.textContent = "★ " + link.textContent;
+    cont.appendChild(a); hay++;
+  });
+  cont.hidden = hay === 0;
+  document.querySelectorAll(".mod").forEach(function(card){
+    var on = favs.indexOf(card.getAttribute("data-mod")) > -1;
+    var b = card.querySelector(".fav");
+    var nombre = card.querySelector(".mod-link").textContent;
+    b.textContent = on ? "★" : "☆";
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.setAttribute("aria-label", (on ? "Quitar de fijados: " : "Fijar ") + nombre);
+    b.title = on ? "Quitar de fijados" : "Fijar arriba";
+  });
 }
-
-function teoChip(el){
-  var txt=el.textContent;
-  document.getElementById('teo-chips').style.display='none';
-  teoAddMsg(txt,'usr'); teoResponder(txt);
+document.querySelectorAll(".mod .fav").forEach(function(b){
+  b.addEventListener("click", function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    var id = b.closest(".mod").getAttribute("data-mod");
+    var i = favs.indexOf(id);
+    if (i > -1) favs.splice(i, 1); else favs.push(id);
+    guardarJSON("home_favoritos", favs);
+    pintarFavoritos();
+  });
+});
+function recordar(nombre, href){
+  if (!href || href.charAt(0) === "#") return;
+  guardarJSON("home_ultimo_modulo", { n: nombre, h: href, t: Date.now() });
 }
+document.addEventListener("click", function(ev){
+  var a = ev.target.closest ? ev.target.closest("a") : null;
+  if (!a) return;
+  if (a.classList.contains("mod-link")) recordar(a.textContent, a.getAttribute("href"));
+  else if (a.closest(".mod-sub")) recordar(a.textContent, a.getAttribute("href"));
+  else if (a.classList.contains("chip")) recordar(a.textContent.replace(/^★\s*/, ""), a.getAttribute("href"));
+});
 
-function teoEnviar(){
-  var inp=document.getElementById('teo-inp');
-  var txt=inp.value.trim(); if(!txt)return;
-  inp.value='';
-  document.getElementById('teo-chips').style.display='none';
-  teoAddMsg(txt,'usr'); teoResponder(txt);
+// ═══════════════════════════════════════════
+// BUSCADOR DEL HERO (Ctrl+K o "/")
+// ═══════════════════════════════════════════
+var MODS = [
+  { n:"Expedientes",             d:"Carpeta digital de cada proceso",            h:"expedientes.html",  i:"carpeta", k:"expediente carpeta folio foliado indice radicado documento pdf proceso" },
+  { n:"Seguimiento de cartera",  d:"Estado de procesos, morosidad y legalidad",  h:"seguimiento.html",  i:"doc",     k:"seguimiento estadistica cartera morosidad control interno legalidad predial ica urbanisticas transito" },
+  { n:"Recaudo",                 d:"Depósitos judiciales y devoluciones",        h:"recaudo.html",      i:"doc",     k:"recaudo deposito judicial devolucion aplicacion titulo" },
+  { n:"Embargos y desembargos",  d:"Oficios a bancos y órdenes de embargo",      h:"desembargos.html",  i:"doc",     k:"oficio embargo desembargo banco" },
+  { n:"Notificaciones",          d:"Lotes por correo, mensajería y web",         h:"notificaciones.html", i:"doc",   k:"notificacion lote masivo correo mensajeria web guia" },
+  { n:"Generar notificaciones con correo", d:"Comparendos: Word, mandamientos y división del PDF", h:"con_correo.html", i:"doc", k:"con correo comparendo mandamiento generar lote" },
+  { n:"Notificación por certificado",      d:"Listados por zona y notificación web",               h:"certificado.html", i:"doc", k:"certificado sin correo zona web" },
+  { n:"Mandamientos de predial",           d:"Por radicado, en Word y PDF",                        h:"predial.html",     i:"doc", k:"predial mandamiento pago" },
+  { n:"Guías anteriores",                  d:"Buscador histórico de guías de notificación",       h:"buscador.html",    i:"buscar", k:"guia buscador historico contribuyente radicado" },
+  { n:"Tutelas",                 d:"Términos, fallos e incidentes",              h:"tutelas_v2.html",   i:"balanza", k:"tutela fallo incidente urgente juzgado termino" },
+  { n:"Peticiones",              d:"Derechos de petición y respuestas",          h:"peticiones.html",   i:"doc",     k:"peticion derecho ciudadano respuesta termino pqrs prescripcion" }
+];
+(function(){
+  var inp = $("q"), list = $("q-list"), sel = 0, items = [];
+  function norm(s){ return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+  function calcular(){
+    var q = inp.value.trim(), nq = norm(q);
+    var mods = !nq ? MODS : MODS.filter(function(m){
+      return norm(m.n).indexOf(nq) > -1 || norm(m.d).indexOf(nq) > -1 || norm(m.k).indexOf(nq) > -1;
+    });
+    items = mods.slice();
+    if (q.length >= 3) {
+      var buscarExp = { n: "Buscar «" + q + "» en Expedientes", d: "Radicado, comparendo, cédula o nombre", h: "expedientes.html?buscar=" + encodeURIComponent(q), i: "buscar", exp: true };
+      if (mods.length === 0) items.unshift(buscarExp); else items.push(buscarExp);
+    }
+    sel = 0;
+  }
+  function render(){
+    if (!items.length) {
+      list.innerHTML = '<li class="res-empty">Escribe al menos 3 caracteres para buscar en Expedientes.</li>';
+    } else {
+      list.innerHTML = items.map(function(m, i){
+        return '<li class="res" role="option" id="res-' + i + '" data-i="' + i + '" aria-selected="' + (i === sel) + '">' +
+          '<span class="res-ico" aria-hidden="true">' + (ICONOS[m.i] || ICONOS.doc) + '</span>' +
+          '<span><span class="res-name" style="display:block">' + esc(m.n) + '</span><span class="res-desc" style="display:block">' + esc(m.d) + '</span></span>' +
+          '<span class="res-go">' + (i === sel ? "Enter" : "") + '</span></li>';
+      }).join("");
+      inp.setAttribute("aria-activedescendant", "res-" + sel);
+      var s = list.querySelector('[aria-selected="true"]'); if (s) s.scrollIntoView({ block:"nearest" });
+    }
+  }
+  function abrir(){ calcular(); render(); list.classList.add("open"); inp.setAttribute("aria-expanded","true"); }
+  function cerrar(){ list.classList.remove("open"); inp.setAttribute("aria-expanded","false"); inp.removeAttribute("aria-activedescendant"); }
+  function ir(m){
+    if (!m) return;
+    if (!m.exp) recordar(m.n, m.h);
+    location.href = m.h;
+  }
+  inp.addEventListener("focus", abrir);
+  inp.addEventListener("input", function(){ calcular(); render(); list.classList.add("open"); inp.setAttribute("aria-expanded","true"); });
+  inp.addEventListener("keydown", function(e){
+    if (e.key === "ArrowDown") { e.preventDefault(); if (items.length) { sel = Math.min(sel+1, items.length-1); render(); } }
+    else if (e.key === "ArrowUp") { e.preventDefault(); if (items.length) { sel = Math.max(sel-1, 0); render(); } }
+    else if (e.key === "Enter") { e.preventDefault(); ir(items[sel]); }
+    else if (e.key === "Escape") { e.preventDefault(); inp.value = ""; cerrar(); inp.blur(); }
+  });
+  list.addEventListener("mousedown", function(e){
+    var li = e.target.closest(".res"); if (!li) return;
+    e.preventDefault(); ir(items[+li.getAttribute("data-i")]);
+  });
+  list.addEventListener("mousemove", function(e){
+    var li = e.target.closest(".res"); if (!li) return;
+    var i = +li.getAttribute("data-i"); if (i !== sel) { sel = i; render(); }
+  });
+  document.addEventListener("click", function(e){ if (!$("search").contains(e.target)) cerrar(); });
+  document.addEventListener("keydown", function(e){
+    var tag = (document.activeElement || {}).tagName || "";
+    if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+      e.preventDefault(); window.scrollTo({ top:0, behavior: REDUCED_MOTION ? "auto" : "smooth" }); inp.focus(); inp.select();
+    } else if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(tag)) {
+      e.preventDefault(); inp.focus();
+    }
+  });
+})();
+
+// ═══════════════════════════════════════════
+// ESTADO DEL SISTEMA — ¿responde Supabase?
+// Petición sin llave (no-cors): solo comprueba que el servidor se alcanza.
+// ═══════════════════════════════════════════
+function ponerEstado(clase, texto){
+  $("sys-dot").className = "dot " + clase;
+  $("sys-txt").textContent = texto;
 }
+function verificarSistema(){
+  if (navigator.onLine === false) { ponerEstado("err", "Sin internet"); return; }
+  var ctrl = ("AbortController" in window) ? new AbortController() : null;
+  var timer = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 7000);
+  fetch(CONFIG.supaUrl + "/auth/v1/health", { mode:"no-cors", cache:"no-store", signal: ctrl ? ctrl.signal : undefined })
+    .then(function(){ clearTimeout(timer); ponerEstado("ok", "Base de datos en línea"); })
+    .catch(function(e){
+      clearTimeout(timer);
+      if (e && e.name === "AbortError") ponerEstado("warn", "La base de datos responde lento");
+      else ponerEstado("err", "Sin conexión con la base de datos");
+    });
+}
+window.addEventListener("offline", function(){ ponerEstado("err", "Sin internet"); });
+window.addEventListener("online", function(){ ponerEstado("warn", "Reconectando…"); verificarSistema(); });
 
-function teoAddMsg(html,tipo){
-  var div=document.createElement('div');
-  div.className='teo-bbl '+tipo; div.innerHTML=html;
-  var msgs=document.getElementById('teo-msgs');
-  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+// ═══════════════════════════════════════════
+// TEO — ROBOT DEL HERO
+// ═══════════════════════════════════════════
+(function(){
+  var robot = $("robot"); if (!robot) return;
+  var svg = $("tsv");
+  if (REDUCED_MOTION && svg && svg.pauseAnimations) svg.pauseAnimations();
+  var ks = document.createElement("style");
+  ks.textContent =
+    "@keyframes wave-l{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(-42deg)}}" +
+    "@keyframes wave-r{0%,100%{transform:rotate(20deg)}50%{transform:rotate(46deg)}}" +
+    "@keyframes alarm{0%,100%{transform:rotate(-32deg)}50%{transform:rotate(-54deg)}}" +
+    "@keyframes think{0%,100%{transform:rotate(18deg)}50%{transform:rotate(30deg)}}";
+  document.head.appendChild(ks);
+  var E = {
+    normal:  { ec:"#4f46e5", pc:"white",   lc:"#818cf8", bop:0,   mid:"#6366f1", aura:"rgba(99,102,241,.28)", armL:null,    armR:null,    frases:["Listo para ayudarte","¿Qué buscamos hoy?"] },
+    feliz:   { ec:"#7c3aed", pc:"#fde68a", lc:"#a78bfa", bop:0,   mid:"#fbbf24", aura:"rgba(250,204,21,.25)", armL:"wave-l",armR:"wave-r",frases:["¡Buen trabajo hoy!","¡A cobrar se dijo!"] },
+    alerta:  { ec:"#dc2626", pc:"white",   lc:"#f87171", bop:1,   mid:"#ef4444", aura:"rgba(239,68,68,.30)",  armL:null,    armR:"alarm", frases:["Hay tutelas urgentes","Revisa los términos"] },
+    pensando:{ ec:"#0891b2", pc:"#bae6fd", lc:"#67e8f9", bop:.5,  mid:"#22d3ee", aura:"rgba(6,182,212,.25)",  armL:"think", armR:null,    frases:["Revisando la cartera…","Contando folios…"] }
+  };
+  var orden = ["normal","feliz","alerta","pensando"], idx = 0;
+  function attr(id, a, v){ var x = $(id); if (x) x.setAttribute(a, v); }
+  function emocion(nombre, conFrase){
+    var e = E[nombre]; if (!e) return;
+    ["el","er"].forEach(function(id){ attr(id, "fill", e.ec); });
+    ["pl","pr"].forEach(function(id){ attr(id, "fill", e.pc); });
+    ["m1","m2","m3","m4","m5"].forEach(function(id){ attr(id, "fill", e.lc); });
+    attr("led-mid", "fill", e.mid);
+    ["bl","br"].forEach(function(id){ attr(id, "opacity", e.bop); });
+    $("robot-aura").style.background = "radial-gradient(circle," + e.aura + " 0%,transparent 70%)";
+    [["arm-l", e.armL], ["arm-r", e.armR]].forEach(function(p){
+      var g = $(p[0]); if (!g) return;
+      g.style.animation = "none"; void g.getBoundingClientRect();
+      if (p[1] && !REDUCED_MOTION) g.style.animation = p[1] + " .65s ease-in-out infinite";
+    });
+    if (conFrase !== false) $("bubble").textContent = e.frases[Math.floor(Math.random()*e.frases.length)];
+  }
+  robot.addEventListener("click", function(){
+    idx = (idx + 1) % orden.length; emocion(orden[idx]);
+    if (!REDUCED_MOTION && svg) { svg.style.transform = "scale(1.06) rotate(-3deg)"; setTimeout(function(){ svg.style.transform = ""; }, 200); }
+  });
+  var t = statsTutelas();
+  if (t && t.urgentes > 0) { idx = orden.indexOf("alerta"); emocion("alerta"); }
+  else $("bubble").textContent = SESION && SESION.nombre ? "Listo para ayudarte, " + SESION.nombre : "Listo para ayudarte";
+  if (!REDUCED_MOTION) {
+    setInterval(function(){
+      ["pl","pr"].forEach(function(id){
+        var el = $(id); if (!el) return;
+        el.setAttribute("height","1.5"); el.setAttribute("y","60.5");
+        setTimeout(function(){ el.setAttribute("height","14"); el.setAttribute("y","54"); }, 115);
+      });
+    }, 3600);
+  }
+})();
+
+// ═══════════════════════════════════════════
+// TEO — CHAT (historial en sessionStorage)
+// ═══════════════════════════════════════════
+var teoAbierto = false, teoPintado = false, teoHistorial = [];
+try { teoHistorial = JSON.parse(sessionStorage.getItem("teo_hist") || "[]"); } catch(e){}
+function teoGuardar(){ try { sessionStorage.setItem("teo_hist", JSON.stringify(teoHistorial.slice(-20))); } catch(e){} }
+function teoAddMsg(html, tipo){
+  var div = document.createElement("div");
+  div.className = "teo-bbl " + tipo; div.innerHTML = html;
+  var msgs = $("teo-msgs"); msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
   return div;
 }
-
-function teoTyping(){
-  return teoAddMsg('<div class="teo-dots"><span></span><span></span><span></span></div>','bot');
-}
-
-async function teoResponder(pregunta){
-  var typing=teoTyping();
-  var stats=window._homeStats||{};
-  var contexto=`Eres Teo, asistente IA del Sistema de Ejecuciones Fiscales de la Alcaldía de Bello, Antioquia, Colombia. Respondes en español, de forma concisa y amigable. Usas HTML básico (strong, br) para dar formato. Máximo 4 líneas salvo que sea necesario más.
-
-El sistema tiene estos módulos:
-- Desembargos y embargos (desembargos.html): oficios bancarios, mandamientos y órdenes de embargo
-- Buscador de guías (buscador.html): busca contribuyentes, radicados y expedientes
-- Tutelas V2 (tutelas_v2.html): gestión completa de tutelas con IA (requiere PIN)
-- Acuerdos de pago (acuerdos.html): proyecta cuotas y genera F-GAF-68
-- Recaudo histórico (recaudo.html): depósitos judiciales, aplicaciones y devoluciones
-- Seguimiento de procesos (seguimiento.html): estadísticas de cobro coactivo
-- Central Jurídica (index.html): paz y salvo, resoluciones y documentos jurídicos
-- Notificaciones: comparendos 2024 y predial por correo, certificado y web
-- Home (home.html): esta pantalla de inicio
-
-${stats.tutelas!==undefined?`Estado actual: ${stats.tutelas} tutelas activas, ${stats.fallos} fallos activos, ${stats.urgentes} urgentes hoy.`:''}
-
-Contexto legal: cobro coactivo municipal colombiano, normativa tributaria local, tutelas constitucionales.`;
-
-  teoHistorial.push({role:"user",content:pregunta});
-  teoGuardar();
-
-  // Intentar usar APPS_URL de tutelas si está disponible
-  var appsUrl="";
-  try{ appsUrl=localStorage.getItem("tutelas_apps_url")||""; }catch(e){}
-
-  if(appsUrl){
-    try{
-      var res=await fetch(appsUrl,{method:"POST",redirect:"follow",
-        body:JSON.stringify({accion:"teo",contexto,mensajes:teoHistorial.slice(-8)})});
-      var txt=await res.text(); var d;
-      try{d=JSON.parse(txt);}catch(e){throw new Error("Respuesta inválida");}
-      if(!d.ok)throw new Error(d.error||"Error del servidor");
-      teoHistorial.push({role:"assistant",content:d.respuesta});
-      teoGuardar();
-      typing.remove(); teoAddMsg(d.respuesta,'bot'); return;
-    }catch(e){ console.warn("[Teo]",e); }
+function teoToggle(forzar){
+  teoAbierto = typeof forzar === "boolean" ? forzar : !teoAbierto;
+  $("teo-panel").classList.toggle("open", teoAbierto);
+  $("teo-fab").setAttribute("aria-expanded", teoAbierto ? "true" : "false");
+  $("teo-badge").classList.remove("show");
+  if (teoAbierto) {
+    if (!teoPintado) {
+      teoPintado = true;
+      if (!teoHistorial.length) {
+        teoAddMsg("Hola, soy <strong>Teo</strong>. Te ayudo a encontrar el módulo correcto o a resolver dudas de cobro coactivo.<br><br>Atajo: <strong>Ctrl+K</strong> lleva al buscador, donde también puedes buscar un radicado o una cédula.", "bot");
+      } else {
+        teoHistorial.forEach(function(m){ teoAddMsg(m.role === "user" ? esc(m.content) : m.content, m.role === "user" ? "usr" : "bot"); });
+        $("teo-chips").style.display = "none";
+      }
+    }
+    setTimeout(function(){ $("teo-inp").focus(); }, 220);
+  } else {
+    $("teo-fab").focus();
   }
-
-  // Fallback: respuesta contextual sin IA
-  typing.remove();
-  var resp=teoRespuestaLocal(pregunta,stats);
-  teoHistorial.push({role:"assistant",content:resp});
-  teoGuardar();
-  teoAddMsg(resp,'bot');
 }
-
-function teoRespuestaLocal(q,stats){
-  var ql=q.toLowerCase();
-  if(ql.includes("tutela")||ql.includes("urgente")){
-    if(stats.urgentes>0) return 'Hay <strong>'+stats.urgentes+'</strong> proceso(s) urgentes hoy y <strong>'+(stats.tutelas||'—')+'</strong> tutelas activas en total. Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a> para verlos.';
-    return 'Hay <strong>'+(stats.tutelas||'—')+'</strong> tutelas activas. '+(stats.urgentes===0?'Sin urgencias hoy ✅':'')+' Entra a <a href="tutelas_v2.html" style="color:#60a5fa">Tutelas V2</a>.';
+$("teo-fab").addEventListener("click", function(){ teoToggle(); });
+$("teo-close").addEventListener("click", function(){ teoToggle(false); });
+document.querySelectorAll(".teo-chip").forEach(function(c){
+  c.addEventListener("click", function(){ $("teo-chips").style.display = "none"; teoPreguntar(c.textContent); });
+});
+$("teo-send").addEventListener("click", teoEnviar);
+$("teo-inp").addEventListener("keydown", function(e){ if (e.key === "Enter") teoEnviar(); });
+document.addEventListener("keydown", function(e){ if (e.key === "Escape" && teoAbierto) teoToggle(false); });
+function teoEnviar(){
+  var inp = $("teo-inp"), txt = inp.value.trim(); if (!txt) return;
+  inp.value = ""; $("teo-chips").style.display = "none"; teoPreguntar(txt);
+}
+function teoPreguntar(txt){
+  teoAddMsg(esc(txt), "usr");
+  teoHistorial.push({ role:"user", content: txt }); teoGuardar();
+  var typing = teoAddMsg('<div class="teo-dots"><span></span><span></span><span></span></div>', "bot");
+  teoResponder(txt).then(function(r){
+    typing.remove(); teoAddMsg(r, "bot");
+    teoHistorial.push({ role:"assistant", content: r }); teoGuardar();
+  });
+}
+function teoContexto(){
+  var t = statsTutelas();
+  return "Eres Teo, asistente del Sistema Teodoro de la Dirección Administrativa de Ejecuciones Fiscales, Alcaldía de Bello (Antioquia, Colombia). " +
+    "Respondes en español, breve y amable (máximo 4 líneas), con HTML básico (strong, br, a).\n" +
+    "Módulos: Expedientes (expedientes.html): carpeta digital foliada por proceso, Predial, OU y Tránsito. " +
+    "Seguimiento de cartera (seguimiento.html): estadísticas por tributo, morosidad, control de legalidad. " +
+    "Recaudo (recaudo.html): depósitos judiciales, aplicaciones, devoluciones. " +
+    "Embargos y desembargos (desembargos.html): oficios bancarios. " +
+    "Notificaciones (notificaciones.html): lotes por correo, mensajería y web; generadores con_correo.html, certificado.html, predial.html; guías antiguas en buscador.html. " +
+    "Tutelas (tutelas_v2.html). Peticiones (peticiones.html). " +
+    "Acuerdos de pago y Central Jurídica están en reconstrucción: esas funciones pasarán a Expedientes.\n" +
+    (t ? "Tutelas: " + t.tutelas + " activas, " + (t.urgentes || 0) + " urgentes.\n" : "") +
+    "Contexto legal: cobro coactivo municipal (Estatuto Tributario Nacional arts. 823 y ss.), tutelas y derechos de petición.";
+}
+function teoResponder(pregunta){
+  // IA vía el Apps Script de Tutelas, si este equipo lo tiene configurado; si falla, respuesta local
+  var url = ""; try { url = localStorage.getItem("tutelas_apps_url") || ""; } catch(e){}
+  if (!url) return Promise.resolve(teoLocal(pregunta));
+  return fetch(url, { method:"POST", redirect:"follow",
+      body: JSON.stringify({ accion:"teo", contexto: teoContexto(), mensajes: teoHistorial.slice(-8) }) })
+    .then(function(r){ return r.text(); })
+    .then(function(txt){ var d = JSON.parse(txt); if (!d.ok || !d.respuesta) throw new Error("sin respuesta"); return d.respuesta; })
+    .catch(function(){ return teoLocal(pregunta); });
+}
+function teoLocal(q){
+  var s = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  function lnk(h, t){ return '<a href="' + h + '">' + t + '</a>'; }
+  if (/acuerdo|cuota|convenio|f-?gaf/.test(s))
+    return "El módulo de Acuerdos de pago está en reconstrucción. La proyección de cuotas y el F-GAF-68 se van a generar desde cada proceso en " + lnk("expedientes.html","Expedientes") + ". El estado de los convenios se consulta en " + lnk("seguimiento.html","Seguimiento") + ".";
+  if (/paz y salvo|resolucion|juridic|central/.test(s))
+    return "La Central Jurídica está en reconstrucción. Las respuestas a peticiones se generan en " + lnk("peticiones.html","Peticiones") + " y los actos del proceso se van a generar desde " + lnk("expedientes.html","Expedientes") + ".";
+  if (/expediente|radicado|folio|cedula|contribuyente/.test(s))
+    return "Busca el radicado, la cédula o el nombre en el buscador de arriba (<strong>Ctrl+K</strong>) o entra directo a " + lnk("expedientes.html","Expedientes") + ".";
+  if (/notific|guia|lote|masivo|mensajeria/.test(s))
+    return "Los lotes enviados se registran y consultan en " + lnk("notificaciones.html","Notificaciones") + ". Para generar un lote nuevo usa " + lnk("con_correo.html","con correo") + ", " + lnk("certificado.html","certificado") + " o " + lnk("predial.html","predial") + ".";
+  if (/embargo|desembargo|oficio|banco/.test(s))
+    return "Los oficios a bancos se generan en " + lnk("desembargos.html","Embargos y desembargos") + ".";
+  if (/tutela|urgente|fallo|incidente/.test(s)) {
+    var t = statsTutelas();
+    return (t ? "Hay <strong>" + t.tutelas + "</strong> tutelas activas y <strong>" + (t.urgentes || 0) + "</strong> urgentes. " : "") + "Entra a " + lnk("tutelas_v2.html","Tutelas") + " para ver términos y vencimientos.";
   }
-  if(ql.includes("embargo")||ql.includes("desembargo")||ql.includes("oficio"))
-    return 'Para generar oficios de desembargo o embargo, usa el módulo <a href="desembargos.html" style="color:#60a5fa">Desembargos</a>.';
-  if(ql.includes("buscar")||ql.includes("contribuyente")||ql.includes("expediente"))
-    return 'Para buscar contribuyentes o expedientes de cobro coactivo, entra al <a href="buscador.html" style="color:#60a5fa">Buscador de Guías</a>.';
-  if(ql.includes("acuerdo")||ql.includes("cuota")||ql.includes("convenio"))
-    return 'Para proyectar cuotas y generar el formulario F-GAF-68, usa <a href="acuerdos.html" style="color:#60a5fa">Acuerdos de Pago</a>.';
-  if(ql.includes("cartera")||ql.includes("seguimiento")||ql.includes("estadística")||ql.includes("estadistica"))
-    return 'Las estadísticas de expedientes y cobro coactivo están en <a href="seguimiento.html" style="color:#60a5fa">Seguimiento de Procesos</a>.';
-  if(ql.includes("recaudo")||ql.includes("depósito")||ql.includes("deposito")||ql.includes("devoluci"))
-    return 'Los depósitos judiciales, aplicaciones y devoluciones están en <a href="recaudo.html" style="color:#60a5fa">Recaudo Histórico</a>.';
-  if(ql.includes("paz y salvo")||ql.includes("resoluci")||ql.includes("jurídic")||ql.includes("juridic"))
-    return 'Paz y salvos, resoluciones y documentos jurídicos se generan en la <a href="index.html" style="color:#60a5fa">Central Jurídica</a>.';
-  if(ql.includes("ctrl")||ql.includes("atajo")||ql.includes("buscar módulo")||ql.includes("favorito"))
-    return 'Atajos del home: <strong>Ctrl+K</strong> (o <strong>/</strong>) abre la búsqueda rápida de módulos, y la <strong>⭐ estrella</strong> de cada card fija tus favoritos de primeros.';
-  if(ql.includes("festivo")||ql.includes("feriado"))
-    return 'El próximo festivo aparece en el <strong>Resumen del día</strong>, en la parte superior del home. Se calcula en tu equipo, sin consultar internet.';
-  return 'Puedo ayudarte con tutelas, desembargos, búsqueda de expedientes, acuerdos de pago, recaudo, seguimiento y documentos jurídicos. ¿Con qué módulo necesitas ayuda?';
+  if (/peticion|pqr|derecho de/.test(s))
+    return "Los derechos de petición se gestionan en " + lnk("peticiones.html","Peticiones") + ".";
+  if (/recaudo|deposito|devolucion|aplicacion/.test(s))
+    return "Depósitos judiciales, aplicaciones y devoluciones están en " + lnk("recaudo.html","Recaudo") + ".";
+  if (/cartera|seguimiento|estadistic|morosidad|legalidad/.test(s))
+    return "Las cifras por tributo, la morosidad y el control de legalidad están en " + lnk("seguimiento.html","Seguimiento de cartera") + ".";
+  if (/festivo|feriado/.test(s)) {
+    var pf = proximoFestivo();
+    return pf ? "El próximo festivo es <strong>" + pf.nombre + "</strong>, el " + pf.fecha.toLocaleDateString("es-CO", { weekday:"long", day:"numeric", month:"long" }) + "." : "No encontré el próximo festivo.";
+  }
+  return "Puedo orientarte con expedientes, seguimiento, recaudo, embargos, notificaciones, tutelas y peticiones. ¿Qué necesitas hacer?";
 }
+setTimeout(function(){ if (!teoAbierto && !teoHistorial.length) $("teo-badge").classList.add("show"); }, 5000);
+
+// ═══════════════════════════════════════════
+// INICIO
+// ═══════════════════════════════════════════
+construirParaHoy();
+estadoTarjetas();
+pintarFavoritos();
+verificarSistema();
 </script>
 </body>
 </html>
