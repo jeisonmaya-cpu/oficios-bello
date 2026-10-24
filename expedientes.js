@@ -2227,7 +2227,12 @@ async function traerTodo(path, orden, alAvanzar) {
 async function contarFilas(path) {
   const headers = await getAuthHeaders({ Prefer: "count=exact", Range: "0-0" });
   const res = await fetch(SUPABASE_URL + "/rest/v1/" + path, { headers });
-  if (!res.ok && res.status !== 206) throw new Error("HTTP " + res.status);
+  if (!res.ok && res.status !== 206) {
+    let msg = "HTTP " + res.status;
+    try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) {}
+    if (/statement timeout|canceling statement/i.test(msg)) msg = "La consulta tardó demasiado y el servidor la canceló";
+    throw new Error(msg);
+  }
   const cr = res.headers.get("content-range") || "";
   const m = cr.match(/\/(\d+)$/);
   return m ? Number(m[1]) : null;
@@ -2685,19 +2690,25 @@ async function acBuscar(mas) {
   if (!mas) grid.innerHTML = esqueletos(8);
   const f = acFiltros();
   try {
-    const [filas, total, nEsc] = await Promise.all([
+    // La lista es lo esencial; los conteos son un extra: si fallan, la lista igual se muestra
+    const [rFilas, rTotal, rEsc] = await Promise.allSettled([
       supaFetch("v_acuerdos_pago?select=*" + f + "&order=" + acOrden() + "&limit=" + AC_LIMITE),
       contarFilas("v_acuerdos_pago?select=consecutivo" + f),
       contarFilas("v_acuerdos_pago?select=consecutivo" + f + ($("ac-escaneo").value ? "" : "&escaneado=is.true"))
     ]);
+    if (rFilas.status === "rejected") throw rFilas.reason;
+    const filas = rFilas.value;
+    const total = rTotal.status === "fulfilled" ? rTotal.value : null;
+    const nEsc = rEsc.status === "fulfilled" ? rEsc.value : null;
+    if (rTotal.status === "rejected") console.warn("Conteo de convenios:", rTotal.reason && rTotal.reason.message);
     const lista = filas || [];
     grid.innerHTML = lista.length ? lista.map(tarjetaAcuerdo).join("")
       : `<div class="xc-vacio">Ningún convenio coincide con la búsqueda o los filtros.</div>`;
-    $("ac-mas").classList.toggle("hidden", !(total > lista.length));
+    $("ac-mas").classList.toggle("hidden", total === null ? lista.length < AC_LIMITE : !(total > lista.length));
     const sc = $("ac-escaneo").value;
-    $("ac-resumen").innerHTML = total === null ? "" :
+    $("ac-resumen").innerHTML = total === null ? (lista.length ? "Mostrando " + stNum(lista.length) + " convenios (no se pudo calcular el total)." : "") :
       `<strong>${stNum(total)}</strong> convenio${total === 1 ? "" : "s"}` +
-      (sc ? "" : ` · <strong>${stNum(nEsc)}</strong> escaneado${nEsc === 1 ? "" : "s"} (${stPct(nEsc, total)})`) +
+      (sc || nEsc === null ? "" : ` · <strong>${stNum(nEsc)}</strong> escaneado${nEsc === 1 ? "" : "s"} (${stPct(nEsc, total)})`) +
       (total > lista.length ? ` · mostrando ${stNum(lista.length)}` : "");
   } catch (e) {
     const falta = /v_acuerdos_pago|does not exist|schema cache|404/i.test(e.message);
