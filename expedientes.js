@@ -2642,7 +2642,7 @@ function irVista(v) {
     if ($("vs-" + k)) { $("vs-" + k).classList.toggle("active", v === k); $("vs-" + k).setAttribute("aria-selected", v === k); }
   });
   if (v === "ica") {
-    if (typeof icaMontar === "function") icaMontar();
+    if (typeof icaMontar === "function") { window.ICA_TARJETAS = true; icaMontar(); }
     else $("vista-ica").innerHTML = '<div class="xc-vacio">Falta subir ica_titulos.js e ica_titulos.css al sitio.</div>';
   }
   $("buscar-intro").textContent = v === "acuerdos"

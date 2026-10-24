@@ -57,6 +57,7 @@ async function icaMontar() {
   if (!raiz) return;
   if (!icaMontado) {
     raiz.innerHTML = ICA_MARKUP;
+    if (window.ICA_TARJETAS) icaActivarTarjetas();
     icaMontado = true;
   }
   try {
@@ -901,4 +902,108 @@ function i26Exportar(){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ICA 2026');
   XLSX.writeFile(wb, 'ICA2026_titulos_remitidos_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+}
+
+/* ════════════════════════════════════════════════════════════
+   VISTA EN TARJETAS (opcional) — la usa Expedientes para que los títulos
+   se vean como los procesos de cobro. Misma información que la fila de la
+   tabla y las mismas acciones (seleccionar, ordenar, gestionar, carpeta).
+   Se activa con window.ICA_TARJETAS = true antes de icaMontar().
+   ════════════════════════════════════════════════════════════ */
+const I26C_ORDENES = [
+  { k: 'prioridad',      t: 'Prioridad (prescripción)' },
+  { k: 'valor',          t: 'Valor' },
+  { k: 'n_fila',         t: 'N.º de título' },
+  { k: 'contribuyente',  t: 'Contribuyente' },
+  { k: 'area',           t: 'Área' },
+  { k: 'estado_proceso', t: 'Estado' },
+  { k: 'responsable',    t: 'Responsable' }
+];
+function i26cNombre(s){ return typeof nombrePropio === 'function' ? nombrePropio(s) : i26Txt(s); }
+
+function i26Tarjeta(r){
+  const est = r.estado_proceso || 'Sin iniciar';
+  const etapa = i26EtapaNombre(r.etapa);
+  const alerta = i26Txt(r.alerta).trim();
+  const sg = i26DiasSinGestion(r);
+  const sel = i26Sel.has(r.id);
+  const id = Number(r.id);
+  const drive = i26UrlOk(r.expediente_url)
+    ? '<a class="i26c-ico" href="' + ouEsc(r.expediente_url.trim()) + '" target="_blank" rel="noopener" title="Abrir carpeta: ' + ouEsc(r.remision) + '" onclick="event.stopPropagation()">📂</a>'
+    : '<span class="i26c-ico off" title="Sin carpeta registrada">📂</span>';
+  const gestion = !i26EnGestion(r) ? ''
+    : sg === null ? '<div class="i26-rojo">Sin gestión registrada</div>'
+    : '<div class="' + (sg > I26_DIAS_SIN_MOV ? 'i26-rojo' : '') + '">Gestión hace ' + sg + ' d</div>';
+  const rad = i26Txt(r.radicado).trim();
+  const lineaVig = [r.vigencias ? 'Vig. ' + ouEsc(r.vigencias) : 'Sin vigencia', rad && !/^n\/?a$/i.test(rad) ? 'Rad. ' + ouEsc(rad) : '']
+    .filter(Boolean).join(' · ');
+  return '<article class="i26c ' + (sel ? 'sel ' : '') + 'e-' + (I26_ESTADO_CSS[est] || 'sin') + '" onclick="i26Abrir(' + id + ')">'
+    + '<div class="i26c-top">'
+    +   '<label class="i26c-ck" onclick="event.stopPropagation()" title="Seleccionar para asignar">'
+    +     '<input type="checkbox" ' + (sel ? 'checked' : '') + ' onchange="i26SelFila(' + id + ',this.checked)"></label>'
+    +   '<span class="i26c-area">' + ouEsc(i26AreaLbl(r.area)) + '</span>'
+    +   '<span class="i26c-est"><span class="i26c-dot"></span>' + ouEsc(est) + '</span>'
+    + '</div>'
+    + '<div class="i26c-num"><span>Título</span> #' + ouEsc(r.n_fila) + '</div>'
+    + '<div class="i26c-nom" title="' + ouEsc(r.contribuyente) + '">' + ouEsc(i26cNombre(r.contribuyente || '—')) + '</div>'
+    + '<div class="i26c-id">' + (r.nit ? 'NIT ' + ouEsc(r.nit) : '&nbsp;') + '</div>'
+    + '<div class="i26c-extra">'
+    +   '<div>' + lineaVig + '</div>'
+    +   '<div>' + (r.responsable ? 'Responsable: <b>' + ouEsc(r.responsable) + '</b>' : '<span class="i26c-muted">Sin responsable asignado</span>') + '</div>'
+    +   gestion
+    + '</div>'
+    + '<div class="i26c-chips">'
+    +   '<span class="i26-chip ' + (I26_CLASIF_CSS[r.clasificacion] || 'dup') + '">' + ouEsc(r.clasificacion || 'Sin clasificar') + '</span>'
+    +   (etapa ? '<span class="i26-e ' + (I26_ESTADO_CSS[est] || 'sin') + '">' + ouEsc(etapa) + '</span>' : '')
+    +   (alerta ? '<span class="i26c-alerta" title="' + ouEsc(alerta) + '">⚠ Cifra por verificar</span>' : '')
+    + '</div>'
+    + '<div class="i26c-presc">' + i26CeldaPresc(r) + '</div>'
+    + '<div class="i26c-foot">'
+    +   '<div class="i26c-valor">' + (r.valor != null ? fmt(r.valor) : '—')
+    +     (r.valor_recaudado ? '<div class="i26c-rec">Recaudado ' + fmt(r.valor_recaudado) + '</div>' : '') + '</div>'
+    +   '<div class="i26c-acc">' + drive
+    +     '<button class="i26c-btn" onclick="event.stopPropagation();i26Abrir(' + id + ')">Gestionar</button></div>'
+    + '</div>'
+    + '</article>';
+}
+
+function i26RenderTarjetas(){
+  if(!i26Datos) return;
+  const filas = i26Filtrados();
+  const paginas = Math.max(1, Math.ceil(filas.length / I26_POR_PAG));
+  if(i26F.pag > paginas) i26F.pag = paginas;
+  const desde = (i26F.pag - 1) * I26_POR_PAG;
+  const vista = filas.slice(desde, desde + I26_POR_PAG);
+  const sumaV = filas.reduce((s, r) => s + (r.clasificacion === 'Recuperable' ? (r.valor || 0) : 0), 0);
+  i26$('i26-conteo').textContent = filas.length + ' de ' + i26Datos.length + ' títulos · recuperable ' + fmt(sumaV);
+  i26$('i26-grid').innerHTML = vista.length ? vista.map(i26Tarjeta).join('')
+    : '<div class="i26c-vacio">Ningún título coincide con los filtros</div>';
+  i26$('i26-ck-all').checked = filas.length > 0 && filas.every(r => i26Sel.has(r.id));
+  const so = i26$('i26c-orden'); if(so) so.value = i26F.sortK;
+  const sd = i26$('i26c-dir'); if(sd) sd.textContent = i26F.sortDir === 1 ? '↑' : '↓';
+  i26PintarBulk();
+  const pg = i26$('i26-pager');
+  if(paginas <= 1){ pg.innerHTML = ''; return; }
+  let h = '<button ' + (i26F.pag === 1 ? 'disabled' : '') + ' onclick="i26Pag(' + (i26F.pag - 1) + ')">‹</button>';
+  for(let p = 1; p <= paginas; p++) h += '<button class="' + (p === i26F.pag ? 'act' : '') + '" onclick="i26Pag(' + p + ')">' + p + '</button>';
+  h += '<button ' + (i26F.pag === paginas ? 'disabled' : '') + ' onclick="i26Pag(' + (i26F.pag + 1) + ')">›</button>';
+  pg.innerHTML = h;
+}
+function i26cOrdenar(k){ i26F.sortK = k; i26F.sortDir = (k === 'valor') ? -1 : 1; i26F.pag = 1; i26RenderTabla(); }
+function i26cInvertir(){ i26F.sortDir *= -1; i26F.pag = 1; i26RenderTabla(); }
+
+// Cambia la tabla por la cuadrícula de tarjetas (una sola vez)
+function icaActivarTarjetas(){
+  const wrap = document.querySelector('#ica-root .table-wrap');
+  if(!wrap || i26$('i26-grid')) return;
+  wrap.insertAdjacentHTML('beforebegin',
+    '<div class="i26c-barra">'
+    + '<label class="i26c-todos"><input type="checkbox" id="i26-ck-all" onclick="i26SelTodos(this.checked)"> Seleccionar los filtrados</label>'
+    + '<div class="i26c-ord"><span>Ordenar por</span>'
+    +   '<select id="i26c-orden" onchange="i26cOrdenar(this.value)">' + I26C_ORDENES.map(o => '<option value="' + o.k + '">' + o.t + '</option>').join('') + '</select>'
+    +   '<button id="i26c-dir" type="button" title="Invertir el orden" onclick="i26cInvertir()">↑</button></div>'
+    + '</div>');
+  wrap.outerHTML = '<div class="i26c-grid" id="i26-grid"></div>';
+  i26RenderTabla = i26RenderTarjetas;
+  i26IrTabla = function(){ i26$('i26-grid').scrollIntoView({behavior:'smooth', block:'start'}); };
 }
