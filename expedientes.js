@@ -325,7 +325,7 @@ function irPanel(n) {
   $("panel-" + n).classList.add("active");
   $("tab-" + n).classList.add("active");
   if (n === "buscar") cargarRecientes();
-  if (n === "estadisticas") { if (ST_VISTA === "acuerdos") cargarEstAcuerdos(); else cargarEstadisticas(); }
+  if (n === "estadisticas") { if (ST_VISTA === "acuerdos") cargarEstAcuerdos(); else if (ST_VISTA === "ica") montarICA(); else cargarEstadisticas(); }
 }
 function irSub(n) {
   ["indice", "incorporar", "novedades", "bitacora"].forEach(k => {
@@ -2646,10 +2646,7 @@ function irVista(v) {
     if ($("vista-" + k)) $("vista-" + k).classList.toggle("hidden", v !== k);
     if ($("vs-" + k)) { $("vs-" + k).classList.toggle("active", v === k); $("vs-" + k).setAttribute("aria-selected", v === k); }
   });
-  if (v === "ica") {
-    if (typeof icaMontar === "function") { window.ICA_TARJETAS = true; icaMontar(); }
-    else $("vista-ica").innerHTML = '<div class="xc-vacio">Falta subir ica_titulos.js e ica_titulos.css al sitio.</div>';
-  }
+  if (v === "ica") montarICA();
   $("buscar-intro").textContent = v === "acuerdos"
     ? "Todos los convenios de pago del reporte de Recaudos desde 2020, Predial e ICA. Busca por número de convenio, cédula o nombre, y filtra por estado, año o si ya está escaneado."
     : v === "ica"
@@ -2781,12 +2778,28 @@ function irStVista(v) {
   ST_VISTA = v;
   $("st-cont").classList.toggle("hidden", v !== "procesos");
   $("st-acu").classList.toggle("hidden", v !== "acuerdos");
+  $("st-ica").classList.toggle("hidden", v !== "ica");
   $("st-acc-procesos").classList.toggle("hidden", v !== "procesos");
   $("st-acc-acuerdos").classList.toggle("hidden", v !== "acuerdos");
-  $("svs-procesos").classList.toggle("active", v === "procesos");
-  $("svs-acuerdos").classList.toggle("active", v === "acuerdos");
-  if (v === "acuerdos") cargarEstAcuerdos(); else cargarEstadisticas();
+  $("st-acc-ica").classList.toggle("hidden", v !== "ica");
+  ["procesos", "acuerdos", "ica"].forEach(k => $("svs-" + k).classList.toggle("active", v === k));
+  if (v === "acuerdos") cargarEstAcuerdos();
+  else if (v === "ica") montarICA();
+  else cargarEstadisticas();
 }
+// Títulos ICA (módulo compartido ica_titulos.js): lista en Buscar, tablero en Estadísticas
+function montarICA() {
+  if (typeof icaMontar !== "function") {
+    const msg = '<div class="xc-vacio">Falta subir ica_titulos.js e ica_titulos.css al sitio.</div>';
+    if ($("ica-root")) $("ica-root").innerHTML = msg;
+    if ($("ica-stats")) $("ica-stats").innerHTML = msg;
+    return;
+  }
+  window.ICA_TARJETAS = true;
+  icaMontar();
+}
+// Al hacer clic en una cifra o alerta del tablero ICA (en Estadísticas) se abre la lista ya filtrada
+window.icaMostrarLista = function () { irPanel("buscar"); irVista("ica"); };
 async function cargarEstAcuerdos(forzar) {
   if (STA && !forzar) { renderEstAcuerdos(); return; }
   $("st-acu").innerHTML = `<div class="card empty">Calculando estadísticas de acuerdos…</div>`;
@@ -2798,7 +2811,11 @@ async function cargarEstAcuerdos(forzar) {
     $("st-acu").innerHTML = `<div class="card empty">${falta ? "Falta crear las vistas de acuerdos (sql_acuerdos_vistas.sql)." : "No se pudieron calcular: " + esc(e.message)}</div>`;
   }
 }
-function stActualizar() { if (ST_VISTA === "acuerdos") cargarEstAcuerdos(true); else cargarEstadisticas(true); }
+function stActualizar() {
+  if (ST_VISTA === "acuerdos") cargarEstAcuerdos(true);
+  else if (ST_VISTA === "ica") { if (typeof i26Cargar === "function") i26Cargar(); }
+  else cargarEstadisticas(true);
+}
 
 function acSumar(filas, campo) { return filas.reduce((s, r) => s + (Number(r[campo]) || 0), 0); }
 function acPorEstado(filas) {

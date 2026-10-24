@@ -1005,5 +1005,28 @@ function icaActivarTarjetas(){
     + '</div>');
   wrap.outerHTML = '<div class="i26c-grid" id="i26-grid"></div>';
   i26RenderTabla = i26RenderTarjetas;
-  i26IrTabla = function(){ i26$('i26-grid').scrollIntoView({behavior:'smooth', block:'start'}); };
+  // Si la lista no está a la vista (por ejemplo, se filtró desde Estadísticas), la página la muestra primero
+  i26IrTabla = function(){
+    const grid = i26$('i26-grid');
+    if (grid && grid.offsetParent === null && typeof window.icaMostrarLista === 'function') window.icaMostrarLista();
+    setTimeout(() => { const g = i26$('i26-grid'); if (g) g.scrollIntoView({behavior:'smooth', block:'start'}); }, 60);
+  };
+  icaMoverTablero();
+}
+
+// Tablero (cifras, alertas, gráficos y nota) a otro contenedor, p. ej. la pestaña Estadísticas.
+// Las funciones lo siguen encontrando por sus id, así que todo sigue funcionando igual.
+function icaMoverTablero(){
+  const destino = document.getElementById('ica-stats');
+  if (!destino || destino.childElementCount) return;
+  const alertas = i26$('i26-alertas');
+  const piezas = [
+    i26$('i26-cartera'),
+    i26$('i26-stats'),
+    alertas ? alertas.previousElementSibling : null,   // título «Qué requiere atención»
+    alertas,
+    document.querySelector('.ica-scope .gr-grid'),
+    document.querySelector('.ica-scope .i26-nota')
+  ].filter(Boolean);
+  piezas.forEach(n => destino.appendChild(n));
 }
