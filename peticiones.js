@@ -40,19 +40,134 @@ async function authHeaders(extra){
   return Object.assign({ apikey: SUPA_KEY, Authorization: 'Bearer ' + token }, extra || {});
 }
 
-async function supaFetch(path, opts){
-  opts = opts || {};
+/* ══════════════════════════════════════════════════════════════
+   V3.2 · RED RESILIENTE
+   Causa de los «a veces no carga»: varias vistas pesadas se pedían al
+   mismo tiempo y la base cortaba alguna por tiempo (statement timeout).
+   Un solo corte dejaba la pantalla a medias y había que recargar.
+   1. Lecturas (GET/HEAD) en cola: máximo 3 simultáneas.
+   2. Corte por tiempo, red caída, 429 o 502/503/504: se reintenta
+      hasta 3 veces con espera creciente.
+   3. Ninguna consulta queda colgada: se aborta a los 45 s (escrituras 90 s).
+   4. Dos pantallas que piden exactamente lo mismo a la vez comparten
+      una sola consulta (cada una recibe su propia copia).
+   Las escrituras NO se reintentan ni se encolan: evitar duplicados.
+   ══════════════════════════════════════════════════════════════ */
+const RED = { max: 3, activos: 0, espera: [], vuelo: new Map(),
+              msLectura: 45000, msEscritura: 90000, reintentos: 3 };
+
+function redTomar(){
+  if(RED.activos < RED.max){ RED.activos++; return Promise.resolve(); }
+  return new Promise(function(r){ RED.espera.push(r); });
+}
+function redSoltar(){
+  const sig = RED.espera.shift();
+  if(sig) sig();            // el cupo pasa directo al siguiente
+  else RED.activos = Math.max(RED.activos - 1, 0);
+}
+
+function esCorteTiempo(e){
+  return !!e && (e.code === '57014' || /statement timeout|canceling statement/i.test(String(e.message || '')));
+}
+function errReintentable(e){
+  if(!e) return false;
+  if(e.name === 'TiempoAgotado' || e.name === 'ErrorRed') return true;
+  if([408, 429, 502, 503, 504, 520, 522, 524].indexOf(e.status) !== -1) return true;
+  return esCorteTiempo(e);
+}
+/* La vista o tabla no existe (falta un SQL): solo en ese caso se usa la vista de respaldo */
+function esFaltaVista(e){
+  if(!e) return false;
+  return e.status === 404 || e.code === 'PGRST205' || e.code === '42P01' ||
+         /does not exist|Could not find the table|relation .* does not exist/i.test(String(e.message || ''));
+}
+
+/* Una sola petición HTTP, con tiempo máximo. Devuelve el texto crudo. */
+async function supaPeticion(path, opts, ms){
   const headers = await authHeaders(Object.assign({'Content-Type':'application/json'}, opts.headers || {}));
-  const res = await fetch(SUPA_URL + '/rest/v1/' + path, Object.assign({}, opts, {headers}));
-  if(!res.ok){
-    let msg = 'HTTP ' + res.status;
-    try{ const j = await res.json(); if(j && (j.message||j.hint)) msg = j.message || j.hint; }catch(e){}
-    throw new Error(msg);
+  const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  const reloj = ctrl ? setTimeout(function(){ ctrl.abort(); }, ms) : null;
+  try{
+    const init = Object.assign({}, opts, { headers: headers });
+    if(ctrl) init.signal = ctrl.signal;
+    const res = await fetch(SUPA_URL + '/rest/v1/' + path, init);
+    if(!res.ok){
+      let msg = 'HTTP ' + res.status, code = '';
+      try{
+        const j = await res.json();
+        if(j){ code = j.code || ''; if(j.message || j.hint) msg = j.message || j.hint; }
+      }catch(e){}
+      const er = new Error(msg); er.status = res.status; er.code = code;
+      throw er;
+    }
+    if(res.status === 204) return '';
+    return await res.text();
+  }catch(e){
+    if(e && e.name === 'AbortError'){
+      const er = new Error('La consulta tardó demasiado y se canceló.'); er.name = 'TiempoAgotado'; throw er;
+    }
+    if(e && e.name === 'TypeError'){
+      const er = new Error('Sin conexión con la base de datos.'); er.name = 'ErrorRed'; throw er;
+    }
+    throw e;
+  }finally{
+    if(reloj) clearTimeout(reloj);
   }
-  if(res.status === 204) return [];
-  const txt = await res.text();
+}
+
+function parsearJSON(txt){
   if(!txt) return [];
   try{ return JSON.parse(txt); }catch(e){ return []; }
+}
+
+async function supaFetch(path, opts){
+  opts = opts || {};
+  const metodo = String(opts.method || 'GET').toUpperCase();
+  if(metodo !== 'GET' && metodo !== 'HEAD'){
+    return parsearJSON(await supaPeticion(path, opts, RED.msEscritura));
+  }
+  const clave = path + '|' + JSON.stringify(opts.headers || {});
+  let prom = RED.vuelo.get(clave);
+  if(!prom){
+    prom = (async function(){
+      await redTomar();
+      try{
+        for(let intento = 0; ; intento++){
+          try{
+            return await supaPeticion(path, opts, RED.msLectura);
+          }catch(e){
+            if(intento >= RED.reintentos || !errReintentable(e)){
+              if(errReintentable(e)){
+                e.message = 'La base de datos está respondiendo lento (se intentó ' + (intento + 1) +
+                            ' veces). ' + (esCorteTiempo(e) ? 'Corte por tiempo.' : e.message);
+              }
+              throw e;
+            }
+            await esperar(700 * Math.pow(2, intento) + Math.random() * 500);
+          }
+        }
+      }finally{
+        redSoltar();
+      }
+    })();
+    RED.vuelo.set(clave, prom);
+    const limpiar = function(){ RED.vuelo.delete(clave); };
+    prom.then(limpiar, limpiar);
+  }
+  // Cada llamador recibe su propio objeto: nadie modifica los datos de otro
+  return parsearJSON(await prom);
+}
+
+/* Bloque de error con botón «Reintentar» para cualquier panel */
+function cajaError(titulo, err, accion){
+  return '<div class="err-carga" role="alert">' +
+    '<div><div class="err-tit">' + esc(titulo) + '</div>' +
+    '<div class="err-det">' + esc((err && err.message) || String(err || '')) + '</div></div>' +
+    (accion ? '<button class="btn btn-ghost" onclick="' + accion + '">Reintentar</button>' : '') +
+  '</div>';
+}
+function filaError(cols, titulo, err, accion){
+  return '<tr><td colspan="' + cols + '">' + cajaError(titulo, err, accion) + '</td></tr>';
 }
 
 async function rpc(nombre, body){
@@ -502,19 +617,36 @@ function toast(texto, tipo, segundos){
   }, (segundos || 4) * 1000);
 }
 
-/* Contadores en las pestañas */
-async function actualizarBadges(){
-  if(soloRadica()) return;
-  try{
-    let q = 'v_pet_cola?select=id&limit=2000';
-    if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
-    ponerBadge('tab-cola', await supaContar(q));
+/* Contadores en las pestañas.
+   Se llama desde muchos sitios (guardar, trasladar, cargar la cola…):
+   se agrupan las llamadas de los últimos 900 ms en una sola consulta.
+   Si el conteo falla, el contador anterior se conserva. */
+let BADGE_RELOJ = null, BADGE_PROM = null, BADGE_RES = null;
+function actualizarBadges(){
+  if(soloRadica()) return Promise.resolve();
+  clearTimeout(BADGE_RELOJ);
+  if(!BADGE_PROM){
+    BADGE_PROM = new Promise(function(r){ BADGE_RES = r; });
+  }
+  const prom = BADGE_PROM;
+  BADGE_RELOJ = setTimeout(async function(){
+    const fin = BADGE_RES;
+    BADGE_PROM = null; BADGE_RES = null;
+    try{
+      let q = 'v_pet_cola?select=id&limit=2000';
+      if(!esAdmin()) q += '&asignado_a=eq.' + PERFIL.id;
+      const n1 = await supaContar(q);
+      if(n1 !== null) ponerBadge('tab-cola', n1);
 
-    let q2 = 'v_pet_bandeja?select=id&estado=eq.PROYECTADA&limit=2000';
-    if(!esAdmin()) q2 += '&asignado_a=eq.' + PERFIL.id;
-    ponerBadge('tab-historicos', await supaContar(q2));
-  }catch(e){}
-  actualizarBadgeGD();
+      let q2 = 'v_pet_bandeja?select=id&estado=eq.PROYECTADA&limit=2000';
+      if(!esAdmin()) q2 += '&asignado_a=eq.' + PERFIL.id;
+      const n2 = await supaContar(q2);
+      if(n2 !== null) ponerBadge('tab-historicos', n2);
+    }catch(e){}
+    actualizarBadgeGD();
+    fin();
+  }, 900);
+  return prom;
 }
 
 /* Contador de pendientes en Gestión Documental (solo admin/revisor) */
@@ -2564,7 +2696,13 @@ function resumenLote(d){
 /* ══════════════════════════════════════════════════════════════
    PANEL 2 — COLA DE TRABAJO
    ══════════════════════════════════════════════════════════════ */
+/* Cada carga lleva un número: si el usuario cambia el filtro dos veces
+   seguidas, la respuesta vieja que llegue tarde se descarta. */
+let COLA_CARGA = 0;
+let ABRIR_TRAS_COLA = null;   // caso ya proyectado que se abre apenas cargue la cola
+
 async function cargarCola(){
+  const mio = ++COLA_CARGA;
   const cont = document.getElementById('c-cont');
   cont.innerHTML = '<div class="card">' +
     '<div class="esq esq-lin" style="width:34%;height:19px"></div>' +
@@ -2582,21 +2720,32 @@ async function cargarCola(){
     else if(filtro !== 'todas') q += '&asignado_a=eq.' + filtro;
     if(orden === 'tipo')    q += '&order=tipo.asc,fecha_limite.asc';
     if(orden === 'persona') q += '&order=documento.asc,fecha_limite.asc';
+    let filas;
     try{
-      COLA = await supaFetchTodo(q);
+      filas = await supaFetchTodo(q);
     }catch(err){
-      // Si aún no se ha ejecutado el delta de tutelas, cae a la vista normal
-      COLA = await supaFetchTodo(q.replace('v_pet_cola_prioridad', 'v_pet_cola'));
+      // Solo si la vista de prioridad no existe (falta el delta de tutelas) se usa la normal.
+      // Un corte por tiempo ya se reintentó dentro de supaFetch: no se duplica la carga.
+      if(vista !== 'v_pet_cola_prioridad' || !esFaltaVista(err)) throw err;
+      filas = await supaFetchTodo(q.replace('v_pet_cola_prioridad', 'v_pet_cola'));
     }
+    if(mio !== COLA_CARGA) return;          // llegó una carga más reciente
+    COLA = filas;
     if(orden === 'urgencia') COLA = ordenarPorRiesgo(COLA);
     cargarOficiosPendientes();
     COLA_IDX = 0;
-    pintarCaso();
+    if(ABRIR_TRAS_COLA){
+      const id = ABRIR_TRAS_COLA; ABRIR_TRAS_COLA = null;
+      await insertarReabierto(id);
+    }else{
+      pintarCaso();
+    }
     avisoSinRadicado();
     avanceDelDia();
     actualizarBadges();
   }catch(err){
-    cont.innerHTML = '<div class="card">No se pudo cargar la cola: ' + esc(err.message) + '</div>';
+    if(mio !== COLA_CARGA) return;
+    cont.innerHTML = '<div class="card">' + cajaError('No se pudo cargar la cola', err, 'cargarCola()') + '</div>';
   }
 }
 
@@ -2615,10 +2764,14 @@ function pintarCaso(){
     return;
   }
   if(COLA_IDX >= COLA.length) COLA_IDX = COLA.length - 1;
+  if(COLA_IDX < 0) COLA_IDX = 0;
   const r = COLA[COLA_IDX];
+  const reab = esReabierto(r);
   const f = document.getElementById('c-filtro');
   const etq = f && f.selectedOptions[0] ? f.selectedOptions[0].textContent : '';
-  pos.textContent = 'Caso ' + (COLA_IDX + 1) + ' de ' + COLA.length + (etq ? ' · ' + etq : '');
+  pos.textContent = reab
+    ? 'Caso ya ' + String(r.estado || '').toLowerCase() + ' · abierto para completar documentos'
+    : 'Caso ' + (COLA_IDX + 1) + ' de ' + COLA.length + (etq ? ' · ' + etq : '');
 
   const d = r.dias_restantes;
   const color = d === null ? 'var(--muted)' : d < 0 ? 'var(--rojo)' : d <= 3 ? 'var(--naranja)' : 'var(--verde)';
@@ -2632,6 +2785,7 @@ function pintarCaso(){
     motivoRiesgo(r) +
     alertaTutela(r) +
     '<div id="k-presencia"></div>' +
+    (reab ? bannerReabierto(r) : '') +
     '<div id="k-oficio"></div>' +
 
     // ── Encabezado: identificación y relojes ──
@@ -2691,22 +2845,35 @@ function pintarCaso(){
     // ── Registro de la gestión ──
     '<div class="grid">' +
       '<div class="fld"><label class="lbl">Fecha de proyección</label>' +
-        '<input type="date" id="k-proy" value="' + iso(new Date()) + '">' +
-        '<div class="hint">Día en que terminó el documento.</div></div>' +
+        '<input type="date" id="k-proy" value="' +
+          (reab && r.fecha_proyeccion ? String(r.fecha_proyeccion).slice(0, 10) : iso(new Date())) + '">' +
+        '<div class="hint">' + (reab ? 'Se conserva la original. Cámbiela solo si estaba mal.'
+                                     : 'Día en que terminó el documento.') + '</div></div>' +
       '<div class="fld"><label class="lbl">Radicado de respuesta</label>' +
         '<input type="text" id="k-rad" placeholder="Cuando Gestión Documental lo entregue" ' +
-        'oninput="autoFechaResp()">' +
+        'value="' + esc(r.radicado_respuesta || '') + '" oninput="autoFechaResp()">' +
         '<div class="hint">Puede dejarlo vacío y completarlo después.</div></div>' +
       '<div class="fld"><label class="lbl">Fecha de la respuesta al usuario</label>' +
-        '<input type="date" id="k-fresp">' +
+        '<input type="date" id="k-fresp" value="' +
+          (r.fecha_respuesta ? String(r.fecha_respuesta).slice(0, 10) : '') + '">' +
         '<div class="hint">Fecha del radicado de salida.</div></div>' +
       '<div class="fld full"><label class="lbl">Notas de gestión</label>' +
-        '<textarea id="k-notas" placeholder="Sentido de la respuesta, observaciones…"></textarea></div>' +
+        // Se muestran las notas que ya existan (traslados, apoyo…): antes quedaban
+        // ocultas y al guardar con el campo vacío se borraban.
+        '<textarea id="k-notas" placeholder="Sentido de la respuesta, observaciones…">' +
+          esc(r.notas_gestion || '') + '</textarea></div>' +
     '</div>' +
 
     // ── Acciones agrupadas ──
     '<div class="acciones">' +
-      '<div class="acc-grupo">' +
+     (reab
+      ? '<div class="acc-grupo">' +
+          '<div class="acc-tit">Caso ya proyectado</div>' +
+          '<button class="btn btn-primary btn-ic" onclick="guardarCaso()">' +
+            ICONO.check + 'Guardar cambios y cerrar</button>' +
+          '<button class="btn btn-ghost btn-ic" onclick="cerrarReabierto()">Cerrar sin cambios</button>' +
+        '</div>'
+      : '<div class="acc-grupo">' +
         '<div class="acc-tit">Registrar y continuar</div>' +
         '<button class="btn btn-primary btn-ic" onclick="guardarCaso()">' +
           ICONO.check + 'Guardar y siguiente</button>' +
@@ -2721,7 +2888,7 @@ function pintarCaso(){
             'Remitir por competencia</button>' : '') +
         '<button class="btn btn-ghost btn-ic" style="margin-left:auto;border-color:rgba(251,146,60,.4);' +
           'color:var(--naranja)" onclick="marcarApoyo()">' + ICONO.alerta + 'Requiere apoyo</button>' +
-      '</div>' +
+      '</div>') +
     '</div>' +
 
     '<div class="msg" id="k-msg"></div>' +
@@ -3865,7 +4032,7 @@ function irAPrimeraCoincidencia(){
       .join(' ').toLowerCase();
     if(blob.indexOf(q) !== -1){ irACaso(i); return; }
   }
-  toast('No está en esta cola. Búsquela con Ctrl+K.', '', 5);
+  buscarFueraDeCola(q);
 }
 
 function irACaso(i){
@@ -3886,13 +4053,19 @@ function cerrarSug(){
 }
 
 function moverCaso(paso){
-  COLA_IDX = Math.min(Math.max(COLA_IDX + paso, 0), COLA.length - 1);
+  // Un caso reabierto no pertenece a la cola: al salir de él se retira
+  if(esReabierto(COLA[COLA_IDX])){
+    COLA.splice(COLA_IDX, 1);
+    if(paso > 0) paso = 0;          // el siguiente ya quedó en esta posición
+  }
+  COLA_IDX = Math.max(Math.min(COLA_IDX + paso, COLA.length - 1), 0);
   pintarCaso();
 }
 
 async function guardarCaso(){
   const r = COLA[COLA_IDX];
   if(!r) return;
+  if(esReabierto(r)) return guardarReabierto(r);
   const msg = document.getElementById('k-msg');
   const proy = document.getElementById('k-proy').value || null;
   const rad  = document.getElementById('k-rad').value.trim();
@@ -6150,6 +6323,7 @@ async function abrirBuscador(){
         BANDEJA = await supaFetchTodo('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
         '&order=fecha_limite.asc&limit=1000');
       }catch(e){
+        if(!esFaltaVista(e)) throw e;
         BANDEJA = await supaFetchTodo('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
         '&order=fecha_limite.asc&limit=1000');
       }
@@ -6252,6 +6426,12 @@ function abrirDesdeBuscador(i){
     abrirEditor(r.id);
     return;
   }
+  // Abogado: su caso ya proyectado o con radicado → se abre para completar documentos
+  if(r.asignado_a && PERFIL && String(r.asignado_a) === String(PERFIL.id) &&
+     ESTADOS_COLA.indexOf(r.estado) === -1){
+    abrirCasoParaOficio(r.id);
+    return;
+  }
   // Abogado: si el caso es suyo, saltar a su cola posicionado en él; si no, a la bandeja filtrada.
   if(r.asignado_a && PERFIL && r.asignado_a === PERFIL.id){
     irA('cola');
@@ -6282,6 +6462,7 @@ async function cargarBandeja(){
     try{
       BANDEJA = await traerTodo(vista, msg);
     }catch(e){
+      if(!esFaltaVista(e)) throw e;
       vista = 'v_pet_bandeja';
       BANDEJA = await traerTodo(vista, msg);
     }
@@ -6290,7 +6471,10 @@ async function cargarBandeja(){
     poblarFiltroAbogados();
     renderBandeja();
   }catch(err){
-    msg.className = 'msg err'; msg.textContent = 'Error: ' + err.message;
+    msg.className = 'msg err';
+    msg.innerHTML = 'Error: ' + esc(err.message) +
+      ' <button class="btn btn-ghost" style="padding:4px 11px;font-size:var(--t-micro);margin-left:8px" ' +
+      'onclick="cargarBandeja()">Reintentar</button>';
   }
 }
 
@@ -6317,6 +6501,7 @@ async function buscarEnBase(){
     try{
       res = await supaFetch('v_pet_bandeja_tutela?select=*&' + filtro + '&limit=200');
     }catch(e){
+      if(!esFaltaVista(e)) throw e;
       res = await supaFetch('v_pet_bandeja?select=*&' + filtro + '&limit=200');
     }
     if(!res.length){
@@ -6351,15 +6536,12 @@ async function traerTodo(vista, msg){
   const MAX = 20;          // techo de seguridad: 20.000 filas
   let todas = [], desde = 0;
   for(let i = 0; i < MAX; i++){
-    const headers = await authHeaders({
-      'Content-Type':'application/json',
-      'Range-Unit':'items',
-      'Range': desde + '-' + (desde + TAM - 1)
+    // Pasa por supaFetch: cola, reintentos y tiempo máximo.
+    // id.asc desempata fecha_limite para que las páginas no se solapen.
+    const bloque = await supaFetch(vista +
+      '?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)&order=fecha_limite.asc,id.asc', {
+      headers: { 'Range-Unit':'items', 'Range': desde + '-' + (desde + TAM - 1) }
     });
-    const res = await fetch(SUPA_URL + '/rest/v1/' + vista +
-      '?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)&order=fecha_limite.asc', { headers });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const bloque = await res.json();
     todas = todas.concat(bloque);
     if(msg && bloque.length) msg.textContent = 'Cargando… ' + todas.length + ' peticiones';
     if(bloque.length < TAM) break;
@@ -7260,7 +7442,11 @@ function renderHist(){
         'onchange="toggleSelHistFila(' + r.id + ')"></td>'
       : '<td></td>';
     return '<tr>' + selCell +
-      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b></td>' +
+      '<td><b style="color:var(--gold)">' + esc(r.radicado) + '</b>' +
+        (!soloRadica() && PERFIL.rol !== 'consulta'
+          ? '<button class="btn-reab" onclick="abrirCasoParaOficio(\'' + esc(String(r.id)) + '\')" ' +
+            'title="Abrir el caso para generar el oficio u otro documento">📄 Hacer oficio</button>'
+          : '') + '</td>' +
       '<td>' + esc(r.peticionario) + '</td>' +
       '<td>' + esc(r.tipo_nombre || r.tipo) + '</td>' +
       '<td>' + esc(r.asignado_nombre || '—') + '</td>' +
@@ -7957,72 +8143,131 @@ async function guardarPersona(uid){
 /* ══════════════════════════════════════════════════════════════
    PANEL 4 — TABLERO
    ══════════════════════════════════════════════════════════════ */
+/* V3.2 · El tablero carga por fases y cada bloque es independiente.
+   Antes: 4 vistas pesadas a la vez en un Promise.all; si UNA se cortaba
+   por tiempo, todo el tablero quedaba en esqueletos y un error suelto.
+   Ahora:
+   Fase 1 · resumen + productividad (lo que más se mira).
+   Fase 2 · radicación + bandeja completa (alertas, flujo, antigüedad).
+            Las trasladadas se cuentan de esa misma bandeja: una consulta
+            pesada menos que antes.
+   Fase 3 · cruce con Tutelas.
+   Un bloque que falle muestra su propio «Reintentar»; los demás siguen. */
+let TAB_CARGA = 0;
+
+function resultado(prom){
+  return prom.then(function(v){ return { ok:true, v:v }; },
+                   function(e){ return { ok:false, e:e }; });
+}
+
+function esqueletoBloque(id){
+  const el = document.getElementById(id);
+  if(el) el.innerHTML = '<div class="esq esq-lin" style="width:100%;margin:6px 0"></div>' +
+                        '<div class="esq esq-lin" style="width:72%"></div>';
+}
+
+function pintarProd(prod){
+  document.getElementById('t-prod').innerHTML = prod.length ? prod.map(function(p){
+    const pj = p.pct_termino_justo;
+    const colPj = pj == null ? 'var(--muted)' : pj >= 90 ? 'var(--verde)' : pj >= 70 ? 'var(--gold)' : 'var(--rojo)';
+    return '<tr><td><b>' + esc(p.abogado) + '</b></td><td>' + p.asignadas + '</td>' +
+      '<td>' + p.pendientes + '</td><td>' + p.proyectadas + '</td><td>' + p.radicadas + '</td>' +
+      '<td style="color:var(--morado)" title="Llegaron vencidas: atraso heredado">' +
+        (p.recibidas_vencidas || 0) + '</td>' +
+      '<td><b>' + (p.dias_en_manos == null ? '—' : p.dias_en_manos) + '</b></td>' +
+      '<td style="color:' + colPj + '"><b>' + (pj == null ? '—' : pj + '%') + '</b></td>' +
+      '<td><b style="color:var(--gold)">' + (p.pct_avance == null ? '—' : p.pct_avance + '%') + '</b></td></tr>';
+  }).join('') : '<tr><td colspan="9">Sin datos.</td></tr>';
+}
+
+function pintarKpis(r){
+  const kpis = [
+    ['Total registradas', r.total, 'var(--txt)'],
+    ['Sin asignar',       r.sin_asignar, 'var(--gold)'],
+    ['En gestión',        r.en_gestion, 'var(--azul)'],
+    ['Proyectadas',       r.proyectadas, 'var(--morado)'],
+    ['Con radicado',      r.respondidas, 'var(--verde)'],
+    ['Vencidas',          r.vencidas, 'var(--rojo)'],
+    ['Urgentes ≤3 días',  r.urgentes, 'var(--naranja)'],
+    ['Prom. días abogado',r.promedio_abogado, 'var(--txt)']
+  ];
+  document.getElementById('t-kpis').innerHTML = kpis.map(function(k){
+    return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' +
+           (k[1] == null ? '—' : k[1]) + '</div><div class="l">' + k[0] + '</div></div>';
+  }).join('');
+}
+
 async function cargarTablero(){
-  try{
-    const [res, prod, rad, tras] = await Promise.all([
-      supaFetch('v_pet_resumen?select=*'),
-      supaFetch('v_pet_productividad?select=*'),
-      supaFetch('v_pet_radicacion?select=*').catch(function(){ return null; }),
-      supaFetchTodo('v_pet_bandeja?select=asignado_a,asignado_nombre&estado=eq.TRASLADADA')
-        .catch(function(){ return []; })
-    ]);
-    // Contar trasladadas por abogada
-    const trMap = {};
-    (tras || []).forEach(function(r){
-      const k = r.asignado_nombre || '';
-      if(!k) return;
-      trMap[k] = (trMap[k] || 0) + 1;
-    });
-    // Inyectar en cada fila de productividad
-    (prod || []).forEach(function(p){
-      p.trasladadas = trMap[p.abogado] || 0;
-    });
-    pintarRadicacion(rad);
-    pintarTarjetas(prod || [], rad || [], (res && res[0]) || {});
-    const r = res[0] || {};
-    const kpis = [
-      ['Total registradas', r.total, 'var(--txt)'],
-      ['Sin asignar',       r.sin_asignar, 'var(--gold)'],
-      ['En gestión',        r.en_gestion, 'var(--azul)'],
-      ['Proyectadas',       r.proyectadas, 'var(--morado)'],
-      ['Con radicado',      r.respondidas, 'var(--verde)'],
-      ['Vencidas',          r.vencidas, 'var(--rojo)'],
-      ['Urgentes ≤3 días',  r.urgentes, 'var(--naranja)'],
-      ['Prom. días abogado',r.promedio_abogado, 'var(--txt)']
-    ];
-    document.getElementById('t-kpis').innerHTML = kpis.map(function(k){
-      return '<div class="kpi"><div class="n" style="color:' + k[2] + '">' +
-             (k[1] == null ? '—' : k[1]) + '</div><div class="l">' + k[0] + '</div></div>';
-    }).join('');
+  const mio = ++TAB_CARGA;
+  const vigente = function(){ return mio === TAB_CARGA; };
 
-    document.getElementById('t-prod').innerHTML = prod.length ? prod.map(function(p){
-      const pj = p.pct_termino_justo;
-      const colPj = pj == null ? 'var(--muted)' : pj >= 90 ? 'var(--verde)' : pj >= 70 ? 'var(--gold)' : 'var(--rojo)';
-      return '<tr><td><b>' + esc(p.abogado) + '</b></td><td>' + p.asignadas + '</td>' +
-        '<td>' + p.pendientes + '</td><td>' + p.proyectadas + '</td><td>' + p.radicadas + '</td>' +
-        '<td style="color:var(--morado)" title="Llegaron vencidas: atraso heredado">' +
-          (p.recibidas_vencidas || 0) + '</td>' +
-        '<td><b>' + (p.dias_en_manos == null ? '—' : p.dias_en_manos) + '</b></td>' +
-        '<td style="color:' + colPj + '"><b>' + (pj == null ? '—' : pj + '%') + '</b></td>' +
-        '<td><b style="color:var(--gold)">' + (p.pct_avance == null ? '—' : p.pct_avance + '%') + '</b></td></tr>';
-    }).join('') : '<tr><td colspan="9">Sin datos.</td></tr>';
+  document.getElementById('t-reparto').style.display = esAdmin() ? 'block' : 'none';
+  if(soloRadica()){
+    const alertas = document.getElementById('t-alertas');
+    if(alertas) alertas.innerHTML = '';
+  }
+  esqueletoBloque('t-flujo');
+  esqueletoBloque('t-aging');
 
-    document.getElementById('t-reparto').style.display = esAdmin() ? 'block' : 'none';
-    if(soloRadica()){
-      const alertas = document.getElementById('t-alertas');
-      if(alertas) alertas.innerHTML = '';
-    }
+  // ── Fase 1 ──
+  const [rRes, rProd] = await Promise.all([
+    resultado(supaFetch('v_pet_resumen?select=*')),
+    resultado(supaFetch('v_pet_productividad?select=*'))
+  ]);
+  if(!vigente()) return;
 
-    cruceTutelas();
-    const todas = await supaFetchTodo('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
+  const res = rRes.ok ? ((rRes.v && rRes.v[0]) || {}) : {};
+  if(rRes.ok) pintarKpis(res);
+  else document.getElementById('t-kpis').innerHTML =
+         '<div style="grid-column:1/-1">' + cajaError('No se pudo cargar el resumen', rRes.e, 'cargarTablero()') + '</div>';
+
+  const prod = rProd.ok ? (rProd.v || []) : [];
+  if(rProd.ok) pintarProd(prod);
+  else document.getElementById('t-prod').innerHTML =
+         filaError(9, 'No se pudo cargar la productividad', rProd.e, 'cargarTablero()');
+
+  // ── Fase 2 ──
+  const [rRad, rTodas] = await Promise.all([
+    resultado(supaFetch('v_pet_radicacion?select=*')),
+    resultado(supaFetchTodo('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
       'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,' +
-      'pendiente_notificacion,dias_sin_entregar,asignado_nombre&limit=3000');
+      'pendiente_notificacion,dias_sin_entregar,asignado_nombre&order=id.asc'))
+  ]);
+  if(!vigente()) return;
+
+  // Radicación
+  if(rRad.ok) pintarRadicacion(rRad.v || []);
+  else if(esFaltaVista(rRad.e)) pintarRadicacion(null);
+  else {
+    document.getElementById('t-rad').innerHTML = filaError(8, 'No se pudo cargar la radicación', rRad.e, 'cargarTablero()');
+    const tot = document.getElementById('t-rad-tot'); if(tot) tot.textContent = '';
+  }
+
+  // Trasladadas por abogada, contadas de la misma bandeja
+  const todas = rTodas.ok ? (rTodas.v || []) : null;
+  if(todas){
+    const trMap = {};
+    todas.forEach(function(r){
+      if(r.estado !== 'TRASLADADA' || !r.asignado_nombre) return;
+      trMap[r.asignado_nombre] = (trMap[r.asignado_nombre] || 0) + 1;
+    });
+    prod.forEach(function(p){ p.trasladadas = trMap[p.abogado] || 0; });
+  }
+  if(rProd.ok) pintarTarjetas(prod, rRad.ok ? (rRad.v || []) : [], res);
+
+  if(todas){
     pintarAlertas(todas);
     pintarFlujo(todas);
     pintarAging(todas);
-  }catch(err){
-    document.getElementById('t-prod').innerHTML = '<tr><td colspan="9">Error: ' + esc(err.message) + '</td></tr>';
+  }else{
+    const err = cajaError('No se pudo cargar la bandeja completa', rTodas.e, 'cargarTablero()');
+    document.getElementById('t-flujo').innerHTML = err;
+    document.getElementById('t-aging').innerHTML = err;
+    const pr = document.getElementById('t-proyeccion'); if(pr) pr.textContent = '';
   }
+
+  // ── Fase 3 ──
+  cruceTutelas();
 }
 
 /* ══ Tarjetas de estadísticas, al estilo del módulo de Tutelas ══ */
@@ -8241,8 +8486,10 @@ async function cruceTutelas(){
          : '') +
      '</div>';
   }catch(e){
-    cont.innerHTML = '<div class="card"><div class="hint">' +
-      'El cruce con Tutelas requiere ejecutar <b>pet_delta_tutelas.sql</b>.</div></div>';
+    cont.innerHTML = esFaltaVista(e)
+      ? '<div class="card"><div class="hint">' +
+        'El cruce con Tutelas requiere ejecutar <b>pet_delta_tutelas.sql</b>.</div></div>'
+      : '<div class="card">' + cajaError('No se pudo calcular el cruce con Tutelas', e, 'cruceTutelas()') + '</div>';
   }
 }
 
@@ -8453,6 +8700,7 @@ async function supaFetchTodo(path, opts){
   // así funciona aunque el proyecto tenga configurado un max_rows menor a 1000.
   let todo = [];
   let off = 0;
+  let tope = 0;   // tamaño de página real del servidor (max_rows), medido en la primera
   while(off < PAG_MAX){
     const sep = base.indexOf('?') === -1 ? '?' : '&';
     let filas;
@@ -8467,6 +8715,9 @@ async function supaFetchTodo(path, opts){
     todo = todo.concat(filas);
     off += filas.length;
     if(filas.length < 50) break;        // página corta y pequeña: ya no hay más
+    if(!tope) tope = filas.length;
+    else if(filas.length < tope) break; // página incompleta: era la última
+    // (sobre vistas pesadas cada página extra vuelve a calcular la vista entera)
   }
   // Red de seguridad: sin filas repetidas por id (inserciones durante la carga)
   if(todo.length && todo[0] && todo[0].id !== undefined){
@@ -8480,17 +8731,36 @@ async function supaFetchTodo(path, opts){
   return todo;
 }
 
-/* Cuenta filas sin descargarlas (HEAD + count=exact). */
+/* Cuenta filas sin descargarlas (HEAD + count=exact).
+   Pasa por la misma cola de lecturas. Si falla devuelve null (antes
+   descargaba la vista completa como respaldo y duplicaba la carga). */
 async function supaContar(path){
   const base = String(path).replace(/&limit=\d+/g, '');
+  await redTomar();
   try{
-    const headers = await authHeaders({ Prefer:'count=exact', Range:'0-0', 'Range-Unit':'items' });
-    const res = await fetch(SUPA_URL + '/rest/v1/' + base, { method:'HEAD', headers: headers });
-    const cr = res.headers.get('content-range') || '';
-    const n = parseInt(cr.split('/')[1], 10);
-    if(res.ok && !isNaN(n)) return n;
-  }catch(e){}
-  return (await supaFetchTodo(path)).length;
+    for(let intento = 0; intento < 2; intento++){
+      const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      const reloj = ctrl ? setTimeout(function(){ ctrl.abort(); }, 20000) : null;
+      try{
+        const headers = await authHeaders({ Prefer:'count=exact', Range:'0-0', 'Range-Unit':'items' });
+        const init = { method:'HEAD', headers: headers };
+        if(ctrl) init.signal = ctrl.signal;
+        const res = await fetch(SUPA_URL + '/rest/v1/' + base, init);
+        const cr = res.headers.get('content-range') || '';
+        const n = parseInt(cr.split('/')[1], 10);
+        if(res.ok && !isNaN(n)) return n;
+        if(res.status < 500) return null;      // error que no se arregla reintentando
+      }catch(e){
+        /* red o tiempo: se reintenta una vez */
+      }finally{
+        if(reloj) clearTimeout(reloj);
+      }
+      await esperar(1200);
+    }
+    return null;
+  }finally{
+    redSoltar();
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -9093,17 +9363,7 @@ function alternarPendientesOficio(){
 
 /* Abre el caso en la cola aunque ya haya salido de ella (proyectado) */
 async function traerCasoOficio(id){
-  let i = COLA.findIndex(function(c){ return c.id === id; });
-  if(i === -1){
-    try{
-      const filas = await supaFetch('v_pet_bandeja?select=*&id=eq.' + id + '&limit=1');
-      if(!filas.length){ toast('No se encontró el caso.', 'err'); return; }
-      COLA.splice(COLA_IDX, 0, filas[0]);
-      i = COLA_IDX;
-    }catch(e){ toast('No se pudo abrir: ' + e.message, 'err'); return; }
-  }
-  COLA_IDX = i;
-  pintarCaso();
+  await insertarReabierto(id);
   const el = document.getElementById('k-oficio');
   if(el) el.scrollIntoView({ behavior:'smooth', block:'center' });
 }
@@ -9135,6 +9395,159 @@ async function traerCasoOficio(id){
     cont.insertAdjacentHTML('beforeend', tarjeta);
   };
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   V3.2 · OFICIO EN CASOS YA PROYECTADOS
+   Muchos abogados hicieron la resolución, marcaron la petición como
+   proyectada y olvidaron el oficio. Ahora el caso se puede «reabrir»
+   en la pantalla de la cola para generar el oficio (o cualquier
+   documento) aunque ya no esté en la cola.
+   Entradas: lista «resoluciones sin oficio», botón «📄 Hacer oficio»
+   en Históricos, la búsqueda «Ir a un caso» y Ctrl+K.
+   Reglas del caso reabierto:
+   · No cambia la fecha de proyección (cuenta para los términos) salvo
+     que el abogado la corrija a mano.
+   · «Guardar» solo envía lo que cambió; nunca lo devuelve a la cola.
+   · No se traslada ni se marca apoyo desde aquí.
+   · Al salir del caso se retira de la lista de trabajo.
+   ══════════════════════════════════════════════════════════════ */
+const ESTADOS_COLA = ['PENDIENTE','ASIGNADA','EN_TRAMITE'];
+
+function esReabierto(r){ return !!r && r.__reabierto === true; }
+
+function bannerReabierto(r){
+  return '<div class="reab-banner" role="note">' +
+    '<div class="reab-ic" aria-hidden="true">📄</div>' +
+    '<div style="flex:1;min-width:220px">' +
+      '<div class="reab-tit">Este caso ya está ' + esc(String(r.estado || '').toLowerCase()) +
+        (r.fecha_proyeccion ? ' desde el ' + fmtFecha(r.fecha_proyeccion) : '') + '</div>' +
+      '<div class="reab-txt">Puede generar aquí el oficio u otro documento. ' +
+        'La fecha de proyección original se conserva y el caso no vuelve a la cola.' +
+        (r.radicado_respuesta ? ' Radicado de respuesta: <b>' + esc(r.radicado_respuesta) + '</b>.' : '') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* Desde cualquier panel: va a la cola y abre el caso */
+function abrirCasoParaOficio(id){
+  if(!PERFIL || soloRadica()) return;
+  const enCola = document.getElementById('p-cola').classList.contains('on');
+  if(enCola){ insertarReabierto(id); return; }
+  ABRIR_TRAS_COLA = id;         // cargarCola lo abre al terminar
+  irA('cola');
+}
+
+/* Inserta el caso en la posición actual de la cola y lo pinta.
+   fila: opcional, si ya se tiene el registro completo. */
+async function insertarReabierto(id, fila){
+  let i = COLA.findIndex(function(c){ return String(c.id) === String(id); });
+  if(i === -1){
+    let r = fila;
+    if(!r){
+      try{
+        const filas = await supaFetch('v_pet_bandeja?select=*&id=eq.' + encodeURIComponent(id) + '&limit=1');
+        r = filas[0];
+      }catch(e){
+        toast('No se pudo abrir el caso: ' + e.message, 'err', 6); pintarCaso(); return;
+      }
+    }
+    if(!r){ toast('No se encontró el caso.', 'err'); pintarCaso(); return; }
+    if(!esAdmin() && r.asignado_a && String(r.asignado_a) !== String(PERFIL.id)){
+      toast('Ese caso está asignado a ' + (r.asignado_nombre || 'otra persona') + '.', 'err', 6);
+      pintarCaso(); return;
+    }
+    if(['CERRADA','ANULADA','TRASLADADA'].indexOf(r.estado) !== -1){
+      toast('El caso está ' + String(r.estado).toLowerCase() + ': ya no se generan documentos desde aquí.', 'err', 6);
+      pintarCaso(); return;
+    }
+    if(ESTADOS_COLA.indexOf(r.estado) === -1) r.__reabierto = true;
+    // Si ya había otro reabierto en pantalla, se reemplaza
+    if(esReabierto(COLA[COLA_IDX])) COLA.splice(COLA_IDX, 1);
+    COLA_IDX = Math.min(Math.max(COLA_IDX, 0), COLA.length);
+    COLA.splice(COLA_IDX, 0, r);
+    i = COLA_IDX;
+  }
+  COLA_IDX = i;
+  pintarCaso();
+  if(esReabierto(COLA[i])){
+    const pl = document.getElementById('pleg-doc');
+    if(pl) pl.classList.add('on');
+  }
+  const c = document.getElementById('c-cont');
+  if(c) c.scrollIntoView({ block:'start', behavior:'smooth' });
+}
+
+/* Retira el caso reabierto de la lista de trabajo */
+function cerrarReabierto(){
+  if(!esReabierto(COLA[COLA_IDX])) return;
+  COLA.splice(COLA_IDX, 1);
+  if(COLA_IDX >= COLA.length) COLA_IDX = Math.max(COLA.length - 1, 0);
+  const kd = document.getElementById('k-doc');
+  if(kd){ kd.innerHTML = ''; kd.removeAttribute('data-modo'); }
+  pintarCaso();
+}
+
+/* Guarda solo lo que cambió. Nunca reescribe la fecha de proyección
+   con la de hoy ni borra un radicado que ya existía. */
+async function guardarReabierto(r){
+  const msg = document.getElementById('k-msg');
+  const dia = function(v){ return v ? String(v).slice(0, 10) : ''; };
+  const proy  = document.getElementById('k-proy').value || '';
+  const rad   = document.getElementById('k-rad').value.trim();
+  const fresp = document.getElementById('k-fresp').value || '';
+  const notas = document.getElementById('k-notas').value.trim();
+
+  const patch = {};
+  if(proy && proy !== dia(r.fecha_proyeccion)) patch.fecha_proyeccion = proy;
+  if(rad && rad !== String(r.radicado_respuesta || '')) patch.radicado_respuesta = rad;
+  if(fresp && fresp !== dia(r.fecha_respuesta)) patch.fecha_respuesta = fresp;
+  if(notas !== String(r.notas_gestion || '').trim()) patch.notas_gestion = notas || null;
+
+  if(!Object.keys(patch).length){
+    cerrarReabierto();
+    toast('Caso ' + r.radicado + ' cerrado sin cambios en el registro.', '', 3);
+    return;
+  }
+  msg.className = 'msg'; msg.textContent = 'Guardando…';
+  try{
+    await supaFetch('pet_peticiones?id=eq.' + r.id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(patch)
+    });
+    toastDeshacer('Caso ' + r.radicado + ' actualizado.', r, patch);
+    cerrarReabierto();
+    actualizarBadges();
+  }catch(err){
+    msg.className = 'msg err'; msg.textContent = 'No se pudo guardar: ' + err.message;
+  }
+}
+
+/* «Ir a un caso» no lo encontró en la cola: se busca entre las
+   proyectadas y respondidas (del abogado, o de todos si es admin). */
+async function buscarFueraDeCola(q){
+  const t = String(q || '').replace(/[(),*"'\\]/g, '').trim();
+  if(t.length < 4){ toast('No está en esta cola. Búsquela con Ctrl+K.', '', 5); return; }
+  const v = encodeURIComponent(t);
+  let qs = 'v_pet_bandeja?select=*&estado=in.(PROYECTADA,RESPONDIDA)' +
+           '&or=(radicado.eq.' + v + ',documento.eq.' + v + ',radicado_respuesta.eq.' + v + ')' +
+           '&order=fecha_proyeccion.desc.nullslast&limit=5';
+  if(!esAdmin()) qs += '&asignado_a=eq.' + PERFIL.id;
+  try{
+    const filas = await supaFetch(qs);
+    if(!filas.length){
+      toast('No está en esta cola ni entre las proyectadas. Búsquela con Ctrl+K.', '', 6);
+      return;
+    }
+    const b = document.getElementById('c-busq'); if(b) b.value = '';
+    cerrarSug();
+    if(filas.length > 1){
+      toast(filas.length + ' casos coinciden; se abre el más reciente. Use el radicado para ser exacto.', '', 6);
+    }
+    await insertarReabierto(filas[0].id, filas[0]);
+  }catch(e){
+    toast('No se pudo buscar: ' + e.message, 'err', 6);
+  }
+}
 
 /* ══════════════════════════════════════════════════════════════
    NOVEDADES DE LA VERSIÓN
