@@ -214,6 +214,7 @@ function formatearRadicado(s) {
 }
 // Situación del proceso a partir del estado en cartera
 const SITUACIONES = {
+  sin_iniciar: "Sin iniciar",
   activo:    "Activo",
   acuerdo:   "En acuerdo de pago",
   cancelado: "Cancelado",
@@ -234,6 +235,7 @@ function situacionDe(f) {
   if (/cancel/.test(s)) return "cancelado";
   if (/termin|archiv/.test(s)) return "terminado";
   if ((f && f.en_acuerdo) || /convenio|acuerdo/.test(s)) return "acuerdo";
+  if (/sin iniciar/.test(s)) return "sin_iniciar";
   if (s) return "activo";
   return "sin";
 }
@@ -474,8 +476,11 @@ function filtrosRecientesCambiaron() { REC_LIMITE = 24; cargarRecientes(); }
 // "LUIS ALIRIO DE LA CRUZ" → "Luis Alirio de la Cruz"; siglas de empresa se respetan
 function nombrePropio(s) {
   const menores = ["de", "del", "la", "las", "los", "y", "e", "da", "van", "von"];
+  // En razones sociales (SAS, S.A., LTDA…) las palabras cortas suelen ser siglas: CAF, AAA, JYM
+  const empresa = /\b(s\.?\s?a\.?\s?s|s\.?\s?a|ltda|e\.?\s?u|s\.?\s?c\.?\s?a)\.?\s*$/i.test(String(s || "").trim());
   return String(s || "").toLowerCase().replace(/\s+/g, " ").trim().split(" ").map((w, i) => {
     if (i > 0 && menores.includes(w)) return w;
+    if (empresa && /^[a-zñ]{2,3}$/.test(w)) return w.toUpperCase();
     if (/^(s\.?a\.?s?\.?|ltda\.?|s\.?a\.?|e\.?u\.?|s\.?c\.?a\.?)$/.test(w)) return w.toUpperCase();
     return w.replace(/(^|[-'])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
   }).join(" ");
@@ -527,8 +532,24 @@ function tarjetaExpediente(o) {
 const EXTRA_CARTERA = {
   predial:  { tabla: "expedientes_predial",  llave: "radicado",       campos: "radicado,matricula,num_ficha,direccion" },
   ou:       { tabla: "expedientes_ou",       llave: "radicado",       campos: "radicado,direccion,barrio" },
-  transito: { tabla: "expedientes_transito", llave: "nro_comparendo", campos: "nro_comparendo,numero_placa,anio" }
+  transito: { tabla: "expedientes_transito", llave: "nro_comparendo", campos: "nro_comparendo,numero_placa,anio" },
+  // Títulos ICA: el expediente TICA-135 corresponde al id 135 de ica_titulos_remitidos
+  ica:      { tabla: "ica_titulos_remitidos", llave: "id",
+              campos: "id,n_fila,area,vigencias,radicado,responsable,fecha_ejecutoria,fecha_mandamiento",
+              aLlave: r => String(r).replace(/\D/g, ""), aRad: f => "TICA-" + f.id }
 };
+// Prescripción de un título ICA: el mandamiento interrumpe (art. 818 E.T.); si no hay,
+// 5 años desde la ejecutoria (art. 817 E.T.). Es una alerta de trabajo, no un cómputo jurídico.
+function avisoPrescripcion(f) {
+  if (f.fecha_mandamiento) return `<div class="xc-presc ok">Mandamiento librado el ${esc(fmtFecha(String(f.fecha_mandamiento).slice(0, 10)))}</div>`;
+  if (!f.fecha_ejecutoria) return '<div class="xc-presc sin">Sin fecha de ejecutoria</div>';
+  const ej = new Date(String(f.fecha_ejecutoria).slice(0, 10) + "T00:00:00");
+  const pr = new Date(ej); pr.setFullYear(pr.getFullYear() + 5);
+  const meses = (pr - new Date()) / (1000 * 60 * 60 * 24 * 30.44);
+  const fecha = fmtFecha(pr.toISOString().slice(0, 10));
+  if (meses < 0) return `<div class="xc-presc err">Prescribiría desde el ${esc(fecha)}: revisar</div>`;
+  return `<div class="xc-presc ${meses < 12 ? "err" : meses < 24 ? "warn" : "ok"}">Prescribe aprox. el ${esc(fecha)}</div>`;
+}
 const EXTRA_CACHE = {};          // "cartera|radicado" → html
 function htmlExtra(cartera, f) {
   const lim = v => String(v || "").trim();
@@ -542,6 +563,15 @@ function htmlExtra(cartera, f) {
   } else if (cartera === "ou") {
     const d = [lim(f.direccion), lim(f.barrio)].filter(Boolean).map(esc).join(" · ");
     if (d) linea.push(`<div class="xc-dir">${d}</div>`);
+  } else if (cartera === "ica") {
+    const d = [lim(f.area), lim(f.vigencias) ? "Vig. " + lim(f.vigencias) : ""].filter(Boolean).map(esc).join(" · ");
+    if (d) linea.push(`<div class="xc-dir">${d}</div>`);
+    const ids = [];
+    if (lim(f.radicado) && !/^n\/?a$/i.test(lim(f.radicado))) ids.push("Rad. " + esc(lim(f.radicado)));
+    if (f.n_fila) ids.push("Fila #" + esc(f.n_fila));
+    if (ids.length) linea.push(`<div class="xc-ids">${ids.join(" · ")}</div>`);
+    linea.push(`<div class="xc-ids">${lim(f.responsable) ? "Responsable: " + esc(lim(f.responsable)) : "Sin responsable asignado"}</div>`);
+    linea.push(avisoPrescripcion(f));
   } else if (cartera === "transito") {
     const d = [lim(f.numero_placa) ? "Placa " + esc(lim(f.numero_placa)) : "", f.anio ? "Vigencia " + esc(f.anio) : ""].filter(Boolean).join(" · ");
     if (d) linea.push(`<div class="xc-ids">${d}</div>`);
@@ -562,10 +592,11 @@ async function enriquecerTarjetas(cont) {
     const cfg = EXTRA_CARTERA[c];
     const rads = [...pendientes[c]];
     try {
-      const lista = rads.map(r => '"' + String(r).replace(/"/g, "") + '"').map(encodeURIComponent).join(",");
-      const filas = await supaFetch(cfg.tabla + "?select=" + cfg.campos + "&" + cfg.llave + "=in.(" + lista + ")") || [];
+      const llaves = rads.map(r => cfg.aLlave ? cfg.aLlave(r) : r).filter(Boolean);
+      const lista = llaves.map(r => '"' + String(r).replace(/"/g, "") + '"').map(encodeURIComponent).join(",");
+      const filas = llaves.length ? (await supaFetch(cfg.tabla + "?select=" + cfg.campos + "&" + cfg.llave + "=in.(" + lista + ")") || []) : [];
       rads.forEach(r => { EXTRA_CACHE[c + "|" + r] = ""; });
-      filas.forEach(f => { EXTRA_CACHE[c + "|" + f[cfg.llave]] = htmlExtra(c, f); });
+      filas.forEach(f => { EXTRA_CACHE[c + "|" + (cfg.aRad ? cfg.aRad(f) : f[cfg.llave])] = htmlExtra(c, f); });
     } catch (e) {
       console.warn("Datos de cartera para tarjetas (" + c + "):", e.message);
       rads.forEach(r => { EXTRA_CACHE[c + "|" + r] = ""; });
@@ -1704,7 +1735,7 @@ function cmCambioModo() {
   const conv = cmModo() === "convenio";
   $("cm-cartera").classList.toggle("hidden", conv);
   $("cm-ayuda-modo").textContent = conv
-    ? "Cada archivo se busca por su número en el reporte de acuerdos de pago (66132.pdf → convenio 66132). Con la cédula del deudor se encuentra su proceso activo en Predial; si no tiene, va a un expediente propio en Acuerdos Predial, y los convenios de ICA van a Acuerdos ICA."
+    ? "Cada archivo se busca por su número en el reporte de acuerdos de pago (66132.pdf → convenio 66132). Con la cédula o NIT del deudor se encuentra su proceso activo: en Predial para los convenios de Predial y entre los títulos ICA para los de ICA. Si no tiene, va a un expediente propio en Acuerdos Predial o Acuerdos ICA."
     : "Cada archivo se asigna a su proceso por el número del nombre (FP-1212, FP1212, FP01212 o FP'1212 son el mismo); lo que sigue al número se usa como descripción.";
   $("cm-ayuda-2").textContent = conv
     ? "Todos los convenios van como un solo tipo de documento. La descripción en el índice será «Convenio de pago N.º …» y la fecha del documento, la de aprobación del convenio."
@@ -1735,6 +1766,10 @@ function cmSugerirTipoConvenio() {
 }
 
 async function cmAnalizarConvenios(archivos) {
+  if (!CARTERAS.acuerdos_predial || !CARTERAS.acuerdos_ica) {
+    toast("Faltan las carteras Acuerdos Predial y Acuerdos ICA en la base: ejecuta sql_exp_acuerdos_por_tributo.sql y recarga la página (Ctrl+Shift+R).", true);
+    return;
+  }
   CM.cartera = "predial"; CM.filas = []; CM.clases = {}; CM.iniciado = false; CM.expAcuerdos = {};
   $("cm-resultado").classList.add("hidden");
   progreso(true, "Leyendo nombres", archivos.length + " archivo(s)", 5);
@@ -1762,20 +1797,25 @@ async function cmAnalizarConvenios(archivos) {
                                     "&consecutivo=in.(" + nums.slice(i, i + 150).join(",") + ")") || [];
       filas.forEach(r => { convs[String(r.consecutivo)] = r; });
     }
-    // 2) Procesos de Predial de esas cédulas
-    const ceds = [...new Set(Object.values(convs).filter(c => c.fuente !== "ica").map(c => llaveCedula(c.cedula_deudor)).filter(Boolean))];
-    for (let i = 0; i < ceds.length; i += 60) {
-      progreso(true, "Buscando procesos por cédula", (i + 1) + " a " + Math.min(i + 60, ceds.length) + " de " + ceds.length, 50 + i / Math.max(1, ceds.length) * 40);
-      const lote = ceds.slice(i, i + 60);
-      const conds = ["id_contribuyente.in.(" + lote.join(",") + ")"]
-        .concat(lote.filter(c => c.length >= 9 && /^[89]/.test(c)).map(c => "id_contribuyente.like." + c + "-*"));
-      const filas = await supaFetch("v_exp_buscar?select=cartera,radicado,radicado_norm,contribuyente,id_contribuyente,estado_cartera,exp_id,estado_expediente,total_documentos" +
-                                    "&cartera=eq.predial&or=" + encodeURIComponent("(" + conds.join(",") + ")")) || [];
-      filas.forEach(r => {
-        const k = llaveCedula(r.id_contribuyente);
-        porCed[k] = porCed[k] || [];
-        if (!porCed[k].some(x => x.radicado === r.radicado)) porCed[k].push(r);
-      });
+    // 2) Procesos de esas cédulas: Predial para convenios de Predial, títulos ICA para los de ICA
+    const conICA = !!CARTERAS.ica;
+    for (const cart of conICA ? ["predial", "ica"] : ["predial"]) {
+      const ceds = [...new Set(Object.values(convs).filter(c => (c.fuente === "ica" ? "ica" : "predial") === cart)
+                                .map(c => llaveCedula(c.cedula_deudor)).filter(Boolean))];
+      for (let i = 0; i < ceds.length; i += 60) {
+        progreso(true, "Buscando " + (cart === "ica" ? "títulos ICA" : "procesos de Predial") + " por cédula o NIT",
+                 (i + 1) + " a " + Math.min(i + 60, ceds.length) + " de " + ceds.length, 50 + i / Math.max(1, ceds.length) * 40);
+        const lote = ceds.slice(i, i + 60);
+        const conds = ["id_contribuyente.in.(" + lote.join(",") + ")"]
+          .concat(lote.filter(c => c.length >= 9 && /^[89]/.test(c)).map(c => "id_contribuyente.like." + c + "-*"));
+        const filas = await supaFetch("v_exp_buscar?select=cartera,radicado,radicado_norm,contribuyente,id_contribuyente,estado_cartera,exp_id,estado_expediente,total_documentos" +
+                                      "&cartera=eq." + cart + "&or=" + encodeURIComponent("(" + conds.join(",") + ")")) || [];
+        filas.forEach(r => {
+          const k = cart + "|" + llaveCedula(r.id_contribuyente);
+          porCed[k] = porCed[k] || [];
+          if (!porCed[k].some(x => x.radicado === r.radicado)) porCed[k].push(r);
+        });
+      }
     }
     // 3) Expedientes de acuerdos ya creados (para no duplicar)
     const aps = nums.map(n => "AP" + n);
@@ -1800,18 +1840,20 @@ async function cmAnalizarConvenios(archivos) {
     const est = String(c.estado || "").toUpperCase();
     if (!ESTADOS_CONVENIO[est]) { f.estado = "descartado"; f.msg = "Convenio " + f.consec + " con estado «" + est + "» sin clasificar: se ignora"; return; }
     const info = "Convenio " + f.consec + " · " + ESTADOS_CONVENIO[est] + " · " + nombrePropio(c.nombre_deudor || "");
-    if (c.fuente === "ica") {
+    const cartBusca = c.fuente === "ica" ? "ica" : "predial";
+    if (c.fuente === "ica" && !CARTERAS.ica) {
       f.proc = cmProcAcuerdos(c); f.msg = info + " · convenio de ICA: va a " + (CARTERAS[f.proc.cartera] || f.proc.cartera);
     } else {
-      const todos = porCed[llaveCedula(c.cedula_deudor)] || [];
-      const activos = todos.filter(p => !["cancelado", "terminado"].includes(situacionDe(p)));
+      const todos = porCed[cartBusca + "|" + llaveCedula(c.cedula_deudor)] || [];
+      const activos = todos.filter(p => !["cancelado", "terminado"].includes(situacionDe(p)));   // "sin iniciar" cuenta como activo
       if (activos.length === 1) { f.proc = activos[0]; f.msg = info; }
       else if (activos.length > 1) {
         f.estado = "ambiguo"; f.cands = activos.sort((a, b) => ordenRadicado(a.radicado, b.radicado));
-        f.msg = info + " · la cédula tiene " + activos.length + " procesos activos";
+        f.msg = info + " · " + (cartBusca === "ica" ? "el NIT tiene " + activos.length + " títulos ICA activos" : "la cédula tiene " + activos.length + " procesos activos");
       } else {
         f.proc = cmProcAcuerdos(c);
-        f.msg = info + (todos.length ? " · sin proceso activo (terminados: " + todos.map(p => radVista(p.radicado)).join(", ") + ")" : " · sin proceso de cobro") +
+        f.msg = info + (todos.length ? " · sin " + (cartBusca === "ica" ? "título" : "proceso") + " activo (terminados: " + todos.map(p => radVista(p.radicado)).join(", ") + ")"
+                                     : (cartBusca === "ica" ? " · sin título ICA remitido" : " · sin proceso de cobro")) +
                 " · va a " + (CARTERAS[f.proc.cartera] || f.proc.cartera);
       }
     }
@@ -2282,7 +2324,7 @@ function renderEstadisticas() {
   vig.forEach(d => { const t = d.tipo_nombre || "Sin tipo"; tipos[t] = (tipos[t] || 0) + 1; });
   const tiposOrd = Object.entries(tipos).sort((a, b) => b[1] - a[1]);
 
-  const ordenSit = ["activo", "acuerdo", "cancelado", "terminado", "sin"];
+  const ordenSit = ["sin_iniciar", "activo", "acuerdo", "cancelado", "terminado", "sin"];
   $("st-cont").innerHTML = `
     <div class="st-kpis">
       <div class="card st-kpi"><div class="kpi-n">${stNum(exps.length)}</div><div class="kpi-l">expedientes digitales</div></div>
@@ -2595,14 +2637,18 @@ let AC_LISTO = false;
 
 function irVista(v) {
   VISTA = v;
-  $("vista-procesos").classList.toggle("hidden", v !== "procesos");
-  $("vista-acuerdos").classList.toggle("hidden", v !== "acuerdos");
-  $("vs-procesos").classList.toggle("active", v === "procesos");
-  $("vs-acuerdos").classList.toggle("active", v === "acuerdos");
-  $("vs-procesos").setAttribute("aria-selected", v === "procesos");
-  $("vs-acuerdos").setAttribute("aria-selected", v === "acuerdos");
+  ["procesos", "acuerdos", "ica"].forEach(k => {
+    if ($("vista-" + k)) $("vista-" + k).classList.toggle("hidden", v !== k);
+    if ($("vs-" + k)) { $("vs-" + k).classList.toggle("active", v === k); $("vs-" + k).setAttribute("aria-selected", v === k); }
+  });
+  if (v === "ica") {
+    if (typeof icaMontar === "function") icaMontar();
+    else $("vista-ica").innerHTML = '<div class="xc-vacio">Falta subir ica_titulos.js e ica_titulos.css al sitio.</div>';
+  }
   $("buscar-intro").textContent = v === "acuerdos"
     ? "Todos los convenios de pago del reporte de Recaudos desde 2020, Predial e ICA. Busca por número de convenio, cédula o nombre, y filtra por estado, año o si ya está escaneado."
+    : v === "ica"
+    ? "Los títulos ICA remitidos a la Dirección: los mismos de Seguimiento, con su gestión, responsables, alertas de prescripción y la carpeta de Drive de cada título. Lo que cambies aquí se ve igual en Seguimiento."
     : "Busca por radicado, comparendo, cédula o nombre en Predial, Obligaciones Urbanísticas y Tránsito. Si el expediente no tiene carpeta digital, créala desde el resultado; si no aparece en ninguna cartera, créala manualmente.";
   if (v === "acuerdos" && !AC_LISTO) { acPrepararAnios(); acBuscar(); }
 }
