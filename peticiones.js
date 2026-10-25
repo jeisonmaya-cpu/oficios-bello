@@ -18,6 +18,15 @@ let FESTIVOS = new Set();
 let TIPOS = [];
 let PERFILES = [];
 let BANDEJA = [];
+/* Caché de la bandeja: se reutiliza al volver a la pestaña o abrir Ctrl+K.
+   Se invalida sola con cualquier escritura (ver supaFetch) y caduca a los 2 min,
+   para ver también lo que cambian los demás. */
+let BANDEJA_TS = 0;
+const BANDEJA_TTL = 120000;
+function invalidarBandeja(){ BANDEJA_TS = 0; }
+function bandejaFresca(){ return BANDEJA.length > 0 && (Date.now() - BANDEJA_TS) < BANDEJA_TTL; }
+// RPC de solo lectura: no ensucian la caché
+const RPC_LECTURA = /^rpc\/(pet_gd_marcas|pet_gd_pendientes|pet_listar_usuarios)\b/;
 let COLA = [];
 let COLA_IDX = 0;
 let CONTADOR = 0;
@@ -124,6 +133,7 @@ async function supaFetch(path, opts){
   opts = opts || {};
   const metodo = String(opts.method || 'GET').toUpperCase();
   if(metodo !== 'GET' && metodo !== 'HEAD'){
+    if(!RPC_LECTURA.test(path)) invalidarBandeja();
     return parsearJSON(await supaPeticion(path, opts, RED.msEscritura));
   }
   const clave = path + '|' + JSON.stringify(opts.headers || {});
@@ -1081,6 +1091,30 @@ function opcionesPDF(buf){
   };
 }
 const CDN_TESS  = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+
+/* Librerías que solo se usan al generar documentos: se cargan la primera vez
+   que hacen falta, no en cada arranque. La promesa queda en caché para que
+   dos clics seguidos no inserten el script dos veces. */
+const CDN_JSZIP    = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+const CDN_JSPDF    = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+const CDN_AUTOTAB  = 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
+const LIBS = new Map();
+function cargarLib(src){
+  if(!LIBS.has(src)){
+    LIBS.set(src, new Promise(function(ok, fail){
+      const s = document.createElement('script');
+      s.src = src; s.async = true; s.onload = ok;
+      s.onerror = function(){ LIBS.delete(src); s.remove(); fail(new Error('No se pudo cargar ' + src)); };
+      document.head.appendChild(s);
+    }));
+  }
+  return LIBS.get(src);
+}
+async function asegurarJSZip(){ if(!window.JSZip) await cargarLib(CDN_JSZIP); }
+async function asegurarJsPDF(){
+  if(!(window.jspdf && window.jspdf.jsPDF)) await cargarLib(CDN_JSPDF);
+  await cargarLib(CDN_AUTOTAB);   // el plugin necesita jsPDF ya cargado
+}
 
 function cargarScript(src){
   return new Promise(function(ok, fail){
@@ -5448,7 +5482,8 @@ function cuerpoXml(parrafos){
 
 /* Motor común: descarga la plantilla, reemplaza y entrega el .docx */
 async function armarDocx(url, datos, nombreArchivo, transformar){
-  if(!window.JSZip) throw new Error('no cargó la librería del documento');
+  try{ await asegurarJSZip(); }
+  catch(e){ throw new Error('no cargó la librería del documento (revise la conexión)'); }
   // 'no-store' evita que el navegador reutilice una plantilla vieja:
   // así se puede actualizar el Word en Supabase sin tocar el código.
   const res = await fetch(url, { cache: 'no-store' });
@@ -6315,18 +6350,17 @@ async function abrirBuscador(){
   inp.value = '';
   BG_RES = []; BG_SEL = 0;
   // Si la bandeja aún no está en memoria, la traemos una sola vez.
-  if(!BANDEJA.length && !BG_CARGANDO){
+  if(!bandejaFresca() && !BG_CARGANDO){
     BG_CARGANDO = true;
     pintarBuscador('cargando');
     try{
       try{
-        BANDEJA = await supaFetchTodo('v_pet_bandeja_tutela?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
-        '&order=fecha_limite.asc&limit=1000');
+        BANDEJA = await traerTodo('v_pet_bandeja_tutela');
       }catch(e){
         if(!esFaltaVista(e)) throw e;
-        BANDEJA = await supaFetchTodo('v_pet_bandeja?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)' +
-        '&order=fecha_limite.asc&limit=1000');
+        BANDEJA = await traerTodo('v_pet_bandeja');
       }
+      BANDEJA_TS = Date.now();
     }catch(err){}
     BG_CARGANDO = false;
   }
@@ -6453,10 +6487,25 @@ function irABandejaCon(rad){
   }, 350);
 }
 
-async function cargarBandeja(){
+function msgBandejaCargada(msg){
+  const seg = Math.round((Date.now() - BANDEJA_TS) / 1000);
+  msg.className = 'msg';
+  msg.innerHTML = BANDEJA.length + ' peticiones abiertas · ' +
+    (seg < 10 ? 'recién cargadas' : 'cargadas hace ' + (seg < 60 ? seg + ' s' : Math.round(seg / 60) + ' min')) +
+    ' <button class="btn btn-ghost" style="padding:4px 11px;font-size:var(--t-micro);margin-left:8px" ' +
+    'onclick="cargarBandeja(true)">Actualizar</button>';
+}
+
+async function cargarBandeja(forzar){
   const msg = document.getElementById('b-msg');
-  msg.className = 'msg'; msg.textContent = 'Cargando…';
   restaurarFiltros();
+  if(!forzar && bandejaFresca()){
+    poblarFiltroAbogados();
+    renderBandeja();
+    msgBandejaCargada(msg);
+    return;
+  }
+  msg.className = 'msg'; msg.textContent = 'Cargando…';
   try{
     let vista = 'v_pet_bandeja_tutela';
     try{
@@ -6466,8 +6515,8 @@ async function cargarBandeja(){
       vista = 'v_pet_bandeja';
       BANDEJA = await traerTodo(vista, msg);
     }
-    msg.className = 'msg';
-    msg.textContent = BANDEJA.length + ' peticiones abiertas cargadas.';
+    BANDEJA_TS = Date.now();
+    msgBandejaCargada(msg);
     poblarFiltroAbogados();
     renderBandeja();
   }catch(err){
@@ -7562,12 +7611,15 @@ function exportarHistCSV(){
 }
 
 /* ── Informe institucional en PDF ── */
-function informePDF(){
+async function informePDF(){
   const msg = document.getElementById('h-msg');
-  if(!window.jspdf || !window.jspdf.jsPDF){
-    msg.className = 'msg err'; msg.textContent = 'No cargó la librería del PDF. Revise la conexión y recargue.';
+  msg.className = 'msg'; msg.textContent = 'Preparando el PDF…';
+  try{ await asegurarJsPDF(); }
+  catch(e){
+    msg.className = 'msg err'; msg.textContent = 'No cargó la librería del PDF. Revise la conexión e intente de nuevo.';
     return;
   }
+  msg.textContent = '';
   const rows = filtrarHist();
   if(!rows.length){
     msg.className = 'msg err'; msg.textContent = 'No hay datos en el filtro para el informe.';
@@ -8340,9 +8392,10 @@ async function cargarTablero(){
   esqueletoBloque('t-aging');
 
   // ── Fase 1 ──
-  const [rRes, rProd] = await Promise.all([
+  const [rRes, rProd, rTras] = await Promise.all([
     resultado(supaFetch('v_pet_resumen?select=*')),
-    resultado(supaFetch('v_pet_productividad?select=*'))
+    resultado(supaFetch('v_pet_productividad?select=*')),
+    resultado(supaFetch('v_pet_trasladadas_abogado?select=asignado_a,trasladadas'))
   ]);
   if(!vigente()) return;
 
@@ -8352,6 +8405,14 @@ async function cargarTablero(){
          '<div style="grid-column:1/-1">' + cajaError('No se pudo cargar el resumen', rRes.e, 'cargarTablero()') + '</div>';
 
   const prod = rProd.ok ? (rProd.v || []) : [];
+  // Trasladadas por id de abogado (vista SQL). Si la vista aún no existe,
+  // se cuentan por nombre en la fase 2, como antes.
+  const trasSQL = rTras.ok;
+  if(trasSQL){
+    const tm = {};
+    (rTras.v || []).forEach(function(t){ tm[t.asignado_a] = Number(t.trasladadas || 0); });
+    prod.forEach(function(p){ p.trasladadas = p.asignado_a ? (tm[p.asignado_a] || 0) : 0; });
+  }
   if(rProd.ok) pintarProd(prod);
   else document.getElementById('t-prod').innerHTML =
          filaError(10, 'No se pudo cargar la productividad', rProd.e, 'cargarTablero()');
@@ -8375,7 +8436,7 @@ async function cargarTablero(){
 
   // Trasladadas por abogada, contadas de la misma bandeja
   const todas = rTodas.ok ? (rTodas.v || []) : null;
-  if(todas){
+  if(todas && !trasSQL){
     const trMap = {};
     todas.forEach(function(r){
       if(r.estado !== 'TRASLADADA' || !r.asignado_nombre) return;
@@ -9105,6 +9166,7 @@ function iniciarTiempoReal(){
               if(RT_VISTOS.has(n.id)) return;
               if(COLA.some(function(c){ return c.id === n.id; })) return;
               RT_VISTOS.add(n.id);
+              invalidarBandeja();
               avisoAsignacion(n);
             })
         .subscribe();
