@@ -8309,25 +8309,69 @@ function renderProd(){
   body.innerHTML = prod.length ? prod.map(function(p){
     const pj = p.pct_termino_justo;
     const colPj = pj == null ? 'var(--muted)' : pj >= 90 ? 'var(--verde)' : pj >= 70 ? 'var(--gold)' : 'var(--rojo)';
-    return '<tr><td><b>' + esc(p.abogado) + '</b></td><td>' + p.asignadas + '</td>' +
-      '<td>' + p.pendientes + '</td><td>' + p.proyectadas + '</td><td>' + p.radicadas + '</td>' +
+    const pend = Number(p.pendientes || 0);
+    const sobre = p.asignado_a ? pend - META_PENDIENTES : 0;
+    const av = p.pct_avance == null ? null : Number(p.pct_avance);
+    return '<tr><td><b>' + esc(p.abogado) + '</b>' + chipsProd(p) + '</td><td>' + p.asignadas + '</td>' +
+      '<td class="' + (!p.asignado_a ? '' : sobre > 0 ? 'meta-mal' : 'meta-ok') + '" title="' +
+        (!p.asignado_a ? '' : sobre > 0 ? sobre + ' sobre la meta de ' + META_PENDIENTES : 'Dentro de la meta de ' + META_PENDIENTES) + '">' +
+        pend + (p.asignado_a && sobre > 0 ? '<span class="meta-exc">+' + sobre + '</span>' : '') + '</td>' +
+      '<td>' + p.proyectadas + '</td><td>' + p.radicadas + '</td>' +
       '<td style="color:var(--gold2)" title="Remitidas por competencia">' + trTxt(p) + '</td>' +
       '<td style="color:var(--morado)" title="Llegaron vencidas: atraso heredado">' +
         (p.recibidas_vencidas || 0) + '</td>' +
       '<td><b>' + (p.dias_en_manos == null ? '—' : p.dias_en_manos) + '</b></td>' +
       '<td style="color:' + colPj + '"><b>' + (pj == null ? '—' : pj + '%') + '</b></td>' +
-      '<td><b style="color:var(--gold)">' + (p.pct_avance == null ? '—' : p.pct_avance + '%') + '</b></td></tr>';
+      '<td>' + (av == null ? '—' :
+        '<div class="av-celda"><b style="color:var(--gold)">' + av + '%</b>' +
+        '<span class="av-barra"><i style="width:' + Math.min(Math.max(av, 0), 100) + '%"></i></span></div>') +
+      '</td></tr>';
   }).join('') : '<tr><td colspan="10">Sin datos.</td></tr>';
 
   if(!foot) return;
   if(!prod.length){ foot.innerHTML = ''; return; }
 
-  // ── Fila de totales ──
+  const t = totalesProd(prod);
+  const colPjT = t.pj == null ? 'var(--muted)' : t.pj >= 90 ? 'var(--verde)' : t.pj >= 70 ? 'var(--gold)' : 'var(--rojo)';
+  foot.innerHTML = '<tr class="fila-total">' +
+    '<td><b>TOTAL</b></td><td><b>' + t.asig + '</b></td>' +
+    '<td title="' + t.sobreMeta + ' de ' + t.conAbogado + ' abogados por encima de ' + META_PENDIENTES + ' pendientes"><b>' + t.pend + '</b>' +
+      (t.sobreMeta ? '<span class="meta-exc">' + t.sobreMeta + '/' + t.conAbogado + ' sobre la meta</span>' : '') + '</td>' +
+    '<td><b>' + t.proy + '</b></td><td><b>' + t.rad + '</b></td>' +
+    '<td style="color:var(--gold2)"><b>' + (t.tras == null ? '…' : t.tras) + '</b></td>' +
+    '<td style="color:var(--morado)"><b>' + t.venc + '</b></td>' +
+    '<td title="Promedio ponderado por asignadas"><b>' + (t.dias == null ? '—' : t.dias) + '</b></td>' +
+    '<td style="color:' + colPjT + '" title="Promedio ponderado por lo resuelto"><b>' +
+      (t.pj == null ? '—' : t.pj + '%') + '</b></td>' +
+    '<td><b style="color:var(--gold)">' + (t.av == null ? '—' : t.av + '%') + '</b></td></tr>';
+}
+
+/* Meta de carga por profesional: pendientes por abogado.
+   Cambie el número aquí si la Dirección fija otra meta. */
+const META_PENDIENTES = 100;
+
+/* Señales automáticas junto al nombre */
+function chipsProd(p){
+  if(!p.asignado_a) return '';
+  const asig = Number(p.asignadas || 0);
+  const hecho = Number(p.radicadas || 0) + Number(p.proyectadas || 0) + Number(p.trasladadas || 0);
+  const her = Number(p.recibidas_vencidas || 0);
+  let h = '';
+  if(asig >= 30 && hecho === 0)
+    h += '<span class="chip-prod chip-rojo" title="Tiene ' + asig + ' asignadas y ninguna proyectada, radicada ni trasladada">Sin avance</span>';
+  if(asig && her / asig >= 0.3)
+    h += '<span class="chip-prod chip-morado" title="' + Math.round(her / asig * 100) +
+         '% de lo que recibió ya llegó vencido: su término se ve afectado por atraso heredado">Atraso heredado</span>';
+  return h;
+}
+
+function totalesProd(prod){
   const suma = function(c){ return prod.reduce(function(a, p){ return a + Number(p[c] || 0); }, 0); };
-  const asig = suma('asignadas'), pend = suma('pendientes'), proy = suma('proyectadas'),
-        rad  = suma('radicadas'), venc = suma('recibidas_vencidas');
-  const trListo = prod.every(function(p){ return p.trasladadas != null; });
-  const tras = trListo ? suma('trasladadas') : null;
+  const t = {
+    asig: suma('asignadas'), pend: suma('pendientes'), proy: suma('proyectadas'),
+    rad: suma('radicadas'), venc: suma('recibidas_vencidas')
+  };
+  t.tras = prod.every(function(p){ return p.trasladadas != null; }) ? suma('trasladadas') : null;
 
   // Días en sus manos: promedio ponderado por asignadas (solo quien tiene dato)
   let pesoD = 0, accD = 0;
@@ -8336,7 +8380,7 @@ function renderProd(){
     const w = Number(p.asignadas || 0);
     pesoD += w; accD += Number(p.dias_en_manos) * w;
   });
-  const diasTot = pesoD ? Math.round(accD / pesoD * 10) / 10 : null;
+  t.dias = pesoD ? Math.round(accD / pesoD * 10) / 10 : null;
 
   // % a término justo: promedio ponderado por lo resuelto (radicadas + proyectadas)
   let pesoT = 0, accT = 0;
@@ -8345,21 +8389,42 @@ function renderProd(){
     const w = Number(p.radicadas || 0) + Number(p.proyectadas || 0);
     pesoT += w; accT += Number(p.pct_termino_justo) * w;
   });
-  const pjTot = pesoT ? Math.round(accT / pesoT * 10) / 10 : null;
-  const colPjT = pjTot == null ? 'var(--muted)' : pjTot >= 90 ? 'var(--verde)' : pjTot >= 70 ? 'var(--gold)' : 'var(--rojo)';
+  t.pj = pesoT ? Math.round(accT / pesoT * 10) / 10 : null;
 
   // Avance: misma fórmula que la vista, (radicadas + proyectadas) / asignadas
-  const avTot = asig ? Math.round((rad + proy) / asig * 1000) / 10 : null;
+  t.av = t.asig ? Math.round((t.rad + t.proy) / t.asig * 1000) / 10 : null;
 
-  foot.innerHTML = '<tr class="fila-total">' +
-    '<td><b>TOTAL</b></td><td><b>' + asig + '</b></td><td><b>' + pend + '</b></td>' +
-    '<td><b>' + proy + '</b></td><td><b>' + rad + '</b></td>' +
-    '<td style="color:var(--gold2)"><b>' + (tras == null ? '…' : tras) + '</b></td>' +
-    '<td style="color:var(--morado)"><b>' + venc + '</b></td>' +
-    '<td title="Promedio ponderado por asignadas"><b>' + (diasTot == null ? '—' : diasTot) + '</b></td>' +
-    '<td style="color:' + colPjT + '" title="Promedio ponderado por lo resuelto"><b>' +
-      (pjTot == null ? '—' : pjTot + '%') + '</b></td>' +
-    '<td><b style="color:var(--gold)">' + (avTot == null ? '—' : avTot + '%') + '</b></td></tr>';
+  const conAb = prod.filter(function(p){ return p.asignado_a; });
+  t.conAbogado = conAb.length;
+  t.sobreMeta = conAb.filter(function(p){ return Number(p.pendientes || 0) > META_PENDIENTES; }).length;
+  return t;
+}
+
+/* Exporta la tabla tal como se ve (mismo orden) con la fila de totales.
+   Separador ; y BOM para que Excel en español la abra bien. */
+function exportarProdCSV(){
+  const prod = filasProdOrdenadas();
+  if(!prod.length){ toast('No hay datos para exportar.', 'err'); return; }
+  const num = function(v){ return v == null ? '' : String(v).replace('.', ','); };
+  const cel = function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+  const cab = ['Abogado','Asignadas','Pendientes','Sobre la meta','Proyectadas','Con radicado','Trasladadas',
+               'Recibidas vencidas','Días en sus manos','% a término justo','Avance %','Señales'];
+  const lin = prod.map(function(p){
+    const sobre = p.asignado_a ? Math.max(Number(p.pendientes || 0) - META_PENDIENTES, 0) : '';
+    const senales = chipsProd(p).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return [cel(p.abogado), p.asignadas, p.pendientes, sobre, p.proyectadas, p.radicadas,
+            p.trasladadas == null ? '' : p.trasladadas, p.recibidas_vencidas || 0,
+            num(p.dias_en_manos), num(p.pct_termino_justo), num(p.pct_avance), cel(senales)].join(';');
+  });
+  const t = totalesProd(prod);
+  lin.push([cel('TOTAL'), t.asig, t.pend, t.sobreMeta + ' abogados', t.proy, t.rad,
+            t.tras == null ? '' : t.tras, t.venc, num(t.dias), num(t.pj), num(t.av), ''].join(';'));
+  const csv = '\uFEFF' + cab.map(cel).join(';') + '\n' + lin.join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8;' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'productividad_abogados_' + iso(new Date()) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
 }
 
 function pintarKpis(r){
@@ -8418,13 +8483,28 @@ async function cargarTablero(){
          filaError(10, 'No se pudo cargar la productividad', rProd.e, 'cargarTablero()');
 
   // ── Fase 2 ──
-  const [rRad, rTodas] = await Promise.all([
+  // Alertas, flujo y antigüedad salen ya contados de v_pet_tablero_agg
+  // (una fila). Antes se descargaba la bandeja entera, de todos los estados,
+  // en páginas de 1000 que recalculaban la vista cada una.
+  const [rRad, rAgg] = await Promise.all([
     resultado(supaFetch('v_pet_radicacion?select=*')),
-    resultado(supaFetchTodo('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
-      'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,' +
-      'pendiente_notificacion,dias_sin_entregar,asignado_nombre&order=id.asc'))
+    resultado(supaFetch('v_pet_tablero_agg?select=*'))
   ]);
   if(!vigente()) return;
+
+  const agg = (rAgg.ok && rAgg.v && rAgg.v[0]) ? rAgg.v[0] : null;
+  const faltaAgg = !rAgg.ok && esFaltaVista(rAgg.e);
+
+  // Descarga completa solo como respaldo: si falta la vista agregada
+  // o la de trasladadas (SQL sin ejecutar todavía).
+  let todas = null, rTodas = null;
+  if(faltaAgg || !trasSQL){
+    rTodas = await resultado(supaFetchTodo('v_pet_bandeja?select=id,estado,semaforo,dias_restantes,' +
+      'fecha_radicado,fecha_proyeccion,fecha_respuesta,dias_esperando_radicado,' +
+      'pendiente_notificacion,dias_sin_entregar,asignado_nombre&order=id.asc'));
+    if(!vigente()) return;
+    todas = rTodas.ok ? (rTodas.v || []) : null;
+  }
 
   // Radicación
   if(rRad.ok) pintarRadicacion(rRad.v || []);
@@ -8434,8 +8514,7 @@ async function cargarTablero(){
     const tot = document.getElementById('t-rad-tot'); if(tot) tot.textContent = '';
   }
 
-  // Trasladadas por abogada, contadas de la misma bandeja
-  const todas = rTodas.ok ? (rTodas.v || []) : null;
+  // Trasladadas por nombre (respaldo si falta la vista SQL)
   if(todas && !trasSQL){
     const trMap = {};
     todas.forEach(function(r){
@@ -8447,12 +8526,14 @@ async function cargarTablero(){
   }
   if(rProd.ok) pintarTarjetas(prod, rRad.ok ? (rRad.v || []) : [], res);
 
-  if(todas){
-    pintarAlertas(todas);
-    pintarFlujo(todas);
-    pintarAging(todas);
+  const datos = agg || (faltaAgg ? todas : null);
+  if(datos){
+    pintarAlertas(datos);
+    pintarFlujo(datos);
+    pintarAging(datos);
   }else{
-    const err = cajaError('No se pudo cargar la bandeja completa', rTodas.e, 'cargarTablero()');
+    const e2 = agg === null && !faltaAgg ? rAgg.e : (rTodas ? rTodas.e : rAgg.e);
+    const err = cajaError('No se pudieron cargar los indicadores del tablero', e2, 'cargarTablero()');
     document.getElementById('t-flujo').innerHTML = err;
     document.getElementById('t-aging').innerHTML = err;
     const pr = document.getElementById('t-proyeccion'); if(pr) pr.textContent = '';
@@ -8692,20 +8773,29 @@ function kpiT(lbl, val, col){
 }
 
 /* ── Alertas accionables ── */
+/* Recibe las filas de la bandeja (respaldo) o la fila de v_pet_tablero_agg */
 function pintarAlertas(rows){
-  const abiertas = rows.filter(function(r){
-    return ['PENDIENTE','ASIGNADA','EN_TRAMITE'].indexOf(r.estado) !== -1;
-  });
-  const vencidas   = abiertas.filter(function(r){ return r.dias_restantes !== null && r.dias_restantes < 0; });
-  const estaSemana = abiertas.filter(function(r){ return r.dias_restantes !== null && r.dias_restantes >= 0 && r.dias_restantes <= 5; });
-  const trabadas   = rows.filter(function(r){ return r.estado === 'PROYECTADA' && r.dias_esperando_radicado > 5; });
-  const sinEntregar = rows.filter(function(r){ return r.pendiente_notificacion === true && r.dias_sin_entregar > 3; });
+  let nVenc, nSem, nTrab, nSinEnt;
+  if(Array.isArray(rows)){
+    const abiertas = rows.filter(function(r){
+      return ['PENDIENTE','ASIGNADA','EN_TRAMITE'].indexOf(r.estado) !== -1;
+    });
+    nVenc   = abiertas.filter(function(r){ return r.dias_restantes !== null && r.dias_restantes < 0; }).length;
+    nSem    = abiertas.filter(function(r){ return r.dias_restantes !== null && r.dias_restantes >= 0 && r.dias_restantes <= 5; }).length;
+    nTrab   = rows.filter(function(r){ return r.estado === 'PROYECTADA' && r.dias_esperando_radicado > 5; }).length;
+    nSinEnt = rows.filter(function(r){ return r.pendiente_notificacion === true && r.dias_sin_entregar > 3; }).length;
+  }else{
+    nVenc   = Number(rows.al_vencidas || 0);
+    nSem    = Number(rows.al_semana || 0);
+    nTrab   = Number(rows.al_trabadas || 0);
+    nSinEnt = Number(rows.al_sin_entregar || 0);
+  }
 
   const items = [];
-  if(vencidas.length)   items.push(['var(--rojo)',    vencidas.length + ' vencidas sin proyectar', 'Riesgo de tutela y desacato. Atiéndalas primero.']);
-  if(estaSemana.length) items.push(['var(--naranja)', estaSemana.length + ' vencen en 5 días hábiles o menos', 'Todavía se alcanzan a responder a término.']);
-  if(trabadas.length)   items.push(['var(--morado)',  trabadas.length + ' proyectadas esperando radicado hace más de 5 días', 'La demora está en Gestión Documental, no en las abogadas.']);
-  if(sinEntregar.length) items.push(['var(--tramite)',   sinEntregar.length + ' radicadas sin entregar al notificador', 'La respuesta existe pero no ha salido. Revisar con quien lleva los oficios.']);
+  if(nVenc)   items.push(['var(--rojo)',    nVenc + ' vencidas sin proyectar', 'Riesgo de tutela y desacato. Atiéndalas primero.']);
+  if(nSem)    items.push(['var(--naranja)', nSem + ' vencen en 5 días hábiles o menos', 'Todavía se alcanzan a responder a término.']);
+  if(nTrab)   items.push(['var(--morado)',  nTrab + ' proyectadas esperando radicado hace más de 5 días', 'La demora está en Gestión Documental, no en las abogadas.']);
+  if(nSinEnt) items.push(['var(--tramite)', nSinEnt + ' radicadas sin entregar al notificador', 'La respuesta existe pero no ha salido. Revisar con quien lleva los oficios.']);
 
   const cont = document.getElementById('t-alertas');
   if(!items.length){
@@ -8731,27 +8821,40 @@ function lunesDe(fechaIso){
 }
 
 function pintarFlujo(rows){
-  const semanas = [];
-  const hoy = new Date();
-  for(let i = 7; i >= 0; i--){
-    const d = new Date(hoy);
-    d.setDate(d.getDate() - i * 7);
-    semanas.push(lunesDe(iso(d)));
-  }
+  let semanas = [];
   const ent = {}, res = {};
-  semanas.forEach(function(s){ ent[s] = 0; res[s] = 0; });
-
-  rows.forEach(function(r){
-    if(r.fecha_radicado){
-      const s = lunesDe(String(r.fecha_radicado).slice(0,10));
-      if(s in ent) ent[s]++;
+  let abiertas;
+  if(Array.isArray(rows)){
+    const hoy = new Date();
+    for(let i = 7; i >= 0; i--){
+      const d = new Date(hoy);
+      d.setDate(d.getDate() - i * 7);
+      semanas.push(lunesDe(iso(d)));
     }
-    const cierre = r.fecha_proyeccion || r.fecha_respuesta;
-    if(cierre){
-      const s = lunesDe(String(cierre).slice(0,10));
-      if(s in res) res[s]++;
-    }
-  });
+    semanas.forEach(function(s){ ent[s] = 0; res[s] = 0; });
+    rows.forEach(function(r){
+      if(r.fecha_radicado){
+        const s = lunesDe(String(r.fecha_radicado).slice(0,10));
+        if(s in ent) ent[s]++;
+      }
+      const cierre = r.fecha_proyeccion || r.fecha_respuesta;
+      if(cierre){
+        const s = lunesDe(String(cierre).slice(0,10));
+        if(s in res) res[s]++;
+      }
+    });
+    abiertas = rows.filter(function(r){
+      return ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(r.estado) !== -1;
+    }).length;
+  }else{
+    (rows.flujo || []).forEach(function(f){
+      const s = String(f.semana).slice(0,10);
+      semanas.push(s);
+      ent[s] = Number(f.entran || 0);
+      res[s] = Number(f.resueltas || 0);
+    });
+    abiertas = Number(rows.abiertas_flujo || 0);
+  }
 
   let tope = 1;
   semanas.forEach(function(s){ tope = Math.max(tope, ent[s], res[s]); });
@@ -8771,9 +8874,6 @@ function pintarFlujo(rows){
   // Proyección: ritmo de las últimas 4 semanas contra lo que queda abierto
   const ult4 = semanas.slice(-4).reduce(function(a, s){ return a + res[s]; }, 0);
   const ritmo = ult4 / 4;
-  const abiertas = rows.filter(function(r){
-    return ['PENDIENTE','ASIGNADA','EN_TRAMITE','PROYECTADA'].indexOf(r.estado) !== -1;
-  }).length;
   const entra4 = semanas.slice(-4).reduce(function(a, s){ return a + ent[s]; }, 0) / 4;
   const neto = ritmo - entra4;
   const el = document.getElementById('t-proyeccion');
@@ -8803,10 +8903,13 @@ function barra(valor, tope, color){
 
 /* ── Antigüedad del represamiento (barras como % del total abierto) ── */
 function pintarAging(rows){
-  const abiertas = rows.filter(function(r){
+  const esLista = Array.isArray(rows);
+  const abiertas = esLista ? rows.filter(function(r){
     return ['PENDIENTE','ASIGNADA','EN_TRAMITE'].indexOf(r.estado) !== -1;
-  });
-  const hoyIso = iso(new Date());
+  }) : [];
+  // Mismo orden que los rangos de abajo
+  const desdeAgg = esLista ? null :
+    [rows.ag_90, rows.ag_61_90, rows.ag_31_60, rows.ag_1_30, rows.ag_termino].map(Number);
   const rangos = [
     ['Vencidas hace más de 90 días', function(d){ return d > 90; },              'var(--rojo)'],
     ['Vencidas 61 a 90 días',        function(d){ return d > 60 && d <= 90; },   'var(--rojo)'],
@@ -8814,15 +8917,15 @@ function pintarAging(rows){
     ['Vencidas 1 a 30 días',         function(d){ return d > 0 && d <= 30; },    'var(--naranja)'],
     ['Aún dentro del término',       function(d){ return d <= 0; },              'var(--verde)']
   ];
-  const total = abiertas.length;
+  const total = esLista ? abiertas.length : Number(rows.ag_total || 0);
   const cont = document.getElementById('t-aging');
   if(!total){ cont.innerHTML = '<span style="color:var(--muted);font-size:13px">No hay peticiones abiertas.</span>'; return; }
 
-  cont.innerHTML = rangos.map(function(r){
-    const n = abiertas.filter(function(x){
+  cont.innerHTML = rangos.map(function(r, i){
+    const n = esLista ? abiertas.filter(function(x){
       const d = x.dias_restantes === null ? 0 : -x.dias_restantes;
       return r[1](d);
-    }).length;
+    }).length : (desdeAgg[i] || 0);
     const pct = Math.round(n / total * 100);
     return '<div style="margin-bottom:10px">' +
       '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px">' +
