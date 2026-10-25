@@ -8166,18 +8166,148 @@ function esqueletoBloque(id){
                         '<div class="esq esq-lin" style="width:72%"></div>';
 }
 
+/* ── Productividad por abogado: columna de trasladadas, fila de totales y orden ──
+   «mejor» depende de la columna: en avance y % a término, más es mejor;
+   en pendientes, días en sus manos y recibidas vencidas, menos es mejor.
+   «Sin asignar» (sin asignado_a) siempre va al final; los vacíos (—), al final. */
+let PROD_DATA = [];
+let PROD_ORDEN = { k: '', peorPrimero: true };
+const PROD_MENOS_ES_MEJOR = { pendientes:1, dias_en_manos:1, recibidas_vencidas:1 };
+
 function pintarProd(prod){
-  document.getElementById('t-prod').innerHTML = prod.length ? prod.map(function(p){
+  PROD_DATA = prod || [];
+  const cab = document.getElementById('t-prod-cab');
+  if(cab && !cab._ordenListo){
+    cab._ordenListo = true;
+    cab.querySelectorAll('th[data-k]').forEach(function(th){
+      th.style.cursor = 'pointer';
+      th.addEventListener('click', function(){
+        const k = th.getAttribute('data-k');
+        if(PROD_ORDEN.k === k) PROD_ORDEN.peorPrimero = !PROD_ORDEN.peorPrimero;
+        else { PROD_ORDEN.k = k; PROD_ORDEN.peorPrimero = true; }
+        renderProd();
+      });
+    });
+  }
+  renderProd();
+}
+
+function ordenarProd(k){
+  PROD_ORDEN.k = k || '';
+  PROD_ORDEN.peorPrimero = true;
+  renderProd();
+}
+
+function invertirProd(){
+  if(!PROD_ORDEN.k){ PROD_ORDEN.k = 'pct_avance'; PROD_ORDEN.peorPrimero = true; }
+  else PROD_ORDEN.peorPrimero = !PROD_ORDEN.peorPrimero;
+  renderProd();
+}
+
+function filasProdOrdenadas(){
+  const k = PROD_ORDEN.k;
+  const filas = PROD_DATA.slice();
+  if(!k) return filas;
+  // Valor «de bondad»: más alto = mejor, para cualquier columna
+  const val = function(p){
+    if(k === 'abogado') return null;
+    const v = p[k];
+    if(v == null || v === '') return null;
+    const n = Number(v);
+    return PROD_MENOS_ES_MEJOR[k] ? -n : n;
+  };
+  return filas.sort(function(a, b){
+    // «Sin asignar» siempre al final
+    const sa = a.asignado_a ? 0 : 1, sb = b.asignado_a ? 0 : 1;
+    if(sa !== sb) return sa - sb;
+    if(k === 'abogado'){
+      const c = String(a.abogado || '').localeCompare(String(b.abogado || ''), 'es', { sensitivity:'base' });
+      return PROD_ORDEN.peorPrimero ? c : -c;   // A→Z / Z→A
+    }
+    const va = val(a), vb = val(b);
+    if(va == null && vb == null) return 0;
+    if(va == null) return 1;
+    if(vb == null) return -1;
+    return PROD_ORDEN.peorPrimero ? va - vb : vb - va;
+  });
+}
+
+function renderProd(){
+  const body = document.getElementById('t-prod');
+  const foot = document.getElementById('t-prod-tot');
+  const k = PROD_ORDEN.k;
+
+  // Controles
+  const sel = document.getElementById('prod-k');
+  if(sel) sel.value = k;
+  const dir = document.getElementById('prod-dir');
+  if(dir) dir.textContent = k === 'abogado'
+    ? (PROD_ORDEN.peorPrimero ? 'A → Z' : 'Z → A')
+    : (PROD_ORDEN.peorPrimero ? 'Peor → mejor' : 'Mejor → peor');
+  const cab = document.getElementById('t-prod-cab');
+  if(cab) cab.querySelectorAll('th[data-k]').forEach(function(th){
+    const activo = th.getAttribute('data-k') === k;
+    th.classList.toggle('th-orden', activo);
+    th.setAttribute('data-flecha', activo ? (PROD_ORDEN.peorPrimero ? '▲' : '▼') : '');
+  });
+
+  const prod = filasProdOrdenadas();
+  const trTxt = function(p){ return p.trasladadas == null ? '…' : p.trasladadas; };
+
+  body.innerHTML = prod.length ? prod.map(function(p){
     const pj = p.pct_termino_justo;
     const colPj = pj == null ? 'var(--muted)' : pj >= 90 ? 'var(--verde)' : pj >= 70 ? 'var(--gold)' : 'var(--rojo)';
     return '<tr><td><b>' + esc(p.abogado) + '</b></td><td>' + p.asignadas + '</td>' +
       '<td>' + p.pendientes + '</td><td>' + p.proyectadas + '</td><td>' + p.radicadas + '</td>' +
+      '<td style="color:var(--gold2)" title="Remitidas por competencia">' + trTxt(p) + '</td>' +
       '<td style="color:var(--morado)" title="Llegaron vencidas: atraso heredado">' +
         (p.recibidas_vencidas || 0) + '</td>' +
       '<td><b>' + (p.dias_en_manos == null ? '—' : p.dias_en_manos) + '</b></td>' +
       '<td style="color:' + colPj + '"><b>' + (pj == null ? '—' : pj + '%') + '</b></td>' +
       '<td><b style="color:var(--gold)">' + (p.pct_avance == null ? '—' : p.pct_avance + '%') + '</b></td></tr>';
-  }).join('') : '<tr><td colspan="9">Sin datos.</td></tr>';
+  }).join('') : '<tr><td colspan="10">Sin datos.</td></tr>';
+
+  if(!foot) return;
+  if(!prod.length){ foot.innerHTML = ''; return; }
+
+  // ── Fila de totales ──
+  const suma = function(c){ return prod.reduce(function(a, p){ return a + Number(p[c] || 0); }, 0); };
+  const asig = suma('asignadas'), pend = suma('pendientes'), proy = suma('proyectadas'),
+        rad  = suma('radicadas'), venc = suma('recibidas_vencidas');
+  const trListo = prod.every(function(p){ return p.trasladadas != null; });
+  const tras = trListo ? suma('trasladadas') : null;
+
+  // Días en sus manos: promedio ponderado por asignadas (solo quien tiene dato)
+  let pesoD = 0, accD = 0;
+  prod.forEach(function(p){
+    if(p.dias_en_manos == null || !p.asignado_a) return;
+    const w = Number(p.asignadas || 0);
+    pesoD += w; accD += Number(p.dias_en_manos) * w;
+  });
+  const diasTot = pesoD ? Math.round(accD / pesoD * 10) / 10 : null;
+
+  // % a término justo: promedio ponderado por lo resuelto (radicadas + proyectadas)
+  let pesoT = 0, accT = 0;
+  prod.forEach(function(p){
+    if(p.pct_termino_justo == null) return;
+    const w = Number(p.radicadas || 0) + Number(p.proyectadas || 0);
+    pesoT += w; accT += Number(p.pct_termino_justo) * w;
+  });
+  const pjTot = pesoT ? Math.round(accT / pesoT * 10) / 10 : null;
+  const colPjT = pjTot == null ? 'var(--muted)' : pjTot >= 90 ? 'var(--verde)' : pjTot >= 70 ? 'var(--gold)' : 'var(--rojo)';
+
+  // Avance: misma fórmula que la vista, (radicadas + proyectadas) / asignadas
+  const avTot = asig ? Math.round((rad + proy) / asig * 1000) / 10 : null;
+
+  foot.innerHTML = '<tr class="fila-total">' +
+    '<td><b>TOTAL</b></td><td><b>' + asig + '</b></td><td><b>' + pend + '</b></td>' +
+    '<td><b>' + proy + '</b></td><td><b>' + rad + '</b></td>' +
+    '<td style="color:var(--gold2)"><b>' + (tras == null ? '…' : tras) + '</b></td>' +
+    '<td style="color:var(--morado)"><b>' + venc + '</b></td>' +
+    '<td title="Promedio ponderado por asignadas"><b>' + (diasTot == null ? '—' : diasTot) + '</b></td>' +
+    '<td style="color:' + colPjT + '" title="Promedio ponderado por lo resuelto"><b>' +
+      (pjTot == null ? '—' : pjTot + '%') + '</b></td>' +
+    '<td><b style="color:var(--gold)">' + (avTot == null ? '—' : avTot + '%') + '</b></td></tr>';
 }
 
 function pintarKpis(r){
@@ -8224,7 +8354,7 @@ async function cargarTablero(){
   const prod = rProd.ok ? (rProd.v || []) : [];
   if(rProd.ok) pintarProd(prod);
   else document.getElementById('t-prod').innerHTML =
-         filaError(9, 'No se pudo cargar la productividad', rProd.e, 'cargarTablero()');
+         filaError(10, 'No se pudo cargar la productividad', rProd.e, 'cargarTablero()');
 
   // ── Fase 2 ──
   const [rRad, rTodas] = await Promise.all([
@@ -8252,6 +8382,7 @@ async function cargarTablero(){
       trMap[r.asignado_nombre] = (trMap[r.asignado_nombre] || 0) + 1;
     });
     prod.forEach(function(p){ p.trasladadas = trMap[p.abogado] || 0; });
+    if(rProd.ok) renderProd();
   }
   if(rProd.ok) pintarTarjetas(prod, rRad.ok ? (rRad.v || []) : [], res);
 

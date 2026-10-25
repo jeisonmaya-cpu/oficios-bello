@@ -15,7 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<link rel="stylesheet" href="peticiones.css?v=5">
+<link rel="stylesheet" href="peticiones.css?v=6">
 </head>
 <body>
 
@@ -570,23 +570,47 @@
     </div>
 
     <div class="card">
-      <div class="lbl" style="margin-bottom:12px">Productividad por abogado</div>
+      <div class="prod-cab">
+        <div class="lbl">Productividad por abogado</div>
+        <div class="prod-orden">
+          <label class="lbl" for="prod-k">Ordenar por</label>
+          <select id="prod-k" onchange="ordenarProd(this.value)">
+            <option value="">Como viene</option>
+            <option value="pct_avance">Avance</option>
+            <option value="pct_termino_justo">% a término justo</option>
+            <option value="pendientes">Pendientes</option>
+            <option value="dias_en_manos">Días en sus manos</option>
+            <option value="radicadas">Con radicado</option>
+            <option value="trasladadas">Trasladadas</option>
+            <option value="proyectadas">Proyectadas</option>
+            <option value="recibidas_vencidas">Recibidas vencidas</option>
+            <option value="asignadas">Asignadas</option>
+            <option value="abogado">Nombre</option>
+          </select>
+          <button type="button" class="btn btn-ghost prod-dir" id="prod-dir" onclick="invertirProd()">Peor → mejor</button>
+        </div>
+      </div>
       <div class="hint" style="margin-bottom:12px">
         <b style="color:var(--morado)">Recibidas vencidas</b> son casos del atraso heredado: ya estaban fuera de término al asignarse.
         <b style="color:var(--txt)">Días en sus manos</b> cuenta desde la asignación, no desde la radicación.
         <b style="color:var(--gold)">% a término justo</b> excluye las heredadas.
+        <b style="color:var(--gold2)">Trasladadas</b> son remitidas por competencia.
+        Clic en un encabezado para ordenar; otro clic invierte el orden.
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr>
-            <th>Abogado</th><th>Asignadas</th><th>Pendientes</th><th>Proyectadas</th>
-            <th>Con radicado</th><th>Recibidas vencidas</th><th>Días en sus manos</th>
-            <th>% a término justo</th><th>Avance</th>
+          <thead id="t-prod-cab"><tr>
+            <th data-k="abogado">Abogado</th><th data-k="asignadas">Asignadas</th>
+            <th data-k="pendientes">Pendientes</th><th data-k="proyectadas">Proyectadas</th>
+            <th data-k="radicadas">Con radicado</th><th data-k="trasladadas">Trasladadas</th>
+            <th data-k="recibidas_vencidas">Recibidas vencidas</th><th data-k="dias_en_manos">Días en sus manos</th>
+            <th data-k="pct_termino_justo">% a término justo</th><th data-k="pct_avance">Avance</th>
           </tr></thead>
-          <tbody id="t-prod"><tr><td colspan="9">
+          <tbody id="t-prod"><tr><td colspan="10">
             <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
             <div class="esq esq-lin" style="width:80%"></div>
           </td></tr></tbody>
+          <tfoot id="t-prod-tot"></tfoot>
         </table>
       </div>
     </div>
@@ -766,6 +790,6 @@
 </div>
 </div>
 
-<script src="peticiones.js?v=6"></script>
+<script src="peticiones.js?v=7"></script>
 </body>
 </html>
