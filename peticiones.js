@@ -4359,14 +4359,12 @@ const CATALOGO_RESPUESTAS = {
     titulo: 'Concesión de prescripción',
     desc: 'Oficio que acompaña la resolución: informa que se declaró la prescripción. Fundamento: art. 817 E.T.',
     campos: [
-      { id:'OBLIGACION',     lbl:'Obligación prescrita', ph:'el comparendo 05088000000018443355' },
-      { id:'RESOLUCION_NUM', lbl:'N° de la resolución',  ph:'RES-2026-0045' },
-      { id:'FECHA_RES',      lbl:'Fecha de la resolución', ph:'DD/MM/AAAA' }
+      { id:'OBLIGACION',     lbl:'Obligación prescrita', ph:'el comparendo 05088000000018443355' }
     ],
     parrafos: [
       'En atención a su petición radicada bajo el número {{RADICADO}}, mediante la cual solicita la prescripción de la acción de cobro respecto de {{OBLIGACION}}, de manera atenta le informamos lo siguiente:',
       'Revisado el expediente se constató que, desde la exigibilidad de la obligación, transcurrió el término de **cinco (5) años** previsto en el artículo 817 del Estatuto Tributario Nacional sin que este se hubiera interrumpido por alguna de las causales del artículo 818 ibídem.',
-      'En consecuencia, esta Dirección, mediante **Resolución N° {{RESOLUCION_NUM}} del {{FECHA_RES}}**, declaró la **prescripción de la acción de cobro** respecto de {{OBLIGACION}}, ordenó la terminación del proceso administrativo de cobro coactivo, el levantamiento de las medidas cautelares a que hubiere lugar y el archivo del expediente.',
+      'En consecuencia, esta Dirección, mediante resolución que se adjunta al presente oficio, declaró la **prescripción de la acción de cobro** respecto de {{OBLIGACION}}, ordenó la terminación del proceso administrativo de cobro coactivo, el levantamiento de las medidas cautelares a que hubiere lugar y el archivo del expediente.',
       'Se adjunta copia de la resolución en mención, la cual se notifica en los términos previstos en la ley.'
     ]
   },
@@ -4469,9 +4467,27 @@ async function cargarCatalogoDB(){
       };
     });
     CAT_DB = true;
+    normalizarConcedePrescripcion();
   }catch(e){
     console.warn('Catálogo incrustado (pet_respuestas_tipo no disponible):', e.message);
   }
+}
+
+/* La resolución y su oficio se proyectan a la vez: el oficio no puede citar
+   el número ni la fecha de la resolución (aún no existen). Si el catálogo de
+   la base todavía los trae, se quitan aquí; el SQL de esta versión los quita
+   de la tabla para que el editor de Plantillas quede igual. */
+function normalizarConcedePrescripcion(){
+  const c = CATALOGO_RESPUESTAS.CONCEDE_PRESCRIPCION;
+  if(!c) return;
+  c.campos = (c.campos || []).filter(function(f){
+    return f.id !== 'RESOLUCION_NUM' && f.id !== 'FECHA_RES';
+  });
+  c.parrafos = (c.parrafos || []).map(function(p){
+    return String(p).replace(
+      /\*{0,2}Resoluci[óo]n N[°º]\s*\{\{RESOLUCION_NUM\}\}\s*del\s*\{\{FECHA_RES\}\}\*{0,2}/g,
+      'resolución que se adjunta al presente oficio');
+  });
 }
 
 /* Grupos del panel: dinámicos si el catálogo vino de la base */
@@ -4498,8 +4514,12 @@ const ORDS = ['PRIMERO','SEGUNDO','TERCERO','CUARTO','QUINTO','SEXTO','SÉPTIMO'
 function ordinal(i){ return ORDS[i] || (i + 1) + '°'; }
 
 const TEMA_DEF = {
-  prescripcion:     { nombre:'Prescripción',     porItem:true,
-    filas:[{id:'num',lbl:'N° comparendo'},{id:'fecha',lbl:'Fecha',tipo:'date'},{id:'valor',lbl:'Valor (sin $)'}] },
+  /* soloA: el campo solo aparece (y se exige) en los comparendos ACEPTADOS,
+     porque alimenta la resolución que concede la prescripción. */
+  prescripcion:     { nombre:'Prescripción',     porItem:true, conResolucion:true,
+    filas:[{id:'num',lbl:'N° comparendo'},{id:'fecha',lbl:'Fecha del comparendo',tipo:'date'},
+           {id:'res',lbl:'Resolución sanción',soloA:true},
+           {id:'fres',lbl:'Fecha de la resolución sanción',tipo:'date',soloA:true}] },
   caducidad:        { nombre:'Caducidad',        porItem:true,
     filas:[{id:'num',lbl:'N° comparendo'},{id:'fecha',lbl:'Fecha',tipo:'date'}] },
   devolucion:       { nombre:'Devolución',       porItem:false },
@@ -4600,8 +4620,8 @@ function docInterior(r){
      formulario (plantilla propia con tablas y numeración) y se descargan
      como un Word aparte. */
   const cardsResol =
-    '<button class="btn btn-doc btn-ic doc-card" onclick="abrirResolucion()">' +
-      ICONO.doc + 'Resolución de prescripción</button>' +
+    '<button class="btn btn-doc btn-ic doc-card" onclick="abrirPrescripcionCompleta()">' +
+      ICONO.doc + 'Prescripción: resolución + oficio</button>' +
     '<button class="btn btn-doc btn-ic doc-card" onclick="abrirExcepciones()">' +
       ICONO.doc + 'Resuelve excepciones</button>';
 
@@ -4648,15 +4668,52 @@ function abrirCombinada(){
   const r = COLA[COLA_IDX];
   if(!r || !COMB_SEL.length) return;
   COMB = {}; COMB_SUG_NO = false;
-  COMB_SEL.forEach(function(tok){
-    if(tok.indexOf('tema:') === 0){
-      const t = tok.slice(5);
-      COMB[tok] = TEMA_DEF[t].porItem ? { reps:[{dec:'A'}], f:{} } : { dec:'A', f:{} };
-    }else COMB[tok] = { f:{} };
-  });
+  COMB_SEL.forEach(function(tok){ COMB[tok] = estadoInicialComb(tok, r); });
   pintarComb();
   const pl = document.getElementById('pleg-doc');
   if(pl) pl.classList.add('on');
+}
+
+/* Estado vacío de un bloque. La prescripción precarga el comparendo y la
+   resolución sanción si se detectaron al radicar (igual que hacía la resolución). */
+function estadoInicialComb(tok, r){
+  if(tok.indexOf('tema:') !== 0) return { f:{} };
+  const t = tok.slice(5);
+  if(!TEMA_DEF[t].porItem) return { dec:'A', f:{} };
+  const rep0 = { dec:'A' };
+  if(t === 'prescripcion' && r){
+    const det    = (r.resumen || '').match(/Comparendo:\s*(\d{10,22})/i);
+    const detRes = (r.resumen || '').match(/Resoluci[óo]n sanci[óo]n:\s*(\d{5,15})/i);
+    if(det) rep0.num = det[1];
+    if(detRes) rep0.res = detRes[1];
+  }
+  return { reps:[rep0], f:{} };
+}
+
+/* Botón de «Resoluciones formales»: resolución + oficio de prescripción.
+   Usa el mismo bloque Prescripción del oficio combinado, de modo que los
+   comparendos se digitan una sola vez y salen en los dos documentos. */
+function abrirPrescripcionCompleta(){
+  const r = COLA[COLA_IDX];
+  if(!r) return;
+  const tok = 'tema:prescripcion';
+  const cont = document.getElementById('k-doc');
+  const abierto = cont && cont.getAttribute('data-modo') === '__COMBINADA__';
+  if(abierto){
+    // Ya hay un oficio combinado en curso: se agrega el bloque sin perder lo escrito
+    guardarCamposComb();
+    if(COMB_SEL.indexOf(tok) === -1){
+      COMB_SEL.unshift(tok);
+      COMB[tok] = estadoInicialComb(tok, r);
+    }
+    repintarDocInt(); pintarComb();
+  }else{
+    if(COMB_SEL.indexOf(tok) === -1) COMB_SEL.unshift(tok);
+    repintarDocInt();
+    abrirCombinada();
+  }
+  const k = document.getElementById('k-doc');
+  if(k) k.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 function cbCampoHTML(idAttr, f, val){
@@ -4678,9 +4735,26 @@ function segHTML(onA, onN, dec, mini){
     '<button type="button" class="a' + (dec !== 'N' ? ' on' : '') + '" onclick="' + onA + '">ACEPTADA</button>' +
     '<button type="button" class="n' + (dec === 'N' ? ' on' : '') + '" onclick="' + onN + '">NEGADA</button></span>';
 }
+/* Campos del catálogo que el oficio combinado llena solo a partir de los
+   comparendos del bloque (para no digitarlos dos veces). */
+const CAMPOS_AUTO = {
+  NIEGA_PRESCRIPCION:   ['COMPARENDO','FECHA_COMP'],
+  CONCEDE_PRESCRIPCION: ['RESOLUCION_NUM','FECHA_RES']
+};
 function camposSinOb(clave){
   const c = CATALOGO_RESPUESTAS[clave];
-  return (c && c.campos ? c.campos : []).filter(function(f){ return f.id !== 'OBLIGACION'; });
+  const auto = CAMPOS_AUTO[clave] || [];
+  return (c && c.campos ? c.campos : []).filter(function(f){
+    return f.id !== 'OBLIGACION' && auto.indexOf(f.id) === -1;
+  });
+}
+/* ¿El oficio combinado lleva además la resolución de prescripción? */
+function combLlevaResolucion(){
+  return COMB_SEL.some(function(tok){
+    if(tok.indexOf('tema:') !== 0) return false;
+    const td = TEMA_DEF[tok.slice(5)];
+    return td && td.conResolucion && COMB[tok] && COMB[tok].reps.some(function(x){ return x.dec !== 'N'; });
+  });
 }
 
 function pintarComb(){
@@ -4730,7 +4804,7 @@ function pintarComb(){
               segHTML("cbDecRep('" + tok + "'," + ri + ",'A')", "cbDecRep('" + tok + "'," + ri + ",'N')", rep.dec, true) +
               (st.reps.length > 1 ? '<button type="button" class="quitar" onclick="cbQuitarRep(\'' + tok + '\',' + ri + ')">✕</button>' : '') +
             '</span></div><div class="grid">' +
-            td.filas.map(function(f){
+            td.filas.filter(function(f){ return !f.soloA || rep.dec !== 'N'; }).map(function(f){
               return '<div class="fld"><label class="lbl">' + esc(f.lbl) + '</label>' +
                 '<input type="' + (f.tipo === 'date' ? 'date' : 'text') + '" value="' + esc(rep[f.id] || '') + '" ' +
                 'oninput="cbRep(\'' + tok + '\',' + ri + ',\'' + f.id + '\',this.value)"></div>';
@@ -4738,6 +4812,11 @@ function pintarComb(){
             '</div></div>';
         }).join('');
         html += '<button type="button" class="addrep" onclick="cbAddRep(\'' + tok + '\')">+ Agregar otro comparendo</button>';
+        if(td.conResolucion){
+          html += '<div class="rep-nota">Los comparendos <b class="a">ACEPTADOS</b> generan además la ' +
+            '<b>resolución que concede la prescripción</b> (Word aparte, se descarga junto con el oficio). ' +
+            'Los <b class="n">NEGADOS</b> se resuelven solo en el oficio.</div>';
+        }
         const hayA = st.reps.some(function(x){ return x.dec !== 'N'; });
         const hayN = st.reps.some(function(x){ return x.dec === 'N'; });
         const cA = claveTema(t,'A'), cN = claveTema(t,'N');
@@ -4787,16 +4866,17 @@ function pintarComb(){
       '<button type="button" class="btn btn-ghost" onclick="COMB_SUG_NO=true;pintarComb()">No aplica</button></div>';
   }
 
+  const conResol = combLlevaResolucion();
   html += '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:16px;align-items:center">' +
-      '<button class="btn btn-primary" onclick="generarCombinada()">Descargar Word</button>' +
+      '<button class="btn btn-primary" onclick="generarCombinada()">' +
+        (conResol ? 'Descargar oficio + resolución' : 'Descargar Word') + '</button>' +
       '<button class="btn btn-ghost" id="cb-btn-prev" onclick="previewCombinada()">Ocultar vista</button>' +
       '<button class="btn btn-ghost" onclick="cerrarKdoc()">Cerrar</button>' +
       '<div class="msg" id="cb-msg" style="margin:0"></div>' +
     '</div>' +
-    '<div class="hint" style="margin-top:12px">¿La petición también requiere una resolución formal? ' +
+    '<div class="hint" style="margin-top:12px">¿La petición también requiere resolver excepciones? ' +
       'Se descarga como Word aparte:</div>' +
     '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:6px">' +
-      '<button class="btn btn-doc btn-ic" onclick="abrirResolucion()">' + ICONO.doc + 'Resolución de prescripción</button>' +
       '<button class="btn btn-doc btn-ic" onclick="abrirExcepciones()">' + ICONO.doc + 'Resuelve excepciones</button>' +
     '</div></div><div id="cb-prev" class="doc-prev" data-vivo="1"></div></div></div>';
 
@@ -4858,6 +4938,7 @@ function armarCombinada(){
   const bloques = [];
   const sentidos = [];   // registro para pet_docs: {tema, sentido, tipo_doc, items}
   let error = null;
+  let resol = null;      // comparendos que van a la resolución de prescripción
 
   COMB_SEL.forEach(function(tok, i){
     const st = COMB[tok];
@@ -4868,21 +4949,41 @@ function armarCombinada(){
         if(!validas.length && !error) error = 'El bloque «' + td.nombre + '» no tiene comparendos con número.';
         const A = validas.filter(function(x){ return x.dec !== 'N'; });
         const N = validas.filter(function(x){ return x.dec === 'N'; });
+        if(A.length && td.conResolucion){
+          // Los datos de la resolución sanción son obligatorios en las aceptadas
+          const falta = A.findIndex(function(x){
+            return !x.fecha || !(x.res || '').trim() || !x.fres;
+          });
+          if(falta !== -1 && !error){
+            error = 'Prescripción: al comparendo ' + (A[falta].num || '') + ' le faltan la fecha, ' +
+              'la resolución sanción o su fecha (los necesita la resolución).';
+          }
+          resol = A.map(function(x){
+            return { comp: x.num.trim(), fcomp: fmtFechaDoc(x.fecha),
+                     res: (x.res || '').trim(), fres: fmtFechaDoc(x.fres) };
+          });
+        }
         if(A.length){
           const cl = claveTema(t,'A');
           if(cl){
-            const local = { OBLIGACION: listaOb(A, t === 'prescripcion') };
+            const local = { OBLIGACION: listaOb(A, false) };
             camposSinOb(cl).forEach(function(f){ local[f.id] = st.f['A-' + f.id] || ''; });
             bloques.push({ clave: cl, local: local });
-            sentidos.push({ tema: t, sentido: 'ACEPTADA',
-              tipo_doc: (t === 'prescripcion' ? 'RESOLUCION' : 'OFICIO'), items: A.length });
+            // La prescripción aceptada la registra la propia resolución al descargarse
+            if(!td.conResolucion)
+              sentidos.push({ tema: t, sentido: 'ACEPTADA', tipo_doc: 'OFICIO', items: A.length });
           }
         }
         if(N.length){
           const cl = claveTema(t,'N');
           if(cl){
-            const local = { OBLIGACION: listaOb(N, t === 'prescripcion') };
+            const local = { OBLIGACION: listaOb(N, false) };
             camposSinOb(cl).forEach(function(f){ local[f.id] = st.f['N-' + f.id] || ''; });
+            // Campos que salen de la lista de comparendos negados
+            if((CAMPOS_AUTO[cl] || []).indexOf('COMPARENDO') !== -1)
+              local.COMPARENDO = enumerar(N.map(function(x){ return x.num.trim(); }));
+            if((CAMPOS_AUTO[cl] || []).indexOf('FECHA_COMP') !== -1)
+              local.FECHA_COMP = enumerar(unicos(N.map(function(x){ return x.fecha ? fmtFecha(x.fecha) : ''; })));
             bloques.push({ clave: cl, local: local });
             sentidos.push({ tema: t, sentido: 'NEGADA', tipo_doc: 'OFICIO', items: N.length });
           }
@@ -4930,7 +5031,8 @@ function armarCombinada(){
     'de los puntos de su petición, dentro de la oportunidad prevista en la Ley 1755 de 2015.');
   parrs.push(CIERRE_COMUN);
 
-  return { comunes: comunes, parrs: parrs, error: error, nBloques: bloques.length, sentidos: sentidos };
+  return { comunes: comunes, parrs: parrs, error: error, nBloques: bloques.length, sentidos: sentidos,
+           resol: resol };
 }
 
 function previewCombinada(){
@@ -4989,7 +5091,35 @@ async function generarCombinada(){
   }
   if(a.error){ msg.className = 'msg err'; msg.textContent = a.error; return; }
   if(!a.nBloques){ msg.className = 'msg err'; msg.textContent = 'No hay bloques con contenido.'; return; }
-  msg.className = 'msg'; msg.textContent = 'Armando el documento…';
+
+  /* 1) Resolución de prescripción (si hay comparendos aceptados).
+        Va primero: así el caso queda marcado «resolución hecha» y el oficio,
+        que sale enseguida, cierra esa marca. */
+  let nombreRes = null;
+  if(a.resol && a.resol.length){
+    if(!a.comunes.CEDULA){
+      msg.className = 'msg err'; msg.textContent = 'Falta la cédula (la necesita la resolución).'; return;
+    }
+    msg.className = 'msg'; msg.textContent = 'Armando la resolución…';
+    try{
+      nombreRes = await descargarResolucionPrescripcion(r, {
+        NOMBRE:   a.comunes.NOMBRE,
+        CEDULA:   formatoCedula(a.comunes.CEDULA),
+        RADICADO: a.comunes.RADICADO,
+        PROYECTO: a.comunes.PROYECTO
+      }, a.resol);
+    }catch(err){
+      msg.className = 'msg err';
+      msg.textContent = 'No se pudo generar la resolución: ' + err.message +
+        '. No se descargó ningún documento.';
+      return;
+    }
+    // Pausa corta: algunos navegadores ignoran dos descargas seguidas
+    await new Promise(function(ok){ setTimeout(ok, 700); });
+  }
+
+  /* 2) Oficio combinado */
+  msg.className = 'msg'; msg.textContent = 'Armando el oficio…';
   try{
     const nombreArchivo = 'Respuesta_combinada_' +
       a.comunes.CEDULA.replace(/[^0-9]/g, '') + '_' +
@@ -5000,21 +5130,35 @@ async function generarCombinada(){
     try{
       await supaFetch('pet_peticiones?id=eq.' + r.id, {
         method:'PATCH', headers:{ Prefer:'return=minimal' },
-        body: JSON.stringify({ doc_proyectado: nombreArchivo })
+        body: JSON.stringify({ doc_proyectado: nombreRes ? (nombreRes + ' + ' + nombreArchivo) : nombreArchivo })
       });
     }catch(e){}
     // Registrar el sentido de cada bloque para los conteos de Control Interno.
     await registrarDocs(r, a.sentidos, nombreArchivo);
     const notas = document.getElementById('k-notas');
-    if(notas && !notas.value.trim())
-      notas.value = 'Se proyecta respuesta combinada: ' + COMB_SEL.map(tituloToken).join(' + ') + '.';
+    if(notas && !notas.value.trim()){
+      notas.value = (nombreRes
+        ? 'Se proyecta resolución que concede la prescripción de ' + a.resol.length +
+          (a.resol.length === 1 ? ' comparendo' : ' comparendos') + ' y oficio: '
+        : 'Se proyecta respuesta combinada: ') + COMB_SEL.map(tituloToken).join(' + ') + '.';
+    }
+    const que = nombreRes ? 'Resolución y oficio descargados (2 archivos).' : 'Documento descargado.';
     msg.className = 'msg ok';
     msg.textContent = a.comunes.EMAIL
-      ? 'Documento descargado. Revíselo y envíelo a ' + a.comunes.EMAIL + '.'
-      : 'Documento descargado. Sin correo registrado: notificación física.';
+      ? que + ' Revíselos y envíelos a ' + a.comunes.EMAIL + '.'
+      : que + ' Sin correo registrado: notificación física.';
   }catch(err){
-    msg.className = 'msg err'; msg.textContent = 'No se pudo generar: ' + err.message;
+    msg.className = 'msg err';
+    msg.textContent = (nombreRes ? 'La resolución sí se descargó, pero el oficio falló: ' : 'No se pudo generar: ') +
+      err.message;
   }
+}
+
+/* Fecha para los documentos: el input date da AAAA-MM-DD; si alguien
+   escribió DD/MM/AAAA se deja igual. */
+function fmtFechaDoc(v){
+  if(!v) return '';
+  return /^\d{4}-\d{2}-\d{2}/.test(v) ? fmtFecha(v) : String(v).trim();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -5657,28 +5801,12 @@ async function generarResolucion(){
 
   msg.className = 'msg'; msg.textContent = 'Armando el documento…';
   try{
-    const nombreArchivo = 'Resolucion_prescripcion_' +
-      datos.CEDULA.replace(/[^0-9]/g,'') + '_' + (r.radicado || '').replace(/[^\w-]/g,'') + '.docx';
-    await armarDocx(URL_PLANTILLA_PRESCRIPCION, datos, nombreArchivo, function(xml){
-      return expandirTablas(xml, lista);
-    });
-
-    try{
-      await supaFetch('pet_peticiones?id=eq.' + r.id, {
-        method:'PATCH', headers:{ Prefer:'return=minimal' },
-        body: JSON.stringify({ doc_proyectado: nombreArchivo })
-      });
-    }catch(e){}
-
+    await descargarResolucionPrescripcion(r, datos, lista);
     const notas = document.getElementById('k-notas');
     if(notas && !notas.value.trim()){
       notas.value = 'Se proyecta resolución que concede la prescripción de ' + lista.length +
         (lista.length === 1 ? ' comparendo.' : ' comparendos.');
     }
-    // Registro para Control Interno: prescripción concedida por resolución.
-    await registrarDocs(r, [{
-      tema: 'prescripcion', sentido: 'ACEPTADA', tipo_doc: 'RESOLUCION', items: lista.length
-    }], nombreArchivo);
     msg.className = 'msg ok';
     msg.textContent = 'Documento con ' + lista.length +
       (lista.length === 1 ? ' comparendo descargado.' : ' comparendos descargado.') +
@@ -5688,6 +5816,41 @@ async function generarResolucion(){
     msg.textContent = 'No se pudo generar: ' + err.message +
       '. Verifique que la plantilla esté cargada en Supabase Storage.';
   }
+}
+
+/* Arma y descarga la resolución que concede la prescripción.
+   persona: { NOMBRE, CEDULA, RADICADO, PROYECTO }
+   lista:   [{ comp, fcomp, res, fres }]  (fechas ya en DD/MM/AAAA)
+   La usan el formulario suelto de la resolución y el oficio combinado. */
+async function descargarResolucionPrescripcion(r, persona, lista){
+  const datos = {
+    NOMBRE:   (persona.NOMBRE || '').trim().toUpperCase(),
+    CEDULA:   (persona.CEDULA || '').trim(),
+    RADICADO: (persona.RADICADO || '').trim(),
+    PROYECTO: (persona.PROYECTO || '').trim(),
+    FECHA_DOC: fmtFecha(iso(new Date())),
+    // Menciones en el texto corrido: se vuelven listas cuando hay varios
+    COMPARENDO:       enumerar(lista.map(function(c){ return c.comp; })),
+    FECHA_COMPARENDO: enumerar(unicos(lista.map(function(c){ return c.fcomp; }))),
+    RESOLUCION:       enumerar(unicos(lista.map(function(c){ return c.res; }))),
+    FECHA_RESOLUCION: enumerar(unicos(lista.map(function(c){ return c.fres; })))
+  };
+  const nombreArchivo = 'Resolucion_prescripcion_' +
+    datos.CEDULA.replace(/[^0-9]/g,'') + '_' + (r.radicado || '').replace(/[^\w-]/g,'') + '.docx';
+  await armarDocx(URL_PLANTILLA_PRESCRIPCION, datos, nombreArchivo, function(xml){
+    return expandirTablas(xml, lista);
+  });
+  try{
+    await supaFetch('pet_peticiones?id=eq.' + r.id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' },
+      body: JSON.stringify({ doc_proyectado: nombreArchivo })
+    });
+  }catch(e){}
+  // Registro para Control Interno: prescripción concedida por resolución.
+  await registrarDocs(r, [{
+    tema: 'prescripcion', sentido: 'ACEPTADA', tipo_doc: 'RESOLUCION', items: lista.length
+  }], nombreArchivo);
+  return nombreArchivo;
 }
 
 function unicos(arr){
