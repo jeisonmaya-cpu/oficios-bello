@@ -6,13 +6,13 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <title>Gestión de Peticiones · Ejecuciones Fiscales Bello</title>
 <!-- build: archivos-peticion + limpieza-pdf-antiguos + control-interno + buscador-global + visualizador + buscador-resueltas · 2026 -->
-<meta name="build" content="peticiones-v3.3 (prescripción: resolución + oficio con una sola captura · carga resiliente · oficio en casos proyectados · cierres Gestión Documental · archivos separados: peticiones.html + peticiones.css + peticiones.js · marca Gestión Documental)">
+<meta name="build" content="peticiones-v3.4 (devolver al abogado desde cierres · prescripción: resolución + oficio con una sola captura · carga resiliente · oficio en casos proyectados · cierres Gestión Documental · archivos separados: peticiones.html + peticiones.css + peticiones.js · marca Gestión Documental)">
 <meta name="cache-control" content="no-cache">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Syne:wght@600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<link rel="stylesheet" href="peticiones.css?v=8">
+<link rel="stylesheet" href="peticiones.css?v=9">
 </head>
 <body>
 
@@ -507,7 +507,10 @@
 
     <div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px">
       <button class="btn btn-ghost" onclick="exportarCierresGDcsv()">Exportar CSV</button>
+      <button class="btn btn-ghost" id="cg-dev-btn" onclick="togglePanelDevoluciones()">Devoluciones por abogado</button>
     </div>
+
+    <div id="cg-dev"></div>
 
     <div class="msg" id="cg-msg"></div>
 
@@ -515,9 +518,9 @@
       <table>
         <thead><tr>
           <th>Radicado</th><th>Peticionario</th><th>Tipo</th><th>Abogada</th>
-          <th>Origen</th><th>Rad. salida</th><th>Fecha salida</th><th>Espera</th><th>Gest. Doc.</th>
+          <th>Origen</th><th>Rad. salida</th><th>Fecha salida</th><th>Espera</th><th>Gest. Doc.</th><th>Revisión</th>
         </tr></thead>
-        <tbody id="cg-body"><tr><td colspan="9">
+        <tbody id="cg-body"><tr><td colspan="10">
           <div class="esq esq-lin" style="width:100%;margin:6px 0"></div>
           <div class="esq esq-lin" style="width:86%"></div>
         </td></tr></tbody>
@@ -789,6 +792,6 @@
 </div>
 </div>
 
-<script src="peticiones.js?v=10"></script>
+<script src="peticiones.js?v=11"></script>
 </body>
 </html>

@@ -2766,6 +2766,10 @@ async function cargarCola(){
     if(mio !== COLA_CARGA) return;          // llegó una carga más reciente
     COLA = filas;
     if(orden === 'urgencia') COLA = ordenarPorRiesgo(COLA);
+    // Las devueltas por salida indebida van primero: sus términos ya vienen corriendo
+    try{ await cargarDevoluciones(); }catch(e){}
+    if(mio !== COLA_CARGA) return;
+    COLA = devueltasPrimero(COLA);
     cargarOficiosPendientes();
     COLA_IDX = 0;
     if(ABRIR_TRAS_COLA){
@@ -2820,6 +2824,7 @@ function pintarCaso(){
     alertaTutela(r) +
     '<div id="k-presencia"></div>' +
     (reab ? bannerReabierto(r) : '') +
+    '<div id="k-devuelta"></div>' +
     '<div id="k-oficio"></div>' +
 
     // ── Encabezado: identificación y relojes ──
@@ -2935,6 +2940,7 @@ function pintarCaso(){
   historialPeticionario(r);
   presenciaCaso(r.id);
   pintarAvisoOficio();
+  pintarAvisoDevuelta();
 }
 
 /* Iconos en línea, sin librerías */
@@ -3323,6 +3329,7 @@ async function cargarCierresGD(){
   }
 
   const pGD = cargarGD();
+  cargarDevoluciones().then(function(){ if(DEV_PANEL_ON) pintarPanelDevoluciones(); });
   try{
     CGD = await supaFetchTodo('v_pet_bandeja?select=*&estado=in.(RESPONDIDA,CERRADA,TRASLADADA,ANULADA)' +
                               '&order=id.asc&limit=3000');
@@ -3408,7 +3415,7 @@ function renderCierresGD(conservar){
   const pg = document.getElementById('cg-pag');
   if(!rows.length){
     const gd = document.getElementById('cg-gd').value;
-    body.innerHTML = '<tr><td colspan="9"><div class="vacio">' +
+    body.innerHTML = '<tr><td colspan="10"><div class="vacio">' +
       '<div class="vacio-ic">' + ICONO.vacio + '</div>' +
       (gd === 'PEND' && GD_OK
         ? '<h3>Nada pendiente en este filtro</h3><p>Todo lo que tiene salida ya está cerrado en la Gestión Documental.</p>'
@@ -3443,6 +3450,7 @@ function renderCierresGD(conservar){
       '<td>' + fmtFecha(cgdFechaSalida(r)) + '</td>' +
       '<td>' + espTxt + '</td>' +
       '<td>' + celdaGD(r) + '</td>' +
+      '<td>' + celdaDevolver(r) + '</td>' +
     '</tr>';
   }).join('');
 
@@ -10115,3 +10123,283 @@ document.addEventListener('keydown', function(e){
     }
   }catch(e){ console.warn(e); }
 })();
+
+
+/* ══════════════════════════════════════════════════════════════
+   V3.4 · DEVOLVER AL ABOGADO
+   Desde «Cierres en Gestión Documental» un admin/revisor devuelve al
+   MISMO abogado una petición con salida indebida (traslado a la propia
+   dependencia, sin radicado de salida, respuesta que no resuelve…).
+   · Motivo obligatorio. La petición vuelve a ASIGNADA y se borran los
+     datos de salida; la fecha de radicación no cambia (los términos
+     siguen corriendo). Si ya estaba marcada en Gest. Doc., la marca se quita.
+   · El abogado la ve primera en su cola, con el motivo.
+   · Historial en pet_devoluciones (evidencia) y resumen por abogado.
+   Requiere pet_devoluciones.sql; sin él, el botón avisa y no hace nada.
+   ══════════════════════════════════════════════════════════════ */
+let DEV_OK = false;          // false si falta el SQL
+let DEV_FILAS = [];          // todas las devoluciones visibles para el usuario
+let DEV_ABIERTAS = new Map();// String(peticion_id) → [devoluciones abiertas, la más reciente primero]
+let DEV_PANEL_ON = false;
+
+const DEV_MOTIVOS = [
+  'Traslado a la propia dependencia (Ejecuciones Fiscales): debe responderse de fondo.',
+  'Traslado sin radicado de salida.',
+  'Respuesta sin radicado de salida o con radicado incorrecto.',
+  'La respuesta no resuelve de fondo lo solicitado.',
+  'Cierre o anulación sin justificación.'
+];
+
+async function cargarDevoluciones(){
+  try{
+    const filas = await rpc('pet_devoluciones_listar', {});
+    DEV_FILAS = filas || [];
+    const m = new Map();
+    DEV_FILAS.forEach(function(d){
+      if(!d.abierta) return;
+      const k = String(d.peticion_id);
+      if(!m.has(k)) m.set(k, []);
+      m.get(k).push(d);
+    });
+    DEV_ABIERTAS = m;
+    DEV_OK = true;
+  }catch(err){
+    DEV_OK = false;
+    if(/pet_devoluciones|function|PGRST202|42883|404/i.test(String(err.message || err)))
+      console.warn('Devoluciones: falta ejecutar pet_devoluciones.sql');
+    else
+      console.warn('Devoluciones: no se pudieron leer (' + (err.message || err) + ').');
+  }
+}
+
+function devAbierta(r){
+  if(!r) return null;
+  const l = DEV_ABIERTAS.get(String(r.id));
+  return l && l.length ? l : null;
+}
+function devTotalPet(id){
+  return DEV_FILAS.filter(function(d){ return String(d.peticion_id) === String(id); }).length;
+}
+
+function devueltasPrimero(lista){
+  if(!DEV_ABIERTAS.size) return lista;
+  const dev = [], resto = [];
+  lista.forEach(function(r){ (devAbierta(r) ? dev : resto).push(r); });
+  return dev.concat(resto);
+}
+
+/* Celda de la tabla de cierres */
+function celdaDevolver(r){
+  if(!esAdmin()) return '';
+  if(!r.asignado_a)
+    return '<span style="color:var(--muted);font-size:12px" title="Sin abogado asignado">—</span>';
+  const n = devTotalPet(r.id);
+  return '<button class="dev-btn" title="Devolver al abogado por salida indebida" ' +
+    'onclick="devolverAlAbogado(' + r.id + ', this)">↩ Devolver</button>' +
+    (n ? '<div class="dev-ya" title="Veces que ya se había devuelto">ya devuelta ' + n + (n === 1 ? ' vez' : ' veces') + '</div>' : '');
+}
+
+/* Ventana para escribir el motivo. Devuelve el texto o null. */
+function pedirMotivoDevolucion(r){
+  return new Promise(function(resolver){
+    let caja = document.getElementById('devolver');
+    if(!caja){
+      caja = document.createElement('div');
+      caja.id = 'devolver';
+      document.body.appendChild(caja);
+    }
+    const marcaGD = gdMarca(r);
+    const salida = cgdRadSalida(r);
+    caja.innerHTML =
+      '<div class="cf-caja dev-caja" role="dialog" aria-modal="true" aria-labelledby="dv-tit">' +
+        '<h3 id="dv-tit">Devolver al abogado</h3>' +
+        '<div class="dev-ficha">' +
+          '<div><span>Radicado</span><b>' + esc(r.radicado || '') + '</b></div>' +
+          '<div><span>Abogado</span><b>' + esc(r.asignado_nombre || '—') + '</b></div>' +
+          '<div><span>Salida</span><b>' + esc(CGD_ORIGEN[r.estado] || r.estado) +
+            (r.estado === 'TRASLADADA' && r.traslado_entidad ? ' → ' + esc(r.traslado_entidad) : '') + '</b></div>' +
+          '<div><span>Rad. salida</span><b>' + esc(salida || 'sin radicado') + '</b></div>' +
+        '</div>' +
+        '<p class="dev-txt">La petición vuelve a la cola de <b>' + esc(r.asignado_nombre || 'su abogado') + '</b> ' +
+          'y se borran los datos de salida. La fecha de radicación no cambia: los términos siguen corriendo.</p>' +
+        (marcaGD ? '<div class="dev-alerta">Ya estaba marcada como cerrada en Gestión Documental. ' +
+          'La marca se quita; recuerde reabrirla en el sistema de la Alcaldía.</div>' : '') +
+        '<label class="lbl" for="dv-mot">Motivo (lo verá el abogado)</label>' +
+        '<div class="dev-chips">' + DEV_MOTIVOS.map(function(m, i){
+          return '<button type="button" class="dev-chip" data-i="' + i + '">' + esc(m.split(':')[0].replace(/\.$/, '')) + '</button>';
+        }).join('') + '</div>' +
+        '<textarea id="dv-mot" rows="3" placeholder="Explique qué está mal y qué debe hacer"></textarea>' +
+        '<div class="msg" id="dv-msg" style="margin:6px 0 0"></div>' +
+        '<div class="cf-acc" style="margin-top:14px">' +
+          '<button class="btn btn-ghost" id="dv-no">Cancelar</button>' +
+          '<button class="btn btn-primary" id="dv-si">Devolver</button>' +
+        '</div>' +
+      '</div>';
+    caja.classList.add('on');
+    const ta = document.getElementById('dv-mot');
+    ta.focus();
+    caja.querySelectorAll('.dev-chip').forEach(function(b){
+      b.onclick = function(){
+        const t = DEV_MOTIVOS[Number(b.getAttribute('data-i'))];
+        ta.value = ta.value.trim() ? ta.value.trim() + ' ' + t : t;
+        ta.focus();
+      };
+    });
+    const cerrar = function(val){
+      caja.classList.remove('on');
+      document.removeEventListener('keydown', tecla);
+      resolver(val);
+    };
+    const tecla = function(e){ if(e.key === 'Escape') cerrar(null); };
+    document.getElementById('dv-no').onclick = function(){ cerrar(null); };
+    document.getElementById('dv-si').onclick = function(){
+      const v = ta.value.trim();
+      if(v.length < 10){
+        const m = document.getElementById('dv-msg');
+        m.className = 'msg err'; m.textContent = 'Escriba el motivo (mínimo 10 caracteres).';
+        return;
+      }
+      cerrar(v);
+    };
+    document.addEventListener('keydown', tecla);
+  });
+}
+
+async function devolverAlAbogado(id, btn){
+  if(!esAdmin()) return;
+  const r = CGD.find(function(x){ return String(x.id) === String(id); });
+  if(!r) return;
+  const motivo = await pedirMotivoDevolucion(r);
+  if(!motivo) return;
+  if(btn){ btn.disabled = true; btn.textContent = 'Devolviendo…'; }
+  try{
+    const res = await rpc('pet_devolver_al_abogado', { p_id: Number(id), p_motivo: motivo });
+    CGD = CGD.filter(function(x){ return String(x.id) !== String(id); });
+    GD_MARCAS.delete(String(id));
+    toast(r.radicado + ' devuelta a ' + ((res && res.abogado) || r.asignado_nombre || 'su abogado') + '.', 'ok', 4);
+    renderCierresGD(true);
+    actualizarBadgeGD();
+    if(typeof actualizarBadges === 'function') actualizarBadges();
+    await cargarDevoluciones();
+    if(DEV_PANEL_ON) pintarPanelDevoluciones();
+  }catch(err){
+    if(btn){ btn.disabled = false; btn.textContent = '↩ Devolver'; }
+    const t = String(err.message || err);
+    toast(/pet_devolver_al_abogado|PGRST202|42883/i.test(t)
+      ? 'Falta ejecutar pet_devoluciones.sql en Supabase.'
+      : 'No se pudo devolver: ' + t, 'err', 6);
+  }
+}
+
+/* Aviso dentro del caso (cola del abogado) */
+function pintarAvisoDevuelta(){
+  const cont = document.getElementById('k-devuelta');
+  if(!cont) return;
+  const r = COLA[COLA_IDX];
+  const l = devAbierta(r);
+  if(!l){ cont.innerHTML = ''; return; }
+  const d = l[0];
+  const total = devTotalPet(r.id);
+  const antes = (CGD_ORIGEN[d.estado_anterior] || d.estado_anterior || '').toLowerCase() +
+    (d.entidad_anterior ? ' a ' + d.entidad_anterior : '') +
+    (d.rad_salida_anterior ? ' con radicado ' + d.rad_salida_anterior : ' sin radicado de salida');
+  cont.innerHTML =
+    '<div class="dev-banner" role="alert">' +
+      '<div class="dev-ic" aria-hidden="true">↩</div>' +
+      '<div style="flex:1;min-width:220px">' +
+        '<div class="dev-b-tit">Petición DEVUELTA' + (total > 1 ? ' · ' + total + ' veces' : '') + '</div>' +
+        '<div class="dev-b-mot">' + esc(d.motivo) + '</div>' +
+        '<div class="dev-b-det">Devuelta por ' + esc(d.devuelta_por_nom || 'el revisor') + ' el ' +
+          fmtFecha(gdFechaLocal(d.devuelta_en)) + '. Antes figuraba ' + esc(antes) + '. ' +
+          'Los términos se cuentan desde la radicación original.</div>' +
+      '</div>' +
+    '</div>';
+}
+
+/* ── Panel «Devoluciones por abogado» (pestaña de cierres) ── */
+function togglePanelDevoluciones(){
+  DEV_PANEL_ON = !DEV_PANEL_ON;
+  const b = document.getElementById('cg-dev-btn');
+  if(b) b.textContent = DEV_PANEL_ON ? 'Ocultar devoluciones' : 'Devoluciones por abogado';
+  pintarPanelDevoluciones();
+}
+
+function pintarPanelDevoluciones(){
+  const cont = document.getElementById('cg-dev');
+  if(!cont) return;
+  if(!DEV_PANEL_ON){ cont.innerHTML = ''; return; }
+  if(!DEV_OK){
+    cont.innerHTML = '<div class="card dev-panel"><div class="hint" style="margin:0">' +
+      'Falta ejecutar <b>pet_devoluciones.sql</b> en Supabase.</div></div>';
+    return;
+  }
+  if(!DEV_FILAS.length){
+    cont.innerHTML = '<div class="card dev-panel"><div class="hint" style="margin:0">' +
+      'Aún no se ha devuelto ninguna petición.</div></div>';
+    return;
+  }
+  const por = {};
+  DEV_FILAS.forEach(function(d){
+    const k = d.abogado_nom || '—';
+    if(!por[k]) por[k] = { total:0, abiertas:0, mes:0, ult:null };
+    const g = por[k];
+    g.total++;
+    if(d.abierta) g.abiertas++;
+    if(gdFechaLocal(d.devuelta_en).slice(0,7) === iso(new Date()).slice(0,7)) g.mes++;
+    if(!g.ult || String(d.devuelta_en) > String(g.ult)) g.ult = d.devuelta_en;
+  });
+  const abos = Object.keys(por).sort(function(a, b){ return por[b].total - por[a].total || a.localeCompare(b); });
+  const max = DEV_FILAS.length;
+  const resumen = abos.map(function(a){
+    const g = por[a];
+    const pct = Math.round(g.total / max * 100);
+    return '<tr><td>' + esc(a) + '</td>' +
+      '<td><div class="dev-bar"><span style="width:' + pct + '%"></span></div></td>' +
+      '<td style="text-align:right"><b>' + g.total + '</b></td>' +
+      '<td style="text-align:right">' + g.mes + '</td>' +
+      '<td style="text-align:right;color:' + (g.abiertas ? 'var(--naranja)' : 'var(--verde)') + '">' + g.abiertas + '</td>' +
+      '<td>' + fmtFecha(gdFechaLocal(g.ult)) + '</td></tr>';
+  }).join('');
+  const recientes = DEV_FILAS.slice(0, 25).map(function(d){
+    return '<tr><td><b style="color:var(--gold)">' + esc(d.radicado || '') + '</b></td>' +
+      '<td>' + esc(d.abogado_nom || '—') + '</td>' +
+      '<td>' + esc(CGD_ORIGEN[d.estado_anterior] || d.estado_anterior || '') +
+        (d.entidad_anterior ? '<div style="color:var(--muted);font-size:var(--t-micro)">' + esc(d.entidad_anterior) + '</div>' : '') + '</td>' +
+      '<td style="max-width:340px">' + esc(d.motivo) + '</td>' +
+      '<td>' + fmtFecha(gdFechaLocal(d.devuelta_en)) +
+        '<div style="color:var(--muted);font-size:var(--t-micro)">' + esc(d.devuelta_por_nom || '') + '</div></td>' +
+      '<td>' + (d.abierta
+        ? '<span class="pill s-urgente">Por corregir</span>'
+        : '<span class="pill s-a_tiempo">Corregida</span>') + '</td></tr>';
+  }).join('');
+  cont.innerHTML =
+    '<div class="card dev-panel">' +
+      '<div class="lbl" style="margin-bottom:10px">Devoluciones por abogado</div>' +
+      '<div class="tbl-wrap"><table><thead><tr>' +
+        '<th>Abogado</th><th style="width:30%">Participación</th><th style="text-align:right">Total</th>' +
+        '<th style="text-align:right">Este mes</th><th style="text-align:right">Por corregir</th><th>Última</th>' +
+      '</tr></thead><tbody>' + resumen + '</tbody></table></div>' +
+      '<div class="lbl" style="margin:18px 0 10px">Últimas devoluciones</div>' +
+      '<div class="tbl-wrap"><table><thead><tr>' +
+        '<th>Radicado</th><th>Abogado</th><th>Salida anterior</th><th>Motivo</th><th>Devuelta</th><th>Estado</th>' +
+      '</tr></thead><tbody>' + recientes + '</tbody></table></div>' +
+      '<div style="margin-top:12px"><button class="btn btn-ghost" onclick="exportarDevolucionesCSV()">Exportar devoluciones CSV</button></div>' +
+    '</div>';
+}
+
+function exportarDevolucionesCSV(){
+  if(!DEV_FILAS.length){ toast('No hay devoluciones para exportar.', ''); return; }
+  const cab = ['Radicado','Abogado','Salida anterior','Entidad','Rad. salida anterior','Fecha salida anterior',
+               'Motivo','Devuelta por','Fecha devolucion','Estado actual','Por corregir'];
+  const lin = DEV_FILAS.map(function(d){
+    return [d.radicado, d.abogado_nom, d.estado_anterior, d.entidad_anterior, d.rad_salida_anterior,
+            d.fecha_salida_anterior, d.motivo, d.devuelta_por_nom, gdFechaLocal(d.devuelta_en),
+            d.estado_actual, d.abierta ? 'SI' : 'NO']
+      .map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }).join(';');
+  });
+  const csv = '\uFEFF' + cab.join(';') + '\n' + lin.join('\n');
+  const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'devoluciones_peticiones_' + iso(new Date()) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
