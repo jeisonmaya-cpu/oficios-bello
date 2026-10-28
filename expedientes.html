@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <title>Expedientes Digitales — Teodoro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="expedientes.css?v=13"/>
+<link rel="stylesheet" href="expedientes.css?v=14"/>
 <link rel="stylesheet" href="ica_titulos.css?v=3"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -46,6 +46,7 @@
     <button class="nav-tab active" id="tab-buscar" onclick="irPanel('buscar')">🔍 Buscar</button>
     <button class="nav-tab" id="tab-expediente" onclick="irPanel('expediente')" disabled>📁 Expediente</button>
     <button class="nav-tab" id="tab-carga" onclick="irPanel('carga')">📦 Carga masiva</button>
+    <button class="nav-tab" id="tab-policia" onclick="irPanel('policia')">✍️ Digitar policía</button>
     <button class="nav-tab" id="tab-estadisticas" onclick="irPanel('estadisticas')">📊 Estadísticas</button>
   </div>
   <span class="nav-user" id="nav-user"></span>
@@ -335,6 +336,120 @@
   </div>
 </div>
 
+<!-- ════════ PANEL DIGITAR POLICÍA ════════ -->
+<div class="panel" id="panel-policia">
+  <div class="pol-head">
+    <div class="page-hdr" style="margin:0">
+      <h2>Digitar comparendos de policía</h2>
+      <p>Cada registro queda a tu nombre. Si un comparendo ya existe, te avisa antes de guardar; lo que digitaste lo puedes corregir desde la lista de abajo.</p>
+    </div>
+    <div class="pol-cuenta" aria-live="polite">
+      <div class="hoy"><div class="n" id="p-k-hoy">0</div><div class="l">digitados hoy</div></div>
+      <div><div class="n" id="p-k-mios">0</div><div class="l">tuyos en total</div></div>
+      <div><div class="n" id="p-k-total">0</div><div class="l">en la cartera</div></div>
+    </div>
+  </div>
+
+  <section class="pol-ficha" id="p-ficha" aria-label="Datos del comparendo">
+    <div class="pol-modo hidden" id="p-modo">
+      <span id="p-modo-t"></span>
+      <button class="btn btn-sm" type="button" onclick="polLimpiar(true)">Cancelar corrección</button>
+    </div>
+    <div class="pol-campos">
+      <div class="pol-f c-comp">
+        <label for="p-comp">Número de comparendo <b>*</b></label>
+        <input class="pol-inp" id="p-comp" autocomplete="off" spellcheck="false" placeholder="Ej. 05-088-6-2026-000123">
+        <div class="pol-nota" id="pn-comp"></div>
+      </div>
+      <div class="pol-f c-fecha">
+        <label for="p-fecha">Fecha del comparendo <b>*</b></label>
+        <input class="pol-inp" id="p-fecha" type="date">
+        <div class="pol-nota" id="pn-fecha"></div>
+      </div>
+      <div class="pol-f c-orden">
+        <label for="p-orden">Orden de policía</label>
+        <input class="pol-inp" id="p-orden" autocomplete="off">
+        <div class="pol-nota" id="pn-orden"></div>
+      </div>
+      <div class="pol-dup hidden" id="p-dup"></div>
+      <div class="pol-f c-nom">
+        <label for="p-nom">Nombres <b>*</b></label>
+        <input class="pol-inp" id="p-nom" autocomplete="off">
+        <div class="pol-nota" id="pn-nom"></div>
+      </div>
+      <div class="pol-f c-ape">
+        <label for="p-ape">Apellidos <b>*</b></label>
+        <input class="pol-inp" id="p-ape" autocomplete="off">
+        <div class="pol-nota" id="pn-ape"></div>
+      </div>
+      <div class="pol-f c-ced">
+        <label for="p-ced">Cédula <b>*</b></label>
+        <input class="pol-inp" id="p-ced" inputmode="numeric" autocomplete="off">
+        <div class="pol-nota" id="pn-ced"></div>
+      </div>
+      <div class="pol-f c-val">
+        <label for="p-valor">Valor <b>*</b></label>
+        <input class="pol-inp" id="p-valor" inputmode="numeric" autocomplete="off" placeholder="$ 0">
+        <div class="pol-nota" id="pn-valor"></div>
+      </div>
+      <div class="pol-f c-obs">
+        <label for="p-obs">Observaciones</label>
+        <input class="pol-inp" id="p-obs" autocomplete="off" placeholder="Opcional: algo que no se lea bien, dato faltante en el documento…">
+      </div>
+    </div>
+    <div class="pol-pie">
+      <label class="chk small muted"><input type="checkbox" id="p-mantener-fecha"> Mantener la fecha para el siguiente</label>
+      <span class="pol-teclas"><kbd>Enter</kbd> pasa al siguiente campo · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> guarda · <kbd>Esc</kbd> limpia</span>
+      <button class="btn btn-gold pol-guardar" id="p-guardar" type="button" onclick="polGuardar()">Guardar comparendo</button>
+    </div>
+    <div class="pol-hist hidden" id="p-hist"></div>
+  </section>
+
+  <div class="rec-hdr"><h3 class="section-title">Lo que digitaste hoy <small class="muted small" id="p-hoy-n"></small></h3></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Hora</th><th>Comparendo</th><th>Fecha</th><th>Orden de policía</th><th>Nombre</th><th class="num">Cédula</th><th class="num">Valor</th><th></th></tr></thead>
+      <tbody id="p-hoy-body"><tr><td colspan="8" class="empty">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="rec-hdr">
+    <h3 class="section-title">Buscar en la cartera de policía</h3>
+    <div class="rec-filtros">
+      <input class="inp" id="p-q" type="search" style="width:280px" placeholder="Comparendo, cédula o nombre" onkeydown="if(event.key==='Enter')polBuscar()">
+      <button class="btn" type="button" onclick="polBuscar()">Buscar</button>
+    </div>
+  </div>
+  <div class="tbl-wrap hidden" id="p-res-wrap">
+    <table class="tbl">
+      <thead><tr><th>Comparendo</th><th>Fecha</th><th>Orden de policía</th><th>Nombre</th><th class="num">Cédula</th><th class="num">Valor</th><th>Digitó</th><th></th></tr></thead>
+      <tbody id="p-res-body"></tbody>
+    </table>
+  </div>
+
+  <section class="hidden" id="p-control">
+    <div class="rec-hdr">
+      <h3 class="section-title">Control de la digitación</h3>
+      <div class="rec-filtros">
+        <button class="btn btn-sm" type="button" onclick="polControl()">Actualizar</button>
+        <button class="btn btn-sm" id="p-btn-csv" type="button" onclick="polCSV()">⬇ Toda la cartera (CSV)</button>
+      </div>
+    </div>
+    <div class="pol-ctrl">
+      <div class="card">
+        <h4 class="pol-h4">Comparendos por persona</h4>
+        <div class="tbl-wrap" style="border:none"><table class="tbl" id="p-ctrl-tabla"><tbody><tr><td class="empty">Cargando…</td></tr></tbody></table></div>
+      </div>
+      <div class="card">
+        <h4 class="pol-h4">Registros para revisar</h4>
+        <div class="pol-grande" id="p-ctrl-sin-orden">—</div><p class="small muted">sin orden de policía</p>
+        <div class="pol-grande" id="p-ctrl-valor0">—</div><p class="small muted">con valor en cero</p>
+        <div class="pol-grande" id="p-ctrl-obs">—</div><p class="small muted">con observaciones de quien digita</p>
+      </div>
+    </div>
+  </section>
+</div>
+
 <!-- ════════ PANEL ESTADÍSTICAS ════════ -->
 <div class="panel" id="panel-estadisticas">
   <div class="page-hdr st-hdr">
@@ -489,7 +604,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="expedientes.js?v=16"></script>
+<script src="expedientes.js?v=17"></script>
 <script src="ica_titulos.js?v=3"></script>
 </body>
 </html>
