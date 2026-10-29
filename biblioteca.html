@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a1f3d">
+<meta name="build" content="biblioteca-v1.0 · 2026-10-28">
+<title>Biblioteca jurídica · Teodoro · Ejecuciones Fiscales Bello</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="biblioteca_contenido.js"></script>
+<style>
+/* ---------- Tokens ---------- */
+:root{
+  --navy:#0a1f3d; --navy-2:#132d55; --gold:#e8a020; --gold-soft:rgba(232,160,32,.16);
+  --bg:#eef1f6; --surface:#ffffff; --surface-2:#f5f7fa; --line:#d8dee8; --line-2:#e7ebf1;
+  --ink:#13213b; --soft:#4b5b76; --mute:#6c7a92; --gold-ink:#8a5800;
+  --ok:#1d7a50; --ok-bg:#e3f3ea; --no:#b13a2b; --no-bg:#fbe9e6; --info:#2356a5; --info-bg:#e6eefa;
+  --tras:#6a4aa8; --tras-bg:#efeaf8; --warn:#9a6200; --warn-bg:#fdf1db;
+  --paper:#ffffff; --paper-ink:#1b1b1b; --desk:#e3e8ef;
+  --serif:'DM Serif Display', Georgia, 'Times New Roman', serif;
+  --sans:'DM Sans', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --r-s:6px; --r-m:10px;
+  color-scheme: light;
+}
+:root[data-theme="oscuro"]{
+  --bg:#06111f; --surface:#0b1b33; --surface-2:#0f2443; --line:#1c3458; --line-2:#162b4b;
+  --ink:#e6ecf5; --soft:#a9b8cf; --mute:#8193ae; --gold-ink:#f0b445; --gold-soft:rgba(232,160,32,.14);
+  --ok:#5fcf98; --ok-bg:rgba(95,207,152,.12); --no:#f08a77; --no-bg:rgba(240,138,119,.12);
+  --info:#86aef2; --info-bg:rgba(134,174,242,.12); --tras:#b9a2ee; --tras-bg:rgba(185,162,238,.12);
+  --warn:#f2bc5c; --warn-bg:rgba(242,188,92,.12); --desk:#081628;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--sans);font-size:15px;line-height:1.5;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---------- Barra superior ---------- */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;padding:10px 20px;background:var(--navy);color:#fff;border-bottom:3px solid var(--gold)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;min-width:0}
+.mark{width:34px;height:34px;border-radius:8px;background:var(--gold);color:var(--navy);display:grid;place-items:center;font-family:var(--serif);font-size:21px;flex:none}
+.brand b{font-family:var(--serif);font-weight:400;font-size:20px;letter-spacing:.2px;display:block;line-height:1.05}
+.brand small{display:block;font-size:12px;color:#c6d2e6}
+.search{flex:1;max-width:560px;position:relative}
+.search input{width:100%;padding:9px 70px 9px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff}
+.search input::placeholder{color:#b8c6dc}
+.search input:focus{background:rgba(255,255,255,.14);outline:none;border-color:var(--gold)}
+.search kbd{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:600 11px var(--sans);color:#b8c6dc;border:1px solid rgba(255,255,255,.25);border-radius:4px;padding:1px 6px}
+.top-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.btn-top{display:flex;align-items:center;gap:10px;background:transparent;border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:8px;padding:7px 12px}
+.btn-top:hover{border-color:var(--gold)}
+.btn-top[aria-pressed="true"]{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.prog{display:flex;align-items:center;gap:8px;font-size:12.5px;white-space:nowrap}
+.prog i{display:block;width:70px;height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}
+.prog i span{display:block;height:100%;background:#7ed6a5}
+.btn-top[aria-pressed="true"] .prog i{background:rgba(10,31,61,.2)}
+.btn-top[aria-pressed="true"] .prog i span{background:var(--navy)}
+.icon-btn{width:36px;height:36px;padding:0;justify-content:center}
+
+/* ---------- Distribución ---------- */
+.layout{display:grid;grid-template-columns:250px 340px minmax(0,1fr);height:calc(100vh - 59px)}
+.shelf,.list,.detail{overflow-y:auto}
+.shelf{background:var(--surface);border-right:1px solid var(--line);padding:18px 12px 30px}
+.list{border-right:1px solid var(--line);background:var(--surface-2)}
+.detail{background:var(--bg)}
+
+/* Estantes */
+.shelf h2{font:600 12px var(--sans);color:var(--mute);margin:0 10px 8px;letter-spacing:.2px}
+.cat{display:flex;justify-content:space-between;align-items:baseline;gap:8px;width:100%;text-align:left;background:none;border:0;border-radius:var(--r-s);padding:8px 10px;color:var(--soft)}
+.cat:hover{background:var(--surface-2);color:var(--ink)}
+.cat[aria-current="true"]{background:var(--navy);color:#fff}
+:root[data-theme="oscuro"] .cat[aria-current="true"]{background:var(--gold);color:var(--navy)}
+.cat span{font-size:14px;line-height:1.3}
+.cat em{font-style:normal;font-size:12px;opacity:.75;font-variant-numeric:tabular-nums}
+.filtros{margin-top:22px;padding:14px 10px 0;border-top:1px solid var(--line-2)}
+.filtros label{display:block;font-size:12px;color:var(--mute);margin:0 0 4px}
+.filtros select{width:100%;padding:7px 8px;border-radius:var(--r-s);border:1px solid var(--line);background:var(--surface);margin-bottom:12px}
+.leyenda{font-size:12.5px;color:var(--soft);line-height:1.45;margin-top:6px}
+.leyenda p{margin:0 0 8px;display:flex;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;margin-top:5px}
+.c-propia{background:var(--ok)} .c-limitada{background:var(--warn)} .c-ajena{background:var(--tras)}
+
+/* Lista de temas */
+.list-head{position:sticky;top:0;z-index:2;background:var(--surface-2);padding:16px 18px 10px;border-bottom:1px solid var(--line-2)}
+.list-head h2{margin:0;font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.15}
+.list-head p{margin:4px 0 0;font-size:13px;color:var(--mute)}
+.cat-select{display:none;width:100%;margin-top:10px;padding:8px;border-radius:var(--r-s);border:1px solid var(--line);background:var(--surface)}
+.temas{list-style:none;margin:0;padding:6px 10px 30px}
+.tema-item{display:block;width:100%;text-align:left;background:transparent;border:0;border-left:3px solid transparent;border-radius:0 var(--r-s) var(--r-s) 0;padding:11px 12px;margin:2px 0}
+.tema-item:hover{background:var(--surface)}
+.tema-item[aria-current="true"]{background:var(--surface);border-left-color:var(--gold);box-shadow:0 1px 0 var(--line-2)}
+.tema-item strong{display:block;font-weight:600;font-size:14.5px;line-height:1.3}
+.tema-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:5px;font-size:12px;color:var(--mute)}
+.tema-meta .dot{margin-top:0;width:7px;height:7px}
+.mini-av{font-variant-numeric:tabular-nums}
+.mini-av.completo{color:var(--ok);font-weight:600}
+.sin-resultados{padding:30px 18px;color:var(--soft);font-size:14px}
+
+/* ---------- Detalle ---------- */
+.detail-inner{max-width:900px;margin:0 auto;padding:26px 32px 60px}
+.volver{display:none;margin-bottom:12px;background:none;border:1px solid var(--line);border-radius:var(--r-s);padding:6px 12px}
+.crumb{margin:0;font-size:13px;color:var(--gold-ink);font-weight:600}
+.detail h1{font-family:var(--serif);font-weight:400;font-size:38px;line-height:1.08;margin:6px 0 12px;letter-spacing:-.2px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--soft)}
+.tag.comp-propia{border-color:transparent;background:var(--ok-bg);color:var(--ok)}
+.tag.comp-limitada{border-color:transparent;background:var(--warn-bg);color:var(--warn)}
+.tag.comp-ajena{border-color:transparent;background:var(--tras-bg);color:var(--tras)}
+.lead{font-size:17px;line-height:1.6;color:var(--soft);max-width:68ch;margin:0 0 22px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:22px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:10px 14px;color:var(--soft);font-weight:600}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
+
+.bloque{margin:0 0 28px}
+.bloque h3{font:600 15px var(--sans);margin:0 0 10px;color:var(--ink)}
+.normas{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.normas li{padding:12px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px}
+.normas b{font-weight:600;color:var(--navy)}
+:root[data-theme="oscuro"] .normas b{color:#cfe0ff}
+.normas p{grid-column:1/-1;margin:0;color:var(--soft);font-size:14.5px;max-width:72ch}
+.verificar{align-self:start;font-size:12px;font-weight:600;color:var(--warn);background:var(--warn-bg);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.lista{margin:0;padding-left:20px;max-width:72ch}
+.lista li{margin:0 0 6px;color:var(--soft)}
+.check{list-style:none;padding:0;margin:0}
+.check li{margin:0 0 6px}
+.check label{display:flex;gap:10px;align-items:flex-start;color:var(--soft);cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--gold)}
+.relacionados{display:flex;flex-wrap:wrap;gap:8px}
+.rel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);padding:6px 11px;font-size:13.5px}
+.rel:hover{border-color:var(--gold)}
+.dos-col{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+
+/* Oficios */
+.of-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.of-tab{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);padding:7px 12px;font-size:13.5px;text-align:left}
+.of-tab[aria-selected="true"]{border-color:var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+:root[data-theme="oscuro"] .of-tab[aria-selected="true"]{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.dec{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.d-concede{color:var(--ok);background:var(--ok-bg)} .d-niega{color:var(--no);background:var(--no-bg)}
+.d-informa{color:var(--info);background:var(--info-bg)} .d-traslada{color:var(--tras);background:var(--tras-bg)}
+.d-requiere{color:var(--warn);background:var(--warn-bg)}
+.est-dot{width:8px;height:8px;border-radius:50%;background:var(--line);flex:none}
+.e-revision{background:var(--info)} .e-ajustes{background:var(--warn)} .e-aprobado{background:var(--ok)}
+
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:14px}
+.toolbar .sep{flex:1}
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);padding:7px 12px;font-size:13.5px;font-weight:500}
+.btn:hover{border-color:var(--navy)}
+:root[data-theme="oscuro"] .btn:hover{border-color:var(--gold)}
+.btn.prim{background:var(--navy);color:#fff;border-color:var(--navy)}
+:root[data-theme="oscuro"] .btn.prim{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.btn.prim:hover{background:var(--navy-2)}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:var(--soft);cursor:pointer;user-select:none}
+.switch input{accent-color:var(--gold);width:16px;height:16px}
+.nota{border-left:3px solid var(--warn);background:var(--warn-bg);padding:10px 14px;border-radius:0 var(--r-s) var(--r-s) 0;font-size:14px;margin:0 0 16px;color:var(--ink)}
+.nota b{color:var(--warn)}
+.editado{font-size:12px;font-weight:600;color:var(--info);background:var(--info-bg);border-radius:999px;padding:2px 9px}
+
+/* La hoja */
+.escritorio{background:var(--desk);border-radius:var(--r-m);padding:34px 20px;margin-bottom:18px}
+.hoja{background:var(--paper);color:var(--paper-ink);max-width:700px;margin:0 auto;padding:54px 62px 40px;font-family:Arial, Helvetica, sans-serif;font-size:14.2px;line-height:1.62;box-shadow:0 1px 2px rgba(10,31,61,.12),0 14px 34px -14px rgba(10,31,61,.35);position:relative}
+.membrete{display:flex;align-items:center;gap:14px;padding-bottom:14px;border-bottom:2px solid var(--navy);margin-bottom:26px}
+.escudo{width:42px;height:42px;border-radius:50%;border:2px solid var(--navy);display:grid;place-items:center;font-family:var(--serif);color:var(--navy);font-size:15px;flex:none}
+.membrete strong{display:block;font-size:14px;color:var(--navy);letter-spacing:.2px}
+.membrete span{display:block;font-size:12px;color:#53627a}
+.hoja p{margin:0 0 13px;text-align:justify}
+.hoja .vineta{padding-left:22px;position:relative}
+.hoja .vineta::before{content:"•";position:absolute;left:8px}
+.hoja .intro{position:relative}
+.hoja .intro::after{content:"Introducción · se omite al combinar";position:absolute;right:-6px;top:-17px;font:600 10.5px var(--sans);color:#8a5800;background:#fdf1db;padding:1px 7px;border-radius:3px}
+.hoja .intro{box-shadow:-14px 0 0 -11px var(--gold)}
+.firma{margin-top:38px}
+.firma strong{display:block;font-size:13.5px}
+.firma span{font-size:13px}
+.proyecto{font-size:11.5px;color:#555;margin-top:22px!important}
+.pie{margin-top:30px;padding-top:8px;border-top:1px solid #ccc;font-size:10.5px;color:#666;display:flex;justify-content:space-between}
+.campo{background:#fdf0d3;color:#7a4e00;border-bottom:1.5px solid var(--gold);border-radius:3px 3px 0 0;padding:0 4px;font-size:.92em;white-space:nowrap}
+.campo.lleno{background:#eef6ff;color:#173f7a;border-bottom-color:#5b8fd6;white-space:normal}
+.campo.desconocido{background:#fde4e0;color:#9b2a1c;border-bottom-color:#c94d3a}
+.editor{width:100%;min-height:420px;border:1px solid #cfd6e0;border-radius:4px;padding:12px;font:13.5px/1.6 Consolas, 'Courier New', monospace;color:#1b1b1b;background:#fff;resize:vertical}
+.editor-ayuda{font:12.5px/1.5 var(--sans);color:#555;margin:8px 0 12px}
+.editor-acciones{display:flex;gap:8px;flex-wrap:wrap}
+.editor-acciones .btn{background:#fff;color:#1b1b1b;border-color:#cfd6e0}
+.editor-acciones .btn.prim{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.campos-usados{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 26px;font-size:13px;color:var(--soft)}
+.campos-usados code{font:12px Consolas, monospace;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:2px 6px;color:var(--ink)}
+
+/* Panel de revisión */
+.rev-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:18px 20px}
+.rev-panel h3{margin:0 0 4px;font:600 16px var(--sans)}
+.rev-panel > p{margin:0 0 14px;font-size:13.5px;color:var(--mute)}
+.estados{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.estados label{position:relative}
+.estados input{position:absolute;opacity:0}
+.estados span{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13.5px;cursor:pointer;background:var(--surface)}
+.estados input:checked + span{border-color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px var(--ink)}
+.estados input:focus-visible + span{outline:2px solid var(--gold);outline-offset:2px}
+.rev-grid{display:grid;grid-template-columns:220px 1fr;gap:12px}
+.rev-grid label{font-size:12.5px;color:var(--mute);display:block;margin-bottom:4px}
+.rev-grid input,.rev-grid textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--r-s);padding:8px 10px}
+.rev-grid textarea{min-height:92px;resize:vertical}
+.rev-pie{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}
+.rev-pie small{color:var(--mute)}
+
+/* ---------- Vista de revisión ---------- */
+.revision{height:calc(100vh - 59px);overflow-y:auto}
+.rev-wrap{max-width:1200px;margin:0 auto;padding:28px 32px 60px}
+.rev-wrap h1{font-family:var(--serif);font-weight:400;font-size:36px;margin:0 0 6px}
+.rev-wrap > p{color:var(--soft);margin:0 0 20px;max-width:75ch}
+.barra-estados{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--line-2);margin:0 0 10px}
+.barra-estados span{display:block;height:100%}
+.conteos{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13.5px;color:var(--soft);margin-bottom:22px}
+.conteos b{color:var(--ink);font-variant-numeric:tabular-nums}
+.conteos .est-dot{display:inline-block;margin-right:6px;vertical-align:middle}
+.rev-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.rev-tools select{padding:7px 8px;border-radius:var(--r-s);border:1px solid var(--line);background:var(--surface)}
+.rev-tools .sep{flex:1}
+.tabla-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{text-align:left;font-weight:600;color:var(--mute);font-size:12.5px;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+td{padding:10px 12px;border-bottom:1px solid var(--line-2);vertical-align:top}
+tr.fila{cursor:pointer}
+tr.fila:hover td{background:var(--surface-2)}
+td small{display:block;color:var(--mute);font-family:Consolas, monospace;font-size:11.5px;margin-top:2px}
+.obs-corta{color:var(--soft);max-width:340px}
+.export-ayuda{margin-top:26px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.export-ayuda div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:14px 16px;font-size:13.5px;color:var(--soft)}
+.export-ayuda b{display:block;color:var(--ink);margin-bottom:4px}
+
+/* Aviso */
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:opacity .18s, transform .18s;z-index:50;pointer-events:none;border-left:3px solid var(--gold)}
+.toast.ver{opacity:1;transform:translate(-50%,0)}
+.fatal{max-width:560px;margin:80px auto;padding:20px;font-family:var(--sans);border-left:4px solid #b13a2b;background:#fff}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1180px){
+  .layout{grid-template-columns:300px minmax(0,1fr)}
+  .shelf{display:none}
+  .cat-select{display:block}
+  .filtros-movil{display:block}
+}
+@media (max-width:820px){
+  .top{flex-wrap:wrap;gap:10px;padding:10px 14px}
+  .search{order:3;flex-basis:100%;max-width:none}
+  .prog i{display:none}
+  .layout{grid-template-columns:1fr;height:auto}
+  .list,.detail{overflow:visible;border:0}
+  body:not(.ver-detalle) .detail{display:none}
+  body.ver-detalle .list{display:none}
+  .volver{display:inline-block}
+  .detail-inner{padding:18px 16px 50px}
+  .detail h1{font-size:30px}
+  .hoja{padding:34px 22px 28px;font-size:13.5px}
+  .hoja .intro::after{display:none}
+  .escritorio{padding:14px 8px}
+  .dos-col,.rev-grid,.export-ayuda{grid-template-columns:1fr}
+  .revision{height:auto}
+  .rev-wrap{padding:20px 16px 50px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{
+  .top,.shelf,.list,.tabs,.toolbar,.rev-panel,.of-tabs,.campos-usados,.nota,.volver,.crumb,.tags,.lead,.detail h1{display:none!important}
+  .layout{display:block;height:auto}.detail{overflow:visible}.escritorio{background:none;padding:0}.hoja{box-shadow:none;padding:0}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="home.html" title="Volver al inicio de Teodoro">
+    <span class="mark" aria-hidden="true">T</span>
+    <span><b>Biblioteca jurídica</b><small>Teodoro · Ejecuciones Fiscales</small></span>
+  </a>
+  <div class="search">
+    <input id="q" type="search" placeholder="Buscar tema, norma u oficio" aria-label="Buscar en la biblioteca" autocomplete="off">
+    <kbd>Ctrl K</kbd>
+  </div>
+  <div class="top-actions">
+    <button class="btn-top" id="btnRevision" aria-pressed="false" title="Ver el avance de la revisión jurídica">
+      <span>Revisión</span>
+      <span class="prog"><i><span id="progBar"></span></i><span id="progTxt"></span></span>
+    </button>
+    <button class="btn-top icon-btn" id="btnTema" title="Cambiar entre modo claro y oscuro" aria-label="Cambiar entre modo claro y oscuro">◐</button>
+  </div>
+</header>
+
+<div class="layout" id="vistaBiblioteca">
+  <aside class="shelf" aria-label="Categorías">
+    <h2>Estantes</h2>
+    <div id="cats"></div>
+    <div class="filtros">
+      <label for="fComp">¿Se toca en cobro coactivo?</label>
+      <select id="fComp">
+        <option value="todas">Todos los temas</option>
+        <option value="propia">Se resuelve en cobro coactivo</option>
+        <option value="limitada">Se toca con límites</option>
+        <option value="ajena">No se toca: se traslada o informa</option>
+      </select>
+      <label for="fCartera">Cartera</label>
+      <select id="fCartera">
+        <option value="todas">Todas</option>
+        <option>Tránsito</option><option>Predial</option><option>ICA</option>
+      </select>
+      <div class="leyenda">
+        <p><span class="dot c-propia"></span><span>Se resuelve dentro del proceso de cobro.</span></p>
+        <p><span class="dot c-limitada"></span><span>Se toca con límites o requiere fijar postura.</span></p>
+        <p><span class="dot c-ajena"></span><span>No se discute aquí: se traslada o se informa.</span></p>
+      </div>
+    </div>
+  </aside>
+
+  <section class="list" aria-label="Temas">
+    <div class="list-head">
+      <h2 id="listTitulo">Todos los temas</h2>
+      <p id="listSub"></p>
+      <select class="cat-select" id="catSelect" aria-label="Categoría"></select>
+    </div>
+    <ul class="temas" id="temas"></ul>
+  </section>
+
+  <main class="detail" id="detail" tabindex="-1"></main>
+</div>
+
+<section class="revision" id="vistaRevision" hidden aria-label="Revisión jurídica"></section>
+
+<input type="file" id="fileImport" accept="application/json,.json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var B = window.BIBLIOTECA;
+if(!B){
+  document.body.innerHTML = '<div class="fatal"><b>No se encontró el contenido de la biblioteca.</b><br>Suba el archivo <code>biblioteca_contenido.js</code> a la misma carpeta que <code>biblioteca.html</code> y recargue.</div>';
+  return;
+}
+
+/* ---------- Constantes ---------- */
+var KEY = 'teodoro_biblioteca_revision_v1';
+var KEY_TEMA = 'teodoro_tema';            /* se lee solo como preferencia inicial */
+var KEY_TEMA_PROPIO = 'teodoro_biblioteca_tema'; /* no se pisa la llave de los otros módulos */
+var DEC = {
+  concede:{t:'Concede',c:'d-concede'}, niega:{t:'Niega',c:'d-niega'}, informa:{t:'Informa',c:'d-informa'},
+  traslada:{t:'Traslada',c:'d-traslada'}, requiere:{t:'Requiere',c:'d-requiere'}
+};
+var EST = { pendiente:'Sin revisar', revision:'En revisión', ajustes:'Ajustes pedidos', aprobado:'Aprobado' };
+var EST_COLOR = { pendiente:'var(--line)', revision:'var(--info)', ajustes:'var(--warn)', aprobado:'var(--ok)' };
+var COMP = {
+  propia:{t:'Se resuelve en cobro coactivo', c:'c-propia'},
+  limitada:{t:'Se toca con límites', c:'c-limitada'},
+  ajena:{t:'No se toca aquí: se traslada o se informa', c:'c-ajena'}
+};
+var FREC = { alta:'Muy frecuente', media:'Frecuente', baja:'Ocasional' };
+
+var catById = {}; B.categorias.forEach(function(c){ catById[c.id] = c; });
+var temaById = {}; B.temas.forEach(function(t){ temaById[t.id] = t; });
+var OF = []; var ofByCod = {};
+B.temas.forEach(function(t){ t.oficios.forEach(function(o){ var x = {o:o, t:t}; OF.push(x); ofByCod[o.codigo] = x; }); });
+
+/* ---------- Estado ---------- */
+var store = cargar();
+var st = { cat:'todas', comp:'todas', cartera:'todas', q:'', tema:null, oficio:null, tab:'ficha', ejemplo:false, editando:false, vista:'biblioteca', fEst:'todos', fCat:'todas' };
+
+function cargar(){
+  try{ var s = JSON.parse(localStorage.getItem(KEY)); if(s && s.oficios) return s; }catch(e){}
+  return { revisor:'', oficios:{} };
+}
+function guardar(){
+  try{ localStorage.setItem(KEY, JSON.stringify(store)); return true; }
+  catch(e){ aviso('No se pudo guardar en este navegador. Exporte la revisión para no perderla.'); return false; }
+}
+function rev(cod){ return store.oficios[cod] || { estado:'pendiente' }; }
+function setRev(cod, datos){ store.oficios[cod] = Object.assign({}, rev(cod), datos); guardar(); }
+
+/* ---------- Utilidades ---------- */
+var $ = function(s){ return document.querySelector(s); };
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function norm(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function hoy(){ return new Date().toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'}); }
+function fechaCorta(iso){ if(!iso) return ''; var d = new Date(iso); return d.toLocaleDateString('es-CO',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); }
+function parrafos(o){ var r = rev(o.codigo); return r.parrafos && r.parrafos.length ? r.parrafos : o.parrafos; }
+function editado(o){ var r = rev(o.codigo); return !!(r.parrafos && r.parrafos.length); }
+function camposDe(pars){
+  var set = {}; pars.join(' ').replace(/\{\{([A-Z0-9_]+)\}\}/g, function(m,k){ set[k]=1; return m; });
+  return Object.keys(set);
+}
+function verificarCount(t){ return t.normas.filter(function(n){ return n.v; }).length; }
+var toastT;
+function aviso(msg){ var el = $('#toast'); el.textContent = msg; el.classList.add('ver'); clearTimeout(toastT); toastT = setTimeout(function(){ el.classList.remove('ver'); }, 2600); }
+function descargar(nombre, contenido, tipo){
+  var blob = new Blob([contenido], {type:tipo});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre;
+  document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function slugFecha(){ var d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+/* Párrafo con la sintaxis de Peticiones: {{CAMPO}}, **negrita**, "- " viñeta */
+function campoHTML(k, modo){
+  var c = B.campos[k];
+  if(!c) return '<span class="campo desconocido" title="Variable sin definir en el catálogo de campos">{{'+esc(k)+'}}</span>';
+  if(modo === 'ejemplo') return '<span class="campo lleno" title="{{'+k+'}}">'+esc(c.ejemplo)+'</span>';
+  return '<span class="campo" title="{{'+k+'}}">'+esc(c.label)+'</span>';
+}
+function parrafoHTML(p, modo, extraClase){
+  var vineta = p.indexOf('- ') === 0;
+  var s = esc(vineta ? p.slice(2) : p)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\{\{([A-Z0-9_]+)\}\}/g, function(m,k){ return campoHTML(k, modo); });
+  var cls = [vineta ? 'vineta' : '', extraClase || ''].filter(Boolean).join(' ');
+  return '<p'+(cls ? ' class="'+cls+'"' : '')+'>'+s+'</p>';
+}
+function textoPlano(o, modo){
+  return parrafos(o).map(function(p){
+    var v = p.indexOf('- ') === 0; var s = v ? p.slice(2) : p;
+    s = s.replace(/\*\*(.+?)\*\*/g,'$1').replace(/\{\{([A-Z0-9_]+)\}\}/g, function(m,k){
+      return modo === 'ejemplo' && B.campos[k] ? B.campos[k].ejemplo : m;
+    });
+    return (v ? '• ' : '') + s;
+  }).join('\n\n');
+}
+
+/* ---------- Filtros ---------- */
+var indice = {};
+B.temas.forEach(function(t){
+  indice[t.id] = norm([t.titulo, t.resumen, t.claves, (t.cartera||[]).join(' '),
+    t.normas.map(function(n){ return n.ref+' '+n.txt; }).join(' '),
+    t.oficios.map(function(o){ return o.nombre+' '+o.codigo; }).join(' ')].join(' '));
+});
+function temasFiltrados(){
+  var palabras = norm(st.q).split(/\s+/).filter(Boolean);
+  return B.temas.filter(function(t){
+    if(st.cat !== 'todas' && t.cat !== st.cat) return false;
+    if(st.comp !== 'todas' && t.competencia !== st.comp) return false;
+    if(st.cartera !== 'todas' && (t.cartera||[]).indexOf(st.cartera) < 0) return false;
+    if(palabras.length){ var h = indice[t.id]; for(var i=0;i<palabras.length;i++){ if(h.indexOf(palabras[i]) < 0) return false; } }
+    return true;
+  });
+}
+
+/* ---------- Render: estantes y lista ---------- */
+function renderCats(){
+  var html = '<button class="cat" data-cat="todas" aria-current="'+(st.cat==='todas')+'"><span>Todos los temas</span><em>'+B.temas.length+'</em></button>';
+  var opts = '<option value="todas">Todos los temas ('+B.temas.length+')</option>';
+  B.categorias.forEach(function(c){
+    var n = B.temas.filter(function(t){ return t.cat === c.id; }).length;
+    html += '<button class="cat" data-cat="'+c.id+'" aria-current="'+(st.cat===c.id)+'" title="'+esc(c.desc)+'"><span>'+esc(c.nombre)+'</span><em>'+n+'</em></button>';
+    opts += '<option value="'+c.id+'"'+(st.cat===c.id?' selected':'')+'>'+esc(c.nombre)+' ('+n+')</option>';
+  });
+  $('#cats').innerHTML = html;
+  $('#catSelect').innerHTML = opts;
+}
+function avanceTema(t){
+  var ap = t.oficios.filter(function(o){ return rev(o.codigo).estado === 'aprobado'; }).length;
+  return { ap:ap, total:t.oficios.length };
+}
+function renderLista(){
+  var lista = temasFiltrados();
+  var c = catById[st.cat];
+  $('#listTitulo').textContent = st.q ? 'Resultados' : (c ? c.nombre : 'Todos los temas');
+  $('#listSub').textContent = st.q
+    ? lista.length + (lista.length === 1 ? ' tema coincide con “' : ' temas coinciden con “') + st.q + '”'
+    : (c ? c.desc : lista.length + ' temas y ' + OF.length + ' oficios modelo para cobro coactivo.');
+  if(!lista.length){
+    $('#temas').innerHTML = '<li class="sin-resultados">Ningún tema coincide. Pruebe con otra palabra (por ejemplo, el número de un artículo) o quite los filtros de la izquierda.</li>';
+    return;
+  }
+  $('#temas').innerHTML = lista.map(function(t){
+    var a = avanceTema(t), v = verificarCount(t);
+    return '<li><button class="tema-item" data-tema="'+t.id+'" aria-current="'+(st.tema===t.id)+'">'+
+      '<strong>'+esc(t.titulo)+'</strong>'+
+      '<span class="tema-meta"><span class="dot '+COMP[t.competencia].c+'" title="'+esc(COMP[t.competencia].t)+'"></span>'+
+      '<span>'+esc((t.cartera||[]).join(', '))+'</span>'+
+      '<span class="mini-av'+(a.ap===a.total?' completo':'')+'">'+a.ap+'/'+a.total+' aprobados</span>'+
+      (v ? '<span title="Citas por verificar">⚠ '+v+'</span>' : '')+
+      '</span></button></li>';
+  }).join('');
+}
+
+/* ---------- Render: detalle ---------- */
+function renderDetalle(){
+  var el = $('#detail');
+  var t = temaById[st.tema];
+  if(!t){
+    var totV = B.temas.reduce(function(s,t){ return s + verificarCount(t); }, 0);
+    el.innerHTML = '<div class="detail-inner"><p class="crumb">Biblioteca jurídica de cobro coactivo</p>'+
+      '<h1>Elija un tema para ver su ficha y sus oficios</h1>'+
+      '<p class="lead">Cada tema trae las normas que lo sostienen, cómo analizarlo, qué revisar antes de responder y los oficios modelo listos para Peticiones. '+
+      'La abogada revisa cada oficio aquí mismo y lo marca como aprobado; los aprobados se exportan al módulo de Peticiones.</p>'+
+      '<div class="tags"><span class="tag">'+B.temas.length+' temas</span><span class="tag">'+OF.length+' oficios modelo</span>'+
+      '<span class="tag comp-limitada">⚠ '+totV+' citas marcadas para verificar</span><span class="tag">Versión '+esc(B.version)+' · '+esc(B.actualizado)+'</span></div></div>';
+    return;
+  }
+  var cat = catById[t.cat], comp = COMP[t.competencia];
+  var html = '<div class="detail-inner">'+
+    '<button class="volver" data-act="volver">← Temas</button>'+
+    '<p class="crumb">'+esc(cat.nombre)+'</p>'+
+    '<h1>'+esc(t.titulo)+'</h1>'+
+    '<div class="tags"><span class="tag comp-'+t.competencia+'"><span class="dot '+comp.c+'"></span>'+esc(comp.t)+'</span>'+
+    (t.cartera||[]).map(function(c){ return '<span class="tag">'+esc(c)+'</span>'; }).join('')+
+    '<span class="tag">'+esc(FREC[t.frecuencia]||'')+'</span></div>'+
+    '<p class="lead">'+esc(t.resumen)+'</p>'+
+    '<div class="tabs" role="tablist">'+
+      '<button class="tab" role="tab" data-tab="ficha" aria-selected="'+(st.tab==='ficha')+'">Ficha jurídica</button>'+
+      '<button class="tab" role="tab" data-tab="oficios" aria-selected="'+(st.tab==='oficios')+'">Oficios modelo ('+t.oficios.length+')</button>'+
+    '</div>';
+  html += st.tab === 'ficha' ? fichaHTML(t) : oficiosHTML(t);
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function fichaHTML(t){
+  var h = '<section class="bloque"><h3>Normas que lo sostienen</h3><ul class="normas">'+
+    t.normas.map(function(n){
+      return '<li><b>'+esc(n.ref)+'</b>'+(n.v ? '<span class="verificar" title="La abogada debe confirmar esta cita antes de aprobar">Verificar</span>' : '<span></span>')+'<p>'+esc(n.txt)+'</p></li>';
+    }).join('')+'</ul></section>';
+  h += '<div class="dos-col"><section class="bloque"><h3>Cómo analizarlo</h3><ul class="lista">'+
+    t.reglas.map(function(r){ return '<li>'+esc(r)+'</li>'; }).join('')+'</ul></section>';
+  h += '<section class="bloque"><h3>Antes de responder, revise</h3><ul class="check">'+
+    t.revisar.map(function(r, i){ return '<li><label><input type="checkbox"> <span>'+esc(r)+'</span></label></li>'; }).join('')+'</ul></section></div>';
+  if(t.errores && t.errores.length){
+    h += '<section class="bloque"><h3>Errores frecuentes</h3><ul class="lista">'+t.errores.map(function(r){ return '<li>'+esc(r)+'</li>'; }).join('')+'</ul></section>';
+  }
+  var rel = (t.relacionados||[]).filter(function(id){ return temaById[id]; });
+  if(rel.length){
+    h += '<section class="bloque"><h3>Temas relacionados</h3><div class="relacionados">'+
+      rel.map(function(id){ return '<button class="rel" data-tema="'+id+'">'+esc(temaById[id].titulo)+'</button>'; }).join('')+'</div></section>';
+  }
+  return h;
+}
+
+function oficiosHTML(t){
+  if(!st.oficio || !t.oficios.some(function(o){ return o.codigo === st.oficio; })) st.oficio = t.oficios[0].codigo;
+  var o = ofByCod[st.oficio].o, r = rev(o.codigo), d = DEC[o.decision] || DEC.informa;
+  var h = '<div class="of-tabs" role="tablist">'+t.oficios.map(function(x){
+    var dx = DEC[x.decision] || DEC.informa, ex = rev(x.codigo).estado;
+    return '<button class="of-tab" role="tab" data-oficio="'+x.codigo+'" aria-selected="'+(x.codigo===o.codigo)+'">'+
+      '<span class="est-dot e-'+ex+'" title="'+EST[ex]+'"></span><span class="dec '+dx.c+'">'+dx.t+'</span><span>'+esc(x.nombre)+'</span></button>';
+  }).join('')+'</div>';
+
+  h += '<div class="toolbar">'+
+    '<label class="switch"><input type="checkbox" data-act="ejemplo"'+(st.ejemplo?' checked':'')+(st.editando?' disabled':'')+'> Ver con datos de ejemplo</label>'+
+    (editado(o) ? '<span class="editado" title="La abogada modificó el texto original">Texto editado</span>' : '')+
+    '<span class="sep"></span>'+
+    '<button class="btn" data-act="copiar">Copiar texto</button>'+
+    '<button class="btn" data-act="word">Descargar Word</button>'+
+    (st.editando ? '' : '<button class="btn prim" data-act="editar">Editar texto</button>')+
+  '</div>';
+
+  if(o.nota) h += '<p class="nota"><b>Nota para la revisión:</b> '+esc(o.nota)+'</p>';
+
+  h += '<div class="escritorio">'+hojaHTML(o)+'</div>';
+
+  var campos = camposDe(parrafos(o));
+  h += '<p class="campos-usados">Variables que usa: '+campos.map(function(k){ return '<code title="'+esc(B.campos[k] ? B.campos[k].label : 'Sin definir')+'">{{'+esc(k)+'}}</code>'; }).join(' ')+
+    ' <span>· Código <code>'+esc(o.codigo)+'</code></span></p>';
+
+  h += '<section class="rev-panel" aria-label="Revisión jurídica de este oficio">'+
+    '<h3>Revisión jurídica</h3><p>Marque el estado del oficio y deje sus observaciones. Solo los aprobados pasan a Peticiones.</p>'+
+    '<div class="estados" role="radiogroup" aria-label="Estado de revisión">'+
+      Object.keys(EST).map(function(k){
+        return '<label><input type="radio" name="estado" value="'+k+'"'+(r.estado===k?' checked':'')+'><span><span class="est-dot e-'+k+'"></span>'+EST[k]+'</span></label>';
+      }).join('')+
+    '</div>'+
+    '<div class="rev-grid"><div><label for="revRevisor">Revisado por</label><input id="revRevisor" value="'+esc(r.revisor || store.revisor || '')+'" placeholder="Nombre de la abogada"></div>'+
+    '<div><label for="revObs">Observaciones</label><textarea id="revObs" placeholder="Qué ajustar, qué cita confirmar, cuándo usar este oficio…">'+esc(r.obs||'')+'</textarea></div></div>'+
+    '<div class="rev-pie"><small>'+(r.fecha ? 'Última revisión: '+esc(fechaCorta(r.fecha))+(r.revisor?' · '+esc(r.revisor):'') : 'Aún sin revisar')+'</small>'+
+    '<button class="btn prim" data-act="guardarRev">Guardar revisión</button></div>'+
+  '</section>';
+  return h;
+}
+
+function hojaHTML(o){
+  var modo = st.ejemplo ? 'ejemplo' : 'campo';
+  var pars = parrafos(o);
+  var cuerpo;
+  if(st.editando){
+    cuerpo = '<textarea class="editor" id="editor" aria-label="Texto del oficio" spellcheck="true">'+esc(pars.join('\n\n'))+'</textarea>'+
+      '<p class="editor-ayuda">Separe los párrafos con una línea en blanco. El primero es la introducción. Use {{CAMPO}} para variables, **texto** para negrita y empiece con “- ” para viñetas.</p>'+
+      '<div class="editor-acciones"><button class="btn prim" data-act="guardarTexto">Guardar texto</button><button class="btn" data-act="cancelarEdicion">Cancelar</button>'+
+      (editado(o) ? '<button class="btn" data-act="restaurar">Restaurar texto original</button>' : '')+'</div>';
+  } else {
+    cuerpo = pars.map(function(p, i){ return parrafoHTML(p, modo, i === 0 ? 'intro' : ''); }).join('');
+  }
+  return '<article class="hoja">'+
+    '<header class="membrete"><div class="escudo" aria-hidden="true">AB</div><div><strong>ALCALDÍA DE BELLO</strong><span>Dirección Administrativa de Ejecuciones Fiscales</span></div></header>'+
+    '<p>Bello, '+esc(hoy())+'</p>'+
+    '<p style="text-align:left">Señor(a)<br><strong>'+campoHTML('PETICIONARIO', modo)+'</strong><br>'+campoHTML('CEDULA', modo)+'</p>'+
+    '<p style="text-align:left"><strong>Asunto:</strong> Respuesta a derecho de petición con radicado '+campoHTML('RADICADO', modo)+'</p>'+
+    '<p>Cordial saludo:</p>'+ cuerpo +
+    '<p>Atentamente,</p>'+
+    '<div class="firma"><strong>'+esc(B.firma.nombre)+'</strong><span>'+esc(B.firma.cargo)+'</span></div>'+
+    '<p class="proyecto">Proyectó: abogado(a) asignado(a)</p>'+
+    '<div class="pie"><span>Alcaldía de Bello · Ejecuciones Fiscales</span><span>F-GAF-110</span></div>'+
+  '</article>';
+}
+
+/* ---------- Render: top y revisión ---------- */
+function renderTop(){
+  var ap = OF.filter(function(x){ return rev(x.o.codigo).estado === 'aprobado'; }).length;
+  $('#progBar').style.width = (OF.length ? ap/OF.length*100 : 0) + '%';
+  $('#progTxt').textContent = ap + ' de ' + OF.length;
+  $('#btnRevision').setAttribute('aria-pressed', st.vista === 'revision');
+}
+
+function renderRevision(){
+  var conteo = { pendiente:0, revision:0, ajustes:0, aprobado:0 };
+  OF.forEach(function(x){ conteo[rev(x.o.codigo).estado || 'pendiente']++; });
+  var filas = OF.filter(function(x){
+    var e = rev(x.o.codigo).estado || 'pendiente';
+    if(st.fEst !== 'todos' && e !== st.fEst) return false;
+    if(st.fCat !== 'todas' && x.t.cat !== st.fCat) return false;
+    return true;
+  });
+  var barra = Object.keys(conteo).map(function(k){
+    return conteo[k] ? '<span style="width:'+(conteo[k]/OF.length*100)+'%;background:'+EST_COLOR[k]+'" title="'+EST[k]+': '+conteo[k]+'"></span>' : '';
+  }).join('');
+  var html = '<div class="rev-wrap">'+
+    '<h1>Revisión jurídica</h1>'+
+    '<p>Aquí se ve el avance de la revisión de todos los oficios. Haga clic en una fila para abrir el oficio. La revisión se guarda en este navegador: use «Exportar revisión» para pasarla a otro equipo o guardar una copia.</p>'+
+    '<div class="barra-estados">'+barra+'</div>'+
+    '<div class="conteos">'+Object.keys(EST).map(function(k){ return '<span><span class="est-dot e-'+k+'"></span>'+EST[k]+': <b>'+conteo[k]+'</b></span>'; }).join('')+'</div>'+
+    '<div class="rev-tools">'+
+      '<select id="fEst" aria-label="Filtrar por estado"><option value="todos">Todos los estados</option>'+Object.keys(EST).map(function(k){ return '<option value="'+k+'"'+(st.fEst===k?' selected':'')+'>'+EST[k]+'</option>'; }).join('')+'</select>'+
+      '<select id="fCat" aria-label="Filtrar por categoría"><option value="todas">Todas las categorías</option>'+B.categorias.map(function(c){ return '<option value="'+c.id+'"'+(st.fCat===c.id?' selected':'')+'>'+esc(c.nombre)+'</option>'; }).join('')+'</select>'+
+      '<span class="sep"></span>'+
+      '<button class="btn" data-act="paquete">Descargar para revisión en Word ('+filas.length+')</button>'+
+      '<button class="btn" data-act="exportar">Exportar revisión</button>'+
+      '<button class="btn" data-act="importar">Importar revisión</button>'+
+      '<button class="btn prim" data-act="sql">SQL para Peticiones ('+conteo.aprobado+')</button>'+
+    '</div>'+
+    '<div class="tabla-wrap"><table><thead><tr><th>Oficio</th><th>Tema</th><th>Decisión</th><th>Estado</th><th>Citas a verificar</th><th>Observaciones</th><th>Última revisión</th></tr></thead><tbody>'+
+    (filas.length ? filas.map(function(x){
+      var r = rev(x.o.codigo), d = DEC[x.o.decision] || DEC.informa, v = verificarCount(x.t);
+      return '<tr class="fila" data-ir="'+x.o.codigo+'" tabindex="0"><td>'+esc(x.o.nombre)+(editado(x.o)?' <span class="editado">editado</span>':'')+'<small>'+esc(x.o.codigo)+'</small></td>'+
+        '<td>'+esc(x.t.titulo)+'</td><td><span class="dec '+d.c+'">'+d.t+'</span></td>'+
+        '<td><span class="est-dot e-'+(r.estado||'pendiente')+'" style="display:inline-block;margin-right:6px"></span>'+EST[r.estado||'pendiente']+'</td>'+
+        '<td>'+(v ? '⚠ '+v : '—')+'</td><td class="obs-corta">'+esc((r.obs||'').slice(0,120))+((r.obs||'').length>120?'…':'')+'</td>'+
+        '<td>'+(r.fecha ? esc(fechaCorta(r.fecha))+(r.revisor?'<small>'+esc(r.revisor)+'</small>':'') : '—')+'</td></tr>';
+    }).join('') : '<tr><td colspan="7" class="sin-resultados">No hay oficios con ese filtro.</td></tr>')+
+    '</tbody></table></div>'+
+    '<div class="export-ayuda">'+
+      '<div><b>Descargar para revisión en Word</b>Un solo documento con los oficios filtrados, cada uno con sus normas por verificar y un espacio para observaciones. Útil para revisar impreso.</div>'+
+      '<div><b>Exportar e importar revisión</b>Guarda en un archivo los estados, observaciones y textos editados. Al importarlo en otro equipo se conserva lo más reciente de cada oficio.</div>'+
+      '<div><b>SQL para Peticiones</b>Genera las filas de los oficios aprobados para la tabla <code>pet_respuestas_tipo</code>. Revise el encabezado del archivo antes de ejecutarlo en Supabase.</div>'+
+    '</div></div>';
+  $('#vistaRevision').innerHTML = html;
+}
+
+function renderTodo(){
+  renderTop();
+  if(st.vista === 'revision'){
+    $('#vistaBiblioteca').hidden = true; $('#vistaRevision').hidden = false; renderRevision(); return;
+  }
+  $('#vistaBiblioteca').hidden = false; $('#vistaRevision').hidden = true;
+  renderCats(); renderLista(); renderDetalle();
+  document.body.classList.toggle('ver-detalle', !!st.tema);
+}
+
+/* ---------- Navegación ---------- */
+function abrirTema(id, opts){
+  opts = opts || {};
+  st.tema = id; st.editando = false;
+  st.tab = opts.tab || 'ficha';
+  st.oficio = opts.oficio || null;
+  st.vista = 'biblioteca';
+  if(location.hash !== '#'+id) history.replaceState(null, '', '#'+id);
+  renderTodo();
+  $('#detail').scrollTop = 0; window.scrollTo(0,0);
+}
+function leerHash(){
+  var h = decodeURIComponent(location.hash.slice(1));
+  if(h === 'revision'){ st.vista = 'revision'; }
+  else if(temaById[h]){ st.vista = 'biblioteca'; st.tema = h; }
+}
+
+/* ---------- Exportaciones ---------- */
+function wordParrafo(p, modo){
+  var v = p.indexOf('- ') === 0;
+  var s = esc(v ? p.slice(2) : p).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\{\{([A-Z0-9_]+)\}\}/g, function(m,k){
+    if(modo === 'ejemplo' && B.campos[k]) return esc(B.campos[k].ejemplo);
+    return '<span style="background:#FFF2CC;color:#7A4E00;font-weight:bold">{{'+esc(k)+'}}</span>';
+  });
+  return v ? '<p class="v">•&nbsp;&nbsp;'+s+'</p>' : '<p>'+s+'</p>';
+}
+function wordHoja(o, modo){
+  var c = function(k){ return modo === 'ejemplo' && B.campos[k] ? esc(B.campos[k].ejemplo) : '<span style="background:#FFF2CC;color:#7A4E00;font-weight:bold">{{'+k+'}}</span>'; };
+  return '<p class="mem"><b>ALCALDÍA DE BELLO</b><br>Dirección Administrativa de Ejecuciones Fiscales</p>'+
+    '<p class="izq">Bello, '+esc(hoy())+'</p>'+
+    '<p class="izq">Señor(a)<br><b>'+c('PETICIONARIO')+'</b><br>'+c('CEDULA')+'</p>'+
+    '<p class="izq"><b>Asunto:</b> Respuesta a derecho de petición con radicado '+c('RADICADO')+'</p>'+
+    '<p>Cordial saludo:</p>'+
+    parrafos(o).map(function(p){ return wordParrafo(p, modo); }).join('')+
+    '<p>Atentamente,</p><p class="izq" style="margin-top:36pt"><b>'+esc(B.firma.nombre)+'</b><br>'+esc(B.firma.cargo)+'</p>'+
+    '<p class="pp">Proyectó: </p><p class="pp" style="text-align:right">F-GAF-110</p>';
+}
+function wordDoc(titulo, cuerpo){
+  return '\ufeff<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
+    '<head><meta charset="utf-8"><title>'+esc(titulo)+'</title>'+
+    '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->'+
+    '<style>@page{size:21.59cm 27.94cm;margin:2.5cm 2.5cm 2.5cm 3cm}body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.35}'+
+    'p{margin:0 0 9pt;text-align:justify}p.izq{text-align:left}p.v{margin-left:18pt}p.mem{text-align:left;border-bottom:1.5pt solid #0A1F3D;padding-bottom:6pt;color:#0A1F3D;margin-bottom:18pt}'+
+    'p.pp{font-size:8.5pt;color:#555}h1{font-size:16pt;color:#0A1F3D;margin:0 0 6pt}h2{font-size:13pt;color:#0A1F3D;margin:0 0 4pt}'+
+    '.ficha{border:1pt solid #D8DEE8;background:#F5F7FA;padding:8pt;margin-bottom:14pt;font-size:9.5pt}.ficha p{margin:0 0 4pt;text-align:left}'+
+    '.obs{border:1pt solid #999;height:90pt;margin-top:10pt;padding:6pt;font-size:9.5pt;color:#555}</style></head><body>'+cuerpo+'</body></html>';
+}
+function descargarOficioWord(){
+  var x = ofByCod[st.oficio]; if(!x) return;
+  var modo = st.ejemplo ? 'ejemplo' : 'campo';
+  descargar(x.o.codigo + (modo==='ejemplo'?'_ejemplo':'') + '.doc', wordDoc(x.o.nombre, wordHoja(x.o, modo)), 'application/msword');
+  aviso('Word descargado: ' + x.o.codigo);
+}
+function paqueteRevision(){
+  var filas = OF.filter(function(x){
+    var e = rev(x.o.codigo).estado || 'pendiente';
+    return (st.fEst === 'todos' || e === st.fEst) && (st.fCat === 'todas' || x.t.cat === st.fCat);
+  });
+  if(!filas.length){ aviso('No hay oficios con ese filtro.'); return; }
+  var portada = '<h1>Biblioteca jurídica de cobro coactivo</h1><p class="izq">Paquete de revisión · '+filas.length+' oficios · generado el '+esc(hoy())+'</p>'+
+    '<p class="izq">Para cada oficio: confirme las citas marcadas «Verificar», ajuste el texto si hace falta y anote sus observaciones en el recuadro. Los cambios se registran luego en el módulo Biblioteca de Teodoro.</p>';
+  var cuerpo = portada + filas.map(function(x){
+    var r = rev(x.o.codigo), d = DEC[x.o.decision] || DEC.informa;
+    var ver = x.t.normas.filter(function(n){ return n.v; });
+    return '<br clear="all" style="page-break-before:always">'+
+      '<div class="ficha"><h2>'+esc(x.o.nombre)+'</h2>'+
+      '<p><b>Tema:</b> '+esc(x.t.titulo)+' · <b>Decisión:</b> '+d.t+' · <b>Código:</b> '+esc(x.o.codigo)+' · <b>Estado:</b> '+EST[r.estado||'pendiente']+'</p>'+
+      '<p><b>Normas del tema:</b> '+x.t.normas.map(function(n){ return esc(n.ref)+(n.v?' <b style="color:#9A6200">[VERIFICAR]</b>':''); }).join('; ')+'</p>'+
+      (ver.length ? '<p><b>Por verificar:</b> '+ver.map(function(n){ return esc(n.ref)+': '+esc(n.txt); }).join(' | ')+'</p>' : '')+
+      (x.o.nota ? '<p><b>Nota:</b> '+esc(x.o.nota)+'</p>' : '')+
+      (r.obs ? '<p><b>Observaciones registradas:</b> '+esc(r.obs)+'</p>' : '')+
+      '</div>' + wordHoja(x.o, 'campo') +
+      '<div class="obs">Observaciones de la revisión:</div>';
+  }).join('');
+  descargar('Biblioteca_revision_'+slugFecha()+'.doc', wordDoc('Paquete de revisión', cuerpo), 'application/msword');
+  aviso('Paquete descargado con ' + filas.length + ' oficios');
+}
+function exportarRevision(){
+  var datos = { tipo:'teodoro-biblioteca-revision', version:B.version, exportado:new Date().toISOString(), revisor:store.revisor, oficios:store.oficios };
+  descargar('Biblioteca_revision_'+slugFecha()+'.json', JSON.stringify(datos, null, 2), 'application/json');
+  aviso('Revisión exportada');
+}
+function importarRevision(file){
+  var fr = new FileReader();
+  fr.onload = function(){
+    try{
+      var d = JSON.parse(fr.result);
+      if(d.tipo !== 'teodoro-biblioteca-revision' || !d.oficios) throw new Error('formato');
+      var n = 0;
+      Object.keys(d.oficios).forEach(function(cod){
+        if(!ofByCod[cod]) return;
+        var nuevo = d.oficios[cod], actual = store.oficios[cod];
+        if(!actual || !actual.fecha || (nuevo.fecha && nuevo.fecha > actual.fecha)){ store.oficios[cod] = nuevo; n++; }
+      });
+      guardar(); renderTodo();
+      aviso(n ? 'Se actualizaron ' + n + ' oficios con la revisión importada' : 'La revisión importada no traía cambios más recientes');
+    }catch(e){ aviso('El archivo no es una exportación de la Biblioteca. Use el que genera «Exportar revisión».'); }
+  };
+  fr.readAsText(file);
+}
+function temaControl(t){
+  if(/prescripcion/.test(t.id)) return 'prescripcion';
+  if(/caducidad/.test(t.id)) return 'caducidad';
+  if(/devolucion/.test(t.id)) return 'devolucion';
+  if(/inembargabilidad|cuenta-ahorro|minimo-vital/.test(t.id)) return 'inembargabilidad';
+  return 'otros';
+}
+function sqlLit(s){ return "'" + String(s).replace(/'/g, "''") + "'"; }
+function generarSQL(){
+  var ap = OF.filter(function(x){ return rev(x.o.codigo).estado === 'aprobado'; });
+  if(!ap.length){ aviso('Aún no hay oficios aprobados.'); return; }
+  var head = '-- Biblioteca jurídica · oficios aprobados para pet_respuestas_tipo\n'+
+    '-- Generado: ' + new Date().toISOString() + ' · ' + ap.length + ' oficios\n'+
+    '-- ANTES DE EJECUTAR: confirme que los nombres de columna coinciden con su tabla\n'+
+    '-- (ver sql_respuestas_tipo.sql). Si su tabla no tiene "codigo" como llave única,\n'+
+    '-- ajuste la cláusula ON CONFLICT. "campos" va como lista de {clave, etiqueta}.\n'+
+    '-- decision: concede | niega | informativa  ·  tema: prescripcion | caducidad | devolucion | inembargabilidad | otros\n\n';
+  var filas = ap.map(function(x, i){
+    var pars = parrafos(x.o);
+    var campos = camposDe(pars).map(function(k){ return { clave:k, etiqueta: B.campos[k] ? B.campos[k].label : k }; });
+    var dec = x.o.decision === 'concede' ? 'concede' : x.o.decision === 'niega' ? 'niega' : 'informativa';
+    return '  (' + [sqlLit(x.o.codigo), sqlLit(x.o.nombre), sqlLit(temaControl(x.t)), sqlLit(dec),
+      sqlLit(JSON.stringify(campos)) + '::jsonb', sqlLit(JSON.stringify(pars)) + '::jsonb', 100 + i, 'true'].join(', ') + ')';
+  });
+  var sql = head + 'insert into pet_respuestas_tipo (codigo, nombre, tema, decision, campos, parrafos, orden, activo)\nvalues\n' +
+    filas.join(',\n') + '\non conflict (codigo) do update set\n  nombre = excluded.nombre, tema = excluded.tema, decision = excluded.decision,\n  campos = excluded.campos, parrafos = excluded.parrafos, activo = excluded.activo;\n';
+  descargar('biblioteca_a_peticiones_'+slugFecha()+'.sql', sql, 'text/plain');
+  aviso('SQL generado con ' + ap.length + ' oficios aprobados');
+}
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click', function(e){
+  var b;
+  if((b = e.target.closest('[data-cat]'))){ st.cat = b.dataset.cat; renderCats(); renderLista(); return; }
+  if((b = e.target.closest('[data-tema]'))){ abrirTema(b.dataset.tema); return; }
+  if((b = e.target.closest('[data-tab]'))){ st.tab = b.dataset.tab; st.editando = false; renderDetalle(); return; }
+  if((b = e.target.closest('[data-oficio]'))){ st.oficio = b.dataset.oficio; st.editando = false; renderDetalle(); return; }
+  if((b = e.target.closest('tr[data-ir]'))){ var x = ofByCod[b.dataset.ir]; abrirTema(x.t.id, { tab:'oficios', oficio:x.o.codigo }); return; }
+  if(!(b = e.target.closest('[data-act]'))) return;
+  var act = b.dataset.act, x2 = st.oficio ? ofByCod[st.oficio] : null;
+  switch(act){
+    case 'volver': st.tema = null; history.replaceState(null,'',location.pathname); renderTodo(); break;
+    case 'copiar':
+      if(!x2) break;
+      var txt = textoPlano(x2.o, st.ejemplo ? 'ejemplo' : 'campo');
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ aviso('Texto copiado'); }, function(){
+        var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select();
+        try{ document.execCommand('copy'); aviso('Texto copiado'); }catch(err){ aviso('No se pudo copiar. Seleccione el texto manualmente.'); }
+        ta.remove();
+      });
+      break;
+    case 'word': descargarOficioWord(); break;
+    case 'editar': st.editando = true; renderDetalle(); var ed = $('#editor'); if(ed) ed.focus(); break;
+    case 'cancelarEdicion': st.editando = false; renderDetalle(); break;
+    case 'guardarTexto':
+      var val = $('#editor').value.replace(/\r/g,'').split(/\n\s*\n/).map(function(s){ return s.trim(); }).filter(Boolean);
+      if(!val.length){ aviso('El oficio no puede quedar vacío.'); break; }
+      var igual = JSON.stringify(val) === JSON.stringify(x2.o.parrafos);
+      setRev(x2.o.codigo, { parrafos: igual ? null : val, fecha:new Date().toISOString() });
+      st.editando = false; renderTodo(); aviso(igual ? 'Sin cambios frente al original' : 'Texto guardado');
+      var raros = camposDe(val).filter(function(k){ return !B.campos[k]; });
+      if(raros.length) setTimeout(function(){ aviso('Variable sin definir: {{' + raros.join('}}, {{') + '}}'); }, 2700);
+      break;
+    case 'restaurar':
+      if(!confirm('¿Restaurar el texto original? Se pierden los cambios hechos a este oficio.')) break;
+      setRev(x2.o.codigo, { parrafos:null, fecha:new Date().toISOString() }); st.editando = false; renderTodo(); aviso('Texto original restaurado'); break;
+    case 'guardarRev':
+      var est = (document.querySelector('input[name="estado"]:checked') || {}).value || 'pendiente';
+      var quien = $('#revRevisor').value.trim(), obs = $('#revObs').value.trim();
+      if(est === 'ajustes' && !obs){ aviso('Escriba qué ajustes pide antes de guardar.'); $('#revObs').focus(); break; }
+      store.revisor = quien || store.revisor;
+      setRev(x2.o.codigo, { estado:est, obs:obs, revisor:quien, fecha:new Date().toISOString() });
+      renderTodo(); aviso('Revisión guardada: ' + EST[est]); break;
+    case 'paquete': paqueteRevision(); break;
+    case 'exportar': exportarRevision(); break;
+    case 'importar': $('#fileImport').click(); break;
+    case 'sql': generarSQL(); break;
+  }
+});
+document.addEventListener('change', function(e){
+  var t = e.target;
+  if(t.matches('[data-act="ejemplo"]')){ st.ejemplo = t.checked; renderDetalle(); }
+  else if(t.id === 'fComp'){ st.comp = t.value; renderLista(); }
+  else if(t.id === 'fCartera'){ st.cartera = t.value; renderLista(); }
+  else if(t.id === 'catSelect'){ st.cat = t.value; renderCats(); renderLista(); }
+  else if(t.id === 'fEst'){ st.fEst = t.value; renderRevision(); }
+  else if(t.id === 'fCat'){ st.fCat = t.value; renderRevision(); }
+  else if(t.id === 'fileImport' && t.files[0]){ importarRevision(t.files[0]); t.value = ''; }
+});
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){ e.preventDefault(); if(st.vista==='revision'){ st.vista='biblioteca'; renderTodo(); } $('#q').focus(); $('#q').select(); }
+  else if(e.key === 'Escape' && document.activeElement === $('#q')){ $('#q').value = ''; st.q = ''; renderLista(); }
+  else if(e.key === 'Enter' && e.target.matches('tr[data-ir]')){ e.target.click(); }
+});
+var qT;
+$('#q').addEventListener('input', function(){
+  clearTimeout(qT); var v = this.value;
+  qT = setTimeout(function(){ st.q = v.trim(); if(st.vista === 'revision'){ st.vista = 'biblioteca'; renderTodo(); } else renderLista(); }, 120);
+});
+$('#q').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ var l = temasFiltrados(); if(l.length) abrirTema(l[0].id); }
+});
+$('#btnRevision').addEventListener('click', function(){
+  st.vista = st.vista === 'revision' ? 'biblioteca' : 'revision';
+  history.replaceState(null, '', st.vista === 'revision' ? '#revision' : (st.tema ? '#'+st.tema : location.pathname));
+  renderTodo(); window.scrollTo(0,0);
+});
+window.addEventListener('hashchange', function(){ leerHash(); renderTodo(); });
+
+/* Tema claro/oscuro */
+function aplicarTema(v){ document.documentElement.setAttribute('data-theme', v); }
+var temaGuardado = null; try{ temaGuardado = localStorage.getItem(KEY_TEMA_PROPIO) || localStorage.getItem(KEY_TEMA); }catch(e){}
+aplicarTema(temaGuardado === 'oscuro' || temaGuardado === 'dark' ? 'oscuro'
+  : temaGuardado === 'claro' || temaGuardado === 'light' ? 'claro'
+  : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro'));
+$('#btnTema').addEventListener('click', function(){
+  var v = document.documentElement.getAttribute('data-theme') === 'oscuro' ? 'claro' : 'oscuro';
+  aplicarTema(v); try{ localStorage.setItem(KEY_TEMA_PROPIO, v); }catch(e){}
+});
+
+leerHash();
+renderTodo();
+})();
+</script>
+</body>
+</html>
