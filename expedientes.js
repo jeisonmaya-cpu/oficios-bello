@@ -535,7 +535,7 @@ const EXTRA_CARTERA = {
   predial:  { tabla: "expedientes_predial",  llave: "radicado",       campos: "radicado,matricula,num_ficha,direccion" },
   ou:       { tabla: "expedientes_ou",       llave: "radicado",       campos: "radicado,direccion,barrio" },
   transito: { tabla: "expedientes_transito", llave: "nro_comparendo", campos: "nro_comparendo,numero_placa,anio" },
-  policia:  { tabla: "expedientes_policia",  llave: "comparendo",     campos: "comparendo,fecha_comparendo,orden_policia" },
+  policia:  { tabla: "expedientes_policia",  llave: "comparendo",     campos: "comparendo,fecha_comparendo,orden_policia,carpeta,pagina" },
   // Títulos ICA: el expediente TICA-135 corresponde al id 135 de ica_titulos_remitidos
   ica:      { tabla: "ica_titulos_remitidos", llave: "id",
               campos: "id,n_fila,area,vigencias,radicado,responsable,fecha_ejecutoria,fecha_mandamiento",
@@ -570,6 +570,7 @@ function htmlExtra(cartera, f) {
     const d = [f.fecha_comparendo ? "Comparendo del " + esc(fmtFecha(f.fecha_comparendo)) : "", lim(f.orden_policia) ? "Orden " + esc(lim(f.orden_policia)) : "Sin orden de policía"]
       .filter(Boolean).join(" · ");
     if (d) linea.push(`<div class="xc-ids">${d}</div>`);
+    if (polUbic(f)) linea.push(`<div class="xc-ids">${esc(polUbic(f))}</div>`);
   } else if (cartera === "ica") {
     const d = [lim(f.area), lim(f.vigencias) ? "Vig. " + lim(f.vigencias) : ""].filter(Boolean).map(esc).join(" · ");
     if (d) linea.push(`<div class="xc-dir">${d}</div>`);
@@ -2935,9 +2936,13 @@ function acCSVAnios() {
 const POL_TABLA = "expedientes_policia";
 const POL_VIGENCIA_CODIGO = "2017-01-30";   // Ley 1801 de 2016 rige desde enero de 2017: solo es un aviso
 const POL_VALOR_ALTO = 100000000;
-const POL_CAMPOS = ["p-comp", "p-fecha", "p-orden", "p-nom", "p-ape", "p-ced", "p-valor", "p-obs"];
-const POL_NOTAS = ["pn-comp", "pn-fecha", "pn-nom", "pn-ape", "pn-ced", "pn-valor", "pn-orden"];
-let POL = { listo: false, uid: null, admin: false, edit: null, hoy: [], res: [], ultimoNuevo: null, revisado: "", guardando: false };
+const POL_CAMPOS = ["p-comp", "p-fecha", "p-orden", "p-carpeta", "p-pagina", "p-nom", "p-ape", "p-ced", "p-valor", "p-obs"];
+const POL_NOTAS = ["pn-comp", "pn-fecha", "pn-nom", "pn-ape", "pn-ced", "pn-valor", "pn-orden", "pn-carpeta", "pn-pagina"];
+const POL_FORMATO_COMP = /^\d{2}-\d{3}-\d-\d{4}-\d+$/;   // 08-088-6-2022-4812
+// Espacios, puntos, barras o guiones bajos pasan a guion (igual que en la base)
+function polFormatoComp(s) { return String(s || "").trim().toUpperCase().replace(/[\s._/]+/g, "-").replace(/-{2,}/g, "-"); }
+function polUbic(r) { return r.carpeta || r.pagina ? "Carp. " + (r.carpeta || "—") + " · pág. " + (r.pagina || "—") : ""; }
+let POL = { listo: false, uid: null, admin: false, edit: null, hoy: [], res: [], ultimoNuevo: null, revisado: "", guardando: false, confirmado: "" };
 
 function polNorm(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 function polDig(s) { return String(s || "").replace(/\D/g, ""); }
@@ -2949,6 +2954,7 @@ function polMsg(e) {
   const m = String((e && e.message) || e || "");
   if (/duplicate key|23505|comparendo_uk/i.test(m)) return "Ese comparendo ya está digitado.";
   if (/pol_cedula_digitos/i.test(m)) return "La cédula debe tener entre 4 y 12 dígitos.";
+  if (/carpeta o la página/i.test(m)) return "Faltan la carpeta o la página. Si ya los llenaste, falta ejecutar sql_policia_carpeta_pagina.sql.";
   if (/expedientes_policia|does not exist|schema cache/i.test(m)) return "Falta crear la tabla de policía en la base de datos (sql_policia_digitacion.sql).";
   return m;
 }
@@ -2959,6 +2965,10 @@ async function polMontar() {
     POL.listo = true;
     $("p-valor").addEventListener("input", e => { const d = polDig(e.target.value); e.target.value = d ? Number(d).toLocaleString("es-CO") : ""; });
     $("p-ced").addEventListener("input", e => { e.target.value = polDig(e.target.value); });
+    $("p-pagina").addEventListener("input", e => { e.target.value = polDig(e.target.value); });
+    // Cualquier cambio anula la confirmación de "Guardar de todos modos"
+    POL_CAMPOS.forEach(id => $(id).addEventListener("input", polQuitarConfirmacion));
+    $("p-comp").addEventListener("change", () => { $("p-comp").value = polFormatoComp($("p-comp").value); });
     POL_CAMPOS.forEach((id, i) => {
       $(id).addEventListener("keydown", e => {
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); polGuardar(); return; }
@@ -2984,7 +2994,8 @@ async function polMontar() {
 
 function polLeer() {
   return {
-    comparendo: $("p-comp").value.trim(), fecha_comparendo: $("p-fecha").value, orden_policia: $("p-orden").value.trim(),
+    comparendo: polFormatoComp($("p-comp").value), fecha_comparendo: $("p-fecha").value, orden_policia: $("p-orden").value.trim(),
+    carpeta: $("p-carpeta").value.trim(), pagina: polDig($("p-pagina").value),
     nombres: $("p-nom").value.trim(), apellidos: $("p-ape").value.trim(), cedula: polDig($("p-ced").value),
     valor: polDig($("p-valor").value), observaciones: $("p-obs").value.trim()
   };
@@ -3005,15 +3016,41 @@ function polValidar(d) {
   else if (Number(d.valor) === 0) polNota("pn-valor", "Valor en cero: revísalo.", "warn");
   else if (Number(d.valor) > POL_VALOR_ALTO) polNota("pn-valor", "Valor muy alto: revísalo.", "warn");
   if (!d.orden_policia) polNota("pn-orden", "Opcional, pero conviene llenarlo.", "warn");
+  else if (/carp/i.test(d.orden_policia)) malo("p-orden", "pn-orden", "La carpeta y la página van en sus campos.");
+  if (!d.carpeta) malo("p-carpeta", "pn-carpeta", "Falta la carpeta.");
+  if (!d.pagina) malo("p-pagina", "pn-pagina", "Falta la página.");
+  if (d.valor !== "" && d.cedula && d.valor === d.cedula) malo("p-valor", "pn-valor", "Es igual a la cédula: revisa el valor.");
+  // Año del comparendo vs. año de la fecha: solo aviso
+  const anioComp = (d.comparendo.match(POL_FORMATO_COMP) ? d.comparendo.split("-")[3] : "");
+  if (anioComp && d.fecha_comparendo && d.fecha_comparendo.slice(0, 4) !== anioComp && !$("pn-fecha").textContent)
+    polNota("pn-fecha", "El comparendo es de " + anioComp + " y la fecha de " + d.fecha_comparendo.slice(0, 4) + ": revísala.", "warn");
   if (!$("p-dup").classList.contains("hidden")) ok = false;
   return ok;
 }
+// Avisos que no bloquean pero piden un segundo clic ("Guardar de todos modos")
+function polAvisosConfirmar(d) {
+  const av = [];
+  if (!POL_FORMATO_COMP.test(d.comparendo)) { av.push("comparendo"); polNota("pn-comp", "No tiene el formato 08-088-6-2022-4812.", "warn"); $("p-comp").classList.add("mal"); }
+  if (Number(d.valor) > POL_VALOR_ALTO) av.push("valor");
+  return av.join("|");
+}
+function polQuitarConfirmacion() {
+  if (!POL.confirmado) return;
+  POL.confirmado = "";
+  $("p-guardar").textContent = POL.edit ? "Guardar corrección" : "Guardar comparendo";
+}
 function polLimpiar(todo) {
-  const fecha = $("p-fecha").value;
+  const fecha = $("p-fecha").value, carpeta = $("p-carpeta").value, pagina = polDig($("p-pagina").value);
+  POL.confirmado = "";
   POL_CAMPOS.forEach(id => { $(id).value = ""; $(id).classList.remove("mal"); });
   POL_NOTAS.forEach(n => polNota(n, ""));
   $("p-dup").classList.add("hidden");
   if (!todo && $("p-mantener-fecha").checked) $("p-fecha").value = fecha;
+  // Recorriendo una carpeta: misma carpeta, página siguiente
+  if (!todo && !POL.edit && $("p-mantener-carpeta").checked && carpeta) {
+    $("p-carpeta").value = carpeta;
+    if (pagina) $("p-pagina").value = String(Number(pagina) + 1);
+  }
   POL.edit = null; POL.revisado = "";
   $("p-ficha").classList.remove("editando");
   $("p-modo").classList.add("hidden");
@@ -3048,9 +3085,17 @@ async function polGuardar() {
   const d = polLeer();
   if (await polDuplicado(true)) { $("p-comp").focus(); return; }
   if (!polValidar(d)) { const m = document.querySelector("#panel-policia .pol-inp.mal"); if (m) m.focus(); return; }
+  const avisos = polAvisosConfirmar(d);
+  if (avisos && POL.confirmado !== avisos) {
+    POL.confirmado = avisos;
+    $("p-guardar").textContent = "Guardar de todos modos";
+    toast("Revisa lo marcado en amarillo. Si está bien, pulsa «Guardar de todos modos».", true);
+    return;
+  }
   POL.guardando = true; $("p-guardar").disabled = true;
   const fila = {
     comparendo: d.comparendo, fecha_comparendo: d.fecha_comparendo, orden_policia: d.orden_policia || null,
+    carpeta: d.carpeta, pagina: d.pagina,
     nombres: d.nombres, apellidos: d.apellidos, cedula: d.cedula, valor: Number(d.valor), observaciones: d.observaciones || null
   };
   try {
@@ -3083,6 +3128,7 @@ function polEditar(r) {
   if (!POL.edit && polConDatos() && !confirm("Hay datos sin guardar en el formulario. ¿Reemplazarlos por el comparendo a corregir?")) return;
   POL.edit = r;
   $("p-comp").value = r.comparendo || ""; $("p-fecha").value = r.fecha_comparendo || ""; $("p-orden").value = r.orden_policia || "";
+  $("p-carpeta").value = r.carpeta || ""; $("p-pagina").value = r.pagina || "";
   $("p-nom").value = r.nombres || ""; $("p-ape").value = r.apellidos || ""; $("p-ced").value = r.cedula || "";
   $("p-valor").value = r.valor != null ? Number(r.valor).toLocaleString("es-CO") : ""; $("p-obs").value = r.observaciones || "";
   $("p-dup").classList.add("hidden"); POL.revisado = polNorm(r.comparendo);
@@ -3091,11 +3137,12 @@ function polEditar(r) {
   $("p-modo").classList.remove("hidden");
   $("p-modo-t").textContent = "Corrigiendo el comparendo " + r.comparendo + " (digitado por " + (r.digitado_por_email || "—") + " el " + fmtFechaHora(r.digitado_en) + ")";
   $("p-guardar").textContent = "Guardar corrección";
+  POL.confirmado = "";
   window.scrollTo({ top: 0, behavior: "smooth" });
   $("p-comp").focus();
   polHistorial(r.id);
 }
-const POL_NOMBRES = { comparendo: "Comparendo", fecha_comparendo: "Fecha", orden_policia: "Orden de policía", nombres: "Nombres",
+const POL_NOMBRES = { comparendo: "Comparendo", fecha_comparendo: "Fecha", orden_policia: "Orden de policía", carpeta: "Carpeta", pagina: "Página", nombres: "Nombres",
                       apellidos: "Apellidos", cedula: "Cédula", valor: "Valor", observaciones: "Observaciones", estado: "Estado" };
 async function polHistorial(id) {
   const caja = $("p-hist");
@@ -3121,6 +3168,7 @@ function polFila(r, conQuien) {
     "<td class=\"pol-comp nowrap\">" + esc(r.comparendo) + "</td>" +
     "<td class=\"nowrap\">" + esc(fmtFecha(r.fecha_comparendo)) + "</td>" +
     "<td>" + (r.orden_policia ? esc(r.orden_policia) : '<span class="pol-falta">Sin dato</span>') + "</td>" +
+    "<td class=\"nowrap\">" + (polUbic(r) ? esc(polUbic(r)) : '<span class="pol-falta">Sin dato</span>') + "</td>" +
     "<td>" + esc((r.nombres || "") + " " + (r.apellidos || "")) + (r.observaciones ? ' <span class="pol-falta" title="' + esc(r.observaciones) + '">· obs.</span>' : "") + "</td>" +
     "<td class=\"num\">" + esc(r.cedula) + "</td>" +
     "<td class=\"num\">" + esc(polPesos(r.valor)) + "</td>" +
@@ -3132,11 +3180,11 @@ async function polCargarHoy() {
   try {
     POL.hoy = await supaFetch(POL_TABLA + "?select=*&digitado_por=eq." + POL.uid + "&digitado_en=gte." + encodeURIComponent(polInicioHoy()) + "&order=digitado_en.desc&limit=1000") || [];
     $("p-hoy-body").innerHTML = POL.hoy.length ? POL.hoy.map(r => polFila(r, false)).join("")
-      : '<tr><td colspan="8" class="empty">Todavía no has digitado nada hoy. Empieza por el número de comparendo.</td></tr>';
+      : '<tr><td colspan="9" class="empty">Todavía no has digitado nada hoy. Empieza por el número de comparendo.</td></tr>';
     $("p-hoy-n").textContent = POL.hoy.length ? POL.hoy.length + " comparendo" + (POL.hoy.length === 1 ? "" : "s") : "";
     $("p-k-hoy").textContent = POL.hoy.length.toLocaleString("es-CO");
   } catch (e) {
-    $("p-hoy-body").innerHTML = '<tr><td colspan="8" class="empty">' + esc(polMsg(e)) + "</td></tr>";
+    $("p-hoy-body").innerHTML = '<tr><td colspan="9" class="empty">' + esc(polMsg(e)) + "</td></tr>";
   }
 }
 async function polConteos() {
@@ -3162,7 +3210,7 @@ async function polBuscar(silencioso) {
     POL.res = await supaFetch(POL_TABLA + "?select=*&or=" + encodeURIComponent("(" + conds.join(",") + ")") + "&order=digitado_en.desc&limit=50") || [];
     $("p-res-wrap").classList.remove("hidden");
     $("p-res-body").innerHTML = POL.res.length ? POL.res.map(r => polFila(r, true)).join("")
-      : '<tr><td colspan="8" class="empty">No hay comparendos con «' + esc(q) + '».</td></tr>';
+      : '<tr><td colspan="9" class="empty">No hay comparendos con «' + esc(q) + '».</td></tr>';
   } catch (e) { if (!silencioso) toast("No se pudo buscar: " + polMsg(e), true); }
 }
 async function polControl() {
@@ -3181,11 +3229,13 @@ async function polControl() {
           "<td class=\"num\"><b>" + Object.values(pp[p]).reduce((a, b) => a + b, 0).toLocaleString("es-CO") + "</b></td></tr>").join("") + "</tbody>"
       : '<tbody><tr><td class="empty">Nadie ha digitado en los últimos 14 días.</td></tr></tbody>';
   } catch (e) { $("p-ctrl-tabla").innerHTML = '<tbody><tr><td class="empty">' + esc(polMsg(e)) + "</td></tr></tbody>"; }
-  const [a, b, c] = await Promise.all([
+  const [a, b, c, u] = await Promise.all([
     contarFilas(POL_TABLA + "?select=id&orden_policia=is.null").catch(() => null),
     contarFilas(POL_TABLA + "?select=id&valor=eq.0").catch(() => null),
-    contarFilas(POL_TABLA + "?select=id&observaciones=not.is.null").catch(() => null)
+    contarFilas(POL_TABLA + "?select=id&observaciones=not.is.null").catch(() => null),
+    contarFilas(POL_TABLA + "?select=id&or=" + encodeURIComponent("(carpeta.is.null,pagina.is.null)")).catch(() => null)
   ]);
+  $("p-ctrl-sin-ubic").textContent = u === null ? "—" : u.toLocaleString("es-CO");
   $("p-ctrl-sin-orden").textContent = a === null ? "—" : a.toLocaleString("es-CO");
   $("p-ctrl-valor0").textContent = b === null ? "—" : b.toLocaleString("es-CO");
   $("p-ctrl-obs").textContent = c === null ? "—" : c.toLocaleString("es-CO");
@@ -3196,6 +3246,7 @@ async function polCSV() {
     const todo = await traerTodo(POL_TABLA + "?select=*", "id.asc");
     descargarCSV("Comparendos_policia_" + fechaArchivo() + ".csv", [
       { t: "Comparendo", v: "comparendo" }, { t: "Fecha", v: r => fmtFecha(r.fecha_comparendo) }, { t: "Orden de policía", v: "orden_policia" },
+      { t: "Carpeta", v: "carpeta" }, { t: "Página", v: "pagina" },
       { t: "Nombres", v: "nombres" }, { t: "Apellidos", v: "apellidos" }, { t: "Cédula", v: "cedula" }, { t: "Valor", v: "valor" },
       { t: "Observaciones", v: "observaciones" }, { t: "Estado", v: "estado" }, { t: "Digitó", v: "digitado_por_email" },
       { t: "Digitado", v: r => fmtFechaHora(r.digitado_en) }, { t: "Corrigió", v: "actualizado_por_email" }, { t: "Corregido", v: r => fmtFechaHora(r.actualizado_en) }

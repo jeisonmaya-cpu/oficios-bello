@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <title>Expedientes Digitales — Teodoro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="expedientes.css?v=14"/>
+<link rel="stylesheet" href="expedientes.css?v=15"/>
 <link rel="stylesheet" href="ica_titulos.css?v=3"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -358,7 +358,7 @@
     <div class="pol-campos">
       <div class="pol-f c-comp">
         <label for="p-comp">Número de comparendo <b>*</b></label>
-        <input class="pol-inp" id="p-comp" autocomplete="off" spellcheck="false" placeholder="Ej. 05-088-6-2026-000123">
+        <input class="pol-inp" id="p-comp" autocomplete="off" spellcheck="false" placeholder="08-088-6-2022-4812">
         <div class="pol-nota" id="pn-comp"></div>
       </div>
       <div class="pol-f c-fecha">
@@ -368,8 +368,18 @@
       </div>
       <div class="pol-f c-orden">
         <label for="p-orden">Orden de policía</label>
-        <input class="pol-inp" id="p-orden" autocomplete="off">
+        <input class="pol-inp" id="p-orden" autocomplete="off" placeholder="2024-05-149">
         <div class="pol-nota" id="pn-orden"></div>
+      </div>
+      <div class="pol-f c-carp">
+        <label for="p-carpeta">Carpeta <b>*</b></label>
+        <input class="pol-inp" id="p-carpeta" autocomplete="off" inputmode="numeric">
+        <div class="pol-nota" id="pn-carpeta"></div>
+      </div>
+      <div class="pol-f c-pag">
+        <label for="p-pagina">Página <b>*</b></label>
+        <input class="pol-inp" id="p-pagina" autocomplete="off" inputmode="numeric">
+        <div class="pol-nota" id="pn-pagina"></div>
       </div>
       <div class="pol-dup hidden" id="p-dup"></div>
       <div class="pol-f c-nom">
@@ -398,7 +408,8 @@
       </div>
     </div>
     <div class="pol-pie">
-      <label class="chk small muted"><input type="checkbox" id="p-mantener-fecha"> Mantener la fecha para el siguiente</label>
+      <label class="chk small muted"><input type="checkbox" id="p-mantener-fecha"> Mantener la fecha</label>
+      <label class="chk small muted"><input type="checkbox" id="p-mantener-carpeta" checked> Mantener la carpeta y pasar a la página siguiente</label>
       <span class="pol-teclas"><kbd>Enter</kbd> pasa al siguiente campo · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> guarda · <kbd>Esc</kbd> limpia</span>
       <button class="btn btn-gold pol-guardar" id="p-guardar" type="button" onclick="polGuardar()">Guardar comparendo</button>
     </div>
@@ -408,8 +419,8 @@
   <div class="rec-hdr"><h3 class="section-title">Lo que digitaste hoy <small class="muted small" id="p-hoy-n"></small></h3></div>
   <div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>Hora</th><th>Comparendo</th><th>Fecha</th><th>Orden de policía</th><th>Nombre</th><th class="num">Cédula</th><th class="num">Valor</th><th></th></tr></thead>
-      <tbody id="p-hoy-body"><tr><td colspan="8" class="empty">Cargando…</td></tr></tbody>
+      <thead><tr><th>Hora</th><th>Comparendo</th><th>Fecha</th><th>Orden de policía</th><th>Ubicación</th><th>Nombre</th><th class="num">Cédula</th><th class="num">Valor</th><th></th></tr></thead>
+      <tbody id="p-hoy-body"><tr><td colspan="9" class="empty">Cargando…</td></tr></tbody>
     </table>
   </div>
 
@@ -422,7 +433,7 @@
   </div>
   <div class="tbl-wrap hidden" id="p-res-wrap">
     <table class="tbl">
-      <thead><tr><th>Comparendo</th><th>Fecha</th><th>Orden de policía</th><th>Nombre</th><th class="num">Cédula</th><th class="num">Valor</th><th>Digitó</th><th></th></tr></thead>
+      <thead><tr><th>Comparendo</th><th>Fecha</th><th>Orden de policía</th><th>Ubicación</th><th>Nombre</th><th class="num">Cédula</th><th class="num">Valor</th><th>Digitó</th><th></th></tr></thead>
       <tbody id="p-res-body"></tbody>
     </table>
   </div>
@@ -443,6 +454,7 @@
       <div class="card">
         <h4 class="pol-h4">Registros para revisar</h4>
         <div class="pol-grande" id="p-ctrl-sin-orden">—</div><p class="small muted">sin orden de policía</p>
+        <div class="pol-grande" id="p-ctrl-sin-ubic">—</div><p class="small muted">sin carpeta o página</p>
         <div class="pol-grande" id="p-ctrl-valor0">—</div><p class="small muted">con valor en cero</p>
         <div class="pol-grande" id="p-ctrl-obs">—</div><p class="small muted">con observaciones de quien digita</p>
       </div>
@@ -604,7 +616,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="expedientes.js?v=17"></script>
+<script src="expedientes.js?v=18"></script>
 <script src="ica_titulos.js?v=3"></script>
 </body>
 </html>
