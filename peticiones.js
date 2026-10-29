@@ -2907,9 +2907,14 @@ function pintarCaso(){
           'placeholder="Sentido de la respuesta, observaciones… o anote el tema y salte: se guarda sola" ' +
           'onblur="guardarNotaPrevia()">' +
           esc(r.notas_gestion || '') + '</textarea>' +
-        '<div class="hint" id="k-notas-est">' + (reab ? '' :
-          'Puede anotar aquí antes de responder (tema, dificultad) y dar <b>Saltar</b>: la nota se guarda sin cerrar el caso.') +
-        '</div></div>' +
+        (reab ? '<div class="hint" id="k-notas-est"></div>'
+          : '<div class="nota-barra">' +
+              '<div class="hint" id="k-notas-est">Anote el tema o la dificultad y guárdela: el caso sigue en su cola.</div>' +
+              '<button type="button" class="btn btn-ghost btn-ic btn-nota" ' +
+                'onmousedown="event.preventDefault()" onclick="guardarNotaPrevia(true)">' +
+                ICONO.nota + 'Guardar nota</button>' +
+            '</div>') +
+        '</div>' +
     '</div>' +
 
     // ── Acciones agrupadas ──
@@ -4111,13 +4116,20 @@ function cerrarSug(){
 /* Nota previa: guarda SOLO notas_gestion (no toca fecha_proyeccion), así el
    caso sigue en la cola. Sirve para marcar "tema X / difícil" y volver luego. */
 const NOTA_EN_VUELO = {};
-async function guardarNotaPrevia(){
+async function guardarNotaPrevia(manual){
   const r = COLA[COLA_IDX];
   const ta = document.getElementById('k-notas');
   if(!r || !ta || esReabierto(r)) return;
   const nueva = ta.value.trim();
   const vieja = String(r.notas_gestion || '').trim();
-  if(nueva === vieja || NOTA_EN_VUELO[r.id] === nueva) return;
+  if(NOTA_EN_VUELO[r.id] === nueva) return;
+  if(nueva === vieja){
+    if(manual){
+      const e0 = document.getElementById('k-notas-est');
+      if(e0) e0.textContent = nueva ? 'La nota ya está guardada.' : 'Escriba la nota primero.';
+    }
+    return;
+  }
   NOTA_EN_VUELO[r.id] = nueva;
   const est = document.getElementById('k-notas-est');
   if(est) est.textContent = 'Guardando nota…';
@@ -4128,7 +4140,10 @@ async function guardarNotaPrevia(){
     });
     r.notas_gestion = nueva || null;            // queda en la fila local de la cola
     const est2 = document.getElementById('k-notas-est');
-    if(est2 && COLA[COLA_IDX] === r) est2.textContent = nueva ? 'Nota guardada. El caso sigue en su cola.' : 'Nota borrada.';
+    if(est2 && COLA[COLA_IDX] === r) est2.textContent = nueva ? '✓ Nota guardada. El caso sigue en su cola.' : 'Nota borrada.';
+    if(manual && nueva) toast('Nota guardada en ' + r.radicado + '.', 'ok', 2);
+    const ta2 = document.getElementById('k-notas');
+    if(ta2 && COLA[COLA_IDX] === r) ta2.classList.toggle('con-nota', !!nueva);
   }catch(err){
     toast('No se pudo guardar la nota de ' + r.radicado + ': ' + err.message, 'err', 6);
     const est3 = document.getElementById('k-notas-est');
