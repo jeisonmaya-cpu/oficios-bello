@@ -2896,11 +2896,20 @@ function pintarCaso(){
         '<input type="date" id="k-fresp" value="' +
           (r.fecha_respuesta ? String(r.fecha_respuesta).slice(0, 10) : '') + '">' +
         '<div class="hint">Fecha del radicado de salida.</div></div>' +
-      '<div class="fld full"><label class="lbl">Notas de gestión</label>' +
+      '<div class="fld full"><label class="lbl">Notas de gestión' +
+          (!reab && r.notas_gestion ? ' <span class="nota-previa-tag">' + ICONO.nota + 'Ya la había anotado</span>' : '') +
+        '</label>' +
         // Se muestran las notas que ya existan (traslados, apoyo…): antes quedaban
         // ocultas y al guardar con el campo vacío se borraban.
-        '<textarea id="k-notas" placeholder="Sentido de la respuesta, observaciones…">' +
-          esc(r.notas_gestion || '') + '</textarea></div>' +
+        // Se guardan solas al salir del campo o al saltar: sirven para anotar el
+        // tema o la dificultad ANTES de responder y volver después sin releer el PDF.
+        '<textarea id="k-notas" class="' + (!reab && r.notas_gestion ? 'con-nota' : '') + '" ' +
+          'placeholder="Sentido de la respuesta, observaciones… o anote el tema y salte: se guarda sola" ' +
+          'onblur="guardarNotaPrevia()">' +
+          esc(r.notas_gestion || '') + '</textarea>' +
+        '<div class="hint" id="k-notas-est">' + (reab ? '' :
+          'Puede anotar aquí antes de responder (tema, dificultad) y dar <b>Saltar</b>: la nota se guarda sin cerrar el caso.') +
+        '</div></div>' +
     '</div>' +
 
     // ── Acciones agrupadas ──
@@ -2945,6 +2954,9 @@ function pintarCaso(){
 
 /* Iconos en línea, sin librerías */
 const ICONO = {
+  nota: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'style="width:12px;height:12px;vertical-align:-1px"><path d="M12 20h9"/>' +
+    '<path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>',
   copiar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
     'style="width:12px;height:12px;vertical-align:-1px"><rect x="9" y="9" width="13" height="13" rx="2"/>' +
     '<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>',
@@ -4010,7 +4022,7 @@ function sugerirCola(){
   const hits = [];
   for(let i = 0; i < COLA.length && hits.length < 12; i++){
     const r = COLA[i];
-    const blob = [r.radicado, r.peticionario, r.documento, r.expediente]
+    const blob = [r.radicado, r.peticionario, r.documento, r.expediente, r.notas_gestion]
       .join(' ').toLowerCase();
     if(blob.indexOf(q) !== -1) hits.push({ r: r, i: i });
   }
@@ -4029,7 +4041,9 @@ function sugerirCola(){
               : d <= 3 ? 'var(--urgente)' : 'var(--atiempo)';
     return '<div class="sug-it" data-i="' + x.i + '" onmousedown="irACaso(' + x.i + ')">' +
       '<span class="sug-rad">' + esc(x.r.radicado) + '</span>' +
-      '<span class="sug-nom">' + esc(x.r.peticionario) + '</span>' +
+      '<span class="sug-nom">' + esc(x.r.peticionario) +
+        (x.r.notas_gestion ? ' <span class="sug-nota" title="' + esc(x.r.notas_gestion) + '">' +
+          ICONO.nota + esc(String(x.r.notas_gestion).slice(0, 40)) + '</span>' : '') + '</span>' +
       '<span class="sug-pos" style="color:' + col + '">' +
         (d === null ? '—' : d < 0 ? 'vencida ' + Math.abs(d) : d + ' días') + '</span>' +
       '<span class="sug-pos">#' + (x.i + 1) + '</span>' +
@@ -4094,7 +4108,44 @@ function cerrarSug(){
   SUG_SEL = -1;
 }
 
+/* Nota previa: guarda SOLO notas_gestion (no toca fecha_proyeccion), así el
+   caso sigue en la cola. Sirve para marcar "tema X / difícil" y volver luego. */
+const NOTA_EN_VUELO = {};
+async function guardarNotaPrevia(){
+  const r = COLA[COLA_IDX];
+  const ta = document.getElementById('k-notas');
+  if(!r || !ta || esReabierto(r)) return;
+  const nueva = ta.value.trim();
+  const vieja = String(r.notas_gestion || '').trim();
+  if(nueva === vieja || NOTA_EN_VUELO[r.id] === nueva) return;
+  NOTA_EN_VUELO[r.id] = nueva;
+  const est = document.getElementById('k-notas-est');
+  if(est) est.textContent = 'Guardando nota…';
+  try{
+    await supaFetch('pet_peticiones?id=eq.' + r.id, {
+      method:'PATCH', headers:{ Prefer:'return=minimal' },
+      body: JSON.stringify({ notas_gestion: nueva || null })
+    });
+    r.notas_gestion = nueva || null;            // queda en la fila local de la cola
+    const est2 = document.getElementById('k-notas-est');
+    if(est2 && COLA[COLA_IDX] === r) est2.textContent = nueva ? 'Nota guardada. El caso sigue en su cola.' : 'Nota borrada.';
+  }catch(err){
+    toast('No se pudo guardar la nota de ' + r.radicado + ': ' + err.message, 'err', 6);
+    const est3 = document.getElementById('k-notas-est');
+    if(est3 && COLA[COLA_IDX] === r) est3.textContent = 'No se guardó la nota. Intente de nuevo.';
+  }finally{
+    delete NOTA_EN_VUELO[r.id];
+  }
+}
+
 function moverCaso(paso){
+  // Antes de salir, la nota escrita no se pierde
+  const ta = document.getElementById('k-notas');
+  const act = COLA[COLA_IDX];
+  if(ta && act && !esReabierto(act) && ta.value.trim() !== String(act.notas_gestion || '').trim()){
+    guardarNotaPrevia();
+    if(ta.value.trim()) toast('Nota guardada en ' + act.radicado + '.', 'ok', 2);
+  }
   // Un caso reabierto no pertenece a la cola: al salir de él se retira
   if(esReabierto(COLA[COLA_IDX])){
     COLA.splice(COLA_IDX, 1);
