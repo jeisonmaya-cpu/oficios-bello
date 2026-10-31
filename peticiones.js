@@ -3104,6 +3104,190 @@ async function cargarCola(){
 function pintarCaso(){
   pintarCasoBase();
   try{ aplicarSplit(); }catch(e){ console.warn('lectura al lado:', e); }
+  try{ pintarFicha(COLA[COLA_IDX]); }catch(e){ console.warn('ficha del deudor:', e); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FICHA DEL DEUDOR (v3.8) · «Situación de la cédula»
+   Una sola consulta (pet_ficha_deudor) al desplegarla. Si el abogado
+   la deja abierta, se consulta sola en cada caso; si la cierra, no se
+   consulta nada. Lo ya consultado en la sesión no se vuelve a pedir.
+   La función devuelve las filas completas de cada tabla, así que aquí
+   se escogen los campos por su nombre (comparendo, fecha, valor, estado).
+   ══════════════════════════════════════════════════════════════ */
+const FICHA_CACHE = new Map();      // dígitos de la cédula → respuesta
+let FICHA_ABIERTA = false;
+try{ FICHA_ABIERTA = localStorage.getItem('pet_ficha') === '1'; }catch(e){}
+
+const FICHA_SECC = [
+  { k:'transito', t:'Comparendos (tránsito)', suma:true },
+  { k:'recaudo',  t:'Depósitos judiciales',   suma:true },
+  { k:'predial',  t:'Predial',                suma:false },
+  { k:'ica',      t:'ICA',                    suma:false },
+  { k:'tutelas',  t:'Tutelas',                suma:false }
+];
+
+function estilosFicha(){
+  if(document.getElementById('fi-css')) return;
+  const st = document.createElement('style');
+  st.id = 'fi-css';
+  const b = 'var(--border,rgba(255,255,255,.1))';
+  st.textContent =
+    '.fi-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:4px 0 12px}' +
+    '.fi-kpi{background:rgba(255,255,255,.04);border:1px solid ' + b + ';border-radius:10px;padding:9px 12px}' +
+    '.fi-kpi .l{font-size:11.5px;color:var(--muted)}' +
+    '.fi-kpi .v{font-family:Syne,sans-serif;font-weight:800;font-size:18px;margin-top:2px}' +
+    '.fi-kpi .s{font-size:11px;color:var(--muted)}' +
+    '.fi-sec{margin-top:10px}' +
+    '.fi-sec-t{font-size:12.5px;font-weight:700;margin-bottom:5px;display:flex;gap:8px;align-items:baseline}' +
+    '.fi-sec-t span{font-weight:400;color:var(--muted);font-size:11.5px}' +
+    '.fi-lista{border:1px solid ' + b + ';border-radius:10px;overflow:hidden}' +
+    '.fi-fila{padding:7px 12px;font-size:12.5px;border-top:1px solid ' + b + '}' +
+    '.fi-fila:first-child{border-top:0}' +
+    '.fi-fila summary{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;cursor:pointer;list-style:none}' +
+    '.fi-fila summary::-webkit-details-marker{display:none}' +
+    '.fi-id{font-family:ui-monospace,monospace;color:var(--gold);min-width:150px}' +
+    '.fi-f{color:var(--muted);flex:1;min-width:90px}' +
+    '.fi-est{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.07)}' +
+    '.fi-todo{display:grid;grid-template-columns:minmax(140px,max-content) 1fr;gap:3px 14px;margin:8px 0 2px;' +
+      'font-size:11.5px;color:var(--muted)}' +
+    '.fi-todo b{font-weight:600;color:inherit;opacity:.8}' +
+    '.fi-pie{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}';
+  document.head.appendChild(st);
+}
+
+function pintarFicha(r){
+  const cont = document.getElementById('k-ficha');
+  if(!cont) return;
+  if(!r || !soloDig(r.documento)){ cont.innerHTML = ''; return; }
+  estilosFicha();
+  cont.innerHTML =
+    '<div class="pleg' + (FICHA_ABIERTA ? ' on' : '') + '" id="pleg-ficha">' +
+      '<button class="pleg-btn" onclick="alternarFicha()">' +
+        '<span class="pleg-fl">' + ICONO.flecha + '</span>Situación de la cédula' +
+        '<span class="pleg-cta" id="fi-cta">' + (FICHA_ABIERTA ? 'consultando…' : 'clic para consultar') + '</span>' +
+      '</button>' +
+      '<div class="pleg-cnt"><div id="fi-cnt"></div></div>' +
+    '</div>';
+  if(FICHA_ABIERTA) cargarFicha(r);
+}
+
+function alternarFicha(){
+  plegar('pleg-ficha');
+  const el = document.getElementById('pleg-ficha');
+  FICHA_ABIERTA = !!(el && el.classList.contains('on'));
+  try{ localStorage.setItem('pet_ficha', FICHA_ABIERTA ? '1' : '0'); }catch(e){}
+  if(FICHA_ABIERTA) cargarFicha(COLA[COLA_IDX]);
+}
+
+async function cargarFicha(r){
+  const cnt = document.getElementById('fi-cnt');
+  if(!cnt || !r) return;
+  const doc = soloDig(r.documento);
+  const id = r.id;
+  const sigueAqui = function(){ const a = COLA[COLA_IDX]; return a && a.id === id; };
+  let d = FICHA_CACHE.get(doc);
+  if(!d){
+    cnt.innerHTML = '<div class="hint" style="padding:6px 0">Consultando comparendos, depósitos y procesos de la cédula…</div>';
+    try{
+      d = await supaFetch('rpc/pet_ficha_deudor?doc=' + encodeURIComponent(doc));
+      FICHA_CACHE.set(doc, d);
+    }catch(e){
+      if(!sigueAqui()) return;
+      cnt.innerHTML = '<div class="hint" style="color:var(--rojo);padding:6px 0">' +
+        (esFaltaVista(e) ? 'Falta correr el SQL de la ficha (pet_ficha_deudor) en Supabase.'
+                         : 'No se pudo consultar: ' + esc(e.message)) + '</div>';
+      const c0 = document.getElementById('fi-cta'); if(c0) c0.textContent = 'error';
+      return;
+    }
+  }
+  if(!sigueAqui()) return;
+  cnt.innerHTML = htmlFicha(r, d);
+  const cta = document.getElementById('fi-cta');
+  if(cta){
+    const n = FICHA_SECC.reduce(function(a, s){ return a + ((d[s.k] || []).length); }, 0);
+    cta.textContent = n ? n + ' registro(s)' : 'sin registros';
+  }
+}
+
+/* Primer campo cuyo nombre cumpla el patrón y tenga valor */
+function campoFicha(fila, re, excluir){
+  const ks = Object.keys(fila);
+  for(let i = 0; i < ks.length; i++){
+    const k = ks[i];
+    if(excluir && excluir.indexOf(k) !== -1) continue;
+    if(re.test(k) && fila[k] !== null && fila[k] !== '') return k;
+  }
+  return null;
+}
+function numFicha(v){
+  if(v === null || v === undefined || v === '') return null;
+  if(typeof v === 'number') return v;
+  const t = String(v).trim();
+  if(/^-?\d+(\.\d+)?$/.test(t)) return parseFloat(t);
+  const solo = t.replace(/[^\d-]/g, '');
+  return solo ? parseInt(solo, 10) : null;
+}
+function pesos(n){ return '$' + Math.round(n).toLocaleString('es-CO'); }
+function fechaFicha(v){
+  const m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[3] + '/' + m[2] + '/' + m[1] : String(v || '');
+}
+
+function htmlFicha(r, d){
+  const claves = d._claves || {};
+  let kpis = '', secciones = '';
+  const sumas = {};
+  FICHA_SECC.forEach(function(s){
+    const filas = d[s.k];
+    if(!Array.isArray(filas)) return;                     // tabla no disponible
+    const clave = String(claves[s.k] || '').split('.').pop();
+    let suma = 0, conValor = 0;
+    const lineas = filas.map(function(f){
+      const kId  = campoFicha(f, /comparendo|titulo|deposito|expediente|radicado|numero|^nro|proceso/i, [clave]);
+      const kFec = campoFicha(f, /fecha/i);
+      const kVal = campoFicha(f, /valor|saldo|monto|total|multa|deuda/i);
+      const kEst = campoFicha(f, /estado/i);
+      const v = kVal ? numFicha(f[kVal]) : null;
+      if(v !== null && !isNaN(v)){ suma += v; conValor++; }
+      const todo = Object.keys(f).filter(function(k){ return f[k] !== null && f[k] !== ''; })
+        .map(function(k){
+          const val = typeof f[k] === 'object' ? JSON.stringify(f[k]) : String(f[k]);
+          return '<b>' + esc(k) + '</b><span>' + esc(val.length > 160 ? val.slice(0, 160) + '…' : val) + '</span>';
+        }).join('');
+      return '<details class="fi-fila"><summary>' +
+          '<span class="fi-id">' + esc(kId ? f[kId] : '—') + '</span>' +
+          '<span class="fi-f">' + (kFec ? esc(fechaFicha(f[kFec])) : '') + '</span>' +
+          (v !== null && !isNaN(v) ? '<span>' + pesos(v) + '</span>' : '') +
+          (kEst ? '<span class="fi-est">' + esc(f[kEst]) + '</span>' : '') +
+        '</summary><div class="fi-todo">' + todo + '</div></details>';
+    });
+    if(s.suma && conValor) sumas[s.k] = suma;
+    kpis += '<div class="fi-kpi"><div class="l">' + esc(s.t) + '</div>' +
+      '<div class="v">' + (s.suma && conValor ? pesos(suma) : filas.length) + '</div>' +
+      '<div class="s">' + filas.length + ' registro(s)' + (filas.length >= 50 ? ' · se muestran 50' : '') + '</div></div>';
+    if(filas.length){
+      secciones += '<div class="fi-sec"><div class="fi-sec-t">' + esc(s.t) + '<span>' + filas.length +
+        ' · clic en una fila para ver todos los datos</span></div><div class="fi-lista">' + lineas.join('') + '</div></div>';
+    }
+  });
+  if(sumas.transito && sumas.recaudo){
+    const cob = sumas.recaudo / sumas.transito * 100;
+    kpis += '<div class="fi-kpi"><div class="l">Cobertura de depósitos</div>' +
+      '<div class="v">' + Math.round(cob) + ' %</div>' +
+      '<div class="s">' + (sumas.recaudo >= sumas.transito ? 'sobra ' + pesos(sumas.recaudo - sumas.transito)
+                                                           : 'falta ' + pesos(sumas.transito - sumas.recaudo)) +
+      '</div></div>';
+  }
+  const usadas = Object.keys(claves).map(function(k){ return claves[k]; });
+  const faltan = d._faltan || [];
+  return '<div class="fi-kpis">' + kpis + '</div>' +
+    (secciones || '<div class="hint">Esta cédula no aparece en ninguna de las tablas consultadas.</div>') +
+    '<div class="fi-pie">Valores aproximados: confirme la deuda en QX antes de decidir. ' +
+      'Los depósitos se suman todos, estén aplicados o no.<br>' +
+      'Cruce por: ' + esc(usadas.join(' · ') || '—') +
+      (faltan.length ? '<br>No disponibles: ' + esc(faltan.join(', ')) : '') +
+    '</div>';
 }
 function pintarCasoBase(){
   const cont = document.getElementById('c-cont');
@@ -3203,6 +3387,9 @@ function pintarCasoBase(){
 
     // ── Otras peticiones de la misma persona (se abre sola si hay abiertas) ──
     '<div id="k-hist"></div>' +
+
+    // ── Situación de la cédula: comparendos, depósitos, predial, ICA, tutelas ──
+    '<div id="k-ficha"></div>' +
 
     // ── Documentos: es el trabajo principal, va abierto ──
     panelDocumentos(r) +
