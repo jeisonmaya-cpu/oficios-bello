@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- deploy: v2025-08-03-full3 · CONSOLIDADO + leyendas de flujo (ingresados/resueltos, no abiertos) para no confundir flujo con stock activo -->
+  <!-- deploy: vr7 2026-10-31 · desempeño por abogado mes a mes · vr6: · agenda de términos, trayectoria, guardado con versión, festivos calculados, perfil a prueba de fallos · antes: v2025-08-03-full3 · CONSOLIDADO + leyendas de flujo (ingresados/resueltos, no abiertos) para no confundir flujo con stock activo -->
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
   <style>
@@ -631,7 +631,7 @@ html[data-theme="light"] .sk-bar{background:linear-gradient(90deg,
 .nov-badge{display:inline-block;font-size:10px;font-weight:700;color:#0a1f3d;background:linear-gradient(135deg,#e8a020,#f0b840);padding:4px 12px;border-radius:20px;letter-spacing:.05em;margin-bottom:12px}
 .nov-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:4px}
 .nov-sub{font-size:12.5px;color:var(--muted)}
-.nov-list{padding:6px 22px 8px;display:flex;flex-direction:column;gap:10px}
+.nov-list{padding:6px 22px 8px;display:flex;flex-direction:column;gap:10px;max-height:58vh;overflow-y:auto}
 .nov-item{display:flex;gap:13px;align-items:flex-start;padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border)}
 .nov-ico{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.22)}
 .nov-tx b{font-size:13.5px;font-weight:600;display:block;margin-bottom:2px}
@@ -757,7 +757,105 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
 .fila:focus-visible,.hoy-item:focus-visible,.gr-item:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 .hist-item{padding:10px 12px;border-left:2px solid var(--border);margin-bottom:8px;font-size:12px;line-height:1.55}
 .hist-item .q{color:var(--muted);font-size:11px;margin-bottom:4px}
-  </style>
+  
+/* ══════════════════════════════════════════════════════════════
+   vr6 · AGENDA DE TÉRMINOS + TRAYECTORIA DEL PROCESO
+   Bloque propio al final del <style>: se revierte borrándolo.
+   ══════════════════════════════════════════════════════════════ */
+:root{--c-tut:#93c5fd;--c-fal:#c4b5fd;--c-inc:#fdba74;--c-venc:#f87171}
+html[data-theme="light"]{--c-tut:#2563eb;--c-fal:#7c3aed;--c-inc:#ea580c;--c-venc:#dc2626}
+
+.ag{max-width:1400px;margin:0 0 18px;border:1px solid var(--border);border-radius:18px;padding:18px 20px 14px;
+  background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
+html[data-theme="light"] .ag{background:linear-gradient(160deg,rgba(15,45,94,.045),rgba(15,45,94,.012))}
+.ag-hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ag-tit{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.ag-sub{font-size:12px;color:var(--muted)}
+.ag-ley{display:flex;gap:14px;font-size:11px;color:var(--muted)}
+.ag-ley i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.ag-dias{display:grid;grid-template-columns:repeat(11,minmax(58px,1fr));gap:6px;overflow-x:auto;padding-bottom:4px}
+.ag-dia{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:8px 4px 9px;border-radius:12px;border:1px solid transparent;transition:background .15s,border-color .15s}
+.ag-dia:hover{background:var(--hover)}
+.ag-dia:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.ag-dia.sel{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.45)}
+.ag-dia.vacio{cursor:default;opacity:.55}
+.ag-dia.vacio:hover{background:none}
+.ag-dsem{font-size:10.5px;color:var(--muted);text-transform:capitalize}
+.ag-dnum{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;line-height:1}
+.ag-dia.hoy .ag-dnum{color:var(--gold)}
+.ag-dia.hoy .ag-dsem{color:var(--gold);font-weight:700}
+.ag-barra{width:22px;height:74px;border-radius:7px;background:rgba(127,127,127,.12);display:flex;flex-direction:column-reverse;overflow:hidden}
+.ag-barra span{display:block;width:100%}
+.ag-n{font-size:12px;font-weight:700;min-height:15px}
+.ag-dia.atras .ag-dnum,.ag-dia.atras .ag-n{color:var(--c-venc)}
+.ag-dia.atras{border-right:1px dashed var(--border);border-radius:12px 0 0 12px}
+.ag-fest{font-size:9.5px;color:var(--gold2);white-space:nowrap}
+html[data-theme="light"] .ag-fest{color:#b45309}
+.ag-lista{margin-top:12px;border-top:1px solid var(--border);padding-top:6px}
+.ag-lista-hd{font-size:12px;color:var(--muted);padding:6px 0 2px}
+.ag-lista .hoy-item{border-top:1px solid var(--border)}
+.ag-lista .hoy-item:first-of-type{border-top:none}
+@media (prefers-reduced-motion:reduce){.ag-dia{transition:none}}
+
+/* Trayectoria del proceso en el detalle del caso */
+.ruta{display:flex;align-items:flex-start;margin:-4px 0 16px;padding:12px 6px 10px;border:1px solid var(--border);border-radius:14px;overflow-x:auto}
+.ruta-paso{flex:1 1 0;min-width:86px;position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:0 4px}
+.ruta-paso::before{content:'';position:absolute;top:10px;left:calc(-50% + 13px);right:calc(50% + 13px);height:2px;background:var(--border)}
+.ruta-paso:first-child::before{display:none}
+.ruta-paso.hecho::before,.ruta-paso.actual::before{background:rgba(74,222,128,.55)}
+.ruta-pt{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;
+  border:2px solid var(--border);color:var(--muted);background:var(--modal-bg);position:relative;z-index:1}
+.ruta-paso.hecho .ruta-pt{border-color:#4ade80;background:rgba(74,222,128,.16);color:#4ade80}
+.ruta-paso.actual .ruta-pt{border-color:var(--gold);background:var(--gold);color:#0a1f3d;box-shadow:0 0 0 4px rgba(245,158,11,.18)}
+.ruta-paso.alerta .ruta-pt{border-color:#f87171;background:rgba(239,68,68,.16);color:#f87171}
+.ruta-et{font-size:11.5px;font-weight:600;color:var(--text)}
+.ruta-paso.pend .ruta-et{color:var(--muted);font-weight:500}
+.ruta-det{font-size:10.5px;color:var(--muted);line-height:1.3;max-width:120px}
+.ruta-paso.click{cursor:pointer;border-radius:10px}
+.ruta-paso.click:hover .ruta-et{text-decoration:underline;text-underline-offset:3px}
+.ruta-paso.click:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+html[data-theme="light"] .ruta-paso.hecho .ruta-pt{color:#15803d;border-color:#16a34a}
+
+/* Login: ver contraseña y aviso de mayúsculas */
+.lg-pass{position:relative}
+.lg-ojo{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#8da2c0;cursor:pointer;font-size:12px;padding:6px 8px;border-radius:6px;font-family:'DM Sans',sans-serif}
+.lg-ojo:hover{color:#fff;background:rgba(255,255,255,.08)}
+.lg-ojo:focus-visible{outline:2px solid #e8a020}
+.lg-caps{display:none;margin-top:6px;font-size:11.5px;color:#fbbf24}
+/* Etiquetas de categoría legibles en tema claro */
+html[data-theme="light"] .b-tut{background:rgba(37,99,235,.12);color:#1d4ed8}
+html[data-theme="light"] .b-fal{background:rgba(124,58,237,.12);color:#6d28d9}
+html[data-theme="light"] .b-inc{background:rgba(234,88,12,.12);color:#c2410c}
+
+/* ══════════════════════════════════════════════════════════════
+   vr7 · DESEMPEÑO POR ABOGADO (Estadísticas)
+   ══════════════════════════════════════════════════════════════ */
+.des-card{border-color:rgba(245,158,11,.35)!important}
+.des-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.des-tit{font-family:'Syne',sans-serif;font-size:16px;font-weight:700}
+.des-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.des-yo{margin:0 0 14px;padding:12px 16px;border-radius:12px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.08);font-size:13px;line-height:1.5}
+.des-yo b{color:var(--gold2)}
+html[data-theme="light"] .des-yo b{color:#b45309}
+.des-podio{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-bottom:16px}
+.des-med{padding:13px 15px;border-radius:12px;border:1px solid var(--border);background:var(--panel)}
+.des-med .q{font-size:11.5px;color:var(--muted)}
+.des-med .n{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-top:4px}
+.des-med .v{font-size:12px;color:var(--muted);margin-top:2px}
+.des-med.yo{border-color:rgba(245,158,11,.55);box-shadow:inset 0 0 0 1px rgba(245,158,11,.25)}
+.des-graf{height:260px;margin-bottom:14px}
+.des-tabla{width:100%;border-collapse:collapse;font-size:12.5px}
+.des-tabla th{text-align:right;font-weight:600;color:var(--muted);font-size:11px;padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.des-tabla th:first-child,.des-tabla td:first-child{text-align:left}
+.des-tabla td{text-align:right;padding:8px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;white-space:nowrap}
+.des-tabla tr.yo td{background:rgba(245,158,11,.08);font-weight:700}
+.des-tabla .sube{color:#4ade80}.des-tabla .baja{color:#f87171}.des-tabla .igual{color:var(--muted)}
+html[data-theme="light"] .des-tabla .sube{color:#15803d}
+html[data-theme="light"] .des-tabla .baja{color:#dc2626}
+.des-tw{overflow-x:auto}
+.des-nota{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.55}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
@@ -795,17 +893,19 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
 <div class="nov-back" id="nov-back" onclick="if(event.target===this)cerrarNovedades()">
   <div class="nov-box" role="dialog" aria-label="Novedades de la versión">
     <div class="nov-head">
-      <div class="nov-badge">NOVEDADES · VR 5</div>
+      <div class="nov-badge">NOVEDADES · VR 7</div>
       <div class="nov-title">¿Qué hay de nuevo?</div>
-      <div class="nov-sub">Mejoras para trabajar más rápido y cómodo.</div>
+      <div class="nov-sub">Más claridad sobre tus términos y menos riesgo de perder trabajo.</div>
     </div>
     <div class="nov-list">
-      <div class="nov-item"><div class="nov-ico">👤</div><div class="nov-tx"><b>Cada quien ve lo suyo</b><span>Los abogados ven solo sus casos. La Dirección y la administración ven todo el equipo.</span></div></div>
-      <div class="nov-item"><div class="nov-ico">🚨</div><div class="nov-tx"><b>Tablero de sanciones</b><span>Si un desacato termina en sanción, ábrelo y pulsa «Marcar como sanción». Queda en la nueva pestaña Sanciones con su estado, multa, arresto y funcionario sancionado.</span></div></div>
-      <div class="nov-item"><div class="nov-ico">🏠</div><div class="nov-tx"><b>«Hoy» según tu rol</b><span>Además de vencidos y urgentes, verás si falta un fallo por llegar, sanciones en curso y, para gestión técnica, pendientes de PQR/SharePoint y notificaciones.</span></div></div>
-      <div class="nov-item"><div class="nov-ico">💾</div><div class="nov-tx"><b>Un solo botón de guardar</b><span>Cuando cambias algo aparece la barra «Guardar cambios» abajo del caso. Al cerrar un caso se pide el dato clave (radicado de respuesta o sentido del fallo).</span></div></div>
-      <div class="nov-item"><div class="nov-ico">🕘</div><div class="nov-tx"><b>Historial de cambios</b><span>En el detalle del caso puedes ver quién cambió qué y cuándo.</span></div></div>
-      <div class="nov-item"><div class="nov-ico">📅</div><div class="nov-tx"><b>Fechas con calendario</b><span>Al crear o editar un caso eliges fechas en calendario y la fecha límite se calcula con el término que da el juez.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">🏁</div><div class="nov-tx"><b>Desempeño mes a mes</b><span>En Estadísticas ves cuántos casos cerraste a término cada mes, si mejoraste frente al mes anterior y cómo vas frente al equipo. Cada mes hay tres reconocimientos: más cierres a término, mejor % a término y mayor progreso.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">📅</div><div class="nov-tx"><b>Agenda de términos</b><span>En «Hoy» ves los próximos 10 días hábiles y cuántos términos vencen cada día. Toca un día para ver sus casos. También te avisa cuál es el próximo festivo.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">🧭</div><div class="nov-tx"><b>Trayectoria del caso</b><span>Arriba del detalle aparece el camino del proceso: admisión, respuesta, fallo, impugnación, incidente y sanción. Toca un paso para abrir ese registro.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">⏱️</div><div class="nov-tx"><b>Vencidos con días</b><span>El semáforo ahora dice cuántos días hábiles lleva vencido un término, no solo «Vencido».</span></div></div>
+      <div class="nov-item"><div class="nov-ico">🛡️</div><div class="nov-tx"><b>Nadie pisa tu trabajo</b><span>Si otra persona modificó el caso mientras corregías sus datos o lo marcabas como hecho superado, el sistema te muestra qué cambió y te pregunta antes de guardar.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">🗓️</div><div class="nov-tx"><b>Festivos siempre al día</b><span>Los festivos se calculan solos para cualquier año. Se corrigieron el 13 de julio de 2026 y el 12 de julio de 2027, que se contaban como festivos sin serlo.</span></div></div>
+      <div class="nov-item"><div class="nov-ico">🔑</div><div class="nov-tx"><b>Ingreso más cómodo</b><span>Puedes ver la contraseña mientras la escribes y te avisa si tienes las mayúsculas activadas.</span></div></div>
+      <div class="nov-item" data-rol="admin tecnica"><div class="nov-ico">🔒</div><div class="nov-tx"><b>Permisos más seguros</b><span>Si el perfil de un usuario no carga, ya no recibe acceso de administrador por defecto: ve un aviso y debe recargar.</span></div></div>
     </div>
     <div class="nov-foot">
       <button class="nov-btn" onclick="cerrarNovedades()">Entendido, ¡a trabajar!</button>
@@ -818,7 +918,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
   <div style="width:100%;max-width:400px;background:rgba(255,255,255,.04);border:1px solid rgba(232,160,32,.2);border-radius:20px;padding:40px 34px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
     <div style="text-align:center;margin-bottom:28px">
       <div style="font-size:42px;margin-bottom:10px">⚖️</div>
-      <h1 style="font-family:'DM Serif Display',serif;font-size:26px;color:#fff;margin:0 0 6px">Sistema de Tutelas</h1>
+      <h1 style="font-family:'Syne',sans-serif;font-weight:800;letter-spacing:-.02em;font-size:26px;color:#fff;margin:0 0 6px">Sistema de Tutelas</h1>
       <p style="font-size:13px;color:#8da2c0;margin:0">Dirección de Ejecuciones Fiscales · Bello</p>
     </div>
     <div style="margin-bottom:16px">
@@ -827,7 +927,11 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
     </div>
     <div style="margin-bottom:22px">
       <label style="display:block;font-size:12px;color:#e8a020;font-weight:600;margin-bottom:6px;letter-spacing:.03em">Contraseña</label>
-      <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;padding:13px 15px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box" onkeydown="if(event.key==='Enter')hacerLogin()">
+      <div class="lg-pass">
+      <input id="login-pass" type="password" autocomplete="current-password" placeholder="••••••••" style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;padding:13px 78px 13px 15px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;box-sizing:border-box" onkeydown="if(event.key==='Enter')hacerLogin()" onkeyup="avisoMayus(event)">
+        <button type="button" class="lg-ojo" id="lg-ojo" onclick="verClave()" aria-label="Mostrar contraseña">Mostrar</button>
+      </div>
+      <div class="lg-caps" id="lg-caps">Las mayúsculas están activadas.</div>
     </div>
     <button id="login-btn" onclick="hacerLogin()" style="width:100%;background:linear-gradient(135deg,#e8a020,#f0b840);color:#0a1f3d;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:transform .1s">Ingresar</button>
     <div style="text-align:center;margin-top:12px"><a href="#" onclick="event.preventDefault();recuperarClave()" style="font-size:12px;color:#8da2c0;text-decoration:underline">¿Olvidaste tu contraseña?</a></div>
@@ -896,6 +1000,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
     <div class="hoy-h1" id="hoy-saludo">Hoy</div>
     <div class="hoy-fecha" id="hoy-fecha"></div>
   </div>
+  <div id="hoy-agenda"></div>
   <div class="hoy-grid" id="hoy-grid"></div>
 </div>
 
@@ -1099,6 +1204,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
       </div>
       <button class="modal-close" onclick="cerrarModalPrincipal()">✕</button>
     </div>
+    <div id="m-ruta"></div>
     <div id="m-editar-wrap" style="display:none;margin:-6px 0 14px">
       <button onclick="abrirEditarCaso()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(232,160,32,.14);border:1px solid rgba(232,160,32,.35);color:var(--gold);font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s" onmouseover="this.style.background='rgba(232,160,32,.24)'" onmouseout="this.style.background='rgba(232,160,32,.14)'">✏️ Editar datos del caso</button>
       <span style="font-size:11px;color:var(--muted);margin-left:8px">Corrige errores de lectura del PDF (accionante, CC, etc.)</span>
@@ -1320,7 +1426,7 @@ html[data-theme="light"] .hoy-num{background:linear-gradient(180deg,var(--text),
 </div>
 
 <!-- MODAL CONFIRMACIÓN -->
-<div class="overlay" id="overlay-confirm" style="z-index:200">
+<div class="overlay" id="overlay-confirm" style="z-index:260">
   <div class="modal" style="max-width:420px;padding:28px">
     <div style="font-size:22px;margin-bottom:12px;text-align:center">💾</div>
     <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:600;text-align:center;margin-bottom:8px" id="confirm-titulo">¿Confirmar cambios?</div>
@@ -1990,21 +2096,29 @@ let tutelas=[], fallos=[], incidentes=[], actual=null, origenModal="tutela";
 //   tecnica → ve todo para la gestión PQR/SharePoint, sin funciones de administración
 //   abogado → solo los casos cuyo RESPONSABLE es él/ella
 //   legacy  → la tabla perfiles aún no existe: comportamiento anterior (ve todo)
-let PERFIL = { rol:"legacy", nombre:"", nombreAbogado:"", alias:[] };
+// vr6 · arranca SIN permisos: si el perfil no se puede leer, nadie queda como administrador.
+let PERFIL = { rol:"sinperfil", nombre:"", nombreAbogado:"", alias:[] };
 function veTodo(){ return ["admin","tecnica","legacy"].includes(PERFIL.rol); }
 function esAdmin(){ return PERFIL.rol==="admin" || PERFIL.rol==="legacy"; }
 async function cargarPerfil(){
-  try{
-    let uid="";
-    if(sbAuth){ const {data}=await sbAuth.auth.getSession(); uid=data&&data.session&&data.session.user?data.session.user.id:""; }
-    if(!uid) return;
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/perfiles?user_id=eq.${encodeURIComponent(uid)}&select=nombre,rol,nombre_abogado,alias,activo`,{ headers: await getAuthHeaders() });
-    if(res.status===404 || res.status===400){ console.warn("Tabla perfiles no existe todavía: modo anterior"); return; }
-    if(!res.ok) throw new Error("HTTP "+res.status);
-    const f=(await res.json())[0];
-    if(!f || f.activo===false){ PERFIL={rol:"sinperfil",nombre:"",nombreAbogado:"",alias:[]}; return; }
-    PERFIL={ rol:f.rol, nombre:f.nombre||"", nombreAbogado:f.nombre_abogado||"", alias:Array.isArray(f.alias)?f.alias:[] };
-  }catch(e){ console.warn("No se pudo leer el perfil:", e.message); }
+  let uid="";
+  try{ if(sbAuth){ const {data}=await sbAuth.auth.getSession(); uid=data&&data.session&&data.session.user?data.session.user.id:""; } }catch(_){}
+  if(!uid) return;   // sin sesión: la pantalla de login se encarga
+  // vr6 · dos intentos; si ambos fallan queda "sinperfil" (antes caía a "legacy" = administrador)
+  for(let intento=1; intento<=2; intento++){
+    try{
+      const res=await fetch(`${SUPABASE_URL}/rest/v1/perfiles?user_id=eq.${encodeURIComponent(uid)}&select=nombre,rol,nombre_abogado,alias,activo`,{ headers: await getAuthHeaders() });
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      const f=(await res.json())[0];
+      if(!f || f.activo===false){ PERFIL={rol:"sinperfil",nombre:"",nombreAbogado:"",alias:[]}; return; }
+      PERFIL={ rol:f.rol, nombre:f.nombre||"", nombreAbogado:f.nombre_abogado||"", alias:Array.isArray(f.alias)?f.alias:[] };
+      return;
+    }catch(e){
+      console.warn(`No se pudo leer el perfil (intento ${intento}):`, e.message);
+      if(intento===1) await new Promise(r=>setTimeout(r,1500));
+    }
+  }
+  PERFIL={rol:"sinperfil",nombre:"",nombreAbogado:"",alias:[],errorCarga:true};
 }
 function misNombres(){ return [PERFIL.nombreAbogado, ...PERFIL.alias].map(x=>String(x||"").trim()).filter(Boolean); }
 function esMio(r){ const ns=misNombres(); return ns.some(n=>matchAbo(r["RESPONSABLE"], n)); }
@@ -2032,7 +2146,9 @@ function aplicarPermisosUI(){
     const rolTxt={admin:"Administrador",tecnica:"Gestión técnica",abogado:"Abogado(a)",sinperfil:"Sin perfil"}[PERFIL.rol];
     if(rolTxt){ pill.style.display="flex"; pill.innerHTML=`👤 <b>${esc((PERFIL.nombre||USUARIO_EMAIL||"").split(" ").slice(0,2).join(" "))}</b> · ${rolTxt}`; }
   }
-  if(PERFIL.rol==="sinperfil") toast("⚠️ Tu usuario no tiene perfil asignado. Pide al administrador que te lo cree.","err");
+  if(PERFIL.rol==="sinperfil") toast(PERFIL.errorCarga
+    ? "⚠️ No se pudo leer tu perfil por un problema de conexión. Recarga la página para ver tus casos."
+    : "⚠️ Tu usuario no tiene perfil asignado. Pide al administrador que te lo cree.","err");
 }
 
 // ════════ v5 · SANCIONES POR DESACATO ════════
@@ -2584,11 +2700,10 @@ async function marcarHechoSuperado(){
   toast("⏳ Guardando...","");
   try{
     if(USAR_SUPABASE && actual._id){
-      const guardado = await Repo.actualizar(actual._id, { "ESTADO": "Hecho superado" });
-      if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
-      const idx=tutelas.findIndex(r=>r._id===actual._id);
-      if(idx>=0) tutelas[idx]["ESTADO"]="Hecho superado";
-      actual["ESTADO"]="Hecho superado";
+      // vr6 · con control de versión (antes podía pisar un guardado simultáneo)
+      const guardado = await guardarConVersion({ "ESTADO": "Hecho superado" });
+      if(!guardado){ toast("↩️ No se marcó. El caso se recargó con los datos actuales.",""); renderAll(); return; }
+      _aplicarRegistroFresco(guardado);
       toast("✅ Marcado como Hecho superado","ok");
       renderAll();
       document.getElementById("overlay").classList.remove("open");
@@ -2671,30 +2786,35 @@ async function guardarEdicionCaso(){
     errBox.style.display="block"; return;
   }
   if(urlDoc!==String(actual["URL DOCUMENTO"]||"").trim()) campos["URL DOCUMENTO"]=urlDoc;
+  // vr6 · solo se envía lo que cambió y con control de versión: antes se mandaban
+  // los 10 campos siempre y una edición podía pisar lo que otra persona corrigió.
+  if(!veTodo()) delete campos["RESPONSABLE"];
+  const _nrm=x=>String(x??"").trim();
+  Object.keys(campos).forEach(k=>{
+    if(k==="URL DOCUMENTO") return;
+    let antes=_nrm(actual[k]);
+    if(k==="FECHA INICIAL" || k==="FECHA LÍMITE"){
+      if(k==="FECHA LÍMITE" && actual._flimEstimada) antes="";
+      antes = antes ? _nrm(_aDMY(antes)) : "";
+    }
+    if(antes===_nrm(campos[k])) delete campos[k];
+  });
+  if(!Object.keys(campos).length){
+    toast("No hay cambios para guardar","");
+    document.getElementById("overlay-editar").classList.remove("open");
+    return;
+  }
   btn.textContent="Guardando..."; btn.style.pointerEvents="none";
   try{
-    let guardado;
-    try{
-      guardado=await Repo.actualizar(actual._id, campos);
-    }catch(e1){
-      // Reintento único ante sesión vencida: fuerza refresh del token y reintenta.
-      // Si aún falla, se propaga al catch externo SIN cerrar el modal (no se pierde lo escrito).
-      if(/JWT expired|401/i.test(e1.message) && sbAuth){
-        try{ await sbAuth.auth.refreshSession(); }catch(_){}
-        guardado=await Repo.actualizar(actual._id, campos);
-      } else throw e1;
+    const guardado = await guardarConVersion(campos);
+    if(!guardado){
+      document.getElementById("overlay-editar").classList.remove("open");
+      toast("↩️ No se guardó. El caso se recargó con los datos actuales.","");
+      abrirModal(encodeURIComponent(JSON.stringify(actual)), origenModal);
+      return;
     }
-    if(!guardado) throw new Error("Supabase no devolvió el registro actualizado");
-    // Refresca el registro en memoria (en el array que corresponda)
-    const arr = origenModal==="incidente" ? incidentes : origenModal==="fallo" ? fallos : tutelas;
-    const idx=arr.findIndex(r=>r._id===actual._id);
-    Object.entries(campos).forEach(([k,v])=>{
-      if(idx>=0) arr[idx][k]=v;
-      actual[k]=v;
-    });
-    // Recalcula días restantes con la nueva fecha límite
-    if(idx>=0) normalizarRegistro(arr[idx]);
-    normalizarRegistro(actual);
+    // Refresca el registro en memoria con lo que devolvió Supabase (incluye la nueva versión)
+    _aplicarRegistroFresco(guardado);
     toast("✅ Correcciones guardadas","ok");
     document.getElementById("overlay-editar").classList.remove("open");
     renderAll();
@@ -2761,7 +2881,7 @@ const NORM_TIPO={
 };
 // ── Estimación de FECHA LÍMITE cuando el registro no la trae ──
 // Los plazos de tutela se cuentan en días HÁBILES (sin sábados, domingos ni
-// festivos — tabla FESTIVOS_CO). La estimación es un apoyo, NO un dato oficial. Por eso se marca _flimEstimada
+// festivos — FESTIVOS_CO). La estimación es un apoyo, NO un dato oficial. Por eso se marca _flimEstimada
 // y la vista la muestra con "~" para que el abogado verifique el auto/fallo.
 // Plazos por tipo: Admite/Tutela 3, Fallo/Sentencia 2, Incidente/Desacato 3.
 const PLAZO_HABIL={
@@ -2912,39 +3032,44 @@ async function leerGvizJSON(gid) {
   }).filter(filaValida);
 }
 
-function calcDias(fecha){
-  if(!fecha) return null;
-  let p=null;
-  if(fecha.includes("/")){ p=fecha.split("/"); if(p.length!==3) return null; }
-  else if(/^\d{4}-\d{2}-\d{2}/.test(fecha)){ const q=fecha.slice(0,10).split("-"); p=[q[2],q[1],q[0]]; }
-  else return null;
-  const fLim=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
-  if (isNaN(fLim.getTime())) return null;
-  const hoy=new Date(); hoy.setHours(0,0,0,0);
-  return Math.round((fLim-hoy)/86400000);
-}
-
 /* ═══════════════════════════════════════════════════════════════
-   vr3 · DÍAS HÁBILES (Colombia)
+   vr6 · DÍAS HÁBILES (Colombia)
    Regla acordada: se descuentan sábados, domingos y festivos
-   nacionales. HOY cuenta como día 1.
-   FESTIVOS_CO: tabla fija revisable, verificada 2025-2027 (Ley 51/1983
-   "Emiliani" + traslados a lunes). Actualízala cada año.
+   nacionales. Antes los festivos eran una tabla fija 2025-2027 que
+   había que actualizar a mano (y traía el 13-jul-2026 y el 12-jul-2027,
+   que no son festivos). Ahora se CALCULAN para cualquier año:
+   · Fijos: 1-ene, 1-may, 20-jul, 7-ago, 8-dic, 25-dic.
+   · Ley 51/1983 (Emiliani, pasan al lunes): 6-ene, 19-mar, 29-jun,
+     15-ago, 12-oct, 1-nov, 11-nov.
+   · Según la Pascua: Jueves y Viernes Santo; Ascensión (+43),
+     Corpus Christi (+64) y Sagrado Corazón (+71), ya en lunes.
+   Si algún día se decreta un festivo extraordinario, agréguelo en
+   FESTIVOS_EXTRA con formato "AAAA-MM-DD".
    ═══════════════════════════════════════════════════════════════ */
-const FESTIVOS_CO = new Set([
-  // 2025
-  "2025-01-01","2025-01-06","2025-03-24","2025-04-17","2025-04-18","2025-05-01",
-  "2025-06-02","2025-06-23","2025-06-30","2025-07-20","2025-08-07","2025-08-18",
-  "2025-10-13","2025-11-03","2025-11-17","2025-12-08","2025-12-25",
-  // 2026
-  "2026-01-01","2026-01-12","2026-03-23","2026-04-02","2026-04-03","2026-05-01",
-  "2026-05-18","2026-06-08","2026-06-15","2026-06-29","2026-07-13","2026-07-20",
-  "2026-08-07","2026-08-17","2026-10-12","2026-11-02","2026-11-16","2026-12-08","2026-12-25",
-  // 2027
-  "2027-01-01","2027-01-11","2027-03-22","2027-03-25","2027-03-26","2027-05-01",
-  "2027-05-10","2027-05-31","2027-06-07","2027-07-05","2027-07-12","2027-07-20",
-  "2027-08-07","2027-08-16","2027-10-18","2027-11-01","2027-11-15","2027-12-08","2027-12-25"
-]);
+const FESTIVOS_EXTRA = new Set([]);
+const _FEST_CACHE = {};
+function _pascua(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),
+        g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,
+        l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+        mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;
+  return new Date(y,mes-1,dia);
+}
+function festivosDelAnio(y){
+  if(_FEST_CACHE[y]) return _FEST_CACHE[y];
+  const s=new Set();
+  const fijo=(m,d)=>s.add(_ymdLocal(new Date(y,m-1,d)));
+  const aLunes=dt=>{ const x=new Date(dt); while(x.getDay()!==1) x.setDate(x.getDate()+1); s.add(_ymdLocal(x)); };
+  const mas=(base,n)=>{ const x=new Date(base); x.setDate(x.getDate()+n); return x; };
+  [[1,1],[5,1],[7,20],[8,7],[12,8],[12,25]].forEach(([m,d])=>fijo(m,d));
+  [[1,6],[3,19],[6,29],[8,15],[10,12],[11,1],[11,11]].forEach(([m,d])=>aLunes(new Date(y,m-1,d)));
+  const p=_pascua(y);
+  s.add(_ymdLocal(mas(p,-3))); s.add(_ymdLocal(mas(p,-2)));
+  aLunes(mas(p,39)); aLunes(mas(p,60)); aLunes(mas(p,68));
+  return (_FEST_CACHE[y]=s);
+}
+// Misma interfaz que la tabla anterior (FESTIVOS_CO.has("AAAA-MM-DD")).
+const FESTIVOS_CO = { has(ymd){ const y=parseInt(String(ymd).slice(0,4),10); return FESTIVOS_EXTRA.has(ymd) || (Number.isFinite(y) && festivosDelAnio(y).has(ymd)); } };
 function _ymdLocal(d){
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), dd=String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${dd}`;
@@ -2964,29 +3089,6 @@ function _habilesEntre(desde, hasta){
   while(p.getTime()<=b.getTime()){ if(_esHabil(p)) n++; p.setDate(p.getDate()+1); }
   return n;
 }
-// Días hábiles restantes hasta la fecha límite, con HOY como día 1.
-// Positivo/0 si aún corre (incluye hoy); negativo si ya venció.
-function calcDiasHab(fecha){
-  if(!fecha) return null;
-  let p=null;
-  if(fecha.includes("/")){ p=fecha.split("/"); if(p.length!==3) return null; }
-  else if(/^\d{4}-\d{2}-\d{2}/.test(fecha)){ const q=fecha.slice(0,10).split("-"); p=[q[2],q[1],q[0]]; }
-  else return null;
-  const lim=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
-  if(isNaN(lim.getTime())) return null;
-  lim.setHours(0,0,0,0);
-  const hoy=new Date(); hoy.setHours(0,0,0,0);
-  if(lim>=hoy){
-    let n=0, d=new Date(hoy);
-    while(d.getTime()<=lim.getTime()){ if(_esHabil(d)) n++; d.setDate(d.getDate()+1); }
-    return n;   // hoy cuenta como 1
-  } else {
-    let n=0, d=new Date(hoy); d.setDate(d.getDate()-1);
-    while(d.getTime()>=lim.getTime()){ if(_esHabil(d)) n--; d.setDate(d.getDate()-1); }
-    return n;    // negativo: hábiles vencidos
-  }
-}
-
 function verificarVencidos(){
   const v=[...tutelas,...fallos,...incidentes].filter(r=>r._dias!==null&&r._dias<0&&!EST_HIST.includes(r["ESTADO"]));
   const b=document.getElementById("alerta-banner");
@@ -3067,7 +3169,7 @@ const matchAbo=(campo,abo)=>{const nc=normNom(campo),na=normNom(abo);if(nc===na)
 function semaforo(dias,estado){
   if (EST_HIST.includes(estado)) return`<span class="sem sem-g"><span class="sem-dot"></span>${estado==="Respondido"?"Listo":estado==="Hecho superado"?"Superado":estado==="Anulado"?"Anulado":"Fin"}</span>`;
   if (dias===null) return`<span class="sem sem-g"><span class="sem-dot"></span>Sin fecha</span>`;
-  if (dias<0)  return`<span class="sem sem-r"><span class="sem-dot"></span>Vencido</span>`;
+  if (dias<0)  return`<span class="sem sem-r" title="Vencido hace ${Math.abs(dias)} día(s) hábil(es)"><span class="sem-dot"></span>Vencido ${Math.abs(dias)}d</span>`;
   if (dias===0) return`<span class="sem sem-r"><span class="sem-dot"></span>¡Hoy!</span>`;
   if (dias===1) return`<span class="sem sem-r"><span class="sem-dot"></span>Mañana</span>`;
   if (dias<=3) return`<span class="sem sem-a"><span class="sem-dot"></span>${dias}d háb.</span>`;
@@ -3501,7 +3603,7 @@ const _EVO_META = {
 function setEstPeriodo(p){ _estPeriodo = p; renderEstadisticas(); }
 function setEvoVista(v){ _evoVista = v; renderEstadisticas(); }
 
-// Parsea DD/MM/YYYY o YYYY-MM-DD → Date | null (mismo criterio que calcDias)
+// Parsea DD/MM/YYYY o YYYY-MM-DD → Date | null (DD/MM/YYYY o ISO)
 function parseFechaReg(s){
   s = String(s||"").trim(); if(!s) return null;
   let d = null;
@@ -3784,6 +3886,7 @@ function renderEstadisticas(){
   const sentNota = `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">${falSinSent} fallo(s) sin sentido registrado no entran en este cálculo.</div>`;
 
   document.getElementById("grid-est").innerHTML=
+    `<div class="est-card des-card" id="des-card" style="grid-column:1/-1"></div>`+
     `<div class="est-card" style="grid-column:1/-1;border-color:rgba(232,160,32,.3)"><div class="est-title" style="color:var(--gold2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><span>📊 Carga de trabajo · ¿conviene otro abogado?</span><button onclick="generarPDFCarga()" style="padding:6px 13px;border-radius:8px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.35);color:var(--gold2);font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer">📄 Descargar PDF</button></div>${cargaH}</div>`+
     `<div class="est-card est-chart-card"><div class="est-title">📈 ${_EVO_META[_evoVista].titulo}</div>`+
     `<div class="evo-vistas" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px">`+
@@ -3804,6 +3907,188 @@ function renderEstadisticas(){
     `<div class="est-card" style="border-color:rgba(251,146,60,.25)"><div class="est-title" style="color:#fb923c">Incidentes/Desacatos — por abogado</div>${incH||'<div style="color:var(--muted);font-size:12px">Sin registros</div>'}</div>`;
 
   dibujarEvolucion(tutelas, fallos, incidentes);
+  renderDesempeno();   // vr7
+}
+
+
+// ════════════════════════════════════════════════════════════
+// vr7 · DESEMPEÑO POR ABOGADO, MES A MES
+// Los abogados solo tienen sus propios casos en memoria, así que la
+// comparación con el equipo viene de la función tut_desempeno_mensual
+// de Supabase, que devuelve SOLO conteos (ningún dato de los casos).
+// Si la función aún no existe, se calcula con lo que hay en memoria
+// (completo para admin/técnica; un abogado se ve solo a sí mismo).
+// Una consulta liviana (~100 filas) cada 30 min como máximo.
+// ════════════════════════════════════════════════════════════
+const _DES = { filas:null, ts:0, cargando:false, fuente:"" };
+let _desMetrica = "atermino";
+let _chartDes = null;
+const _DES_METRICAS = {
+  atermino: { l:"Cierres a término", f:x=>x.a_termino },
+  pct:      { l:"% a término",       f:x=>x.medidos ? Math.round(x.a_termino/x.medidos*100) : null, pct:true },
+  cierres:  { l:"Cierres",           f:x=>x.cierres },
+  recibidos:{ l:"Recibidos",         f:x=>x.recibidos }
+};
+const _mesClave = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+function _desMeses(){
+  const out=[], hoy=new Date();
+  for(let i=11;i>=0;i--) out.push(_mesClave(new Date(hoy.getFullYear(),hoy.getMonth()-i,1)));
+  return out;
+}
+function _desNombreMes(k, largo){
+  const [y,m]=k.split("-").map(Number);
+  return new Date(y,m-1,1).toLocaleDateString("es-CO", largo?{month:"long"}:{month:"short",year:"2-digit"}).replace(".","");
+}
+function _desCanon(resp){
+  const r=String(resp||"").trim(); if(!r) return "";
+  return ABOGADOS.find(a=>matchAbo(r,a)) || r;
+}
+// Mismo cálculo que la función SQL, con los datos en memoria
+function _desempenoLocal(){
+  const meses=new Set(_desMeses()), acc={};
+  const fila=(abo,mes)=>{ const k=abo+"|"+mes; return acc[k] || (acc[k]={abogado:abo,mes,recibidos:0,cierres:0,medidos:0,a_termino:0,dias_sum:0,dias_n:0}); };
+  [...tutelas,...fallos,...incidentes].forEach(r=>{
+    const abo=_desCanon(r["RESPONSABLE"]); if(!abo) return;
+    const fi=parseFechaReg(r["FECHA INICIAL"]);
+    if(fi && meses.has(_mesClave(fi))) fila(abo,_mesClave(fi)).recibidos++;
+    if(!["Finalizado","Respondido","Hecho superado"].includes(r["ESTADO"])) return;
+    const fc=parseFechaReg(r["FECHA CIERRE"]); if(!fc || !meses.has(_mesClave(fc))) return;
+    const o=fila(abo,_mesClave(fc)); o.cierres++;
+    const fl=r._flimEstimada ? null : parseFechaReg(r["FECHA LÍMITE"]||r["FECHA LIMITE"]);
+    if(fl){ o.medidos++; if(fc<=fl) o.a_termino++; }
+    if(fi && fc>=fi){ o.dias_sum+=(fc-fi)/86400000; o.dias_n++; }
+  });
+  return Object.values(acc);
+}
+async function cargarDesempeno(){
+  if(_DES.cargando) return;
+  _DES.cargando=true;
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/rpc/tut_desempeno_mensual`,{
+      method:"POST", headers: await getAuthHeaders({"Content-Type":"application/json"}), body:JSON.stringify({meses:12}) });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const filas=await res.json();
+    _DES.filas=(filas||[]).map(f=>({ abogado:String(f.abogado||"").trim(), mes:String(f.mes||"").slice(0,7),
+      recibidos:+f.recibidos||0, cierres:+f.cierres||0, medidos:+f.medidos||0, a_termino:+f.a_termino||0,
+      dias_sum:+f.dias_sum||0, dias_n:+f.dias_n||0 }));
+    _DES.fuente="equipo";
+  }catch(e){
+    console.warn("Desempeño: uso datos locales —", e.message);
+    _DES.filas=null; _DES.fuente="local";
+  }finally{
+    _DES.ts=Date.now(); _DES.cargando=false;
+    renderDesempeno(true);
+  }
+}
+function setDesMetrica(m){ _desMetrica=m; renderDesempeno(true); }
+function _esYo(nombre){
+  const ns=misNombres(); return ns.some(n=>normNom(n)===normNom(nombre) || matchAbo(nombre,n));
+}
+function renderDesempeno(sinRecarga){
+  const card=document.getElementById("des-card"); if(!card) return;
+  if(!sinRecarga && Date.now()-_DES.ts > 30*60*1000) cargarDesempeno();
+  const filas = _DES.fuente==="equipo" && _DES.filas ? _DES.filas : _desempenoLocal();
+  const meses=_desMeses();
+  const actual=meses[11], cerrado=meses[10], previo=meses[9];   // el mes en curso no compite
+  const M=_DES_METRICAS[_desMetrica];
+  // Índice abogado → mes → fila
+  const idx={};
+  filas.forEach(f=>{ (idx[f.abogado] ||= {})[f.mes]=f; });
+  const vacia={recibidos:0,cierres:0,medidos:0,a_termino:0,dias_sum:0,dias_n:0};
+  const dato=(a,m)=>(idx[a]&&idx[a][m])||vacia;
+  // Abogados con actividad en los últimos 3 meses
+  const abogados=Object.keys(idx).filter(a=>[actual,cerrado,previo].some(m=>{const d=dato(a,m);return d.recibidos||d.cierres;}));
+  const ns=misNombres();
+  const yo=abogados.find(a=>ns.some(n=>normNom(n)===normNom(a))) || abogados.find(_esYo) || "";
+  const soyAbogado = PERFIL.rol==="abogado";
+  const nomCerrado=_desNombreMes(cerrado,true), nomPrevio=_desNombreMes(previo,true), nomActual=_desNombreMes(actual,true);
+
+  if(!abogados.length){
+    card.innerHTML=`<div class="des-tit">🏁 Desempeño por abogado</div><div class="des-sub" style="margin-top:8px">Aún no hay cierres con fecha registrada en los últimos meses. La comparación aparece cuando se cierren casos con su fecha de cierre.</div>`;
+    return;
+  }
+
+  // ── Podio del último mes completo ──
+  const medalla=(icono,pregunta,lista,fmt,detalle)=>{
+    const g=lista[0];
+    if(!g) return `<div class="des-med"><div class="q">${icono} ${pregunta}</div><div class="n">—</div><div class="v">Sin datos suficientes</div></div>`;
+    return `<div class="des-med${g.a===yo?" yo":""}"><div class="q">${icono} ${pregunta}</div><div class="n">${esc(pNom(g.a))}${g.a===yo?" (tú)":""}</div><div class="v">${fmt(g)}${detalle?" · "+detalle(g):""}</div></div>`;
+  };
+  const porATermino=abogados.map(a=>({a,v:dato(a,cerrado).a_termino})).filter(x=>x.v>0).sort((x,y)=>y.v-x.v);
+  const porPct=abogados.map(a=>{const d=dato(a,cerrado);return {a,v:d.medidos>=5?d.a_termino/d.medidos:null,n:d.medidos};})
+    .filter(x=>x.v!==null).sort((x,y)=>y.v-x.v||y.n-x.n);
+  const porProgreso=abogados.map(a=>({a,v:dato(a,cerrado).a_termino-dato(a,previo).a_termino,ant:dato(a,previo).a_termino}))
+    .filter(x=>x.v>0).sort((x,y)=>y.v-x.v);
+  const podio=`<div class="des-podio">`+
+    medalla("🥇",`Más cierres a término en ${nomCerrado}`,porATermino,g=>`${g.v} cierre${g.v!==1?"s":""} a término`)+
+    medalla("🎯",`Mejor % a término en ${nomCerrado}`,porPct,g=>`${Math.round(g.v*100)}%`,g=>`${g.n} medidos`)+
+    medalla("📈",`Más progreso frente a ${nomPrevio}`,porProgreso,g=>`+${g.v} a término`,g=>`venía de ${g.ant}`)+
+  `</div>`;
+
+  // ── Mensaje personal (solo para quien tiene casos propios) ──
+  let yoH="";
+  if(yo){
+    const c=dato(yo,cerrado), p=dato(yo,previo), a=dato(yo,actual);
+    const dif=c.a_termino-p.a_termino;
+    const pct=c.medidos?Math.round(c.a_termino/c.medidos*100):null;
+    const puesto=porATermino.findIndex(x=>x.a===yo);
+    const tendencia = dif>0 ? `<b>${dif} más</b> que en ${nomPrevio} 💪` : dif<0 ? `${-dif} menos que en ${nomPrevio}` : `igual que en ${nomPrevio}`;
+    yoH=`<div class="des-yo">En ${nomCerrado} cerraste <b>${c.a_termino} caso${c.a_termino!==1?"s":""} a término</b>, ${tendencia}${pct!==null?` (${pct}% de tus cierres medidos llegaron a tiempo)`:""}.
+      ${puesto>=0?` Quedaste de <b>${puesto+1}.º</b> de ${porATermino.length} en cierres a término.`:""}
+      En ${nomActual} llevas <b>${a.a_termino}</b> a término y ${a.cierres} cierre${a.cierres!==1?"s":""} en total.</div>`;
+  }
+
+  // ── Tabla: último mes completo frente al anterior ──
+  const val=(a,m)=>M.f(dato(a,m));
+  const fmtV=v=>v===null||v===undefined?"—":M.pct?v+"%":v;
+  const filasT=abogados.map(a=>({a,c:val(a,cerrado),p:val(a,previo),e:val(a,actual),pct:_DES_METRICAS.pct.f(dato(a,cerrado))}))
+    .sort((x,y)=>(y.c??-1)-(x.c??-1) || x.a.localeCompare(y.a));
+  const tabla=`<div class="des-tw"><table class="des-tabla"><thead><tr>
+      <th>Abogado</th><th>${esc(nomPrevio)}</th><th>${esc(nomCerrado)}</th><th>Cambio</th><th>${esc(nomActual)} (en curso)</th>${_desMetrica!=="pct"?`<th>% a término ${esc(nomCerrado)}</th>`:""}
+    </tr></thead><tbody>`+
+    filasT.map(x=>{
+      const d = (x.c===null||x.p===null) ? null : x.c-x.p;
+      const cam = d===null ? `<span class="igual">—</span>` : d>0 ? `<span class="sube">▲ ${d}${M.pct?" pts":""}</span>` : d<0 ? `<span class="baja">▼ ${-d}${M.pct?" pts":""}</span>` : `<span class="igual">=</span>`;
+      return `<tr class="${x.a===yo?"yo":""}"><td>${esc(x.a)}${x.a===yo?" (tú)":""}</td><td>${fmtV(x.p)}</td><td>${fmtV(x.c)}</td><td>${cam}</td><td>${fmtV(x.e)}</td>${_desMetrica!=="pct"?`<td>${x.pct===null?"—":x.pct+"%"}</td>`:""}</tr>`;
+    }).join("")+`</tbody></table></div>`;
+
+  const botones=Object.entries(_DES_METRICAS).map(([k,o])=>`<button class="ep-btn${_desMetrica===k?" on":""}" onclick="setDesMetrica('${k}')">${o.l}</button>`).join("");
+  const aviso = _DES.fuente==="local" && soyAbogado
+    ? `<div class="des-nota" style="color:var(--gold2)">Por ahora ves solo tus números; la comparación con el equipo se activa cuando la administración habilite el tablero.</div>` : "";
+  card.innerHTML=`<div class="des-hd"><div><div class="des-tit">🏁 Desempeño por abogado, mes a mes</div>
+      <div class="des-sub">Cada quien contra su propio mes anterior y contra el equipo. El ranking usa el último mes completo (${esc(nomCerrado)}).</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${botones}</div></div>`+
+    yoH+podio+`<div class="des-graf"><canvas id="des-chart"></canvas></div>`+tabla+aviso+
+    `<div class="des-nota">Cuenta <strong>actuaciones</strong>: admite, fallo e incidente valen cada uno, porque cada uno es trabajo. Solo entran cierres con fecha de cierre registrada (Respondido, Finalizado y Hecho superado; los anulados no cuentan). «A término» = cerrado en o antes de la fecha límite; los casos sin fecha límite registrada no se miden. «Recibidos» depende del reparto, por eso no da medalla. El mes en curso no compite porque está incompleto.</div>`;
+  _dibujarDesempeno(abogados, meses, yo, val);
+}
+function _dibujarDesempeno(abogados, meses, yo, val){
+  const cv=document.getElementById("des-chart"); if(!cv) return;
+  if(typeof Chart==="undefined"){ const w=cv.parentElement; w.style.height="auto"; w.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">No se pudo cargar la librería de gráficos; la tabla de abajo tiene los mismos datos.</div>'; return; }
+  if(_chartDes){ _chartDes.destroy(); _chartDes=null; }
+  const claro=document.documentElement.getAttribute("data-theme")==="light";
+  const cTexto=claro?"#475569":"#94a3b8", cRej=claro?"rgba(15,45,94,.10)":"rgba(255,255,255,.05)";
+  const PAL=["#60a5fa","#4ade80","#c084fc","#f472b6","#22d3ee","#fb923c","#a3e635","#f87171","#818cf8","#2dd4bf","#facc15","#e879f9"];
+  const conYo = !!yo && PERFIL.rol==="abogado";   // un abogado ve su línea resaltada y las demás de fondo
+  // Recorta los meses iniciales sin ningún dato (antes de que existiera el registro de cierres)
+  const conDato=m=>abogados.some(a=>{ const v=val(a,m); return v!==null && v!==0; });
+  let ini=meses.findIndex(conDato); if(ini<0) ini=0; ini=Math.min(ini, Math.max(0, meses.length-3));
+  meses=meses.slice(ini);
+  const ult=meses.length-1;
+  const ds=abogados.map((a,i)=>{
+    const esYo=a===yo, col=esYo?"#f59e0b":PAL[i%PAL.length];
+    const tenue=conYo && !esYo;
+    return { label:pNom(a)+(esYo?" (tú)":""), data:meses.map(m=>val(a,m)),
+      borderColor: tenue ? (claro?"rgba(71,85,105,.35)":"rgba(148,163,184,.35)") : col,
+      backgroundColor: col, borderWidth: esYo?3.5:tenue?1.5:2, pointRadius: esYo?4:2, tension:.3, spanGaps:true,
+      order: esYo?0:1, segment:{borderDash:c=>c.p1DataIndex===ult?[5,4]:undefined} };
+  });
+  _chartDes=new Chart(cv,{ type:"line", data:{ labels:meses.map(m=>_desNombreMes(m)), datasets:ds },
+    options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:"nearest",intersect:false},
+      plugins:{ legend:{position:"bottom",labels:{color:cTexto,font:{family:"'DM Sans',sans-serif",size:11},boxWidth:10}},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y===null?"—":c.parsed.y+(_DES_METRICAS[_desMetrica].pct?"%":"")}`}} },
+      scales:{ x:{ticks:{color:cTexto,font:{size:10}},grid:{color:cRej}},
+        y:{beginAtZero:true,max:_DES_METRICAS[_desMetrica].pct?100:undefined,ticks:{color:cTexto,font:{size:10},precision:0},grid:{color:cRej}} } } });
 }
 
 // ── Gráfico de evolución (Chart.js): últimos 12 meses ──
@@ -4004,6 +4289,7 @@ function renderCockpit(){
     if(sinNot.length) grid.innerHTML += bloque("naranja","📣","Incidentes sin notificar", sinNot,
       `goTab('otros');quickOtr='sinnotif';pagInc=1;renderOtros()`, "", "", r=>r._diasHab);
   }
+  renderAgenda();   // vr6
 }
 function actualizarBadgeDuplicados(){const b=document.getElementById("badge-duplicados");if(!b)return;const n=contarDuplicados();b.textContent=n;b.style.display=n>0?"inline-block":"none";}
 
@@ -4165,6 +4451,7 @@ function abrirModal(da, origen){
     notifWrap.style.display = (origenModal==="incidente") ? "block" : "none";
     if(origenModal==="incidente") pintarNotifModal();
   }
+  pintarRuta(r, origenModal);   // vr6 · trayectoria del proceso
   document.getElementById("overlay").classList.add("open");
   // Snapshot de los campos editables para detectar cambios sin guardar al cerrar
   _snapshotModal = leerCamposModal();
@@ -4586,6 +4873,30 @@ function _aplicarRegistroFresco(fresco){
   const copiar=dest=>{ const c=dest._cat; Object.assign(dest, fresco); if(c) dest._cat=c; else if(cat) dest._cat=cat; };
   if(arr){ const idx=arr.findIndex(x=>x._id===actual._id); if(idx>=0) copiar(arr[idx]); }
   copiar(actual);
+}
+
+// vr6 · Guardado con control de versión reutilizable (mismo criterio que guardarEstado).
+// Devuelve el registro guardado (formato dashboard) o null si el usuario decide no pisar
+// lo que otra persona cambió mientras tenía el caso abierto.
+async function guardarConVersion(cambios){
+  let fila = await sbPatchVersionado(actual._id, cambios, actual["ACTUALIZADO EN"]);
+  if(fila) return sbASheet(fila);
+  const srvRaw = await sbLeerFila(actual._id);
+  if(!srvRaw) throw new Error("El caso ya no existe o tu usuario no tiene permiso para verlo");
+  const srv = sbASheet(srvRaw);
+  if(String(srv["ACTUALIZADO EN"]||"")===String(actual["ACTUALIZADO EN"]||""))
+    throw new Error("Supabase no aplicó el cambio (revisa los permisos de tu usuario)");
+  const n=x=>String(x??"").trim();
+  const choques = Object.keys(cambios).filter(k=>n(srv[k])!==n(actual[k]) && n(srv[k])!==n(cambios[k]));
+  if(choques.length){
+    const det = choques.map(k=>`• ${ETQ_CAMPO[k]||k}: ahora dice «${abrev(n(srv[k])||"(vacío)",70)}»`).join("\n");
+    const pisar = await confirmar("Otra persona cambió este caso",
+      `Mientras lo tenías abierto se modificó:\n${det}\n\n¿Reemplazar esos campos con lo que escribiste tú?`);
+    if(!pisar){ _aplicarRegistroFresco(srv); return null; }
+  }
+  fila = await sbPatchVersionado(actual._id, cambios, srv["ACTUALIZADO EN"]);
+  if(!fila) throw new Error("El caso cambió de nuevo mientras guardabas. Intenta otra vez.");
+  return sbASheet(fila);
 }
 
 async function guardarEstado(){
@@ -5544,6 +5855,168 @@ document.addEventListener('keydown',e=>{
 // ════════════════════════════════════════
 // LOGIN / AUTENTICACIÓN
 // ════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════
+// vr6 · AGENDA DE TÉRMINOS (pestaña Hoy)
+// Diez días hábiles a partir de hoy, con cuántos términos vencen
+// cada día. Usa el mismo reloj de días hábiles que el semáforo.
+// ════════════════════════════════════════════════════════════
+let _agSel = null;            // índice de columna elegida (-1 = atrasados)
+function _agDias(){
+  const out=[]; const d=new Date(); d.setHours(0,0,0,0);
+  while(!_esHabil(d)) d.setDate(d.getDate()+1);   // si hoy no es hábil, arranca el próximo hábil
+  while(out.length<10){ if(_esHabil(d)) out.push(new Date(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+function _proximoFestivo(){
+  const d=new Date(); d.setHours(0,0,0,0);
+  for(let i=0;i<120;i++){ const dw=d.getDay(); if(dw!==0 && dw!==6 && FESTIVOS_CO.has(_ymdLocal(d))) return new Date(d); d.setDate(d.getDate()+1); }
+  return null;
+}
+function _agUniverso(){
+  return [...tutelas,...fallos,...incidentes].filter(r=>!EST_HIST.includes(r["ESTADO"]) && r._diasHab!==null && r._diasHab!==undefined);
+}
+function renderAgenda(){
+  const cont=document.getElementById("hoy-agenda"); if(!cont) return;
+  const dias=_agDias();
+  const uni=_agUniverso();
+  const atras=uni.filter(r=>r._diasHab<0);
+  // _diasHab: 0 = vence hoy, k = k-ésimo hábil después de hoy. Si hoy no es hábil
+  // (fin de semana o festivo), lo que "vence hoy" se cuenta en el primer hábil.
+  const hoyHabil=_esHabil((()=>{const d=new Date();d.setHours(0,0,0,0);return d;})());
+  const off=hoyHabil?0:1;
+  const porDia=dias.map((_,k)=>uni.filter(r=>r._diasHab===k+off || (k===0 && r._diasHab===0)));
+  const cat=r=>r._cat==="fallo"?"fal":r._cat==="incidente"?"inc":"tut";
+  const max=Math.max(1, atras.length, ...porDia.map(l=>l.length));
+  const fest=_proximoFestivo();
+  const hoy=new Date(); hoy.setHours(0,0,0,0);
+  if(_agSel===null){ // primera vez: el primer día con términos (o atrasados si hay)
+    _agSel = atras.length ? -1 : porDia.findIndex(l=>l.length);
+    if(_agSel===-1 && !atras.length) _agSel=null;
+  }
+  const barra=lista=>{
+    const c={tut:0,fal:0,inc:0}; lista.forEach(r=>c[cat(r)]++);
+    const h=n=>`${Math.round(n/max*100)}%`;
+    return `<div class="ag-barra">${c.tut?`<span style="height:${h(c.tut)};background:var(--c-tut)"></span>`:""}${c.fal?`<span style="height:${h(c.fal)};background:var(--c-fal)"></span>`:""}${c.inc?`<span style="height:${h(c.inc)};background:var(--c-inc)"></span>`:""}</div>`;
+  };
+  // ¿Hay un festivo justo antes de este día hábil? (para avisar del puente)
+  const trasFestivo=d=>{ const p=new Date(d); p.setDate(p.getDate()-1); while(p.getDay()===0||p.getDay()===6){ p.setDate(p.getDate()-1); } return FESTIVOS_CO.has(_ymdLocal(p)) && p>=hoy; };
+  let html=`<div class="ag">
+    <div class="ag-hd">
+      <div><div class="ag-tit">Agenda de términos</div>
+      <div class="ag-sub">Lo que vence en los próximos 10 días hábiles${fest?` · próximo festivo: ${esc(fest.toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long"}))}`:""}</div></div>
+      <div class="ag-ley"><span><i style="background:var(--c-tut)"></i>Tutelas</span><span><i style="background:var(--c-fal)"></i>Fallos</span><span><i style="background:var(--c-inc)"></i>Incidentes</span></div>
+    </div>
+    <div class="ag-dias" role="list">`;
+  html+=`<button class="ag-dia atras${atras.length?"":" vacio"}${_agSel===-1?" sel":""}" role="listitem" ${atras.length?`onclick="agElegir(-1)"`:"tabindex=\"-1\""} aria-label="${atras.length} términos vencidos">
+      <span class="ag-dsem">Vencidos</span><span class="ag-dnum">${atras.length}</span>${barra(atras)}<span class="ag-n"></span></button>`;
+  dias.forEach((d,k)=>{
+    const l=porDia[k];
+    const esHoy=d.getTime()===hoy.getTime();
+    const sem=esHoy?"Hoy":d.toLocaleDateString("es-CO",{weekday:"short"}).replace(".","");
+    const tf=trasFestivo(d);
+    html+=`<button class="ag-dia${esHoy?" hoy":""}${l.length?"":" vacio"}${_agSel===k?" sel":""}" role="listitem" ${l.length?`onclick="agElegir(${k})"`:"tabindex=\"-1\""}
+        aria-label="${esc(d.toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long"}))}: ${l.length} término(s)">
+      <span class="ag-dsem">${esc(sem)}</span><span class="ag-dnum">${d.getDate()}</span>${barra(l)}
+      <span class="ag-n">${l.length||""}</span>${tf?`<span class="ag-fest" title="El día hábil anterior es festivo">tras festivo</span>`:""}</button>`;
+  });
+  html+=`</div>`;
+  // Lista del día elegido
+  if(_agSel!==null){
+    const lista = _agSel===-1 ? atras.slice().sort((a,b)=>a._diasHab-b._diasHab) : porDia[_agSel]||[];
+    if(lista.length){
+      const titulo = _agSel===-1 ? `${lista.length} término(s) vencido(s)`
+        : `${lista.length} término(s) vencen el ${dias[_agSel].toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long"})}`;
+      window._agItems = lista;
+      const badge=r=>r._cat==="fallo"?`<span class="hoy-badge2 b-fal">Fallo</span>`:r._cat==="incidente"?`<span class="hoy-badge2 b-inc">Incid.</span>`:`<span class="hoy-badge2 b-tut">Tutela</span>`;
+      html+=`<div class="ag-lista"><div class="ag-lista-hd">${esc(titulo)}</div>`+
+        lista.slice(0,12).map((r,i)=>{ const juz=juzCorto(r["JUZGADO"]);
+          return `<div class="hoy-item" onclick="abrirModalIdx('_agItems',${i})">${badge(r)}
+            <div class="hoy-acc"><div class="n">${esc(r["ACCIONANTE"]||"—")}</div><div class="s">${esc(radCorto(r["RADICADO"])||"—")}${juz?" · "+esc(juz):""}${veTodo()&&r["RESPONSABLE"]?" · "+esc(pNom(r["RESPONSABLE"])):""}</div></div>
+            ${r._diasHab<0?`<span class="hoy-dias d-venc">Vencido ${Math.abs(r._diasHab)}d háb.</span>`:`<span class="hoy-dias d-hoy">${esc(badgeEst(r["ESTADO"]).replace(/<[^>]+>/g,"")||"Activo")}</span>`}
+          </div>`; }).join("")+
+        (lista.length>12?`<div class="hoy-ver" style="cursor:default">y ${lista.length-12} más</div>`:"")+`</div>`;
+    }
+  }
+  html+=`</div>`;
+  cont.innerHTML=html;
+}
+function agElegir(k){ _agSel = (_agSel===k) ? null : k; renderAgenda(); }
+
+// ════════════════════════════════════════════════════════════
+// vr6 · TRAYECTORIA DEL PROCESO (detalle del caso)
+// Junta admite, fallo, impugnación, incidentes y sanción del mismo
+// radicado y marca dónde está el caso. Cada paso con registro se abre.
+// ════════════════════════════════════════════════════════════
+function pintarRuta(r, origen){
+  const cont=document.getElementById("m-ruta"); if(!cont) return;
+  const k=normRad(r["RADICADO"]);
+  const rel = radDebil(k) ? [] : [...tutelas,...fallos,...incidentes].filter(x=>normRad(x["RADICADO"])===k);
+  if(r._id && !rel.some(x=>x._id===r._id && x._cat===r._cat)) rel.push(r);
+  const tipoNoAdmite=TIPOS_FALLO.concat(TIPOS_OTROS);
+  const tuts=rel.filter(x=>(x._cat||"tutela")==="tutela");
+  const tut=tuts.find(x=>!tipoNoAdmite.includes(x["TIPO"])) || tuts[0] || null;
+  const fal=rel.filter(x=>x._cat==="fallo").sort((a,b)=>(b._id||0)-(a._id||0))[0] || null;
+  const incs=rel.filter(x=>x._cat==="incidente");
+  const san=incs.find(esSancion) || null;
+  const fecha=x=>{ const d=parseFechaReg(x); return d?d.toLocaleDateString("es-CO",{day:"numeric",month:"short"}):""; };
+  const catR = r._cat || (origen==="fallo"||origen==="incidente" ? origen : "tutela");
+  const esActual=x=>!!(x && r._id && x._id===r._id && (x._cat||"tutela")===catR);
+  const pasos=[];
+  pasos.push({ et:"Admisión", rec:tut, hecho:!!tut, det: tut ? (fecha(tut["FECHA INICIAL"])||"Recibida") : "Sin admite registrado" });
+  const respondida = tut && ["Respondido","Finalizado","Hecho superado"].includes(tut["ESTADO"]);
+  pasos.push({ et: tut && tut["ESTADO"]==="Hecho superado" ? "Hecho superado" : "Respuesta",
+    rec:null, hecho:!!respondida, alerta: !!(tut && !respondida && tut._diasHab!==null && tut._diasHab<0),
+    det: respondida ? (fecha(tut["FECHA CIERRE"])||"Enviada") : tut && tut._diasHab!==null ? (tut._diasHab<0?`Vencida ${Math.abs(tut._diasHab)}d háb.`:tut._diasHab===0?"Vence hoy":`Faltan ${tut._diasHab}d háb.`) : "Pendiente" });
+  pasos.push({ et:"Fallo", rec:fal, hecho:!!fal, det: fal ? (String(fal["SENTIDO FALLO"]||"").trim()||fecha(fal["FECHA INICIAL"])||"Recibido") : "Pendiente" });
+  const desf = fal && SENTIDOS_DESFAVORABLES.includes(String(fal["SENTIDO FALLO"]||"").trim());
+  if(desf){
+    const imp=String(fal["IMPUGNACION"]||"").trim();
+    const info=infoImpugnacion(fal);
+    pasos.push({ et:"Impugnación", rec:null, hecho:!!imp, alerta: !imp && info && (info.sinFecha || info.dias<=1),
+      det: imp ? imp : info && !info.sinFecha ? (info.dias<0?"Término vencido":`Decidir: ${info.dias}d háb.`) : "Falta fecha de notificación" });
+  }
+  if(incs.length || fal){
+    const incAct = incs.find(esActual) || incs.slice().sort((a,b)=>(b._id||0)-(a._id||0))[0] || null;
+    pasos.push({ et: incs.length>1 ? `Incidentes (${incs.length})` : "Incidente", rec:incAct, hecho:!!incs.length,
+      det: incs.length ? (incAct["TIPO"]||"Desacato") : "Ninguno" });
+  }
+  if(san) pasos.push({ et:"Sanción", rec:san, hecho:true, alerta:SANCION_VIGENTE.includes(estadoSancion(san)), det: estadoSancion(san) });
+
+  window._rutaItems=[];
+  cont.innerHTML=`<div class="ruta" aria-label="Trayectoria del proceso">${pasos.map((p,i)=>{
+    const actualP = esActual(p.rec) || (p.et==="Admisión" && !r._id && origen==="tutela");
+    const cls = actualP ? "actual" : p.alerta ? "alerta" : p.hecho ? "hecho" : "pend";
+    const puede = p.rec && !esActual(p.rec);
+    const idx = puede ? window._rutaItems.push(p.rec)-1 : -1;
+    const icono = p.alerta && !actualP ? "!" : p.hecho && !actualP ? "✓" : String(i+1);
+    return `<div class="ruta-paso ${cls}${puede?" click":""}" ${puede?`role="button" tabindex="0" onclick="abrirRuta(${idx})" onkeydown="if(event.key==='Enter')abrirRuta(${idx})" title="Abrir este registro"`:""}>
+      <div class="ruta-pt">${icono}</div><div class="ruta-et">${esc(p.et)}</div><div class="ruta-det">${esc(abrev(p.det,40))}</div></div>`;
+  }).join("")}</div>`;
+}
+function abrirRuta(i){
+  const rec=(window._rutaItems||[])[i]; if(!rec) return;
+  if(_snapshotModal && leerCamposModal()!==_snapshotModal){ toast("Guarda o descarta los cambios antes de pasar a otro registro","err"); return; }
+  const org = rec._cat==="fallo" ? "fallo" : rec._cat==="incidente" ? "incidente" : "tutela";
+  abrirModal(encodeURIComponent(JSON.stringify(rec)), org);
+}
+
+// ════════════════════════════════════════════════════════════
+// vr6 · LOGIN: ver contraseña y aviso de mayúsculas
+// ════════════════════════════════════════════════════════════
+function verClave(){
+  const i=document.getElementById("login-pass"), b=document.getElementById("lg-ojo"); if(!i||!b) return;
+  const ver = i.type==="password";
+  i.type = ver ? "text" : "password";
+  b.textContent = ver ? "Ocultar" : "Mostrar";
+  b.setAttribute("aria-label", ver ? "Ocultar contraseña" : "Mostrar contraseña");
+  i.focus();
+}
+function avisoMayus(e){
+  const c=document.getElementById("lg-caps");
+  if(c && e.getModifierState) c.style.display = e.getModifierState("CapsLock") ? "block" : "none";
+}
+
 async function hacerLogin(){
   if(!sbAuth){ mostrarLoginError("Error de conexión con el servidor. Recarga la página."); return; }
   const email = document.getElementById("login-email").value.trim();
@@ -5581,11 +6054,11 @@ function entrarAlSistema(){
     if(typeof renderPanelDisponibilidad==="function") renderPanelDisponibilidad();
   }).catch(e=>console.warn("Reparto/turno inicial:", e));
   // v5 · primero el perfil (rol y nombre), luego los datos ya filtrados
-  cargarPerfil().finally(()=>{ aplicarPermisosUI(); cargarDatosSafe(); });
+  window._perfilListo = cargarPerfil().finally(()=>{ aplicarPermisosUI(); cargarDatosSafe(); });
 }
 
 /* ── SPLASH + NOVEDADES vr3 ── */
-const NOV_VERSION = "vr5";  // súbelo (vr4…) cuando quieras que el modal reaparezca
+const NOV_VERSION = "vr7";  // súbelo (vr4…) cuando quieras que el modal reaparezca
 function mostrarSplash(){
   const sp=document.getElementById("splash");
   if(!sp) return;
@@ -5599,9 +6072,14 @@ function mostrarSplash(){
 function verNovedadesSiToca(){
   let visto=null;
   try{ visto=localStorage.getItem("tutelas_novedades_vistas"); }catch(e){}
-  if(visto!==NOV_VERSION) abrirNovedades();
+  // vr6 · espera el perfil para mostrar solo las novedades de tu rol
+  if(visto!==NOV_VERSION) Promise.resolve(window._perfilListo).finally(()=>abrirNovedades());
 }
 function abrirNovedades(){
+  // vr6 · los ítems con data-rol solo se muestran a esos roles
+  document.querySelectorAll("#nov-back .nov-item[data-rol]").forEach(el=>{
+    el.style.display = el.dataset.rol.split(" ").includes(PERFIL.rol) ? "" : "none";
+  });
   const b=document.getElementById("nov-back");
   if(b) b.classList.add("open");
 }
@@ -5643,7 +6121,7 @@ setInterval(()=>{
 }, 30*60*1000);
 
 // Además, al volver a una pestaña que estuvo en segundo plano, se refresca una vez
-// de inmediato (si ya pasaron más de 5 min desde la última carga) en vez de esperar
+// de inmediato (si ya pasaron más de 10 min desde la última carga) en vez de esperar
 // hasta el próximo tick del intervalo — así el usuario no ve datos desactualizados
 // al volver a la pestaña.
 let _ultimaCargaTS = Date.now();
