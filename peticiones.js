@@ -443,9 +443,26 @@ function estilosSplit(){
   st.id = 'sp-css';
   const borde = 'var(--border,rgba(255,255,255,.1))';
   st.textContent =
-    '#c-pdf{display:none}' +
-    '#p-cola.on.split{display:grid;grid-template-columns:minmax(360px,46%) minmax(0,1fr);gap:18px;align-items:start}' +
+    '#c-pdf,#sp-div{display:none}' +
+    '#p-cola.on.split{display:grid;grid-template-columns:minmax(320px,var(--sp-ancho,55%)) 14px minmax(420px,1fr);' +
+      'gap:0;align-items:start}' +
     '#p-cola.split .cola-box{max-width:none;margin:0;min-width:0}' +
+    '#p-cola.split .cola-top{flex-wrap:wrap}' +
+    // Divisor: se arrastra para dar más o menos ancho al PDF; doble clic lo devuelve al inicial
+    '#p-cola.split #sp-div{display:block;position:sticky;top:10px;height:calc(100vh - 20px);cursor:col-resize;' +
+      'display:flex;align-items:center;justify-content:center}' +
+    '#sp-div::after{content:"";width:4px;height:48px;border-radius:4px;background:' + borde + ';transition:background .15s}' +
+    '#sp-div:hover::after,#p-cola.arrastrando #sp-div::after{background:#3b82f6;height:80px}' +
+    '#p-cola.arrastrando{cursor:col-resize;user-select:none}' +
+    '#p-cola.arrastrando iframe{pointer-events:none}' +
+    '#c-pdf .btn svg{width:14px;height:14px;vertical-align:-2px}' +
+    // Botón «Leer petición»: sólido y visible
+    '.chip-leer{background:#2563eb!important;border-color:#2563eb!important;color:#fff!important;font-weight:700;' +
+      'padding:7px 14px!important;box-shadow:0 2px 10px rgba(37,99,235,.35);cursor:pointer}' +
+    '.chip-leer:hover{background:#1d4ed8!important}' +
+    '.chip-leer svg{stroke:#fff}' +
+    '.chip-leer.activo{background:transparent!important;color:#60a5fa!important;box-shadow:none}' +
+    '.chip-leer.activo svg{stroke:#60a5fa}' +
     '#p-cola.split #c-pdf{display:flex;flex-direction:column;position:sticky;top:10px;' +
       'height:calc(100vh - 20px);border:1px solid ' + borde + ';border-radius:12px;overflow:hidden;' +
       'background:var(--card,#1b1d22)}' +
@@ -466,13 +483,54 @@ function contenedorSplit(){
     c = document.createElement('div');
     c.id = 'c-pdf';
     p.insertBefore(c, p.firstChild);
+    const d = document.createElement('div');
+    d.id = 'sp-div';
+    d.title = 'Arrastre para cambiar el ancho · doble clic para volver al inicial';
+    d.addEventListener('mousedown', iniciarArrastreSplit);
+    d.addEventListener('dblclick', function(){ fijarAnchoSplit(SPLIT_ANCHO_INI, true); });
+    p.insertBefore(d, c.nextSibling);
   }
   return c;
+}
+
+/* Ancho del PDF en % del panel; se recuerda en este equipo */
+const SPLIT_ANCHO_INI = 55;
+function fijarAnchoSplit(pct, guardar){
+  const p = document.getElementById('p-cola');
+  if(!p) return;
+  pct = Math.min(Math.max(pct, 30), 72);
+  p.style.setProperty('--sp-ancho', pct.toFixed(1) + '%');
+  if(guardar){ try{ localStorage.setItem('pet_split_ancho', pct.toFixed(1)); }catch(e){} }
+}
+function anchoSplitGuardado(){
+  try{ const v = parseFloat(localStorage.getItem('pet_split_ancho')); if(v) return v; }catch(e){}
+  return SPLIT_ANCHO_INI;
+}
+function iniciarArrastreSplit(e){
+  e.preventDefault();
+  const p = document.getElementById('p-cola');
+  const caja = p.getBoundingClientRect();
+  let pct = anchoSplitGuardado();
+  p.classList.add('arrastrando');
+  const mover = function(ev){
+    pct = (ev.clientX - caja.left) / caja.width * 100;
+    fijarAnchoSplit(pct, false);
+  };
+  const soltar = function(){
+    p.classList.remove('arrastrando');
+    document.removeEventListener('mousemove', mover);
+    document.removeEventListener('mouseup', soltar);
+    fijarAnchoSplit(pct, true);
+  };
+  document.addEventListener('mousemove', mover);
+  document.addEventListener('mouseup', soltar);
 }
 
 /* Botón «Leer petición» del caso */
 function abrirPeticion(ruta, nombre){
   if(window.innerWidth < SPLIT_MIN_ANCHO){ verArchivoPet(ruta, nombre); return; }
+  const p = document.getElementById('p-cola');
+  if(p && p.classList.contains('split')){ cerrarSplit(); return; }
   SPLIT_ON = true;
   try{ localStorage.setItem('pet_split', '1'); }catch(e){}
   aplicarSplit();
@@ -489,7 +547,13 @@ function aplicarSplit(){
   estilosSplit();
   const activo = SPLIT_ON && window.innerWidth >= SPLIT_MIN_ANCHO;
   p.classList.toggle('split', activo);
-  if(activo) sincronizarSplit();
+  const b = document.getElementById('k-leer');
+  if(b){
+    b.classList.toggle('activo', activo);
+    const t = b.querySelector('.txt-leer');
+    if(t) t.textContent = activo ? 'Ocultar petición' : 'Leer petición';
+  }
+  if(activo){ fijarAnchoSplit(anchoSplitGuardado(), false); sincronizarSplit(); }
   else liberarSplit();
 }
 
@@ -514,7 +578,7 @@ async function sincronizarSplit(){
     '<div class="sp-top">' +
       '<div class="sp-tit">' + (r ? esc(r.radicado) + ' · ' + esc(r.peticionario || '') : 'Petición') + '</div>' +
       '<button class="btn btn-ghost" id="sp-tab" disabled title="Abrir en otra pestaña">Pestaña</button>' +
-      '<button class="btn btn-ghost" id="sp-desc" disabled title="Descargar el PDF">' + ICONO.descarga + '</button>' +
+      '<button class="btn btn-ghost" id="sp-desc" disabled title="Descargar el PDF">' + ICONO.descarga + ' Descargar</button>' +
       '<button class="btn btn-ghost" onclick="cerrarSplit()" title="Cerrar la lectura al lado">✕</button>' +
     '</div>' +
     '<div class="sp-cuerpo" id="sp-cuerpo"><div class="sp-msg">' +
@@ -3107,10 +3171,11 @@ function pintarCasoBase(){
             ? '<span class="chip copiable" data-v="' + esc(r.expediente) + '" onclick="copiar(this.dataset.v, \'Expediente\')">' +
               ICONO.carpeta + esc(r.expediente) + '</span>' : '') +
           (r.archivo_path
-            ? '<button class="chip chip-btn" data-ruta="' + esc(r.archivo_path) + '" ' +
+            ? '<button class="chip chip-btn chip-leer" id="k-leer" data-ruta="' + esc(r.archivo_path) + '" ' +
               'data-nom="' + esc('peticion_' + r.radicado + '.pdf') + '" ' +
               'onclick="abrirPeticion(this.dataset.ruta, this.dataset.nom)" ' +
-              'title="Leer el PDF al lado del caso (y descargarlo si lo necesita)">' + ICONO.doc + 'Leer petición</button>'
+              'title="Leer el PDF al lado del caso (y descargarlo si lo necesita)">' + ICONO.doc +
+              '<span class="txt-leer">Leer petición</span></button>'
             : '<span class="chip vacio" title="El radicador no adjuntó el archivo">' +
               ICONO.descarga + 'Sin archivo</span>') +
         '</div>' +
