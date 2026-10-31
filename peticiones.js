@@ -424,6 +424,138 @@ async function verArchivoPet(ruta, nombre){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   LEER LA PETICIÓN AL LADO DEL CASO (v3.7)
+   En pantallas anchas, «Leer petición» parte la cola en dos: el PDF a
+   la izquierda (fijo al hacer scroll) y el caso a la derecha. Queda
+   abierto al pasar de caso y carga solo el PDF del caso siguiente.
+   Mientras está abierto, el PDF del próximo caso se pide por adelantado
+   (uno solo) para que el cambio sea instantáneo. En pantallas angostas
+   se usa la vista previa en ventana.
+   ══════════════════════════════════════════════════════════════ */
+const SPLIT_MIN_ANCHO = 1100;
+let SPLIT_ON = false;
+try{ SPLIT_ON = localStorage.getItem('pet_split') === '1'; }catch(e){}
+let SPLIT_URL = null, SPLIT_RUTA = undefined, SPLIT_SEQ = 0;
+
+function estilosSplit(){
+  if(document.getElementById('sp-css')) return;
+  const st = document.createElement('style');
+  st.id = 'sp-css';
+  const borde = 'var(--border,rgba(255,255,255,.1))';
+  st.textContent =
+    '#c-pdf{display:none}' +
+    '#p-cola.on.split{display:grid;grid-template-columns:minmax(360px,46%) minmax(0,1fr);gap:18px;align-items:start}' +
+    '#p-cola.split .cola-box{max-width:none;margin:0;min-width:0}' +
+    '#p-cola.split #c-pdf{display:flex;flex-direction:column;position:sticky;top:10px;' +
+      'height:calc(100vh - 20px);border:1px solid ' + borde + ';border-radius:12px;overflow:hidden;' +
+      'background:var(--card,#1b1d22)}' +
+    '#c-pdf .sp-top{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid ' + borde + '}' +
+    '#c-pdf .sp-tit{flex:1;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '#c-pdf .btn{padding:5px 10px;font-size:12px}' +
+    '#c-pdf .sp-cuerpo{flex:1;position:relative;background:#525659}' +
+    '#c-pdf iframe,#c-pdf img{width:100%;height:100%;border:0;display:block;object-fit:contain}' +
+    '#c-pdf .sp-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;' +
+      'color:#eee;text-align:center;padding:20px;font-size:13.5px}';
+  document.head.appendChild(st);
+}
+
+function contenedorSplit(){
+  let c = document.getElementById('c-pdf');
+  if(!c){
+    const p = document.getElementById('p-cola');
+    c = document.createElement('div');
+    c.id = 'c-pdf';
+    p.insertBefore(c, p.firstChild);
+  }
+  return c;
+}
+
+/* Botón «Leer petición» del caso */
+function abrirPeticion(ruta, nombre){
+  if(window.innerWidth < SPLIT_MIN_ANCHO){ verArchivoPet(ruta, nombre); return; }
+  SPLIT_ON = true;
+  try{ localStorage.setItem('pet_split', '1'); }catch(e){}
+  aplicarSplit();
+}
+function cerrarSplit(){
+  SPLIT_ON = false;
+  try{ localStorage.setItem('pet_split', '0'); }catch(e){}
+  aplicarSplit();
+}
+
+function aplicarSplit(){
+  const p = document.getElementById('p-cola');
+  if(!p) return;
+  estilosSplit();
+  const activo = SPLIT_ON && window.innerWidth >= SPLIT_MIN_ANCHO;
+  p.classList.toggle('split', activo);
+  if(activo) sincronizarSplit();
+  else liberarSplit();
+}
+
+function liberarSplit(){
+  SPLIT_SEQ++;
+  if(SPLIT_URL){ URL.revokeObjectURL(SPLIT_URL); SPLIT_URL = null; }
+  SPLIT_RUTA = undefined;
+  const c = document.getElementById('c-pdf');
+  if(c) c.innerHTML = '';
+}
+
+async function sincronizarSplit(){
+  const r = COLA[COLA_IDX];
+  const ruta = (r && r.archivo_path) || null;
+  if(ruta === SPLIT_RUTA && ruta) return;          // ya se está mostrando
+  const c = contenedorSplit();
+  const seq = ++SPLIT_SEQ;
+  if(SPLIT_URL){ URL.revokeObjectURL(SPLIT_URL); SPLIT_URL = null; }
+  SPLIT_RUTA = ruta;
+  const nombre = r ? 'peticion_' + r.radicado + '.pdf' : '';
+  c.innerHTML =
+    '<div class="sp-top">' +
+      '<div class="sp-tit">' + (r ? esc(r.radicado) + ' · ' + esc(r.peticionario || '') : 'Petición') + '</div>' +
+      '<button class="btn btn-ghost" id="sp-tab" disabled title="Abrir en otra pestaña">Pestaña</button>' +
+      '<button class="btn btn-ghost" id="sp-desc" disabled title="Descargar el PDF">' + ICONO.descarga + '</button>' +
+      '<button class="btn btn-ghost" onclick="cerrarSplit()" title="Cerrar la lectura al lado">✕</button>' +
+    '</div>' +
+    '<div class="sp-cuerpo" id="sp-cuerpo"><div class="sp-msg">' +
+      (ruta ? 'Cargando la petición…'
+            : r ? 'Esta petición no tiene archivo adjunto.' : 'No hay caso abierto.') +
+    '</div></div>';
+  if(!ruta) return;
+  try{
+    const blob = await blobArchivoPet(ruta);
+    if(seq !== SPLIT_SEQ) return;                  // ya pasaron a otro caso
+    SPLIT_URL = URL.createObjectURL(blob);
+    const cuerpo = document.getElementById('sp-cuerpo');
+    if(blob.type === 'application/pdf'){
+      cuerpo.innerHTML = '<iframe title="Petición" src="' + SPLIT_URL + '#view=FitH"></iframe>';
+    }else if(/^image\//.test(blob.type)){
+      cuerpo.innerHTML = '<img alt="Petición" src="' + SPLIT_URL + '">';
+    }else{
+      cuerpo.innerHTML = '<div class="sp-msg">Este tipo de archivo no se puede mostrar aquí. Descárguelo.</div>';
+    }
+    const bD = document.getElementById('sp-desc'), bT = document.getElementById('sp-tab');
+    bD.disabled = false; bT.disabled = false;
+    bD.onclick = function(){ guardarBlobComo(blob, nombre); };
+    bT.onclick = function(){ window.open(URL.createObjectURL(blob), '_blank'); };
+    precargarSiguiente();
+  }catch(err){
+    if(seq !== SPLIT_SEQ) return;
+    SPLIT_RUTA = undefined;                        // que se reintente al volver al caso
+    const cuerpo = document.getElementById('sp-cuerpo');
+    if(cuerpo) cuerpo.innerHTML = '<div class="sp-msg">No se pudo abrir el archivo: ' + esc(err.message) + '</div>';
+  }
+}
+
+function precargarSiguiente(){
+  const sig = COLA[COLA_IDX + 1];
+  if(!sig || !sig.archivo_path || ARCH_PET.has(sig.archivo_path)) return;
+  setTimeout(function(){ blobArchivoPet(sig.archivo_path).catch(function(){}); }, 1500);
+}
+
+window.addEventListener('resize', debounce(function(){ if(SPLIT_ON) aplicarSplit(); }, 250));
+
+/* ══════════════════════════════════════════════════════════════
    DÍAS HÁBILES (cálculo en vivo, espejo del SQL)
    ══════════════════════════════════════════════════════════════ */
 function iso(d){
@@ -1189,7 +1321,7 @@ function opcionesPDF(buf){
     standardFontDataUrl: CDN_PDFFONT
   };
 }
-const CDN_TESS  = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+const CDN_TESS  = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 
 /* Librerías que solo se usan al generar documentos: se cargan la primera vez
    que hacen falta, no en cada arranque. La promesa queda en caché para que
@@ -2685,7 +2817,26 @@ async function guardarLote(){
     : 'Guardando…';
 
   const abos = PERFILES.filter(function(p){ return p.rol === 'abogado'; });
-  let idx = 0, ok = 0, fallos = 0;
+  let ok = 0, fallos = 0;
+  // Reparto por carga real: a cada petición, quien tenga menos en curso en ese
+  // momento (contando lo que se le va asignando en este mismo grupo). Antes era
+  // turno fijo desde el primero en orden alfabético, que siempre recibía de más.
+  const carga = {};
+  if(dest === 'AUTO' && abos.length){
+    let filas = CARGAS;
+    try{ filas = await supaFetch('v_pet_productividad?select=asignado_a,pendientes'); }catch(e){}
+    abos.forEach(function(a){ carga[a.id] = 0; });
+    (filas || []).forEach(function(f){
+      if(f.asignado_a in carga) carga[f.asignado_a] = Number(f.pendientes) || 0;
+    });
+  }
+  // Empates al azar, no siempre a favor del mismo
+  const turno = abos.slice().sort(function(){ return Math.random() - 0.5; });
+  const menosCargado = function(){
+    let mejor = null;
+    turno.forEach(function(a){ if(mejor === null || carga[a.id] < carga[mejor]) mejor = a.id; });
+    return mejor;
+  };
   // Cola de PDF que radicaron pero cuyo archivo no subió: para reintento.
   window.LOTE_ARCH_FALLIDOS = window.LOTE_ARCH_FALLIDOS || [];
   var LOTE_ARCH_FALLIDOS = window.LOTE_ARCH_FALLIDOS;
@@ -2705,7 +2856,7 @@ async function guardarLote(){
       origen:         'LOTE'
     };
     if(dest === 'AUTO'){
-      if(abos.length){ reg.asignado_a = abos[idx % abos.length].id; idx++; }
+      if(abos.length){ reg.asignado_a = menosCargado(); carga[reg.asignado_a]++; }
     } else if(dest){
       reg.asignado_a = dest;
     }
@@ -2887,6 +3038,10 @@ async function cargarCola(){
 }
 
 function pintarCaso(){
+  pintarCasoBase();
+  try{ aplicarSplit(); }catch(e){ console.warn('lectura al lado:', e); }
+}
+function pintarCasoBase(){
   const cont = document.getElementById('c-cont');
   const pos = document.getElementById('c-pos');
   if(!COLA.length){
@@ -2928,14 +3083,14 @@ function pintarCaso(){
     // ── Encabezado: identificación y relojes ──
     '<div class="caso-hd">' +
       '<div class="caso-id">' +
-        '<div class="caso-rad copiable" onclick="copiar(\'' + esc(r.radicado) + '\', \'Radicado\')" ' +
+        '<div class="caso-rad copiable" data-v="' + esc(r.radicado) + '" onclick="copiar(this.dataset.v, \'Radicado\')" ' +
           'title="Clic para copiar">' + esc(r.radicado) +
           '<span class="ic">' + ICONO.copiar + '</span></div>' +
         chipRiesgo(r) +
         '<div class="caso-nom">' + esc(r.peticionario) + '</div>' +
         (r.documento
           ? '<div class="copiable" style="font-size:13px;color:var(--muted);margin-top:2px" ' +
-            'onclick="copiar(\'' + esc(r.documento) + '\', \'Cédula\')" title="Clic para copiar">' +
+            'data-v="' + esc(r.documento) + '" onclick="copiar(this.dataset.v, \'Cédula\')" title="Clic para copiar">' +
             'CC ' + esc(r.documento) + '<span class="ic">' + ICONO.copiar + '</span></div>' : '') +
 
         // ── Contacto ──
@@ -2949,13 +3104,13 @@ function pintarCaso(){
             ? '<a class="chip" href="tel:' + esc(tel) + '" title="Llamar">' + ICONO.tel + esc(r.telefono) + '</a>'
             : '') +
           (r.expediente
-            ? '<span class="chip copiable" onclick="copiar(\'' + esc(r.expediente) + '\', \'Expediente\')">' +
+            ? '<span class="chip copiable" data-v="' + esc(r.expediente) + '" onclick="copiar(this.dataset.v, \'Expediente\')">' +
               ICONO.carpeta + esc(r.expediente) + '</span>' : '') +
           (r.archivo_path
             ? '<button class="chip chip-btn" data-ruta="' + esc(r.archivo_path) + '" ' +
               'data-nom="' + esc('peticion_' + r.radicado + '.pdf') + '" ' +
-              'onclick="verArchivoPet(this.dataset.ruta, this.dataset.nom)" ' +
-              'title="Ver el PDF de la petición (y descargarlo si lo necesita)">' + ICONO.descarga + 'Ver petición</button>'
+              'onclick="abrirPeticion(this.dataset.ruta, this.dataset.nom)" ' +
+              'title="Leer el PDF al lado del caso (y descargarlo si lo necesita)">' + ICONO.doc + 'Leer petición</button>'
             : '<span class="chip vacio" title="El radicador no adjuntó el archivo">' +
               ICONO.descarga + 'Sin archivo</span>') +
         '</div>' +
@@ -4002,7 +4157,7 @@ function alertaTutela(r){
         '</div>' +
         '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px">' +
           (r.tutela_radicado
-            ? '<span class="chip copiable" onclick="copiar(\'' + esc(r.tutela_radicado) + '\', \'Radicado de tutela\')">' +
+            ? '<span class="chip copiable" data-v="' + esc(r.tutela_radicado) + '" onclick="copiar(this.dataset.v, \'Radicado de tutela\')">' +
               'Tutela ' + esc(r.tutela_radicado) + '</span>' : '') +
           (r.tutela_juzgado ? '<span class="chip">' + esc(r.tutela_juzgado) + '</span>' : '') +
           (r.tutela_responsable ? '<span class="chip">' + esc(r.tutela_responsable) + '</span>' : '') +
@@ -4120,9 +4275,6 @@ function autoFechaResp(){
   if(rad && f && rad.value.trim() && !f.value) f.value = iso(new Date());
 }
 
-function mi(k, v){
-  return '<div class="mi"><div class="k">' + esc(k) + '</div><div>' + esc(v) + '</div></div>';
-}
 
 /* ── Ir directo a un caso dentro de la cola ── */
 let SUG_SEL = -1;
@@ -9854,14 +10006,6 @@ function ordenarPorRiesgo(lista){
 
 /* Explica en una línea por qué este caso va aquí. Las tutelas ya tienen su
    propia alerta grande, así que solo se muestra de vencida en adelante. */
-function motivoRiesgo(r){
-  const o = document.getElementById('c-orden');
-  if(!o || o.value !== 'urgencia') return '';
-  const k = riesgoCaso(r);
-  if(k.nivel < 2 || k.nivel > 4) return '';
-  const cls = k.nivel === 2 ? 'rm-vencida' : k.nivel === 3 ? 'rm-judicial' : 'rm-urgente';
-  return '<div class="riesgo-motivo ' + cls + '">' + esc(k.motivo) + '</div>';
-}
 
 /* ══════════════════════════════════════════════════════════════
    V2 · TIEMPO REAL (Supabase Realtime)
