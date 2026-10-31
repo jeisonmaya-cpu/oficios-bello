@@ -299,30 +299,127 @@ async function reintentarArchivosLote(){
 }
 
 /* Descarga el PDF de una petición (URL firmada temporal, privada). */
-async function descargarArchivoPet(rutaOArchivo, nombreSugerido){
-  const ruta = rutaOArchivo;
+/* ══════════════════════════════════════════════════════════════
+   VER / DESCARGAR EL PDF DE LA PETICIÓN (v3.6)
+   Se baja UNA sola vez y se muestra en el visor del navegador; el botón
+   «Descargar» guarda ese mismo archivo, sin volver a pedirlo. Lo ya visto
+   en esta sesión se reabre al instante (últimos 10, solo en memoria).
+   ══════════════════════════════════════════════════════════════ */
+const ARCH_PET = new Map();   // ruta → Blob
+
+async function blobArchivoPet(ruta){
+  if(ARCH_PET.has(ruta)) return ARCH_PET.get(ruta);
+  // URL firmada válida por 60 s
+  const headers = await authHeaders({'Content-Type':'application/json'});
+  const res = await fetch(
+    SUPA_URL + '/storage/v1/object/sign/' + BUCKET_PET + '/' + encodeURI(ruta),
+    { method:'POST', headers, body: JSON.stringify({ expiresIn: 60 }) }
+  );
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const j = await res.json();
+  const bin = await fetch(SUPA_URL + '/storage/v1' + j.signedURL);
+  if(!bin.ok) throw new Error('HTTP ' + bin.status);
+  let blob = await bin.blob();
+  // Si se subió sin tipo, el navegador lo descargaría en vez de mostrarlo
+  if(/\.pdf$/i.test(ruta) && blob.type !== 'application/pdf'){
+    blob = new Blob([blob], { type:'application/pdf' });
+  }
+  ARCH_PET.set(ruta, blob);
+  if(ARCH_PET.size > 10) ARCH_PET.delete(ARCH_PET.keys().next().value);
+  return blob;
+}
+
+function guardarBlobComo(blob, nombre){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+}
+
+/* Descarga directa (se conserva para quien la llame sin vista previa) */
+async function descargarArchivoPet(ruta, nombreSugerido){
   if(!ruta){ toast('Esta petición no tiene archivo adjunto.', 'err'); return; }
   try{
-    // Pedimos una URL firmada válida por 60 s
-    const headers = await authHeaders({'Content-Type':'application/json'});
-    const res = await fetch(
-      SUPA_URL + '/storage/v1/object/sign/' + BUCKET_PET + '/' + encodeURI(ruta),
-      { method:'POST', headers, body: JSON.stringify({ expiresIn: 60 }) }
-    );
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const j = await res.json();
-    const url = SUPA_URL + '/storage/v1' + j.signedURL;
-    // Descargamos el binario y forzamos "guardar como"
-    const bin = await fetch(url);
-    if(!bin.ok) throw new Error('HTTP ' + bin.status);
-    const blob = await bin.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = nombreSugerido || (ruta.split('/').pop());
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    guardarBlobComo(await blobArchivoPet(ruta), nombreSugerido || ruta.split('/').pop());
   }catch(err){
     toast('No se pudo descargar: ' + err.message, 'err');
+  }
+}
+
+let PREVIA_URL = null;
+function estilosPreviaPet(){
+  if(document.getElementById('pp-css')) return;
+  const st = document.createElement('style');
+  st.id = 'pp-css';
+  st.textContent =
+    '#pp{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);display:flex;' +
+      'align-items:center;justify-content:center;padding:18px}' +
+    '#pp .pp-caja{background:var(--card,#1b1d22);border-radius:14px;width:min(1000px,100%);' +
+      'height:min(92vh,1200px);display:flex;flex-direction:column;overflow:hidden;' +
+      'box-shadow:0 20px 60px rgba(0,0,0,.45)}' +
+    '#pp .pp-top{display:flex;align-items:center;gap:10px;padding:10px 14px;' +
+      'border-bottom:1px solid var(--line,rgba(255,255,255,.1))}' +
+    '#pp .pp-tit{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '#pp .pp-cuerpo{flex:1;position:relative;background:#525659}' +
+    '#pp iframe,#pp img{width:100%;height:100%;border:0;display:block;object-fit:contain}' +
+    '#pp .pp-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;' +
+      'color:#eee;font-size:14px;text-align:center;padding:20px}';
+  document.head.appendChild(st);
+}
+
+function cerrarPreviaPet(){
+  const ov = document.getElementById('pp');
+  if(ov) ov.remove();
+  if(PREVIA_URL){ URL.revokeObjectURL(PREVIA_URL); PREVIA_URL = null; }
+  document.removeEventListener('keydown', teclaPreviaPet, true);
+}
+function teclaPreviaPet(e){
+  if(e.key === 'Escape'){ e.stopPropagation(); e.preventDefault(); cerrarPreviaPet(); }
+}
+
+async function verArchivoPet(ruta, nombre){
+  if(!ruta){ toast('Esta petición no tiene archivo adjunto.', 'err'); return; }
+  nombre = nombre || ruta.split('/').pop();
+  cerrarPreviaPet();
+  estilosPreviaPet();
+  const ov = document.createElement('div');
+  ov.id = 'pp';
+  ov.innerHTML =
+    '<div class="pp-caja" role="dialog" aria-label="Vista previa de la petición">' +
+      '<div class="pp-top">' +
+        '<div class="pp-tit">' + esc(nombre) + '</div>' +
+        '<button class="btn btn-ghost" id="pp-tab" disabled>Abrir en pestaña</button>' +
+        '<button class="btn btn-primary" id="pp-desc" disabled>' + ICONO.descarga + ' Descargar</button>' +
+        '<button class="btn btn-ghost" onclick="cerrarPreviaPet()" title="Cerrar (Esc)">✕</button>' +
+      '</div>' +
+      '<div class="pp-cuerpo" id="pp-cuerpo"><div class="pp-msg">Cargando documento…</div></div>' +
+    '</div>';
+  ov.addEventListener('click', function(e){ if(e.target === ov) cerrarPreviaPet(); });
+  document.body.appendChild(ov);
+  document.addEventListener('keydown', teclaPreviaPet, true);
+
+  try{
+    const blob = await blobArchivoPet(ruta);
+    if(!document.getElementById('pp')) return;          // lo cerraron mientras cargaba
+    PREVIA_URL = URL.createObjectURL(blob);
+    const cuerpo = document.getElementById('pp-cuerpo');
+    if(blob.type === 'application/pdf'){
+      cuerpo.innerHTML = '<iframe title="Petición" src="' + PREVIA_URL + '#view=FitH"></iframe>';
+    }else if(/^image\//.test(blob.type)){
+      cuerpo.innerHTML = '<img alt="Petición" src="' + PREVIA_URL + '">';
+    }else{
+      cuerpo.innerHTML = '<div class="pp-msg">Este tipo de archivo no se puede previsualizar.<br>' +
+        'Use «Descargar».</div>';
+    }
+    const bDesc = document.getElementById('pp-desc');
+    const bTab = document.getElementById('pp-tab');
+    bDesc.disabled = false; bTab.disabled = false;
+    bDesc.onclick = function(){ guardarBlobComo(blob, nombre); };
+    bTab.onclick = function(){ window.open(URL.createObjectURL(blob), '_blank'); };
+  }catch(err){
+    const c = document.getElementById('pp-cuerpo');
+    if(c) c.innerHTML = '<div class="pp-msg">No se pudo abrir el archivo: ' + esc(err.message) + '</div>';
   }
 }
 
@@ -2822,7 +2919,6 @@ function pintarCaso(){
 
   cont.innerHTML =
    '<div class="caso">' +
-    motivoRiesgo(r) +
     alertaTutela(r) +
     '<div id="k-presencia"></div>' +
     (reab ? bannerReabierto(r) : '') +
@@ -2835,6 +2931,7 @@ function pintarCaso(){
         '<div class="caso-rad copiable" onclick="copiar(\'' + esc(r.radicado) + '\', \'Radicado\')" ' +
           'title="Clic para copiar">' + esc(r.radicado) +
           '<span class="ic">' + ICONO.copiar + '</span></div>' +
+        chipRiesgo(r) +
         '<div class="caso-nom">' + esc(r.peticionario) + '</div>' +
         (r.documento
           ? '<div class="copiable" style="font-size:13px;color:var(--muted);margin-top:2px" ' +
@@ -2855,9 +2952,10 @@ function pintarCaso(){
             ? '<span class="chip copiable" onclick="copiar(\'' + esc(r.expediente) + '\', \'Expediente\')">' +
               ICONO.carpeta + esc(r.expediente) + '</span>' : '') +
           (r.archivo_path
-            ? '<button class="chip chip-btn" onclick="descargarArchivoPet(\'' +
-              esc(r.archivo_path).replace(/'/g,"\\'") + '\', \'peticion_' + esc(r.radicado) + '.pdf\')" ' +
-              'title="Descargar el PDF de la petición">' + ICONO.descarga + 'Descargar petición</button>'
+            ? '<button class="chip chip-btn" data-ruta="' + esc(r.archivo_path) + '" ' +
+              'data-nom="' + esc('peticion_' + r.radicado + '.pdf') + '" ' +
+              'onclick="verArchivoPet(this.dataset.ruta, this.dataset.nom)" ' +
+              'title="Ver el PDF de la petición (y descargarlo si lo necesita)">' + ICONO.descarga + 'Ver petición</button>'
             : '<span class="chip vacio" title="El radicador no adjuntó el archivo">' +
               ICONO.descarga + 'Sin archivo</span>') +
         '</div>' +
@@ -2883,13 +2981,24 @@ function pintarCaso(){
     '</div>' +
     (r.resumen ? '<div class="caso-res">' + esc(r.resumen) + '</div>' : '') +
 
-    // ── Registro de la gestión ──
+    // ── Otras peticiones de la misma persona (se abre sola si hay abiertas) ──
+    '<div id="k-hist"></div>' +
+
+    // ── Documentos: es el trabajo principal, va abierto ──
+    panelDocumentos(r) +
+
+    // ── Registro de la gestión: lo último, cuando el documento ya existe ──
+    '<div class="acc-tit" style="margin:22px 0 10px">Registrar la gestión</div>' +
     '<div class="grid">' +
       '<div class="fld"><label class="lbl">Fecha de proyección</label>' +
-        '<input type="date" id="k-proy" value="' +
-          (reab && r.fecha_proyeccion ? String(r.fecha_proyeccion).slice(0, 10) : iso(new Date())) + '">' +
-        '<div class="hint">' + (reab ? 'Se conserva la original. Cámbiela solo si estaba mal.'
-                                     : 'Día en que terminó el documento.') + '</div></div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<input type="date" id="k-proy" style="flex:1" value="' +
+            (r.fecha_proyeccion ? String(r.fecha_proyeccion).slice(0, 10) : '') + '">' +
+          '<button type="button" class="btn btn-ghost" style="padding:6px 11px" ' +
+            'onclick="proyeccionHoy()" title="Poner la fecha de hoy">Hoy</button>' +
+        '</div>' +
+        '<div class="hint" id="k-proy-hint">' + (reab ? 'Se conserva la original. Cámbiela solo si estaba mal.'
+          : 'Se llena sola al generar el documento. Si lo hizo por fuera, use «Hoy».') + '</div></div>' +
       '<div class="fld"><label class="lbl">Radicado de respuesta</label>' +
         '<input type="text" id="k-rad" placeholder="Cuando Gestión Documental lo entregue" ' +
         'value="' + esc(r.radicado_respuesta || '') + '" oninput="autoFechaResp()">' +
@@ -2932,8 +3041,8 @@ function pintarCaso(){
         '<div class="acc-tit">Registrar y continuar</div>' +
         '<button class="btn btn-primary btn-ic" onclick="guardarCaso()">' +
           ICONO.check + 'Guardar y siguiente</button>' +
-        '<button class="btn btn-ghost btn-ic" onclick="moverCaso(1)">Saltar ›</button>' +
         '<button class="btn btn-ghost btn-ic" onclick="moverCaso(-1)">‹ Anterior</button>' +
+        '<button class="btn btn-ghost btn-ic" onclick="moverCaso(1)">Saltar ›</button>' +
         (esAdmin()
           ? '<button class="btn btn-ghost btn-ic" style="border-color:rgba(192,132,252,.45);' +
             'color:var(--morado)" onclick="abrirTraslado()">' + ICONO.traslado + 'Trasladar</button>' : '') +
@@ -2947,8 +3056,6 @@ function pintarCaso(){
     '</div>' +
 
     '<div class="msg" id="k-msg"></div>' +
-    panelDocumentos(r) +
-    '<div id="k-hist"></div>' +
     '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
       '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
    '</div>';
@@ -4181,7 +4288,10 @@ async function guardarCaso(){
   const rad  = document.getElementById('k-rad').value.trim();
   const notas= document.getElementById('k-notas').value.trim();
   if(!proy && !rad){
-    msg.className = 'msg err'; msg.textContent = 'Indique al menos la fecha de proyección.';
+    msg.className = 'msg err';
+    msg.textContent = 'Aún no hay documento proyectado. Genérelo arriba o, si lo hizo por fuera, ' +
+                      'ponga la fecha de proyección (botón «Hoy»).';
+    const fp = document.getElementById('k-proy'); if(fp) fp.focus();
     return;
   }
   const fresp = document.getElementById('k-fresp').value || null;
@@ -4249,7 +4359,7 @@ async function historialPeticionario(r){
     const mias = abiertas.filter(function(o){ return o.asignado_nombre === (PERFIL||{}).nombre; });
 
     cont.innerHTML =
-     '<div class="pleg" id="pleg-hist">' +
+     '<div class="pleg' + (abiertas.length ? ' on' : '') + '" id="pleg-hist">' +
        '<button class="pleg-btn" onclick="plegar(\'pleg-hist\')">' +
          '<span class="pleg-fl">' + ICONO.flecha + '</span>' +
          'Otras peticiones de ' + esc((r.peticionario || '').split(' ')[0]) +
@@ -4721,7 +4831,7 @@ function tituloToken(tok){
 }
 
 function panelDocumentos(r){
-  return '<div class="pleg" id="pleg-doc">' +
+  return '<div class="pleg on" id="pleg-doc">' +
     '<button class="pleg-btn" onclick="plegar(\'pleg-doc\')">' +
       '<span class="pleg-fl">' + ICONO.flecha + '</span>Generar documentos' +
       '<span class="pleg-cta">resolución y respuestas tipo</span>' +
@@ -5154,7 +5264,11 @@ async function registrarDocs(r, sentidos, nombreArchivo){
       headers:{ Prefer:'return=minimal,resolution=ignore-duplicates' },
       body: JSON.stringify(filas)
     });
-  }catch(e){ /* silencioso: no debe frenar la entrega del documento */ }
+  }catch(e){
+    // No frena la entrega del documento, pero se avisa: si no, Control Interno pierde el conteo
+    console.warn('pet_docs:', e);
+    toast('El documento se generó, pero no quedó registrado para las estadísticas: ' + e.message, 'err', 6);
+  }
 }
 
 async function generarCombinada(){
@@ -5723,7 +5837,34 @@ async function armarDocx(url, datos, nombreArchivo, transformar){
   const a = document.createElement('a');
   a.href = u; a.download = nombreArchivo; a.click();
   URL.revokeObjectURL(u);
+  proyeccionPorDocumento();
   return nombreArchivo;
+}
+
+/* El documento ya se generó: la proyección queda con la fecha de hoy
+   (solo en la cola y si estaba vacía; nunca pisa una fecha existente). */
+function proyeccionPorDocumento(){
+  const panel = document.getElementById('p-cola');
+  if(!panel || !panel.classList.contains('on')) return;
+  const el = document.getElementById('k-proy');
+  if(!el || el.value) return;
+  el.value = iso(new Date());
+  const h = document.getElementById('k-proy-hint');
+  if(h){ h.textContent = 'Se llenó al generar el documento. Ya puede guardar.'; h.style.color = 'var(--verde)'; }
+}
+function proyeccionHoy(){
+  const el = document.getElementById('k-proy');
+  if(el) el.value = iso(new Date());
+}
+
+/* Motivo de riesgo como chip junto al radicado (antes era una franja más) */
+function chipRiesgo(r){
+  const o = document.getElementById('c-orden');
+  if(!o || o.value !== 'urgencia') return '';
+  const k = riesgoCaso(r);
+  if(k.nivel < 2 || k.nivel > 4) return '';
+  const cls = k.nivel === 2 ? 'pill s-vencida' : k.nivel === 3 ? 'pill-tut tut-per' : 'pill s-urgente';
+  return '<div style="margin:5px 0 3px"><span class="' + cls + '">' + esc(k.motivo) + '</span></div>';
 }
 
 function abrirResolucion(){
