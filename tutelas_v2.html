@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <!-- deploy: vr7 2026-10-31 · desempeño por abogado mes a mes · vr6: · agenda de términos, trayectoria, guardado con versión, festivos calculados, perfil a prueba de fallos · antes: v2025-08-03-full3 · CONSOLIDADO + leyendas de flujo (ingresados/resueltos, no abiertos) para no confundir flujo con stock activo -->
+  <!-- deploy: vr8 2026-10-31 · bandeja técnica · vr7 2026-10-31 · desempeño por abogado mes a mes · vr6: · agenda de términos, trayectoria, guardado con versión, festivos calculados, perfil a prueba de fallos · antes: v2025-08-03-full3 · CONSOLIDADO + leyendas de flujo (ingresados/resueltos, no abiertos) para no confundir flujo con stock activo -->
   <title>Tutelas — Alcaldía de Bello</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
   <style>
@@ -855,6 +855,45 @@ html[data-theme="light"] .des-tabla .sube{color:#15803d}
 html[data-theme="light"] .des-tabla .baja{color:#dc2626}
 .des-tw{overflow-x:auto}
 .des-nota{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.55}
+
+/* ══════════════════════════════════════════════════════════════
+   vr8 · BANDEJA TÉCNICA
+   ══════════════════════════════════════════════════════════════ */
+.bt-hd{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.bt-tit{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.02em}
+.bt-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+.bt-hechos{font-size:13px;color:var(--muted);text-align:right}
+.bt-hechos b{font-family:'Syne',sans-serif;font-size:22px;color:#4ade80;margin-right:4px}
+html[data-theme="light"] .bt-hechos b{color:#15803d}
+.bt-fila{display:grid;grid-template-columns:minmax(220px,1.35fr) minmax(170px,1fr) minmax(140px,.8fr) minmax(190px,1.25fr) auto;gap:10px;align-items:start;
+  padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-radius:12px;background:var(--panel);transition:border-color .15s,opacity .4s}
+.bt-fila.sucia{border-color:rgba(245,158,11,.5)}
+.bt-fila.ok{border-color:rgba(74,222,128,.55);background:rgba(74,222,128,.07)}
+.bt-fila.sale{opacity:0}
+.bt-caso .n{font-size:13.5px;font-weight:600;line-height:1.3}
+.bt-caso .s{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.bt-caso .chips{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.bt-link{background:none;border:none;padding:0;color:var(--gold2);font-size:11.5px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;text-underline-offset:2px}
+html[data-theme="light"] .bt-link{color:#b45309}
+.bt-campo label{display:block;font-size:10.5px;color:var(--muted);margin-bottom:4px}
+.bt-campo label .falta{color:#fbbf24;font-weight:600}
+.bt-in{width:100%;box-sizing:border-box;background:var(--input-bg);border:1px solid var(--input-bd);border-radius:8px;color:var(--text);padding:8px 10px;font-size:12.5px;font-family:'DM Sans',sans-serif;outline:none}
+.bt-in:focus{border-color:rgba(245,158,11,.6);background:rgba(245,158,11,.06)}
+.bt-in.vacio{border-color:rgba(251,191,36,.45);border-style:dashed}
+.bt-in.mal{border-color:#f87171}
+.bt-ayuda{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.bt-acc{display:flex;flex-direction:column;gap:6px;align-items:stretch;padding-top:17px}
+.bt-btn{padding:8px 14px;border-radius:8px;border:1px solid rgba(245,158,11,.45);background:rgba(245,158,11,.15);color:var(--gold2);font-weight:700;font-size:12.5px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.bt-btn:disabled{opacity:.4;cursor:default}
+html[data-theme="light"] .bt-btn{color:#92400e}
+.bt-btn.sec{border-color:var(--border);background:transparent;color:var(--muted);font-weight:500}
+.bt-btn:focus-visible,.bt-link:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.bt-vacio{text-align:center;padding:48px 10px;color:var(--muted)}
+.bt-vacio .ic{font-size:38px;margin-bottom:8px}
+.bt-mas{text-align:center;padding:10px;font-size:12px;color:var(--muted)}
+@media(max-width:1100px){.bt-fila{grid-template-columns:1fr 1fr}.bt-caso{grid-column:1/-1}.bt-acc{grid-column:1/-1;flex-direction:row;padding-top:0}}
+@media(max-width:600px){.bt-fila{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.bt-fila{transition:none}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -893,11 +932,12 @@ html[data-theme="light"] .des-tabla .baja{color:#dc2626}
 <div class="nov-back" id="nov-back" onclick="if(event.target===this)cerrarNovedades()">
   <div class="nov-box" role="dialog" aria-label="Novedades de la versión">
     <div class="nov-head">
-      <div class="nov-badge">NOVEDADES · VR 7</div>
+      <div class="nov-badge">NOVEDADES · VR 8</div>
       <div class="nov-title">¿Qué hay de nuevo?</div>
       <div class="nov-sub">Más claridad sobre tus términos y menos riesgo de perder trabajo.</div>
     </div>
     <div class="nov-list">
+      <div class="nov-item" data-rol="tecnica admin"><div class="nov-ico">🔧</div><div class="nov-tx"><b>Bandeja técnica</b><span>Una pestaña nueva con todo lo que falta (encargado PQR, radicado PQR, SharePoint y notificaciones), del caso más urgente al menos. Escribes en la misma fila, pulsas Enter y pasas al siguiente sin abrir cada caso. «↺» repite el último encargado y «No registra PQR» llena todo de un clic.</span></div></div>
       <div class="nov-item"><div class="nov-ico">🏁</div><div class="nov-tx"><b>Desempeño mes a mes</b><span>En Estadísticas ves cuántos casos cerraste a término cada mes, si mejoraste frente al mes anterior y cómo vas frente al equipo. Cada mes hay tres reconocimientos: más cierres a término, mejor % a término y mayor progreso.</span></div></div>
       <div class="nov-item"><div class="nov-ico">📅</div><div class="nov-tx"><b>Agenda de términos</b><span>En «Hoy» ves los próximos 10 días hábiles y cuántos términos vencen cada día. Toca un día para ver sus casos. También te avisa cuál es el próximo festivo.</span></div></div>
       <div class="nov-item"><div class="nov-ico">🧭</div><div class="nov-tx"><b>Trayectoria del caso</b><span>Arriba del detalle aparece el camino del proceso: admisión, respuesta, fallo, impugnación, incidente y sanción. Toca un paso para abrir ese registro.</span></div></div>
@@ -980,6 +1020,7 @@ html[data-theme="light"] .des-tabla .baja{color:#dc2626}
 
 <div class="nav-tabs">
   <div class="ntab active" id="tab-hoy"          onclick="goTab('hoy')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>Hoy</div>
+  <div class="ntab"        id="tab-tecnica"      onclick="goTab('tecnica')" title="Llenar rápido lo que falta: encargado PQR, radicado PQR, SharePoint y notificaciones"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Bandeja técnica <span class="nbadge" id="badge-tecnica">0</span></div>
   <div class="ntab"        id="tab-admites"      onclick="goTab('admites')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>Admites <span class="nbadge" id="badge-admites">0</span></div>
   <div class="ntab"        id="tab-mios"         onclick="toggleMisCasos()" oncontextmenu="event.preventDefault();_menuYo()" title="Clic: filtrar mis casos · Clic derecho: cambiar de persona"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>Mis casos</div>
   <div class="ntab"        id="tab-fallos"       onclick="goTab('fallos')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>Fallos &amp; Sent. <span class="nbadge amber" id="badge-fallos">0</span></div>
@@ -1002,6 +1043,20 @@ html[data-theme="light"] .des-tabla .baja{color:#dc2626}
   </div>
   <div id="hoy-agenda"></div>
   <div class="hoy-grid" id="hoy-grid"></div>
+</div>
+
+<div class="panel" id="panel-tecnica">
+  <div class="bt-hd">
+    <div><div class="bt-tit">Bandeja técnica</div>
+      <div class="bt-sub" id="bt-sub">Llena lo que falta sin abrir cada caso. Enter guarda la fila y salta a la siguiente.</div></div>
+    <div class="bt-hechos" id="bt-hechos"></div>
+  </div>
+  <div class="filtros">
+    <input class="fi fi-buscar" id="bt-q" placeholder="🔍 Buscar accionante o radicado..." oninput="renderBandeja()"/>
+    <div class="ep-btns" id="bt-filtros"></div>
+  </div>
+  <datalist id="bt-encargados"></datalist>
+  <div id="bt-lista"></div>
 </div>
 
 <div class="panel" id="panel-admites">
@@ -2135,7 +2190,7 @@ function aplicarPermisosUI(){
   const ocultar=(sel,oc)=>document.querySelectorAll(sel).forEach(el=>{ el.style.display = oc ? "none" : ""; });
   const abogado = !veTodo();
   // Pestañas que no aplican a un abogado
-  ["#tab-mios","#tab-reparto","#tab-pqr","#tab-duplicados"].forEach(id=>ocultar(id, abogado));
+  ["#tab-mios","#tab-reparto","#tab-pqr","#tab-duplicados","#tab-tecnica"].forEach(id=>ocultar(id, abogado));
   // Filtros por abogado: un abogado solo tiene sus casos
   ["fa-abo","ff-abo","fo-abo","fh-abo","fs-abo"].forEach(id=>{ const el=document.getElementById(id); if(el){ if(abogado) el.value=""; el.style.display = abogado ? "none" : ""; } });
   // Crear casos a mano y el informe ejecutivo: administración / técnica
@@ -4190,7 +4245,7 @@ function dibujarEvolucion(tuts, falls, incs){
   }
 }
 
-function renderAll(){aplicarVisibilidad();renderSanciones();renderCockpit();renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();actualizarBadgeDuplicados();if(document.getElementById("tab-duplicados")?.classList.contains("active"))renderDuplicados();}
+function renderAll(){if(typeof renderBandeja==="function")setTimeout(renderBandeja,0);aplicarVisibilidad();renderSanciones();renderCockpit();renderAdmites();renderFallos();renderOtros();renderReparto();renderPQR();renderHistorico();renderEstadisticas();actualizarBadgeDuplicados();if(document.getElementById("tab-duplicados")?.classList.contains("active"))renderDuplicados();}
 
 /* ═══════════════════════════════════════════════════════════════
    vr3 · COCKPIT "HOY"  ·  usa días hábiles (_diasHab)
@@ -4284,10 +4339,10 @@ function renderCockpit(){
   if(PERFIL.rol==="tecnica" || PERFIL.rol==="admin"){
     const pendTec = tutelas.filter(r=>!EST_HIST.includes(r["ESTADO"]) && faltaTecnico(r)).sort((a,b)=>(a._dias??999)-(b._dias??999));
     if(pendTec.length) grid.innerHTML += bloque("naranja","🔧","Pendientes técnicos", pendTec,
-      `goTab('admites');quickAdm='pendtec';pagAdm=1;renderAdmites()`, "", "", r=>queFaltaTecnico(r).join(", "));
+      `_btFiltro='todo';goTab('tecnica')`, "", "", r=>queFaltaTecnico(r).join(", "));
     const sinNot = incidentes.filter(r=>!EST_HIST.includes(r["ESTADO"]) && !estaNotificado(r));
     if(sinNot.length) grid.innerHTML += bloque("naranja","📣","Incidentes sin notificar", sinNot,
-      `goTab('otros');quickOtr='sinnotif';pagInc=1;renderOtros()`, "", "", r=>r._diasHab);
+      `_btFiltro='notif';goTab('tecnica')`, "", "", r=>r._diasHab);
   }
   renderAgenda();   // vr6
 }
@@ -4878,25 +4933,36 @@ function _aplicarRegistroFresco(fresco){
 // vr6 · Guardado con control de versión reutilizable (mismo criterio que guardarEstado).
 // Devuelve el registro guardado (formato dashboard) o null si el usuario decide no pisar
 // lo que otra persona cambió mientras tenía el caso abierto.
-async function guardarConVersion(cambios){
-  let fila = await sbPatchVersionado(actual._id, cambios, actual["ACTUALIZADO EN"]);
+async function guardarConVersion(cambios, reg){
+  const r = reg || actual;
+  let fila = await sbPatchVersionado(r._id, cambios, r["ACTUALIZADO EN"]);
   if(fila) return sbASheet(fila);
-  const srvRaw = await sbLeerFila(actual._id);
+  const srvRaw = await sbLeerFila(r._id);
   if(!srvRaw) throw new Error("El caso ya no existe o tu usuario no tiene permiso para verlo");
   const srv = sbASheet(srvRaw);
-  if(String(srv["ACTUALIZADO EN"]||"")===String(actual["ACTUALIZADO EN"]||""))
+  if(String(srv["ACTUALIZADO EN"]||"")===String(r["ACTUALIZADO EN"]||""))
     throw new Error("Supabase no aplicó el cambio (revisa los permisos de tu usuario)");
   const n=x=>String(x??"").trim();
-  const choques = Object.keys(cambios).filter(k=>n(srv[k])!==n(actual[k]) && n(srv[k])!==n(cambios[k]));
+  const choques = Object.keys(cambios).filter(k=>n(srv[k])!==n(r[k]) && n(srv[k])!==n(cambios[k]));
   if(choques.length){
     const det = choques.map(k=>`• ${ETQ_CAMPO[k]||k}: ahora dice «${abrev(n(srv[k])||"(vacío)",70)}»`).join("\n");
     const pisar = await confirmar("Otra persona cambió este caso",
       `Mientras lo tenías abierto se modificó:\n${det}\n\n¿Reemplazar esos campos con lo que escribiste tú?`);
-    if(!pisar){ _aplicarRegistroFresco(srv); return null; }
+    if(!pisar){ if(r===actual) _aplicarRegistroFresco(srv); else _aplicarFrescoA(r, srv); return null; }
   }
-  fila = await sbPatchVersionado(actual._id, cambios, srv["ACTUALIZADO EN"]);
+  fila = await sbPatchVersionado(r._id, cambios, srv["ACTUALIZADO EN"]);
   if(!fila) throw new Error("El caso cambió de nuevo mientras guardabas. Intenta otra vez.");
   return sbASheet(fila);
+}
+// Copia un registro fresco de Supabase sobre el registro en memoria (por id y categoría)
+function _aplicarFrescoA(reg, fresco){
+  const cat = reg._cat;
+  const arr = cat==="fallo" ? fallos : cat==="incidente" ? incidentes : tutelas;
+  const idx = arr.findIndex(x=>x._id===reg._id);
+  const copiar=d=>{ Object.assign(d, fresco); d._cat=cat; };
+  if(idx>=0) copiar(arr[idx]);
+  if(reg!==arr[idx]) copiar(reg);
+  if(actual && actual._id===reg._id && actual._cat===cat) copiar(actual);
 }
 
 async function guardarEstado(){
@@ -5726,6 +5792,7 @@ const TAB_HINT = {
   pqr:          "Tutelas cruzadas con una PQR. \"Sin respuesta\" son las que aún esperan que la petición se responda.",
   historico:    "Casos ya cerrados: finalizados, respondidos, anulados o con hecho superado. Solo consulta.",
   duplicados:   "Posibles registros repetidos (mismo radicado y mismo accionante). Revisa antes de anular.",
+  tecnica:      "Pendientes técnicos de los casos activos, del más urgente al menos. Escribe, pulsa Enter y pasa al siguiente.",
   estadisticas: "Indicadores de gestión: carga por abogado, tiempos de cierre y estados. Solo lectura."
 };
 function pintarTabHint(tab){
@@ -5736,7 +5803,7 @@ function pintarTabHint(tab){
   el.style.display=t?"block":"none";
 }
 function goTab(tab){
-  ["hoy","admites","fallos","otros","sanciones","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
+  ["hoy","tecnica","admites","fallos","otros","sanciones","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
     document.getElementById("tab-"+t).classList.toggle("active",t===tab);
     document.getElementById("panel-"+t).classList.toggle("active",t===tab);
   });
@@ -5748,6 +5815,7 @@ function goTab(tab){
   else if(tab==="historico")pagHis=1;
   else if(tab==="duplicados")renderDuplicados();
   else if(tab==="hoy")renderCockpit();
+  else if(tab==="tecnica")renderBandeja();
   else if(tab==="sanciones"){pagSan=1;renderSanciones();}
 }
 
@@ -5855,6 +5923,218 @@ document.addEventListener('keydown',e=>{
 // ════════════════════════════════════════
 // LOGIN / AUTENTICACIÓN
 // ════════════════════════════════════════
+
+
+// ════════════════════════════════════════════════════════════
+// vr8 · BANDEJA TÉCNICA (Verónica)
+// Todos los pendientes técnicos en una sola lista, del más urgente
+// al menos, con los campos editables en la misma fila. Enter guarda
+// la fila (solo lo que cambió, con control de versión) y lleva el
+// cursor al siguiente campo vacío. Lo escrito y no guardado se
+// conserva aunque la lista se refresque.
+// ════════════════════════════════════════════════════════════
+let _btFiltro = "todo";
+const _btBorrador = {};          // id → {campo: valor} escrito y aún sin guardar
+let _btUltimoEnc = "";           // último encargado usado (botón «repetir»)
+const _BT_MAX = 60;              // filas visibles a la vez (rendimiento)
+const _BT_CAMPOS = [["ENCARGADO PQR","enc"],["PQR","rad"],["SHAREPOINT","sp"]];
+const _btKeyHoy = () => "tutelas_bt_hechos_"+_ymdLocal(new Date());
+function _btHechos(){ try{ return parseInt(localStorage.getItem(_btKeyHoy())||"0",10)||0; }catch(_){ return 0; } }
+function _btSumarHecho(){ try{ localStorage.setItem(_btKeyHoy(), String(_btHechos()+1)); }catch(_){} }
+const _btVal = (r,campo)=>{ const b=_btBorrador[r._id]; return b && campo in b ? b[campo] : String(r[campo]||"").trim(); };
+
+function _btPendientes(){
+  const activos = r=>!EST_HIST.includes(r["ESTADO"]);
+  const tec = tutelas.filter(r=>activos(r) && r._id && faltaTecnico(r));
+  const notif = incidentes.filter(r=>activos(r) && r._id && !estaNotificado(r));
+  return { tec, notif };
+}
+function _btOrden(a,b){ return (a._diasHab??9999)-(b._diasHab??9999); }
+
+function renderBandeja(){
+  const lista=document.getElementById("bt-lista"); if(!lista) return;
+  // Recuerda dónde estaba escribiendo para devolver el foco tras redibujar
+  const fa=document.activeElement, enBand=fa && fa.classList && fa.classList.contains("bt-in");
+  const focoId = enBand ? (window._btFilas[+fa.closest(".bt-fila").dataset.i]||{})._id : null;
+  const focoC = enBand ? fa.dataset.c : null, focoPos = enBand ? fa.selectionStart : null;
+  const restaurar=()=>{ if(!focoId) return; const k=(window._btFilas||[]).findIndex(x=>x._id===focoId);
+    const el=k>=0 && document.querySelector(`#bt-f-${k} .bt-in[data-c="${focoC}"]`);
+    if(el){ el.focus(); try{ el.setSelectionRange(focoPos,focoPos); }catch(_){} } };
+  setTimeout(restaurar,0);
+  const {tec, notif} = _btPendientes();
+  const badge=document.getElementById("badge-tecnica"); if(badge) badge.textContent = tec.length + notif.length;
+  const panel=document.getElementById("panel-tecnica");
+  if(!panel || !panel.classList.contains("active")) return;   // solo se dibuja si está a la vista
+
+  // Encargados conocidos para el autocompletado
+  const dl=document.getElementById("bt-encargados");
+  if(dl && !dl.dataset.listo){
+    const nombres=new Set();
+    document.querySelectorAll("#m-pqrenc-sel option").forEach(o=>{ if(o.value) nombres.add(o.value); });
+    [...tutelas,...fallos,...incidentes].forEach(r=>{ const e=String(r["ENCARGADO PQR"]||"").trim(); if(e) nombres.add(e); });
+    dl.innerHTML=[...nombres].sort((a,b)=>a.localeCompare(b,"es")).map(n=>`<option value="${escAttr(n)}">`).join("");
+    dl.dataset.listo="1";
+  }
+
+  const cuenta={ todo:tec.length,
+    enc: tec.filter(r=>!String(r["ENCARGADO PQR"]||"").trim()).length,
+    rad: tec.filter(r=>!String(r["PQR"]||"").trim()).length,
+    sp:  tec.filter(r=>!String(r["SHAREPOINT"]||"").trim()).length,
+    notif: notif.length };
+  const etq={todo:"Todo lo que falta",enc:"Sin encargado",rad:"Sin radicado PQR",sp:"Sin SharePoint",notif:"Incidentes sin notificar"};
+  document.getElementById("bt-filtros").innerHTML=Object.keys(etq).map(k=>
+    `<button class="ep-btn${_btFiltro===k?" on":""}" onclick="_btFiltro='${k}';renderBandeja()">${etq[k]} (${cuenta[k]})</button>`).join("");
+  const h=_btHechos();
+  document.getElementById("bt-hechos").innerHTML = h ? `<b>${h}</b>completado${h!==1?"s":""} hoy` : "";
+
+  const q=(document.getElementById("bt-q").value||"").trim();
+  let filas;
+  if(_btFiltro==="notif") filas=notif;
+  else filas=tec.filter(r=> _btFiltro==="todo" ? true
+      : _btFiltro==="enc" ? !String(r["ENCARGADO PQR"]||"").trim()
+      : _btFiltro==="rad" ? !String(r["PQR"]||"").trim()
+      : !String(r["SHAREPOINT"]||"").trim());
+  filas=filas.filter(r=>fBusc(r,q)).sort(_btOrden);
+  window._btFilas=filas.slice(0,_BT_MAX);
+
+  if(!filas.length){
+    lista.innerHTML=`<div class="bt-vacio"><div class="ic">✅</div>${q?"Nada coincide con la búsqueda.":_btFiltro==="notif"?"Todos los incidentes activos están notificados.":"No hay pendientes técnicos en este grupo."}</div>`;
+    return;
+  }
+  const chipDias=r=> r._diasHab===null||r._diasHab===undefined ? "" : semaforo(r._diasHab, r["ESTADO"]);
+  const caso=(r,i)=>`<div class="bt-caso">
+      <div class="n">${esc(r["ACCIONANTE"]||"—")}</div>
+      <div class="s">${esc(r["RADICADO"]||"—")}<br>${esc(juzCorto(r["JUZGADO"])||"")}${r["RESPONSABLE"]?" · "+esc(pNom(r["RESPONSABLE"])):""}</div>
+      <div class="chips">${chipDias(r)}
+        <button class="bt-link" onclick="copiarTexto(${i})" title="Copiar radicado">Copiar radicado</button>
+        <button class="bt-link" onclick="abrirModalIdx('_btFilas',${i})">Abrir caso</button></div>
+    </div>`;
+
+  if(_btFiltro==="notif"){
+    lista.innerHTML=window._btFilas.map((r,i)=>`<div class="bt-fila" style="grid-template-columns:1fr auto">${caso(r,i)}
+      <div class="bt-acc" style="padding-top:0"><button class="bt-btn" onclick="btNotificar(${i})">📣 Marcar notificado</button></div></div>`).join("")
+      + (filas.length>_BT_MAX?`<div class="bt-mas">Mostrando ${_BT_MAX} de ${filas.length}. Al completar estos aparecen los siguientes.</div>`:"");
+    return;
+  }
+
+  lista.innerHTML=window._btFilas.map((r,i)=>{
+    const enc=_btVal(r,"ENCARGADO PQR"), rad=_btVal(r,"PQR"), sp=_btVal(r,"SHAREPOINT");
+    const sucia=!!_btBorrador[r._id] && Object.keys(_btBorrador[r._id]).length;
+    const lbl=(t,v)=>`<label>${t}${v?"":` <span class="falta">· falta</span>`}</label>`;
+    return `<div class="bt-fila${sucia?" sucia":""}" id="bt-f-${i}" data-i="${i}">
+      ${caso(r,i)}
+      <div class="bt-campo">${lbl("Encargado PQR",enc)}
+        <input class="bt-in${enc?"":" vacio"}" list="bt-encargados" data-c="ENCARGADO PQR" value="${escAttr(enc)}" placeholder="Escribe un nombre…" autocomplete="off">
+        <div class="bt-ayuda">${_btUltimoEnc&&!enc?`<button class="bt-link" onclick="btRepetir(${i})" title="Usar el mismo encargado de la fila anterior">↺ ${esc(pNom(_btUltimoEnc))}</button>`:""}
+          <button class="bt-link" onclick="btNoRegistra(${i})" title="Marca encargado, radicado y respuesta como «No registra PQR»">No registra PQR</button></div>
+      </div>
+      <div class="bt-campo">${lbl("Radicado PQR",rad)}
+        <input class="bt-in${rad?"":" vacio"}" data-c="PQR" value="${escAttr(rad)}" placeholder="Ej.: 202610012345" autocomplete="off"></div>
+      <div class="bt-campo">${lbl("SharePoint",sp)}
+        <input class="bt-in${sp?"":" vacio"}" data-c="SHAREPOINT" value="${escAttr(sp)}" placeholder="Pega el enlace del documento" autocomplete="off">
+        ${/^https?:\/\//i.test(sp)?`<div class="bt-ayuda"><a class="bt-link" href="${escAttr(sp)}" target="_blank" rel="noopener">Abrir enlace</a></div>`:""}
+      </div>
+      <div class="bt-acc"><button class="bt-btn" onclick="btGuardar(${i})" ${sucia?"":"disabled"}>Guardar</button>
+        ${sucia?`<button class="bt-btn sec" onclick="btDescartar(${i})">Descartar</button>`:""}</div>
+    </div>`;
+  }).join("") + (filas.length>_BT_MAX?`<div class="bt-mas">Mostrando ${_BT_MAX} de ${filas.length}. Al completar estos aparecen los siguientes.</div>`:"");
+}
+
+// Escribir en una fila: guarda el borrador y activa «Guardar» sin redibujar (no se pierde el foco)
+document.addEventListener("input", e=>{
+  const inp=e.target; if(!inp.classList || !inp.classList.contains("bt-in")) return;
+  const fila=inp.closest(".bt-fila"); const r=window._btFilas && window._btFilas[+fila.dataset.i]; if(!r) return;
+  if(inp.dataset.c==="PQR" && /^(https?:\/\/|www\.)/i.test(inp.value.trim())){
+    const url=inp.value.trim(); inp.value=String(r["PQR"]||"");
+    const sp=fila.querySelector('.bt-in[data-c="SHAREPOINT"]');
+    if(sp){ sp.value=url; sp.dispatchEvent(new Event("input",{bubbles:true})); sp.focus(); }
+    toast("🔗 Era un enlace: lo pasé a SharePoint","");
+  }
+  const campo=inp.dataset.c, v=inp.value.trim();
+  const b=(_btBorrador[r._id] ||= {});
+  if(v===String(r[campo]||"").trim()) delete b[campo]; else b[campo]=inp.value;
+  if(!Object.keys(b).length) delete _btBorrador[r._id];
+  const sucia=!!_btBorrador[r._id];
+  fila.classList.toggle("sucia", sucia);
+  inp.classList.toggle("vacio", !v);
+  inp.classList.remove("mal");
+  const btn=fila.querySelector(".bt-acc .bt-btn"); if(btn) btn.disabled=!sucia;
+});
+// Enter guarda la fila; Escape descarta lo escrito en ella
+document.addEventListener("keydown", e=>{
+  const inp=e.target; if(!inp.classList || !inp.classList.contains("bt-in")) return;
+  const fila=inp.closest(".bt-fila"); const i=+fila.dataset.i;
+  if(e.key==="Enter"){ e.preventDefault(); if(_btBorrador[(window._btFilas[i]||{})._id]) btGuardar(i); else _btFocoSiguiente(i, inp); }
+  else if(e.key==="Escape" && _btBorrador[(window._btFilas[i]||{})._id]){ e.preventDefault(); e.stopPropagation(); btDescartar(i); }
+}, true);
+
+function _btFocoSiguiente(i, desde){
+  // Primero un campo vacío más adelante en la misma fila; si no, el primer vacío de las filas siguientes
+  const filas=[...document.querySelectorAll("#bt-lista .bt-fila")];
+  const ins=filas.flatMap(f=>[...f.querySelectorAll(".bt-in")]);
+  let pos;
+  if(desde) pos=ins.indexOf(desde);
+  else { const k=ins.findIndex(x=>+x.closest(".bt-fila").dataset.i>i); if(k<0) return; pos=k-1; }
+  const sig=ins.slice(pos+1).find(x=>!x.value.trim()) || ins[pos+1];
+  if(sig){ sig.focus(); sig.scrollIntoView({block:"nearest"}); }
+}
+
+async function btGuardar(i){
+  const r=window._btFilas && window._btFilas[i]; if(!r) return;
+  const b=_btBorrador[r._id]; if(!b) return;
+  const cambios={}; Object.entries(b).forEach(([k,v])=>{ cambios[k]=String(v).trim(); });
+  const fila=document.getElementById("bt-f-"+i);
+  if(cambios["SHAREPOINT"] && /^www\./i.test(cambios["SHAREPOINT"])) cambios["SHAREPOINT"]="https://"+cambios["SHAREPOINT"];
+  const btn=fila && fila.querySelector(".bt-acc .bt-btn"); if(btn){ btn.disabled=true; btn.textContent="Guardando…"; }
+  try{
+    const fresco=await guardarConVersion(cambios, r);
+    if(!fresco){ delete _btBorrador[r._id]; toast("↩️ No se guardó: el caso se recargó con lo que escribió la otra persona.",""); renderBandeja(); return; }
+    _aplicarFrescoA(r, fresco);
+    delete _btBorrador[r._id];
+    if(cambios["ENCARGADO PQR"] && cambios["ENCARGADO PQR"]!=="No registra PQR") _btUltimoEnc=cambios["ENCARGADO PQR"];
+    const completo=!faltaTecnico(r);
+    if(completo){ _btSumarHecho(); }
+    toast(completo?"✅ Caso completo":"✅ Guardado","ok");
+    if(fila){
+      fila.classList.remove("sucia"); fila.classList.add("ok");
+      if(btn){ btn.textContent="Guardado"; }
+    }
+    if(!completo && fila){ const v=[...fila.querySelectorAll(".bt-in")].find(x=>!x.value.trim()); if(v) v.focus(); else _btFocoSiguiente(i,null); }
+    else _btFocoSiguiente(i, null);
+    // Se redibuja un instante después para que se vea la confirmación (los borradores de otras filas se conservan)
+    setTimeout(()=>{ const foco=document.activeElement; const fi=foco&&foco.closest&&foco.closest(".bt-fila"); const id=fi&&window._btFilas[+fi.dataset.i]?window._btFilas[+fi.dataset.i]._id:null; const c=foco&&foco.dataset?foco.dataset.c:null;
+      if(completo && fila) fila.classList.add("sale");
+      setTimeout(()=>{ renderBandeja(); renderCockpit(); actualizarIndicadoresTec();
+        if(id){ const k=window._btFilas.findIndex(x=>x._id===id); const el=k>=0&&document.querySelector(`#bt-f-${k} .bt-in[data-c="${c}"]`); if(el) el.focus(); } }, completo?350:0);
+    }, 650);
+  }catch(e){
+    if(btn){ btn.disabled=false; btn.textContent="Guardar"; }
+    if(/JWT expired|401/i.test(e.message)) toast("⚠️ Tu sesión expiró. Recarga la página; lo que escribiste en esta fila se perderá si cierras.","err");
+    else toast("❌ No se guardó: "+e.message,"err");
+  }
+}
+function actualizarIndicadoresTec(){ try{ const {tec,notif}=_btPendientes(); const b=document.getElementById("badge-tecnica"); if(b) b.textContent=tec.length+notif.length; }catch(_){} }
+function btDescartar(i){ const r=window._btFilas[i]; if(r) delete _btBorrador[r._id]; renderBandeja(); }
+function _btPoner(i, campo, valor){
+  const fila=document.getElementById("bt-f-"+i); const inp=fila&&fila.querySelector(`.bt-in[data-c="${campo}"]`);
+  if(!inp) return; inp.value=valor; inp.dispatchEvent(new Event("input",{bubbles:true}));
+}
+function btRepetir(i){ _btPoner(i,"ENCARGADO PQR",_btUltimoEnc); const f=document.querySelector(`#bt-f-${i} .bt-in[data-c="PQR"]`); if(f) f.focus(); }
+function btNoRegistra(i){
+  const r=window._btFilas[i]; if(!r) return;
+  _btPoner(i,"ENCARGADO PQR","No registra PQR"); _btPoner(i,"PQR","NO REGISTRA");
+  const b=(_btBorrador[r._id] ||= {}); if(String(r["RESPUESTA PQR"]||"").trim()!=="NO REGISTRA") b["RESPUESTA PQR"]="NO REGISTRA";
+  const f=document.querySelector(`#bt-f-${i} .bt-in[data-c="SHAREPOINT"]`); if(f) f.focus();
+}
+async function copiarTexto(i){
+  const r=window._btFilas[i]; if(!r) return;
+  try{ await navigator.clipboard.writeText(String(r["RADICADO"]||"")); toast("📋 Radicado copiado","ok"); }catch(_){ toast("No se pudo copiar","err"); }
+}
+async function btNotificar(i){
+  await toggleNotificado("_btFilas", i);
+  if(estaNotificado(window._btFilas[i]||{})) _btSumarHecho();
+  renderBandeja(); renderCockpit();
+}
 
 // ════════════════════════════════════════════════════════════
 // vr6 · AGENDA DE TÉRMINOS (pestaña Hoy)
@@ -6058,7 +6338,7 @@ function entrarAlSistema(){
 }
 
 /* ── SPLASH + NOVEDADES vr3 ── */
-const NOV_VERSION = "vr7";  // súbelo (vr4…) cuando quieras que el modal reaparezca
+const NOV_VERSION = "vr8";  // súbelo (vr4…) cuando quieras que el modal reaparezca
 function mostrarSplash(){
   const sp=document.getElementById("splash");
   if(!sp) return;
