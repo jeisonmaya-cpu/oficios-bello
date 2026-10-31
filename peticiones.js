@@ -402,6 +402,7 @@ async function entrar(){
 
 async function salir(){
   borrarBorrador();
+  await cacheBorrarTodo();
   try{ if(sbAuth) await sbAuth.auth.signOut(); }catch(e){}
   location.reload();
 }
@@ -458,6 +459,7 @@ async function iniciar(){
   prepararDigitar();
   llenarAbogados();
   registrarAtajoBuscador();
+  asegurarCopiaLocal();   // Ctrl+K responde al instante con la copia de este equipo
   ligarBorrador();
   setTimeout(recuperarBorrador, 400);
   iniciarTiempoReal();
@@ -6573,11 +6575,194 @@ const debRenderPersonas = debounce(function(){ renderPersonas(); }, 220);
 const debRenderHist     = debounce(function(){ renderHist();     }, 220);
 
 /* ══════════════════════════════════════════════════════════════
-   BUSCADOR GLOBAL (Ctrl+K) — busca en toda la bandeja en memoria
+   BÚSQUEDA TOLERANTE (v3.5)
+   · Sin tildes ni mayúsculas: «gomez» encuentra «GÓMEZ».
+   · Palabras en cualquier orden: «perez juan» encuentra «JUAN PÉREZ»;
+     dobles espacios en el nombre guardado ya no estorban.
+   · Números sin puntos, guiones ni espacios: «1.036.123» = «1036123».
+   ══════════════════════════════════════════════════════════════ */
+function normBusq(s){
+  return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+function soloDig(s){ return String(s == null ? '' : s).replace(/\D/g, ''); }
+
+/* Texto ya normalizado de cada fila, calculado una sola vez */
+const BLOB_BUSQ = new WeakMap();
+function blobDe(r){
+  let b = BLOB_BUSQ.get(r);
+  if(!b){
+    b = {
+      txt: normBusq([r.radicado, r.peticionario, r.documento, r.radicado_respuesta, r.expediente].join(' ')),
+      abo: normBusq(r.asignado_nombre),
+      dig: '|' + [r.radicado, r.documento, r.radicado_respuesta, r.expediente].map(soloDig).join('|') + '|'
+    };
+    BLOB_BUSQ.set(r, b);
+  }
+  return b;
+}
+function prepararBusq(q){
+  const n = normBusq(q);
+  return { n: n, toks: n ? n.split(' ') : [], dig: soloDig(q) };
+}
+function coincideBusq(r, pq, conAbogado){
+  if(!pq.n) return true;
+  const b = blobDe(r);
+  const txt = conAbogado ? b.txt + ' ' + b.abo : b.txt;
+  if(pq.toks.every(function(t){ return txt.indexOf(t) !== -1; })) return true;
+  return pq.dig.length >= 5 && b.dig.indexOf(pq.dig) !== -1;
+}
+/* ¿Vale la pena preguntarle a la base? (evita consultas con 1–2 letras) */
+function busqSuficiente(pq){
+  return pq.dig.length >= 4 || pq.n.replace(/[^a-z]/g, '').length >= 3;
+}
+const ESTADOS_FUERA = ['CERRADA','ANULADA','TRASLADADA'];
+
+/* Busca en TODA la base (abiertas, cerradas, anuladas y trasladadas).
+   Usa la función pet_buscar (sin tildes, números sin puntos); si aún no
+   se ha corrido el SQL, cae a una búsqueda por palabras con ilike. */
+async function buscarEnTodaLaBase(qRaw, lim){
+  lim = lim || 60;
+  let filas = null;
+  try{
+    filas = await supaFetch('rpc/pet_buscar?q=' + encodeURIComponent(qRaw) + '&lim=' + lim);
+  }catch(e){
+    if(!esFaltaVista(e)) throw e;
+  }
+  if(!Array.isArray(filas)){
+    const toks = String(qRaw).replace(/[(),*"'\\]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 5)
+      .map(function(t){ return /^[\d.\-]+$/.test(t) ? soloDig(t) : t; })
+      .filter(Boolean);
+    if(!toks.length) return [];
+    const campos = ['radicado','peticionario','documento','radicado_respuesta','expediente'];
+    const grupos = toks.map(function(t){
+      const v = encodeURIComponent(t);
+      return 'or(' + campos.map(function(c){ return c + '.ilike.*' + v + '*'; }).join(',') + ')';
+    });
+    filas = await supaFetch('v_pet_bandeja?select=*&and=(' + grupos.join(',') + ')' +
+                            '&order=id.desc&limit=' + lim);
+  }
+  // Primero las abiertas, luego las más recientes
+  filas.sort(function(a, b){
+    const fa = ESTADOS_FUERA.indexOf(a.estado) !== -1 ? 1 : 0;
+    const fb = ESTADOS_FUERA.indexOf(b.estado) !== -1 ? 1 : 0;
+    return fa - fb || (b.id || 0) - (a.id || 0);
+  });
+  return filas;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COPIA LOCAL DE LA BANDEJA (IndexedDB) · v3.5
+   La bandeja y Ctrl+K se pintan al instante con la última copia guardada
+   en este equipo y se actualizan por detrás. Una copia por usuario
+   (respeta lo que cada quien puede ver). Se borra al cerrar sesión.
+   ══════════════════════════════════════════════════════════════ */
+const CACHE_DB = 'teodoro_peticiones';
+let CACHE_CONN = null;
+function cacheAbrir(){
+  if(CACHE_CONN) return CACHE_CONN;
+  CACHE_CONN = new Promise(function(res, rej){
+    if(!window.indexedDB){ rej(new Error('Sin IndexedDB')); return; }
+    const r = indexedDB.open(CACHE_DB, 1);
+    r.onupgradeneeded = function(){ r.result.createObjectStore('kv'); };
+    r.onsuccess = function(){ res(r.result); };
+    r.onerror = function(){ rej(r.error); };
+  });
+  CACHE_CONN.catch(function(){ CACHE_CONN = null; });
+  return CACHE_CONN;
+}
+async function cacheOp(modo, fn){
+  const db = await cacheAbrir();
+  return new Promise(function(res, rej){
+    const tx = db.transaction('kv', modo);
+    const req = fn(tx.objectStore('kv'));
+    tx.oncomplete = function(){ res(req ? req.result : undefined); };
+    tx.onerror = tx.onabort = function(){ rej(tx.error); };
+  });
+}
+function claveCacheBandeja(){ return 'bandeja:' + (PERFIL ? PERFIL.id : ''); }
+async function cacheLeerBandeja(){
+  try{
+    const v = await cacheOp('readonly', function(s){ return s.get(claveCacheBandeja()); });
+    return (v && Array.isArray(v.filas)) ? v : null;
+  }catch(e){ return null; }
+}
+function cacheGuardarBandeja(filas){
+  cacheOp('readwrite', function(s){ s.put({ ts: Date.now(), filas: filas }, claveCacheBandeja()); })
+    .catch(function(){});
+}
+function cacheBorrarTodo(){
+  return cacheOp('readwrite', function(s){ s.clear(); }).catch(function(){});
+}
+
+let BANDEJA_COPIA_TS = 0;      // >0: lo que se ve es la copia local de esa hora
+let CARGA_BANDEJA = null;      // una sola carga en curso, compartida por Bandeja y Ctrl+K
+const BANDEJA_EXTRA = new Map(); // filas traídas de «toda la base» (cerradas, trasladadas…)
+
+function agregarExtra(r){
+  BANDEJA_EXTRA.set(String(r.id), r);
+  if(!BANDEJA.some(function(x){ return x.id === r.id; })) BANDEJA.push(r);
+}
+
+async function asegurarCopiaLocal(){
+  if(BANDEJA.length) return;
+  const c = await cacheLeerBandeja();
+  if(c && c.filas.length && !BANDEJA.length){ BANDEJA = c.filas; BANDEJA_COPIA_TS = c.ts; }
+}
+
+function refrescarBandeja(msg){
+  if(!CARGA_BANDEJA){
+    CARGA_BANDEJA = (async function(){
+      const filas = await traerBandejaFresca(msg);
+      cacheGuardarBandeja(filas);
+      const ids = new Set(filas.map(function(r){ return String(r.id); }));
+      BANDEJA_EXTRA.forEach(function(r, id){ if(!ids.has(id)) filas.push(r); });
+      BANDEJA = filas;
+      BANDEJA_TS = Date.now();
+      BANDEJA_COPIA_TS = 0;
+      return filas;
+    })();
+    const fin = function(){ CARGA_BANDEJA = null; };
+    CARGA_BANDEJA.then(fin, fin);
+  }
+  return CARGA_BANDEJA;
+}
+
+/* Abiertas, con marcas de tutela. Primero intenta pet_bandeja_abierta:
+   una sola consulta, la vista se calcula UNA vez (antes: una vez por
+   cada página de 1.000). Si el SQL no está, pagina como antes. */
+async function traerBandejaFresca(msg){
+  let filas = null;
+  try{
+    filas = await supaFetch('rpc/pet_bandeja_abierta');
+  }catch(e){
+    if(!esFaltaVista(e)) throw e;
+  }
+  if(!Array.isArray(filas)){
+    try{ filas = await traerTodo('v_pet_bandeja_tutela', msg); }
+    catch(e){
+      if(!esFaltaVista(e)) throw e;
+      filas = await traerTodo('v_pet_bandeja', msg);
+    }
+  }
+  // Orden por vencimiento (lo usa Ctrl+K cuando no hay texto)
+  filas.sort(function(a, b){
+    const fa = String(a.fecha_limite || '9999'), fb = String(b.fecha_limite || '9999');
+    return fa < fb ? -1 : fa > fb ? 1 : (a.id || 0) - (b.id || 0);
+  });
+  return filas;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUSCADOR GLOBAL (Ctrl+K)
+   Busca al instante en la bandeja en memoria y, al mismo tiempo, en
+   TODA la base: así responde «¿ya se repartió?» aunque la petición esté
+   cerrada, trasladada o se haya radicado hace un minuto.
    ══════════════════════════════════════════════════════════════ */
 let BG_RES = [];       // resultados actuales
 let BG_SEL = 0;        // índice resaltado
-let BG_CARGANDO = false;
+let BG_BASE = { q: '', estado: '', filas: [] };  // respuesta de toda la base para la consulta actual
+let BG_SEQ = 0;
 
 async function abrirBuscador(){
   const ov = document.getElementById('buscador');
@@ -6586,23 +6771,18 @@ async function abrirBuscador(){
   const inp = document.getElementById('bg-q');
   inp.value = '';
   BG_RES = []; BG_SEL = 0;
-  // Si la bandeja aún no está en memoria, la traemos una sola vez.
-  if(!bandejaFresca() && !BG_CARGANDO){
-    BG_CARGANDO = true;
-    pintarBuscador('cargando');
-    try{
-      try{
-        BANDEJA = await traerTodo('v_pet_bandeja_tutela');
-      }catch(e){
-        if(!esFaltaVista(e)) throw e;
-        BANDEJA = await traerTodo('v_pet_bandeja');
-      }
-      BANDEJA_TS = Date.now();
-    }catch(err){}
-    BG_CARGANDO = false;
+  BG_BASE = { q: '', estado: '', filas: [] };
+  setTimeout(function(){ inp.focus(); }, 30);
+  await asegurarCopiaLocal();
+  if(!bandejaFresca()){
+    // No se espera: se busca con lo que haya y se repinta al llegar lo nuevo.
+    refrescarBandeja().then(function(){
+      if(ov.classList.contains('on')) correrBuscador(true);
+    }, function(){
+      if(ov.classList.contains('on')) pintarBuscador();
+    });
   }
   correrBuscador();
-  setTimeout(function(){ inp.focus(); }, 30);
 }
 
 function cerrarBuscador(){
@@ -6610,23 +6790,47 @@ function cerrarBuscador(){
   if(ov) ov.classList.remove('on');
 }
 
-const debBuscador = debounce(function(){ correrBuscador(); }, 180);
+const debBuscador = debounce(function(){ correrBuscador(); }, 150);
+const debBuscarBase = debounce(function(){ buscarBaseBuscador(); }, 350);
 
-function correrBuscador(){
-  const q = (document.getElementById('bg-q').value || '').trim().toLowerCase();
-  if(!q){
-    // Sin texto: mostramos lo más urgente (primeras de la bandeja, ya viene ordenada).
-    BG_RES = BANDEJA.slice(0, 8);
+function correrBuscador(conservar){
+  const qRaw = (document.getElementById('bg-q').value || '').trim();
+  const pq = prepararBusq(qRaw);
+  let locales;
+  if(!pq.n){
+    // Sin texto: lo más urgente (la bandeja ya viene ordenada por vencimiento).
+    locales = BANDEJA.slice(0, 8);
   }else{
-    const toks = q.split(/\s+/);
-    BG_RES = BANDEJA.filter(function(r){
-      const blob = [r.radicado, r.peticionario, r.documento, r.radicado_respuesta,
-                    r.expediente, r.asignado_nombre].join(' ').toLowerCase();
-      return toks.every(function(t){ return blob.indexOf(t) !== -1; });
-    }).slice(0, 40);
+    locales = BANDEJA.filter(function(r){ return coincideBusq(r, pq, true); }).slice(0, 40);
   }
-  BG_SEL = 0;
+  // Se suman las que solo aparecieron al buscar en toda la base
+  let extra = [];
+  if(pq.n && BG_BASE.q === pq.n){
+    const ids = new Set(locales.map(function(r){ return String(r.id); }));
+    extra = BG_BASE.filas.filter(function(r){ return !ids.has(String(r.id)); });
+  }
+  BG_RES = locales.concat(extra).slice(0, 50);
+  BG_SEL = conservar ? Math.min(BG_SEL, Math.max(BG_RES.length - 1, 0)) : 0;
   pintarBuscador();
+  if(pq.n && BG_BASE.q !== pq.n && busqSuficiente(pq)) debBuscarBase();
+}
+
+async function buscarBaseBuscador(){
+  const qRaw = (document.getElementById('bg-q').value || '').trim();
+  const pq = prepararBusq(qRaw);
+  if(!pq.n || !busqSuficiente(pq) || BG_BASE.q === pq.n) return;
+  const seq = ++BG_SEQ;
+  BG_BASE = { q: '', estado: 'buscando', filas: [] };
+  pintarBuscador();
+  try{
+    const filas = await buscarEnTodaLaBase(qRaw, 30);
+    if(seq !== BG_SEQ) return;
+    BG_BASE = { q: pq.n, estado: 'ok', filas: filas };
+  }catch(e){
+    if(seq !== BG_SEQ) return;
+    BG_BASE = { q: pq.n, estado: 'error', filas: [], err: e.message };
+  }
+  correrBuscador(true);
 }
 
 function colorSemaforo(r){
@@ -6640,14 +6844,38 @@ function colorSemaforo(r){
 function pintarBuscador(modo){
   const cont = document.getElementById('bg-lista');
   if(!cont) return;
-  if(modo === 'cargando'){
+  const q = (document.getElementById('bg-q').value || '').trim();
+  const pq = prepararBusq(q);
+  const cargando = !BANDEJA.length && !!CARGA_BANDEJA;
+  // Línea de estado de la búsqueda en toda la base
+  let pie = '';
+  if(pq.n && busqSuficiente(pq)){
+    if(BG_BASE.estado === 'ok' && BG_BASE.q === pq.n){
+      pie = '<div class="bg-vacio" style="padding:8px 14px;font-size:11.5px">' +
+        'Incluye cerradas, anuladas y trasladadas (toda la base).</div>';
+    }else if(BG_BASE.estado === 'error' && BG_BASE.q === pq.n){
+      pie = '<div class="bg-vacio" style="padding:8px 14px;font-size:11.5px;color:var(--vencido)">' +
+        'No se pudo consultar toda la base: ' + esc(BG_BASE.err || '') + '</div>';
+    }else{
+      pie = '<div class="bg-vacio" style="padding:8px 14px;font-size:11.5px">' +
+        'Buscando también en cerradas y trasladadas…</div>';
+    }
+  }
+  if(modo === 'cargando' || (!BG_RES.length && cargando && !pq.n)){
     cont.innerHTML = '<div class="bg-vacio">Cargando peticiones…</div>';
     return;
   }
   if(!BG_RES.length){
-    const q = (document.getElementById('bg-q').value || '').trim();
-    cont.innerHTML = '<div class="bg-vacio">' +
-      (q ? 'Nada coincide con «' + esc(q) + '».' : 'No hay peticiones cargadas.') + '</div>';
+    let txt;
+    if(!q) txt = 'No hay peticiones cargadas.';
+    else if(BG_BASE.estado === 'ok' && BG_BASE.q === pq.n)
+      txt = '<b>No existe en el sistema.</b><br>«' + esc(q) + '» no corresponde a ninguna petición ' +
+            'registrada: ni abierta, ni cerrada, ni trasladada.';
+    else if(!busqSuficiente(pq)) txt = 'Escriba un poco más (radicado, cédula o nombre).';
+    else if(cargando) txt = 'Cargando la bandeja · buscando «' + esc(q) + '» en toda la base…';
+    else txt = 'Nada entre las abiertas con «' + esc(q) + '». Buscando en toda la base…';
+    cont.innerHTML = '<div class="bg-vacio">' + txt + '</div>' +
+      (BG_BASE.estado === 'error' ? pie : '');
     return;
   }
   cont.innerHTML = BG_RES.map(function(r, i){
@@ -6671,7 +6899,7 @@ function pintarBuscador(modo){
         '<div class="bg-est">' + esc(r.estado || '') + '</div>' +
       '</div>' +
     '</div>';
-  }).join('');
+  }).join('') + pie;
   const sel = cont.querySelector('.bg-it.sel');
   if(sel) sel.scrollIntoView({block:'nearest'});
 }
@@ -6692,6 +6920,8 @@ function abrirDesdeBuscador(i){
   const r = BG_RES[i];
   if(!r) return;
   cerrarBuscador();
+  // Puede venir de «toda la base» (cerrada, trasladada…): se incorpora a la bandeja
+  if(!BANDEJA.some(function(x){ return x.id === r.id; })) agregarExtra(r);
   // Admin / revisor: abre la ficha de corrección directamente (ver + editar cualquiera).
   if(esAdmin()){
     abrirEditor(r.id);
@@ -6720,6 +6950,9 @@ function irABandejaCon(rad){
   irA('bandeja');
   setTimeout(function(){
     const q = document.getElementById('b-q');
+    ['b-estado','b-sem','b-tut','b-abo'].forEach(function(id){
+      const e = document.getElementById(id); if(e) e.value = '';
+    });
     if(q){ q.value = rad; renderBandeja(); }
   }, 350);
 }
@@ -6742,25 +6975,30 @@ async function cargarBandeja(forzar){
     msgBandejaCargada(msg);
     return;
   }
-  msg.className = 'msg'; msg.textContent = 'Cargando…';
-  try{
-    let vista = 'v_pet_bandeja_tutela';
-    try{
-      BANDEJA = await traerTodo(vista, msg);
-    }catch(e){
-      if(!esFaltaVista(e)) throw e;
-      vista = 'v_pet_bandeja';
-      BANDEJA = await traerTodo(vista, msg);
-    }
-    BANDEJA_TS = Date.now();
-    msgBandejaCargada(msg);
+  await asegurarCopiaLocal();
+  if(BANDEJA.length){
+    // Se muestra ya lo que hay (copia local o lo último en memoria) y se actualiza por detrás
     poblarFiltroAbogados();
     renderBandeja();
+    const seg = BANDEJA_COPIA_TS ? Math.round((Date.now() - BANDEJA_COPIA_TS) / 60000) : 0;
+    msg.className = 'msg';
+    msg.textContent = BANDEJA.length + ' peticiones' +
+      (BANDEJA_COPIA_TS ? ' · copia de hace ' + (seg < 1 ? 'menos de 1 min' : seg + ' min') : '') +
+      ' · actualizando…';
+  }else{
+    msg.className = 'msg'; msg.textContent = 'Cargando…';
+  }
+  try{
+    await refrescarBandeja(msg);
+    msgBandejaCargada(msg);
+    poblarFiltroAbogados();
+    renderBandeja(true);
   }catch(err){
     msg.className = 'msg err';
-    msg.innerHTML = 'Error: ' + esc(err.message) +
+    msg.innerHTML = (BANDEJA.length ? 'No se pudo actualizar; se muestra la copia anterior. ' : 'Error: ') +
+      esc(err.message) +
       ' <button class="btn btn-ghost" style="padding:4px 11px;font-size:var(--t-micro);margin-left:8px" ' +
-      'onclick="cargarBandeja()">Reintentar</button>';
+      'onclick="cargarBandeja(true)">Reintentar</button>';
   }
 }
 
@@ -6771,69 +7009,70 @@ async function buscarEnBase(){
   const msg = document.getElementById('b-msg');
   const body = document.getElementById('b-body');
   if(!q) return;
+  B_AUTO_Q = normBusq(q);
 
   const cols = 9 + (SELECCION ? 1 : 0) + (esAdmin() ? 1 : 0);
   body.innerHTML = '<tr><td colspan="' + cols + '">' +
     '<div class="esq esq-lin" style="width:100%;margin:8px 0"></div>' +
     '<div class="esq esq-lin" style="width:70%"></div></td></tr>';
-  msg.className = 'msg'; msg.textContent = 'Buscando en toda la base…';
+  msg.className = 'msg'; msg.textContent = 'No está entre las abiertas · buscando en toda la base…';
 
-  const t = q.replace(/[(),*]/g, '');
-  const filtro = 'or=(radicado.ilike.*' + t + '*,peticionario.ilike.*' + t + '*,' +
-                 'documento.ilike.*' + t + '*,radicado_respuesta.ilike.*' + t + '*,' +
-                 'expediente.ilike.*' + t + '*)';
   try{
-    let res;
-    try{
-      res = await supaFetch('v_pet_bandeja_tutela?select=*&' + filtro + '&limit=200');
-    }catch(e){
-      if(!esFaltaVista(e)) throw e;
-      res = await supaFetch('v_pet_bandeja?select=*&' + filtro + '&limit=200');
-    }
+    const res = await buscarEnTodaLaBase(q, 200);
+    // Si mientras tanto cambiaron la búsqueda, no se pisa lo nuevo
+    if(normBusq(document.getElementById('b-q').value) !== B_AUTO_Q) return;
     if(!res.length){
       body.innerHTML = '<tr><td colspan="' + cols + '"><div class="vacio">' +
         '<div class="vacio-ic">' + ICONO.vacio + '</div><h3>No existe en el sistema</h3>' +
-        '<p>«' + esc(q) + '» no corresponde a ninguna petición registrada. ' +
-        'Verifique el número o regístrela.</p></div></td></tr>';
+        '<p>«' + esc(q) + '» no corresponde a ninguna petición registrada ' +
+        '(ni abierta, ni cerrada, ni trasladada). Verifique el número o regístrela.</p></div></td></tr>';
       msg.className = 'msg err';
       msg.textContent = 'Sin coincidencias en toda la base.';
       return;
     }
     // Se incorporan al listado para poder verlas y editarlas
-    res.forEach(function(r){
-      if(!BANDEJA.some(function(x){ return x.id === r.id; })) BANDEJA.push(r);
+    res.forEach(agregarExtra);
+    // Que los filtros guardados no escondan lo que se acaba de encontrar
+    ['b-estado','b-sem','b-tut','b-abo'].forEach(function(id){
+      const e = document.getElementById(id); if(e) e.value = '';
     });
-    const cerradas = res.filter(function(r){
-      return r.estado === 'CERRADA' || r.estado === 'ANULADA';
-    }).length;
+    const fuera = res.filter(function(r){ return ESTADOS_FUERA.indexOf(r.estado) !== -1; }).length;
+    renderBandeja();
     msg.className = 'msg ok';
     msg.textContent = res.length + ' encontrada(s) en toda la base' +
-      (cerradas ? ' · ' + cerradas + ' ya estaban cerradas o anuladas (verlas en Histórico)' : '') + '.';
-    renderBandeja();
+      (fuera ? ' · ' + fuera + ' cerrada(s), anulada(s) o trasladada(s)' : '') + '.';
   }catch(err){
     msg.className = 'msg err'; msg.textContent = 'No se pudo buscar: ' + err.message;
   }
 }
 
-/* Trae todas las filas por bloques: el REST de Supabase corta en 1.000
-   y hasta ahora quedaban fuera las de vencimiento más lejano. */
+/* Trae las abiertas por bloques (respaldo si no existe pet_bandeja_abierta).
+   Orden por id: es el índice de la tabla y no obliga a ordenar la vista
+   entera por fecha en cada bloque (el orden de urgencia se hace aquí).
+   Si ya se sabe cuántas hay (copia local), los bloques se piden a la vez. */
 async function traerTodo(vista, msg){
   const TAM = 1000;
   const MAX = 20;          // techo de seguridad: 20.000 filas
-  let todas = [], desde = 0;
-  for(let i = 0; i < MAX; i++){
-    // Pasa por supaFetch: cola, reintentos y tiempo máximo.
-    // id.asc desempata fecha_limite para que las páginas no se solapen.
-    const bloque = await supaFetch(vista +
-      '?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)&order=fecha_limite.asc,id.asc', {
-      headers: { 'Range-Unit':'items', 'Range': desde + '-' + (desde + TAM - 1) }
-    });
-    todas = todas.concat(bloque);
-    if(msg && bloque.length) msg.textContent = 'Cargando… ' + todas.length + ' peticiones';
-    if(bloque.length < TAM) break;
-    desde += TAM;
+  const base = vista + '?select=*&estado=not.in.(CERRADA,ANULADA,TRASLADADA)&order=id.asc';
+  const pagina = function(i){
+    return supaFetch(base, { headers: { 'Range-Unit':'items', 'Range': (i * TAM) + '-' + (i * TAM + TAM - 1) } });
+  };
+  const previstas = Math.min(Math.max(Math.ceil(BANDEJA.length / TAM), 1), MAX);
+  const primeras = await Promise.all(Array.from({ length: previstas }, function(_, i){ return pagina(i); }));
+  let todas = [].concat.apply([], primeras);
+  let ultima = primeras[primeras.length - 1];
+  let i = previstas;
+  while(ultima.length === TAM && i < MAX){
+    if(msg) msg.textContent = 'Cargando… ' + todas.length + ' peticiones';
+    ultima = await pagina(i++);
+    todas = todas.concat(ultima);
   }
-  return todas;
+  const vistos = new Set();
+  return todas.filter(function(r){
+    const k = String(r.id);
+    if(vistos.has(k)) return false;
+    vistos.add(k); return true;
+  });
 }
 
 /* Llena el selector de abogados de la bandeja con quienes tienen
@@ -6931,7 +7170,7 @@ function limpiarFiltros(){
 }
 
 function filtrarBandeja(){
-  const q  = document.getElementById('b-q').value.trim().toLowerCase();
+  const pq = prepararBusq(document.getElementById('b-q').value);
   const es = document.getElementById('b-estado').value;
   const sm = document.getElementById('b-sem').value;
   const ab = (document.getElementById('b-abo') || {}).value || '';
@@ -6945,16 +7184,13 @@ function filtrarBandeja(){
     if(tv === 'si'  && !(Number(r.en_tutela || 0) > 0)) return false;
     if(tv === 'des' && r.tutela_desacato !== true) return false;
     if(tv === 'per' && !(Number(r.persona_vigentes || 0) > 0)) return false;
-    if(q){
-      const blob = [r.radicado, r.peticionario, r.documento, r.radicado_respuesta, r.expediente]
-        .join(' ').toLowerCase();
-      if(blob.indexOf(q) === -1) return false;
-    }
+    if(pq.n && !coincideBusq(r, pq, false)) return false;
     return true;
   });
 }
 
 /* ── Paginación de la Bandeja ── */
+let B_AUTO_Q = '';   // última búsqueda que ya se llevó a toda la base
 let B_PAG = 0;
 let B_TAM = 50;
 
@@ -7055,6 +7291,9 @@ function renderBandeja(conservarPagina){
       '</div></td></tr>';
     const pg0 = document.getElementById('b-pag');
     if(pg0) pg0.innerHTML = '';
+    // Nada entre las abiertas: se pregunta solo a toda la base (una vez por búsqueda)
+    const pq = prepararBusq(q);
+    if(pq.n && busqSuficiente(pq) && B_AUTO_Q !== pq.n) setTimeout(buscarEnBase, 0);
     return;
   }
   // Solo la página actual
