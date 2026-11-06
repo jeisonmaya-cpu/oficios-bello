@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contratación · Teodoro</title>
+<style>
+:root{
+  --ink:#0a0f1e; --ink2:#0f172a; --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.08);
+  --line:rgba(255,255,255,.11); --txt:#e7ecf6; --soft:#a3aec4; --mute:#6f7b93;
+  --gold:#f59e0b; --blue:#2563eb; --cyan:#06b6d4; --ok:#22c55e; --bad:#f43f5e; --warn:#f59e0b;
+  --okbg:rgba(34,197,94,.14); --badbg:rgba(244,63,94,.14); --warnbg:rgba(245,158,11,.14); --infobg:rgba(6,182,212,.14);
+  --head:'Syne','Segoe UI',system-ui,sans-serif; --body:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+  --r:12px; --sombra:0 10px 30px rgba(0,0,0,.35);
+}
+html.tema-claro{
+  --ink:#e8dfc8; --ink2:#efe7d4; --panel:#fbf7ee; --panel2:#f3ecdc; --line:rgba(70,51,31,.18);
+  --txt:#2b1f12; --soft:#5f4c36; --mute:#8a7559; --gold:#a66a00; --blue:#46331f; --cyan:#a68b69;
+  --okbg:rgba(34,140,70,.14); --badbg:rgba(190,30,60,.12); --warnbg:rgba(190,120,0,.14); --infobg:rgba(166,139,105,.2);
+  --sombra:0 8px 22px rgba(70,51,31,.15);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--ink);color:var(--txt);font:14px/1.5 var(--body)}
+.bg-layer{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(circle at 1px 1px,rgba(255,255,255,.07) 1px,transparent 0) 0 0/22px 22px,
+  radial-gradient(1200px 600px at 85% -10%,rgba(37,99,235,.18),transparent 60%),
+  radial-gradient(900px 500px at -10% 110%,rgba(6,182,212,.12),transparent 60%)}
+html.tema-claro .bg-layer{background:radial-gradient(circle at 1px 1px,rgba(70,51,31,.10) 1px,transparent 0) 0 0/22px 22px}
+h1,h2,h3{font-family:var(--head);margin:0;letter-spacing:-.01em}
+h1{font-size:26px} h2{font-size:19px} h3{font-size:15px}
+a{color:var(--cyan)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.oculto{display:none!important}
+.mute{color:var(--soft)} .peq{font-size:12.5px}
+
+/* ---------- botones / campos ---------- */
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel2);
+  padding:7px 13px;border-radius:9px;cursor:pointer;white-space:nowrap;transition:background .15s}
+.btn:hover{background:var(--panel)} .btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-p{background:linear-gradient(135deg,var(--blue),var(--cyan));border-color:transparent;color:#fff;font-weight:600}
+html.tema-claro .btn-p{background:var(--blue)}
+.btn-g{border-color:var(--gold);color:var(--gold);background:transparent}
+.btn-ok{background:var(--okbg);border-color:transparent;color:var(--ok)}
+.btn-bad{background:var(--badbg);border-color:transparent;color:var(--bad)}
+.btn-s{padding:4px 9px;font-size:12.5px;border-radius:7px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--soft)}
+input,select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+html.tema-claro input,html.tema-claro select,html.tema-claro textarea{background:#fff}
+textarea{resize:vertical;min-height:80px}
+select option{background:var(--ink2);color:var(--txt)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+.span2{grid-column:span 2} .span3{grid-column:span 3} .spanall{grid-column:1/-1}
+@media(max-width:820px){.g2,.g3,.g4{grid-template-columns:1fr}.span2,.span3{grid-column:auto}}
+
+/* ---------- estructura ---------- */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:10px 22px;
+  background:rgba(10,15,30,.75);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+html.tema-claro .top{background:#46331f;color:#f6efe0}
+html.tema-claro .top .btn{color:#f6efe0;border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.08)}
+html.tema-claro .top select{background:rgba(255,255,255,.12);color:#f6efe0;border-color:rgba(255,255,255,.25)}
+.marca{font-family:var(--head);font-weight:700;font-size:17px;display:flex;align-items:center;gap:9px}
+.marca b{color:var(--gold)} html.tema-claro .marca b{color:#e8c48a}
+.top .esp{flex:1}
+.top select{width:auto;padding:5px 8px}
+.quien{font-size:12.5px;opacity:.85;text-align:right;line-height:1.25}
+nav.tabs{display:flex;gap:4px;padding:10px 22px 0;flex-wrap:wrap}
+nav.tabs button{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;cursor:pointer;color:var(--soft);font-weight:600}
+nav.tabs button.on{color:var(--txt);border-color:var(--gold)}
+nav.tabs .n{background:var(--badbg);color:var(--bad);border-radius:20px;padding:0 7px;font-size:11.5px;margin-left:5px}
+main{padding:18px 22px 60px;max-width:1500px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;backdrop-filter:blur(10px)}
+html.tema-claro .card{box-shadow:var(--sombra)}
+.fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fila.entre{justify-content:space-between}
+.sep{height:14px}
+
+/* ---------- río de etapas (tablero) ---------- */
+.rio{display:grid;grid-template-columns:repeat(10,minmax(92px,1fr));gap:0;overflow-x:auto;padding:6px 0 4px}
+.rio .et{position:relative;padding:14px 10px 12px;cursor:pointer;border-radius:10px;text-align:left;background:none;border:none}
+.rio .et:hover{background:var(--panel2)}
+.rio .et::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--line)}
+.rio .et.lleno::before{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+html.tema-claro .rio .et.lleno::before{background:var(--cyan)}
+.rio .num{font-family:var(--head);font-size:34px;font-weight:700;line-height:1}
+.rio .et.vacio .num{color:var(--mute)}
+.rio .nom{font-size:12.5px;color:var(--soft);margin-top:6px;line-height:1.25}
+.rio .dias{font-size:11.5px;color:var(--mute);margin-top:4px}
+.rio .dias.alerta{color:var(--bad)}
+
+/* ---------- tablas / chips ---------- */
+.tabla-w{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+table.t th{text-align:left;font-weight:600;color:var(--soft);padding:9px 10px;border-bottom:1px solid var(--line);background:var(--panel2);position:sticky;top:0;white-space:nowrap}
+html.tema-claro table.t th{background:#a68b69;color:#fff}
+table.t td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t tr:last-child td{border-bottom:none}
+table.t tbody tr:hover{background:var(--panel2)}
+.chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.c-ok{background:var(--okbg);color:var(--ok)} .c-bad{background:var(--badbg);color:var(--bad)}
+.c-warn{background:var(--warnbg);color:var(--warn)} .c-info{background:var(--infobg);color:var(--cyan)}
+.c-gris{background:var(--panel2);color:var(--soft)}
+.barra{height:6px;border-radius:6px;background:var(--panel2);overflow:hidden;min-width:90px}
+.barra i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+html.tema-claro .barra i{background:var(--cyan)}
+.nombre{font-weight:600} .sub{font-size:12px;color:var(--soft)}
+
+/* ---------- stepper del contrato ---------- */
+.pasos{display:flex;gap:0;overflow-x:auto;padding:4px 0 2px}
+.paso{flex:1;min-width:86px;position:relative;padding-top:20px;font-size:11.5px;color:var(--mute);text-align:center;background:none;border:none}
+.paso::before{content:"";position:absolute;top:7px;left:0;right:0;height:2px;background:var(--line)}
+.paso::after{content:"";position:absolute;top:2px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--ink2);border:2px solid var(--line)}
+.paso.hecho{color:var(--soft)} .paso.hecho::before{background:var(--cyan)} .paso.hecho::after{background:var(--cyan);border-color:var(--cyan)}
+.paso.actual{color:var(--txt);font-weight:700} .paso.actual::before{background:linear-gradient(90deg,var(--cyan),var(--line))}
+.paso.actual::after{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 4px rgba(245,158,11,.25)}
+button.paso{cursor:pointer} button.paso:hover{color:var(--txt)}
+
+/* ---------- modal / toast ---------- */
+.velo{position:fixed;inset:0;background:rgba(3,6,15,.6);backdrop-filter:blur(3px);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:4vh 14px;overflow-y:auto}
+.modal{background:var(--ink2);border:1px solid var(--line);border-radius:16px;width:min(1100px,100%);box-shadow:var(--sombra);animation:entra .18s ease-out}
+html.tema-claro .modal{background:#f7f1e3}
+.modal.chico{width:min(480px,100%)}
+.modal-h{display:flex;align-items:flex-start;gap:12px;padding:18px 20px 12px;border-bottom:1px solid var(--line)}
+.modal-b{padding:16px 20px 20px}
+.cerrar{margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:var(--soft);line-height:1}
+.subtabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 -20px 16px;padding:0 20px;overflow-x:auto}
+.subtabs button{background:none;border:none;padding:9px 12px;cursor:pointer;color:var(--soft);border-bottom:2px solid transparent;white-space:nowrap}
+.subtabs button.on{color:var(--txt);border-color:var(--cyan);font-weight:600}
+@keyframes entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.modal{animation:none}}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:8px;align-items:center}
+.tst{background:var(--ink2);border:1px solid var(--line);padding:10px 16px;border-radius:10px;box-shadow:var(--sombra);font-size:13.5px}
+.tst.err{border-color:var(--bad);color:var(--bad)} .tst.ok{border-color:var(--ok)}
+.cargando{opacity:.6;pointer-events:none}
+
+/* ---------- login ---------- */
+#login{min-height:100vh;display:grid;place-items:center;padding:20px}
+#login .card{width:min(400px,100%);padding:28px}
+#login h1{font-size:28px;margin-bottom:4px}
+.lista-gen{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.gen{text-align:left;padding:14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);cursor:pointer}
+.gen:hover{border-color:var(--cyan)}
+.gen b{display:block;font-family:var(--head);margin-bottom:3px}
+.obs{background:var(--badbg);color:var(--bad);padding:6px 10px;border-radius:8px;font-size:12.5px;margin-top:4px}
+.aviso{background:var(--infobg);border-radius:10px;padding:10px 14px;font-size:13.5px}
+.vacio-msg{padding:30px;text-align:center;color:var(--soft)}
+</style>
+</head>
+<body>
+<div class="bg-layer"></div>
+
+<!-- ============ LOGIN ============ -->
+<section id="login" class="oculto">
+  <div class="card">
+    <div class="marca" style="margin-bottom:18px">Teodoro <b>Contratación</b></div>
+    <h1>Entrar</h1>
+    <p class="mute" style="margin:0 0 18px">Usa el mismo correo y contraseña con que entras a Teodoro.</p>
+    <div class="grid">
+      <label class="f">Correo<input id="lg-email" type="email" autocomplete="username"></label>
+      <label class="f">Contraseña<input id="lg-pass" type="password" autocomplete="current-password"></label>
+      <button class="btn btn-p" id="lg-btn" onclick="entrar()">Entrar</button>
+      <button class="btn" style="justify-content:center" onclick="recuperar()">Olvidé mi contraseña</button>
+      <div id="lg-msg" class="peq"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<section id="app" class="oculto">
+  <header class="top">
+    <a href="home.html" class="marca" style="text-decoration:none;color:inherit">Teodoro <b>Contratación</b></a>
+    <span class="esp"></span>
+    <select id="sel-vig" onchange="cambiarVigencia(this.value)" aria-label="Vigencia"></select>
+    <button class="btn btn-s" onclick="recargar()" title="Actualizar datos">⟳ Actualizar</button>
+    <button class="btn btn-s" onclick="alternarTema()" title="Modo claro / oscuro">🌓</button>
+    <div class="quien"><div id="q-nombre"></div><div id="q-rol" class="mute"></div></div>
+    <button class="btn btn-s" onclick="salir()">Salir</button>
+  </header>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="vista"></main>
+</section>
+
+<div id="capa"></div>
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN — reemplazar con los datos del proyecto "Cobro coactivo"
+   ===================================================================== */
+const CFG = {
+  URL: 'https://TU-PROYECTO.supabase.co',
+  KEY: 'sb_publishable_REEMPLAZAR',
+  BUCKET: 'contratacion',
+  ENTIDAD: 'MUNICIPIO DE BELLO',
+  NIT: '890.980.112-1',
+  DEPENDENCIA: 'Dirección Administrativa de Ejecuciones Fiscales',
+  ORDENADOR: { nombre: 'JUAN PABLO GÓMEZ LONDOÑO', cargo: 'Director Administrativo de Ejecuciones Fiscales' },
+  DIAS_ALERTA: 5,          // días en una misma etapa antes de marcarlo como atascado
+  MAX_MB: 10
+};
+
+const ETAPAS = [
+  ['documentos','Recolección de documentos','Sube los documentos que aparecen como faltantes o devueltos.'],
+  ['revision','Revisión jurídica','El equipo está revisando tus documentos.'],
+  ['estudios','Estudios previos','Se están elaborando los estudios previos de tu contrato.'],
+  ['cdp','CDP','Se está expidiendo la disponibilidad presupuestal.'],
+  ['minuta','Minuta y firma','Tu contrato está listo para firma.'],
+  ['rp','Registro presupuestal','Se está expidiendo el registro presupuestal.'],
+  ['garantias','Pólizas y ARL','Se está verificando la afiliación a ARL y garantías, si aplican.'],
+  ['acta','Acta de inicio','Pronto se firma el acta de inicio.'],
+  ['ejecucion','En ejecución','Tu contrato está en ejecución. Radica aquí tus informes mensuales.'],
+  ['terminado','Terminado','El contrato terminó.']
+];
+const IDX = Object.fromEntries(ETAPAS.map((e,i)=>[e[0],i]));
+const PERFILES = {profesional:'Prestación de servicios profesionales', tecnico:'Prestación de servicios técnicos', apoyo:'Prestación de servicios de apoyo a la gestión'};
+const EST_INF = {borrador:['Borrador','c-gris'],radicado:['Radicado','c-info'],devuelto:['Devuelto','c-bad'],aprobado:['Aprobado','c-ok'],pagado:['Pagado','c-ok']};
+
+/* ============================ ESTADO ============================ */
+const S = { perfil:null, rol:null, requisitos:[], contratos:[], documentos:[], informes:[],
+            vigencia: Number(localStorage.getItem('teo_ctr_vigencia')) || new Date().getFullYear(),
+            tab:'tablero', filtroEtapa:'', busca:'', sel:new Set(), detalle:null, subtab:'resumen', portalId:null, portalTab:'docs' };
+let SES = null; try{ SES = JSON.parse(localStorage.getItem('teo_ctr_sesion')||'null'); }catch(e){}
+
+/* ============================ UTILIDADES ============================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cop = n => '$' + Math.round(Number(n)||0).toLocaleString('es-CO');
+const hoyISO = () => new Date().toISOString().slice(0,10);
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function fecha(d){ if(!d) return '—'; const x = new Date(String(d).length===10 ? d+'T12:00:00' : d); return isNaN(x) ? '—' : x.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}); }
+function fechaLarga(d){ if(!d) return '____ de __________ de ____'; const x=new Date(d+'T12:00:00'); return `${x.getDate()} de ${MESES[x.getMonth()]} de ${x.getFullYear()}`; }
+function diasDesde(iso){ if(!iso) return null; return Math.floor((Date.now()-new Date(iso).getTime())/864e5); }
+function sumarMeses(iso, meses){
+  if(!iso || !meses) return null;
+  const d = new Date(iso+'T12:00:00'); const ent = Math.floor(meses); const dias = Math.round((meses-ent)*30);
+  d.setMonth(d.getMonth()+ent); d.setDate(d.getDate()+dias-1); return d.toISOString().slice(0,10);
+}
+function toast(msg, tipo=''){ const t=document.createElement('div'); t.className='tst '+tipo; t.textContent=msg; $('toast').appendChild(t); setTimeout(()=>t.remove(), tipo==='err'?6000:3200); }
+function fallo(e){ console.error(e); toast(e.message || String(e), 'err'); }
+
+/* Número a letras (pesos colombianos) */
+const U=['','UN','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE','DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISÉIS','DIECISIETE','DIECIOCHO','DIECINUEVE','VEINTE','VEINTIÚN','VEINTIDÓS','VEINTITRÉS','VEINTICUATRO','VEINTICINCO','VEINTISÉIS','VEINTISIETE','VEINTIOCHO','VEINTINUEVE'];
+const DEC=['','','','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+const CEN=['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS','SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+function tres(n){ if(n===100) return 'CIEN'; const c=Math.floor(n/100), r=n%100; let s=CEN[c];
+  if(r) s += (s?' ':'') + (r<30 ? U[r] : DEC[Math.floor(r/10)] + (r%10 ? ' Y '+U[r%10] : '')); return s; }
+function miles(n){ const m=Math.floor(n/1000), r=n%1000; let s=''; if(m) s = m===1 ? 'MIL' : tres(m)+' MIL'; if(r) s += (s?' ':'')+tres(r); return s; }
+function letras(n){
+  n = Math.round(Number(n)||0); if(!n) return 'CERO PESOS M/L';
+  const mm = Math.floor(n/1e6), r = n%1e6; let s='';
+  if(mm) s = mm===1 ? 'UN MILLÓN' : miles(mm)+' MILLONES';
+  if(r) s += (s?' ':'') + miles(r); else if(mm) s += ' DE';
+  return s + ' PESOS M/L';
+}
+
+/* ============================ AUTENTICACIÓN ============================ */
+function guardarSesion(j){
+  SES = { access_token:j.access_token, refresh_token:j.refresh_token,
+          expira: Date.now() + ((j.expires_in||3600)-60)*1000, email:String(j.user?.email||'').toLowerCase() };
+  localStorage.setItem('teo_ctr_sesion', JSON.stringify(SES));
+}
+async function authPost(path, body){
+  const r = await fetch(CFG.URL+'/auth/v1/'+path,{method:'POST',headers:{apikey:CFG.KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error_description || j.msg || j.message || 'No se pudo autenticar');
+  return j;
+}
+async function asegurarSesion(){
+  if(!SES) throw new Error('Sesión cerrada. Vuelve a entrar.');
+  if(Date.now() < SES.expira) return;
+  try{ guardarSesion(await authPost('token?grant_type=refresh_token',{refresh_token:SES.refresh_token})); }
+  catch(e){ salir(); throw new Error('La sesión expiró. Vuelve a entrar.'); }
+}
+async function entrar(){
+  const email=$('lg-email').value.trim(), pass=$('lg-pass').value;
+  if(!email || !pass){ $('lg-msg').textContent='Escribe correo y contraseña.'; return; }
+  $('lg-btn').disabled=true; $('lg-msg').textContent='Entrando…';
+  try{ guardarSesion(await authPost('token?grant_type=password',{email,password:pass})); $('lg-msg').textContent=''; await iniciar(); }
+  catch(e){ $('lg-msg').textContent = e.message.includes('Invalid') ? 'Correo o contraseña incorrectos.' : e.message; }
+  finally{ $('lg-btn').disabled=false; }
+}
+async function recuperar(){
+  const email=$('lg-email').value.trim();
+  if(!email){ $('lg-msg').textContent='Escribe tu correo arriba y vuelve a pulsar.'; return; }
+  try{ await authPost('recover',{email}); $('lg-msg').textContent='Te enviamos un correo para restablecer la contraseña.'; }
+  catch(e){ $('lg-msg').textContent=e.message; }
+}
+function salir(){ SES=null; localStorage.removeItem('teo_ctr_sesion'); $('app').classList.add('oculto'); $('login').classList.remove('oculto'); cerrarModal(); }
+
+/* ============================ API REST / STORAGE ============================ */
+async function rest(path, {method='GET', body, prefer, range}={}){
+  await asegurarSesion();
+  const h = { apikey:CFG.KEY, Authorization:'Bearer '+SES.access_token };
+  if(body !== undefined) h['Content-Type']='application/json';
+  if(prefer) h.Prefer = prefer;
+  if(range){ h['Range-Unit']='items'; h.Range=range; }
+  const r = await fetch(CFG.URL+'/rest/v1/'+path, {method, headers:h, body: body!==undefined ? JSON.stringify(body) : undefined});
+  const t = await r.text(); let j=null; try{ j = t ? JSON.parse(t) : null; }catch(e){}
+  if(!r.ok){
+    const m = j?.message || j?.hint || ('Error '+r.status);
+    if(/duplicate key/.test(m)) throw new Error('Ya existe un registro con esos datos (cédula repetida en la vigencia).');
+    throw new Error(m);
+  }
+  return j;
+}
+/* Paginación estable: siempre ordenada por id único para no duplicar ni perder filas */
+async function todos(tabla, q){
+  const out=[];
+  for(let i=0;;i+=1000){ const p = await rest(`${tabla}?${q}`,{range:`${i}-${i+999}`}); out.push(...p); if(p.length<1000) break; }
+  return out;
+}
+async function subirArchivo(ruta, file){
+  if(file.size > CFG.MAX_MB*1048576) throw new Error(`El archivo supera ${CFG.MAX_MB} MB.`);
+  await asegurarSesion();
+  const r = await fetch(`${CFG.URL}/storage/v1/object/${CFG.BUCKET}/${ruta}`,{method:'POST',
+    headers:{apikey:CFG.KEY,Authorization:'Bearer '+SES.access_token,'x-upsert':'true','Content-Type':file.type||'application/pdf'},body:file});
+  if(!r.ok){ const j=await r.json().catch(()=>({})); throw new Error(j.message||j.error||'No se pudo subir el archivo'); }
+  return ruta;
+}
+async function verArchivo(ruta){
+  if(!ruta) return;
+  const w = window.open('','_blank');
+  try{
+    await asegurarSesion();
+    const r = await fetch(`${CFG.URL}/storage/v1/object/sign/${CFG.BUCKET}/${ruta}`,{method:'POST',
+      headers:{apikey:CFG.KEY,Authorization:'Bearer '+SES.access_token,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:600})});
+    const j = await r.json(); if(!r.ok) throw new Error(j.message||'No se pudo abrir el archivo');
+    w.location = CFG.URL+'/storage/v1'+j.signedURL;
+  }catch(e){ w.close(); fallo(e); }
+}
+function rutaArchivo(cid, prefijo, file){
+  const ext = (file.name.split('.').pop()||'pdf').toLowerCase().replace(/[^a-z0-9]/g,'');
+  return `${cid}/${prefijo}_${Date.now()}.${ext}`;
+}
+async function bitacora(contrato_id, evento, detalle=''){
+  try{ await rest('ctr_bitacora',{method:'POST',body:{contrato_id,evento,detalle}}); }catch(e){ console.warn(e); }
+}
+
+/* ============================ CARGA DE DATOS ============================ */
+async function cargarDatos(){
+  const [req, perf] = await Promise.all([
+    rest('ctr_requisitos?select=*&order=orden.asc,codigo.asc'),
+    rest(`ctr_perfiles?select=*&email=ilike.${encodeURIComponent(SES.email)}`)
+  ]);
+  S.requisitos = req; S.perfil = perf[0] && perf[0].activo ? perf[0] : null;
+  S.rol = S.perfil ? S.perfil.rol : 'contratista';
+  const [con, docs, infs] = await Promise.all([
+    todos('ctr_contratos','select=*&order=id.asc'),
+    todos('ctr_documentos','select=id,contrato_id,requisito,ruta,nombre_archivo,fecha_expedicion,estado,observacion,subido_por,subido_en,revisado_por,revisado_en&order=id.asc'),
+    todos('ctr_informes','select=*&order=id.asc')
+  ]);
+  S.contratos=con; S.documentos=docs; S.informes=infs;
+}
+async function iniciar(){
+  $('login').classList.add('oculto'); $('app').classList.remove('oculto');
+  $('vista').innerHTML = '<div class="vacio-msg">Cargando…</div>';
+  try{ await cargarDatos(); }catch(e){ fallo(e); $('vista').innerHTML='<div class="vacio-msg">No se pudieron cargar los datos. Revisa la configuración de Supabase y vuelve a intentar.</div>'; return; }
+  $('q-nombre').textContent = S.perfil?.nombre || SES.email;
+  $('q-rol').textContent = {admin:'Administrador',revisor:'Revisor',contratista:'Contratista'}[S.rol];
+  pintarVigencias(); pintar();
+}
+async function recargar(){
+  try{ await cargarDatos(); pintarVigencias(); pintar(); if(S.detalle) abrirContrato(S.detalle, S.subtab); toast('Datos actualizados','ok'); }catch(e){ fallo(e); }
+}
+function pintarVigencias(){
+  const anios = new Set([new Date().getFullYear(), new Date().getFullYear()+1, ...S.contratos.map(c=>c.vigencia)]);
+  $('sel-vig').innerHTML = [...anios].sort((a,b)=>b-a).map(a=>`<option ${a===S.vigencia?'selected':''}>${a}</option>`).join('');
+  $('sel-vig').classList.toggle('oculto', S.rol==='contratista');
+}
+function cambiarVigencia(v){ S.vigencia=Number(v); localStorage.setItem('teo_ctr_vigencia',v); S.sel.clear(); pintar(); }
+function alternarTema(){ const c=document.documentElement.classList.toggle('tema-claro'); localStorage.setItem('teodoro_tema', c?'claro':'oscuro'); }
+if(localStorage.getItem('teodoro_tema')==='claro') document.documentElement.classList.add('tema-claro');
+
+/* ============================ CÁLCULOS ============================ */
+const esStaff = () => S.rol==='admin' || S.rol==='revisor';
+const contratosVig = () => S.contratos.filter(c=>c.vigencia===S.vigencia);
+const porId = id => S.contratos.find(c=>c.id===id);
+function reqsDe(c){ return S.requisitos.filter(r=>r.activo && (!r.aplica || !r.aplica.length || r.aplica.includes(c.perfil))); }
+function docDe(cid, cod){ return S.documentos.find(d=>d.contrato_id===cid && d.requisito===cod); }
+function venceEl(d, r){ if(!r.vigencia_dias || !d?.fecha_expedicion) return null; const x=new Date(d.fecha_expedicion+'T12:00:00'); x.setDate(x.getDate()+r.vigencia_dias); return x.toISOString().slice(0,10); }
+function estadoReq(c, r){
+  const d = docDe(c.id, r.codigo);
+  if(!d) return 'falta';
+  const v = venceEl(d, r);
+  if(v && v < hoyISO() && IDX[c.etapa] <= IDX.minuta && d.estado!=='rechazado') return 'vencido';
+  return d.estado;
+}
+const CHIP_DOC = {falta:['Falta','c-gris'],cargado:['Por revisar','c-info'],aprobado:['Aprobado','c-ok'],rechazado:['Devuelto','c-bad'],vencido:['Vencido','c-warn']};
+function avance(c){
+  const rs = reqsDe(c); const ob = rs.filter(r=>r.obligatorio);
+  const est = rs.map(r=>[r, estadoReq(c,r)]);
+  const n = k => est.filter(([r,e])=>e===k).length;
+  const aprobOb = est.filter(([r,e])=>r.obligatorio && e==='aprobado').length;
+  return { total:ob.length, aprob:aprobOb, cargados:n('cargado'), rechazados:n('rechazado'), vencidos:n('vencido'),
+           faltan: est.filter(([r,e])=>r.obligatorio && e==='falta').length, pct: ob.length ? Math.round(aprobOb*100/ob.length) : 0,
+           completo: ob.length>0 && aprobOb===ob.length };
+}
+function diasEnEtapa(c){ return diasDesde(c.fechas_etapa?.[c.etapa] || c.creado); }
+function chipEtapa(c){ const i=IDX[c.etapa]??0; const d=diasEnEtapa(c); const atas = d>CFG.DIAS_ALERTA && c.etapa!=='ejecucion' && c.etapa!=='terminado';
+  return `<span class="chip ${i>=8?'c-ok':'c-info'}">${esc(ETAPAS[i][1])}</span> <span class="sub" style="color:${atas?'var(--bad)':''}">${d??0} d</span>`; }
+function siguienteNumeroInforme(cid){ const ns=S.informes.filter(i=>i.contrato_id===cid).map(i=>i.numero); return ns.length?Math.max(...ns)+1:1; }
+
+/* ============================ NAVEGACIÓN ============================ */
+function pintar(){
+  if(S.rol==='contratista'){ $('tabs').innerHTML=''; pintarPortal(); return; }
+  const porRevisar = S.documentos.filter(d=>d.estado==='cargado' && porId(d.contrato_id)?.vigencia===S.vigencia).length;
+  const infRad = S.informes.filter(i=>i.estado==='radicado' && porId(i.contrato_id)?.vigencia===S.vigencia).length;
+  const tabs = [['tablero','Tablero'],['contratos','Contratos'],['revision','Revisar documentos',porRevisar],['informes','Informes mensuales',infRad],['cargue','Crear y renovar']];
+  if(S.rol==='admin') tabs.push(['requisitos','Requisitos']);
+  $('tabs').innerHTML = tabs.map(([k,l,n])=>`<button class="${S.tab===k?'on':''}" onclick="irA('${k}')">${l}${n?`<span class="n">${n}</span>`:''}</button>`).join('');
+  ({tablero:vTablero, contratos:vContratos, revision:vRevision, informes:vInformes, cargue:vCargue, requisitos:vRequisitos})[S.tab]();
+}
+function irA(t, etapa){ S.tab=t; if(etapa!==undefined) S.filtroEtapa=etapa; pintar(); window.scrollTo(0,0); }
+
+/* ============================ TABLERO ============================ */
+function vTablero(){
+  const cs = contratosVig();
+  const listos = cs.filter(c=>c.etapa==='documentos' && avance(c).completo);
+  const atascados = cs.filter(c=>!['ejecucion','terminado'].includes(c.etapa) && diasEnEtapa(c)>CFG.DIAS_ALERTA).sort((a,b)=>diasEnEtapa(b)-diasEnEtapa(a));
+  const porRevisar = S.documentos.filter(d=>d.estado==='cargado' && porId(d.contrato_id)?.vigencia===S.vigencia);
+  const vencidos = cs.reduce((n,c)=>n+avance(c).vencidos,0);
+  const infRad = S.informes.filter(i=>i.estado==='radicado' && porId(i.contrato_id)?.vigencia===S.vigencia);
+  const valor = cs.reduce((s,c)=>s+Number(c.valor_total||0),0);
+  const enEjec = cs.filter(c=>IDX[c.etapa]>=8).length;
+
+  const rio = ETAPAS.map(([k,l],i)=>{
+    const g = cs.filter(c=>c.etapa===k); const prom = g.length ? Math.round(g.reduce((s,c)=>s+(diasEnEtapa(c)||0),0)/g.length) : 0;
+    return `<button class="et ${g.length?'lleno':'vacio'}" onclick="irA('contratos','${k}')">
+      <div class="num">${g.length}</div><div class="nom">${esc(l)}</div>
+      <div class="dias ${prom>CFG.DIAS_ALERTA&&i<8?'alerta':''}">${g.length?`${prom} d promedio`:'&nbsp;'}</div></button>`;
+  }).join('');
+
+  $('vista').innerHTML = `
+  <div class="fila entre" style="margin-bottom:6px">
+    <div><h1>Contratación ${S.vigencia}</h1>
+    <p class="mute" style="margin:4px 0 0">${cs.length} contratos por ${cop(valor)}. ${enEjec} ya en ejecución.</p></div>
+    <div class="fila"><button class="btn" onclick="exportarCSV()">Exportar CSV</button><button class="btn btn-p" onclick="irA('cargue')">Crear contratos</button></div>
+  </div>
+  <div class="card" style="margin-top:14px"><div class="fila entre"><h3>Dónde está cada contrato</h3><span class="sub">Toca una etapa para ver sus contratos</span></div><div class="rio">${rio}</div></div>
+  <div class="sep"></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3 style="margin-bottom:10px">Para hacer hoy</h3>
+      <div class="grid" style="gap:8px">
+        ${filaPend(porRevisar.length,'documentos esperan revisión','Revisar',"irA('revision')")}
+        ${filaPend(listos.length,'contratos con documentos completos, listos para pasar a revisión jurídica','Pasar a revisión','avanzarListos()')}
+        ${filaPend(infRad.length,'informes mensuales radicados por aprobar','Ver informes',"irA('informes')")}
+        ${filaPend(vencidos,'documentos vencidos que el contratista debe actualizar','Ver contratos',"irA('contratos','documentos')")}
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px">Atascados más de ${CFG.DIAS_ALERTA} días</h3>
+      ${atascados.length ? `<div class="tabla-w"><table class="t"><tbody>${atascados.slice(0,8).map(c=>`
+        <tr style="cursor:pointer" onclick="abrirContrato('${c.id}')"><td><div class="nombre">${esc(c.nombre)}</div><div class="sub">${esc(ETAPAS[IDX[c.etapa]][1])}</div></td>
+        <td style="text-align:right"><span class="chip c-bad">${diasEnEtapa(c)} días</span></td></tr>`).join('')}</tbody></table></div>`
+        : '<p class="mute">Ningún contrato lleva demasiado tiempo en la misma etapa.</p>'}
+    </div>
+  </div>`;
+}
+function filaPend(n, txt, btn, fn){
+  return `<div class="fila entre" style="padding:8px 0;border-bottom:1px solid var(--line)">
+    <div class="fila" style="flex-wrap:nowrap"><span style="font-family:var(--head);font-size:22px;font-weight:700;min-width:38px;color:${n?'var(--gold)':'var(--mute)'}">${n}</span><span>${txt}</span></div>
+    ${n?`<button class="btn btn-s" onclick="${fn}">${btn}</button>`:''}</div>`;
+}
+async function avanzarListos(){
+  const listos = contratosVig().filter(c=>c.etapa==='documentos' && avance(c).completo);
+  if(!listos.length) return;
+  if(!confirm(`¿Pasar ${listos.length} contratos a Revisión jurídica?`)) return;
+  try{ for(const c of listos) await moverEtapa(c,'revision',true); toast(`${listos.length} contratos pasaron a revisión`,'ok'); pintar(); }catch(e){ fallo(e); }
+}
+
+/* ============================ LISTA DE CONTRATOS ============================ */
+function vContratos(){
+  const q = S.busca.toLowerCase();
+  const cs = contratosVig().filter(c=>(!S.filtroEtapa || c.etapa===S.filtroEtapa) &&
+    (!q || [c.nombre,c.cedula,c.numero,c.email,c.objeto,c.supervisor].join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>(IDX[a.etapa]-IDX[b.etapa]) || a.nombre.localeCompare(b.nombre));
+  const todosSel = cs.length && cs.every(c=>S.sel.has(c.id));
+  $('vista').innerHTML = `
+  <div class="fila entre"><h2>Contratos ${S.vigencia}</h2><span class="sub">${cs.length} de ${contratosVig().length}</span></div>
+  <div class="fila" style="margin:12px 0">
+    <input id="busca" placeholder="Buscar por nombre, cédula, número, objeto o supervisor" style="max-width:380px" value="${esc(S.busca)}" oninput="S.busca=this.value;vContratosTabla()">
+    <select style="width:auto" onchange="S.filtroEtapa=this.value;vContratos()"><option value="">Todas las etapas</option>${ETAPAS.map(([k,l])=>`<option value="${k}" ${S.filtroEtapa===k?'selected':''}>${l}</option>`).join('')}</select>
+    <span class="esp" style="flex:1"></span>
+    <span class="sub" id="n-sel">${S.sel.size} seleccionados</span>
+    <select id="lote-tipo" style="width:auto"><option value="">Acción en lote…</option>
+      <option value="avanzar">Pasar a la siguiente etapa</option>
+      ${Object.entries(DOCS_GEN).map(([k,g])=>`<option value="doc:${k}">Generar: ${g.nombre}</option>`).join('')}
+    </select>
+    <button class="btn" onclick="accionLote()">Aplicar</button>
+  </div>
+  <div id="tabla-c"></div>`;
+  vContratosTabla();
+  const b=$('busca'); if(S.busca){ b.focus(); b.setSelectionRange(b.value.length,b.value.length); }
+}
+function vContratosTabla(){
+  const q = S.busca.toLowerCase();
+  const cs = contratosVig().filter(c=>(!S.filtroEtapa || c.etapa===S.filtroEtapa) &&
+    (!q || [c.nombre,c.cedula,c.numero,c.email,c.objeto,c.supervisor].join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>(IDX[a.etapa]-IDX[b.etapa]) || a.nombre.localeCompare(b.nombre));
+  if(!cs.length){ $('tabla-c').innerHTML = `<div class="card vacio-msg">No hay contratos con ese filtro. <br><br><button class="btn btn-p" onclick="irA('cargue')">Crear contratos</button></div>`; return; }
+  $('tabla-c').innerHTML = `<div class="tabla-w"><table class="t"><thead><tr>
+    <th><input type="checkbox" style="width:auto" ${cs.every(c=>S.sel.has(c.id))?'checked':''} onchange="selTodos(this.checked)"></th>
+    <th>Contratista</th><th>N.º</th><th>Perfil</th><th>Valor total</th><th>Etapa</th><th>Documentos</th><th>Informes</th><th></th></tr></thead><tbody>
+    ${cs.map(c=>{ const a=avance(c); const inf=S.informes.filter(i=>i.contrato_id===c.id);
+      return `<tr>
+      <td><input type="checkbox" style="width:auto" ${S.sel.has(c.id)?'checked':''} onchange="selUno('${c.id}',this.checked)"></td>
+      <td><div class="nombre">${esc(c.nombre)}</div><div class="sub">CC ${esc(c.cedula)} · ${esc(c.email)}</div></td>
+      <td>${esc(c.numero||'—')}</td><td class="sub">${esc(c.perfil)}</td><td>${cop(c.valor_total)}</td>
+      <td>${chipEtapa(c)}</td>
+      <td><div class="fila" style="gap:6px;flex-wrap:nowrap"><div class="barra"><i style="width:${a.pct}%"></i></div><span class="sub">${a.aprob}/${a.total}</span></div>
+        <div style="margin-top:3px">${a.cargados?`<span class="chip c-info">${a.cargados} por revisar</span> `:''}${a.rechazados?`<span class="chip c-bad">${a.rechazados} devueltos</span> `:''}${a.vencidos?`<span class="chip c-warn">${a.vencidos} vencidos</span>`:''}</div></td>
+      <td class="sub">${inf.length?`${inf.filter(i=>['aprobado','pagado'].includes(i.estado)).length}/${inf.length} aprob.`:'—'}</td>
+      <td><button class="btn btn-s" onclick="abrirContrato('${c.id}')">Abrir</button></td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
+function selUno(id, v){ v?S.sel.add(id):S.sel.delete(id); $('n-sel').textContent=`${S.sel.size} seleccionados`; }
+function selTodos(v){ document.querySelectorAll('#tabla-c tbody input[type=checkbox]').forEach(x=>{x.checked=v;x.dispatchEvent(new Event('change'));}); }
+async function accionLote(){
+  const tipo = $('lote-tipo').value; const cs = [...S.sel].map(porId).filter(Boolean);
+  if(!tipo) return toast('Elige una acción.','err');
+  if(!cs.length) return toast('Selecciona al menos un contrato.','err');
+  if(tipo==='avanzar'){
+    if(!confirm(`¿Pasar ${cs.length} contratos a su siguiente etapa?`)) return;
+    try{ for(const c of cs){ const i=IDX[c.etapa]; if(i<ETAPAS.length-1) await moverEtapa(c, ETAPAS[i+1][0], true); } toast('Etapas actualizadas','ok'); S.sel.clear(); pintar(); }catch(e){ fallo(e); }
+    return;
+  }
+  const k = tipo.slice(4); const g = DOCS_GEN[k];
+  const cuerpo = cs.sort((a,b)=>a.nombre.localeCompare(b.nombre)).map((c,i)=>(i?'<br clear="all" style="page-break-before:always">':'')+g.fn(c)).join('');
+  descargarWord(`${g.archivo}_lote_${S.vigencia}`, cuerpo);
+  for(const c of cs) bitacora(c.id,'Documento generado (lote)',g.nombre);
+}
+function exportarCSV(){
+  const cols = ['vigencia','numero','cedula','nombre','email','telefono','perfil','profesion','objeto','valor_mensual','plazo_meses','valor_total','fecha_inicio','fecha_fin','supervisor','cdp','rp','etapa'];
+  const filas = contratosVig().map(c=>[...cols.map(k=>k==='etapa'?ETAPAS[IDX[c.etapa]][1]:c[k]), avance(c).pct+'%']);
+  const csv = '\ufeff'+[ [...cols,'documentos'], ...filas ].map(f=>f.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  bajar(new Blob([csv],{type:'text/csv;charset=utf-8'}), `contratos_${S.vigencia}.csv`);
+}
+function bajar(blob, nombre){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nombre; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); }
+
+/* ============================ ETAPAS ============================ */
+async function moverEtapa(c, etapa, silencioso){
+  const fe = {...(c.fechas_etapa||{}), [etapa]: new Date().toISOString()};
+  const [n] = await rest(`ctr_contratos?id=eq.${c.id}`,{method:'PATCH',body:{etapa,fechas_etapa:fe},prefer:'return=representation'});
+  Object.assign(c, n);
+  await bitacora(c.id,'Cambio de etapa',`${ETAPAS[IDX[c.etapa]][1]}`);
+  if(!silencioso) toast(`Etapa: ${ETAPAS[IDX[etapa]][1]}`,'ok');
+}
+async function clicEtapa(cid, etapa){
+  const c=porId(cid); if(c.etapa===etapa) return;
+  if(etapa==='revision' && !avance(c).completo && !confirm('Aún faltan documentos obligatorios aprobados. ¿Pasar a revisión de todas formas?')) return;
+  if(IDX[etapa]>=IDX.cdp && !c.valor_total && !confirm('El contrato no tiene valor registrado. ¿Continuar?')) return;
+  if(etapa==='acta' && (!c.rp) && !confirm('No hay registro presupuestal (RP) anotado. ¿Continuar?')) return;
+  try{ await moverEtapa(c, etapa); abrirContrato(cid, S.subtab); pintar(); }catch(e){ fallo(e); }
+}
+function pasos(c, editable){
+  const i = IDX[c.etapa];
+  return `<div class="pasos">${ETAPAS.map(([k,l],j)=>{ const cl = j<i?'hecho':(j===i?'actual':'');
+    return editable ? `<button class="paso ${cl}" onclick="clicEtapa('${c.id}','${k}')" title="Mover a: ${l}">${l}</button>` : `<div class="paso ${cl}">${l}</div>`; }).join('')}</div>`;
+}
+
+/* ============================ MODALES ============================ */
+function cerrarModal(){ $('capa').innerHTML=''; S.detalle=null; }
+function modal(html, chico){ $('capa').innerHTML = `<div class="velo" onclick="if(event.target===this)cerrarModal()"><div class="modal ${chico?'chico':''}">${html}</div></div>`; }
+function pedirTexto(titulo, ayuda, valor=''){
+  return new Promise(res=>{
+    const prev = $('capa').innerHTML; const cont=document.createElement('div');
+    cont.innerHTML = `<div class="velo" style="z-index:60"><div class="modal chico"><div class="modal-h"><h3>${esc(titulo)}</h3></div>
+      <div class="modal-b grid"><p class="mute peq" style="margin:0">${esc(ayuda)}</p><textarea id="pt-txt">${esc(valor)}</textarea>
+      <div class="fila" style="justify-content:flex-end"><button class="btn" id="pt-no">Cancelar</button><button class="btn btn-p" id="pt-si">Aceptar</button></div></div></div></div>`;
+    document.body.appendChild(cont); $('pt-txt').focus();
+    $('pt-no').onclick=()=>{cont.remove();res(null);}; $('pt-si').onclick=()=>{const v=$('pt-txt').value.trim();cont.remove();res(v);};
+  });
+}
+
+/* ============================ DETALLE DEL CONTRATO ============================ */
+function abrirContrato(id, sub){
+  const c = porId(id); if(!c) return;
+  S.detalle=id; S.subtab = sub || 'resumen';
+  const a = avance(c);
+  const st = [['resumen','Resumen'],['docs',`Documentos (${a.aprob}/${a.total})`],['datos','Datos del contrato'],['generar','Generar documentos'],['informes','Informes'],['bitacora','Bitácora']];
+  modal(`<div class="modal-h"><div><h2>${esc(c.nombre)}</h2><div class="sub">CC ${esc(c.cedula)} · ${esc(c.email)} · ${c.numero?'Contrato '+esc(c.numero):'Sin número'} · Vigencia ${c.vigencia}</div></div>
+    <button class="cerrar" onclick="cerrarModal()" aria-label="Cerrar">×</button></div>
+    <div class="modal-b">${pasos(c,true)}<div class="sep"></div>
+    <div class="subtabs">${st.map(([k,l])=>`<button class="${S.subtab===k?'on':''}" onclick="abrirContrato('${id}','${k}')">${l}</button>`).join('')}</div>
+    <div id="det-cuerpo"></div></div>`);
+  ({resumen:dResumen, docs:dDocs, datos:dDatos, generar:dGenerar, informes:dInformes, bitacora:dBitacora})[S.subtab](c);
+}
+function dResumen(c){
+  const a = avance(c);
+  $('det-cuerpo').innerHTML = `<div class="grid g3">
+    <div class="card"><div class="sub">Objeto</div><p style="margin:4px 0 0">${esc(c.objeto||'Sin objeto registrado')}</p></div>
+    <div class="card"><div class="sub">Valor</div><h2 style="margin-top:4px">${cop(c.valor_total)}</h2><div class="sub">${cop(c.valor_mensual)} mensual × ${c.plazo_meses||0} meses</div></div>
+    <div class="card"><div class="sub">Plazo</div><p style="margin:4px 0 0">${fecha(c.fecha_inicio)} a ${fecha(c.fecha_fin)}</p><div class="sub">Supervisor: ${esc(c.supervisor||'—')}</div></div>
+    <div class="card"><div class="sub">Documentos obligatorios</div><div class="fila" style="margin-top:6px"><div class="barra" style="flex:1"><i style="width:${a.pct}%"></i></div><b>${a.pct}%</b></div>
+      <div class="sub" style="margin-top:6px">${a.faltan} faltan · ${a.cargados} por revisar · ${a.rechazados} devueltos · ${a.vencidos} vencidos</div></div>
+    <div class="card"><div class="sub">Presupuesto</div><p style="margin:4px 0 0">CDP ${esc(c.cdp||'—')} (${fecha(c.fecha_cdp)})<br>RP ${esc(c.rp||'—')} (${fecha(c.fecha_rp)})</p></div>
+    <div class="card"><div class="sub">Notas internas</div><p style="margin:4px 0 0;white-space:pre-wrap">${esc(c.notas||'—')}</p></div>
+  </div>
+  ${c.etapa==='documentos' && a.completo ? `<div class="aviso" style="margin-top:12px">Todos los documentos obligatorios están aprobados. <button class="btn btn-s btn-p" onclick="clicEtapa('${c.id}','revision')">Pasar a revisión jurídica</button></div>`:''}`;
+}
+function dDocs(c){
+  const rs = reqsDe(c);
+  $('det-cuerpo').innerHTML = `<div class="fila entre" style="margin-bottom:10px"><span class="sub">Los documentos con vencimiento se cuentan desde la fecha de expedición.</span>
+    ${rs.some(r=>estadoReq(c,r)==='cargado')?`<button class="btn btn-ok btn-s" onclick="aprobarTodos('${c.id}')">Aprobar todos los que están por revisar</button>`:''}</div>
+  <div class="tabla-w"><table class="t"><thead><tr><th>Requisito</th><th>Estado</th><th>Expedición</th><th>Vence</th><th>Archivo</th><th>Acciones</th></tr></thead><tbody>
+  ${rs.map(r=>{ const d=docDe(c.id,r.codigo); const e=estadoReq(c,r); const v=venceEl(d,r);
+    return `<tr><td><div class="nombre">${esc(r.nombre)}${r.obligatorio?'':' <span class="sub">(si aplica)</span>'}</div>${d?.observacion?`<div class="obs">${esc(d.observacion)}</div>`:''}</td>
+    <td><span class="chip ${CHIP_DOC[e][1]}">${CHIP_DOC[e][0]}</span>${d?.revisado_por?`<div class="sub">${esc(d.revisado_por)}</div>`:''}</td>
+    <td class="sub">${fecha(d?.fecha_expedicion)}</td><td class="sub">${v?fecha(v):'—'}</td>
+    <td>${d?.ruta?`<button class="btn btn-s" onclick="verArchivo('${esc(d.ruta)}')">Ver</button><div class="sub">${fecha(d.subido_en)}</div>`:'—'}</td>
+    <td><div class="fila" style="gap:5px">
+      ${d && d.estado!=='aprobado'?`<button class="btn btn-ok btn-s" onclick="revisarDoc('${d.id}','aprobado')">Aprobar</button>`:''}
+      ${d?`<button class="btn btn-bad btn-s" onclick="revisarDoc('${d.id}','rechazado')">Devolver</button>`:''}
+      <label class="btn btn-s" title="Subir en nombre del contratista">Subir<input type="file" accept=".pdf,image/*" class="oculto" onchange="subirDoc('${c.id}','${r.codigo}',this.files[0],null,true)"></label>
+    </div></td></tr>`;}).join('')}
+  </tbody></table></div>`;
+}
+async function revisarDoc(docId, estado){
+  let obs = null;
+  if(estado==='rechazado'){ obs = await pedirTexto('Devolver documento','Explica al contratista qué debe corregir. Lo verá en su portal.'); if(!obs) return; }
+  try{
+    const [n] = await rest(`ctr_documentos?id=eq.${docId}`,{method:'PATCH',prefer:'return=representation',
+      body:{estado, observacion:obs, revisado_por:SES.email, revisado_en:new Date().toISOString()}});
+    Object.assign(S.documentos.find(d=>d.id===docId), n);
+    await bitacora(n.contrato_id, estado==='aprobado'?'Documento aprobado':'Documento devuelto', `${n.requisito}${obs?': '+obs:''}`);
+    toast(estado==='aprobado'?'Documento aprobado':'Documento devuelto al contratista','ok');
+    if(S.detalle) abrirContrato(S.detalle, S.subtab); if(S.tab==='revision' && !S.detalle) pintar(); else pintar();
+  }catch(e){ fallo(e); }
+}
+async function aprobarTodos(cid){
+  const ids = S.documentos.filter(d=>d.contrato_id===cid && d.estado==='cargado').map(d=>d.id);
+  if(!ids.length || !confirm(`¿Aprobar ${ids.length} documentos?`)) return;
+  try{
+    const ns = await rest(`ctr_documentos?id=in.(${ids.join(',')})`,{method:'PATCH',prefer:'return=representation',body:{estado:'aprobado',observacion:null,revisado_por:SES.email,revisado_en:new Date().toISOString()}});
+    ns.forEach(n=>Object.assign(S.documentos.find(d=>d.id===n.id),n));
+    await bitacora(cid,'Documentos aprobados en bloque',`${ids.length} documentos`);
+    toast('Documentos aprobados','ok'); abrirContrato(cid,'docs'); pintar();
+  }catch(e){ fallo(e); }
+}
+async function subirDoc(cid, codigo, file, fechaExp, desdeStaff){
+  if(!file) return;
+  const r = S.requisitos.find(x=>x.codigo===codigo);
+  if(r?.vigencia_dias && !fechaExp){
+    fechaExp = await pedirTexto('Fecha de expedición', `Este documento vence a los ${r.vigencia_dias} días. Escribe la fecha de expedición (AAAA-MM-DD).`, hoyISO());
+    if(!fechaExp) return;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(fechaExp)) return toast('La fecha debe tener el formato AAAA-MM-DD.','err');
+  }
+  toast('Subiendo archivo…');
+  try{
+    const ruta = await subirArchivo(rutaArchivo(cid, codigo, file), file);
+    const [n] = await rest('ctr_documentos?on_conflict=contrato_id,requisito',{method:'POST',prefer:'resolution=merge-duplicates,return=representation',
+      body:{contrato_id:cid, requisito:codigo, ruta, nombre_archivo:file.name, fecha_expedicion:fechaExp||null, estado:'cargado', observacion:null, subido_por:SES.email, subido_en:new Date().toISOString(), revisado_por:null, revisado_en:null}});
+    const i = S.documentos.findIndex(d=>d.id===n.id); if(i>=0) S.documentos[i]=n; else S.documentos.push(n);
+    await bitacora(cid,'Documento cargado',`${r?.nombre||codigo}${desdeStaff?' (por el equipo)':''}`);
+    toast('Documento cargado','ok');
+    if(esStaff()){ abrirContrato(cid,'docs'); pintar(); } else pintarPortal();
+  }catch(e){ fallo(e); }
+}
+
+/* ---------- formulario de datos ---------- */
+const CAMPOS = [
+  ['Contratista',[['cedula','Cédula'],['nombre','Nombre completo'],['email','Correo (con el que entra a Teodoro)','email'],['telefono','Teléfono'],['direccion','Dirección'],['profesion','Profesión u oficio']]],
+  ['Seguridad social y banco',[['eps','EPS'],['afp','Fondo de pensión'],['arl','ARL'],['riesgo_arl','Nivel de riesgo ARL'],['banco','Banco'],['tipo_cuenta','Tipo de cuenta'],['num_cuenta','Número de cuenta']]],
+  ['Contrato',[['numero','Número de contrato'],['perfil','Tipo','perfil'],['supervisor','Supervisor'],['dependencia','Dependencia'],['objeto','Objeto','area'],['obligaciones','Obligaciones específicas (una por línea)','area']]],
+  ['Valor y plazo',[['valor_mensual','Valor mensual','number'],['plazo_meses','Plazo en meses','number'],['valor_total','Valor total','number'],['fecha_inicio','Fecha de inicio','date'],['fecha_fin','Fecha de terminación','date']]],
+  ['Presupuesto',[['rubro','Rubro presupuestal'],['cdp','CDP'],['fecha_cdp','Fecha CDP','date'],['rp','Registro presupuestal'],['fecha_rp','Fecha RP','date'],['poliza','Póliza (si aplica)']]],
+  ['Internas',[['notas','Notas internas','area']]]
+];
+const CAMPOS_CONTRATISTA = ['telefono','direccion','profesion','eps','afp','arl','banco','tipo_cuenta','num_cuenta'];
+function formCampos(c, soloContratista){
+  return CAMPOS.map(([titulo, cs])=>{
+    const vis = cs.filter(([k])=>!soloContratista || CAMPOS_CONTRATISTA.includes(k)); if(!vis.length) return '';
+    return `<h3 style="margin:14px 0 8px">${titulo}</h3><div class="grid g3">${vis.map(([k,l,t])=>{
+      const v = c[k] ?? '';
+      if(t==='area') return `<label class="f spanall">${l}<textarea data-k="${k}" rows="${k==='obligaciones'?6:3}">${esc(v)}</textarea></label>`;
+      if(t==='perfil') return `<label class="f">${l}<select data-k="${k}">${Object.entries(PERFILES).map(([p,n])=>`<option value="${p}" ${v===p?'selected':''}>${n}</option>`).join('')}</select></label>`;
+      return `<label class="f">${l}<input data-k="${k}" type="${t||'text'}" value="${esc(v)}" ${t==='number'?'step="any"':''}></label>`;
+    }).join('')}</div>`;
+  }).join('');
+}
+function leerForm(cont){
+  const o={}; cont.querySelectorAll('[data-k]').forEach(el=>{ let v=el.value.trim(); const t=el.type;
+    if(t==='number') v = v===''?null:Number(v); else if(v==='') v=null; o[el.dataset.k]=v; });
+  if(o.email) o.email=o.email.toLowerCase(); return o;
+}
+function enlazarCalculos(cont){
+  const g=k=>cont.querySelector(`[data-k="${k}"]`); if(!g('valor_mensual')) return;
+  const calc=()=>{ const m=Number(g('valor_mensual').value)||0, p=Number(g('plazo_meses').value)||0;
+    if(m&&p) g('valor_total').value=Math.round(m*p); const f=sumarMeses(g('fecha_inicio').value,p); if(f) g('fecha_fin').value=f; };
+  ['valor_mensual','plazo_meses','fecha_inicio'].forEach(k=>g(k).addEventListener('input',calc));
+}
+function dDatos(c){
+  $('det-cuerpo').innerHTML = `<div id="f-datos">${formCampos(c)}</div>
+    <div class="fila entre" style="margin-top:16px">
+      ${S.rol==='admin'?`<button class="btn btn-bad" onclick="eliminarContrato('${c.id}')">Eliminar contrato</button>`:'<span></span>'}
+      <button class="btn btn-p" onclick="guardarDatos('${c.id}')">Guardar cambios</button></div>`;
+  enlazarCalculos($('f-datos'));
+}
+async function guardarDatos(cid){
+  const o = leerForm($('f-datos'));
+  if(!o.cedula || !o.nombre || !o.email) return toast('Cédula, nombre y correo son obligatorios.','err');
+  try{ const [n]=await rest(`ctr_contratos?id=eq.${cid}`,{method:'PATCH',body:o,prefer:'return=representation'});
+    Object.assign(porId(cid),n); await bitacora(cid,'Datos actualizados'); toast('Cambios guardados','ok'); pintar(); abrirContrato(cid,'datos'); }
+  catch(e){ fallo(e); }
+}
+async function eliminarContrato(cid){
+  const c=porId(cid); const ok = await pedirTexto('Eliminar contrato',`Se borrarán el contrato, sus documentos registrados e informes. Escribe la cédula ${c.cedula} para confirmar.`);
+  if(ok!==c.cedula) return ok!==null && toast('La cédula no coincide; no se eliminó.','err');
+  try{ await rest(`ctr_contratos?id=eq.${cid}`,{method:'DELETE'}); S.contratos=S.contratos.filter(x=>x.id!==cid); cerrarModal(); pintar(); toast('Contrato eliminado','ok'); }catch(e){ fallo(e); }
+}
+function dGenerar(c){
+  $('det-cuerpo').innerHTML = `<p class="mute peq" style="margin-top:0">Se descargan como Word (.doc) con los datos del contrato. Revisa y ajusta el texto antes de firmar; las plantillas deben validarse con la lista oficial de la Alcaldía.</p>
+  <div class="lista-gen">${Object.entries(DOCS_GEN).map(([k,g])=>`<button class="gen" onclick="generarUno('${c.id}','${k}')"><b>${g.nombre}</b><span class="sub">${g.desc}</span></button>`).join('')}</div>`;
+}
+function generarUno(cid,k){ const c=porId(cid), g=DOCS_GEN[k]; descargarWord(`${g.archivo}_${c.cedula}`, g.fn(c)); bitacora(cid,'Documento generado',g.nombre); }
+function dInformes(c){
+  const infs = S.informes.filter(i=>i.contrato_id===c.id).sort((a,b)=>a.numero-b.numero);
+  $('det-cuerpo').innerHTML = infs.length ? tablaInformes(infs,false) : '<div class="vacio-msg">El contratista aún no ha registrado informes. Los radica desde su portal cuando el contrato está en ejecución.</div>';
+}
+async function dBitacora(c){
+  $('det-cuerpo').innerHTML='<div class="vacio-msg">Cargando…</div>';
+  try{ const b = await rest(`ctr_bitacora?contrato_id=eq.${c.id}&order=fecha.desc&limit=300`);
+    $('det-cuerpo').innerHTML = b.length ? `<div class="tabla-w"><table class="t"><thead><tr><th>Fecha</th><th>Evento</th><th>Detalle</th><th>Usuario</th></tr></thead><tbody>
+    ${b.map(x=>`<tr><td class="sub">${new Date(x.fecha).toLocaleString('es-CO')}</td><td>${esc(x.evento)}</td><td class="sub">${esc(x.detalle||'')}</td><td class="sub">${esc(x.usuario||'')}</td></tr>`).join('')}</tbody></table></div>`
+    : '<div class="vacio-msg">Sin movimientos registrados.</div>'; }catch(e){ fallo(e); }
+}
+
+/* ============================ REVISIÓN DE DOCUMENTOS ============================ */
+function vRevision(){
+  const pend = S.documentos.filter(d=>d.estado==='cargado' && porId(d.contrato_id)?.vigencia===S.vigencia)
+    .sort((a,b)=>String(a.subido_en).localeCompare(String(b.subido_en)));
+  const grupos = {}; pend.forEach(d=>(grupos[d.contrato_id]=grupos[d.contrato_id]||[]).push(d));
+  $('vista').innerHTML = `<div class="fila entre"><h2>Documentos por revisar</h2><span class="sub">${pend.length} documentos de ${Object.keys(grupos).length} contratistas, los más antiguos primero</span></div><div class="sep"></div>
+  ${pend.length ? Object.entries(grupos).map(([cid,ds])=>{ const c=porId(cid); return `<div class="card" style="margin-bottom:12px">
+    <div class="fila entre"><div><span class="nombre">${esc(c.nombre)}</span> <span class="sub">CC ${esc(c.cedula)}</span></div>
+    <div class="fila"><button class="btn btn-s" onclick="abrirContrato('${cid}','docs')">Ver contrato</button><button class="btn btn-ok btn-s" onclick="aprobarTodos('${cid}')">Aprobar los ${ds.length}</button></div></div>
+    <div class="tabla-w" style="margin-top:10px"><table class="t"><tbody>${ds.map(d=>{ const r=S.requisitos.find(x=>x.codigo===d.requisito)||{}; const v=venceEl(d,r);
+      return `<tr><td>${esc(r.nombre||d.requisito)}</td><td class="sub">Expedido ${fecha(d.fecha_expedicion)}${v?` · vence ${fecha(v)}`:''}</td><td class="sub">Subido ${fecha(d.subido_en)}</td>
+      <td style="text-align:right"><div class="fila" style="justify-content:flex-end;gap:5px"><button class="btn btn-s" onclick="verArchivo('${esc(d.ruta)}')">Ver</button>
+      <button class="btn btn-ok btn-s" onclick="revisarDoc('${d.id}','aprobado')">Aprobar</button><button class="btn btn-bad btn-s" onclick="revisarDoc('${d.id}','rechazado')">Devolver</button></div></td></tr>`;}).join('')}</tbody></table></div></div>`; }).join('')
+  : '<div class="card vacio-msg">No hay documentos esperando revisión.</div>'}`;
+}
+
+/* ============================ INFORMES MENSUALES (EQUIPO) ============================ */
+function tablaInformes(infs, conNombre){
+  return `<div class="tabla-w"><table class="t"><thead><tr>${conNombre?'<th>Contratista</th>':''}<th>N.º</th><th>Periodo</th><th>Valor</th><th>Planilla SS</th><th>Estado</th><th>Archivos</th><th>Acciones</th></tr></thead><tbody>
+  ${infs.map(i=>{ const c=porId(i.contrato_id); const [el,ec]=EST_INF[i.estado];
+    return `<tr>${conNombre?`<td><div class="nombre">${esc(c?.nombre)}</div><div class="sub">${esc(c?.numero||'')}</div></td>`:''}
+    <td>${i.numero}</td><td class="sub">${fecha(i.periodo_inicio)} – ${fecha(i.periodo_fin)}</td><td>${cop(i.valor)}</td><td class="sub">${esc(i.planilla_numero||'—')}</td>
+    <td><span class="chip ${ec}">${el}</span>${i.observacion?`<div class="obs">${esc(i.observacion)}</div>`:''}</td>
+    <td><div class="fila" style="gap:4px">${i.planilla_ruta?`<button class="btn btn-s" onclick="verArchivo('${esc(i.planilla_ruta)}')">Planilla</button>`:''}${i.evidencias_ruta?`<button class="btn btn-s" onclick="verArchivo('${esc(i.evidencias_ruta)}')">Evidencias</button>`:''}
+      <button class="btn btn-s" onclick="bajarInforme('${i.id}')">Informe .doc</button></div></td>
+    <td><div class="fila" style="gap:4px">
+      ${i.estado==='radicado'?`<button class="btn btn-ok btn-s" onclick="revisarInforme('${i.id}','aprobado')">Aprobar</button><button class="btn btn-bad btn-s" onclick="revisarInforme('${i.id}','devuelto')">Devolver</button>`:''}
+      ${i.estado==='aprobado'?`<button class="btn btn-s" onclick="revisarInforme('${i.id}','pagado')">Marcar pagado</button>`:''}
+    </div></td></tr>`;}).join('')}</tbody></table></div>`;
+}
+function vInformes(){
+  const infs = S.informes.filter(i=>porId(i.contrato_id)?.vigencia===S.vigencia);
+  const rad = infs.filter(i=>i.estado==='radicado').sort((a,b)=>String(a.radicado_en).localeCompare(String(b.radicado_en)));
+  const resto = infs.filter(i=>i.estado!=='radicado').sort((a,b)=>String(b.periodo_inicio).localeCompare(String(a.periodo_inicio)));
+  const sinInforme = contratosVig().filter(c=>c.etapa==='ejecucion' && !S.informes.some(i=>i.contrato_id===c.id && i.periodo_fin && i.periodo_fin.slice(0,7)===new Date().toISOString().slice(0,7)));
+  $('vista').innerHTML = `<h2>Informes mensuales y cuentas de cobro</h2><div class="sep"></div>
+  <div class="card"><div class="fila entre"><h3>Radicados por aprobar (${rad.length})</h3></div><div class="sep"></div>${rad.length?tablaInformes(rad,true):'<p class="mute">No hay informes pendientes de aprobación.</p>'}</div>
+  <div class="sep"></div>
+  <div class="card"><h3>En ejecución sin informe de este mes (${sinInforme.length})</h3>
+    <p class="mute peq">${sinInforme.length?sinInforme.map(c=>esc(c.nombre)).join(', '):'Todos los contratistas en ejecución ya registraron informe este mes.'}</p></div>
+  <div class="sep"></div>
+  <div class="card"><h3>Historial</h3><div class="sep"></div>${resto.length?tablaInformes(resto,true):'<p class="mute">Sin informes todavía.</p>'}</div>`;
+}
+async function revisarInforme(id, estado){
+  let obs=null;
+  if(estado==='devuelto'){ obs = await pedirTexto('Devolver informe','Indica qué debe corregir el contratista.'); if(!obs) return; }
+  try{ const [n]=await rest(`ctr_informes?id=eq.${id}`,{method:'PATCH',prefer:'return=representation',body:{estado,observacion:obs,revisado_por:SES.email,revisado_en:new Date().toISOString()}});
+    Object.assign(S.informes.find(i=>i.id===id),n); await bitacora(n.contrato_id,`Informe ${n.numero}: ${EST_INF[estado][0]}`,obs||'');
+    toast(`Informe ${EST_INF[estado][0].toLowerCase()}`,'ok'); pintar(); if(S.detalle) abrirContrato(S.detalle,'informes'); }catch(e){ fallo(e); }
+}
+
+/* ============================ CREAR Y RENOVAR ============================ */
+const COLS_MASIVO = ['cedula','nombre','email','telefono','perfil','profesion','objeto','valor_mensual','plazo_meses','fecha_inicio','supervisor'];
+let PREVIA = [];
+function vCargue(){
+  const anios = [...new Set(S.contratos.map(c=>c.vigencia))].filter(a=>a!==S.vigencia).sort((a,b)=>b-a);
+  $('vista').innerHTML = `<h2>Crear y renovar contratos ${S.vigencia}</h2><div class="sep"></div>
+  <div class="grid g3">
+    <button class="gen" onclick="nuevoContrato()"><b>Un contrato</b><span class="sub">Formulario completo para un contratista nuevo.</span></button>
+    <button class="gen" onclick="document.getElementById('sec-masivo').scrollIntoView({behavior:'smooth'})"><b>Pegar desde Excel</b><span class="sub">Crea decenas de contratos de una vez copiando las filas de una hoja.</span></button>
+    <button class="gen" onclick="document.getElementById('sec-renovar').scrollIntoView({behavior:'smooth'})"><b>Renovar del año anterior</b><span class="sub">Copia contratistas, objeto y obligaciones, y reutiliza documentos que no vencen.</span></button>
+  </div>
+  <div class="sep"></div>
+  <div class="card" id="sec-renovar"><h3>Renovar contratos de otra vigencia</h3>
+    <p class="mute peq">Se crean en la vigencia ${S.vigencia}, en la etapa de documentos. Los documentos marcados como reutilizables (cédula, títulos, experiencia…) que estaban aprobados se copian aprobados; los demás se piden de nuevo.</p>
+    ${anios.length?`<div class="fila"><label class="f" style="width:160px">Copiar desde<select id="ren-origen" onchange="listarRenovables()">${anios.map(a=>`<option>${a}</option>`).join('')}</select></label>
+      <label class="fila peq" style="gap:6px;margin-top:16px"><input type="checkbox" id="ren-valor" style="width:auto" checked> Mantener valor mensual y plazo</label>
+      <label class="fila peq" style="gap:6px;margin-top:16px"><input type="checkbox" id="ren-docs" style="width:auto" checked> Reutilizar documentos permanentes</label></div>
+      <div id="ren-lista" style="margin-top:12px"></div>`:'<p class="mute">No hay contratos de otras vigencias para renovar.</p>'}
+  </div>
+  <div class="sep"></div>
+  <div class="card" id="sec-masivo"><h3>Pegar desde Excel</h3>
+    <p class="mute peq">Copia las filas de tu hoja y pégalas aquí. Columnas en este orden: <b>${COLS_MASIVO.join(', ')}</b>. El perfil es profesional, tecnico o apoyo. La fecha de inicio va como AAAA-MM-DD (puede ir vacía). Si una cédula ya existe en ${S.vigencia}, la fila se omite.</p>
+    <div class="fila" style="margin-bottom:8px"><button class="btn btn-s" onclick="plantillaMasivo()">Descargar plantilla</button></div>
+    <textarea id="masivo" rows="7" placeholder="Pega aquí las filas copiadas de Excel…" oninput="previaMasivo()"></textarea>
+    <div id="masivo-previa" style="margin-top:12px"></div>
+  </div>`;
+  if(anios.length) listarRenovables();
+}
+function nuevoContrato(){
+  const base = {perfil:'profesional', dependencia:CFG.DEPENDENCIA, riesgo_arl:'I', vigencia:S.vigencia};
+  modal(`<div class="modal-h"><h2>Nuevo contrato ${S.vigencia}</h2><button class="cerrar" onclick="cerrarModal()">×</button></div>
+    <div class="modal-b"><div id="f-nuevo">${formCampos(base)}</div><div class="fila" style="justify-content:flex-end;margin-top:16px"><button class="btn" onclick="cerrarModal()">Cancelar</button><button class="btn btn-p" onclick="crearContrato()">Crear contrato</button></div></div>`);
+  enlazarCalculos($('f-nuevo'));
+}
+async function crearContrato(){
+  const o = leerForm($('f-nuevo')); o.vigencia=S.vigencia; o.etapa='documentos'; o.fechas_etapa={documentos:new Date().toISOString()}; o.creado_por=SES.email;
+  if(!o.cedula || !o.nombre || !o.email) return toast('Cédula, nombre y correo son obligatorios.','err');
+  if(!/^\S+@\S+\.\S+$/.test(o.email)) return toast('El correo no es válido.','err');
+  try{ const [n]=await rest('ctr_contratos',{method:'POST',body:o,prefer:'return=representation'}); S.contratos.push(n);
+    await bitacora(n.id,'Contrato creado'); toast('Contrato creado','ok'); pintar(); abrirContrato(n.id,'resumen'); }catch(e){ fallo(e); }
+}
+function plantillaMasivo(){
+  const ej = ['1036000000','NOMBRE APELLIDO APELLIDO','correo@ejemplo.com','3000000000','profesional','Abogado','Prestar servicios profesionales como abogado para el impulso de los procesos de cobro coactivo','4500000','11','2027-01-15','Nombre del supervisor'];
+  bajar(new Blob(['\ufeff'+COLS_MASIVO.join(';')+'\r\n'+ej.join(';')],{type:'text/csv;charset=utf-8'}),'plantilla_contratos.csv');
+}
+function previaMasivo(){
+  const txt = $('masivo').value.trim(); const box=$('masivo-previa'); PREVIA=[];
+  if(!txt){ box.innerHTML=''; return; }
+  const existentes = new Set(contratosVig().map(c=>String(c.cedula)));
+  const vistas = new Set();
+  txt.split(/\r?\n/).forEach((linea,n)=>{
+    const p = linea.split(/\t|;/).map(x=>x.trim()); if(!p.join('')) return;
+    if(n===0 && /c[eé]dula/i.test(p[0])) return;
+    const o = {}; COLS_MASIVO.forEach((k,i)=>o[k]=p[i]||'');
+    o.cedula = o.cedula.replace(/\D/g,''); o.email=o.email.toLowerCase(); o.perfil = (o.perfil||'profesional').toLowerCase().replace('técnico','tecnico');
+    o.valor_mensual = Number(String(o.valor_mensual).replace(/[^\d]/g,''))||0; o.plazo_meses = Number(String(o.plazo_meses).replace(',','.'))||0;
+    const err=[];
+    if(!o.cedula) err.push('sin cédula'); if(!o.nombre) err.push('sin nombre');
+    if(!/^\S+@\S+\.\S+$/.test(o.email)) err.push('correo inválido');
+    if(!PERFILES[o.perfil]) err.push('perfil inválido');
+    if(o.fecha_inicio && !/^\d{4}-\d{2}-\d{2}$/.test(o.fecha_inicio)) err.push('fecha inválida');
+    if(existentes.has(o.cedula)) err.push('ya existe en la vigencia');
+    if(vistas.has(o.cedula)) err.push('repetida en lo pegado'); vistas.add(o.cedula);
+    PREVIA.push({o, err});
+  });
+  const ok = PREVIA.filter(x=>!x.err.length).length;
+  box.innerHTML = `<div class="tabla-w"><table class="t"><thead><tr><th>Cédula</th><th>Nombre</th><th>Correo</th><th>Perfil</th><th>Mensual</th><th>Meses</th><th>Validación</th></tr></thead><tbody>
+    ${PREVIA.map(({o,err})=>`<tr><td>${esc(o.cedula)}</td><td>${esc(o.nombre)}</td><td class="sub">${esc(o.email)}</td><td>${esc(o.perfil)}</td><td>${cop(o.valor_mensual)}</td><td>${o.plazo_meses}</td>
+    <td>${err.length?`<span class="chip c-bad">${esc(err.join(', '))}</span>`:'<span class="chip c-ok">Lista</span>'}</td></tr>`).join('')}</tbody></table></div>
+    <div class="fila entre" style="margin-top:10px"><span class="sub">${ok} de ${PREVIA.length} filas se crearán</span><button class="btn btn-p" ${ok?'':'disabled'} onclick="crearMasivo()">Crear ${ok} contratos</button></div>`;
+}
+async function crearMasivo(){
+  const filas = PREVIA.filter(x=>!x.err.length).map(({o})=>({...o, fecha_inicio:o.fecha_inicio||null, vigencia:S.vigencia,
+    valor_total: Math.round(o.valor_mensual*o.plazo_meses), fecha_fin: sumarMeses(o.fecha_inicio,o.plazo_meses),
+    dependencia:CFG.DEPENDENCIA, etapa:'documentos', fechas_etapa:{documentos:new Date().toISOString()}, creado_por:SES.email}));
+  if(!filas.length) return;
+  try{ const ns = await rest('ctr_contratos?on_conflict=vigencia,cedula',{method:'POST',body:filas,prefer:'resolution=ignore-duplicates,return=representation'});
+    S.contratos.push(...ns); for(const n of ns) await bitacora(n.id,'Contrato creado (cargue masivo)');
+    toast(`${ns.length} contratos creados`,'ok'); $('masivo').value=''; PREVIA=[]; S.tab='contratos'; S.filtroEtapa='documentos'; pintar(); }catch(e){ fallo(e); }
+}
+function listarRenovables(){
+  const origen = Number($('ren-origen').value); const yaEstan = new Set(contratosVig().map(c=>String(c.cedula)));
+  const cs = S.contratos.filter(c=>c.vigencia===origen && !yaEstan.has(String(c.cedula))).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  $('ren-lista').innerHTML = cs.length ? `<div class="tabla-w" style="max-height:380px;overflow:auto"><table class="t"><thead><tr><th><input type="checkbox" style="width:auto" checked onchange="document.querySelectorAll('.ren-ck').forEach(x=>x.checked=this.checked)"></th><th>Contratista</th><th>Objeto</th><th>Mensual</th></tr></thead><tbody>
+    ${cs.map(c=>`<tr><td><input type="checkbox" class="ren-ck" value="${c.id}" style="width:auto" checked></td><td><div class="nombre">${esc(c.nombre)}</div><div class="sub">CC ${esc(c.cedula)}</div></td><td class="sub">${esc((c.objeto||'').slice(0,110))}</td><td>${cop(c.valor_mensual)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="fila" style="justify-content:flex-end;margin-top:10px"><button class="btn btn-p" onclick="renovar()">Renovar seleccionados en ${S.vigencia}</button></div>`
+    : `<p class="mute">Todos los contratistas de ${origen} ya tienen contrato en ${S.vigencia}.</p>`;
+}
+async function renovar(){
+  const ids = [...document.querySelectorAll('.ren-ck:checked')].map(x=>x.value); if(!ids.length) return toast('Selecciona al menos un contratista.','err');
+  const conValor = $('ren-valor').checked, conDocs = $('ren-docs').checked;
+  const COPIAR = ['cedula','nombre','email','telefono','direccion','profesion','banco','tipo_cuenta','num_cuenta','eps','afp','arl','perfil','objeto','obligaciones','supervisor','dependencia','riesgo_arl','rubro'];
+  const filas = ids.map(id=>{ const c=porId(id); const o={}; COPIAR.forEach(k=>o[k]=c[k]);
+    if(conValor){ o.valor_mensual=c.valor_mensual; o.plazo_meses=c.plazo_meses; o.valor_total=c.valor_total; }
+    return {...o, vigencia:S.vigencia, etapa:'documentos', fechas_etapa:{documentos:new Date().toISOString()}, creado_por:SES.email, notas:`Renovado desde ${c.vigencia}`}; });
+  if(!confirm(`¿Crear ${filas.length} contratos en ${S.vigencia}?`)) return;
+  try{
+    const ns = await rest('ctr_contratos?on_conflict=vigencia,cedula',{method:'POST',body:filas,prefer:'resolution=ignore-duplicates,return=representation'});
+    S.contratos.push(...ns); let copiados=0;
+    if(conDocs){
+      const reut = new Set(S.requisitos.filter(r=>r.reutilizable).map(r=>r.codigo)); const docs=[];
+      for(const n of ns){ const viejo = S.contratos.find(c=>ids.includes(c.id) && String(c.cedula)===String(n.cedula));
+        S.documentos.filter(d=>d.contrato_id===viejo?.id && d.estado==='aprobado' && reut.has(d.requisito)).forEach(d=>docs.push({contrato_id:n.id,requisito:d.requisito,ruta:d.ruta,nombre_archivo:d.nombre_archivo,fecha_expedicion:d.fecha_expedicion,estado:'aprobado',observacion:'Reutilizado de la vigencia anterior',subido_por:d.subido_por,subido_en:d.subido_en,revisado_por:SES.email,revisado_en:new Date().toISOString()})); }
+      for(let i=0;i<docs.length;i+=200){ const r = await rest('ctr_documentos?on_conflict=contrato_id,requisito',{method:'POST',body:docs.slice(i,i+200),prefer:'resolution=ignore-duplicates,return=representation'}); S.documentos.push(...r); copiados+=r.length; }
+    }
+    for(const n of ns) await bitacora(n.id,'Contrato renovado', n.notas);
+    toast(`${ns.length} contratos renovados${conDocs?`, ${copiados} documentos reutilizados`:''}`,'ok'); S.tab='contratos'; S.filtroEtapa='documentos'; pintar();
+  }catch(e){ fallo(e); }
+}
+
+/* ============================ REQUISITOS (ADMIN) ============================ */
+function vRequisitos(){
+  $('vista').innerHTML = `<div class="fila entre"><h2>Requisitos documentales</h2><button class="btn btn-p" onclick="nuevoRequisito()">Agregar requisito</button></div>
+  <p class="mute peq">Lo que se le pide a cada contratista. "Aplica a" vacío significa todos los perfiles. "Vence en" son días desde la fecha de expedición. "Reutilizable" lo copia aprobado al renovar el contrato.</p>
+  <div class="tabla-w"><table class="t"><thead><tr><th>Orden</th><th>Código</th><th>Nombre</th><th>Descripción</th><th>Aplica a</th><th>Vence en (días)</th><th>Obligatorio</th><th>Reutilizable</th><th>Activo</th><th></th></tr></thead><tbody>
+  ${S.requisitos.map(r=>`<tr data-cod="${esc(r.codigo)}">
+    <td><input data-r="orden" type="number" value="${r.orden}" style="width:70px"></td><td class="sub">${esc(r.codigo)}</td>
+    <td><input data-r="nombre" value="${esc(r.nombre)}" style="min-width:220px"></td><td><input data-r="descripcion" value="${esc(r.descripcion||'')}" style="min-width:200px"></td>
+    <td><input data-r="aplica" value="${esc((r.aplica||[]).join(','))}" placeholder="todos" style="width:130px"></td>
+    <td><input data-r="vigencia_dias" type="number" value="${r.vigencia_dias??''}" style="width:80px"></td>
+    <td><input data-r="obligatorio" type="checkbox" style="width:auto" ${r.obligatorio?'checked':''}></td>
+    <td><input data-r="reutilizable" type="checkbox" style="width:auto" ${r.reutilizable?'checked':''}></td>
+    <td><input data-r="activo" type="checkbox" style="width:auto" ${r.activo?'checked':''}></td>
+    <td><button class="btn btn-s" onclick="guardarRequisito(this)">Guardar</button></td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function leerReq(tr){ const o={}; tr.querySelectorAll('[data-r]').forEach(el=>{ const k=el.dataset.r;
+  if(el.type==='checkbox') o[k]=el.checked; else if(el.type==='number') o[k]=el.value===''?null:Number(el.value);
+  else if(k==='aplica') o[k]=el.value.trim()?el.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean):null; else o[k]=el.value.trim()||null; }); return o; }
+async function guardarRequisito(btn){
+  const tr=btn.closest('tr'); const o=leerReq(tr); if(!o.nombre) return toast('El nombre es obligatorio.','err'); if(o.orden==null) o.orden=100;
+  try{ const [n]=await rest(`ctr_requisitos?codigo=eq.${encodeURIComponent(tr.dataset.cod)}`,{method:'PATCH',body:o,prefer:'return=representation'});
+    Object.assign(S.requisitos.find(r=>r.codigo===n.codigo),n); toast('Requisito guardado','ok'); }catch(e){ fallo(e); }
+}
+async function nuevoRequisito(){
+  const nombre = await pedirTexto('Nuevo requisito','Nombre del documento que se pedirá a los contratistas.'); if(!nombre) return;
+  const codigo = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'_').slice(0,24);
+  try{ const [n]=await rest('ctr_requisitos',{method:'POST',body:{codigo,nombre,orden:(Math.max(0,...S.requisitos.map(r=>r.orden))+10)},prefer:'return=representation'});
+    S.requisitos.push(n); vRequisitos(); toast('Requisito agregado','ok'); }catch(e){ fallo(e); }
+}
+
+/* ============================ PORTAL DEL CONTRATISTA ============================ */
+function pintarPortal(){
+  const mios = S.contratos.slice().sort((a,b)=>b.vigencia-a.vigencia);
+  if(!mios.length){
+    $('vista').innerHTML = `<div class="card" style="max-width:640px;margin:40px auto"><h2>No encontramos contratos a tu nombre</h2>
+      <p class="mute">Entraste con <b>${esc(SES.email)}</b>. Si vas a contratar con la Dirección, pide al equipo de contratación que verifique que tu contrato esté registrado con este mismo correo.</p></div>`; return;
+  }
+  if(!S.portalId || !mios.some(c=>c.id===S.portalId)) S.portalId = mios[0].id;
+  const c = porId(S.portalId); const a = avance(c); const i = IDX[c.etapa];
+  const enEjec = i >= IDX.acta;
+  const tabs = [['docs','Mis documentos'],['datos','Mis datos'],['informes','Informes mensuales']];
+  $('vista').innerHTML = `
+  <div class="fila entre"><div><h1>Hola, ${esc(c.nombre.split(' ')[0].toLowerCase().replace(/^./,x=>x.toUpperCase()))}</h1>
+    <p class="mute" style="margin:4px 0 0">${esc(PERFILES[c.perfil])} · Vigencia ${c.vigencia}${c.numero?` · Contrato ${esc(c.numero)}`:''}</p></div>
+    ${mios.length>1?`<select style="width:auto" onchange="S.portalId=this.value;pintarPortal()">${mios.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>Contrato ${x.vigencia}${x.numero?' — '+esc(x.numero):''}</option>`).join('')}</select>`:''}</div>
+  <div class="card" style="margin-top:14px">${pasos(c,false)}
+    <div class="aviso" style="margin-top:14px"><b>${esc(ETAPAS[i][1])}.</b> ${esc(ETAPAS[i][2])}
+    ${c.etapa==='documentos'?` Llevas ${a.aprob} de ${a.total} documentos obligatorios aprobados${a.rechazados?`; ${a.rechazados} fueron devueltos y debes corregirlos`:''}${a.vencidos?`; ${a.vencidos} están vencidos`:''}.`:''}</div></div>
+  <nav class="subtabs" style="margin:16px 0;padding:0">${tabs.map(([k,l])=>`<button class="${S.portalTab===k?'on':''}" onclick="S.portalTab='${k}';pintarPortal()">${l}</button>`).join('')}</nav>
+  <div id="portal-cuerpo"></div>`;
+  ({docs:pDocs, datos:pDatos, informes:pInformes})[S.portalTab](c, enEjec);
+}
+function pDocs(c){
+  const rs = reqsDe(c);
+  const orden = {rechazado:0,vencido:1,falta:2,cargado:3,aprobado:4};
+  const filas = rs.map(r=>[r,estadoReq(c,r),docDe(c.id,r.codigo)]).sort((x,y)=>orden[x[1]]-orden[y[1]] || x[0].orden-y[0].orden);
+  $('portal-cuerpo').innerHTML = `<p class="mute peq" style="margin-top:0">Sube cada documento en PDF (máximo ${CFG.MAX_MB} MB). Los que vencen piden la fecha de expedición; deben estar vigentes al momento de firmar.</p>
+  <div class="tabla-w"><table class="t"><thead><tr><th>Documento</th><th>Estado</th><th>Archivo</th><th>Cargar</th></tr></thead><tbody>
+  ${filas.map(([r,e,d])=>{ const puede = e!=='aprobado';
+    return `<tr><td><div class="nombre">${esc(r.nombre)}${r.obligatorio?'':' <span class="sub">(si aplica)</span>'}</div>
+      ${r.descripcion?`<div class="sub">${esc(r.descripcion)}</div>`:''}${r.vigencia_dias?`<div class="sub">No mayor a ${r.vigencia_dias} días</div>`:''}
+      ${e==='rechazado'&&d?.observacion?`<div class="obs">Devuelto: ${esc(d.observacion)}</div>`:''}${e==='vencido'?'<div class="obs">Venció. Sube uno nuevo.</div>':''}</td>
+    <td><span class="chip ${CHIP_DOC[e][1]}">${CHIP_DOC[e][0]}</span></td>
+    <td>${d?.ruta?`<button class="btn btn-s" onclick="verArchivo('${esc(d.ruta)}')">Ver</button>`:'<span class="sub">—</span>'}</td>
+    <td>${puede?`<label class="btn btn-s ${e==='falta'||e==='rechazado'||e==='vencido'?'btn-p':''}">${d?'Reemplazar':'Subir'}<input type="file" accept=".pdf,image/*" class="oculto" onchange="subirDoc('${c.id}','${r.codigo}',this.files[0])"></label>`:'<span class="sub">Listo</span>'}</td></tr>`;}).join('')}
+  </tbody></table></div>`;
+}
+function pDatos(c){
+  $('portal-cuerpo').innerHTML = `<div class="card"><p class="mute peq" style="margin-top:0">Mantén actualizados tus datos de contacto, seguridad social y cuenta bancaria. Los demás datos del contrato los registra el equipo de contratación.</p>
+    <div id="f-mis">${formCampos(c,true)}</div><div class="fila" style="justify-content:flex-end;margin-top:14px"><button class="btn btn-p" onclick="guardarMisDatos('${c.id}')">Guardar mis datos</button></div></div>`;
+}
+async function guardarMisDatos(cid){
+  const o = leerForm($('f-mis'));
+  try{ const [n]=await rest(`ctr_contratos?id=eq.${cid}`,{method:'PATCH',body:o,prefer:'return=representation'}); Object.assign(porId(cid),n); await bitacora(cid,'El contratista actualizó sus datos'); toast('Datos guardados','ok'); }catch(e){ fallo(e); }
+}
+function pInformes(c, enEjec){
+  const infs = S.informes.filter(i=>i.contrato_id===c.id).sort((a,b)=>b.numero-a.numero);
+  if(!enEjec && !infs.length){ $('portal-cuerpo').innerHTML='<div class="card vacio-msg">Los informes mensuales se habilitan cuando se firme el acta de inicio.</div>'; return; }
+  $('portal-cuerpo').innerHTML = `<div class="fila entre" style="margin-bottom:12px"><span class="mute peq">Cada mes registra tus actividades, adjunta la planilla de seguridad social pagada y radica. El supervisor lo aprueba aquí mismo.</span>
+    <button class="btn btn-p" onclick="formInforme('${c.id}')">Nuevo informe</button></div>
+  ${infs.length?`<div class="tabla-w"><table class="t"><thead><tr><th>N.º</th><th>Periodo</th><th>Valor</th><th>Estado</th><th></th></tr></thead><tbody>
+  ${infs.map(i=>{const [el,ec]=EST_INF[i.estado]; return `<tr><td>${i.numero}</td><td class="sub">${fecha(i.periodo_inicio)} – ${fecha(i.periodo_fin)}</td><td>${cop(i.valor)}</td>
+    <td><span class="chip ${ec}">${el}</span>${i.observacion&&i.estado==='devuelto'?`<div class="obs">${esc(i.observacion)}</div>`:''}</td>
+    <td><div class="fila" style="gap:5px;justify-content:flex-end">${['borrador','devuelto'].includes(i.estado)?`<button class="btn btn-s" onclick="formInforme('${c.id}','${i.id}')">Editar</button>`:''}<button class="btn btn-s" onclick="bajarInforme('${i.id}')">Descargar .doc</button></div></td></tr>`;}).join('')}
+  </tbody></table></div>`:'<div class="card vacio-msg">Aún no has registrado informes.</div>'}`;
+}
+function formInforme(cid, iid){
+  const c=porId(cid); const i = iid ? S.informes.find(x=>x.id===iid) : null;
+  const num = i?.numero || siguienteNumeroInforme(cid);
+  const plantilla = (c.obligaciones||'').split('\n').filter(x=>x.trim()).map((o,k)=>`Obligación ${k+1}: ${o.trim()}\nActividades: \n`).join('\n');
+  modal(`<div class="modal-h"><div><h2>Informe N.º ${num}</h2><div class="sub">${esc(c.nombre)}</div></div><button class="cerrar" onclick="cerrarModal()">×</button></div>
+  <div class="modal-b grid g2">
+    <label class="f">Periodo desde<input id="in-ini" type="date" value="${i?.periodo_inicio||''}"></label>
+    <label class="f">Periodo hasta<input id="in-fin" type="date" value="${i?.periodo_fin||''}"></label>
+    <label class="f">Valor a cobrar<input id="in-val" type="number" value="${i?.valor ?? c.valor_mensual ?? 0}"></label>
+    <label class="f">N.º planilla de seguridad social<input id="in-pla" value="${esc(i?.planilla_numero||'')}"></label>
+    <label class="f spanall">Actividades realizadas por obligación<textarea id="in-act" rows="12">${esc(i?.actividades || plantilla)}</textarea></label>
+    <label class="f">Planilla de seguridad social pagada (PDF)${i?.planilla_ruta?' <span class="chip c-ok">ya cargada</span>':''}<input id="in-fpla" type="file" accept=".pdf,image/*"></label>
+    <label class="f">Evidencias en un solo PDF (opcional)${i?.evidencias_ruta?' <span class="chip c-ok">ya cargadas</span>':''}<input id="in-fev" type="file" accept=".pdf"></label>
+    <div class="fila spanall" style="justify-content:flex-end"><button class="btn" onclick="guardarInforme('${cid}','${iid||''}',${num},'borrador')">Guardar borrador</button>
+    <button class="btn btn-p" onclick="guardarInforme('${cid}','${iid||''}',${num},'radicado')">Radicar al supervisor</button></div>
+  </div>`);
+}
+async function guardarInforme(cid, iid, num, estado){
+  const prev = iid ? S.informes.find(x=>x.id===iid) : null;
+  const o = { contrato_id:cid, numero:num, periodo_inicio:$('in-ini').value||null, periodo_fin:$('in-fin').value||null,
+    valor:Number($('in-val').value)||0, actividades:$('in-act').value, planilla_numero:$('in-pla').value.trim()||null, estado };
+  const fp=$('in-fpla').files[0], fe=$('in-fev').files[0];
+  if(estado==='radicado'){
+    if(!o.periodo_inicio || !o.periodo_fin) return toast('Indica el periodo del informe.','err');
+    if(!fp && !prev?.planilla_ruta) return toast('Adjunta la planilla de seguridad social pagada para radicar.','err');
+    if(!o.planilla_numero) return toast('Escribe el número de la planilla.','err');
+  }
+  try{
+    if(fp) o.planilla_ruta = await subirArchivo(rutaArchivo(cid,`informe${num}_planilla`,fp),fp);
+    if(fe) o.evidencias_ruta = await subirArchivo(rutaArchivo(cid,`informe${num}_evidencias`,fe),fe);
+    let n;
+    if(iid) [n] = await rest(`ctr_informes?id=eq.${iid}`,{method:'PATCH',body:o,prefer:'return=representation'});
+    else [n] = await rest('ctr_informes',{method:'POST',body:o,prefer:'return=representation'});
+    const k=S.informes.findIndex(x=>x.id===n.id); if(k>=0) S.informes[k]=n; else S.informes.push(n);
+    await bitacora(cid, estado==='radicado'?`Informe ${num} radicado`:`Informe ${num} guardado`);
+    toast(estado==='radicado'?'Informe radicado al supervisor':'Borrador guardado','ok'); cerrarModal(); pintar();
+  }catch(e){ fallo(e); }
+}
+function bajarInforme(iid){ const i=S.informes.find(x=>x.id===iid), c=porId(i.contrato_id); descargarWord(`informe_${i.numero}_${c.cedula}`, tplInforme(c,i)); }
+
+/* ============================ PLANTILLAS WORD ============================ */
+function descargarWord(nombre, cuerpo){
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${esc(nombre)}</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>@page{size:21.59cm 27.94cm;margin:2.5cm 2.5cm 2.5cm 3cm}body{font-family:Arial;font-size:11pt;line-height:1.35}
+h1{font-size:12pt;text-align:center;margin:0 0 4pt}h2{font-size:11pt;margin:12pt 0 4pt}p{text-align:justify;margin:0 0 7pt}
+table{border-collapse:collapse;width:100%;margin:6pt 0}td,th{border:1px solid #000;padding:4pt;font-size:10pt;vertical-align:top;text-align:left}
+th{background:#d9d9d9}.c{text-align:center}.enc{text-align:center;font-size:10pt;margin-bottom:14pt}.firma{margin-top:42pt}</style></head><body>${cuerpo}</body></html>`;
+  bajar(new Blob(['\ufeff'+html],{type:'application/msword'}), nombre.replace(/[^\w-]+/g,'_')+'.doc');
+}
+const enc = () => `<div class="enc"><b>${CFG.ENTIDAD}</b><br>NIT ${CFG.NIT}<br>${esc(CFG.DEPENDENCIA)}</div>`;
+const v = (x, ph='__________') => x ? esc(x) : ph;
+const oblig = c => (c.obligaciones||'').split('\n').map(x=>x.trim()).filter(Boolean);
+const listaOblig = c => oblig(c).length ? oblig(c).map((o,i)=>`<p>${i+1}. ${esc(o)}</p>`).join('') : '<p>[Registrar las obligaciones específicas en los datos del contrato.]</p>';
+const valorTxt = (n) => `${letras(n)} (${cop(n)})`;
+const firma = (nombre, cargo) => `<p class="firma">_________________________________<br><b>${esc(nombre)}</b><br>${esc(cargo)}</p>`;
+const tipoTxt = c => ({profesional:'servicios profesionales', tecnico:'servicios técnicos', apoyo:'servicios de apoyo a la gestión'})[c.perfil];
+
+const DOCS_GEN = {
+  estudios:{nombre:'Estudios previos',archivo:'estudios_previos',desc:'Necesidad, objeto, modalidad, valor, riesgos, garantías y supervisión.',fn:c=>`${enc()}
+<h1>ESTUDIOS Y DOCUMENTOS PREVIOS</h1><p class="c">Contratación directa — prestación de ${tipoTxt(c)}</p>
+<h2>1. Descripción de la necesidad</h2>
+<p>La ${esc(CFG.DEPENDENCIA)} del ${CFG.ENTIDAD} tiene a su cargo el recaudo de las obligaciones a favor del municipio mediante el procedimiento administrativo de cobro coactivo, así como la atención de peticiones, tutelas y notificaciones derivadas de dicha gestión. El volumen de expedientes supera la capacidad del personal de planta, por lo cual se requiere contratar ${tipoTxt(c)} con persona natural idónea que apoye el cumplimiento de estas funciones. [Ampliar con datos específicos de la necesidad.]</p>
+<h2>2. Objeto</h2><p>${v(c.objeto,'[Objeto del contrato]')}</p>
+<h2>3. Obligaciones específicas del contratista</h2>${listaOblig(c)}
+<h2>4. Modalidad de selección y fundamento jurídico</h2>
+<p>Contratación directa para la prestación de ${tipoTxt(c)}, conforme al numeral 4, literal h), del artículo 2 de la Ley 1150 de 2007 y al artículo 2.2.1.2.1.4.9 del Decreto 1082 de 2015, que permiten contratar directamente con la persona natural que esté en capacidad de ejecutar el objeto y acredite la idoneidad y experiencia relacionada, sin que sea necesario obtener varias ofertas.</p>
+<h2>5. Valor estimado y forma de pago</h2>
+<p>El valor del contrato es de ${valorTxt(c.valor_total)}, correspondiente a ${c.plazo_meses||'__'} meses con honorarios mensuales de ${valorTxt(c.valor_mensual)}, determinado según la tabla de honorarios vigente de la entidad para el perfil requerido. Se pagará en mensualidades vencidas, previa presentación del informe de actividades, certificación de cumplimiento del supervisor y acreditación del pago de aportes al Sistema de Seguridad Social Integral (artículo 50 de la Ley 789 de 2002 y artículo 23 de la Ley 1150 de 2007).</p>
+<p>Rubro: ${v(c.rubro)}. Certificado de disponibilidad presupuestal: ${v(c.cdp)} del ${c.fecha_cdp?fechaLarga(c.fecha_cdp):'__________'}.</p>
+<h2>6. Plazo</h2><p>${c.plazo_meses||'__'} meses contados a partir de la suscripción del acta de inicio, previo registro presupuestal y afiliación a riesgos laborales${c.fecha_fin?`, sin exceder el ${fechaLarga(c.fecha_fin)}`:''}.</p>
+<h2>7. Idoneidad y experiencia requeridas</h2><p>Perfil: ${v(c.profesion,'[profesión u oficio]')}. [Indicar formación y años de experiencia exigidos.]</p>
+<h2>8. Análisis de riesgos</h2><table><tr><th>Riesgo</th><th>Probabilidad</th><th>Impacto</th><th>Asignación</th><th>Tratamiento</th></tr>
+<tr><td>Incumplimiento de las obligaciones</td><td>Baja</td><td>Medio</td><td>Contratista</td><td>Supervisión mensual y aprobación de informes</td></tr>
+<tr><td>Inexactitud de la información aportada</td><td>Baja</td><td>Medio</td><td>Contratista</td><td>Verificación documental previa</td></tr>
+<tr><td>Manejo indebido de información reservada</td><td>Baja</td><td>Alto</td><td>Contratista</td><td>Cláusula de confidencialidad</td></tr></table>
+<h2>9. Garantías</h2><p>De conformidad con el artículo 7 de la Ley 1150 de 2007 y el artículo 2.2.1.2.1.4.5 del Decreto 1082 de 2015, las garantías no son obligatorias en la contratación directa. ${c.poliza?`Se exige: ${esc(c.poliza)}.`:'Dada la naturaleza del objeto y la forma de pago contra entrega mensual, no se exigen garantías.'}</p>
+<h2>10. Supervisión</h2><p>Estará a cargo de ${v(c.supervisor,'[supervisor designado]')}, o quien haga sus veces, conforme a los artículos 83 y 84 de la Ley 1474 de 2011.</p>
+${firma(CFG.ORDENADOR.nombre, CFG.ORDENADOR.cargo)}`},
+
+  nopersonal:{nombre:'Certificado de insuficiencia de personal',archivo:'cert_insuficiencia_personal',desc:'Constancia de que la planta no alcanza para cubrir la necesidad.',fn:c=>`${enc()}
+<h1>CERTIFICADO DE INEXISTENCIA O INSUFICIENCIA DE PERSONAL DE PLANTA</h1><div style="height:14pt"></div>
+<p>El suscrito ${esc(CFG.ORDENADOR.cargo)} del ${CFG.ENTIDAD} certifica que en la planta de personal de la dependencia no existe personal suficiente para desarrollar las actividades descritas en el siguiente objeto: «${v(c.objeto,'[objeto]')}», por lo que se hace necesario contratar la prestación de ${tipoTxt(c)}, en los términos del numeral 3 del artículo 32 de la Ley 80 de 1993.</p>
+<p>Se expide en Bello, Antioquia, el ${fechaLarga(hoyISO())}.</p>${firma(CFG.ORDENADOR.nombre, CFG.ORDENADOR.cargo)}`},
+
+  idoneidad:{nombre:'Certificado de idoneidad',archivo:'cert_idoneidad',desc:'Acredita que el contratista cumple formación y experiencia.',fn:c=>`${enc()}
+<h1>CERTIFICADO DE IDONEIDAD Y EXPERIENCIA</h1><div style="height:14pt"></div>
+<p>El suscrito ${esc(CFG.ORDENADOR.cargo)} certifica que, revisados los soportes de formación académica y experiencia aportados por <b>${esc(c.nombre)}</b>, identificado(a) con cédula de ciudadanía ${esc(c.cedula)}, de profesión u oficio ${v(c.profesion)}, se verificó que cuenta con la idoneidad y la experiencia relacionada con el objeto a contratar: «${v(c.objeto,'[objeto]')}», conforme al artículo 2.2.1.2.1.4.9 del Decreto 1082 de 2015.</p>
+<p>Se expide en Bello, Antioquia, el ${fechaLarga(hoyISO())}.</p>${firma(CFG.ORDENADOR.nombre, CFG.ORDENADOR.cargo)}`},
+
+  minuta:{nombre:'Minuta del contrato',archivo:'minuta',desc:'Contrato de prestación de servicios con cláusulas completas.',fn:c=>`${enc()}
+<h1>CONTRATO DE PRESTACIÓN DE ${tipoTxt(c).toUpperCase()} N.º ${v(c.numero,'_____')} DE ${c.vigencia}</h1>
+<table><tr><th style="width:32%">Contratante</th><td>${CFG.ENTIDAD} — NIT ${CFG.NIT}</td></tr><tr><th>Contratista</th><td>${esc(c.nombre)} — CC ${esc(c.cedula)}</td></tr>
+<tr><th>Objeto</th><td>${v(c.objeto)}</td></tr><tr><th>Valor</th><td>${valorTxt(c.valor_total)}</td></tr><tr><th>Plazo</th><td>${c.plazo_meses||'__'} meses</td></tr>
+<tr><th>CDP</th><td>${v(c.cdp)} — Rubro ${v(c.rubro)}</td></tr><tr><th>Supervisor</th><td>${v(c.supervisor)}</td></tr></table>
+<p>Entre los suscritos, <b>${esc(CFG.ORDENADOR.nombre)}</b>, en calidad de ${esc(CFG.ORDENADOR.cargo)}, quien obra en nombre y representación del ${CFG.ENTIDAD}, en adelante EL MUNICIPIO, y <b>${esc(c.nombre)}</b>, mayor de edad, identificado(a) con cédula de ciudadanía ${esc(c.cedula)}, quien en adelante se denominará EL CONTRATISTA, hemos convenido celebrar el presente contrato, que se rige por la Ley 80 de 1993, la Ley 1150 de 2007, el Decreto 1082 de 2015 y las siguientes cláusulas:</p>
+<p><b>PRIMERA. OBJETO:</b> ${v(c.objeto)}.</p>
+<p><b>SEGUNDA. OBLIGACIONES ESPECÍFICAS DEL CONTRATISTA:</b></p>${listaOblig(c)}
+<p><b>TERCERA. OBLIGACIONES GENERALES DEL CONTRATISTA:</b> 1. Cumplir el objeto con calidad y oportunidad. 2. Afiliarse y pagar oportunamente los aportes al Sistema de Seguridad Social Integral (salud, pensión y riesgos laborales) sobre el 40 % del valor mensual, conforme al artículo 50 de la Ley 789 de 2002 y la Ley 1562 de 2012. 3. Presentar informe mensual de actividades. 4. Guardar reserva sobre la información que conozca en ejecución del contrato. 5. Devolver al terminar los bienes, documentos e información a su cargo.</p>
+<p><b>CUARTA. OBLIGACIONES DEL MUNICIPIO:</b> 1. Pagar el valor pactado en la forma convenida. 2. Suministrar la información necesaria para la ejecución. 3. Ejercer la supervisión del contrato.</p>
+<p><b>QUINTA. VALOR Y FORMA DE PAGO:</b> El valor total es de ${valorTxt(c.valor_total)}, que se pagará en mensualidades vencidas de ${valorTxt(c.valor_mensual)}, previa presentación del informe de actividades, certificación de cumplimiento del supervisor y acreditación del pago de aportes a seguridad social. Los pagos de periodos inferiores a un mes se liquidarán proporcionalmente.</p>
+<p><b>SEXTA. PLAZO:</b> ${c.plazo_meses||'__'} meses contados a partir de la suscripción del acta de inicio${c.fecha_fin?`, sin exceder el ${fechaLarga(c.fecha_fin)}`:''}.</p>
+<p><b>SÉPTIMA. IMPUTACIÓN PRESUPUESTAL:</b> Rubro ${v(c.rubro)}, según certificado de disponibilidad presupuestal ${v(c.cdp)}.</p>
+<p><b>OCTAVA. SUPERVISIÓN:</b> La ejercerá ${v(c.supervisor)} o quien haga sus veces, conforme a los artículos 83 y 84 de la Ley 1474 de 2011.</p>
+<p><b>NOVENA. EXCLUSIÓN DE RELACIÓN LABORAL:</b> El presente contrato no genera relación laboral ni prestaciones sociales, de conformidad con el numeral 3 del artículo 32 de la Ley 80 de 1993. EL CONTRATISTA actuará con autonomía técnica y administrativa.</p>
+<p><b>DÉCIMA. INHABILIDADES E INCOMPATIBILIDADES:</b> EL CONTRATISTA declara bajo juramento, que se entiende prestado con la firma, que no se encuentra incurso en las inhabilidades e incompatibilidades de los artículos 8 y 9 de la Ley 80 de 1993 y demás normas concordantes.</p>
+<p><b>UNDÉCIMA. CLÁUSULAS EXCEPCIONALES:</b> Se entienden incorporadas las de interpretación, modificación y terminación unilaterales y caducidad, previstas en los artículos 14 a 18 de la Ley 80 de 1993.</p>
+<p><b>DUODÉCIMA. MULTAS Y CLÁUSULA PENAL:</b> En caso de incumplimiento, EL MUNICIPIO podrá imponer multas y hacer efectiva la cláusula penal, previo procedimiento del artículo 86 de la Ley 1474 de 2011 y conforme al artículo 17 de la Ley 1150 de 2007.</p>
+<p><b>DECIMOTERCERA. INDEMNIDAD:</b> EL CONTRATISTA mantendrá indemne al MUNICIPIO frente a reclamaciones de terceros derivadas de sus actuaciones.</p>
+<p><b>DECIMOCUARTA. CESIÓN:</b> EL CONTRATISTA no podrá ceder el contrato sin autorización previa y escrita del MUNICIPIO.</p>
+<p><b>DECIMOQUINTA. GARANTÍAS:</b> ${c.poliza?esc(c.poliza):'No se exigen, conforme al artículo 2.2.1.2.1.4.5 del Decreto 1082 de 2015.'}</p>
+<p><b>DECIMOSEXTA. PERFECCIONAMIENTO Y EJECUCIÓN:</b> El contrato se perfecciona con la firma de las partes. Para su ejecución se requiere el registro presupuestal y la afiliación a riesgos laborales, conforme al artículo 41 de la Ley 80 de 1993, modificado por el artículo 23 de la Ley 1150 de 2007.</p>
+<p><b>DECIMOSÉPTIMA. LIQUIDACIÓN:</b> Se realizará si hay lugar a ella, conforme al artículo 60 de la Ley 80 de 1993, modificado por el artículo 217 del Decreto 019 de 2012.</p>
+<p><b>DECIMOCTAVA. DOMICILIO:</b> Para todos los efectos se fija como domicilio contractual el municipio de Bello, Antioquia.</p>
+<p>Para constancia se firma en Bello, Antioquia, el ____ de __________ de ${c.vigencia}.</p>
+<table style="border:none"><tr><td style="border:none;width:50%">${firma(CFG.ORDENADOR.nombre, CFG.ORDENADOR.cargo)}EL MUNICIPIO</td><td style="border:none">${firma(c.nombre,'CC '+c.cedula)}EL CONTRATISTA</td></tr></table>`},
+
+  acta:{nombre:'Acta de inicio',archivo:'acta_inicio',desc:'Con CDP, RP, ARL y fechas del contrato.',fn:c=>`${enc()}
+<h1>ACTA DE INICIO</h1><p class="c">Contrato N.º ${v(c.numero,'_____')} de ${c.vigencia}</p>
+<table><tr><th style="width:35%">Contratista</th><td>${esc(c.nombre)} — CC ${esc(c.cedula)}</td></tr><tr><th>Objeto</th><td>${v(c.objeto)}</td></tr>
+<tr><th>Valor</th><td>${valorTxt(c.valor_total)}</td></tr><tr><th>Plazo</th><td>${c.plazo_meses||'__'} meses</td></tr>
+<tr><th>CDP</th><td>${v(c.cdp)} del ${c.fecha_cdp?fechaLarga(c.fecha_cdp):'_____'}</td></tr><tr><th>Registro presupuestal</th><td>${v(c.rp)} del ${c.fecha_rp?fechaLarga(c.fecha_rp):'_____'}</td></tr>
+<tr><th>ARL</th><td>${v(c.arl)} — riesgo ${v(c.riesgo_arl,'I')}</td></tr><tr><th>Fecha de inicio</th><td>${c.fecha_inicio?fechaLarga(c.fecha_inicio):'_____'}</td></tr>
+<tr><th>Fecha de terminación</th><td>${c.fecha_fin?fechaLarga(c.fecha_fin):'_____'}</td></tr><tr><th>Supervisor</th><td>${v(c.supervisor)}</td></tr></table>
+<p>Verificados los requisitos de perfeccionamiento y ejecución, el supervisor y el contratista dan inicio a la ejecución del contrato en la fecha indicada.</p>
+<table style="border:none"><tr><td style="border:none;width:50%">${firma(c.supervisor||'Supervisor','Supervisor')}</td><td style="border:none">${firma(c.nombre,'Contratista')}</td></tr></table>`},
+
+  chequeo:{nombre:'Lista de chequeo documental',archivo:'lista_chequeo',desc:'Estado de cada requisito, con fechas y quién lo revisó.',fn:c=>`${enc()}
+<h1>LISTA DE CHEQUEO DOCUMENTAL</h1><p class="c">${esc(c.nombre)} — CC ${esc(c.cedula)} — Vigencia ${c.vigencia}</p>
+<table><tr><th>#</th><th>Requisito</th><th>Estado</th><th>Expedición</th><th>Revisó</th></tr>
+${reqsDe(c).map((r,i)=>{const d=docDe(c.id,r.codigo);const e=estadoReq(c,r);return `<tr><td>${i+1}</td><td>${esc(r.nombre)}${r.obligatorio?'':' (si aplica)'}</td><td>${CHIP_DOC[e][0]}</td><td>${d?.fecha_expedicion?fecha(d.fecha_expedicion):''}</td><td>${esc(d?.revisado_por||'')}</td></tr>`;}).join('')}</table>
+<p>Fecha: ${fechaLarga(hoyISO())}</p>${firma('','Revisó')}`}
+};
+
+function tplInforme(c, i){
+  return `${enc()}<h1>INFORME DE ACTIVIDADES N.º ${i.numero} Y CUENTA DE COBRO</h1>
+<table><tr><th style="width:32%">Contrato</th><td>N.º ${v(c.numero,'_____')} de ${c.vigencia}</td></tr><tr><th>Contratista</th><td>${esc(c.nombre)} — CC ${esc(c.cedula)}</td></tr>
+<tr><th>Objeto</th><td>${v(c.objeto)}</td></tr><tr><th>Periodo</th><td>${i.periodo_inicio?fechaLarga(i.periodo_inicio):'_____'} a ${i.periodo_fin?fechaLarga(i.periodo_fin):'_____'}</td></tr>
+<tr><th>Valor total del contrato</th><td>${cop(c.valor_total)}</td></tr><tr><th>Supervisor</th><td>${v(c.supervisor)}</td></tr></table>
+<h2>Actividades realizadas</h2>${String(i.actividades||'').split('\n').map(l=>`<p>${esc(l)||'&nbsp;'}</p>`).join('')}
+<h2>Seguridad social</h2><p>Planilla N.º ${v(i.planilla_numero)}, pagada sobre el 40 % de los honorarios mensuales (EPS ${v(c.eps)}, pensión ${v(c.afp)}, ARL ${v(c.arl)}).</p>
+<h2>Cuenta de cobro</h2><p>El ${CFG.ENTIDAD}, NIT ${CFG.NIT}, debe a <b>${esc(c.nombre)}</b>, CC ${esc(c.cedula)}, la suma de <b>${valorTxt(i.valor)}</b>, por concepto del pago N.º ${i.numero} del contrato citado. Consignar en ${v(c.banco)}, cuenta ${v(c.tipo_cuenta,'')} N.º ${v(c.num_cuenta)}.</p>
+<table style="border:none"><tr><td style="border:none;width:50%">${firma(c.nombre,'Contratista')}</td><td style="border:none">${firma(c.supervisor||'Supervisor','Vo. Bo. Supervisor')}</td></tr></table>`;
+}
+
+/* ============================ ARRANQUE ============================ */
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') cerrarModal(); if(e.key==='Enter' && !$('login').classList.contains('oculto')) entrar(); });
+if(SES) iniciar(); else $('login').classList.remove('oculto');
+</script>
+</body>
+</html>
