@@ -6127,6 +6127,110 @@ function _btPendientes(){
 }
 function _btOrden(a,b){ return (a._diasHab??9999)-(b._diasHab??9999); }
 
+// ════════════════════════════════════════════════════════════
+// TRAER DE PETICIONES — autollenado del encargado y radicado PQR
+// Cruza la tutela con el módulo de Peticiones (misma base Supabase):
+//   · match por CÉDULA (pet_peticiones.documento) y, si no hay, por NOMBRE
+//   · Encargado PQR  ← nombre del abogado asignado (pet_perfiles.nombre)
+//   · Radicado PQR   ← radicado de ENTRADA de la petición
+//   · Rad. cumplimiento ← radicado_respuesta (si ya fue respondida) — se
+//     guarda por detrás aunque no sea columna de la bandeja, con un chip.
+// Si hay varias peticiones, el técnico ELIGE; nunca se adivina a ciegas.
+// ════════════════════════════════════════════════════════════
+let _petPerfiles = null; // cache uuid→nombre de abogados de Peticiones
+async function _cargarPetPerfiles(){
+  if(_petPerfiles) return _petPerfiles;
+  _petPerfiles = {};
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/pet_perfiles?select=id,nombre`, { headers: await getAuthHeaders() });
+    if(res.ok) (await res.json()).forEach(p=>{ if(p && p.id) _petPerfiles[p.id]=p.nombre||""; });
+  }catch(e){ console.warn("[peticiones] perfiles no cargaron:", e.message); }
+  return _petPerfiles;
+}
+async function _buscarPeticiones(ccNit, nombre){
+  const headers = await getAuthHeaders();
+  const cols = "id,radicado,radicado_respuesta,documento,peticionario,tipo,estado,fecha_radicado,asignado_a,expediente";
+  const pedir = async(filtro)=>{
+    try{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/pet_peticiones?${filtro}&select=${cols}&order=fecha_radicado.desc&limit=12`, { headers });
+      return res.ok ? await res.json() : [];
+    }catch(_){ return []; }
+  };
+  const raw = String(ccNit||"").trim();
+  const dig = raw.replace(/\D/g,"");
+  let filas = [];
+  if(raw)                          filas = await pedir(`documento=eq.${encodeURIComponent(raw)}`);
+  if(!filas.length && dig && dig!==raw) filas = await pedir(`documento=eq.${encodeURIComponent(dig)}`);
+  if(!filas.length && nombre && nombre.trim().length>5){
+    const n = nombre.trim().replace(/\s+/g,"*");
+    filas = await pedir(`peticionario=ilike.*${encodeURIComponent(n)}*`);
+  }
+  return filas;
+}
+async function btTraerPeticion(i){
+  const r = window._btFilas && window._btFilas[i]; if(!r) return;
+  const fila = document.getElementById("bt-f-"+i);
+  const btn = fila && fila.querySelector(".bt-traer");
+  if(btn){ btn.disabled=true; btn.textContent="Buscando…"; }
+  try{
+    const filas = await _buscarPeticiones(r["CC / NIT"], r["ACCIONANTE"]);
+    if(!filas.length){ toast("No encontré petición de esta persona en Peticiones","err"); return; }
+    await _cargarPetPerfiles();
+    if(filas.length===1) _btAplicarPeticion(i, filas[0]);
+    else _btPickerPeticion(i, filas);
+  }catch(e){
+    console.error("[peticiones] traer:", e);
+    toast("No se pudo consultar Peticiones: "+e.message,"err");
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent="⚡ Traer de Peticiones"; }
+  }
+}
+function _btAplicarPeticion(i, pet){
+  const r = window._btFilas[i]; if(!r) return;
+  const b = (_btBorrador[r._id] ||= {});
+  const nombre = (_petPerfiles && _petPerfiles[pet.asignado_a]) || "";
+  const dif = (campo,val)=> val && String(val).trim() && String(val).trim()!==String(r[campo]||"").trim();
+  if(dif("ENCARGADO PQR", nombre))                 b["ENCARGADO PQR"]=nombre;
+  if(dif("PQR", pet.radicado))                     b["PQR"]=pet.radicado;
+  if(dif("RADICADO DE CUMPLIMIENTO", pet.radicado_respuesta)) b["RADICADO DE CUMPLIMIENTO"]=pet.radicado_respuesta;
+  if(!Object.keys(b).length){ delete _btBorrador[r._id]; toast("Esa petición no agrega datos nuevos",""); return; }
+  renderBandeja();
+  toast("⚡ Traído de Peticiones — verifica y Guarda","ok");
+}
+function _btQuitarCumpl(i){
+  const r = window._btFilas[i]; if(!r) return;
+  const b = _btBorrador[r._id]; if(b){ delete b["RADICADO DE CUMPLIMIENTO"]; if(!Object.keys(b).length) delete _btBorrador[r._id]; }
+  renderBandeja();
+}
+function _btPickerPeticion(i, filas){
+  const prev=document.getElementById("bt-picker"); if(prev) prev.remove();
+  const r = window._btFilas[i];
+  window._btPickFilas = filas;
+  const d = document.createElement("div"); d.id="bt-picker";
+  d.style.cssText="position:fixed;inset:0;z-index:950;background:rgba(6,12,26,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px";
+  d.onclick=e=>{ if(e.target===d) d.remove(); };
+  const items = filas.map((p,k)=>{
+    const ab = (_petPerfiles && _petPerfiles[p.asignado_a]) || "— sin asignar —";
+    const resp = p.radicado_respuesta ? ` · <span style="color:#4ade80">respondida (${esc(p.radicado_respuesta)})</span>` : " · sin responder";
+    return `<div onclick="_btPickElegir(${i},${k})" style="padding:11px 13px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='transparent'">
+      <div style="font-weight:600;font-size:13px">Rad. ${esc(p.radicado||"—")} <span style="color:var(--muted);font-weight:400">· ${esc(p.tipo||"")}</span></div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${esc(p.fecha_radicado||"")} · ${esc(p.estado||"")}${resp} · Abogado: ${esc(ab)}</div>
+    </div>`;
+  }).join("");
+  d.innerHTML=`<div style="background:var(--modal-bg);border:1px solid var(--border);border-radius:16px;max-width:560px;width:100%;max-height:80vh;overflow:auto;padding:20px">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:3px">Esta persona tiene ${filas.length} peticiones</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">${esc(r["ACCIONANTE"]||"")} — elige la que corresponde a esta tutela</div>
+      ${items}
+      <div style="text-align:right;margin-top:6px"><button class="mbtn mbtn-s" onclick="document.getElementById('bt-picker').remove()">Cancelar</button></div>
+    </div>`;
+  document.body.appendChild(d);
+}
+function _btPickElegir(i,k){
+  const p = (window._btPickFilas||[])[k];
+  const pk = document.getElementById("bt-picker"); if(pk) pk.remove();
+  if(p) _btAplicarPeticion(i, p);
+}
+
 function renderBandeja(){
   const lista=document.getElementById("bt-lista"); if(!lista) return;
   // Recuerda dónde estaba escribiendo para devolver el foco tras redibujar
@@ -6201,11 +6305,14 @@ function renderBandeja(){
       ${caso(r,i)}
       <div class="bt-campo">${lbl("Encargado PQR",enc)}
         <input class="bt-in${enc?"":" vacio"}" list="bt-encargados" data-c="ENCARGADO PQR" value="${escAttr(enc)}" placeholder="Escribe un nombre…" autocomplete="off">
-        <div class="bt-ayuda">${_btUltimoEnc&&!enc?`<button class="bt-link" onclick="btRepetir(${i})" title="Usar el mismo encargado de la fila anterior">↺ ${esc(pNom(_btUltimoEnc))}</button>`:""}
+        <div class="bt-ayuda"><button class="bt-link bt-traer" onclick="btTraerPeticion(${i})" title="Buscar en Peticiones por cédula o nombre y traer encargado y radicado" style="color:var(--gold2)">⚡ Traer de Peticiones</button>
+          ${_btUltimoEnc&&!enc?`<button class="bt-link" onclick="btRepetir(${i})" title="Usar el mismo encargado de la fila anterior">↺ ${esc(pNom(_btUltimoEnc))}</button>`:""}
           <button class="bt-link" onclick="btNoRegistra(${i})" title="Marca encargado, radicado y respuesta como «No registra PQR»">No registra PQR</button></div>
       </div>
       <div class="bt-campo">${lbl("Radicado PQR",rad)}
-        <input class="bt-in${rad?"":" vacio"}" data-c="PQR" value="${escAttr(rad)}" placeholder="Ej.: 202610012345" autocomplete="off"></div>
+        <input class="bt-in${rad?"":" vacio"}" data-c="PQR" value="${escAttr(rad)}" placeholder="Ej.: 202610012345" autocomplete="off">
+        ${(_btBorrador[r._id]&&_btBorrador[r._id]["RADICADO DE CUMPLIMIENTO"])?`<div class="bt-ayuda"><span style="color:#4ade80">✓ cumplimiento: ${esc(_btBorrador[r._id]["RADICADO DE CUMPLIMIENTO"])}</span> <button class="bt-link" onclick="_btQuitarCumpl(${i})" title="Quitar el radicado de cumplimiento (no traerlo)">quitar</button></div>`:""}
+      </div>
       <div class="bt-campo">${lbl("SharePoint",sp)}
         <input class="bt-in${sp?"":" vacio"}" data-c="SHAREPOINT" value="${escAttr(sp)}" placeholder="Pega el enlace del documento" autocomplete="off">
         ${/^https?:\/\//i.test(sp)?`<div class="bt-ayuda"><a class="bt-link" href="${escAttr(sp)}" target="_blank" rel="noopener">Abrir enlace</a></div>`:""}
