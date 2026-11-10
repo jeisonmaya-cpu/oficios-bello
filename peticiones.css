@@ -825,3 +825,99 @@ footer b{color:var(--gold)}
 .nota-barra .hint{margin:0}
 .btn-nota{padding:5px 12px;font-size:12px;border-color:rgba(232,160,32,.45);color:var(--gold)}
 .btn-nota svg{width:13px;height:13px}
+
+
+/* ══════════════════════════════════════════════════════════════
+   v3.5 · LA COLA USA TODO EL ANCHO
+   La ficha del caso se mide a sí misma (container query): así el
+   diseño de dos zonas aparece cuando de verdad hay espacio, también
+   con el PDF abierto al lado o el menú plegado.
+   ══════════════════════════════════════════════════════════════ */
+main.ancho{max-width:1880px}
+.cola-box{max-width:none;container-type:inline-size;container-name:cola}
+@media(min-width:1140px){.cola-box.doc-abierto{max-width:none}}
+
+/* Una columna (por defecto): el orden de siempre */
+.caso-cols{display:flex;flex-direction:column}
+.caso-izq{display:contents}
+.caso-cols>*,.caso-izq>*{min-width:0}
+.cz-res{order:1}.cz-hist{order:2}.cz-ficha{order:3}.caso-der{order:4}.cz-reg{order:5}
+.caso-hd .caso-meta{order:3;flex:1 1 100%;margin:2px 0 0}
+.caso-hd .caso-id{min-width:0}
+
+/* Encabezado en una sola franja: identificación · datos · relojes */
+@container cola (min-width:1180px){
+  .caso-hd{flex-wrap:nowrap;align-items:center;gap:26px}
+  .caso-hd .caso-id{flex:0 1 auto;max-width:44%}
+  .caso-hd .caso-meta{order:0;flex:1 1 0;margin:0;padding:4px 26px;
+    grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 22px;
+    border-left:1px solid var(--border);border-right:1px solid var(--border)}
+  .caso-hd .relojes{flex:none}
+}
+/* Dos zonas. Con un documento abierto se necesita más ancho, porque la
+   derecha se reparte entre el formulario y la hoja de vista previa. */
+@container cola (min-width:1180px){
+  .cola-box:not(.doc-abierto) .caso-cols{display:grid;grid-template-columns:minmax(350px,29%) minmax(0,1fr);
+    gap:26px;align-items:start}
+  .cola-box:not(.doc-abierto) .caso-izq{display:flex;flex-direction:column;position:sticky;top:10px;
+    max-height:calc(100vh - 20px);overflow-y:auto;padding-right:8px;scrollbar-width:thin}
+  .cola-box:not(.doc-abierto) .cz-reg{order:3}
+  .cola-box:not(.doc-abierto) .cz-ficha{order:4}
+  .cola-box:not(.doc-abierto) .cz-reg>.acc-tit:first-child{margin-top:6px!important}
+  .cola-box:not(.doc-abierto) .cz-reg .grid{grid-template-columns:1fr 1fr}
+  .cola-box:not(.doc-abierto) .caso-der>.pleg{border-top:0;margin-top:0;padding-top:0}
+}
+@container cola (min-width:1560px){
+  .cola-box.doc-abierto .caso-cols{display:grid;grid-template-columns:minmax(340px,24%) minmax(0,1fr);
+    gap:26px;align-items:start}
+  .cola-box.doc-abierto .caso-izq{display:flex;flex-direction:column;position:sticky;top:10px;
+    max-height:calc(100vh - 20px);overflow-y:auto;padding-right:8px;scrollbar-width:thin}
+  .cola-box.doc-abierto .cz-reg{order:3}
+  .cola-box.doc-abierto .cz-ficha{order:4}
+  .cola-box.doc-abierto .cz-reg>.acc-tit:first-child{margin-top:6px!important}
+  .cola-box.doc-abierto .cz-reg .grid{grid-template-columns:1fr 1fr}
+  .cola-box.doc-abierto .caso-der>.pleg{border-top:0;margin-top:0;padding-top:0}
+}
+/* Formulario + hoja: lado a lado solo si la zona de documentos da para los dos */
+.caso-der{container-type:inline-size;container-name:docs}
+@container docs (max-width:860px){
+  .doc-split{display:block}
+  .doc-split .doc-prev{position:static;margin-top:14px}
+  .doc-split .doc-prev .pv-wrap{max-height:560px}
+}
+@container docs (min-width:1100px){
+  .doc-split .doc-prev{flex:0 0 46%}
+}
+
+/* ── Preguntas frecuentes: un clic las agrega al oficio ── */
+.doc-grp.faq{margin-top:11px;border-color:rgba(245,158,11,.38);background:rgba(245,158,11,.04)}
+.faq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.doc-grp .faq-card{display:flex;align-items:center;gap:10px;margin:0;height:100%;line-height:1.3}
+.faq-mas{flex:none;width:22px;height:22px;border-radius:7px;display:grid;place-items:center;
+  font-family:'Syne';font-weight:800;font-size:13px;border:1.5px solid currentColor;opacity:.85}
+.faq-card.sel .faq-mas{background:var(--gold);border-color:var(--gold);color:var(--navy);opacity:1}
+.faq-txt{flex:1;min-width:0}
+
+/* Orden de los puntos del oficio combinado */
+.cb-ctl{margin-left:auto;order:9;display:inline-flex;gap:5px}
+.cb-ctl button{width:27px;height:27px;border-radius:8px;border:1px solid var(--border);
+  background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;font-size:13px;line-height:1}
+.cb-ctl button:hover:not(:disabled){color:var(--txt);border-color:var(--gold)}
+.cb-ctl button:disabled{opacity:.3;cursor:default}
+.cb-ctl button.x:hover{color:var(--rojo);border-color:var(--rojo)}
+
+/* Cita en recuadro dentro de la hoja (punto de la petición o norma) */
+.pv-cita{border:1px solid #8a8a8a;padding:8px 12px;margin:0 6px 13px;font-style:italic}
+
+/* Complementos en dos columnas cuando la zona de documentos es ancha: el
+   formulario del oficio queda más cerca, con menos scroll */
+.comp-grid{display:grid;grid-template-columns:1fr;gap:7px}
+.doc-grp .comp-grid .btn{margin:0}
+@container docs (min-width:900px){
+  .doc-grid.comb{grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr)}
+  .comp-grid{grid-template-columns:1fr 1fr}
+}
+.cola-top{gap:14px}
+.cola-top .cola-busq{max-width:620px}
+
+.doc-grp .doc-card:not(.faq-card){padding-right:36px}

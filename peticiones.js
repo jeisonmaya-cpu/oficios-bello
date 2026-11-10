@@ -1139,6 +1139,9 @@ function irA(id){
     if(el) el.classList.toggle('on', p === id);
     if(tb) tb.classList.toggle('on', p === id);
   });
+  // La cola de trabajo usa todo el ancho de la pantalla
+  const mn = document.querySelector('#cuerpo main');
+  if(mn) mn.classList.toggle('ancho', id === 'cola');
   if(id === 'cola')    cargarCola();
   if(id === 'lote') prepararLote();
   if(id === 'bandeja') cargarBandeja();
@@ -3320,6 +3323,17 @@ function pintarCasoBase(){
 
   const tel = r.telefono ? String(r.telefono).replace(/[^0-9+]/g,'') : '';
 
+  // Datos del caso: en pantallas anchas van dentro del encabezado, en una sola franja
+  const metaHTML =
+    '<div class="caso-meta">' +
+      mi('Tipo', r.tipo_nombre || r.tipo) +
+      mi('Radicación', fmtFecha(r.fecha_radicado)) +
+      mi('Vence', fmtFecha(r.fecha_limite)) +
+      mi('Base legal', r.base_legal || '—') +
+      mi('Canal', r.canal || '—') +
+      mi('Asignada a', r.asignado_nombre || 'Sin asignar') +
+    '</div>';
+
   cont.innerHTML =
    '<div class="caso">' +
     alertaTutela(r) +
@@ -3365,6 +3379,8 @@ function pintarCasoBase(){
         '</div>' +
       '</div>' +
 
+      metaHTML +
+
       '<div class="relojes">' +
         '<div class="reloj-b">' +
           '<div class="dias-big" style="color:' + color + '">' + dTxt + '</div>' +
@@ -3374,27 +3390,23 @@ function pintarCasoBase(){
       '</div>' +
     '</div>' +
 
-    // ── Datos del caso ──
-    '<div class="caso-meta">' +
-      mi('Tipo', r.tipo_nombre || r.tipo) +
-      mi('Radicación', fmtFecha(r.fecha_radicado)) +
-      mi('Vence', fmtFecha(r.fecha_limite)) +
-      mi('Base legal', r.base_legal || '—') +
-      mi('Canal', r.canal || '—') +
-      mi('Asignada a', r.asignado_nombre || 'Sin asignar') +
+    /* ── Dos zonas (v3.5). Con ancho suficiente: a la izquierda el contexto del
+       caso y el registro de la gestión (fijos al hacer scroll) y a la derecha
+       los documentos, que son el trabajo. En pantallas angostas todo vuelve a
+       una sola columna en el orden de siempre (lo ordena el CSS). ── */
+    '<div class="caso-cols"><div class="caso-izq">' +
+    '<div class="cz-res">' +
+      (r.resumen ? '<div class="caso-res">' + esc(r.resumen) + '</div>' : '') +
     '</div>' +
-    (r.resumen ? '<div class="caso-res">' + esc(r.resumen) + '</div>' : '') +
 
     // ── Otras peticiones de la misma persona (se abre sola si hay abiertas) ──
-    '<div id="k-hist"></div>' +
+    '<div id="k-hist" class="cz-hist"></div>' +
 
     // ── Situación de la cédula: comparendos, depósitos, predial, ICA, tutelas ──
-    '<div id="k-ficha"></div>' +
-
-    // ── Documentos: es el trabajo principal, va abierto ──
-    panelDocumentos(r) +
+    '<div id="k-ficha" class="cz-ficha"></div>' +
 
     // ── Registro de la gestión: lo último, cuando el documento ya existe ──
+    '<div class="cz-reg">' +
     '<div class="acc-tit" style="margin:22px 0 10px">Registrar la gestión</div>' +
     '<div class="grid">' +
       '<div class="fld"><label class="lbl">Fecha de proyección</label>' +
@@ -3465,6 +3477,12 @@ function pintarCasoBase(){
     '<div class="msg" id="k-msg"></div>' +
     '<div class="hint" style="margin-top:8px"><span class="kbd">Ctrl+Enter</span> guarda · ' +
       '<span class="kbd">→</span> siguiente · <span class="kbd">←</span> anterior</div>' +
+    '</div>' +            // .cz-reg
+    '</div>' +            // .caso-izq
+
+    // ── Documentos: es el trabajo principal, va abierto ──
+    '<div class="caso-der">' + panelDocumentos(r) + '</div>' +
+    '</div>' +            // .caso-cols
    '</div>';
 
   historialPeticionario(r);
@@ -5013,6 +5031,151 @@ const CATALOGO_RESPUESTAS = {
   });
 })();
 
+/* ══════════════════════════════════════════════════════════════
+   PREGUNTAS FRECUENTES (v3.5) · respuesta punto por punto
+   Salen del modelo «RESPUESTA PQRSDF - MODELO» de la Dirección: cada
+   una contesta una pretensión que se repite en las peticiones contra
+   el cobro coactivo de comparendos. En «Combinar respuestas» un clic
+   la agrega al oficio como un punto más; el orden se cambia con ↑ ↓.
+   El campo SOLICITUD cita en un recuadro el punto tal como lo pidió el
+   ciudadano (los párrafos que empiezan con "> " salen como cita).
+   Si la tabla pet_respuestas_tipo no las tiene todavía, se usan estas;
+   desde la pestaña Plantillas se pasan a la base para poder editarlas.
+   ⚠ Textos tomados del modelo: valídelos el equipo jurídico.
+   ══════════════════════════════════════════════════════════════ */
+const GRUPO_FAQ = 'Preguntas frecuentes';
+const APERTURA_FAQ =
+  'En atención a su petición radicada bajo el número {{RADICADO}}, de manera atenta le informamos lo siguiente:';
+const MANUAL_CARTERA =
+  'Manual Interno del Recaudo de Cartera de la Alcaldía de Bello (Decreto 202104000435 de 2021)';
+function campoSolicitud(def){
+  return { id:'SOLICITUD', lbl:'Punto de la petición (se cita en un recuadro; ajústelo o bórrelo)',
+           tipo:'area', opcional:true, def:def };
+}
+
+const FAQ_RESPUESTAS = {
+
+  FAQ_COMPETENCIA_MOVILIDAD: {
+    titulo: 'Competencia compartida con Movilidad',
+    desc: 'Aclara que la petición iba dirigida a la Secretaría de Movilidad y que esta Dirección responde lo que le corresponde al cobro coactivo.',
+    campos: [],
+    parrafos: [
+      APERTURA_FAQ,
+      'La petición, dirigida a la Secretaría de Movilidad de Bello, fue recibida por la Dirección Administrativa de Gestión Documental y Atención al Ciudadano, dependencia que le asignó el radicado N° {{RADICADO}}. No obstante, debe precisarse que su contenido involucra asuntos que son competencia tanto de la Dirección Administrativa de Ejecuciones Fiscales como de la Secretaría de Movilidad, razón por la cual esta Dirección se pronuncia sobre lo que le corresponde dentro del procedimiento administrativo de cobro coactivo.'
+    ]
+  },
+
+  FAQ_NOTIFICACION_SANCION: {
+    titulo: 'Indebida notificación del acto sancionatorio',
+    desc: 'El ciudadano alega que no le notificaron la resolución sanción (art. 72 CPACA). Fundamento: art. 829-1 E.T.; arts. 87 y 88 CPACA; arts. 139 y 142 CNT.',
+    campos: [ campoSolicitud('Que se declare que el acto administrativo sancionatorio que sirve de fundamento al proceso de cobro coactivo no fue notificado en debida forma y que, conforme al artículo 72 de la Ley 1437 de 2011, no ha producido efectos legales.') ],
+    parrafos: [
+      APERTURA_FAQ,
+      '> {{SOLICITUD}}',
+      'La verificación de la forma en que se surtió la notificación del acto administrativo sancionatorio, así como de las actuaciones previas adelantadas para vincular al contraventor, son diligencias que por mandato expreso de la ley corresponde adelantar al Inspector de Tránsito y que reposan en el expediente administrativo contravencional.',
+      'Ahora bien, por disposición expresa del artículo 829-1 del Estatuto Tributario Nacional, en el procedimiento administrativo de cobro coactivo no son de recibo las discusiones que debieron surtirse en la vía gubernativa, puesto que el cobro coactivo presupone la existencia de un título debidamente ejecutoriado, característica que solo es predicable de los actos administrativos que acrediten alguno de los supuestos de firmeza previstos en el artículo 87 de la Ley 1437 de 2011.',
+      'Para efectos ilustrativos, la notificación de la resolución sancionatoria se realiza en estrados (artículo 139 del Código Nacional de Tránsito) y los recursos deben ejercerse en esa misma oportunidad (artículo 142 ibídem). En este sentido, el acto administrativo remitido para cobro goza de **presunción de legalidad** en los términos del artículo 88 del CPACA:',
+      '> ARTÍCULO 88. Presunción de legalidad del acto administrativo. Los actos administrativos se presumen legales mientras no hayan sido anulados por la Jurisdicción de lo Contencioso Administrativo. Cuando fueren suspendidos, no podrán ejecutarse hasta tanto se resuelva definitivamente sobre su legalidad o se levante dicha medida cautelar.'
+    ]
+  },
+
+  FAQ_FALTA_EJECUTORIA: {
+    titulo: 'Falta de ejecutoria o de mérito ejecutivo del título',
+    desc: 'Pide declarar que el acto no está en firme ni presta mérito ejecutivo. Explica el trámite de excepciones. Fundamento: arts. 828 a 834 E.T.; arts. 87, 99 y 100 CPACA; arts. 27 a 29 del Manual.',
+    campos: [ campoSolicitud('Que se declare que dicho acto no se encuentra en firme ni ejecutoriado en los términos del artículo 87 de la Ley 1437 de 2011 y que, por tanto, no presta mérito ejecutivo ni constituye título idóneo para adelantar el cobro coactivo.') ],
+    parrafos: [
+      APERTURA_FAQ,
+      '> {{SOLICITUD}}',
+      'El título ejecutivo que da lugar al trámite coactivo es la resolución sancionatoria que emite la autoridad de tránsito, previa acreditación de los supuestos de firmeza. Por tanto, mientras no exista un acto administrativo que la revoque o que declare la caducidad de la obligación, la Dirección Administrativa de Ejecuciones Fiscales no tiene competencia para declarar que dicho acto se encuentra incurso en alguna causal de nulidad, asunto que corresponde de manera privativa a la Jurisdicción de lo Contencioso Administrativo.',
+      'Prestan mérito ejecutivo los actos administrativos ejecutoriados que contengan obligaciones claras, expresas y exigibles a favor del Estado (artículo 828 del Estatuto Tributario Nacional y artículos 99 y 100 del CPACA), y la ejecutoria se produce en los eventos del artículo 829 ibídem, en concordancia con el artículo 87 del CPACA. La controversia sobre si ese presupuesto se cumple es, precisamente, el objeto de la **excepción de falta de ejecutoria del título**, prevista en el numeral 3 del artículo 831 del Estatuto Tributario Nacional y, en su caso, de la de falta de título ejecutivo del numeral 7 ibídem.',
+      'En consecuencia, se informa que, conforme al artículo 830 del Estatuto Tributario Nacional y al artículo 27 del ' + MANUAL_CARTERA + ', dentro de los quince (15) días siguientes a la notificación del mandamiento de pago el deudor debe cancelar la obligación o proponer, mediante escrito, las excepciones del artículo 831. Presentadas estas, el Director Administrativo de Ejecuciones Fiscales verifica los requisitos del artículo 28 del Manual (oportunidad y legitimación) y, cumplidos, las resuelve de fondo mediante resolución motivada dentro del mes siguiente a su presentación (artículo 832 del Estatuto Tributario Nacional), decisión contra la cual procede el recurso de reposición ante el mismo funcionario (artículo 834 ibídem).',
+      'En el caso concreto, el mandamiento de pago ya fue notificado y el término para excepcionar corre a partir de la fecha de esa diligencia. Por ello, y en aplicación del principio de prevalencia del derecho sustancial, esta Dirección precisa: (i) si el escrito de petición fue presentado dentro de los quince (15) días siguientes a dicha notificación, se le dará el trámite de excepciones y se resolverá de fondo mediante resolución motivada, con pronunciamiento expreso sobre la alegada falta de ejecutoria del título; y (ii) si el término ya se encontraba vencido, se estará a lo previsto en el artículo 29 del Manual, conforme al cual las excepciones presentadas por fuera del término se niegan de plano por extemporáneas, sin perjuicio de los demás medios de defensa que el ordenamiento le reconoce ante la Jurisdicción de lo Contencioso Administrativo.'
+    ]
+  },
+
+  FAQ_ARCHIVO_MEDIDAS: {
+    titulo: 'Archivo del proceso y levantamiento de medidas',
+    desc: 'Niega el archivo y el levantamiento de medidas porque no hay excepción probada ni pago. Fundamento: art. 833 E.T.; art. 30 del Manual.',
+    campos: [ campoSolicitud('Que se ordene el archivo del proceso de cobro coactivo adelantado en mi contra y el levantamiento de las medidas cautelares que se hubieren decretado.') ],
+    parrafos: [
+      APERTURA_FAQ,
+      '> {{SOLICITUD}}',
+      'El artículo 833 del Estatuto Tributario Nacional y el artículo 30 del ' + MANUAL_CARTERA + ' disponen que la terminación del procedimiento y el levantamiento de las medidas preventivas proceden cuando se declara probada una excepción o cuando el deudor cancela la totalidad de las obligaciones, supuestos que a la fecha no se configuran: no se ha declarado probada excepción alguna ni se ha acreditado el pago de la obligación.',
+      'Por consiguiente, **no hay lugar a ordenar el archivo del expediente ni el levantamiento de medidas**. Lo anterior, sin perjuicio de que, de prosperar las excepciones que llegare a proponer, esta Dirección proceda de inmediato a declarar la terminación del procedimiento y a ordenar el levantamiento de las medidas que estuvieren vigentes.'
+    ]
+  },
+
+  FAQ_SIMIT: {
+    titulo: 'Eliminar o suspender el registro en el SIMIT',
+    desc: 'Explica que el SIMIT lo administra la Federación Colombiana de Municipios y lo alimenta la Secretaría de Movilidad; el registro subsiste mientras exista la obligación.',
+    campos: [ campoSolicitud('Que se ordene la eliminación o suspensión del registro correspondiente en el SIMIT y en los demás sistemas de información a cargo de la entidad.') ],
+    parrafos: [
+      APERTURA_FAQ,
+      '> {{SOLICITUD}}',
+      'El registro en el Sistema Integrado de Información sobre Multas y Sanciones por Infracciones de Tránsito (SIMIT) refleja la existencia de una obligación vigente y es administrado por la Federación Colombiana de Municipios, con base en la información que reportan las autoridades de tránsito. Su alimentación, actualización y depuración corresponden, en el Municipio de Bello, a la Secretaría de Movilidad y a su operador de servicios de tránsito, y no a esta Dirección.',
+      'Mientras subsista la obligación y no se declare la terminación del procedimiento, **no existe fundamento jurídico para ordenar la eliminación o suspensión del registro**, pues este constituye consecuencia legal del estado de mora.'
+    ]
+  },
+
+  FAQ_NO_SUSPENDE_COBRO: {
+    titulo: 'Suspender el cobro mientras se resuelve la petición',
+    desc: 'La petición no suspende el cobro coactivo; enumera las causales legales de suspensión. Fundamento: arts. 89 y 91 CPACA; arts. 814 y 831-5 E.T.; Ley 1116 de 2006; CGP.',
+    campos: [ campoSolicitud('Que, mientras se resuelve de fondo la presente petición, la entidad se abstenga de continuar las diligencias de cobro y de decretar o hacer efectivas medidas cautelares.') ],
+    parrafos: [
+      APERTURA_FAQ,
+      '> {{SOLICITUD}}',
+      'La presentación de un derecho de petición no suspende el procedimiento administrativo de cobro coactivo ni enerva la fuerza ejecutoria de los actos administrativos base del recaudo, la cual, conforme a los artículos 89 y 91 del CPACA, se mantiene mientras el acto no sea anulado o suspendido por la Jurisdicción de lo Contencioso Administrativo, o no concurra alguna de las causales taxativas de pérdida de ejecutoriedad. La suspensión del trámite ejecutivo responde a hipótesis legalmente tasadas, que dependen de la ley o de una conducta procesal activa del ejecutado, a saber:',
+      '- La suscripción de facilidades o acuerdos de pago (artículo 814 del Estatuto Tributario Nacional).',
+      '- La formulación oportuna de la excepción por interposición y admisión de demandas de nulidad y restablecimiento del derecho ante la Jurisdicción de lo Contencioso Administrativo (numeral 5 del artículo 831 ibídem).',
+      '- La admisión a procesos de reorganización empresarial (Ley 1116 de 2006).',
+      '- La aceptación de solicitudes de negociación de deudas en trámites de insolvencia de persona natural no comerciante (Código General del Proceso).',
+      'Al no enmarcarse la solicitud en ninguna de estas causales, y en atención a que los cuestionamientos sobre el acto originario no suspenden el cobro coactivo, **no hay lugar a decretar la cesación de las diligencias** ni a abstenerse de adoptar las medidas que legalmente procedan.'
+    ]
+  },
+
+  FAQ_COPIAS_EXPEDIENTE: {
+    titulo: 'Copias: expediente coactivo y contravencional',
+    desc: 'Entrega las piezas del expediente de cobro coactivo y traslada a Movilidad lo del expediente contravencional. Fundamento: art. 65 del Manual; art. 21 Ley 1437 de 2011 (Ley 1755 de 2015).',
+    campos: [
+      campoSolicitud('Que se expida copia de los documentos relacionados en el escrito de petición.'),
+      { id:'MEDIO_ENVIO', lbl:'Medio por el que se envían', def:'al correo electrónico indicado para notificaciones' },
+      { id:'PIEZAS_COACTIVO', lbl:'Piezas del expediente de cobro coactivo que se entregan', tipo:'area',
+        def:'el mandamiento de pago librado, la constancia de su notificación, la citación para notificación personal prevista en el artículo 826 del Estatuto Tributario Nacional con su constancia de envío, y la constancia relativa a las medidas cautelares' },
+      { id:'PIEZAS_MOVILIDAD', lbl:'Documentos que reposan en Movilidad (se trasladan)', tipo:'area',
+        def:'acto administrativo sancionatorio con su constancia de ejecutoria, constancia de su notificación y constancias de las actuaciones adelantadas para agotar la notificación personal, la citación y la notificación por aviso' }
+    ],
+    parrafos: [
+      APERTURA_FAQ,
+      '> {{SOLICITUD}}',
+      '**Accedida en lo de competencia de esta Dirección y trasladada por competencia en lo restante.** El artículo 65 del ' + MANUAL_CARTERA + ' dispone que los expedientes de esta Dirección “solo podrán ser examinados por el deudor, el contribuyente, responsable, declarante o su apoderado legalmente constituido”, de manera que, tratándose del propio ejecutado, no se predica reserva alguna. En consecuencia, se remiten con la presente respuesta, {{MEDIO_ENVIO}}, las siguientes piezas del expediente de cobro coactivo: {{PIEZAS_COACTIVO}}.',
+      'Respecto de los demás documentos solicitados ({{PIEZAS_MOVILIDAD}}), se precisa que integran el expediente contravencional, distinto del expediente de cobro coactivo, y se encuentran bajo custodia de la Secretaría de Movilidad de Bello, a la cual se da traslado en los términos del artículo 21 de la Ley 1437 de 2011, sustituido por el artículo 1 de la Ley 1755 de 2015. Sin perjuicio de ello, se remite copia del título ejecutivo tal como fue entregado por la oficina gestora y obra en el expediente de cobro coactivo.'
+    ]
+  }
+};
+
+/* Agrega al catálogo en uso las preguntas frecuentes que no tenga
+   (catálogo incrustado, o base que aún no las recibió). */
+function fusionarFAQ(){
+  Object.keys(FAQ_RESPUESTAS).forEach(function(k){
+    if(CATALOGO_RESPUESTAS[k]) return;
+    const f = FAQ_RESPUESTAS[k];
+    CATALOGO_RESPUESTAS[k] = { titulo:f.titulo, desc:f.desc, campos:f.campos, parrafos:f.parrafos,
+      grupo:GRUPO_FAQ, tema:null, decision:null, libre:false };
+  });
+}
+fusionarFAQ();
+function esFAQ(k){
+  const c = CATALOGO_RESPUESTAS[k];
+  return !!(c && (c.grupo === GRUPO_FAQ || /^FAQ_/.test(k)));
+}
+function clavesFAQ(){ return Object.keys(CATALOGO_RESPUESTAS).filter(esFAQ); }
+
+/* Cita cuyo único contenido es un campo vacío: no se imprime */
+function citaVacia(p, vals){
+  const m = /^>\s*\{\{([A-Z0-9_]+)\}\}\s*$/.exec(String(p));
+  return !!(m && !String((vals && vals[m[1]]) || '').trim());
+}
+
 /* Respuestas sugeridas según el tipo de la petición (las demás quedan disponibles) */
 const SUGERIDOS_POR_TIPO = {
   PRESCRIPCION: ['CONCEDE_PRESCRIPCION','NIEGA_PRESCRIPCION'],
@@ -5033,7 +5196,8 @@ const GRUPOS_DOC = [
   { t:'Embargos',         items:['DESEMBARGO_ORDEN','MINIMO_VITAL'] },
   { t:'Pagos y cartera',  items:['REQUISITOS_ACUERDO','ESTADO_CUENTA'] },
   { t:'Trámite',          items:['REQUERIMIENTO_ART17','TRASLADO_COMPETENCIA','COPIAS'] },
-  { t:'Redacción propia', items:['OFICIO_GENERAL'] }
+  { t:'Redacción propia', items:['OFICIO_GENERAL'] },
+  { t:GRUPO_FAQ,          items:Object.keys(FAQ_RESPUESTAS) }
 ];
 
 /* ══════════════════════════════════════════════════════════════
@@ -5057,6 +5221,7 @@ async function cargarCatalogoDB(){
       };
     });
     CAT_DB = true;
+    fusionarFAQ();
     normalizarConcedePrescripcion();
   }catch(e){
     console.warn('Catálogo incrustado (pet_respuestas_tipo no disponible):', e.message);
@@ -5154,10 +5319,56 @@ function repintarDocInt(){
   const el = document.getElementById('doc-int');
   if(r && el) el.innerHTML = docInterior(r);
 }
+function combAbierta(){
+  const c = document.getElementById('k-doc');
+  return !!(c && c.getAttribute('data-modo') === '__COMBINADA__');
+}
+/* Marca o desmarca un bloque. Si el oficio combinado ya está abierto, el
+   bloque entra o sale en vivo, sin perder lo que el abogado lleva escrito. */
 function combToggle(tok){
+  const abierta = combAbierta();
+  if(abierta) guardarCamposComb();
   const i = COMB_SEL.indexOf(tok);
-  if(i === -1) COMB_SEL.push(tok); else COMB_SEL.splice(i, 1);
+  if(i === -1){
+    COMB_SEL.push(tok);
+    if(abierta) COMB[tok] = estadoInicialComb(tok, COLA[COLA_IDX]);
+  }else{
+    COMB_SEL.splice(i, 1);
+    delete COMB[tok];
+  }
   repintarDocInt();
+  if(abierta){ if(COMB_SEL.length) pintarComb(); else cerrarKdoc(); }
+}
+/* Pregunta frecuente: un clic la deja dentro del oficio (y lo abre si hace falta) */
+function faqAgregar(k){
+  const tok = 'c:' + k, c = CATALOGO_RESPUESTAS[k];
+  if(!c || !COLA[COLA_IDX]) return;
+  const estaba = COMB_SEL.indexOf(tok) !== -1;
+  if(combAbierta()){
+    combToggle(tok);
+  }else{
+    if(!estaba) COMB_SEL.push(tok);
+    repintarDocInt();
+    abrirCombinada();
+  }
+  const i = COMB_SEL.indexOf(tok);
+  if(i !== -1){
+    toast('Agregada al oficio como punto ' + (i + 1) + ': ' + c.titulo, 'ok', 2.5);
+    const b = document.getElementById('cb-b-' + i);
+    if(b && b.scrollIntoView) b.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+}
+/* Orden y retiro de los puntos del oficio combinado */
+function cbMover(i, d){
+  const j = i + d;
+  if(j < 0 || j >= COMB_SEL.length) return;
+  guardarCamposComb();
+  const t = COMB_SEL[i]; COMB_SEL[i] = COMB_SEL[j]; COMB_SEL[j] = t;
+  repintarDocInt(); pintarComb();
+}
+function cbQuitar(i){
+  const tok = COMB_SEL[i];
+  if(tok) combToggle(tok);
 }
 
 function docInterior(r){
@@ -5193,8 +5404,15 @@ function docInterior(r){
   }).join('');
 
   const compKeys = Object.keys(CATALOGO_RESPUESTAS).filter(function(k){
-    return !CATALOGO_RESPUESTAS[k].tema;
+    return !CATALOGO_RESPUESTAS[k].tema && !esFAQ(k);
   });
+  const cardsFAQ = clavesFAQ().map(function(k){
+    const c = CATALOGO_RESPUESTAS[k], pos = COMB_SEL.indexOf('c:' + k), sel = pos !== -1;
+    return '<button class="btn btn-of doc-card faq-card' + (sel ? ' sel' : '') + '" ' +
+      'title="' + esc(c.desc || '') + '" onclick="faqAgregar(\'' + k + '\')">' +
+      '<span class="faq-mas">' + (sel ? pos + 1 : '+') + '</span>' +
+      '<span class="faq-txt">' + esc(c.titulo) + '</span></button>';
+  }).join('');
   const cardsComp = compKeys.map(function(k){
     const tok = 'c:' + k, sel = COMB_SEL.indexOf(tok) !== -1;
     return '<button class="btn btn-of btn-ic doc-card' + (sel ? ' sel' : '') + '" onclick="combToggle(\'' + tok + '\')">' +
@@ -5215,11 +5433,17 @@ function docInterior(r){
     '<button class="btn btn-doc btn-ic doc-card" onclick="abrirExcepciones()">' +
       ICONO.doc + 'Resuelve excepciones</button>';
 
-  return '<div class="doc-grid">' +
+  return '<div class="doc-grid comb">' +
       '<div class="doc-grp"><div class="doc-grp-t">Decisiones de fondo</div>' + cardsTema + '</div>' +
-      '<div class="doc-grp"><div class="doc-grp-t">Complementos</div>' + cardsComp + '</div>' +
+      '<div class="doc-grp comp"><div class="doc-grp-t">Complementos</div>' +
+        '<div class="comp-grid">' + cardsComp + '</div></div>' +
       '<div class="doc-grp"><div class="doc-grp-t">Resoluciones formales <span class="hint" style="font-weight:400">· Word aparte</span></div>' + cardsResol + '</div>' +
     '</div>' +
+      (cardsFAQ
+        ? '<div class="doc-grp faq"><div class="doc-grp-t">Preguntas frecuentes ' +
+          '<span class="hint" style="font-weight:400">· un clic agrega la respuesta al oficio, punto por punto</span></div>' +
+          '<div class="faq-grid">' + cardsFAQ + '</div></div>'
+        : '') +
     '<div class="comb-bar">' +
       '<b style="font-family:Syne">' + COMB_SEL.length + '</b><span class="hint" style="margin:0">bloques de oficio</span>' +
       '<div class="chips">' + chips + '</div>' +
@@ -5262,6 +5486,8 @@ function abrirCombinada(){
   pintarComb();
   const pl = document.getElementById('pleg-doc');
   if(pl) pl.classList.add('on');
+  const kd = document.getElementById('k-doc');
+  if(kd && kd.scrollIntoView) kd.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
 /* Estado vacío de un bloque. La prescripción precarga el comparendo y la
@@ -5378,9 +5604,16 @@ function pintarComb(){
 
   COMB_SEL.forEach(function(tok, i){
     const st = COMB[tok];
-    html += '<div class="cb-blq"><div class="cb-blq-hd">' +
+    html += '<div class="cb-blq" id="cb-b-' + i + '"><div class="cb-blq-hd">' +
       '<span class="cb-num">' + (i + 1) + '</span>' +
-      '<span class="cb-tit">' + esc(tituloToken(tok)) + '</span>';
+      '<span class="cb-tit">' + esc(tituloToken(tok)) + '</span>' +
+      '<span class="cb-ctl">' +
+        '<button type="button" title="Subir este punto" ' + (i === 0 ? 'disabled ' : '') +
+          'onclick="cbMover(' + i + ',-1)">↑</button>' +
+        '<button type="button" title="Bajar este punto" ' + (i === COMB_SEL.length - 1 ? 'disabled ' : '') +
+          'onclick="cbMover(' + i + ',1)">↓</button>' +
+        '<button type="button" class="x" title="Quitar del oficio" onclick="cbQuitar(' + i + ')">✕</button>' +
+      '</span>';
     if(tok.indexOf('tema:') === 0){
       const t = tok.slice(5), td = TEMA_DEF[t];
       if(!td.porItem)
@@ -5614,7 +5847,9 @@ function armarCombinada(){
         .filter(Boolean)
         .forEach(function(p){ parrs.push(p); });
     }else{
-      c.parrafos.slice(1).forEach(function(p){ parrs.push(subLocal(p, b.local)); });
+      c.parrafos.slice(1).forEach(function(p){
+        if(!citaVacia(p, b.local)) parrs.push(subLocal(p, b.local));
+      });
     }
   });
   parrs.push('En los anteriores términos se da respuesta de fondo, clara y congruente a la totalidad ' +
@@ -5809,7 +6044,17 @@ function plPintar(){
       '</div></div>';
   }).join('');
 
-  w.innerHTML = '<div class="pl-grid"><div class="pl-lista">' + lista + '</div>' +
+  const faltanFAQ = plFaltanFAQ();
+  const avisoFAQ = faltanFAQ.length
+    ? '<div class="card" style="border-color:rgba(245,158,11,.45);padding:15px 18px;margin-bottom:14px;' +
+      'display:flex;gap:14px;align-items:center;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:240px;font-size:var(--t-sm);line-height:1.55">' +
+          '<b>' + faltanFAQ.length + ' preguntas frecuentes</b> ya funcionan en la cola con el texto del modelo, ' +
+          'pero aún no están en la base. Páselas para poder corregir sus textos desde aquí.</div>' +
+        '<button class="btn btn-primary" onclick="plImportarFAQ()">Pasar a la base</button>' +
+        '<div class="msg" id="pl-faq-msg" style="margin:0"></div></div>'
+    : '';
+  w.innerHTML = avisoFAQ + '<div class="pl-grid"><div class="pl-lista">' + lista + '</div>' +
     '<div class="pl-ed">' +
       '<div class="grid">' +
         '<div class="fld"><label class="lbl">Clave (única, MAYÚSCULAS)</label>' +
@@ -5856,6 +6101,38 @@ function plPintar(){
       '</div>' +
       '<div id="pl-prev-box"></div>' +
     '</div></div>';
+}
+
+/* Preguntas frecuentes incluidas en el código que la tabla aún no tiene */
+function plFaltanFAQ(){
+  const ya = {};
+  PL.filas.forEach(function(f){ ya[f.clave] = true; });
+  return Object.keys(FAQ_RESPUESTAS).filter(function(k){ return !ya[k]; });
+}
+async function plImportarFAQ(){
+  const msg = document.getElementById('pl-faq-msg');
+  const filas = plFaltanFAQ().map(function(k, i){
+    const f = FAQ_RESPUESTAS[k];
+    return { clave:k, grupo:GRUPO_FAQ, titulo:f.titulo, descripcion:f.desc, campos:f.campos,
+      parrafos:f.parrafos, tema:null, decision:null, orden:200 + i, activo:true,
+      actualizado_por: PERFIL ? PERFIL.nombre : null, ultima_edicion: new Date().toISOString() };
+  });
+  if(!filas.length) return;
+  if(msg){ msg.className = 'msg'; msg.textContent = 'Guardando…'; }
+  try{
+    await supaFetch('pet_respuestas_tipo', {
+      method:'POST', headers:{ Prefer:'return=minimal' }, body: JSON.stringify(filas) });
+    toast(filas.length + ' preguntas frecuentes quedaron en la base y ya se pueden editar.', 'ok', 5);
+    await cargarCatalogoDB();
+    await cargarPlantillas();
+  }catch(e){
+    if(msg){
+      msg.className = 'msg err';
+      msg.textContent = /security|permiso|denied|403|violates/i.test(e.message)
+        ? 'Sin permiso de edición: pida que agreguen su correo en pet_plantillas_editores.'
+        : 'No se pudo guardar: ' + e.message;
+    }
+  }
 }
 
 function plCargarBuf(){
@@ -5908,8 +6185,11 @@ function plPreview(){
     Object.keys(datos).forEach(function(k){ t = t.split('{{' + k + '}}').join(datos[k]); });
     const vineta = /^-\s+/.test(t);
     if(vineta) t = t.replace(/^-\s+/, '');
+    const cita = /^>\s+/.test(t);
+    if(cita) t = t.replace(/^>\s+/, '');
     t = esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    return '<p style="margin:0 0 9px' + (vineta ? ';padding-left:18px' : '') + '">' +
+    return '<p style="margin:0 0 9px' + (vineta ? ';padding-left:18px' : '') +
+      (cita ? ';border:1px solid #8a8a8a;padding:7px 11px;font-style:italic' : '') + '">' +
       (vineta ? '• ' : '') + t + '</p>';
   }).join('');
   box.innerHTML = '<div class="pl-prev">' + html + '</div>';
@@ -6048,7 +6328,7 @@ function parrafosRespuesta(c, datos){
       .map(function(p){ return p.replace(/\s*\n\s*/g, ' ').trim(); })
       .filter(Boolean);
   }else{
-    parrafos = c.parrafos.slice();
+    parrafos = c.parrafos.filter(function(p){ return !citaVacia(p, datos); });
     parrafos.push(CIERRE_COMUN);
   }
   return parrafos;
@@ -6058,7 +6338,8 @@ function parrafosRespuesta(c, datos){
    Resalta en ámbar los campos que aún faltan, para guiar al abogado. */
 function previaHTML(parrafos, datos){
   const cuerpo = parrafos.map(function(p){
-    let t = p, faltan = false;
+    const cita = /^>\s+/.test(p);
+    let t = cita ? p.replace(/^>\s+/, '') : p, faltan = false;
     Object.keys(datos).forEach(function(k){
       const v = datos[k];
       if(t.indexOf('{{' + k + '}}') !== -1){
@@ -6073,7 +6354,8 @@ function previaHTML(parrafos, datos){
     const vineta = /^-\s+/.test(p);
     if(vineta) t = t.replace(/^-\s+/, '');
     t = t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    return '<p class="pv-p' + (vineta ? ' pv-vin' : '') + '">' + (vineta ? '• ' : '') + t + '</p>';
+    return '<p class="pv-p' + (vineta ? ' pv-vin' : '') + (cita ? ' pv-cita' : '') + '">' +
+      (vineta ? '• ' : '') + t + '</p>';
   }).join('');
   return cuerpo;
 }
@@ -6083,7 +6365,7 @@ function pintarHojaPrevia(cont, parrafos, datos){
     '<div class="pv-wrap">' +
       '<div class="pv-hoja">' +
         '<div class="pv-membrete">ALCALDÍA DE BELLO · Dirección Administrativa de Ejecuciones Fiscales</div>' +
-        '<div class="pv-fecha">Bello, ' + esc(datos.FECHA_LARGA || '____') + '</div>' +
+        '<div class="pv-fecha">' + esc(datos.FECHA_LARGA || 'Bello, ____') + '</div>' +
         '<div class="pv-dest">' +
           esc(datos.TRATAMIENTO || 'Señor(a)') + ' <b>' + esc(datos.NOMBRE || '_____') + '</b><br>' +
           (datos.CEDULA ? 'C.C. ' + esc(datos.CEDULA) + '<br>' : '') +
@@ -6200,21 +6482,37 @@ function inyectarCuerpo(xml, parrafos){
 function cuerpoXml(parrafos){
   // Fuente del oficio: sin esto el cuerpo hereda el tamaño por defecto
   // del documento (12pt) y queda más grande que el resto (Arial 11pt).
-  const FUENTE = '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>' +
-                 '<w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="es-ES"/>';
+  // Los elementos van en el orden que exige el esquema de Word.
+  const rpr = function(negrita, cursiva){
+    return '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>' +
+      (negrita ? '<w:b/>' : '') + (cursiva ? '<w:i/>' : '') +
+      '<w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="es-ES"/>';
+  };
+  const borde = function(lado){
+    return '<w:' + lado + ' w:val="single" w:sz="4" w:space="5" w:color="7F7F7F"/>';
+  };
   return parrafos.map(function(p){
-    let texto = p, ind = '';
-    if(/^-\s+/.test(texto)){
+    let texto = p, ind = '', cita = false;
+    if(/^>\s+/.test(texto)){
+      // Cita en recuadro: el punto de la petición o la norma transcrita
+      texto = texto.replace(/^>\s+/, '');
+      cita = true;
+    }else if(/^-\s+/.test(texto)){
       texto = '• ' + texto.replace(/^-\s+/, '');
       ind = '<w:ind w:left="425"/>';
     }
     const runs = texto.split('**').map(function(seg, i){
       if(!seg) return '';
-      return '<w:r><w:rPr>' + FUENTE + (i % 2 === 1 ? '<w:b/>' : '') + '</w:rPr>' +
+      return '<w:r><w:rPr>' + rpr(i % 2 === 1, cita) + '</w:rPr>' +
         '<w:t xml:space="preserve">' + xmlSeguro(seg) + '</w:t></w:r>';
     }).join('');
-    return '<w:p><w:pPr><w:jc w:val="both"/>' + ind +
-      '<w:spacing w:after="160"/><w:rPr>' + FUENTE + '</w:rPr></w:pPr>' + runs + '</w:p>';
+    if(cita){
+      return '<w:p><w:pPr><w:pBdr>' + borde('top') + borde('left') + borde('bottom') + borde('right') +
+        '</w:pBdr><w:spacing w:before="60" w:after="200"/><w:ind w:left="170" w:right="170"/>' +
+        '<w:jc w:val="both"/><w:rPr>' + rpr(false, true) + '</w:rPr></w:pPr>' + runs + '</w:p>';
+    }
+    return '<w:p><w:pPr><w:spacing w:after="160"/>' + ind +
+      '<w:jc w:val="both"/><w:rPr>' + rpr(false, false) + '</w:rPr></w:pPr>' + runs + '</w:p>';
   }).join('');
 }
 
@@ -10865,37 +11163,21 @@ async function buscarFueraDeCola(q){
    Cada novedad dice a qué roles les aplica, para no mostrarle a nadie
    cambios de pantallas que no usa.
    ══════════════════════════════════════════════════════════════ */
-const VERSION_APP = '2';
+const VERSION_APP = '3';
 const NOVEDADES = [
-  { ic:'🎯', tit:'La cola empieza por lo más urgente',
-    txt:'En «Por riesgo» primero salen los desacatos, luego las tutelas, las vencidas y las que están por vencer. ' +
-        'Cada caso dice por qué va ahí.',
+  { ic:'⚡', tit:'Preguntas frecuentes con un clic',
+    txt:'En «Generar documentos» hay un grupo nuevo con las respuestas a lo que más piden contra el cobro de ' +
+        'comparendos: notificación, ejecutoria, archivo, SIMIT, suspensión del cobro y copias. ' +
+        'Un clic la agrega al oficio como un punto más, con el punto del ciudadano citado en un recuadro.',
     para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } },
-  { ic:'🔔', tit:'Aviso cuando le asignan un caso',
-    txt:'Sin recargar la página: aparece un aviso con el radicado y un botón para abrirlo en la cola.',
+  { ic:'↕️', tit:'Arme el oficio punto por punto',
+    txt:'Con el oficio abierto puede seguir agregando bloques sin perder lo escrito, ' +
+        'subirlos o bajarlos con las flechas y quitar el que no aplique.',
     para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } },
-  { ic:'👥', tit:'Sepa si alguien más está en el caso',
-    txt:'Si otra persona tiene abierto el mismo caso, se lo mostramos arriba para que no respondan dos veces.',
-    para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } },
-  { ic:'🔍', tit:'Cada dato leído muestra de dónde salió',
-    txt:'Debajo del campo verá el pedazo del documento donde se encontró. Si la lectura es dudosa, ' +
-        'el campo se pinta en dorado o naranja para que lo verifique.',
-    para: function(){ return puedeRadicar(); } },
-  { ic:'⚡', tit:'Escaneados más rápidos',
-    txt:'El reconocimiento de texto ya no se reinicia en cada página, así que los lotes de escaneados tardan menos.',
-    para: function(){ return puedeRadicar(); } },
-  { ic:'💾', tit:'Lo que digita no se pierde',
-    txt:'Si se cae internet o se cierra la pestaña a mitad de una radicación, al volver se recupera lo escrito. ' +
-        'Solo hay que volver a cargar el PDF.',
-    para: function(){ return puedeRadicar(); } },
-  { ic:'📎', tit:'Ninguna resolución sin su oficio',
-    txt:'Al generar una resolución, el caso queda marcado «Falta el oficio» con un botón para hacerlo de una vez. ' +
-        'Si guarda sin él, se lo recordamos y queda en su lista hasta que lo haga.',
-    para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } },
-  { ic:'📊', tit:'Listas y tablero completos',
-    txt:'El tablero, el archivo histórico y Control Interno ahora traen todos los registros, ' +
-        'no solo los primeros mil.',
-    para: function(){ return !soloRadica(); } }
+  { ic:'🖥️', tit:'El caso usa toda la pantalla',
+    txt:'En monitores anchos el contexto del caso y «Guardar y siguiente» quedan fijos a la izquierda, ' +
+        'y los documentos con su vista previa ocupan el resto. En pantallas pequeñas todo sigue como antes.',
+    para: function(){ return !soloRadica() && PERFIL.rol !== 'consulta'; } }
 ];
 
 function claveNovedades(){ return 'pet_novedades_' + (PERFIL ? PERFIL.id : 'anon'); }
