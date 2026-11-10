@@ -62,6 +62,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 .ntab.on{color:var(--text);border-bottom-color:var(--gold)}
 .ntab:hover:not(.on){color:rgba(255,255,255,.8)}
 .nbadge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:18px;text-align:center}
+/* (Fase 2) Pestañas agrupadas: Trabajo · Análisis · Administración */
+.ngroup{display:flex;align-items:center;flex-shrink:0}
+.ngroup-lbl{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);padding:0 4px 0 2px;white-space:nowrap;user-select:none}
+.nsep{width:1px;height:22px;background:var(--border);margin:0 12px;flex-shrink:0}
+.ngroup-admin{margin-left:auto;padding-left:12px}
+.ngroup-admin .ntab{font-size:11.5px}
+/* (Fase 3) Ficha del depósito en pestañas */
+.ftabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--border);background:rgba(10,31,61,.35);
+  overflow-x:auto;flex-shrink:0}
+.ftabs::-webkit-scrollbar{height:0}
+.ftab{display:flex;align-items:center;gap:6px;padding:11px 14px;font-size:12px;font-weight:600;color:var(--soft);
+  background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;
+  font-family:'DM Sans',sans-serif;transition:color .18s,border-color .18s}
+.ftab:hover:not(.on){color:var(--text)}
+.ftab.on{color:var(--text);border-bottom-color:var(--gold)}
+.ftab-badge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(232,160,32,.18);
+  color:var(--gold2);min-width:18px;text-align:center}
+.ftab-badge:empty{display:none}
+.fpane{display:none}
+.fpane.on{display:block}
+.fpane .vista360:first-child{margin-top:0}
+.fpane-vacio{padding:28px 12px;text-align:center;font-size:12.5px;color:var(--muted)}
 .nb-blue{background:rgba(45,141,232,.3);color:var(--info-txt)}
 .nb-gold{background:rgba(232,160,32,.35);color:var(--gold2)}
 
@@ -654,7 +677,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
   background:var(--gold);margin-left:5px;vertical-align:middle;flex-shrink:0}
 
 @media(max-width:768px){
-  .topbar{padding:0 16px}.tabs{padding:0 12px}
+  .topbar{padding:0 16px}.tabs{padding:0 12px}.ngroup-lbl{display:none}.nsep{margin:0 6px}.ngroup-admin{margin-left:0}.ftabs{padding:0 10px}.ftab{padding:10px 10px}
   main{padding:16px 12px 80px}
   .cg2,.cg3{grid-template-columns:1fr}
   .banco-grid{grid-template-columns:1fr}
@@ -695,6 +718,12 @@ html.tema-claro #global-buscar{background:rgba(253,248,236,.92);border-color:rgb
 html.tema-claro .tabs{background:#f1e9d4;border-bottom:1px solid var(--border)}
 html.tema-claro .ntab{color:rgba(58,44,30,.6)}
 html.tema-claro .ntab.on{color:#46331f;border-bottom-color:#46331f}
+html.tema-claro .ngroup-lbl{color:rgba(58,44,30,.5)}
+html.tema-claro .nsep{background:rgba(70,51,31,.18)}
+html.tema-claro .ftabs{background:#efe5cb;border-bottom-color:rgba(70,51,31,.16)}
+html.tema-claro .ftab{color:rgba(58,44,30,.62)}
+html.tema-claro .ftab.on{color:#46331f;border-bottom-color:#46331f}
+html.tema-claro .ftab-badge{background:rgba(124,90,32,.16);color:#7c5a20}
 html.tema-claro .ntab:hover:not(.on){color:#3a2c1e}
 /* ── NIVEL 3: tarjetas crema sobre fondo arena ── */
 html.tema-claro .card,html.tema-claro .kpi,html.tema-claro .pend-stat,html.tema-claro .dash-kpi,
@@ -814,17 +843,29 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
 
 <!-- ── TABS ── -->
 <div class="tabs">
-  <button class="ntab on" id="tab-registros" onclick="goTab('registros')">
-    📋 Registros <span class="nbadge nb-blue" id="badge-total">0</span>
-  </button>
-  <button class="ntab" id="tab-pendientes" onclick="goTab('pendientes')">
-    ⏳ Pendientes <span class="nbadge nb-gold" id="badge-pen">0</span>
-  </button>
-  <button class="ntab" id="tab-dashboard" onclick="goTab('dashboard')">📊 Dashboard</button>
-  <button class="ntab" id="tab-reportes" onclick="goTab('reportes')">📑 Reportes</button>
-  <button class="ntab" id="tab-duplicados" onclick="goTab('duplicados')">🔁 Duplicados <span class="nbadge nb-gold" id="badge-dup" style="display:none">0</span></button>
-  <button class="ntab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
-  <button class="ntab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
+  <!-- Fase 2: pestañas agrupadas. El grupo Administración lleva la clase "solo-admin":
+       en la Fase 1 (roles) se oculta para quien no sea administrador. -->
+  <div class="ngroup" id="ngroup-trabajo">
+    <span class="ngroup-lbl">Trabajo</span>
+    <button class="ntab on" id="tab-registros" onclick="goTab('registros')">
+      📋 Registros <span class="nbadge nb-blue" id="badge-total">0</span>
+    </button>
+    <button class="ntab" id="tab-pendientes" onclick="goTab('pendientes')">
+      ⏳ Pendientes <span class="nbadge nb-gold" id="badge-pen">0</span>
+    </button>
+  </div>
+  <span class="nsep"></span>
+  <div class="ngroup" id="ngroup-analisis">
+    <span class="ngroup-lbl">Análisis</span>
+    <button class="ntab" id="tab-dashboard" onclick="goTab('dashboard')">📊 Dashboard</button>
+    <button class="ntab" id="tab-reportes" onclick="goTab('reportes')">📑 Reportes</button>
+  </div>
+  <div class="ngroup ngroup-admin solo-admin" id="ngroup-admin">
+    <span class="ngroup-lbl">Administración</span>
+    <button class="ntab" id="tab-duplicados" onclick="goTab('duplicados')">🔁 Duplicados <span class="nbadge nb-gold" id="badge-dup" style="display:none">0</span></button>
+    <button class="ntab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
+    <button class="ntab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
+  </div>
 </div>
 
 <main>
@@ -872,7 +913,7 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="tb-btn" id="btnExportCSV" onclick="exportarRecaudo('csv')" style="font-size:11px;padding:5px 11px;background:rgba(232,160,32,.18);border-color:rgba(232,160,32,.45);color:var(--gold,#e8a020)">⬇ CSV</button>
         <button class="tb-btn" id="btnExportXLSX" onclick="exportarRecaudo('xlsx')" style="font-size:11px;padding:5px 11px;background:rgba(232,160,32,.18);border-color:rgba(232,160,32,.45);color:var(--gold,#e8a020)">⬇ Excel</button>
-        <button class="tb-btn" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:var(--warn-txt)">📥 Importar</button>
+        <button class="tb-btn solo-admin" onclick="goTab('importar')" style="font-size:11px;padding:5px 11px;background:rgba(234,88,12,.2);border-color:rgba(234,88,12,.4);color:var(--warn-txt)">📥 Importar</button>
       </div>
     </div>
     <div class="filtros">
@@ -896,9 +937,10 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
       <select class="finp" id="f-impuesto" onchange="filtrar()">
         <option value="">Impuesto (todos)</option>
         <option value="PREDIAL">Predial</option>
-        <option value="ICO">ICO / ICA</option>
-        <option value="TRANSITO">Tránsito</option>
-        <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+        <option value="ICA">ICO / ICA</option>
+        <option value="TRANSITO">Tránsito (incl. multas)</option>
+        <option value="OU">Oblig. Urbanística</option>
+        <option value="POLICIA">Sanción de policía</option>
       </select>
       <select class="finp" id="f-responsable" onchange="filtrar()">
         <option value="">Responsable (todos)</option>
@@ -1047,9 +1089,10 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
       <select class="finp" id="fp-impuesto" onchange="filtrarPend()">
         <option value="">Impuesto (todos)</option>
         <option value="PREDIAL">Predial</option>
-        <option value="ICO">ICO / ICA</option>
-        <option value="TRANSITO">Tránsito</option>
-        <option value="OBLIGACION URBANISTICA">Oblig. Urbanística</option>
+        <option value="ICA">ICO / ICA</option>
+        <option value="TRANSITO">Tránsito (incl. multas)</option>
+        <option value="OU">Oblig. Urbanística</option>
+        <option value="POLICIA">Sanción de policía</option>
       </select>
       <select class="finp" id="fp-monto" onchange="filtrarPend()">
         <option value="">💰 Monto (todos)</option>
@@ -1616,7 +1659,14 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
       </div>
       <button class="mclose" onclick="cerrarModal()" aria-label="Cerrar ficha de gestión">✕</button>
     </div>
+    <div class="ftabs" role="tablist">
+      <button class="ftab on" id="ftab-gestion" role="tab" onclick="fichaTab('gestion')">✏️ Gestión</button>
+      <button class="ftab" id="ftab-contacto" role="tab" onclick="fichaTab('contacto')">📞 Contacto <span class="ftab-badge" id="ftab-contacto-n"></span></button>
+      <button class="ftab" id="ftab-persona" role="tab" onclick="fichaTab('persona')">👤 La persona <span class="ftab-badge" id="ftab-persona-n"></span></button>
+      <button class="ftab" id="ftab-historial" role="tab" onclick="fichaTab('historial')">📝 Historial</button>
+    </div>
     <div class="mbody">
+      <div class="fpane on" id="fpane-gestion">
       <div class="banco-info">
         <div class="banco-info-title">🏦 Datos del banco — solo lectura</div>
         <div class="banco-grid" id="m-banco-datos"></div>
@@ -1677,7 +1727,6 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
             <option value="">— Sin definir</option>
             <option value="SI">✅ Sí tiene convenio</option>
             <option value="NO">❌ No</option>
-            <option value="Tiene convenio">🤝 Tiene convenio</option>
           </select>
         </div>
       </div>
@@ -1692,25 +1741,8 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
           <input type="text" id="m-radicado-resp" placeholder="Radicado"/>
         </div>
       </div>
-      <div class="cg2" style="margin-bottom:10px">
-        <div class="campo"><label>Gestión Tesorería</label>
-          <input type="text" id="m-gest-tes" placeholder="Funcionario tesorería"/>
-        </div>
-        <div class="campo"><label>Teléfono de contacto</label>
-          <input type="tel" id="m-telefono" placeholder="Teléfono contribuyente" pattern="[0-9+()\s.-]{7,20}" title="Solo números, espacios, +, -, ( ) y puntos. Entre 7 y 20 caracteres."/>
-        </div>
-      </div>
-      <div class="cg2" style="margin-bottom:10px">
-        <div class="campo"><label>Correo electrónico</label>
-          <input type="email" id="m-correo" placeholder="correo@ejemplo.com"/>
-        </div>
-        <div class="campo"><label>Ciudad</label>
-          <input type="text" id="m-ciudad" placeholder="Ciudad"/>
-        </div>
-      </div>
-      <div class="campo" style="margin-bottom:10px">
-        <label>Dirección</label>
-        <input type="text" id="m-direccion" placeholder="Dirección del contribuyente"/>
+      <div class="campo" style="margin-bottom:10px"><label>Gestión Tesorería</label>
+        <input type="text" id="m-gest-tes" placeholder="Funcionario tesorería"/>
       </div>
       <div class="campo">
         <label>💵 Consignaciones adicionales <span style="font-weight:400;color:var(--soft);text-transform:none">— cuando el depósito no cubre toda la deuda</span></label>
@@ -1722,6 +1754,31 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
         <label>Observación</label>
         <textarea id="m-observacion" placeholder="Detalles de la gestión, soportes, actuaciones..."></textarea>
       </div>
+      </div><!-- /fpane-gestion -->
+
+      <div class="fpane" id="fpane-contacto">
+      <div class="msec">📞 Datos de contacto del contribuyente</div>
+      <div class="cg2" style="margin-bottom:10px">
+        <div class="campo"><label>Teléfono de contacto</label>
+          <input type="tel" id="m-telefono" placeholder="Teléfono contribuyente" pattern="[0-9+()\s.-]{7,20}" title="Solo números, espacios, +, -, ( ) y puntos. Entre 7 y 20 caracteres." oninput="actualizarBadgesFicha()"/>
+        </div>
+        <div class="campo"><label>Correo electrónico</label>
+          <input type="email" id="m-correo" placeholder="correo@ejemplo.com" oninput="actualizarBadgesFicha()"/>
+        </div>
+      </div>
+      <div class="cg2" style="margin-bottom:10px">
+        <div class="campo"><label>Ciudad</label>
+          <input type="text" id="m-ciudad" placeholder="Ciudad" oninput="actualizarBadgesFicha()"/>
+        </div>
+        <div class="campo"><label>Dirección</label>
+          <input type="text" id="m-direccion" placeholder="Dirección del contribuyente" oninput="actualizarBadgesFicha()"/>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:4px">Con «Guardar gestión» se guardan juntos los datos de todas las pestañas.</p>
+      </div><!-- /fpane-contacto -->
+
+      <div class="fpane" id="fpane-persona">
+      <div class="fpane-vacio" id="fpane-persona-vacio">Esta persona no tiene otros depósitos, expedientes, comparendos ni embargos registrados.</div>
       <!-- 🆕 OTROS DEPÓSITOS DE ESTA PERSONA (colapsable) -->
       <div class="vista360" id="m-otros-dep-wrap" style="display:none">
         <div class="v360-title v360-toggle" onclick="toggleV360(this)">
@@ -1761,6 +1818,10 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
         </div>
       </div>
 
+      </div><!-- /fpane-persona -->
+
+      <div class="fpane" id="fpane-historial">
+      <div class="fpane-vacio" id="fpane-historial-vacio">Este depósito no tiene cambios registrados.</div>
       <div class="vista360" id="m-log-wrap" style="display:none">
         <div class="v360-title v360-toggle" onclick="toggleV360(this)">
           <span>📝 Historial de cambios</span>
@@ -1768,6 +1829,7 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
         </div>
         <div class="v360-body"><div id="m-log"></div></div>
       </div>
+      </div><!-- /fpane-historial -->
       <div id="m-alert" style="display:none;margin-top:12px"></div>
     </div>
     <div class="mfoot">
@@ -2084,6 +2146,28 @@ function renderReporteDetalleDebounced(){ clearTimeout(_debRep); _debRep=setTime
 function quitarTildes(s){
   return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
+// ── Agrupa cualquier escritura de impuesto en un grupo canónico para FILTRAR ──
+// (Fase 0) Antes los filtros comparaban con includes(): "ICO" nunca encontraba "ICA",
+// y "OBLIGACION URBANISTICA" no encontraba los deducidos como "URBANISTICA".
+// También acepta los valores viejos guardados en los filtros locales ('ICO', 'OBLIGACION URBANISTICA').
+// Solo se usa en filtros: el valor guardado en la base y lo que se muestra NO cambian.
+function grupoImpuesto(v){
+  var u=quitarTildes(v).toUpperCase().trim();
+  if(!u) return '';
+  if(u.indexOf('PREDIAL')>=0) return 'PREDIAL';
+  if(u==='ICO' || u==='ICA' || u.indexOf('ICO /')>=0 || u.indexOf('INDUSTRIA')>=0) return 'ICA';
+  if(u.indexOf('TRANSITO')>=0) return 'TRANSITO';
+  if(u.indexOf('URBAN')>=0 || u==='OU') return 'OU';
+  if(u.indexOf('POLICIA')>=0) return 'POLICIA';
+  return u;
+}
+// ── Acuerdo de pago: "Tiene convenio" era un duplicado de "SI" ──
+function normAcuerdo(v){
+  var u=quitarTildes(v).toUpperCase().trim();
+  if(u==='SI' || u==='TIENE CONVENIO') return 'SI';
+  if(u==='NO') return 'NO';
+  return v || '';
+}
 function construirBuscable(fila){
   return quitarTildes((fila['deposito judicial']||'')+' '+(fila['Nombre Demandante.1']||'')+' '+(fila['Identificación Demandado']||'')+' '+(fila['Proceso']||'')+' '+(fila['Número del Proceso']||'')+' '+(fila['RESPONSABLE']||'')).toLowerCase();
 }
@@ -2121,7 +2205,7 @@ function filaSupaAUI(r){
     'ESTADO APLICACIÓN':        r.estado_aplicacion || '',
     'Proceso':                  r.numero_proceso_manual || '',   // proceso/expediente que asigna el contador (NO el del banco)
     'Impuesto':                 r.tipo_impuesto || '',   // tipo de impuesto (manual); si vacío, se deduce del expediente al mostrar
-    'Pendiente convenio':       r.acuerdo_pago || '',
+    'Pendiente convenio':       normAcuerdo(r.acuerdo_pago),   // 'Tiene convenio' se lee como 'SI' (Fase 0)
     'CI INICIAL':               r.ci_inicial || '',
     'CONSIGNACIONES':           Array.isArray(r.consignaciones) ? r.consignaciones : [],
     _editadoPor:                r.editado_por || '',
@@ -3025,7 +3109,7 @@ function filtrar(){
     }
     if(fEDev){ var ed=normEst(r['ESTADO DEVOLUCION']); if(fEDev==='SIN GESTIONAR'&&ed) return false; if(fEDev!=='SIN GESTIONAR'&&ed!==fEDev) return false; }
     if(fEApl){ var ea=normEst(r['ESTADO APLICACIÓN']); if(fEApl==='SIN GESTIONAR'&&ea) return false; if(fEApl!=='SIN GESTIONAR'&&ea!==fEApl) return false; }
-    if(fImp){ var imp=impuestoDe(r).toUpperCase(); if(!imp.includes(fImp)) return false; }
+    if(fImp){ if(grupoImpuesto(impuestoDe(r))!==grupoImpuesto(fImp)) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
     if(fMonto){ var v=parsearValor(r['Valor del Depóstio']); if(v<fMonto) return false; }
     if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
@@ -3951,7 +4035,7 @@ function filtrarPend(){
     if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
     if(buscar){ var hay=r._buscable!==undefined?r._buscable:construirBuscable(r); if(hay.indexOf(buscar)<0) return false; }
     if(fResp){ if((r['RESPONSABLE']||'').toLowerCase().indexOf(fResp)<0) return false; }
-    if(fImp){ if(!impuestoDe(r).toUpperCase().includes(fImp)) return false; }
+    if(fImp){ if(grupoImpuesto(impuestoDe(r))!==grupoImpuesto(fImp)) return false; }
     if(fMonto){ var v=parsearValor(r['Valor del Depóstio']); if(v<fMonto) return false; }
     if(fExp){ var cid=String(r['Identificación Demandado']||''); var tiene=!!(cid&&(expedientesPorCedula[cid]||transitoPorCedula[cid])); if(fExp==='con'&&!tiene) return false; if(fExp==='sin'&&tiene) return false; }
     return true;
@@ -4104,10 +4188,62 @@ function abrirModal(dep){
   cargarBitacora(dep);
   // Restablecer secciones colapsables a estado expandido
   document.querySelectorAll('#modal .vista360').forEach(v=>v.classList.remove('colapsado'));
+  _iniciarObsFicha();
+  fichaTab('gestion');   // la ficha siempre abre en Gestión
   document.getElementById('modal').classList.add('open');
   document.body.style.overflow='hidden';
   // Guardar huella de los campos editables para detectar cambios sin guardar
   _huellaModal=huellaCampos();
+}
+
+// ════════════════════════════════════════════════════════════
+// FICHA EN PESTAÑAS (Fase 3) — Gestión · Contacto · La persona · Historial
+// Todos los campos siguen en el mismo modal (mismos IDs), solo se muestran por
+// pestaña: guardarGestion(), huellaCampos() y el aviso de cambios sin guardar
+// no cambian. Los bloques 360 se siguen pintando como antes; aquí solo se
+// cuentan para el número de la pestaña y para el mensaje de "vacío".
+// ════════════════════════════════════════════════════════════
+var FICHA_TABS=['gestion','contacto','persona','historial'];
+var _obsFicha=null;
+function fichaTab(t){
+  FICHA_TABS.forEach(function(k){
+    var b=document.getElementById('ftab-'+k), p=document.getElementById('fpane-'+k);
+    if(b){ b.classList.toggle('on', k===t); b.setAttribute('aria-selected', k===t?'true':'false'); }
+    if(p) p.classList.toggle('on', k===t);
+  });
+  var mb=document.querySelector('#modal .mbody'); if(mb) mb.scrollTop=0;
+  actualizarBadgesFicha();
+}
+function _visible(id){ var el=document.getElementById(id); return !!(el && el.style.display!=='none'); }
+function actualizarBadgesFicha(){
+  // Contacto: cuántos de los 4 datos están llenos
+  var nC=['m-telefono','m-correo','m-ciudad','m-direccion'].filter(function(id){
+    var el=document.getElementById(id); return el && String(el.value||'').trim();
+  }).length;
+  var bc=document.getElementById('ftab-contacto-n'); if(bc) bc.textContent = nC ? (nC+'/4') : '';
+  // La persona: cuántos bloques 360 tienen información real. Se lee el contador
+  // de cada bloque ("3 expedientes", "sin embargos", "…"): solo cuenta si empieza
+  // por un número. "Otros depósitos" incluye el actual, así que cuenta desde 2.
+  var nP=[['m-otros-dep',2],['m-expedientes',1],['m-transito',1],['m-embargos',1]].filter(function(b){
+    if(!_visible(b[0]+'-wrap')) return false;
+    var c=document.getElementById(b[0]+'-count'); var n=parseInt(c?c.textContent:'',10);
+    return !isNaN(n) && n>=b[1];
+  }).length;
+  var bp=document.getElementById('ftab-persona-n'); if(bp) bp.textContent = nP ? String(nP) : '';
+  var vp=document.getElementById('fpane-persona-vacio'); if(vp) vp.style.display = nP ? 'none' : 'block';
+  var vh=document.getElementById('fpane-historial-vacio'); if(vh) vh.style.display = _visible('m-log-wrap') ? 'none' : 'block';
+}
+// Los bloques de tránsito, embargos e historial se llenan después (consultas
+// asíncronas): un observador mantiene al día los números de las pestañas.
+function _iniciarObsFicha(){
+  if(_obsFicha || !window.MutationObserver) return;
+  _obsFicha=new MutationObserver(function(){ actualizarBadgesFicha(); });
+  ['m-otros-dep-wrap','m-expedientes-wrap','m-transito-wrap','m-embargos-wrap','m-log-wrap'].forEach(function(id){
+    var el=document.getElementById(id); if(el) _obsFicha.observe(el,{attributes:true,attributeFilter:['style']});
+  });
+  ['m-otros-dep-count','m-expedientes-count','m-transito-count','m-embargos-count'].forEach(function(id){
+    var el=document.getElementById(id); if(el) _obsFicha.observe(el,{childList:true,characterData:true,subtree:true});
+  });
 }
 
 // Devuelve una "firma" de todos los campos editables del modal
