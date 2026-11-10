@@ -62,13 +62,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 .ntab.on{color:var(--text);border-bottom-color:var(--gold)}
 .ntab:hover:not(.on){color:rgba(255,255,255,.8)}
 .nbadge{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:18px;text-align:center}
-/* (Fase 2) Pestañas agrupadas: Trabajo · Análisis · Administración */
-.ngroup{display:flex;align-items:center;flex-shrink:0}
-.ngroup-lbl{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--muted);padding:0 4px 0 2px;white-space:nowrap;user-select:none}
-.nsep{width:1px;height:22px;background:var(--border);margin:0 12px;flex-shrink:0}
-.ngroup-admin{margin-left:auto;padding-left:12px}
-.ngroup-admin .ntab{font-size:11.5px}
 /* (Fase 3) Ficha del depósito en pestañas */
 .ftabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--border);background:rgba(10,31,61,.35);
   overflow-x:auto;flex-shrink:0}
@@ -677,7 +670,7 @@ table.dup-tabla td{padding:6px 8px;border-bottom:1px solid var(--border2);font-s
   background:var(--gold);margin-left:5px;vertical-align:middle;flex-shrink:0}
 
 @media(max-width:768px){
-  .topbar{padding:0 16px}.tabs{padding:0 12px}.ngroup-lbl{display:none}.nsep{margin:0 6px}.ngroup-admin{margin-left:0}.ftabs{padding:0 10px}.ftab{padding:10px 10px}
+  .topbar{padding:0 16px}.tabs{padding:0 12px}.ftabs{padding:0 10px}.ftab{padding:10px 10px}
   main{padding:16px 12px 80px}
   .cg2,.cg3{grid-template-columns:1fr}
   .banco-grid{grid-template-columns:1fr}
@@ -718,8 +711,6 @@ html.tema-claro #global-buscar{background:rgba(253,248,236,.92);border-color:rgb
 html.tema-claro .tabs{background:#f1e9d4;border-bottom:1px solid var(--border)}
 html.tema-claro .ntab{color:rgba(58,44,30,.6)}
 html.tema-claro .ntab.on{color:#46331f;border-bottom-color:#46331f}
-html.tema-claro .ngroup-lbl{color:rgba(58,44,30,.5)}
-html.tema-claro .nsep{background:rgba(70,51,31,.18)}
 html.tema-claro .ftabs{background:#efe5cb;border-bottom-color:rgba(70,51,31,.16)}
 html.tema-claro .ftab{color:rgba(58,44,30,.62)}
 html.tema-claro .ftab.on{color:#46331f;border-bottom-color:#46331f}
@@ -810,9 +801,141 @@ html.tema-claro .import-drop{background:#efe7d1;border-color:rgba(70,51,31,.28)}
 html.tema-claro .import-drop:hover,html.tema-claro .import-drop.drag{background:#eae0c4;border-color:#46331f}
 html.tema-claro .tj-valor{color:var(--money)}
 html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,31,.2)}
+
+/* ════════════════════════════════════════════════════════════
+   MENÚ LATERAL — mismo patrón que Peticiones (peticiones.css v3):
+   #app > #lat (menú) + #cuerpo (barra superior, contenido y pie).
+   Se pliega a 62px con el botón "Menú"; la preferencia queda guardada.
+   Los colores usan la paleta de Recaudo para respetar tema claro/oscuro.
+   ════════════════════════════════════════════════════════════ */
+#app{display:flex;min-height:100vh;align-items:stretch}
+#lat{width:212px;flex-shrink:0;background:rgba(9,24,47,.82);border-right:1px solid var(--border);
+  position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
+  backdrop-filter:blur(12px);transition:width .22s ease;z-index:110}
+#lat.min{width:62px}
+.lat-hd{padding:12px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;min-height:56px}
+.lat-logo{width:31px;height:31px;border-radius:9px;flex-shrink:0;text-decoration:none;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a1f3d;
+  display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:14px}
+.lat-tit{font-family:'Syne',sans-serif;font-weight:800;font-size:13.5px;line-height:1.25;white-space:nowrap;overflow:hidden;letter-spacing:.02em}
+.lat-tit span{color:var(--gold);display:block;font-size:11.5px;font-weight:600;letter-spacing:0}
+#lat.min .lat-tit,#lat.min .nav-txt,#lat.min .lat-yo,#lat.min .lat-sec{display:none}
+#lat.min .lat-hd{justify-content:center;padding:12px 8px}
+.lat-nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 9px}
+.lat-nav::-webkit-scrollbar{width:4px}
+.lat-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+.lat-sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  font-weight:700;padding:11px 8px 6px;white-space:nowrap}
+.nav-b{display:flex;align-items:center;gap:11px;width:100%;background:none;border:none;
+  color:var(--soft);border-radius:10px;padding:9px 11px;cursor:pointer;font-family:'DM Sans',sans-serif;
+  font-size:13.5px;font-weight:500;text-align:left;margin-bottom:2px;text-decoration:none;
+  transition:background .15s,color .15s;position:relative}
+.nav-b:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.nav-b.on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a1f3d;font-weight:700}
+.nav-b svg{width:17px;height:17px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nav-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+#lat.min .nav-b{justify-content:center;padding:10px 0}
+#lat.min .nav-b:hover:after{content:attr(data-txt);position:absolute;left:calc(100% + 9px);
+  background:#0d2550;border:1px solid var(--border);border-radius:8px;padding:7px 12px;
+  font-size:12.5px;font-weight:500;white-space:nowrap;z-index:120;box-shadow:0 6px 20px rgba(0,0,0,.45);color:var(--text)}
+/* Contador: flex-shrink:0 para que nunca recorte el nombre de la opción */
+.nav-badge{margin-left:auto;flex-shrink:0;background:rgba(232,160,32,.22);color:var(--gold2);border-radius:99px;
+  padding:1px 7px;font-size:10.5px;font-weight:700;min-width:20px;text-align:center}
+.nav-badge.azul{background:rgba(45,141,232,.22);color:#9cc9f5}
+.nav-b.on .nav-badge{background:rgba(10,31,61,.28);color:#0a1f3d}
+/* Plegado: el número no cabe junto al ícono → se muestra como un punto; el número sale en la etiqueta emergente */
+#lat.min .nav-badge{position:absolute;top:6px;right:12px;margin:0;padding:0;width:8px;height:8px;min-width:0;font-size:0;border-radius:50%;background:var(--gold)}
+#lat.min .nav-badge.azul{background:var(--blue2)}
+.nav-ext{opacity:.85}
+.nav-ext .sale{width:12px;height:12px;opacity:.5;margin-left:auto}
+#lat.min .nav-ext .sale{display:none}
+.lat-sep{height:1px;background:var(--border);margin:10px 6px}
+.lat-pie{border-top:1px solid var(--border);padding:12px 11px}
+.lat-yo{font-size:11.5px;color:var(--muted);line-height:1.45;margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lat-yo b{color:var(--text);display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.lat-acc{display:flex;gap:6px}
+.lat-acc button{flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);
+  color:var(--soft);border-radius:9px;padding:8px;cursor:pointer;font-family:'DM Sans',sans-serif;
+  font-size:11.5px;display:flex;align-items:center;justify-content:center;gap:6px;transition:color .15s,border-color .15s}
+.lat-acc button:hover{color:var(--text);border-color:var(--gold)}
+.lat-acc svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#lat.min .lat-acc{flex-direction:column}
+#lat.min .lat-acc span{display:none}
+#cuerpo{flex:1 1 0;min-width:0;display:flex;flex-direction:column;min-height:100vh}
+#cuerpo main{flex:1;width:100%}
+.kbd{display:inline-block;background:rgba(255,255,255,.09);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:10.5px;font-family:'DM Mono',monospace;color:var(--muted)}
+.pie-teo{text-align:center;padding:16px 20px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);line-height:1.7}
+.pie-teo b{color:var(--gold)}
+.pie-chip{display:inline-block;background:var(--gold);color:#0a1f3d;font-weight:700;border-radius:99px;padding:1px 10px;margin-right:6px;font-size:11px}
+@media(max-width:860px){
+  #app{flex-direction:column}
+  #lat{width:auto;height:auto;position:relative;flex-direction:row;border-right:none;border-bottom:1px solid var(--border);align-items:center}
+  #lat.min{width:auto}
+  .lat-hd{border-bottom:none;border-right:1px solid var(--border);min-height:0;padding:10px}
+  .lat-tit{display:none}
+  .lat-nav{display:flex;flex-wrap:nowrap;align-items:center;padding:8px;gap:4px;flex:1;overflow-x:auto;overflow-y:hidden}
+  #lat-admin{display:contents}
+  .lat-sec,.lat-sep,.nav-txt,.nav-ext .sale,.lat-yo{display:none}
+  .nav-b{width:auto;margin:0;padding:9px 10px;flex-shrink:0}
+  .nav-badge{position:absolute;top:5px;right:5px;margin:0;padding:0;width:7px;height:7px;min-width:0;font-size:0;border-radius:50%;background:var(--gold)}
+  .lat-pie{border-top:none;border-left:1px solid var(--border);padding:8px}
+  .lat-acc span{display:none}
+  #lat-btn-menu{display:none}
+}
+html.tema-claro #lat{background:#efe5cb;border-right-color:rgba(70,51,31,.18)}
+html.tema-claro .lat-hd,html.tema-claro .lat-pie{border-color:rgba(70,51,31,.16)}
+html.tema-claro .lat-tit{color:#46331f}
+html.tema-claro .lat-tit span{color:#7c5a20}
+html.tema-claro .lat-sec{color:rgba(58,44,30,.5)}
+html.tema-claro .nav-b{color:rgba(58,44,30,.72)}
+html.tema-claro .nav-b:hover{background:rgba(70,51,31,.08);color:#46331f}
+html.tema-claro .nav-b.on{background:linear-gradient(135deg,#8a6e4b,#5d4429);color:#f6f0de}
+html.tema-claro .nav-badge{background:rgba(124,90,32,.16);color:#7c5a20}
+html.tema-claro .nav-b.on .nav-badge{background:rgba(246,240,222,.25);color:#f6f0de}
+html.tema-claro .lat-yo b{color:#46331f}
+html.tema-claro .lat-acc button{background:rgba(70,51,31,.06);border-color:rgba(70,51,31,.18);color:#5d4429}
+html.tema-claro .lat-sep{background:rgba(70,51,31,.16)}
+html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;border-color:rgba(70,51,31,.2)}
 </style>
 </head>
 <body>
+<div id="app">
+<!-- ══ MENÚ LATERAL (patrón Peticiones) ══ -->
+<aside id="lat" aria-label="Menú de Recaudo">
+  <div class="lat-hd">
+    <a class="lat-logo" href="home.html" title="Ir al inicio de Teodoro">T</a>
+    <div class="lat-tit">TEODORO<span>Recaudo</span></div>
+  </div>
+  <nav class="lat-nav">
+    <div class="lat-sec">Gestión</div>
+      <button class="nav-b" id="tab-registros" data-tab="registros" data-vista="" data-txt="Registros" onclick="irVista('registros')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg><span class="nav-txt">Registros</span><span class="nav-badge azul" id="badge-total">0</span></button>
+      <button class="nav-b" id="tab-pendientes" data-tab="pendientes" data-vista="" data-txt="Pendientes" onclick="irVista('pendientes')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-txt">Pendientes</span><span class="nav-badge" id="badge-pen">0</span></button>
+    <div class="lat-sec">Control</div>
+      <button class="nav-b" id="tab-dashboard" data-tab="dashboard" data-vista="" data-txt="Dashboard" onclick="irVista('dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20v-8M11 20V5M16 20v-11M21 20v-5"/></svg><span class="nav-txt">Dashboard</span></button>
+      <button class="nav-b" id="nav-rep-impuesto" data-tab="reportes" data-vista="impuesto" data-txt="Por impuesto" onclick="irVista('reportes','impuesto')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V10M19 21V10M9 21v-7M15 21v-7M12 3 3 8h18z"/></svg><span class="nav-txt">Por impuesto</span></button>
+      <button class="nav-b" id="nav-rep-deudores" data-tab="reportes" data-vista="deudores" data-txt="Mayores deudores" onclick="irVista('reportes','deudores')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg><span class="nav-txt">Mayores deudores</span></button>
+      <button class="nav-b" id="nav-rep-comparendos" data-tab="reportes" data-vista="comparendos" data-txt="Cruce comparendos" onclick="irVista('reportes','comparendos')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17v-4l2-6h14l2 6v4z"/><path d="M6 17v2M18 17v2M3 13h18"/><circle cx="7.5" cy="15" r=".6"/><circle cx="16.5" cy="15" r=".6"/></svg><span class="nav-txt">Cruce comparendos</span></button>
+    <div class="solo-admin" id="lat-admin">
+    <div class="lat-sec">Administración</div>
+      <button class="nav-b" id="tab-duplicados" data-tab="duplicados" data-vista="" data-txt="Duplicados" onclick="irVista('duplicados')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V5a2 2 0 0 1 2-2h11"/></svg><span class="nav-txt">Duplicados</span><span class="nav-badge" id="badge-dup" style="display:none">0</span></button>
+      <button class="nav-b" id="tab-importar" data-tab="importar" data-vista="" data-txt="Importar lote" onclick="irVista('importar')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><span class="nav-txt">Importar lote</span></button>
+      <button class="nav-b" id="tab-config" data-tab="config" data-vista="" data-txt="Configuración" onclick="irVista('config')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="nav-txt">Configuración</span></button>
+    </div>
+    <div class="lat-sep"></div>
+    <div class="lat-sec">Sistema Teodoro</div>
+    <a class="nav-b nav-ext" href="home.html" data-txt="Inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="nav-txt">Inicio</span><svg class="sale" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+    <a class="nav-b nav-ext" href="desembargos.html" data-txt="Desembargos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></svg><span class="nav-txt">Desembargos</span><svg class="sale" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+  </nav>
+  <div class="lat-pie">
+    <div class="lat-yo"><b id="usuario-activo">Sin identificar</b><span id="lat-rol">Recaudo</span></div>
+    <div class="lat-acc">
+      <button id="lat-btn-menu" onclick="toggleLat()" title="Plegar o desplegar el menú"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg><span>Menú</span></button>
+      <button onclick="cambiarUsuario()" title="Cerrar sesión"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Salir</span></button>
+    </div>
+  </div>
+</aside>
+
+<div id="cuerpo">
 
 <!-- ── TOPBAR ── -->
 <div class="topbar">
@@ -824,7 +947,7 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
     </div>
   </div>
   <div class="tb-mid" style="flex:1;display:flex;justify-content:center;position:relative;max-width:420px;margin:0 auto">
-    <input id="global-buscar" class="finp" style="width:100%" placeholder="🔍 Buscar depósito, cédula o nombre..." oninput="buscarGlobalDebounced()" onkeydown="if(event.key==='Escape'){this.value='';cerrarBusquedaGlobal();} if(event.key==='Enter'){irAlPrimerResultadoGlobal();}"/>
+    <input id="global-buscar" class="finp" style="width:100%" placeholder="🔍 Buscar depósito, cédula o nombre…   Ctrl K" oninput="buscarGlobalDebounced()" onkeydown="if(event.key==='Escape'){this.value='';cerrarBusquedaGlobal();} if(event.key==='Enter'){irAlPrimerResultadoGlobal();}"/>
     <div id="global-resultados" class="global-results"></div>
   </div>
   <div class="tb-right">
@@ -835,36 +958,7 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
     </div>
     <span class="sync-pendientes" id="sync-pendientes" onclick="procesarCola()" title="Reintentar sincronización" style="display:none"></span>
     <button class="tb-btn" id="btn-tema" onclick="toggleTema()" title="Cambiar entre modo oscuro y claro">🌓</button>
-    <button class="tb-btn" id="usuario-activo" onclick="cambiarUsuario()" title="Cerrar sesión">👤 Sin identificar</button>
     <button class="tb-btn gold" onclick="exportarExcel()">⬇️ Exportar Excel</button>
-    <a href="home.html" class="tb-btn">🏛️ Inicio</a>
-  </div>
-</div>
-
-<!-- ── TABS ── -->
-<div class="tabs">
-  <!-- Fase 2: pestañas agrupadas. El grupo Administración lleva la clase "solo-admin":
-       en la Fase 1 (roles) se oculta para quien no sea administrador. -->
-  <div class="ngroup" id="ngroup-trabajo">
-    <span class="ngroup-lbl">Trabajo</span>
-    <button class="ntab on" id="tab-registros" onclick="goTab('registros')">
-      📋 Registros <span class="nbadge nb-blue" id="badge-total">0</span>
-    </button>
-    <button class="ntab" id="tab-pendientes" onclick="goTab('pendientes')">
-      ⏳ Pendientes <span class="nbadge nb-gold" id="badge-pen">0</span>
-    </button>
-  </div>
-  <span class="nsep"></span>
-  <div class="ngroup" id="ngroup-analisis">
-    <span class="ngroup-lbl">Análisis</span>
-    <button class="ntab" id="tab-dashboard" onclick="goTab('dashboard')">📊 Dashboard</button>
-    <button class="ntab" id="tab-reportes" onclick="goTab('reportes')">📑 Reportes</button>
-  </div>
-  <div class="ngroup ngroup-admin solo-admin" id="ngroup-admin">
-    <span class="ngroup-lbl">Administración</span>
-    <button class="ntab" id="tab-duplicados" onclick="goTab('duplicados')">🔁 Duplicados <span class="nbadge nb-gold" id="badge-dup" style="display:none">0</span></button>
-    <button class="ntab" id="tab-importar" onclick="goTab('importar')">📥 Importar lote</button>
-    <button class="ntab" id="tab-config" onclick="goTab('config')">⚙️ Configuración</button>
   </div>
 </div>
 
@@ -1216,7 +1310,9 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
 
 <!-- ══ PANEL REPORTES ══ -->
 <div id="panel-reportes" style="display:none">
-  <div class="subtab-bar">
+  <!-- Las 3 vistas están ahora en el menú lateral (sección Control); la barra queda oculta
+       pero se conserva porque cambiarVistaReporte() sigue marcando sus botones. -->
+  <div class="subtab-bar" style="display:none">
     <button class="subtab-btn on" id="subtab-impuesto" onclick="cambiarVistaReporte('impuesto')">📑 Por impuesto</button>
     <button class="subtab-btn" id="subtab-deudores" onclick="cambiarVistaReporte('deudores')">🏆 Mayores deudores</button>
     <button class="subtab-btn" id="subtab-comparendos" onclick="cambiarVistaReporte('comparendos')">🚗 Cruce comparendos</button>
@@ -1466,9 +1562,12 @@ html.tema-claro .copy-btn{background:rgba(70,51,31,.08);border-color:rgba(70,51,
 
 </main>
 
-<footer style="text-align:center;padding:14px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
+<footer class="pie-teo">
+  <span class="pie-chip">Sistema Teodoro</span> Desarrollado por <b>Jeison Maya</b> · 2026<br/>
   Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello · Antioquia
 </footer>
+</div><!-- /#cuerpo -->
+</div><!-- /#app -->
 
 <!-- ══ MODAL GESTIÓN ══ -->
 <!-- ══ WIZARD DE ACCESO "TEODORO" — Supabase Auth (mismo modelo que Tutelas / Desembargos) ══ -->
@@ -1966,12 +2065,42 @@ function sbHeaders(extra){
   return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer " + SUPABASE_ANON }, extra || {});
 }
 
+// ── SEGURIDAD (sesión real en las tablas propias de Recaudo) ──
+// Antes TODAS las consultas iban con la llave pública (anon), incluidas las que
+// modifican depósitos: con las políticas *_publica cualquiera que tuviera la llave
+// (está en este HTML) podía editar la tabla sin iniciar sesión.
+// Ahora recaudo y recaudo_bitacora se consultan con el token de la sesión de
+// Supabase Auth (rol "authenticated"). Las demás tablas (expedientes, tránsito)
+// siguen con sbHeaders() hasta que se aseguren en su propio módulo.
+const TABLAS_CON_SESION = ['recaudo','recaudo_bitacora'];
+var _sbToken = '';   // access_token vigente; lo mantiene al día onAuthStateChange
+function sbHeadersSesion(extra){
+  return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer " + (_sbToken || SUPABASE_ANON) }, extra || {});
+}
+function headersPara(tabla){ return TABLAS_CON_SESION.indexOf(tabla) >= 0 ? sbHeadersSesion : sbHeaders; }
+// Pide a Supabase Auth la sesión actual (renueva el token si venció). Se usa al
+// recibir un 401: típico cuando el equipo quedó suspendido y el token expiró.
+async function refrescarToken(){
+  try{
+    if(!sbAuth) return false;
+    var r = await sbAuth.auth.getSession();
+    var t = (r && r.data && r.data.session) ? r.data.session.access_token : '';
+    if(t && t === _sbToken){
+      var rr = await sbAuth.auth.refreshSession();
+      t = (rr && rr.data && rr.data.session) ? rr.data.session.access_token : t;
+    }
+    _sbToken = t || '';
+    return !!_sbToken;
+  }catch(e){ return false; }
+}
+
 // ── Trae TODAS las filas de una tabla/vista, paginando de a 1000 (límite REST de Supabase) ──
 // Pide la primera página con "Prefer: count=exact" para conocer el total de una vez,
 // y si el servidor lo entrega, pide TODAS las páginas restantes EN PARALELO (antes se
 // pedían una por una, esperando cada respuesta antes de pedir la siguiente).
 async function sbFetchAll(tabla, select, extraQuery){
   var bloque = 1000;
+  var hdr = headersPara(tabla);
   var url = SUPABASE_URL + "/rest/v1/" + tabla + "?select=" + encodeURIComponent(select) + (extraQuery ? "&" + extraQuery : "");
 
   // La PRIMERA página también reintenta (antes, un solo fallo puntual de red
@@ -1980,8 +2109,9 @@ async function sbFetchAll(tabla, select, extraQuery){
     var ultimo=null;
     for(var i=0;i<3;i++){
       try{
-        var r=await fetch(u, { headers: sbHeaders({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact" }) });
+        var r=await fetch(u, { headers: hdr({ Range: "0-" + (bloque - 1), "Range-Unit": "items", Prefer: "count=exact" }) });
         if(r.ok) return r;
+        if(r.status===401 && hdr===sbHeadersSesion){ await refrescarToken(); ultimo=r; continue; } // token vencido: renovar y reintentar
         ultimo=r;
         if(r.status>=400 && r.status<500 && r.status!==429) break; // error de consulta: no insistir
       }catch(e){ ultimo=null; }
@@ -2019,7 +2149,7 @@ async function sbFetchAll(tabla, select, extraQuery){
       var intentos=3, ultimoError=null;
       for(var i=0;i<intentos;i++){
         try{
-          var res = await fetch(url, { headers: sbHeaders({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items" }) });
+          var res = await fetch(url, { headers: hdr({ Range: d + "-" + (d + bloque - 1), "Range-Unit": "items" }) });
           if(res.ok) return await res.json();
           ultimoError = new Error("Supabase HTTP " + res.status);
         }catch(e){ ultimoError = e; }
@@ -2049,7 +2179,7 @@ async function sbFetchAll(tabla, select, extraQuery){
   // Respaldo: si el servidor no devolvió el conteo exacto (poco común), seguir en serie como antes.
   var desde2 = bloque;
   while(true){
-    var res = await fetch(url, { headers: sbHeaders({ Range: desde2 + "-" + (desde2 + bloque - 1), "Range-Unit": "items" }) });
+    var res = await fetch(url, { headers: hdr({ Range: desde2 + "-" + (desde2 + bloque - 1), "Range-Unit": "items" }) });
     if(!res.ok) throw new Error("Supabase HTTP " + res.status);
     var chunk = await res.json();
     todos = todos.concat(chunk);
@@ -2480,6 +2610,17 @@ try {
   console.error('Error creando cliente Supabase Auth:', e);
 }
 
+// El token cambia cada hora (Supabase lo renueva solo): se copia aquí en cada cambio
+// para que sbHeadersSesion() siempre lleve el vigente. Si la sesión se cierra en
+// otro módulo, el token queda vacío y las tablas protegidas dejan de responder.
+if(sbAuth){
+  try{
+    sbAuth.auth.onAuthStateChange(function(evento, sesion){
+      _sbToken = (sesion && sesion.access_token) ? sesion.access_token : '';
+    });
+  }catch(e){ console.warn('No se pudo escuchar los cambios de sesión:', e); }
+}
+
 // Identidad para firmar gestiones/oficios (independiente de la sesión de Supabase Auth)
 const CFG_USUARIO_KEY = 'recaudo_cfg_v1';
 var cfgUsuario = {};
@@ -2495,7 +2636,10 @@ function cambiarUsuario(){ cerrarSesion(); }
 
 function pintarUsuarioActivo(){
   var el=document.getElementById('usuario-activo');
-  if(el) el.textContent = USUARIO_ACTIVO ? '👤 '+USUARIO_ACTIVO.split(' ').slice(0,2).join(' ') : '👤 Sin identificar';
+  if(el){
+    el.textContent = USUARIO_ACTIVO ? USUARIO_ACTIVO.split(' ').slice(0,3).join(' ') : 'Sin identificar';
+    el.title = USUARIO_ACTIVO || '';
+  }
 }
 
 // ── Wizard "Teodoro" — mismas frases y animaciones que Desembargos ──
@@ -2585,6 +2729,7 @@ async function conectar(){
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Entrando…'; }
   try{
     var res = await sbAuth.auth.signInWithPassword({ email:email, password:pass });
+    if(!res.error && res.data && res.data.session) _sbToken = res.data.session.access_token || '';
     if(res.error){
       wizAlert('e', 'Correo o contraseña incorrectos.');
       if(btn){ btn.disabled = false; btn.innerHTML = '🚀 ¡Entrar con Teodoro!'; }
@@ -2623,6 +2768,7 @@ try { loadCfgUsuario(); } catch(e){ cfgUsuario = {}; }
     try{
       var r = await sbAuth.auth.getSession();
       haySesion = !!(r && r.data && r.data.session);
+      if(haySesion) _sbToken = r.data.session.access_token || '';
     }catch(e){ haySesion = false; }
   }
   if(haySesion && cfgUsuario.nombre){
@@ -2769,7 +2915,9 @@ function bvCerrar(){
 }
 
 // TABS
-function goTab(t){
+var _tabActual='registros';
+function goTab(t, sinRender){
+  _tabActual=t;
   ['registros','pendientes','dashboard','reportes','duplicados','importar','config'].forEach(p=>{
     var el=document.getElementById('panel-'+p);
     var tb=document.getElementById('tab-'+p);
@@ -2778,10 +2926,62 @@ function goTab(t){
   });
   if(t==='pendientes') filtrarPend();
   if(t==='dashboard') renderDashboard();
-  if(t==='reportes'){ if(_vistaReporteActual==='deudores'){ renderMayoresDeudores(); } else { renderReporte(); } }
+  if(t==='reportes' && !sinRender){ if(_vistaReporteActual==='deudores'){ renderMayoresDeudores(); } else { renderReporte(); } }
   if(t==='duplicados') renderDuplicados();
   if(t==='config') actualizarCfgPanel();
+  pintarNav();
+  window.scrollTo(0,0);
 }
+// Con el menú plegado el contador se ve como un punto: la etiqueta emergente lleva el número.
+function actualizarEtiquetasNav(){
+  document.querySelectorAll('#lat .nav-b[data-tab]').forEach(function(b){
+    var t=b.querySelector('.nav-txt'), n=b.querySelector('.nav-badge');
+    if(!t) return;
+    var num = (n && n.style.display!=='none' && n.textContent.trim()) ? ' · '+n.textContent.trim() : '';
+    b.setAttribute('data-txt', t.textContent + num);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// MENÚ LATERAL — navegación, plegado y atajo Ctrl K
+// Las tres vistas de Reportes (Por impuesto, Mayores deudores, Cruce comparendos)
+// son entradas directas del menú; las subpestañas dentro del panel siguen funcionando.
+// ════════════════════════════════════════════════════════════
+const LAT_MIN_KEY='recaudo_lat_min_v1';
+function irVista(tab, vista){
+  if(tab==='reportes' && vista){
+    _vistaReporteActual=vista;
+    goTab('reportes', true);           // muestra el panel sin pintar el reporte anterior
+    cambiarVistaReporte(vista);        // pinta deudores / comparendos
+    if(vista==='impuesto') renderReporte();
+  } else {
+    goTab(tab);
+  }
+}
+function pintarNav(){
+  document.querySelectorAll('#lat .nav-b[data-tab]').forEach(function(b){
+    var on = b.getAttribute('data-tab')===_tabActual &&
+             (!b.getAttribute('data-vista') || b.getAttribute('data-vista')===_vistaReporteActual);
+    b.classList.toggle('on', on);
+    if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+  });
+  actualizarEtiquetasNav();
+}
+function toggleLat(){
+  var l=document.getElementById('lat'); if(!l) return;
+  l.classList.toggle('min');
+  try{ localStorage.setItem(LAT_MIN_KEY, l.classList.contains('min')?'1':'0'); }catch(e){}
+}
+(function restaurarLat(){
+  try{ if(localStorage.getItem(LAT_MIN_KEY)==='1'){ var l=document.getElementById('lat'); if(l) l.classList.add('min'); } }catch(e){}
+  pintarNav();
+})();
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey||e.metaKey) && String(e.key).toLowerCase()==='k'){
+    var g=document.getElementById('global-buscar');
+    if(g){ e.preventDefault(); g.focus(); g.select(); }
+  }
+});
 
 // ════════════════════════════════════════════════════════════
 // BUSCADOR GLOBAL (topbar) — encuentra un depósito desde cualquier pestaña
@@ -3009,6 +3209,7 @@ function renderKpis(){
   if(ki) ki.textContent=ultimaSync?('Sync: '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})):'—';
   var bt=document.getElementById('badge-total'); if(bt) bt.textContent=total.toLocaleString('es-CO');
   var bp=document.getElementById('badge-pen'); if(bp) bp.textContent=(pen+tram).toLocaleString('es-CO');
+  actualizarEtiquetasNav();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -3725,6 +3926,7 @@ function actualizarBadgeDuplicados(){
   var n=d.exactos.length;
   if(n>0){ b.style.display='inline-block'; b.textContent=n; }
   else { b.style.display='none'; }
+  actualizarEtiquetasNav();
 }
 
 function renderDuplicados(){
@@ -4113,7 +4315,7 @@ function renderPag(total,btnId,pag,cb){
 async function cargarDetalleModal(r){
   try{
     var url=SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(r._id)+'&select=estado_deposito,tipo_tx_origen';
-    var res=await fetch(url,{headers:sbHeaders()});
+    var res=await fetch(url,{headers:sbHeadersSesion()});
     if(!res.ok) throw new Error('HTTP '+res.status);
     var filas=await res.json();
     var d=filas&&filas[0]?filas[0]:{};
@@ -4874,7 +5076,7 @@ async function guardarGestion(){
   // abierto (varias personas gestionan al tiempo). Antes esto se sobrescribía
   // en silencio; ahora se avisa y se pide confirmar antes de pisar el cambio ajeno.
   try{
-    var chk=await fetch(SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec)+'&select=ultima_edicion,editado_por',{headers:sbHeaders()});
+    var chk=await fetch(SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec)+'&select=ultima_edicion,editado_por',{headers:sbHeadersSesion()});
     if(chk.ok){
       var filaServ=await chk.json();
       var edServ=(filaServ&&filaServ[0])?(filaServ[0].ultima_edicion||null):null;
@@ -5166,10 +5368,23 @@ try{ aplicarTema(localStorage.getItem(TEMA_KEY)==='claro'?'claro':'oscuro'); }ca
 
 // PATCH con manejo de error (devuelve true/false)
 async function patchRecaudo(idTec, payload){
+  // Pide de vuelta el id de la fila actualizada: si la política de seguridad no
+  // deja editar, Supabase responde 200 con [] (cero filas) en vez de un error.
+  // Antes eso se tomaba como "guardado" en silencio; ahora va a la cola de reintentos.
+  var url=SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec)+'&select=id';
+  async function intentar(){
+    return fetch(url,{ method:'PATCH', headers:sbHeadersSesion({'Content-Type':'application/json',Prefer:'return=representation'}), body:JSON.stringify(payload) });
+  }
   try{
-    var url=SUPABASE_URL+'/rest/v1/recaudo?id=eq.'+encodeURIComponent(idTec);
-    var res=await fetch(url,{ method:'PATCH', headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}), body:JSON.stringify(payload) });
-    return res.ok;
+    var res=await intentar();
+    if(res.status===401 && await refrescarToken()) res=await intentar();
+    if(!res.ok) return false;
+    var filas=await res.json().catch(function(){ return []; });
+    if(!Array.isArray(filas) || !filas.length){
+      console.warn('[patchRecaudo] 0 filas actualizadas (id '+idTec+'): ¿sesión vencida o sin permiso?');
+      return false;
+    }
+    return true;
   }catch(e){ return false; }
 }
 
@@ -5178,7 +5393,7 @@ async function registrarBitacora(deposito, usuario, cambios){
   try{
     await fetch(SUPABASE_URL+'/rest/v1/recaudo_bitacora',{
       method:'POST',
-      headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+      headers:sbHeadersSesion({'Content-Type':'application/json',Prefer:'return=minimal'}),
       body:JSON.stringify({ deposito_judicial:String(deposito), usuario:usuario, cambios:cambios })
     });
   }catch(e){ /* si falla, no bloquea el guardado principal */ }
@@ -5193,7 +5408,7 @@ async function cargarBitacora(deposito){
   wrap.style.display='block';
   try{
     var url=SUPABASE_URL+'/rest/v1/recaudo_bitacora?deposito_judicial=eq.'+encodeURIComponent(deposito)+'&order=fecha.desc&select=usuario,cambios,fecha';
-    var res=await fetch(url,{ headers:sbHeaders() });
+    var res=await fetch(url,{ headers:sbHeadersSesion() });
     if(!res.ok) throw new Error();
     var rows=await res.json();
     if(!rows.length){ cont.innerHTML='<div style="font-size:11px;color:var(--muted);padding:6px 0;font-style:italic">Sin cambios registrados todavía.</div>'; return; }
@@ -5352,7 +5567,7 @@ async function confirmarImportacion(){
       var bloque=nuevos.slice(i,i+500);
       var res=await fetch(SUPABASE_URL+'/rest/v1/recaudo',{
         method:'POST',
-        headers:sbHeaders({'Content-Type':'application/json',Prefer:'return=minimal'}),
+        headers:sbHeadersSesion({'Content-Type':'application/json',Prefer:'return=minimal'}),
         body:JSON.stringify(bloque)
       });
       if(!res.ok){ var t=await res.text(); throw new Error('HTTP '+res.status+' '+t); }
@@ -5679,7 +5894,7 @@ async function cargarActividadSemanal(modo){
   try{
     var url=SUPABASE_URL+'/rest/v1/recaudo_bitacora?fecha=gte.'+encodeURIComponent(desde.toISOString())
       +'&fecha=lte.'+encodeURIComponent(hasta.toISOString())+'&order=fecha.desc&select=usuario,cambios,fecha,deposito_judicial';
-    var res=await fetch(url,{headers:sbHeaders()});
+    var res=await fetch(url,{headers:sbHeadersSesion()});
     if(!res.ok) throw new Error('HTTP '+res.status);
     var rows=await res.json();
     _actividadCache={desde:desde,hasta:hasta,filas:rows};
@@ -6368,6 +6583,7 @@ function cambiarVistaReporte(vista){
     var el=document.getElementById(v[1]); if(el) el.style.display=(vista===v[0])?'block':'none';
     var btn=document.getElementById(v[2]); if(btn) btn.classList.toggle('on', vista===v[0]);
   });
+  pintarNav();
   if(vista==='deudores') renderMayoresDeudores();
   if(vista==='comparendos') renderCruceComparendos();
 }
