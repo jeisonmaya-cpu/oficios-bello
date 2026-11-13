@@ -3,7 +3,7 @@
 
 Sistema web integrado para la gestión documental, jurídica y de atención al ciudadano. Funciona completamente en el navegador — sin servidores, sin instalaciones.
 
-🔗 **[Acceder al sistema](https://jeisonmaya-cpu.github.io/oficios-bello/home.html)**
+🔗 **[Acceder al sistema](https://jeisonmaya-cpu.github.io/oficios-bello/)**
 
 ---
 
@@ -11,8 +11,8 @@ Sistema web integrado para la gestión documental, jurídica y de atención al c
 
 | Archivo | Módulo | Descripción |
 |---|---|---|
-| `home.html` | 🏛️ **Hub central** | Página de inicio con acceso a todos los módulos |
-| `index.html` | 📄 **Generar Oficios** | Desembargos, tutelas y carga masiva de documentos |
+| `index.html` | 🏛️ **Hub central** | Página de inicio con acceso a todos los módulos |
+| `oficios.html` | 📄 **Generar Oficios** | Desembargos, tutelas y carga masiva de documentos |
 | `buscador.html` | 🔍 **Buscador de Guías** | Consulta contribuyentes, radicados y expedientes |
 | `seguimiento.html` | 📋 **Seguimiento de Procesos** | Expedientes, vencimientos y cobro coactivo |
 | `acuerdos.html` | 🤝 **Acuerdos de Pago** | Proyección de cuotas y formulario F-GAF-68 |
@@ -139,8 +139,8 @@ Seguimiento en Dashboard → hasta Cerrado/Respondido
 
 ```
 oficios-bello/
-├── home.html                 ← Hub central (actualizado con módulo PQR)
-├── index.html                ← Generar oficios
+├── index.html                ← Portada / hub central (antes home.html)
+├── oficios.html              ← Generar oficios (antes index.html)
 ├── buscador.html             ← Buscador de guías
 ├── seguimiento.html          ← Seguimiento de procesos
 ├── acuerdos.html             ← Acuerdos de pago

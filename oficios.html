@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Central Jurídica — Alcaldía de Bello</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="stylesheet" href="oficios.css"/>
+</head>
+<body>
+<div class="bg"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand">⚖️ Central Jurídica</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">🏛️ Inicio</a>
+      <a href="desembargos.html" class="nav-link">📄 Oficios</a>
+      <a href="acuerdos.html" class="nav-link">🤝 Acuerdos</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-label">⚖️ Módulo</div>
+  <h1>Central <em>Jurídica</em></h1>
+  <p>Paz y Salvo · Resoluciones · Documentos jurídicos de cobro coactivo</p>
+</div>
+
+<div class="wrap">
+
+  <!-- TIPO DE DOCUMENTO -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">📋 Tipo de obligación</span></div>
+    <div class="gcard-body">
+      <div class="tipo-grid">
+        <button class="tipo-btn active" data-tipo="OU" onclick="selTipo(this)">
+          <span class="tipo-icon">🏗️</span>
+          <span class="tipo-name">Obligación Urbanística</span>
+          <span class="tipo-sub">Constancia de pago OU</span>
+          <span class="tipo-badge badge-ou">OU-XXXX</span>
+        </button>
+        <button class="tipo-btn" data-tipo="PM" onclick="selTipo(this)">
+          <span class="tipo-icon">👮</span>
+          <span class="tipo-name">Policía Nacional</span>
+          <span class="tipo-sub">Constancia de pago multa</span>
+          <span class="tipo-badge badge-pm">PM-XXXX</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATOS DEL EXPEDIENTE -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">📁 Datos del expediente</span></div>
+    <div class="gcard-body">
+      <div class="g2">
+        <div class="fg">
+          <label>N° Expediente *</label>
+          <input type="text" id="num_exp" placeholder="Ej: 0815C" class="hl"
+            oninput="actualizarPreview()"/>
+          <span class="hint" id="exp-hint">Se generará como OU-0815C</span>
+        </div>
+        <div class="fg">
+          <label>Fecha del documento</label>
+          <input type="date" id="fecha_doc" oninput="actualizarPreview()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATOS DEL CONTRIBUYENTE -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">👤 Datos del contribuyente</span></div>
+    <div class="gcard-body">
+      <div class="g2">
+        <div class="fg">
+          <label>Nombre completo *</label>
+          <input type="text" id="nombre" placeholder="Apellidos y nombres en mayúscula"
+            oninput="actualizarPreview()" style="text-transform:uppercase"/>
+        </div>
+        <div class="fg">
+          <label>Número de identificación *</label>
+          <input type="text" id="cedula" placeholder="Sin puntos ni guiones"
+            oninput="actualizarPreview()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATOS DE LA RESOLUCIÓN Y PAGO -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">💰 Resolución y valor pagado</span></div>
+    <div class="gcard-body">
+      <div class="g3">
+        <div class="fg">
+          <label>N° Resolución *</label>
+          <input type="text" id="num_resolucion" placeholder="Ej: 202200008523"
+            oninput="actualizarPreview()"/>
+        </div>
+        <div class="fg">
+          <label>Fecha resolución *</label>
+          <input type="date" id="fecha_resolucion" oninput="actualizarPreview()"/>
+        </div>
+        <div class="fg">
+          <label>Valor total pagado ($) *</label>
+          <input type="number" id="valor_pagado" placeholder="Ej: 3103500"
+            oninput="actualizarPreview()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="prev-card" id="prev-card">
+    <div class="prev-title">👁️ Vista previa del documento</div>
+    <div id="prev-rows"></div>
+  </div>
+
+  <!-- ACCIONES -->
+  <div class="gcard">
+    <div class="gcard-head"><span class="gcard-title">⚙️ Funcionario y generación</span></div>
+    <div class="gcard-body">
+      <div class="g2" style="margin-bottom:14px">
+        <div class="fg">
+          <label>Funcionario que proyecta *</label>
+          <input type="text" id="proyecta" placeholder="Nombre completo"/>
+        </div>
+        <div class="fg">
+          <label>Cargo</label>
+          <input type="text" id="cargo_proyecta" value="Profesional Universitario"/>
+        </div>
+      </div>
+      <div class="st" id="st"></div>
+      <button class="btn-acc btn-gold" onclick="generarDocumento()">
+        📄 Generar Paz y Salvo — Word
+      </button>
+      <button class="btn-acc btn-ghost" onclick="limpiarForm()">
+        🗑️ Limpiar formulario
+      </button>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="gcard">
+    <div class="gcard-head">
+      <span class="gcard-title">📋 Documentos generados hoy</span>
+      <span style="font-size:11px;color:var(--muted)" id="hist-count"></span>
+    </div>
+    <div id="hist-lista">
+      <div class="empty"><div class="empty-icon">📄</div>
+        <p style="font-size:13px;color:var(--soft)">Sin documentos generados hoy</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="oficios.js"></script>
+</body>
+</html>

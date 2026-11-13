@@ -1048,7 +1048,7 @@ const NAV_IC = {
 
 /* Otros módulos del sistema. Para agregar uno más, basta una línea aquí. */
 const MODULOS = [
-  {id:'home',    txt:'Inicio',  url:'home.html',       ic:'inicio',
+  {id:'home',    txt:'Inicio',  url:'index.html',       ic:'inicio',
    desc:'Portada del sistema, con todos los módulos'},
   {id:'tutelas', txt:'Tutelas', url:'tutelas_v2.html', ic:'tutelas',
    desc:'Gestión de tutelas, fallos e incidentes de desacato'}
