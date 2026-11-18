@@ -5,6 +5,8 @@
    - Montar lote: Excel + PDF → verificación página por persona → Supabcase
    - Un PDF por lote en Google Drive; cada notificación sabe su página
    - Oficio individual: se extrae del PDF del lote solo cuando se necesita
+   - Sin dirección: deudores inubicables; desde la ficha se descarga la
+     resolución de inubicabilidad y el aviso (Word) llenos con sus datos
    ===================================================================== */
 'use strict';
 
@@ -18,7 +20,9 @@ var CFG = {
   SESION_HORAS: 8,
   POR_PAGINA: 50,
   LOTE_INSERT: 500,
-  LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js'],
+  LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js', 'lib/jszip.min.js'],
+  PLANTILLAS: { resolucion: 'plantillas/resolucion_inubicabilidad.docx', aviso: 'plantillas/aviso_inubicabilidad.docx' },
+  CONSTANCIA_KEY: 'notificaciones_constancia_inub',
   PDF_WORKER: 'lib/pdf.worker.min.js',
   PDF_CMAPS: 'lib/cmaps/'
 };
@@ -34,13 +38,15 @@ var RENTA_IDS = ['transito', 'predial', 'ica', 'ou'];
 var MEDIOS = {
   correo:     { nombre: 'Correo electrónico',    corto: 'Correo' },
   mensajeria: { nombre: 'Empresa de mensajería', corto: 'Mensajería' },
-  web:        { nombre: 'Publicación web',       corto: 'Web' }
+  web:        { nombre: 'Publicación web',       corto: 'Web' },
+  sin_direccion: { nombre: 'Sin dirección (aviso)', corto: 'Sin dirección' }
 };
 
 var ICONOS = {
   correo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
   mensajeria: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
-  web: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg>'
+  web: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg>',
+  sin_direccion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 17.6 5.4"/><path d="M18.7 8.5c.2.3.3.7.3 1 0 5.3-7 11.5-7 11.5"/><path d="m3 3 18 18"/></svg>'
 };
 
 var ALERTAS_FILTRO = {
@@ -48,8 +54,10 @@ var ALERTAS_FILTRO = {
   registro:   { nombre: 'Registros incompletos',          filtro: 'alerta_registro=not.is.null' },
   sin_pdf:    { nombre: 'Lote sin PDF en Drive',           filtro: 'notif_lotes.drive_pdf_id=is.null' },
   sin_pagina: { nombre: 'Sin página en el PDF',            filtro: 'pagina_inicio=is.null&notif_lotes.archivo_pdf=not.is.null' },
-  sin_guia:   { nombre: 'Mensajería sin número de guía',   filtro: 'guia=is.null&notif_lotes.medio=eq.mensajeria' }
+  sin_guia:   { nombre: 'Mensajería sin número de guía',   filtro: 'guia=is.null&notif_lotes.medio=eq.mensajeria' },
+  sin_direccion: { nombre: 'Sin dirección (inubicables)',  filtro: 'notif_lotes.medio=eq.sin_direccion' }
 };
+var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
 /* =========================================================
    Utilidades
@@ -100,7 +108,8 @@ function toast(msg, tipo) {
    porque no se sabe quién recibió el correo. Si no, desde el envío + 5 días. */
 function terminoLote(l) {
   var base, desde;
-  if (l.publicado_web && l.fecha_publicacion_web) { base = aFecha(l.fecha_publicacion_web); desde = 'la publicación web'; }
+  if (l.medio === 'sin_direccion' && fijacionAviso(l)) { base = desfijacionAviso(l); desde = 'la desfijación del aviso (' + fFecha(base) + ')'; }
+  else if (l.publicado_web && l.fecha_publicacion_web) { base = aFecha(l.fecha_publicacion_web); desde = 'la publicación web'; }
   else if (l.medio === 'correo' && l.fecha_envio) { base = addDias(aFecha(l.fecha_envio), 5); desde = 'el envío más 5 días'; }
   else return null;
   var vence = addHabiles(base, 15);
@@ -109,6 +118,12 @@ function terminoLote(l) {
   var txt = d < 0 ? 'Vencido' : (d === 0 ? 'Vence hoy' : 'Faltan ' + d + ' días');
   return { vence: vence, desde: desde, dias: d, t: t, txt: txt };
 }
+/* El aviso queda fijado cinco días hábiles: se desfija el cuarto día hábil después de fijado */
+function fijacionAviso(l) { var f = l.fecha_publicacion_web || l.fecha_envio; return f ? aFecha(f) : null; }
+function desfijacionAviso(l) { var f = fijacionAviso(l); return f ? addHabiles(f, 4) : null; }
+function fLarga(d, del) { if (!d) return ''; if (typeof d === 'string') d = aFecha(d); return d.getDate() + ' de ' + MESES[d.getMonth()] + (del ? ' del ' : ' de ') + d.getFullYear(); }
+function esSinDireccion(l) { return l && l.medio === 'sin_direccion'; }
+function detalleDe(a, clave) { var d = a.detalle || {}; return d[clave] == null ? '' : d[clave]; }
 
 /* =========================================================
    Sesión (Supabase Auth por REST)
@@ -323,11 +338,13 @@ function vistaResumen() {
   var nCorreo = sumar(f.filter(function (r) { return r.medio === 'correo'; }), 'n');
   var nMsj = sumar(f.filter(function (r) { return r.medio === 'mensajeria'; }), 'n');
   var nWeb = sumar(f, 'publicadas_web') + sumar(f.filter(function (r) { return r.medio === 'web'; }), 'n');
+  var nSD = sumar(f.filter(function (r) { return r.medio === 'sin_direccion'; }), 'n');
 
   var h = '<section class="panel"><div class="panel-head"><h3>Medios de notificación</h3><p>Una misma notificación puede contar en correo y en publicación web.</p></div><div class="medios">';
   h += medioCard('correo', nCorreo, pctTxt(pct(nCorreo, n)) + ' de las notificaciones', false);
   h += medioCard('web', nWeb, pctTxt(pct(nWeb, n)) + ' publicadas en el portal', false);
   h += medioCard('mensajeria', nMsj, nMsj ? pctTxt(pct(nMsj, n)) + ' de las notificaciones' : 'Sin contrato vigente', !nMsj);
+  if (nSD) h += medioCard('sin_direccion', nSD, pctTxt(pct(nSD, n)) + ' inubicables, notificados por aviso', false);
   h += '</div><div class="note">Los rebotes de correo todavía no se registran. Mientras tanto, el término se calcula desde la publicación web cuando el lote fue publicado.</div></section>';
 
   var aC = sumar(f, 'alertas_correo'), aR = sumar(f, 'alertas_registro'), sA = sumar(f, 'sin_archivo'), sP = sumar(f, 'sin_pagina'), sG = sumar(f, 'sin_guia');
@@ -380,7 +397,7 @@ function vistaLotes() {
       '<td class="mono">' + fFecha(l.fecha_envio) + (l.fecha_envio_aproximada ? '<div class="sub">aproximada</div>' : '') + '</td>' +
       '<td>' + (l.publicado_web ? '<span class="estado ok">' + fFecha(l.fecha_publicacion_web) + '</span>' : '<span class="estado mute">No</span>') + '</td>' +
       '<td class="num">' + fmt(l.n) + '</td><td class="num">' + pesosCorto(l.valor) + '</td>' +
-      '<td>' + (!l.archivo_pdf ? '<span class="estado mute">Sin PDF</span>' : (l.drive_pdf_id ? '<span class="estado ok">Cargado</span>' : '<span class="estado warn">Pendiente</span>')) + '</td>' +
+      '<td>' + (esSinDireccion(l) ? '<span class="estado info">Resolución y aviso</span>' : !l.archivo_pdf ? '<span class="estado mute">Sin PDF</span>' : (l.drive_pdf_id ? '<span class="estado ok">Cargado</span>' : '<span class="estado warn">Pendiente</span>')) + '</td>' +
       '<td class="num">' + (Number(l.alertas_correo) + Number(l.alertas_registro) ? '<span class="estado warn">' + fmt(Number(l.alertas_correo) + Number(l.alertas_registro)) + '</span>' : '<span class="sub">0</span>') + '</td></tr>';
   });
   return h + '</tbody></table></div></section>';
@@ -437,14 +454,16 @@ function pintarActos() {
     var al = [];
     if (a.alerta_correo) al.push('<span class="estado warn">' + esc(a.alerta_correo) + '</span>');
     if (a.alerta_registro) al.push('<span class="estado bad">' + esc(a.alerta_registro) + '</span>');
+    var sd = esSinDireccion(l);
     h += '<tr data-acto="' + i + '" tabindex="0">' +
       '<td class="mono">' + esc(a.radicado) + (a.guia ? '<div class="sub">Guía ' + esc(a.guia) + '</div>' : '') + '</td>' +
       '<td>' + esc(a.nombre) + '<div class="sub">' + esc(a.documento || 'Sin documento') + '</div></td>' +
-      '<td>' + (a.email ? esc(a.email) : esc(a.direccion || '') + (a.ciudad ? '<div class="sub">' + esc(a.ciudad) + '</div>' : '')) + '</td>' +
+      '<td>' + (sd ? '<span class="estado bad">Sin dirección</span><div class="sub">' + esc(a.direccion || '') + '</div>'
+        : a.email ? esc(a.email) : esc(a.direccion || '') + (a.ciudad ? '<div class="sub">' + esc(a.ciudad) + '</div>' : '')) + '</td>' +
       '<td>' + esc(a.referencias || '') + '</td>' +
       '<td class="num">' + pesos(a.total) + '</td>' +
       '<td><span class="dot" style="background:' + renta(l.renta).color + '"></span>Lote ' + esc(l.numero) + '</td>' +
-      '<td>' + (!l.archivo_pdf ? '<span class="estado mute">Sin PDF</span>' : (a.pagina_inicio ? '<span class="estado ' + (l.drive_pdf_id ? 'ok' : 'mute') + '">Pág. ' + fmt(a.pagina_inicio) + '</span>' : '<span class="estado bad">Sin página</span>')) + '</td>' +
+      '<td>' + (sd ? '<span class="estado info">Resolución y aviso</span>' : !l.archivo_pdf ? '<span class="estado mute">Sin PDF</span>' : (a.pagina_inicio ? '<span class="estado ' + (l.drive_pdf_id ? 'ok' : 'mute') + '">Pág. ' + fmt(a.pagina_inicio) + '</span>' : '<span class="estado bad">Sin página</span>')) + '</td>' +
       '<td><div class="chips">' + (al.join('') || '<span class="sub">Ninguna</span>') + '</div></td></tr>';
   });
   $('tablaActos').innerHTML = h + '</tbody>';
@@ -475,6 +494,7 @@ function cerrarDrawer() {
 }
 
 function fichaActo(a) {
+  if (esSinDireccion(a.notif_lotes)) { fichaSinDireccion(a); return; }
   var l = a.notif_lotes || {}, t = terminoLote(l);
   var h = '<div class="drawer-head"><div><span class="estado info">' + esc(MEDIOS[l.medio] ? MEDIOS[l.medio].nombre : '') + '</span>' +
     '<h3 class="mono">' + esc(a.radicado) + '</h3><div class="who">' + esc(a.nombre) + ', ' + esc(a.documento || 'sin documento') + '</div></div>' +
@@ -524,6 +544,60 @@ function fichaActo(a) {
   abrirDrawer(h);
 }
 
+/* ---------- Ficha de un deudor sin dirección ---------- */
+function comparendosDe(a) {
+  var raw = detalleDe(a, 'COMPARENDOS DETALLE'), lista = [];
+  if (raw) { try { lista = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { lista = []; } }
+  if (!lista.length && a.referencias) {
+    lista = a.referencias.split(/[,;]+/).map(function (c) { return { c: c.trim() }; }).filter(function (x) { return x.c; });
+  }
+  return lista;
+}
+function leerConstancia() { try { return localStorage.getItem(CFG.CONSTANCIA_KEY) || ''; } catch (e) { return ''; } }
+function guardarConstancia(v) { try { localStorage.setItem(CFG.CONSTANCIA_KEY, v); } catch (e) { /* sin almacenamiento */ } }
+
+function fichaSinDireccion(a) {
+  var l = a.notif_lotes || {}, t = terminoLote(l), comps = comparendosDe(a);
+  var fij = fijacionAviso(l), desf = desfijacionAviso(l);
+  var guiasOtros = detalleDe(a, 'GUIAS OTROS COMPARENDOS');
+  var h = '<div class="drawer-head"><div><span class="estado bad">Sin dirección</span>' +
+    '<h3>' + esc(a.nombre) + '</h3><div class="who">Documento ' + esc(a.documento || 'sin documento') + (detalleDe(a, 'GRUPO') ? ', ' + esc(detalleDe(a, 'GRUPO')).toLowerCase() : '') + '</div></div>' +
+    '<button class="close" type="button" data-cerrar="1" aria-label="Cerrar">&times;</button></div>';
+  h += '<div class="dl">' +
+    '<div class="full"><small>Dirección registrada</small><b>' + esc(a.direccion || 'Sin dirección') + (a.ciudad ? ', ' + esc(a.ciudad) : '') + '</b></div>' +
+    (detalleDe(a, 'MOTIVO') ? '<div class="full"><small>Por qué no sirve</small><b>' + esc(detalleDe(a, 'MOTIVO')) + '</b></div>' : '') +
+    '<div><small>Renta</small><b><span class="dot" style="background:' + renta(l.renta).color + '"></span>' + esc(renta(l.renta).nombre) + '</b></div>' +
+    '<div><small>Lote</small><b>Lote ' + esc(l.numero) + (l.vigencia ? ', vigencia ' + esc(l.vigencia) : '') + '</b></div>' +
+    (a.valor_capital != null ? '<div><small>Multas</small><b>' + pesos(a.valor_capital) + '</b></div>' : '') +
+    (a.intereses != null ? '<div><small>Intereses</small><b>' + pesos(a.intereses) + '</b></div>' : '') +
+    '<div class="full"><small>Total</small><b>' + pesos(a.total) + '</b></div></div>';
+
+  if (guiasOtros) h += '<div class="box warn"><h4>Este deudor sí recibió guía por otros comparendos</h4><p>Guías ' + esc(guiasOtros) + '. Antes de declarar la inubicabilidad, revisa si esa dirección sirve también para estos comparendos.</p></div>';
+
+  h += '<div class="section-title">Comparendos (' + fmt(comps.length) + ')</div><div class="table-wrap" style="margin-top:4px"><table class="data" style="min-width:0"><thead><tr><th>Comparendo</th><th>Fecha</th><th>Resolución</th><th class="num">Multa</th></tr></thead><tbody>' +
+    comps.map(function (c) { return '<tr><td class="mono">' + esc(c.c) + '</td><td class="mono">' + esc(c.f || '') + '</td><td class="mono">' + esc(c.r || '') + (c.fr ? '<div class="sub">' + esc(c.fr) + '</div>' : '') + '</td><td class="num">' + (c.m != null ? pesos(c.m) : '') + '</td></tr>'; }).join('') +
+    '</tbody></table></div>';
+
+  h += '<div class="section-title">Ruta de notificación</div><div class="tl">' +
+    '<div class="tl-item"><div class="tl-dot warn">' + ICONOS.sin_direccion + '</div><h5>Deudor inubicable <span class="estado bad">Sin dirección</span></h5><p>No hay dirección física ni electrónica útil para enviar la citación.</p></div>' +
+    '<div class="tl-item"><div class="tl-dot ' + (fij ? 'ok' : 'mute') + '">' + ICONOS.web + '</div><h5>Aviso ' + (fij ? '<span class="estado ok">Fijado</span>' : '<span class="estado mute">Sin fecha</span>') + '</h5>' +
+    '<p>' + (fij ? 'Fijado el ' + fFecha(fij) + ' y desfijado el ' + fFecha(desf) + ' (5 días hábiles).' + (l.url_publicacion_web ? ' <a href="' + esc(l.url_publicacion_web) + '" target="_blank" rel="noopener">Ver publicación</a>' : '') : 'El lote no tiene fecha de fijación del aviso.') + '</p></div></div>';
+  if (t) h += '<div class="box info"><h4>Término: ' + fFecha(t.vence) + ' (' + t.txt.toLowerCase() + ')</h4><p>Quince días hábiles contados desde ' + esc(t.desde) + '. Cálculo aproximado, sin festivos.</p></div>';
+
+  var fAviso = l.fecha_publicacion_web || l.fecha_envio || '';
+  h += '<div class="section-title">Resolución de inubicabilidad y aviso</div>' +
+    '<div class="box"><p>Revisa los datos. Lo que dejes vacío sale en el Word como <b>[FALTA …]</b> para completarlo a mano.</p>' +
+    '<div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px">' +
+      '<label class="campo"><span>Radicado de la petición</span><input class="input" id="iRadPet" placeholder="2026…"></label>' +
+      '<label class="campo"><span>Mandamiento de pago</span><input class="input" id="iMand" value="' + esc(l.mandamiento || '') + '"></label>' +
+      '<label class="campo"><span>Fecha del mandamiento</span><input class="input" id="iFMand" type="date" value="' + esc(l.fecha_mandamiento || '') + '"></label>' +
+      '<label class="campo"><span>Fecha de publicación del aviso</span><input class="input" id="iFAviso" type="date" value="' + esc(fAviso) + '"></label>' +
+      '<label class="campo span2" style="grid-column:1/-1"><span>Constancia de inubicabilidad y fecha</span><input class="input" id="iConst" value="' + esc(leerConstancia()) + '" placeholder="Constancia de inubicabilidad del …"></label>' +
+    '</div><div class="acciones"><button class="btn btn-gold" type="button" data-inubicabilidad="1">Descargar resolución y aviso</button></div><div id="inubRes"></div></div>';
+  _actoFicha = a;
+  abrirDrawer(h);
+}
+
 function fichaLote(l) {
   var t = terminoLote(l);
   var h = '<div class="drawer-head"><div><span class="estado info"><span class="dot" style="background:' + renta(l.renta).color + '"></span>' + esc(renta(l.renta).nombre) + '</span>' +
@@ -542,7 +616,11 @@ function fichaLote(l) {
   if (Number(l.alertas_correo) + Number(l.alertas_registro)) {
     h += '<div class="box warn"><h4>' + fmt(l.alertas_correo) + ' correos de riesgo y ' + fmt(l.alertas_registro) + ' registros incompletos</h4><p>Revísalos en Notificaciones con el filtro de alerta.</p></div>';
   }
-  if (!l.archivo_pdf) {
+  if (esSinDireccion(l)) {
+    var fj = fijacionAviso(l);
+    h += '<div class="box info"><h4>Deudores sin dirección</h4><p>' + (fj ? 'Aviso fijado el ' + fFecha(fj) + ' y desfijado el ' + fFecha(desfijacionAviso(l)) + '. ' : 'El lote no tiene fecha de fijación del aviso. ') +
+      'La resolución de inubicabilidad y el aviso de cada deudor se descargan desde su ficha, en Notificaciones.</p></div>';
+  } else if (!l.archivo_pdf) {
     h += '<div class="box"><h4>Lote cargado sin PDF de oficios</h4><p>Las notificaciones de este lote tienen radicado' + (l.medio === 'mensajeria' ? ' y número de guía' : '') + ', pero no oficio asociado.</p></div>';
   } else h += '<div class="box ' + (l.drive_pdf_id ? 'ok' : 'warn') + '" id="boxDrive"><h4>' + (l.drive_pdf_id ? 'PDF del lote en Google Drive' : 'Falta enlazar el PDF del lote en Drive') + '</h4>' +
     (l.drive_pdf_id ? '<p><a href="' + driveArchivo(l.drive_pdf_id) + '" target="_blank" rel="noopener">Abrir el PDF del lote</a>' + (l.archivo_pdf ? ' (' + esc(l.archivo_pdf) + ')' : '') + '</p>'
@@ -644,6 +722,110 @@ function extraerOficio(a, datos, recordar) {
 }
 
 /* =========================================================
+   Resolución de inubicabilidad y aviso: Word desde plantilla
+   Las plantillas (carpeta plantillas/) traen marcadores {{...}}.
+   Las filas de tabla con marcadores {{C.…}} se repiten por comparendo.
+   ========================================================= */
+var _plantillas = {};
+function traerPlantilla(clave) {
+  if (_plantillas[clave]) return Promise.resolve(_plantillas[clave]);
+  return fetch(CFG.PLANTILLAS[clave], { cache: 'no-cache' }).then(function (r) {
+    if (!r.ok) throw new Error('No se encontró ' + CFG.PLANTILLAS[clave] + '. Verifica que la carpeta plantillas/ esté publicada junto al módulo.');
+    return r.arrayBuffer();
+  }).then(function (b) { _plantillas[clave] = b; return b; });
+}
+function xmlEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function falta(txt) { return '[FALTA: ' + txt + ']'; }
+function llenarXml(xml, global, filas) {
+  xml = xml.replace(/<w:tr[ >][\s\S]*?<\/w:tr>/g, function (tr) {
+    if (tr.indexOf('{{C.') < 0) return tr;
+    return filas.map(function (f) {
+      return tr.replace(/\{\{C\.([A-Z]+)\}\}/g, function (m, k) { return xmlEsc(f[k] == null ? '' : f[k]); });
+    }).join('');
+  });
+  return xml.replace(/\{\{([A-Z0-9_.]+)\}\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(global, k) ? xmlEsc(global[k]) : m; });
+}
+function llenarDocx(buf, global, filas) {
+  return JSZip.loadAsync(buf).then(function (zip) {
+    return zip.file('word/document.xml').async('string').then(function (xml) {
+      zip.file('word/document.xml', llenarXml(xml, global, filas));
+      return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+    });
+  });
+}
+function descargarBlob(blob, nombre) {
+  var el = document.createElement('a');
+  el.href = URL.createObjectURL(blob); el.download = nombre;
+  document.body.appendChild(el); el.click(); el.remove();
+  setTimeout(function () { URL.revokeObjectURL(el.href); }, 4000);
+}
+
+/* Arma los valores de las dos plantillas para un deudor */
+function datosInubicabilidad(a, f) {
+  var comps = comparendosDe(a);
+  var dAviso = f.fAviso ? aFecha(f.fAviso) : null;
+  var dSig = dAviso ? addDias(dAviso, 1) : null;
+  var d3 = dSig ? new Date(dSig.getFullYear() + 3, dSig.getMonth(), dSig.getDate()) : null;
+  var tM = 0, tI = 0;
+  var filas = comps.map(function (c) {
+    var m = Number(c.m || 0), i = Number(c.i || 0); tM += m; tI += i;
+    return {
+      COMP: c.c, FCOMP: c.f || falta('fecha'), RES: c.r || falta('resolución'), FRES: c.fr || falta('fecha'),
+      MULTA: c.m != null ? pesos(m) : '', INT: c.i != null ? pesos(i) : '', TOTAL: c.m != null ? pesos(m + i) : '',
+      DESC: c.inf ? 'Infracción ' + c.inf : 'Infracción'
+    };
+  });
+  function lista(k, txt) { var v = filas.map(function (x) { return x[k]; }); return v.length ? v.join(', ') : falta(txt); }
+  var g = {
+    NOMBRE: a.nombre || falta('nombre'), DOC: a.documento || falta('documento'),
+    RAD_PETICION: f.radPet || falta('radicado de la petición'),
+    COMPARENDOS: lista('COMP', 'comparendos'), FECHAS_COMP: lista('FCOMP', 'fechas'),
+    RESOLUCIONES: lista('RES', 'resoluciones'), FECHAS_RES: lista('FRES', 'fechas'),
+    MANDAMIENTO: f.mand || falta('mandamiento de pago'),
+    FECHA_MAND: f.fMand ? fFecha(f.fMand) : falta('fecha del mandamiento'),
+    CONSTANCIA: f.constancia || falta('constancia de inubicabilidad y fecha'),
+    FECHA_AVISO: dAviso ? fLarga(dAviso) : falta('fecha de publicación del aviso'),
+    FECHA_SIG: dSig ? fLarga(dSig) : falta('día siguiente a la publicación'),
+    FECHA_3A: d3 ? fLarga(d3) : falta('fecha de cumplimiento de los 3 años'),
+    FIJACION: dAviso ? fLarga(dAviso, true) : falta('fecha de fijación'),
+    DESFIJACION: dAviso ? fLarga(addHabiles(dAviso, 4), true) : falta('fecha de desfijación'),
+    'T.MULTA': pesos(tM), 'T.INT': pesos(tI), 'T.TOTAL': pesos(tM + tI)
+  };
+  return { g: g, filas: filas, d3: d3 };
+}
+
+function generarInubicabilidad() {
+  var a = _actoFicha; if (!a) return;
+  var out = $('inubRes'), btn = document.querySelector('[data-inubicabilidad]');
+  function v(id) { return ($(id) && $(id).value.trim()) || ''; }
+  var f = { radPet: v('iRadPet'), mand: v('iMand'), fMand: v('iFMand'), fAviso: v('iFAviso'), constancia: v('iConst') };
+  if (f.constancia) guardarConstancia(f.constancia);
+  var d = datosInubicabilidad(a, f);
+  if (!d.filas.length) { out.innerHTML = '<div class="note bad">Este deudor no tiene comparendos registrados.</div>'; return; }
+  if (d.d3 && d.d3 <= hoy() && !window.confirm('Con el aviso publicado el ' + fFecha(f.fAviso) + ', los tres años se cumplieron el ' + fFecha(d.d3) + '. La resolución afirma que la prescripción no ha operado, y con esas fechas eso no sería cierto. ¿Generarla de todos modos?')) return;
+  var faltan = Object.keys(d.g).filter(function (k) { return String(d.g[k]).indexOf('[FALTA') === 0; }).length;
+  var base = ((a.documento || a.radicado) + ' ' + (a.nombre || '')).replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  btn.disabled = true;
+  out.innerHTML = '<div class="note info">Generando los documentos…</div>';
+  cargarLibs().then(function () {
+    return Promise.all([traerPlantilla('resolucion'), traerPlantilla('aviso')]);
+  }).then(function (bufs) {
+    return Promise.all([llenarDocx(bufs[0], d.g, d.filas), llenarDocx(bufs[1], d.g, d.filas)]);
+  }).then(function (docs) {
+    var z = new JSZip();
+    z.file(base + ' - Resolucion inubicabilidad.docx', docs[0]);
+    z.file(base + ' - Aviso.docx', docs[1]);
+    return z.generateAsync({ type: 'blob' });
+  }).then(function (blob) {
+    descargarBlob(blob, base + ' - Inubicabilidad.zip');
+    out.innerHTML = '<div class="note ok">Descargado «' + esc(base) + ' - Inubicabilidad.zip» con la resolución y el aviso en Word (' + fmt(d.filas.length) + (d.filas.length > 1 ? ' comparendos' : ' comparendo') + ').</div>' +
+      (faltan ? '<div class="note">Quedaron ' + faltan + ' datos marcados como [FALTA …]. Complétalos en Word antes de firmar.</div>' : '');
+  }).catch(function (e) {
+    out.innerHTML = '<div class="note bad">' + esc(e.message || String(e)) + '</div>';
+  }).then(function () { btn.disabled = false; });
+}
+
+/* =========================================================
    Montar lote
    ========================================================= */
 var M = null;
@@ -681,13 +863,13 @@ function vistaMontar() {
   '<section class="panel paso" id="paso1"><div class="panel-head"><h3><span class="paso-num">1</span>Datos del lote</h3><p>Lo que identifica el envío. El año de notificación sale de la fecha de envío.</p></div>' +
   '<div class="form-grid">' +
     '<label class="campo"><span>Renta</span><select class="select" id="mRenta">' + opR + '</select></label>' +
-    '<label class="campo"><span>Medio</span><select class="select" id="mMedio"><option value="correo">Correo electrónico</option><option value="mensajeria">Empresa de mensajería</option><option value="web">Solo publicación web</option></select></label>' +
+    '<label class="campo"><span>Medio</span><select class="select" id="mMedio"><option value="correo">Correo electrónico</option><option value="mensajeria">Empresa de mensajería</option><option value="web">Solo publicación web</option><option value="sin_direccion">Sin dirección (resolución de inubicabilidad y aviso)</option></select></label>' +
     '<label class="campo"><span>Número de lote</span><input class="input" id="mNumero" type="number" min="1" step="1" placeholder="34"></label>' +
     '<label class="campo"><span>Vigencia de la obligación</span><select class="select" id="mVigencia">' + opV + '</select></label>' +
     '<label class="campo"><span>Mandamiento o masivo</span><input class="input" id="mMandamiento" placeholder="M 86-2024"></label>' +
     '<label class="campo"><span>Concepto</span><select class="select" id="mConcepto"><option value="">Sin especificar</option><option>Multas de tránsito</option><option>Acuerdo de pago incumplido</option><option>Impuesto predial</option><option>Industria y comercio</option><option>Obligaciones urbanísticas</option><option>Otro</option></select></label>' +
     '<label class="campo"><span>Fecha del mandamiento</span><input class="input" id="mFechaMand" type="date"></label>' +
-    '<label class="campo"><span>Fecha de envío (radicado)</span><input class="input" id="mFechaEnvio" type="date"></label>' +
+    '<label class="campo"><span>Fecha de envío (en «Sin dirección»: fijación del aviso)</span><input class="input" id="mFechaEnvio" type="date"></label>' +
     '<label class="campo check span2"><input type="checkbox" id="mWeb"> El lote también se publicó en la página web</label>' +
     '<label class="campo"><span>Fecha de publicación web</span><input class="input" id="mFechaWeb" type="date" disabled></label>' +
     '<label class="campo"><span>Enlace de la publicación</span><input class="input" id="mUrlWeb" type="url" placeholder="https://" disabled></label>' +
@@ -1045,7 +1227,7 @@ function pintarResumenPdf() {
 function guardarLote() {
   if (M.ocupado || !M.filas.length) return;
   var d = leerFormulario(); if (!d) return;
-  if (!M.asign && !window.confirm('El lote se guardará sin PDF de oficios. Cada notificación quedará con su radicado' + (d.medio === 'mensajeria' ? ' y su guía' : '') + ', pero sin página asociada. ¿Continuar?')) return;
+  if (!M.asign && d.medio !== 'sin_direccion' && !window.confirm('El lote se guardará sin PDF de oficios. Cada notificación quedará con su radicado' + (d.medio === 'mensajeria' ? ' y su guía' : '') + ', pero sin página asociada. ¿Continuar?')) return;
   var anioLote = aFecha(d.fecha_envio).getFullYear();
   var out = $('resFinal'), btn = $('btnGuardar');
   var filas = M.filas.filter(function (f) { return !f.error; });
@@ -1084,7 +1266,8 @@ function guardarLote() {
     M.guardado = { loteId: loteId };
     var ya = totalReg - nuevos;
     out.innerHTML = '<div class="note ok">Lote guardado. ' + fmt(nuevos) + ' notificaciones nuevas' + (ya ? ' y ' + fmt(ya) + ' que ya existían (no se modificaron)' : '') + '.</div>' +
-      (M.asign ? '<div class="note info">Siguiente paso: sube «' + esc(M.pdfNombre) + '» a Drive (nombre sugerido: ' + esc(nombreSugerido(d)) + '), copia su enlace y pégalo en la ficha del lote.</div>' : '<div class="note info">El lote quedó guardado sin PDF: cada notificación tiene su radicado' + (d.medio === 'mensajeria' ? ' y su número de guía' : '') + '.</div>') + botonIrLote();
+      (d.medio === 'sin_direccion' ? '<div class="note info">Cada deudor quedó marcado como «Sin dirección». Desde su ficha, en Notificaciones, descargas la resolución de inubicabilidad y el aviso.</div>' :
+       M.asign ? '<div class="note info">Siguiente paso: sube «' + esc(M.pdfNombre) + '» a Drive (nombre sugerido: ' + esc(nombreSugerido(d)) + '), copia su enlace y pégalo en la ficha del lote.</div>' : '<div class="note info">El lote quedó guardado sin PDF: cada notificación tiene su radicado' + (d.medio === 'mensajeria' ? ' y su número de guía' : '') + '.</div>') + botonIrLote();
     toast('Lote ' + d.numero + ' guardado', 'ok');
     S.anio = anioLote;
     return cargarResumen().then(cargarLotes).then(function () { renderAnios(); renderHero(); renderTabs(); });
@@ -1117,6 +1300,7 @@ document.addEventListener('click', function (e) {
   if ((el = e.target.closest('[data-pag]'))) { if (el.disabled) return; S.pagina += +el.dataset.pag; buscarActos(); return; }
   if (e.target.id === 'btnPdfLote') { guardarPdfLote(e.target.dataset.loteId); return; }
   if ((el = e.target.closest('[data-oficio]'))) { oficioIndividual(); return; }
+  if ((el = e.target.closest('[data-inubicabilidad]'))) { if (!el.disabled) generarInubicabilidad(); return; }
   if (e.target.id === 'btnGuardar') { guardarLote(); return; }
   if (e.target.id === 'btnSalir') { Auth.salir(); mostrarLogin(); return; }
   if (e.target.id === 'btnRecargar') { recargarTodo().then(function () { toast('Datos actualizados', 'ok'); }); return; }
