@@ -574,6 +574,7 @@ function fichaSinDireccion(a) {
 
   if (guiasOtros) h += '<div class="box warn"><h4>Este deudor sí recibió guía por otros comparendos</h4><p>Guías ' + esc(guiasOtros) + '. Antes de declarar la inubicabilidad, revisa si esa dirección sirve también para estos comparendos.</p></div>';
 
+  if (detalleDe(a, 'TIENE OTROS COMPARENDOS SIN NOTIFICAR')) h += '<div class="box info"><h4>Tiene otros comparendos 2022 sin notificar</h4><p>Este deudor también tiene comparendos de dirección válida con multa de hasta $500.000 que no se cargaron. La resolución y el aviso cubren solo los comparendos de abajo.</p></div>';
   h += '<div class="section-title">Comparendos (' + fmt(comps.length) + ')</div><div class="table-wrap" style="margin-top:4px"><table class="data" style="min-width:0"><thead><tr><th>Comparendo</th><th>Fecha</th><th>Resolución</th><th class="num">Multa</th></tr></thead><tbody>' +
     comps.map(function (c) { return '<tr><td class="mono">' + esc(c.c) + '</td><td class="mono">' + esc(c.f || '') + '</td><td class="mono">' + esc(c.r || '') + (c.fr ? '<div class="sub">' + esc(c.fr) + '</div>' : '') + '</td><td class="num">' + (c.m != null ? pesos(c.m) : '') + '</td></tr>'; }).join('') +
     '</tbody></table></div>';
