@@ -21,7 +21,7 @@ var CFG = {
   POR_PAGINA: 50,
   LOTE_INSERT: 500,
   LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js', 'lib/jszip.min.js'],
-  PLANTILLAS_JS: 'plantillas_inub.js?v=1',
+  PLANTILLAS_JS: 'plantillas_inub.js?v=2',
   CONSTANCIA_KEY: 'notificaciones_constancia_inub',
   PDF_WORKER: 'lib/pdf.worker.min.js',
   PDF_CMAPS: 'lib/cmaps/'
@@ -610,14 +610,17 @@ function fichaSinDireccion(a) {
 
   var fAviso = l.fecha_publicacion_web || l.fecha_envio || '';
   h += '<div class="section-title">Resolución de inubicabilidad y aviso</div>' +
-    '<div class="box"><p>Revisa los datos. Lo que dejes vacío sale en el Word como <b>[FALTA …]</b> para completarlo a mano.</p>' +
+    '<div class="box"><p>Para el PDF final se necesitan todos los datos. El borrador en Word deja lo que falte marcado como <b>[FALTA …]</b>.</p>' +
     '<div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px">' +
+      '<label class="campo"><span>Número de la resolución</span><input class="input" id="iNumRes" placeholder="Ej. 1234"></label>' +
+      '<label class="campo"><span>Fecha de la resolución</span><input class="input" id="iFRes" type="date" value="' + hoyISO() + '"></label>' +
       '<label class="campo"><span>Radicado de la petición</span><input class="input" id="iRadPet" placeholder="2026…"></label>' +
       '<label class="campo"><span>Mandamiento de pago</span><input class="input" id="iMand" value="' + esc(l.mandamiento || '') + '"></label>' +
       '<label class="campo"><span>Fecha del mandamiento</span><input class="input" id="iFMand" type="date" value="' + esc(l.fecha_mandamiento || '') + '"></label>' +
       '<label class="campo"><span>Fecha de publicación del aviso</span><input class="input" id="iFAviso" type="date" value="' + esc(fAviso) + '"></label>' +
       '<label class="campo span2" style="grid-column:1/-1"><span>Constancia de inubicabilidad y fecha</span><input class="input" id="iConst" value="' + esc(leerConstancia()) + '" placeholder="Constancia de inubicabilidad del …"></label>' +
-    '</div><div class="acciones"><button class="btn btn-gold" type="button" data-inubicabilidad="1">Descargar resolución y aviso</button></div><div id="inubRes"></div></div>';
+    '</div><div class="acciones"><button class="btn btn-gold" type="button" data-inubicabilidad="pdf">Descargar PDF (resolución y aviso)</button>' +
+    '<button class="btn" type="button" data-inubicabilidad="word" title="Para revisar o corregir antes de expedir">Borrador en Word</button></div><div id="inubRes"></div></div>';
   _actoFicha = a;
   abrirDrawer(h);
 }
@@ -831,19 +834,45 @@ function datosInubicabilidad(a, f) {
   return { g: g, filas: filas, d3: d3 };
 }
 
-function generarInubicabilidad() {
+function hoyISO() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function generarInubicabilidad(modo) {
   var a = _actoFicha; if (!a) return;
-  var out = $('inubRes'), btn = document.querySelector('[data-inubicabilidad]');
+  var out = $('inubRes'), btns = document.querySelectorAll('[data-inubicabilidad]');
   function v(id) { return ($(id) && $(id).value.trim()) || ''; }
-  var f = { radPet: v('iRadPet'), mand: v('iMand'), fMand: v('iFMand'), fAviso: v('iFAviso'), constancia: v('iConst') };
+  var f = { radPet: v('iRadPet'), mand: v('iMand'), fMand: v('iFMand'), fAviso: v('iFAviso'), constancia: v('iConst'), numRes: v('iNumRes'), fRes: v('iFRes') };
   if (f.constancia) guardarConstancia(f.constancia);
   var d = datosInubicabilidad(a, f);
   if (!d.filas.length) { out.innerHTML = '<div class="note bad">Este deudor no tiene comparendos registrados.</div>'; return; }
+  if (modo === 'pdf') {
+    var req = [['numRes', 'número de la resolución'], ['fRes', 'fecha de la resolución'], ['radPet', 'radicado de la petición'], ['mand', 'mandamiento de pago'], ['fMand', 'fecha del mandamiento'], ['fAviso', 'fecha de publicación del aviso'], ['constancia', 'constancia de inubicabilidad']];
+    var vacios = req.filter(function (r) { return !f[r[0]]; }).map(function (r) { return r[1]; });
+    if (vacios.length) { out.innerHTML = '<div class="note bad">Para el PDF final falta: ' + esc(vacios.join(', ')) + '.</div>'; return; }
+  }
   if (d.d3 && d.d3 <= hoy() && !window.confirm('Con el aviso publicado el ' + fFecha(f.fAviso) + ', los tres años se cumplieron el ' + fFecha(d.d3) + '. La resolución afirma que la prescripción no ha operado, y con esas fechas eso no sería cierto. ¿Generarla de todos modos?')) return;
   var faltan = Object.keys(d.g).filter(function (k) { return String(d.g[k]).indexOf('[FALTA') === 0; }).length;
   var base = ((a.documento || a.radicado) + ' ' + (a.nombre || '')).replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
-  btn.disabled = true;
+  Array.prototype.forEach.call(btns, function (b) { b.disabled = true; });
+  function liberar() { Array.prototype.forEach.call(btns, function (b) { b.disabled = false; }); }
   out.innerHTML = '<div class="note info">Generando los documentos…</div>';
+  if (modo === 'pdf') {
+    var extra = { NUM: f.numRes, FECHA_RES: fLarga(f.fRes) };
+    cargarLibs().then(function () { return traerPlantilla('resolucion'); }).then(function () {
+      var P = window.PLANTILLAS_INUB_PDF;
+      if (!P || !window.MotorPDF) throw new Error('El archivo plantillas_inub.js es una versión anterior. Sube la versión nueva.');
+      return Promise.all([MotorPDF.generar(PDFLib, P.resolucion, d.g, d.filas, extra), MotorPDF.generar(PDFLib, P.aviso, d.g, d.filas, extra)]);
+    }).then(function (pdfs) {
+      var z = new JSZip();
+      z.file(base + ' - Resolucion ' + f.numRes.replace(/[\\/:*?"<>|]+/g, '-') + ' inubicabilidad.pdf', pdfs[0]);
+      z.file(base + ' - Aviso.pdf', pdfs[1]);
+      return z.generateAsync({ type: 'blob' });
+    }).then(function (blob) {
+      descargarBlob(blob, base + ' - Inubicabilidad PDF.zip');
+      out.innerHTML = '<div class="note ok">Descargado «' + esc(base) + ' - Inubicabilidad PDF.zip» con la resolución N.º ' + esc(f.numRes) + ' y el aviso en PDF (' + fmt(d.filas.length) + (d.filas.length > 1 ? ' comparendos' : ' comparendo') + ').</div>';
+    }).catch(function (e) {
+      out.innerHTML = '<div class="note bad">' + esc(e.message || String(e)) + '</div>';
+    }).then(liberar);
+    return;
+  }
   cargarLibs().then(function () {
     return Promise.all([traerPlantilla('resolucion'), traerPlantilla('aviso')]);
   }).then(function (bufs) {
@@ -859,7 +888,7 @@ function generarInubicabilidad() {
       (faltan ? '<div class="note">Quedaron ' + faltan + ' datos marcados como [FALTA …]. Complétalos en Word antes de firmar.</div>' : '');
   }).catch(function (e) {
     out.innerHTML = '<div class="note bad">' + esc(e.message || String(e)) + '</div>';
-  }).then(function () { btn.disabled = false; });
+  }).then(liberar);
 }
 
 /* =========================================================
@@ -1337,7 +1366,7 @@ document.addEventListener('click', function (e) {
   if ((el = e.target.closest('[data-pag]'))) { if (el.disabled) return; S.pagina += +el.dataset.pag; buscarActos(); return; }
   if (e.target.id === 'btnPdfLote') { guardarPdfLote(e.target.dataset.loteId); return; }
   if ((el = e.target.closest('[data-oficio]'))) { oficioIndividual(); return; }
-  if ((el = e.target.closest('[data-inubicabilidad]'))) { if (!el.disabled) generarInubicabilidad(); return; }
+  if ((el = e.target.closest('[data-inubicabilidad]'))) { if (!el.disabled) generarInubicabilidad(el.dataset.inubicabilidad); return; }
   if (e.target.id === 'btnGuardar') { guardarLote(); return; }
   if (e.target.id === 'btnSalir') { Auth.salir(); mostrarLogin(); return; }
   if (e.target.id === 'btnRecargar') { recargarTodo().then(function () { toast('Datos actualizados', 'ok'); }); return; }
