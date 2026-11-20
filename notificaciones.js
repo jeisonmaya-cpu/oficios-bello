@@ -21,7 +21,7 @@ var CFG = {
   POR_PAGINA: 50,
   LOTE_INSERT: 500,
   LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js', 'lib/jszip.min.js'],
-  PLANTILLAS_JS: 'plantillas_inub.js?v=2',
+  PLANTILLAS_JS: 'plantillas_inub.js?v=3',
   CONSTANCIA_KEY: 'notificaciones_constancia_inub',
   PDF_WORKER: 'lib/pdf.worker.min.js',
   PDF_CMAPS: 'lib/cmaps/'
@@ -609,20 +609,45 @@ function fichaSinDireccion(a) {
   if (t) h += '<div class="box info"><h4>Término: ' + fFecha(t.vence) + ' (' + t.txt.toLowerCase() + ')</h4><p>Quince días hábiles contados desde ' + esc(t.desde) + '. Cálculo aproximado, sin festivos.</p></div>';
 
   var fAviso = l.fecha_publicacion_web || l.fecha_envio || '';
+  var mandD = detalleDe(a, 'MANDAMIENTO') || l.mandamiento || '';
+  var fMandD = aISO(detalleDe(a, 'FECHA MANDAMIENTO')) || l.fecha_mandamiento || '';
   h += '<div class="section-title">Resolución de inubicabilidad y aviso</div>' +
-    '<div class="box"><p>Para el PDF final se necesitan todos los datos. El borrador en Word deja lo que falte marcado como <b>[FALTA …]</b>.</p>' +
+    '<div class="box"><div id="numInfo" class="note info" style="margin-top:0">Consultando el número de resolución…</div>' +
     '<div class="form-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px">' +
-      '<label class="campo"><span>Número de la resolución</span><input class="input" id="iNumRes" placeholder="Ej. 1234"></label>' +
-      '<label class="campo"><span>Fecha de la resolución</span><input class="input" id="iFRes" type="date" value="' + hoyISO() + '"></label>' +
-      '<label class="campo"><span>Radicado de la petición</span><input class="input" id="iRadPet" placeholder="2026…"></label>' +
-      '<label class="campo"><span>Mandamiento de pago</span><input class="input" id="iMand" value="' + esc(l.mandamiento || '') + '"></label>' +
-      '<label class="campo"><span>Fecha del mandamiento</span><input class="input" id="iFMand" type="date" value="' + esc(l.fecha_mandamiento || '') + '"></label>' +
+      '<label class="campo"><span>Mandamiento de pago del deudor</span><input class="input" id="iMand" value="' + esc(mandD) + '" placeholder="Número del mandamiento"></label>' +
+      '<label class="campo"><span>Fecha del mandamiento</span><input class="input" id="iFMand" type="date" value="' + esc(fMandD) + '"></label>' +
       '<label class="campo"><span>Fecha de publicación del aviso</span><input class="input" id="iFAviso" type="date" value="' + esc(fAviso) + '"></label>' +
-      '<label class="campo span2" style="grid-column:1/-1"><span>Constancia de inubicabilidad y fecha</span><input class="input" id="iConst" value="' + esc(leerConstancia()) + '" placeholder="Constancia de inubicabilidad del …"></label>' +
+      '<label class="campo span2" style="grid-column:1/-1"><span>Constancia de inubicabilidad (documento que prueba que no se encontró dirección, con su fecha)</span><input class="input" id="iConst" value="' + esc(leerConstancia()) + '" placeholder="Ej. Constancia de inubicabilidad del 15 de noviembre de 2026"></label>' +
     '</div><div class="acciones"><button class="btn btn-gold" type="button" data-inubicabilidad="pdf">Descargar PDF (resolución y aviso)</button>' +
     '<button class="btn" type="button" data-inubicabilidad="word" title="Para revisar o corregir antes de expedir">Borrador en Word</button></div><div id="inubRes"></div></div>';
   _actoFicha = a;
   abrirDrawer(h);
+  numeroExistente(a).then(function (r) {
+    if (_actoFicha !== a || !$('numInfo')) return;
+    $('numInfo').innerHTML = r ? 'Este deudor ya tiene la <b>resolución N.º ' + esc(fmtNumRes(r.numero)) + '</b> del ' + esc(fLarga(r.fecha)) + '. Al descargar se usa el mismo número.'
+      : 'El número de resolución se asigna automáticamente (consecutivo) al descargar el PDF.';
+  }, function () { if ($('numInfo')) $('numInfo').textContent = 'El número de resolución se asigna automáticamente al descargar el PDF.'; });
+}
+function fmtNumRes(n) { return String(n).padStart(4, '0'); }
+function aISO(v) {
+  if (!v) return '';
+  var m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return m[0];
+  m = String(v).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : '';
+}
+function numeroExistente(a) {
+  return supaFetch('notif_resoluciones_inub?select=numero,anio,fecha&radicado=eq.' + encodeURIComponent(a.radicado)).then(function (r) { return (r.data || [])[0] || null; });
+}
+function asignarNumero(a) {
+  return supaFetch('rpc/asignar_resolucion_inub', { method: 'POST', body: { p_radicado: a.radicado, p_documento: a.documento || null, p_lote: a.lote_id || (a.notif_lotes && a.notif_lotes.id) || null } })
+    .then(function (r) {
+      var x = Array.isArray(r.data) ? r.data[0] : r.data;
+      if (!x || !x.numero) throw new Error('Supabase no devolvió el número de resolución.');
+      return x;
+    }, function (e) {
+      if (/asignar_resolucion_inub|function|404/i.test(e.message)) throw new Error('Falta ejecutar en Supabase el SQL del consecutivo (sql_consecutivo_inubicabilidad.sql).');
+      throw e;
+    });
 }
 
 function fichaLote(l) {
@@ -839,12 +864,12 @@ function generarInubicabilidad(modo) {
   var a = _actoFicha; if (!a) return;
   var out = $('inubRes'), btns = document.querySelectorAll('[data-inubicabilidad]');
   function v(id) { return ($(id) && $(id).value.trim()) || ''; }
-  var f = { radPet: v('iRadPet'), mand: v('iMand'), fMand: v('iFMand'), fAviso: v('iFAviso'), constancia: v('iConst'), numRes: v('iNumRes'), fRes: v('iFRes') };
+  var f = { mand: v('iMand'), fMand: v('iFMand'), fAviso: v('iFAviso'), constancia: v('iConst') };
   if (f.constancia) guardarConstancia(f.constancia);
   var d = datosInubicabilidad(a, f);
   if (!d.filas.length) { out.innerHTML = '<div class="note bad">Este deudor no tiene comparendos registrados.</div>'; return; }
   if (modo === 'pdf') {
-    var req = [['numRes', 'número de la resolución'], ['fRes', 'fecha de la resolución'], ['radPet', 'radicado de la petición'], ['mand', 'mandamiento de pago'], ['fMand', 'fecha del mandamiento'], ['fAviso', 'fecha de publicación del aviso'], ['constancia', 'constancia de inubicabilidad']];
+    var req = [['mand', 'mandamiento de pago'], ['fMand', 'fecha del mandamiento'], ['fAviso', 'fecha de publicación del aviso'], ['constancia', 'constancia de inubicabilidad']];
     var vacios = req.filter(function (r) { return !f[r[0]]; }).map(function (r) { return r[1]; });
     if (vacios.length) { out.innerHTML = '<div class="note bad">Para el PDF final falta: ' + esc(vacios.join(', ')) + '.</div>'; return; }
   }
@@ -855,10 +880,15 @@ function generarInubicabilidad(modo) {
   function liberar() { Array.prototype.forEach.call(btns, function (b) { b.disabled = false; }); }
   out.innerHTML = '<div class="note info">Generando los documentos…</div>';
   if (modo === 'pdf') {
-    var extra = { NUM: f.numRes, FECHA_RES: fLarga(f.fRes) };
+    var extra = {};
     cargarLibs().then(function () { return traerPlantilla('resolucion'); }).then(function () {
+      if (!window.PLANTILLAS_INUB_PDF || !window.MotorPDF) throw new Error('El archivo plantillas_inub.js es una versión anterior. Sube la versión nueva.');
+      return asignarNumero(a);
+    }).then(function (nr) {
+      f.numRes = fmtNumRes(nr.numero);
+      extra = { NUM: f.numRes, FECHA_RES: fLarga(nr.fecha) };
+      if ($('numInfo')) $('numInfo').innerHTML = 'Este deudor tiene la <b>resolución N.º ' + esc(f.numRes) + '</b> del ' + esc(fLarga(nr.fecha)) + '.';
       var P = window.PLANTILLAS_INUB_PDF;
-      if (!P || !window.MotorPDF) throw new Error('El archivo plantillas_inub.js es una versión anterior. Sube la versión nueva.');
       return Promise.all([MotorPDF.generar(PDFLib, P.resolucion, d.g, d.filas, extra), MotorPDF.generar(PDFLib, P.aviso, d.g, d.filas, extra)]);
     }).then(function (pdfs) {
       var z = new JSZip();
