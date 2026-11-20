@@ -21,7 +21,7 @@ var CFG = {
   POR_PAGINA: 50,
   LOTE_INSERT: 500,
   LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js', 'lib/jszip.min.js'],
-  PLANTILLAS: { resolucion: 'plantillas/resolucion_inubicabilidad.docx', aviso: 'plantillas/aviso_inubicabilidad.docx' },
+  PLANTILLAS_JS: 'plantillas_inub.js?v=1',
   CONSTANCIA_KEY: 'notificaciones_constancia_inub',
   PDF_WORKER: 'lib/pdf.worker.min.js',
   PDF_CMAPS: 'lib/cmaps/'
@@ -54,8 +54,7 @@ var ALERTAS_FILTRO = {
   registro:   { nombre: 'Registros incompletos',          filtro: 'alerta_registro=not.is.null' },
   sin_pdf:    { nombre: 'Lote sin PDF en Drive',           filtro: 'notif_lotes.drive_pdf_id=is.null' },
   sin_pagina: { nombre: 'Sin página en el PDF',            filtro: 'pagina_inicio=is.null&notif_lotes.archivo_pdf=not.is.null' },
-  sin_guia:   { nombre: 'Mensajería sin número de guía',   filtro: 'guia=is.null&notif_lotes.medio=eq.mensajeria' },
-  sin_direccion: { nombre: 'Sin dirección (inubicables)',  filtro: 'notif_lotes.medio=eq.sin_direccion' }
+  sin_guia:   { nombre: 'Mensajería sin número de guía',   filtro: 'guia=is.null&notif_lotes.medio=eq.mensajeria' }
 };
 var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
@@ -310,7 +309,7 @@ function renderHero() {
 }
 
 function renderTabs() {
-  var tabs = [['resumen', 'Resumen'], ['lotes', 'Lotes'], ['notificaciones', 'Notificaciones'], ['montar', 'Montar lote']];
+  var tabs = [['resumen', 'Resumen'], ['lotes', 'Lotes'], ['notificaciones', 'Notificaciones'], ['sindir', 'Sin dirección'], ['montar', 'Montar lote']];
   $('tabs').innerHTML = tabs.map(function (t) {
     return '<button type="button" class="tab' + (S.vista === t[0] ? ' active' : '') + (t[0] === 'montar' ? ' cta' : '') + '" data-vista="' + t[0] + '" aria-pressed="' + (S.vista === t[0]) + '">' + t[1] + '</button>';
   }).join('');
@@ -321,6 +320,12 @@ function renderVista() {
   if (S.vista === 'resumen') v.innerHTML = vistaResumen();
   else if (S.vista === 'lotes') v.innerHTML = vistaLotes();
   else if (S.vista === 'notificaciones') { v.innerHTML = vistaNotificaciones(); buscarActos(); }
+  else if (S.vista === 'sindir') {
+    v.innerHTML = '<div class="cargando">Consultando…</div>';
+    supaFetchAll('v_notif_lotes?select=*&medio=eq.sin_direccion&order=fecha_envio.desc,id.desc')
+      .then(function (d) { S.lotesSD = d; }, function () { S.lotesSD = []; })
+      .then(function () { if (S.vista === 'sindir') { v.innerHTML = vistaSinDireccion(); buscarActos(); } });
+  }
   else { v.innerHTML = vistaMontar(); pintarMontar(); }
 }
 function renderTodo() { renderAnios(); renderHero(); renderTabs(); renderVista(); }
@@ -419,16 +424,34 @@ function vistaNotificaciones() {
     '<div class="pager" id="pager"></div></section>';
 }
 
+/* Vista aparte para los deudores sin dirección: todas las vigencias y años, solo ese medio */
+function vistaSinDireccion() {
+  var lotesSD = S.lotesSD || [];
+  var opL = '<option value="">Todos los lotes sin dirección</option>';
+  lotesSD.forEach(function (l) { opL += '<option value="' + l.id + '"' + (String(S.f.lote) === String(l.id) ? ' selected' : '') + '>Lote ' + esc(l.numero) + (l.vigencia ? ', vigencia ' + esc(l.vigencia) : '') + '</option>'; });
+  return '<section class="panel"><div class="panel-head"><h3>Deudores sin dirección</h3><p>Deudores inubicables que se notifican por aviso. Abre cualquiera para descargar su resolución de inubicabilidad y su aviso.</p></div>' +
+    (lotesSD.length ? '' : '<div class="note">Todavía no hay lotes con medio «Sin dirección». Si montaste el lote con otro medio, corrígelo en Supabase o vuelve a montarlo.</div>') +
+    '<div class="toolbar"><input class="input" id="q" type="search" value="' + esc(S.f.q) + '" placeholder="Cédula, nombre o comparendo">' +
+    '<select class="select" id="fLote" aria-label="Lote">' + opL + '</select></div>' +
+    '<div class="table-wrap"><table class="data" id="tablaActos"><tbody><tr><td><div class="cargando">Consultando…</div></td></tr></tbody></table></div>' +
+    '<div class="pager" id="pager"></div></section>';
+}
+
 var _busqueda = 0;
 function buscarActos() {
   if (!$('tablaActos')) return;
   var id = ++_busqueda;
   var sel = 'radicado,consecutivo,documento,nombre,email,alerta_correo,alerta_registro,referencias,n_referencias,valor_capital,intereses,total,detalle,verificacion,pagina_inicio,paginas,estado_correo,guia,direccion,ciudad,lote_id,' +
     'notif_lotes!inner(id,numero,renta,medio,vigencia,mandamiento,fecha_mandamiento,fecha_envio,fecha_envio_aproximada,anio_envio,concepto,publicado_web,fecha_publicacion_web,url_publicacion_web,drive_pdf_id,archivo_pdf)';
-  var q = 'notif_actos?select=' + encodeURIComponent(sel) + '&notif_lotes.anio_envio=eq.' + S.anio;
-  if (S.renta !== 'todas') q += '&notif_lotes.renta=eq.' + S.renta;
+  var sd = S.vista === 'sindir';
+  var q = 'notif_actos?select=' + encodeURIComponent(sel);
+  if (sd) q += '&notif_lotes.medio=eq.sin_direccion';
+  else {
+    q += '&notif_lotes.anio_envio=eq.' + S.anio + '&notif_lotes.medio=neq.sin_direccion';
+    if (S.renta !== 'todas') q += '&notif_lotes.renta=eq.' + S.renta;
+    if (S.f.alerta && ALERTAS_FILTRO[S.f.alerta]) q += '&' + ALERTAS_FILTRO[S.f.alerta].filtro;
+  }
   if (S.f.lote) q += '&lote_id=eq.' + encodeURIComponent(S.f.lote);
-  if (S.f.alerta && ALERTAS_FILTRO[S.f.alerta]) q += '&' + ALERTAS_FILTRO[S.f.alerta].filtro;
   var t = S.f.q.replace(/[^\p{L}\p{N}@._\- ]/gu, '').trim();
   if (t) {
     var c = '*' + t + '*';
@@ -727,13 +750,26 @@ function extraerOficio(a, datos, recordar) {
    Las plantillas (carpeta plantillas/) traen marcadores {{...}}.
    Las filas de tabla con marcadores {{C.…}} se repiten por comparendo.
    ========================================================= */
-var _plantillas = {};
+var _plantillas = {}, _plantillasJs = null;
+/* Las plantillas viajan dentro de plantillas_inub.js (raíz del sitio), así no dependen de una carpeta */
 function traerPlantilla(clave) {
   if (_plantillas[clave]) return Promise.resolve(_plantillas[clave]);
-  return fetch(CFG.PLANTILLAS[clave], { cache: 'no-cache' }).then(function (r) {
-    if (!r.ok) throw new Error('No se encontró ' + CFG.PLANTILLAS[clave] + '. Verifica que la carpeta plantillas/ esté publicada junto al módulo.');
-    return r.arrayBuffer();
-  }).then(function (b) { _plantillas[clave] = b; return b; });
+  if (!_plantillasJs) {
+    _plantillasJs = window.PLANTILLAS_INUB ? Promise.resolve() : new Promise(function (res, rej) {
+      var sc = document.createElement('script');
+      sc.src = CFG.PLANTILLAS_JS; sc.onload = res;
+      sc.onerror = function () { _plantillasJs = null; rej(new Error('No se pudo cargar ' + CFG.PLANTILLAS_JS + '. Súbelo a la raíz del repositorio, junto a notificaciones.js.')); };
+      document.head.appendChild(sc);
+    });
+  }
+  return _plantillasJs.then(function () {
+    var b64 = window.PLANTILLAS_INUB && window.PLANTILLAS_INUB[clave];
+    if (!b64) throw new Error('El archivo de plantillas no trae la plantilla «' + clave + '».');
+    var bin = atob(b64), u = new Uint8Array(bin.length);
+    for (var k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+    _plantillas[clave] = u.buffer;
+    return u.buffer;
+  });
 }
 function xmlEsc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function falta(txt) { return '[FALTA: ' + txt + ']'; }
@@ -1288,7 +1324,7 @@ document.addEventListener('click', function (e) {
   if ((el = e.target.closest('[data-cerrar]'))) { cerrarDrawer(); return; }
   if ((el = e.target.closest('[data-anio]'))) { S.anio = +el.dataset.anio; S.pagina = 1; S.f.lote = ''; cargarLotes().then(renderTodo).catch(function (er) { toast(er.message, 'bad'); }); return; }
   if ((el = e.target.closest('[data-renta]'))) { S.renta = el.dataset.renta; S.pagina = 1; S.f.lote = ''; cargarLotes().then(renderTodo).catch(function (er) { toast(er.message, 'bad'); }); return; }
-  if ((el = e.target.closest('[data-vista]'))) { S.vista = el.dataset.vista; renderTabs(); renderVista(); return; }
+  if ((el = e.target.closest('[data-vista]'))) { var nv = el.dataset.vista; if ((nv === 'sindir') !== (S.vista === 'sindir')) { S.f = { q: '', lote: '', alerta: '' }; S.pagina = 1; } S.vista = nv; renderTabs(); renderVista(); return; }
   if ((el = e.target.closest('[data-ver-alerta]'))) { S.f = { q: '', lote: '', alerta: el.dataset.verAlerta }; S.pagina = 1; S.vista = 'notificaciones'; renderTabs(); renderVista(); return; }
   if ((el = e.target.closest('[data-ver-lote]'))) { cerrarDrawer(); S.f = { q: '', lote: el.dataset.verLote, alerta: '' }; S.pagina = 1; S.vista = 'notificaciones'; renderTabs(); renderVista(); return; }
   if ((el = e.target.closest('[data-abrir-lote]'))) {
