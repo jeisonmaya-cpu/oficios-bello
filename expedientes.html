@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <title>Expedientes Digitales — Teodoro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="expedientes.css?v=15"/>
+<link rel="stylesheet" href="expedientes.css?v=16"/>
 <link rel="stylesheet" href="ica_titulos.css?v=3"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -459,6 +459,30 @@
         <div class="pol-grande" id="p-ctrl-obs">—</div><p class="small muted">con observaciones de quien digita</p>
       </div>
     </div>
+
+    <div class="rec-hdr">
+      <h3 class="section-title">Lo que está digitando el equipo <small class="muted small" id="p-eq-n"></small></h3>
+      <div class="rec-filtros">
+        <select class="inp" id="p-eq-persona" onchange="polEquipo()"><option value="">Todas las personas</option></select>
+        <input class="inp" id="p-eq-desde" type="date" title="Desde" onchange="polEquipo()">
+        <input class="inp" id="p-eq-hasta" type="date" title="Hasta" onchange="polEquipo()">
+        <select class="inp" id="p-eq-revisar" onchange="polEquipo()" title="Solo registros para revisar">
+          <option value="">Todos los registros</option>
+          <option value="orden">Sin orden de policía</option>
+          <option value="ubic">Sin carpeta o página</option>
+          <option value="valor0">Valor en cero</option>
+          <option value="obs">Con observaciones</option>
+        </select>
+        <button class="btn btn-sm" type="button" onclick="polEquipo()">Actualizar</button>
+        <button class="btn btn-sm" id="p-eq-csv" type="button" onclick="polEquipoCSV()">⬇ Esta lista (CSV)</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Comparendo</th><th>Fecha</th><th>Orden de policía</th><th>Ubicación</th><th>Nombre</th><th class="num">Cédula</th><th class="num">Valor</th><th>Digitó</th><th></th></tr></thead>
+        <tbody id="p-eq-body"><tr><td colspan="9" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </div>
   </section>
 </div>
 
@@ -616,7 +640,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="expedientes.js?v=18"></script>
+<script src="expedientes.js?v=19"></script>
 <script src="ica_titulos.js?v=3"></script>
 </body>
 </html>

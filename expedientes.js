@@ -2942,7 +2942,9 @@ const POL_FORMATO_COMP = /^\d{2}-\d{3}-\d-\d{4}-\d+$/;   // 08-088-6-2022-4812
 // Espacios, puntos, barras o guiones bajos pasan a guion (igual que en la base)
 function polFormatoComp(s) { return String(s || "").trim().toUpperCase().replace(/[\s._/]+/g, "-").replace(/-{2,}/g, "-"); }
 function polUbic(r) { return r.carpeta || r.pagina ? "Carp. " + (r.carpeta || "—") + " · pág. " + (r.pagina || "—") : ""; }
-let POL = { listo: false, uid: null, admin: false, edit: null, hoy: [], res: [], ultimoNuevo: null, revisado: "", guardando: false, confirmado: "" };
+// Pueden ver lo que digita todo el equipo (solo consulta). Quien sea admin en pol_es_admin también lo ve y además puede corregir.
+const POL_SUPERVISORES = ["jeisonmaya@gmail.com"];
+let POL = { listo: false, uid: null, email: "", admin: false, supervisa: false, edit: null, hoy: [], res: [], eq: [], ultimoNuevo: null, revisado: "", guardando: false, confirmado: "" };
 
 function polNorm(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 function polDig(s) { return String(s || "").replace(/\D/g, ""); }
@@ -2982,13 +2984,19 @@ async function polMontar() {
     });
     $("p-comp").addEventListener("blur", () => polDuplicado(false));
     $("p-comp").addEventListener("input", () => { $("p-dup").classList.add("hidden"); $("p-comp").classList.remove("mal"); polNota("pn-comp", ""); POL.revisado = ""; });
-    try { const { data } = await sbAuth.auth.getSession(); POL.uid = data && data.session ? data.session.user.id : null; } catch (e) {}
+    try {
+      const { data } = await sbAuth.auth.getSession();
+      POL.uid = data && data.session ? data.session.user.id : null;
+      POL.email = data && data.session ? String(data.session.user.email || "").toLowerCase() : "";
+    } catch (e) {}
     try { POL.admin = !!(await rpc("pol_es_admin", {})); } catch (e) { POL.admin = false; }
-    $("p-control").classList.toggle("hidden", !POL.admin);
+    POL.supervisa = POL.admin || POL_SUPERVISORES.includes(POL.email);
+    $("p-control").classList.toggle("hidden", !POL.supervisa);
+    if (POL.supervisa) { $("p-eq-desde").value = hoyISO(); $("p-eq-hasta").value = hoyISO(); }
   }
   $("p-fecha").max = hoyISO();
   await Promise.all([polCargarHoy(), polConteos()]);
-  if (POL.admin) polControl();
+  if (POL.supervisa) { polControl(); polEquipo(); }
   if (!POL.edit && !polConDatos()) $("p-comp").focus();
 }
 
@@ -3122,7 +3130,7 @@ async function polEditarId(id) {
   try { const f = await supaFetch(POL_TABLA + "?select=*&id=eq." + Number(id)) || []; if (f[0]) polEditar(f[0]); }
   catch (e) { toast("No se pudo abrir: " + polMsg(e), true); }
 }
-function polEditarDesde(lista, id) { const r = (lista === "res" ? POL.res : POL.hoy).find(x => x.id === id); if (r) polEditar(r); }
+function polEditarDesde(lista, id) { const r = (lista === "res" ? POL.res : lista === "eq" ? POL.eq : POL.hoy).find(x => x.id === id); if (r) polEditar(r); }
 function polEditar(r) {
   if (!(POL.admin || r.digitado_por === POL.uid)) { toast("Solo puedes corregir lo que digitaste.", true); return; }
   if (!POL.edit && polConDatos() && !confirm("Hay datos sin guardar en el formulario. ¿Reemplazarlos por el comparendo a corregir?")) return;
@@ -3161,7 +3169,7 @@ async function polHistorial(id) {
   } catch (e) { caja.classList.add("hidden"); }
 }
 
-function polFila(r, conQuien) {
+function polFila(r, conQuien, lista) {
   const puede = POL.admin || r.digitado_por === POL.uid;
   return "<tr" + (r.id === POL.ultimoNuevo ? ' class="pol-nuevo"' : "") + ">" +
     (conQuien ? "" : "<td class=\"small muted nowrap\">" + esc(polHora(r.digitado_en)) + "</td>") +
@@ -3173,7 +3181,7 @@ function polFila(r, conQuien) {
     "<td class=\"num\">" + esc(r.cedula) + "</td>" +
     "<td class=\"num\">" + esc(polPesos(r.valor)) + "</td>" +
     (conQuien ? "<td class=\"small muted\">" + esc(r.digitado_por_email || "—") + "<br>" + esc(fmtFechaHora(r.digitado_en)) + "</td>" : "") +
-    "<td style=\"text-align:right\">" + (puede ? '<button class="btn btn-sm" type="button" onclick="polEditarDesde(\'' + (conQuien ? "res" : "hoy") + '\',' + Number(r.id) + ')">Corregir</button>' : "") + "</td></tr>";
+    "<td style=\"text-align:right\">" + (puede ? '<button class="btn btn-sm" type="button" onclick="polEditarDesde(\'' + (lista || (conQuien ? "res" : "hoy")) + '\',' + Number(r.id) + ')">Corregir</button>' : "") + "</td></tr>";
 }
 async function polCargarHoy() {
   if (!POL.uid) return;
@@ -3214,7 +3222,7 @@ async function polBuscar(silencioso) {
   } catch (e) { if (!silencioso) toast("No se pudo buscar: " + polMsg(e), true); }
 }
 async function polControl() {
-  if (!POL.admin) return;
+  if (!POL.supervisa) return;
   const desde = new Date(); desde.setDate(desde.getDate() - 13); desde.setHours(0, 0, 0, 0);
   try {
     const filas = await supaFetch(POL_TABLA + "?select=digitado_por_email,digitado_en&digitado_en=gte." + encodeURIComponent(desde.toISOString()) + "&limit=50000") || [];
@@ -3225,9 +3233,18 @@ async function polControl() {
     const personas = Object.keys(pp).sort();
     $("p-ctrl-tabla").innerHTML = personas.length
       ? "<thead><tr><th>Persona</th>" + ult.map(d => "<th class=\"num\">" + d + "</th>").join("") + "<th class=\"num\">14 días</th></tr></thead><tbody>" +
-        personas.map(p => "<tr><td class=\"small\">" + esc(p) + "</td>" + ult.map(d => "<td class=\"num\">" + (pp[p][d] || "") + "</td>").join("") +
+        personas.map(p => "<tr><td class=\"small\"><a href=\"#\" class=\"pol-persona\" data-p=\"" + esc(p) + "\" title=\"Ver lo que digitó\">" + esc(p) + "</a></td>" + ult.map(d => "<td class=\"num\">" + (pp[p][d] || "") + "</td>").join("") +
           "<td class=\"num\"><b>" + Object.values(pp[p]).reduce((a, b) => a + b, 0).toLocaleString("es-CO") + "</b></td></tr>").join("") + "</tbody>"
       : '<tbody><tr><td class="empty">Nadie ha digitado en los últimos 14 días.</td></tr></tbody>';
+    POL.personas = personas;
+    polLlenarPersonas();
+    $("p-ctrl-tabla").querySelectorAll(".pol-persona").forEach(a => a.addEventListener("click", ev => {
+      ev.preventDefault();
+      $("p-eq-persona").value = a.dataset.p;
+      const d = new Date(); d.setDate(d.getDate() - 13);
+      $("p-eq-desde").value = d.toLocaleDateString("en-CA"); $("p-eq-hasta").value = hoyISO();
+      polEquipo().then(() => $("p-eq-body").scrollIntoView({ behavior: "smooth", block: "start" }));
+    }));
   } catch (e) { $("p-ctrl-tabla").innerHTML = '<tbody><tr><td class="empty">' + esc(polMsg(e)) + "</td></tr></tbody>"; }
   const [a, b, c, u] = await Promise.all([
     contarFilas(POL_TABLA + "?select=id&orden_policia=is.null").catch(() => null),
@@ -3240,6 +3257,61 @@ async function polControl() {
   $("p-ctrl-valor0").textContent = b === null ? "—" : b.toLocaleString("es-CO");
   $("p-ctrl-obs").textContent = c === null ? "—" : c.toLocaleString("es-CO");
 }
+// ── Lo que está digitando el equipo (supervisión) ──
+const POL_EQ_LIMITE = 2000;
+function polLlenarPersonas() {
+  const sel = $("p-eq-persona"); if (!sel) return;
+  const actual = sel.value;
+  const lista = Array.from(new Set((POL.personas || []).concat(actual ? [actual] : []))).filter(p => p && p !== "—").sort();
+  sel.innerHTML = '<option value="">Todas las personas</option>' + lista.map(p => '<option value="' + esc(p) + '">' + esc(p) + "</option>").join("");
+  sel.value = actual;
+}
+function polEquipoRuta() {
+  let path = POL_TABLA + "?select=*";
+  const per = $("p-eq-persona").value, de = $("p-eq-desde").value, ha = $("p-eq-hasta").value, rev = $("p-eq-revisar").value;
+  if (per) path += "&digitado_por_email=eq." + encodeURIComponent(per);
+  if (de) path += "&digitado_en=gte." + encodeURIComponent(new Date(de + "T00:00:00").toISOString());
+  if (ha) { const h = new Date(ha + "T00:00:00"); h.setDate(h.getDate() + 1); path += "&digitado_en=lt." + encodeURIComponent(h.toISOString()); }
+  if (rev === "orden") path += "&orden_policia=is.null";
+  else if (rev === "valor0") path += "&valor=eq.0";
+  else if (rev === "obs") path += "&observaciones=not.is.null";
+  else if (rev === "ubic") path += "&or=" + encodeURIComponent("(carpeta.is.null,pagina.is.null)");
+  return path;
+}
+async function polEquipo() {
+  if (!POL.supervisa) return;
+  const body = $("p-eq-body");
+  body.innerHTML = '<tr><td colspan="9" class="empty">Cargando…</td></tr>';
+  try {
+    POL.eq = await supaFetch(polEquipoRuta() + "&order=digitado_en.desc&limit=" + POL_EQ_LIMITE) || [];
+    body.innerHTML = POL.eq.length ? POL.eq.map(r => polFila(r, true, "eq")).join("")
+      : '<tr><td colspan="9" class="empty">No hay comparendos digitados con estos filtros.</td></tr>';
+    const n = POL.eq.length;
+    $("p-eq-n").textContent = n ? (n >= POL_EQ_LIMITE ? "los " + n.toLocaleString("es-CO") + " más recientes (descarga el CSV para verlos todos)"
+                                                    : n.toLocaleString("es-CO") + " comparendo" + (n === 1 ? "" : "s")) : "";
+  } catch (e) {
+    POL.eq = [];
+    body.innerHTML = '<tr><td colspan="9" class="empty">' + esc(polMsg(e)) + "</td></tr>";
+    $("p-eq-n").textContent = "";
+  }
+}
+async function polEquipoCSV() {
+  const btn = $("p-eq-csv"); btn.disabled = true;
+  try {
+    const filas = await traerTodo(polEquipoRuta(), "digitado_en.desc,id.desc");
+    if (!filas.length) { toast("No hay registros con estos filtros.", true); return; }
+    const per = $("p-eq-persona").value;
+    descargarCSV("Comparendos_policia_" + (per ? per.split("@")[0] + "_" : "") + fechaArchivo() + ".csv", POL_CSV_COLS, filas);
+  } catch (e) { toast("No se pudo descargar: " + polMsg(e), true); }
+  finally { btn.disabled = false; }
+}
+const POL_CSV_COLS = [
+  { t: "Comparendo", v: "comparendo" }, { t: "Fecha", v: r => fmtFecha(r.fecha_comparendo) }, { t: "Orden de policía", v: "orden_policia" },
+  { t: "Carpeta", v: "carpeta" }, { t: "Página", v: "pagina" },
+  { t: "Nombres", v: "nombres" }, { t: "Apellidos", v: "apellidos" }, { t: "Cédula", v: "cedula" }, { t: "Valor", v: "valor" },
+  { t: "Observaciones", v: "observaciones" }, { t: "Estado", v: "estado" }, { t: "Digitó", v: "digitado_por_email" },
+  { t: "Digitado", v: r => fmtFechaHora(r.digitado_en) }, { t: "Corrigió", v: "actualizado_por_email" }, { t: "Corregido", v: r => fmtFechaHora(r.actualizado_en) }
+];
 async function polCSV() {
   const btn = $("p-btn-csv"); btn.disabled = true;
   try {
