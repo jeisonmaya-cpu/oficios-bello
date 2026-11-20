@@ -464,8 +464,10 @@
       <h3 class="section-title">Lo que está digitando el equipo <small class="muted small" id="p-eq-n"></small></h3>
       <div class="rec-filtros">
         <select class="inp" id="p-eq-persona" onchange="polEquipo()"><option value="">Todas las personas</option></select>
-        <input class="inp" id="p-eq-desde" type="date" title="Desde" onchange="polEquipo()">
-        <input class="inp" id="p-eq-hasta" type="date" title="Hasta" onchange="polEquipo()">
+        <input class="inp" id="p-eq-desde" type="date" title="Desde (vacío = desde el inicio)" onchange="polEquipo()">
+        <input class="inp" id="p-eq-hasta" type="date" title="Hasta (vacío = hasta hoy)" onchange="polEquipo()">
+        <button class="btn btn-sm" type="button" onclick="$('p-eq-desde').value=$('p-eq-hasta').value=hoyISO();polEquipo()">Hoy</button>
+        <button class="btn btn-sm" type="button" onclick="$('p-eq-desde').value=$('p-eq-hasta').value='';polEquipo()">Todo</button>
         <select class="inp" id="p-eq-revisar" onchange="polEquipo()" title="Solo registros para revisar">
           <option value="">Todos los registros</option>
           <option value="orden">Sin orden de policía</option>
@@ -640,7 +642,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="expedientes.js?v=19"></script>
+<script src="expedientes.js?v=20"></script>
 <script src="ica_titulos.js?v=3"></script>
 </body>
 </html>

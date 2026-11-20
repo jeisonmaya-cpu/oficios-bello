@@ -2943,7 +2943,7 @@ const POL_FORMATO_COMP = /^\d{2}-\d{3}-\d-\d{4}-\d+$/;   // 08-088-6-2022-4812
 function polFormatoComp(s) { return String(s || "").trim().toUpperCase().replace(/[\s._/]+/g, "-").replace(/-{2,}/g, "-"); }
 function polUbic(r) { return r.carpeta || r.pagina ? "Carp. " + (r.carpeta || "—") + " · pág. " + (r.pagina || "—") : ""; }
 // Pueden ver lo que digita todo el equipo (solo consulta). Quien sea admin en pol_es_admin también lo ve y además puede corregir.
-const POL_SUPERVISORES = ["jeisonmaya@gmail.com"];
+const POL_SUPERVISORES = ["jeisonmaya@gmail.com", "camilapuertacamargo@gmail.com"];
 let POL = { listo: false, uid: null, email: "", admin: false, supervisa: false, edit: null, hoy: [], res: [], eq: [], ultimoNuevo: null, revisado: "", guardando: false, confirmado: "" };
 
 function polNorm(s) { return String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
@@ -2992,7 +2992,6 @@ async function polMontar() {
     try { POL.admin = !!(await rpc("pol_es_admin", {})); } catch (e) { POL.admin = false; }
     POL.supervisa = POL.admin || POL_SUPERVISORES.includes(POL.email);
     $("p-control").classList.toggle("hidden", !POL.supervisa);
-    if (POL.supervisa) { $("p-eq-desde").value = hoyISO(); $("p-eq-hasta").value = hoyISO(); }
   }
   $("p-fecha").max = hoyISO();
   await Promise.all([polCargarHoy(), polConteos()]);
@@ -3258,7 +3257,6 @@ async function polControl() {
   $("p-ctrl-obs").textContent = c === null ? "—" : c.toLocaleString("es-CO");
 }
 // ── Lo que está digitando el equipo (supervisión) ──
-const POL_EQ_LIMITE = 2000;
 function polLlenarPersonas() {
   const sel = $("p-eq-persona"); if (!sel) return;
   const actual = sel.value;
@@ -3283,12 +3281,15 @@ async function polEquipo() {
   const body = $("p-eq-body");
   body.innerHTML = '<tr><td colspan="9" class="empty">Cargando…</td></tr>';
   try {
-    POL.eq = await supaFetch(polEquipoRuta() + "&order=digitado_en.desc&limit=" + POL_EQ_LIMITE) || [];
+    POL.eq = await traerTodo(polEquipoRuta(), "digitado_en.desc,id.desc", k => { $("p-eq-n").textContent = "cargando " + k.toLocaleString("es-CO") + "…"; });
     body.innerHTML = POL.eq.length ? POL.eq.map(r => polFila(r, true, "eq")).join("")
       : '<tr><td colspan="9" class="empty">No hay comparendos digitados con estos filtros.</td></tr>';
+    if (!$("p-eq-persona").value) {
+      POL.personas = Array.from(new Set((POL.personas || []).concat(POL.eq.map(r => r.digitado_por_email).filter(Boolean))));
+      polLlenarPersonas();
+    }
     const n = POL.eq.length;
-    $("p-eq-n").textContent = n ? (n >= POL_EQ_LIMITE ? "los " + n.toLocaleString("es-CO") + " más recientes (descarga el CSV para verlos todos)"
-                                                    : n.toLocaleString("es-CO") + " comparendo" + (n === 1 ? "" : "s")) : "";
+    $("p-eq-n").textContent = n ? n.toLocaleString("es-CO") + " comparendo" + (n === 1 ? "" : "s") : "";
   } catch (e) {
     POL.eq = [];
     body.innerHTML = '<tr><td colspan="9" class="empty">' + esc(polMsg(e)) + "</td></tr>";
