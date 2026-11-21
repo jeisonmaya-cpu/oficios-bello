@@ -21,7 +21,7 @@ var CFG = {
   POR_PAGINA: 50,
   LOTE_INSERT: 500,
   LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js', 'lib/jszip.min.js'],
-  PLANTILLAS_JS: 'plantillas_inub.js?v=3',
+  PLANTILLAS_JS: 'plantillas_inub.js?v=4',
   CONSTANCIA_KEY: 'notificaciones_constancia_inub',
   PDF_WORKER: 'lib/pdf.worker.min.js',
   PDF_CMAPS: 'lib/cmaps/'
@@ -425,10 +425,101 @@ function vistaNotificaciones() {
 }
 
 /* =========================================================
+   Constancia de notificación (PDF) con todas las notificaciones del deudor
+   ========================================================= */
+var DIRECTOR = { nombre: 'JUAN PABLO GÓMEZ LONDOÑO', cargo: 'Director Administrativo de Ejecuciones Fiscales' };
+function cR(x, o) { return Object.assign({ x: String(x == null ? '' : x), s: 10.5 }, o || {}); }
+function cP(runs, o) { return Object.assign({ t: 'p', al: 'j', il: 0, ir: 0, fi: 0, sb: 0, sa: 6, ls: 1.1, ms: 10.5, runs: runs }, o || {}); }
+function cCelda(txt, o) { o = o || {}; return { span: 1, fill: o.fill || null, va: 't', b: [cP([cR(txt, { s: 9.5, b: o.b ? 1 : 0 })], { al: 'l', sa: 0, ms: 9.5, ls: 1.05 })] }; }
+function filasNotificacion(o, resol) {
+  var l = o.notif_lotes || {}, f = [], fe = l.fecha_envio ? fFecha(l.fecha_envio) + (l.fecha_envio_aproximada ? ' (fecha aproximada)' : '') : 'Sin fecha registrada';
+  function fila(k, v) { if (v) f.push({ c: [cCelda(k, { fill: 'EEF1F5', b: 1 }), cCelda(v)] }); }
+  fila('Lote', 'Lote ' + l.numero + ' de ' + renta(l.renta).nombre + (l.vigencia ? ', vigencia ' + l.vigencia : '') + (l.concepto ? ' (' + l.concepto + ')' : ''));
+  if (l.medio === 'sin_direccion') {
+    var fij = fijacionAviso(l);
+    fila('Medio', 'Notificación por aviso: deudor sin dirección conocida');
+    fila('Dirección registrada', (o.direccion || 'Sin dirección') + (detalleDe(o, 'MOTIVO') ? ' (' + detalleDe(o, 'MOTIVO') + ')' : ''));
+    fila('Aviso', fij ? 'Fijado el ' + fFecha(fij) + ' y desfijado el ' + fFecha(desfijacionAviso(l)) : 'Sin fecha de fijación registrada');
+    if (resol) fila('Resolución de inubicabilidad', 'N.º ' + fmtNumRes(resol.numero) + ' del ' + fLarga(resol.fecha));
+  } else {
+    fila('Medio', MEDIOS[l.medio] ? MEDIOS[l.medio].nombre : l.medio);
+    fila('Radicado', o.radicado);
+    if (l.medio === 'mensajeria') { fila('Guía de mensajería', o.guia || 'Sin número de guía registrado'); fila('Dirección', (o.direccion || '') + (o.ciudad ? ', ' + o.ciudad : '')); }
+    if (l.medio === 'correo') fila('Correo electrónico', o.email || 'Sin correo registrado');
+    fila('Fecha de envío', l.medio === 'web' ? '' : fe);
+    fila('Publicación web', l.publicado_web ? 'Publicado el ' + fFecha(l.fecha_publicacion_web) + (l.url_publicacion_web ? ' en ' + l.url_publicacion_web : '') : (l.medio === 'web' ? fe : 'No registrada'));
+  }
+  var mand = detalleDe(o, 'MANDAMIENTO') || l.mandamiento, fm = aISO(detalleDe(o, 'FECHA MANDAMIENTO')) || l.fecha_mandamiento;
+  if (mand) fila('Mandamiento de pago', mand + (fm ? ' del ' + fFecha(fm) : ''));
+  fila(o.n_referencias > 1 ? 'Referencias (' + o.n_referencias + ')' : 'Referencia', String(o.referencias || '').split(/[,;]+/).map(function (x) { return x.trim(); }).filter(Boolean).join(', '));
+  if (o.total != null) fila('Valor notificado', pesos(o.total));
+  return f;
+}
+function bloquesConstancia(a, lista, resols) {
+  var B = [];
+  B.push(cP([cR('La Dirección Administrativa de Ejecuciones Fiscales de la Alcaldía de Bello hace constar que, según los registros del módulo de notificaciones, a nombre de '), cR(a.nombre || 'Sin nombre', { b: 1 }),
+    cR(', identificado(a) con documento '), cR(a.documento || 'sin documento', { b: 1 }),
+    cR(lista.length === 1 ? ', se registra la siguiente notificación:' : ', se registran las siguientes ' + lista.length + ' notificaciones:')], { sa: 10 }));
+  lista.forEach(function (o, i) {
+    B.push(cP([cR((lista.length > 1 ? (i + 1) + '. ' : '') + (MEDIOS[o.notif_lotes.medio] ? MEDIOS[o.notif_lotes.medio].nombre : '') + ' · ' + renta(o.notif_lotes.renta).nombre + (o.notif_lotes.anio_envio ? ' · ' + o.notif_lotes.anio_envio : ''), { b: 1, s: 10.5 })], { al: 'l', sa: 3, sb: i ? 6 : 0 }));
+    B.push({ t: 'tbl', cols: [140, 328], pad: 5, rows: filasNotificacion(o, resols[o.radicado]) });
+    B.push(cP([cR('')], { sa: 2, ms: 6 }));
+  });
+  B.push(cP([cR('La presente constancia se expide en Bello el ' + fLarga(hoy()) + ', con base en la información registrada en el sistema, a solicitud de la parte interesada.')], { sb: 8, sa: 46 }));
+  B.push(cP([{ img: 'firma.jpeg', w: 115, h: 37.3, anchor: { dx: 0, dy: -34 } }, cR('_______________________________')], { al: 'l', sa: 0 }));
+  B.push(cP([cR(DIRECTOR.nombre, { b: 1 })], { al: 'l', sa: 0 }));
+  B.push(cP([cR(DIRECTOR.cargo)], { al: 'l', sa: 14 }));
+  var ahora = new Date();
+  B.push(cP([cR('Generada en Teodoro por ' + (Auth.email() || 'usuario') + ' el ' + fFecha(ahora) + ' a las ' + String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0') + '.', { s: 7.5, c: '666666' })], { al: 'l', sa: 0, ms: 7.5 }));
+  return B;
+}
+function generarConstancia() {
+  var a = _actoFicha; if (!a) return;
+  var out = $('constRes'), btn = document.querySelector('[data-constancia]');
+  if (btn) btn.disabled = true;
+  out.innerHTML = '<div class="note info">Generando la constancia…</div>';
+  var lista;
+  obtenerOtros(a).then(function (otros) {
+    lista = [a].concat(otros);
+    var sd = lista.filter(function (o) { return o.notif_lotes.medio === 'sin_direccion'; }).map(function (o) { return o.radicado; });
+    if (!sd.length) return [];
+    return supaFetch('notif_resoluciones_inub?select=radicado,numero,fecha&radicado=in.(' + encodeURIComponent(sd.join(',')) + ')').then(function (r) { return r.data || []; }, function () { return []; });
+  }).then(function (rs) {
+    var resols = {}; rs.forEach(function (x) { resols[x.radicado] = x; });
+    return cargarLibs().then(function () { return traerPlantilla('resolucion'); }).then(function () {
+      var base = window.PLANTILLAS_INUB_PDF && window.PLANTILLAS_INUB_PDF.constancia;
+      if (!base || !window.MotorPDF) throw new Error('El archivo plantillas_inub.js es una versión anterior. Sube la versión nueva.');
+      var P = Object.assign({}, base, { blocks: bloquesConstancia(a, lista, resols) });
+      return MotorPDF.generar(PDFLib, P, {}, [], {});
+    });
+  }).then(function (bytes) {
+    var nombre = ((a.documento || a.radicado) + ' ' + (a.nombre || '')).replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 70) + ' - Constancia de notificacion.pdf';
+    descargarBlob(new Blob([bytes], { type: 'application/pdf' }), nombre);
+    out.innerHTML = '<div class="note ok">Descargada la constancia con ' + fmt(lista.length) + (lista.length === 1 ? ' notificación.' : ' notificaciones.') + '</div>';
+  }).catch(function (e) {
+    out.innerHTML = '<div class="note bad">' + esc(e.message || String(e)) + '</div>';
+  }).then(function () { if (btn) btn.disabled = false; });
+}
+function copiarEnlace() {
+  var a = _actoFicha; if (!a) return;
+  var url = location.origin + location.pathname + '?buscar=' + encodeURIComponent(docValido(a.documento) ? String(a.documento).replace(/^0+/, '') : a.radicado);
+  var ok = function () { toast('Enlace copiado. Al abrirlo se busca este deudor en Notificaciones.', 'ok'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { window.prompt('Copia este enlace:', url); });
+  else window.prompt('Copia este enlace:', url);
+}
+/* Enlace directo: notificaciones?buscar=8013585 (desde tutelas, peticiones o un correo) */
+function buscarDesdeEnlace() {
+  var v = new URLSearchParams(location.search).get('buscar');
+  if (!v || !$('qGlobal')) return;
+  $('qGlobal').value = v;
+  buscarGlobal(v, true);
+}
+
+/* =========================================================
    Buscador global: todas las rentas, años y medios
    ========================================================= */
 var _global = [], _tGlobal = null, _idGlobal = 0;
-function buscarGlobal(v) {
+function buscarGlobal(v, abrirSiUno) {
   var res = $('resGlobal'), t = normalizarBusqueda(v);
   if (!res) return;
   if (!t || (/^\d+$/.test(t) ? t.length < 4 : t.length < 3)) { res.hidden = true; res.innerHTML = ''; return; }
@@ -439,6 +530,13 @@ function buscarGlobal(v) {
     if (id !== _idGlobal) return;
     _global = r.data || [];
     pintarGlobal(t);
+    if (abrirSiUno && _global.length) {
+      var docs = {}; _global.forEach(function (o) { docs[String(o.documento || o.radicado).replace(/^0+/, '')] = 1; });
+      if (Object.keys(docs).length === 1) {
+        var masReciente = _global.slice().sort(function (x, y) { return String(y.notif_lotes.fecha_envio || '').localeCompare(String(x.notif_lotes.fecha_envio || '')); })[0];
+        cerrarGlobal(); fichaActo(masReciente);
+      }
+    }
   }).catch(function (e) {
     if (id !== _idGlobal) return;
     res.innerHTML = '<div class="rg-msg">' + esc(e.message) + '</div>';
@@ -603,13 +701,22 @@ function estadoFrase(a) {
 }
 function docValido(d) { d = String(d || '').replace(/\D/g, ''); return d.length >= 5 && !/^0+$/.test(d); }
 var _otros = [];
+function obtenerOtros(a) {
+  if (!docValido(a.documento)) return Promise.resolve([]);
+  var base = String(a.documento).replace(/\D/g, '').replace(/^0+/, ''), variantes = [base, '0' + base, '00' + base, '000' + base];
+  return supaFetch('notif_actos?select=' + encodeURIComponent(SEL_ACTO) + '&documento=in.(' + encodeURIComponent(variantes.join(',')) + ')&radicado=neq.' + encodeURIComponent(a.radicado) + '&limit=50')
+    .then(function (r) { return (r.data || []).sort(function (x, y) { return String(y.notif_lotes.fecha_envio || '').localeCompare(String(x.notif_lotes.fecha_envio || '')); }); });
+}
+function botonesFicha() {
+  return '<div class="acciones" style="margin:0 0 6px"><button class="btn" type="button" data-constancia="1">Constancia de notificación (PDF)</button>' +
+    '<button class="btn" type="button" data-copiar-enlace="1" title="Enlace que abre directamente este deudor en Notificaciones">Copiar enlace</button></div><div id="constRes" style="margin-bottom:14px"></div>';
+}
 function cargarOtrosRegistros(a) {
   var box = $('otrosReg'); if (!box) return;
   if (!docValido(a.documento)) { box.innerHTML = ''; return; }
-  var base = String(a.documento).replace(/\D/g, '').replace(/^0+/, ''), variantes = [base, '0' + base, '00' + base, '000' + base];
-  supaFetch('notif_actos?select=' + encodeURIComponent(SEL_ACTO) + '&documento=in.(' + encodeURIComponent(variantes.join(',')) + ')&radicado=neq.' + encodeURIComponent(a.radicado) + '&limit=50').then(function (r) {
+  obtenerOtros(a).then(function (lista) {
     if (_actoFicha !== a || !$('otrosReg')) return;
-    _otros = (r.data || []).sort(function (x, y) { return String(y.notif_lotes.fecha_envio || '').localeCompare(String(x.notif_lotes.fecha_envio || '')); });
+    _otros = lista;
     if (!_otros.length) { $('otrosReg').innerHTML = '<p class="sub" style="margin:-4px 0 14px">No tiene otras notificaciones en Teodoro.</p>'; return; }
     var visibles = 4;
     $('otrosReg').innerHTML = '<div class="section-title" style="margin-top:0">Otras notificaciones de este deudor (' + fmt(_otros.length) + ')</div><div class="otros">' +
@@ -638,7 +745,7 @@ function fichaActo(a) {
   var h = '<div class="drawer-head"><div><span class="estado info">' + esc(MEDIOS[l.medio] ? MEDIOS[l.medio].nombre : '') + '</span>' +
     '<h3 class="mono">' + esc(a.radicado) + '</h3><div class="who">' + esc(a.nombre) + ', ' + esc(a.documento || 'sin documento') + '</div></div>' +
     '<button class="close" type="button" data-cerrar="1" aria-label="Cerrar">&times;</button></div>';
-  h += estadoFrase(a) + '<div id="otrosReg"></div>';
+  h += estadoFrase(a) + '<div id="otrosReg"></div>' + botonesFicha();
   h += '<div class="dl">' +
     (l.medio === 'mensajeria' || a.guia ? '<div><small>Radicado de la Alcaldía</small><b class="mono">' + esc(a.radicado) + '</b></div><div><small>Guía de mensajería</small><b class="mono">' + esc(a.guia || 'Sin guía') + '</b></div>' : '') +
     (a.email ? '<div class="full"><small>Correo</small><b>' + esc(a.email) + '</b></div>' : '') +
@@ -704,7 +811,7 @@ function fichaSinDireccion(a) {
   var h = '<div class="drawer-head"><div><span class="estado bad">Sin dirección</span>' +
     '<h3>' + esc(a.nombre) + '</h3><div class="who">Documento ' + esc(a.documento || 'sin documento') + (detalleDe(a, 'GRUPO') ? ', ' + esc(detalleDe(a, 'GRUPO')).toLowerCase() : '') + '</div></div>' +
     '<button class="close" type="button" data-cerrar="1" aria-label="Cerrar">&times;</button></div>';
-  h += estadoFrase(a) + '<div id="numFrase"></div><div id="otrosReg"></div>';
+  h += estadoFrase(a) + '<div id="numFrase"></div><div id="otrosReg"></div>' + botonesFicha();
   h += '<div class="dl">' +
     '<div class="full"><small>Dirección registrada</small><b>' + esc(a.direccion || 'Sin dirección') + (a.ciudad ? ', ' + esc(a.ciudad) : '') + '</b></div>' +
     (detalleDe(a, 'MOTIVO') ? '<div class="full"><small>Por qué no sirve</small><b>' + esc(detalleDe(a, 'MOTIVO')) + '</b></div>' : '') +
@@ -1502,6 +1609,8 @@ function botonIrLote() { return '<div class="acciones"><button class="btn btn-go
 document.addEventListener('click', function (e) {
   var el;
   if ((el = e.target.closest('[data-global]'))) { var g = _global[+el.dataset.global]; cerrarGlobal(); if (g) fichaActo(g); return; }
+  if ((el = e.target.closest('[data-constancia]'))) { if (!el.disabled) generarConstancia(); return; }
+  if ((el = e.target.closest('[data-copiar-enlace]'))) { copiarEnlace(); return; }
   if ((el = e.target.closest('[data-ver-otros]'))) { document.querySelectorAll('[data-otro][hidden]').forEach(function (x) { x.hidden = false; }); el.remove(); return; }
   if ((el = e.target.closest('[data-otro]'))) { var ot = _otros[+el.dataset.otro]; if (ot) fichaActo(ot); return; }
   if (!e.target.closest('.buscador-global')) cerrarGlobal();
@@ -1569,6 +1678,7 @@ function iniciarApp() {
   $('vista').innerHTML = '<div class="cargando">Cargando notificaciones…</div>';
   recargarTodo().then(function () {
     if (!aniosDisponibles().length) { S.vista = 'montar'; renderTabs(); renderVista(); }
+    buscarDesdeEnlace();
   });
 }
 $('loginForm').addEventListener('submit', function (e) {
