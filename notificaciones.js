@@ -424,6 +424,59 @@ function vistaNotificaciones() {
     '<div class="pager" id="pager"></div></section>';
 }
 
+/* =========================================================
+   Buscador global: todas las rentas, años y medios
+   ========================================================= */
+var _global = [], _tGlobal = null, _idGlobal = 0;
+function buscarGlobal(v) {
+  var res = $('resGlobal'), t = normalizarBusqueda(v);
+  if (!res) return;
+  if (!t || (/^\d+$/.test(t) ? t.length < 4 : t.length < 3)) { res.hidden = true; res.innerHTML = ''; return; }
+  var id = ++_idGlobal;
+  res.hidden = false;
+  res.innerHTML = '<div class="rg-msg">Buscando «' + esc(t) + '» en todas las notificaciones…</div>';
+  supaFetch('notif_actos?select=' + encodeURIComponent(SEL_ACTO) + filtroTexto(t) + '&limit=60').then(function (r) {
+    if (id !== _idGlobal) return;
+    _global = r.data || [];
+    pintarGlobal(t);
+  }).catch(function (e) {
+    if (id !== _idGlobal) return;
+    res.innerHTML = '<div class="rg-msg">' + esc(e.message) + '</div>';
+  });
+}
+function pintarGlobal(t) {
+  var res = $('resGlobal');
+  if (!_global.length) { res.innerHTML = '<div class="rg-msg">No hay notificaciones con «' + esc(t) + '». Prueba con la cédula sin puntos o con los últimos dígitos del comparendo.</div>'; return; }
+  var grupos = {}, orden = [];
+  _global.forEach(function (o, i) {
+    var k = docValido(o.documento) ? 'd' + String(o.documento).replace(/^0+/, '') : 'n' + (o.nombre || '') + o.radicado;
+    if (!grupos[k]) { grupos[k] = []; orden.push(k); }
+    grupos[k].push(i);
+  });
+  var h = '<div class="rg-head">' + fmt(_global.length) + (_global.length >= 60 ? '+' : '') + (_global.length === 1 ? ' notificación de ' : ' notificaciones de ') + fmt(orden.length) + (orden.length === 1 ? ' deudor' : ' deudores') + (_global.length >= 60 ? '. Escribe algo más preciso para acotar.' : '') + '</div>';
+  orden.forEach(function (k) {
+    var idx = grupos[k], p = _global[idx[0]];
+    idx.sort(function (x, y) { return String(_global[y].notif_lotes.fecha_envio || '').localeCompare(String(_global[x].notif_lotes.fecha_envio || '')); });
+    h += '<div class="rg-grupo"><div class="rg-deudor"><b>' + resaltar(p.nombre || 'Sin nombre', t) + '</b><span class="sub">' + resaltar(p.documento || 'Sin documento', t) + ' · ' + fmt(idx.length) + (idx.length === 1 ? ' registro' : ' registros') + '</span></div>' +
+      idx.map(function (i) { return itemRegistro(_global[i], 'data-global="' + i + '"', t); }).join('') + '</div>';
+  });
+  res.innerHTML = h;
+}
+/* Qué comparendo o guía coincidió, para mostrarlo resaltado */
+function coincidencia(o, t) {
+  var T = t.toUpperCase();
+  if (o.guia && String(o.guia).toUpperCase().indexOf(T) > -1) return 'guía ' + o.guia;
+  var refs = String(o.referencias || '').split(/[,;\s]+/);
+  for (var i = 0; i < refs.length; i++) if (refs[i] && refs[i].toUpperCase().indexOf(T) > -1 && refs[i].length > T.length) return refs[i];
+  return '';
+}
+function resaltar(txt, t) {
+  var s = String(txt), i = s.toUpperCase().indexOf(t.toUpperCase());
+  if (!t || i < 0) return esc(s);
+  return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + t.length)) + '</mark>' + esc(s.slice(i + t.length));
+}
+function cerrarGlobal() { var r = $('resGlobal'); if (r) r.hidden = true; }
+
 /* Vista aparte para los deudores sin dirección: todas las vigencias y años, solo ese medio */
 function vistaSinDireccion() {
   var lotesSD = S.lotesSD || [];
@@ -437,12 +490,25 @@ function vistaSinDireccion() {
     '<div class="pager" id="pager"></div></section>';
 }
 
+var SEL_ACTO = 'radicado,consecutivo,documento,nombre,email,alerta_correo,alerta_registro,referencias,n_referencias,valor_capital,intereses,total,detalle,verificacion,pagina_inicio,paginas,estado_correo,guia,direccion,ciudad,lote_id,' +
+  'notif_lotes!inner(id,numero,renta,medio,vigencia,mandamiento,fecha_mandamiento,fecha_envio,fecha_envio_aproximada,anio_envio,concepto,publicado_web,fecha_publicacion_web,url_publicacion_web,drive_pdf_id,archivo_pdf)';
+
+/* Limpia lo que escribe el usuario: «8.013.585» -> 8013585; comparendos con solo los últimos dígitos */
+function normalizarBusqueda(v) {
+  var t = String(v || '').replace(/[^\p{L}\p{N}@._\- ]/gu, '').trim();
+  if (/^[\d\s.,\-]+$/.test(t)) t = t.replace(/\D/g, '');
+  return t;
+}
+function filtroTexto(t) {
+  var c = '*' + t + '*';
+  return '&or=' + encodeURIComponent('(radicado.ilike.' + c + ',documento.ilike.' + c + ',nombre.ilike.' + c + ',email.ilike.' + c + ',referencias.ilike.' + c + ',guia.ilike.' + c + ')');
+}
+
 var _busqueda = 0;
 function buscarActos() {
   if (!$('tablaActos')) return;
   var id = ++_busqueda;
-  var sel = 'radicado,consecutivo,documento,nombre,email,alerta_correo,alerta_registro,referencias,n_referencias,valor_capital,intereses,total,detalle,verificacion,pagina_inicio,paginas,estado_correo,guia,direccion,ciudad,lote_id,' +
-    'notif_lotes!inner(id,numero,renta,medio,vigencia,mandamiento,fecha_mandamiento,fecha_envio,fecha_envio_aproximada,anio_envio,concepto,publicado_web,fecha_publicacion_web,url_publicacion_web,drive_pdf_id,archivo_pdf)';
+  var sel = SEL_ACTO;
   var sd = S.vista === 'sindir';
   var q = 'notif_actos?select=' + encodeURIComponent(sel);
   if (sd) q += '&notif_lotes.medio=eq.sin_direccion';
@@ -452,11 +518,8 @@ function buscarActos() {
     if (S.f.alerta && ALERTAS_FILTRO[S.f.alerta]) q += '&' + ALERTAS_FILTRO[S.f.alerta].filtro;
   }
   if (S.f.lote) q += '&lote_id=eq.' + encodeURIComponent(S.f.lote);
-  var t = S.f.q.replace(/[^\p{L}\p{N}@._\- ]/gu, '').trim();
-  if (t) {
-    var c = '*' + t + '*';
-    q += '&or=' + encodeURIComponent('(radicado.ilike.' + c + ',documento.ilike.' + c + ',nombre.ilike.' + c + ',email.ilike.' + c + ',referencias.ilike.' + c + ',guia.ilike.' + c + ')');
-  }
+  var t = normalizarBusqueda(S.f.q);
+  if (t) q += filtroTexto(t);
   q += '&order=radicado.asc';
   var ini = (S.pagina - 1) * CFG.POR_PAGINA;
   supaFetch(q, { range: [ini, ini + CFG.POR_PAGINA - 1] }).then(function (r) {
@@ -516,12 +579,66 @@ function cerrarDrawer() {
   if (_focoPrevio && _focoPrevio.focus) _focoPrevio.focus();
 }
 
+/* Estado de la notificación en una frase, para leer de un vistazo */
+function estadoFrase(a) {
+  var l = a.notif_lotes || {}, t = terminoLote(l), partes = [], tono = 'info';
+  var f = l.fecha_envio ? fFecha(l.fecha_envio) + (l.fecha_envio_aproximada ? ' (aprox.)' : '') : 'sin fecha';
+  if (l.medio === 'sin_direccion') {
+    var fij = fijacionAviso(l);
+    partes.push(fij ? 'Deudor sin dirección, notificado por aviso fijado el ' + fFecha(fij) + ' y desfijado el ' + fFecha(desfijacionAviso(l)) : 'Deudor sin dirección; el lote no tiene fecha de fijación del aviso');
+  } else if (l.medio === 'mensajeria') {
+    partes.push('Enviado por mensajería el ' + f + (a.guia ? ' con la guía ' + a.guia : ' sin número de guía'));
+    if (!a.guia) tono = 'warn';
+  } else if (l.medio === 'correo') {
+    partes.push('Enviado por correo electrónico el ' + f + (a.email ? ' a ' + a.email : ''));
+  } else if (l.medio === 'web') {
+    partes.push('Publicado en la página web el ' + fFecha(l.fecha_publicacion_web || l.fecha_envio));
+  }
+  if (l.medio !== 'web' && l.medio !== 'sin_direccion') partes.push(l.publicado_web ? 'publicado en la web el ' + fFecha(l.fecha_publicacion_web) : 'sin publicación web registrada');
+  if (t) partes.push('el término ' + (t.dias < 0 ? 'venció' : 'vence') + ' el ' + fFecha(t.vence));
+  if (a.alerta_registro || a.alerta_correo) tono = 'warn';
+  var txt = partes.join('; ') + '.';
+  return '<div class="estado-frase ' + tono + '"><small>Estado</small><p>' + esc(txt.charAt(0).toUpperCase() + txt.slice(1)) + '</p>' +
+    '<span class="sub">Lote ' + esc(l.numero) + ' de ' + esc(renta(l.renta).nombre) + (l.vigencia ? ', vigencia ' + esc(l.vigencia) : '') + (l.anio_envio ? ', notificaciones de ' + esc(l.anio_envio) : '') + '</span></div>';
+}
+function docValido(d) { d = String(d || '').replace(/\D/g, ''); return d.length >= 5 && !/^0+$/.test(d); }
+var _otros = [];
+function cargarOtrosRegistros(a) {
+  var box = $('otrosReg'); if (!box) return;
+  if (!docValido(a.documento)) { box.innerHTML = ''; return; }
+  var base = String(a.documento).replace(/\D/g, '').replace(/^0+/, ''), variantes = [base, '0' + base, '00' + base, '000' + base];
+  supaFetch('notif_actos?select=' + encodeURIComponent(SEL_ACTO) + '&documento=in.(' + encodeURIComponent(variantes.join(',')) + ')&radicado=neq.' + encodeURIComponent(a.radicado) + '&limit=50').then(function (r) {
+    if (_actoFicha !== a || !$('otrosReg')) return;
+    _otros = (r.data || []).sort(function (x, y) { return String(y.notif_lotes.fecha_envio || '').localeCompare(String(x.notif_lotes.fecha_envio || '')); });
+    if (!_otros.length) { $('otrosReg').innerHTML = '<p class="sub" style="margin:-4px 0 14px">No tiene otras notificaciones en Teodoro.</p>'; return; }
+    var visibles = 4;
+    $('otrosReg').innerHTML = '<div class="section-title" style="margin-top:0">Otras notificaciones de este deudor (' + fmt(_otros.length) + ')</div><div class="otros">' +
+      _otros.map(function (o, i) { return itemRegistro(o, 'data-otro="' + i + '"' + (i >= visibles ? ' hidden' : '')); }).join('') +
+      (_otros.length > visibles ? '<button type="button" class="btn" data-ver-otros="1" style="margin:4px">Ver ' + fmt(_otros.length - visibles) + ' más</button>' : '') + '</div>';
+  }).catch(function () { if ($('otrosReg')) $('otrosReg').innerHTML = ''; });
+}
+function etiquetaMedio(l) {
+  var cls = l.medio === 'sin_direccion' ? 'bad' : l.medio === 'mensajeria' ? 'warn' : l.medio === 'web' ? 'ok' : 'info';
+  return '<span class="estado ' + cls + '">' + esc(MEDIOS[l.medio] ? MEDIOS[l.medio].corto : l.medio) + '</span>';
+}
+function itemRegistro(o, attr, t) {
+  var l = o.notif_lotes || {}, ref = t ? coincidencia(o, t) : '';
+  var detalle = ref ? 'Coincide: ' + resaltar(ref, t) + ' · ' : '';
+  detalle += (l.fecha_envio ? 'Enviado ' + fFecha(l.fecha_envio) : 'Sin fecha') + (o.guia && ref.indexOf('guía') < 0 ? ' · guía ' + esc(o.guia) : '');
+  if (!ref && o.referencias) detalle += ' · ' + esc(String(o.referencias).slice(0, 70)) + (String(o.referencias).length > 70 ? '…' : '');
+  return '<button type="button" class="registro" ' + attr + '>' + etiquetaMedio(l) +
+    '<span class="reg-main"><b>Lote ' + esc(l.numero) + ' · ' + esc(renta(l.renta).nombre) + (l.anio_envio ? ' · ' + esc(l.anio_envio) : '') + '</b>' +
+    '<span class="sub">' + detalle + '</span></span>' +
+    '<span class="reg-v">' + pesos(o.total) + '</span></button>';
+}
+
 function fichaActo(a) {
   if (esSinDireccion(a.notif_lotes)) { fichaSinDireccion(a); return; }
   var l = a.notif_lotes || {}, t = terminoLote(l);
   var h = '<div class="drawer-head"><div><span class="estado info">' + esc(MEDIOS[l.medio] ? MEDIOS[l.medio].nombre : '') + '</span>' +
     '<h3 class="mono">' + esc(a.radicado) + '</h3><div class="who">' + esc(a.nombre) + ', ' + esc(a.documento || 'sin documento') + '</div></div>' +
     '<button class="close" type="button" data-cerrar="1" aria-label="Cerrar">&times;</button></div>';
+  h += estadoFrase(a) + '<div id="otrosReg"></div>';
   h += '<div class="dl">' +
     (l.medio === 'mensajeria' || a.guia ? '<div><small>Radicado de la Alcaldía</small><b class="mono">' + esc(a.radicado) + '</b></div><div><small>Guía de mensajería</small><b class="mono">' + esc(a.guia || 'Sin guía') + '</b></div>' : '') +
     (a.email ? '<div class="full"><small>Correo</small><b>' + esc(a.email) + '</b></div>' : '') +
@@ -565,6 +682,7 @@ function fichaActo(a) {
   }
   _actoFicha = a;
   abrirDrawer(h);
+  cargarOtrosRegistros(a);
 }
 
 /* ---------- Ficha de un deudor sin dirección ---------- */
@@ -586,6 +704,7 @@ function fichaSinDireccion(a) {
   var h = '<div class="drawer-head"><div><span class="estado bad">Sin dirección</span>' +
     '<h3>' + esc(a.nombre) + '</h3><div class="who">Documento ' + esc(a.documento || 'sin documento') + (detalleDe(a, 'GRUPO') ? ', ' + esc(detalleDe(a, 'GRUPO')).toLowerCase() : '') + '</div></div>' +
     '<button class="close" type="button" data-cerrar="1" aria-label="Cerrar">&times;</button></div>';
+  h += estadoFrase(a) + '<div id="numFrase"></div><div id="otrosReg"></div>';
   h += '<div class="dl">' +
     '<div class="full"><small>Dirección registrada</small><b>' + esc(a.direccion || 'Sin dirección') + (a.ciudad ? ', ' + esc(a.ciudad) : '') + '</b></div>' +
     (detalleDe(a, 'MOTIVO') ? '<div class="full"><small>Por qué no sirve</small><b>' + esc(detalleDe(a, 'MOTIVO')) + '</b></div>' : '') +
@@ -622,8 +741,10 @@ function fichaSinDireccion(a) {
     '<button class="btn" type="button" data-inubicabilidad="word" title="Para revisar o corregir antes de expedir">Borrador en Word</button></div><div id="inubRes"></div></div>';
   _actoFicha = a;
   abrirDrawer(h);
+  cargarOtrosRegistros(a);
   numeroExistente(a).then(function (r) {
     if (_actoFicha !== a || !$('numInfo')) return;
+    if (r && $('numFrase')) $('numFrase').innerHTML = '<div class="note ok" style="margin:-6px 0 14px">Resolución de inubicabilidad <b>N.º ' + esc(fmtNumRes(r.numero)) + '</b> del ' + esc(fLarga(r.fecha)) + '.</div>';
     $('numInfo').innerHTML = r ? 'Este deudor ya tiene la <b>resolución N.º ' + esc(fmtNumRes(r.numero)) + '</b> del ' + esc(fLarga(r.fecha)) + '. Al descargar se usa el mismo número.'
       : 'El número de resolución se asigna automáticamente (consecutivo) al descargar el PDF.';
   }, function () { if ($('numInfo')) $('numInfo').textContent = 'El número de resolución se asigna automáticamente al descargar el PDF.'; });
@@ -1380,6 +1501,10 @@ function botonIrLote() { return '<div class="acciones"><button class="btn btn-go
    ========================================================= */
 document.addEventListener('click', function (e) {
   var el;
+  if ((el = e.target.closest('[data-global]'))) { var g = _global[+el.dataset.global]; cerrarGlobal(); if (g) fichaActo(g); return; }
+  if ((el = e.target.closest('[data-ver-otros]'))) { document.querySelectorAll('[data-otro][hidden]').forEach(function (x) { x.hidden = false; }); el.remove(); return; }
+  if ((el = e.target.closest('[data-otro]'))) { var ot = _otros[+el.dataset.otro]; if (ot) fichaActo(ot); return; }
+  if (!e.target.closest('.buscador-global')) cerrarGlobal();
   if ((el = e.target.closest('[data-cerrar]'))) { cerrarDrawer(); return; }
   if ((el = e.target.closest('[data-anio]'))) { S.anio = +el.dataset.anio; S.pagina = 1; S.f.lote = ''; cargarLotes().then(renderTodo).catch(function (er) { toast(er.message, 'bad'); }); return; }
   if ((el = e.target.closest('[data-renta]'))) { S.renta = el.dataset.renta; S.pagina = 1; S.f.lote = ''; cargarLotes().then(renderTodo).catch(function (er) { toast(er.message, 'bad'); }); return; }
@@ -1402,7 +1527,9 @@ document.addEventListener('click', function (e) {
   if (e.target.id === 'btnRecargar') { recargarTodo().then(function () { toast('Datos actualizados', 'ok'); }); return; }
 });
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') { cerrarDrawer(); return; }
+  if (e.key === 'Escape') { if ($('resGlobal') && !$('resGlobal').hidden) { cerrarGlobal(); return; } cerrarDrawer(); return; }
+  if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || '')) && $('qGlobal') && !$('app').hidden) { e.preventDefault(); $('qGlobal').focus(); return; }
+  if (e.target.id === 'qGlobal' && e.key === 'Enter') { clearTimeout(_tGlobal); buscarGlobal(e.target.value); return; }
   if (e.key === 'Enter' && e.target.closest) {
     var tr = e.target.closest('tr[data-acto]');
     if (tr) { var a = S.actos[+tr.dataset.acto]; if (a) fichaActo(a); }
@@ -1411,6 +1538,7 @@ document.addEventListener('keydown', function (e) {
 var _tBusca = null;
 document.addEventListener('input', function (e) {
   if (CAMPOS_FORM.indexOf(e.target.id) > -1) guardarForm();
+  if (e.target.id === 'qGlobal') { clearTimeout(_tGlobal); var vg = e.target.value; _tGlobal = setTimeout(function () { buscarGlobal(vg); }, 450); return; }
   if (e.target.id === 'q') { clearTimeout(_tBusca); var v = e.target.value; _tBusca = setTimeout(function () { S.f.q = v; S.pagina = 1; buscarActos(); }, 400); }
 });
 document.addEventListener('change', function (e) {
