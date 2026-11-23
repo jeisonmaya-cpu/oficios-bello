@@ -2170,7 +2170,7 @@ function sbHeaders(extra){
 // Ahora recaudo y recaudo_bitacora se consultan con el token de la sesión de
 // Supabase Auth (rol "authenticated"). Las demás tablas (expedientes, tránsito)
 // siguen con sbHeaders() hasta que se aseguren en su propio módulo.
-const TABLAS_CON_SESION = ['recaudo','recaudo_bitacora'];
+const TABLAS_CON_SESION = ['recaudo','recaudo_bitacora','mv_transito_recaudo']; // mv_transito_recaudo: solo usuarios con sesión (no anon)
 var _sbToken = '';   // access_token vigente; lo mantiene al día onAuthStateChange
 function sbHeadersSesion(extra){
   return Object.assign({ apikey: SUPABASE_ANON, Authorization: "Bearer " + (_sbToken || SUPABASE_ANON) }, extra || {});
@@ -2530,6 +2530,23 @@ async function fetchRecaudo(extraQuery){
   }
 }
 
+// ── Resumen de tránsito por cédula ──
+// Antes se leía v_transito_por_cedula, que agrupa 130k+ comparendos AL VUELO en cada
+// página de 1000 que se pedía (decenas de agregaciones completas por cada apertura).
+// Ahora se lee mv_transito_recaudo: el mismo resumen YA CALCULADO en la base (vista
+// materializada que se refresca sola) y limitado a las cédulas que aparecen en recaudo,
+// que son las únicas que este módulo consulta. Si la vista materializada aún no existe
+// (SQL sin correr), se usa la vista anterior para no dejar el módulo sin tránsito.
+var COLS_TRANSITO = 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total';
+async function fetchTransitoResumen(){
+  try{
+    return await sbFetchAll('mv_transito_recaudo', COLS_TRANSITO, 'order=documento.asc');
+  }catch(e){
+    console.warn('[tránsito] mv_transito_recaudo no disponible ('+(e&&e.message)+'); se usa v_transito_por_cedula.');
+    return await sbFetchAll('v_transito_por_cedula', COLS_TRANSITO);
+  }
+}
+
 const ULTIMA_CARGA_KEY = 'recaudo_ultima_carga_v1';
 
 // Reconstruye `dataBanco` (lo que se muestra) a partir de `dataBancoCompleto` (todo lo que
@@ -2635,7 +2652,7 @@ async function cargarTodo(){
       // cédula (transitoPorCedula[cid]=...), un duplicado entre páginas solo
       // sobreescribe la misma clave — inocuo. (El order sí se mantiene en las
       // tablas base, donde es barato y necesario.)
-      sbFetchAll('v_transito_por_cedula', 'documento,nombre,comparendos,valor_multa,valor_interes,valor_total')
+      fetchTransitoResumen()
     ]);
 
     // 1) Depósitos — es la fuente principal; si falla, no hay nada que mostrar.
