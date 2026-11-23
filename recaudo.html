@@ -896,6 +896,27 @@ html.tema-claro .lat-yo b{color:#46331f}
 html.tema-claro .lat-acc button{background:rgba(70,51,31,.06);border-color:rgba(70,51,31,.18);color:#5d4429}
 html.tema-claro .lat-sep{background:rgba(70,51,31,.16)}
 html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;border-color:rgba(70,51,31,.2)}
+/* ── Estado del título en el Banco Agrario ── */
+.bk-chip{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:700;white-space:nowrap;vertical-align:middle;font-family:'DM Sans',sans-serif}
+.bk-pend{background:rgba(45,141,232,.15);color:#9cc9f5;border:1px solid rgba(45,141,232,.35)}
+.bk-pag{background:rgba(22,163,74,.15);color:var(--money);border:1px solid rgba(22,163,74,.3)}
+.bk-nore{background:rgba(234,88,12,.16);color:var(--warn-txt);border:1px solid rgba(234,88,12,.4)}
+.bk-sin{background:rgba(148,163,184,.12);color:var(--soft);border:1px solid rgba(148,163,184,.3)}
+html.tema-claro .bk-pend{background:rgba(29,78,137,.1);color:#1d4e89;border-color:rgba(29,78,137,.3)}
+.agr-card{margin-bottom:18px}
+.agr-files{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.agr-file{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(255,255,255,.03);font-size:12px}
+.agr-file b{font-size:13px}
+.agr-ok{color:var(--money);font-weight:700}
+.agr-bad{color:var(--err-txt2);font-weight:700}
+.agr-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:12px 0}
+.agr-kpi{padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(255,255,255,.03)}
+.agr-kpi .n{font-size:20px;font-weight:700;font-family:'DM Serif Display',serif}
+.agr-kpi .l{font-size:11px;color:var(--soft);margin-top:2px;line-height:1.35}
+.agr-prog{height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:10px 0 6px}
+.agr-prog > div{height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .3s}
+.term-alerta{cursor:pointer}
+.term-alerta:hover{filter:brightness(1.15)}
 </style>
 </head>
 <body>
@@ -910,6 +931,7 @@ html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;bor
     <div class="lat-sec">Gestión</div>
       <button class="nav-b" id="tab-registros" data-tab="registros" data-vista="" data-txt="Registros" onclick="irVista('registros')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg><span class="nav-txt">Registros</span><span class="nav-badge azul" id="badge-total">0</span></button>
       <button class="nav-b" id="tab-pendientes" data-tab="pendientes" data-vista="" data-txt="Pendientes" onclick="irVista('pendientes')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-txt">Pendientes</span><span class="nav-badge" id="badge-pen">0</span></button>
+      <button class="nav-b" id="tab-terminados" data-tab="terminados" data-vista="" data-txt="Títulos terminados" onclick="irVista('terminados')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.6"/></svg><span class="nav-txt">Títulos terminados</span><span class="nav-badge" id="badge-term" style="display:none">0</span></button>
     <div class="lat-sec">Control</div>
       <button class="nav-b" id="tab-dashboard" data-tab="dashboard" data-vista="" data-txt="Dashboard" onclick="irVista('dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20v-8M11 20V5M16 20v-11M21 20v-5"/></svg><span class="nav-txt">Dashboard</span></button>
       <button class="nav-b" id="nav-rep-impuesto" data-tab="reportes" data-vista="impuesto" data-txt="Por impuesto" onclick="irVista('reportes','impuesto')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V10M19 21V10M9 21v-7M15 21v-7M12 3 3 8h18z"/></svg><span class="nav-txt">Por impuesto</span></button>
@@ -970,9 +992,9 @@ html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;bor
 <div id="panel-registros">
   <div class="kpis" id="kpis">
     <div class="kpi blue">
-      <div class="kpi-lbl">Total registros</div>
+      <div class="kpi-lbl">Títulos vigentes</div>
       <div class="kpi-val" id="k-total">—</div>
-      <div class="kpi-sub">cargados en sistema</div>
+      <div class="kpi-sub" id="k-total-sub">aún en el banco</div>
     </div>
     <div class="kpi gold">
       <div class="kpi-lbl">Pendientes</div>
@@ -990,12 +1012,12 @@ html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;bor
       <div class="kpi-sub">en proceso</div>
     </div>
     <div class="kpi purple">
-      <div class="kpi-lbl">Valor total</div>
+      <div class="kpi-lbl">Valor vigente</div>
       <div class="kpi-val" id="k-valor" style="font-size:18px">—</div>
-      <div class="kpi-sub">depósitos</div>
+      <div class="kpi-sub">títulos sin pagar</div>
     </div>
-    <div class="kpi blue">
-      <div class="kpi-lbl">Nuevos · último lote</div>
+    <div class="kpi green term-alerta" onclick="irVista('terminados')" title="Ver los títulos que el banco ya pagó a la Alcaldía">
+      <div class="kpi-lbl">Terminados (pagados)</div>
       <div class="kpi-val" id="k-nuevos">—</div>
       <div class="kpi-sub" id="k-import-fecha">—</div>
     </div>
@@ -1003,7 +1025,7 @@ html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;bor
 
   <div class="card">
     <div class="card-hdr">
-      <div class="card-hdr-title">📋 Registros del banco</div>
+      <div class="card-hdr-title">📋 Títulos vigentes <span style="font-size:11px;font-weight:400;color:var(--soft)">— pendientes de pago en el banco</span></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="tb-btn" id="btnExportCSV" onclick="exportarRecaudo('csv')" style="font-size:11px;padding:5px 11px;background:rgba(232,160,32,.18);border-color:rgba(232,160,32,.45);color:var(--gold,#e8a020)">⬇ CSV</button>
         <button class="tb-btn" id="btnExportXLSX" onclick="exportarRecaudo('xlsx')" style="font-size:11px;padding:5px 11px;background:rgba(232,160,32,.18);border-color:rgba(232,160,32,.45);color:var(--gold,#e8a020)">⬇ Excel</button>
@@ -1012,6 +1034,12 @@ html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;bor
     </div>
     <div class="filtros">
       <input class="finp search" id="f-buscar" placeholder="🔍 Buscar nombre, cédula, depósito, proceso..." oninput="filtrarDebounced()"/>
+      <select class="finp" id="f-banco" onchange="filtrar()" title="Estado del título según el último reporte del Banco Agrario">
+        <option value="">🏦 Banco (todos los vigentes)</option>
+        <option value="PENDIENTE">Pendiente de pago</option>
+        <option value="NO_REPORTADO">No reportado en el último corte</option>
+        <option value="SIN_DATO">Sin reporte del banco</option>
+      </select>
       <select class="finp" id="f-estado-dev" onchange="filtrar()">
         <option value="">Devolución (todos)</option>
         <option value="PENDIENTE">⏳ Pendiente</option>
@@ -1214,6 +1242,50 @@ html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;bor
     <div class="pag">
       <div class="pag-info" id="pag-info-pend">—</div>
       <div class="pag-btns" id="pag-btns-pend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL TÍTULOS TERMINADOS (pagados por el banco a la Alcaldía) ══ -->
+<div id="panel-terminados" style="display:none">
+  <div class="kpis" id="term-kpis"></div>
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-hdr-title">✅ Títulos terminados <span style="font-size:11px;font-weight:400;color:var(--soft)">— el Banco Agrario los pagó con abono a la cuenta de la Alcaldía</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="tb-btn gold" onclick="exportarTerminadosExcel()" style="font-size:11px;padding:5px 11px">⬇ Excel</button>
+      </div>
+    </div>
+    <div class="filtros">
+      <input class="finp search" id="ft-buscar" placeholder="🔍 Buscar título, nombre, cédula..." oninput="filtrarTermDebounced()"/>
+      <select class="finp" id="ft-anio" onchange="filtrarTerm()"><option value="">📅 Año de pago (todos)</option></select>
+      <select class="finp" id="ft-gestion" onchange="filtrarTerm()">
+        <option value="">Gestión en Teodoro (toda)</option>
+        <option value="sinfin">⚠️ Sin finalizar en Teodoro</option>
+        <option value="fin">✅ Finalizada en Teodoro</option>
+      </select>
+      <select class="finp" id="ft-impuesto" onchange="filtrarTerm()">
+        <option value="">Impuesto (todos)</option>
+        <option value="PREDIAL">Predial</option>
+        <option value="ICA">ICO / ICA</option>
+        <option value="TRANSITO">Tránsito (incl. multas)</option>
+        <option value="OU">Oblig. Urbanística</option>
+        <option value="POLICIA">Sanción de policía</option>
+      </select>
+      <button class="fbtn fbtn-outline" onclick="limpiarFiltrosTerm()" style="font-size:11px">✕ Limpiar</button>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr>
+          <th>#Título</th><th>Emisión</th><th>Pago banco</th><th>Demandado</th><th>Cédula</th>
+          <th style="text-align:right">Valor</th><th>Impuesto</th><th>Aplicación</th><th>Devolución</th><th>Responsable</th><th></th>
+        </tr></thead>
+        <tbody id="tbody-term"></tbody>
+      </table>
+    </div>
+    <div class="pag">
+      <div class="pag-info" id="pag-info-term">—</div>
+      <div class="pag-btns" id="pag-btns-term"></div>
     </div>
   </div>
 </div>
@@ -1512,10 +1584,36 @@ html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;bor
 
 <!-- ══ PANEL IMPORTAR ══ -->
 <div id="panel-importar" style="display:none">
+  <!-- Reporte oficial del Banco Agrario: "Títulos por dependencia" (pendientes y pagados) -->
+  <div class="card agr-card">
+    <div class="card-hdr">
+      <div class="card-hdr-title">🏦 Corte del Banco Agrario — Títulos por dependencia</div>
+      <button class="fbtn fbtn-gold" onclick="document.getElementById('fileAgrario').click()">📂 Seleccionar reportes</button>
+      <input type="file" id="fileAgrario" accept=".xls,.xlsx" multiple style="display:none" onchange="leerArchivosAgrario(this.files);this.value=''"/>
+    </div>
+    <div style="padding:16px 18px">
+      <div style="font-size:12px;color:var(--soft);line-height:1.6">
+        Suba <b>los dos reportes del mismo día</b>: <b>PENDIENTE DE PAGO</b> y <b>PAGADO CON ABONO A CUENTA</b> (puede seleccionarlos juntos).
+        Teodoro toma el valor <b>exacto con centavos</b> del banco, marca qué títulos siguen vigentes y cuáles ya se pagaron,
+        agrega los títulos nuevos y repara números de título dañados. <b>La gestión del equipo no se toca.</b>
+      </div>
+      <div class="import-drop" id="dropAgrario" style="margin-top:12px;padding:22px"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="event.preventDefault();this.classList.remove('drag');leerArchivosAgrario(event.dataTransfer.files)"
+        onclick="document.getElementById('fileAgrario').click()">
+        <div style="font-size:30px;margin-bottom:6px;opacity:.6">🏦</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">Arrastre aquí los reportes .xls del Banco Agrario</div>
+        <p>TITULOSPORDEPENDENCIA_PENDIENTE_DE_PAGO… · TITULOSPORDEPENDENCIA_PAGADO_CON_ABONO_A_CUENTA…</p>
+      </div>
+      <div id="agr-resultado" style="display:none;margin-top:14px"></div>
+    </div>
+  </div>
+
   <div class="import-banner">
     <div class="import-banner-txt">
-      <h4>📥 Importar nuevo lote del banco</h4>
-      <p>Suba el Excel que envía el banco. El sistema detecta registros nuevos y evita duplicados.</p>
+      <h4>📥 Importar lote (formato anterior)</h4>
+      <p>Para el Excel de consulta general con encabezados en la primera fila. Si sube aquí un reporte "Títulos por dependencia", se procesa arriba automáticamente.</p>
     </div>
     <button class="fbtn fbtn-gold" onclick="document.getElementById('fileImport').click()">📂 Seleccionar archivo</button>
     <input type="file" id="fileImport" accept=".xlsx,.xls" style="display:none" onchange="procesarImport(this)"/>
@@ -1529,7 +1627,7 @@ html.tema-claro #lat.min .nav-b:hover:after{background:#f6f0de;color:#46331f;bor
       onclick="document.getElementById('fileImport').click()">
       <div style="font-size:40px;margin-bottom:8px;opacity:.6">📊</div>
       <div style="font-size:14px;font-weight:600;color:var(--text)">Arrastre el Excel aquí o haga clic para seleccionar</div>
-      <p>Formatos: .xlsx · .xls — mismo formato que envía Bancolombia</p>
+      <p>Formatos: .xlsx · .xls — consulta general (encabezados en la fila 1)</p>
     </div>
     <div id="import-resultado" style="padding:16px;display:none"></div>
   </div>
@@ -2341,7 +2439,11 @@ function filaSupaAUI(r){
     _editadoPor:                r.editado_por || '',
     _editadoFecha:              r.ultima_edicion ? new Date(r.ultima_edicion).toLocaleString('es-CO') : '',
     _ultimaEdicionISO:          r.ultima_edicion || null,  // valor crudo, para detectar ediciones concurrentes
-    _fechaGestion:              r.fecha_gestion || ''      // cuándo quedó FINALIZADO (lo pone un trigger en Supabase)
+    _fechaGestion:              r.fecha_gestion || '',     // cuándo quedó FINALIZADO (lo pone un trigger en Supabase)
+    // Estado del título según el último reporte del Banco Agrario (lo llena procesar_corte_banco)
+    _estadoBanco:               r.estado_banco || '',
+    _fechaPagoBanco:            r.fecha_pago_banco || '',
+    _fechaCorteBanco:           r.fecha_corte_banco || ''
   };
   fila._buscable = construirBuscable(fila);
   return fila;
@@ -2409,6 +2511,25 @@ const COLUMNAS_RECAUDO_LISTA = 'id,deposito_judicial,fecha_emision,identificacio
   +'ciudad,responsable,gestion_tesoreria,comprobante_egreso,radicado_respuesta,estado_devolucion,'
   +'estado_aplicacion,numero_proceso_manual,tipo_impuesto,ci_inicial,acuerdo_pago,consignaciones,editado_por,ultima_edicion,fecha_gestion';
 
+// Columnas del corte del Banco Agrario (las crea recaudo_corte_banco.sql). Si el SQL
+// todavía no se ha ejecutado, Supabase responde 400 al pedirlas: la app sigue
+// funcionando sin ellas y muestra un aviso, en vez de quedarse sin datos.
+const COLUMNAS_BANCO = ',estado_banco,fecha_pago_banco,fecha_corte_banco';
+var _colsBancoOK = true;
+function columnasRecaudo(){ return COLUMNAS_RECAUDO_LISTA + (_colsBancoOK ? COLUMNAS_BANCO : ''); }
+async function fetchRecaudo(extraQuery){
+  try{
+    return await sbFetchAll('recaudo', columnasRecaudo(), extraQuery);
+  }catch(e){
+    if(_colsBancoOK && /HTTP 400/.test(String(e && e.message))){
+      console.warn('[recaudo] Las columnas del corte bancario no existen todavía; se carga sin ellas.');
+      _colsBancoOK = false;
+      return await sbFetchAll('recaudo', columnasRecaudo(), extraQuery);
+    }
+    throw e;
+  }
+}
+
 const ULTIMA_CARGA_KEY = 'recaudo_ultima_carga_v1';
 
 // Reconstruye `dataBanco` (lo que se muestra) a partir de `dataBancoCompleto` (todo lo que
@@ -2430,6 +2551,57 @@ function reconstruirDataBancoDesdeCompleto(){
   });
   _duplicadosOcultos = dataBancoCompleto.length - unicos.length;
   dataBanco = unicos;
+  separarPorEstadoBanco();
+}
+
+// ════════════════════════════════════════════════════════════
+// ESTADO EN EL BANCO — separa los títulos vigentes (siguen en el banco) de los
+// terminados (el banco ya los pagó a la Alcaldía). Registros y Pendientes trabajan
+// sobre los vigentes; "Títulos terminados" sobre los pagados. El buscador global,
+// la ficha, Dashboard, Reportes y Duplicados siguen viendo TODO (dataBanco).
+// ════════════════════════════════════════════════════════════
+var dataVigentes = [];
+var dataTerminados = [];
+var _ultimoCorteBanco = '';   // 'AAAA-MM-DD' del corte más reciente aplicado
+function grupoBanco(r){
+  var e = String(r._estadoBanco||'').toUpperCase();
+  if(e.indexOf('PAGADO')>=0) return 'PAGADO';
+  if(e.indexOf('PENDIENTE')>=0) return 'PENDIENTE';
+  if(e.indexOf('NO REPORT')>=0) return 'NO_REPORTADO';
+  return 'SIN_DATO';
+}
+function esTerminado(r){ return grupoBanco(r)==='PAGADO'; }
+function separarPorEstadoBanco(){
+  var vig=[], term=[], ult='';
+  for(var i=0;i<dataBanco.length;i++){
+    var r=dataBanco[i];
+    if(esTerminado(r)) term.push(r); else vig.push(r);
+    var fc=String(r._fechaCorteBanco||'');
+    if(fc>ult) ult=fc;
+  }
+  dataVigentes=vig; dataTerminados=term; _ultimoCorteBanco=ult;
+}
+function fechaCO(iso){
+  var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? (m[3]+'/'+m[2]+'/'+m[1]) : '';
+}
+// Chip pequeño con el estado en el banco. En Registros solo se muestran los casos
+// raros (no reportado / sin reporte), para no llenar la tabla de etiquetas iguales.
+function chipBanco(r, siempre){
+  var g=grupoBanco(r);
+  if(!_colsBancoOK) return '';
+  if(g==='PAGADO') return '<span class="bk-chip bk-pag" title="Pagado por el banco el '+eh(fechaCO(r._fechaPagoBanco)||'—')+'">🏦 pagado</span>';
+  if(g==='PENDIENTE') return siempre ? '<span class="bk-chip bk-pend" title="Pendiente de pago al corte del '+eh(fechaCO(r._fechaCorteBanco))+'">🏦 pendiente</span>' : '';
+  if(g==='NO_REPORTADO') return '<span class="bk-chip bk-nore" title="Estaba en reportes anteriores del banco pero no aparece en el corte del '+eh(fechaCO(r._fechaCorteBanco))+'. Revisar si fue devuelto, anulado o pagado a un tercero.">🏦 no reportado</span>';
+  if(!_ultimoCorteBanco) return '';
+  return '<span class="bk-chip bk-sin" title="Este título no aparece en ningún reporte del banco cargado (puede ser anterior al rango consultado o tener el número mal escrito).">🏦 sin reporte</span>';
+}
+function textoEstadoBanco(r){
+  var g=grupoBanco(r);
+  if(g==='PAGADO') return '✅ Pagado con abono a cuenta';
+  if(g==='PENDIENTE') return '⏳ Pendiente de pago';
+  if(g==='NO_REPORTADO') return '⚠️ No reportado en el último corte';
+  return '— Sin reporte del banco';
 }
 
 async function cargarTodo(){
@@ -2454,7 +2626,7 @@ async function cargarTodo(){
       // puede venir repetida en dos páginas (y otra perderse) — eso producía
       // depósitos "duplicados" fantasma que NO existían en la base, y KPIs
       // levemente distintos en cada carga/PC.
-      sbFetchAll('recaudo', COLUMNAS_RECAUDO_LISTA, 'order=fecha_emision.desc.nullslast,id.asc'),
+      fetchRecaudo('order=fecha_emision.desc.nullslast,id.asc'),
       // expedientes_predial no tiene columna id: se ordena por radicado + factura +
       // contribuyente, combinación prácticamente única que estabiliza la paginación.
       sbFetchAll('expedientes_predial', 'id_contribuyente,radicado,modulo,estado,valor_total,numero_factura,matricula,direccion', 'order=radicado.asc,numero_factura.asc,id_contribuyente.asc'),
@@ -2515,14 +2687,16 @@ async function cargarTodo(){
     if(resultados[2].status!=='fulfilled') fallos.push('tránsito');
     var bannerEl=document.getElementById('banner-datos-incompletos');
     if(bannerEl){
+      var avisos='';
       if(fallos.length){
-        bannerEl.style.display='block';
-        bannerEl.innerHTML='<div class="alerta al-warn" style="display:flex">⚠️ No se pudo cargar <strong>'+fallos.join(' y ')+'</strong> esta vez — el cruce con depósitos puede salir incompleto (ej. Reportes por Tránsito, o el aviso ⚠️ Revisar). '
+        avisos+='<div class="alerta al-warn" style="display:flex">⚠️ No se pudo cargar <strong>'+fallos.join(' y ')+'</strong> esta vez — el cruce con depósitos puede salir incompleto (ej. Reportes por Tránsito, o el aviso ⚠️ Revisar). '
           +'<button class="tb-btn" style="margin-left:auto;flex-shrink:0" onclick="recargarTodo()">🔄 Reintentar</button></div>';
-      } else {
-        bannerEl.style.display='none';
-        bannerEl.innerHTML='';
       }
+      if(!_colsBancoOK){
+        avisos+='<div class="alerta al-warn" style="display:flex;margin-top:8px">🏦 Falta preparar la base de datos para el corte del Banco Agrario: ejecute <strong>&nbsp;recaudo_corte_banco.sql&nbsp;</strong> en el SQL Editor de Supabase. Mientras tanto, todos los títulos se muestran como vigentes.</div>';
+      }
+      bannerEl.style.display=avisos?'block':'none';
+      bannerEl.innerHTML=avisos;
     }
 
     var ts = ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
@@ -2553,8 +2727,7 @@ async function sincronizarDelta(){
   setSS('loading','Buscando cambios...');
   var horaAntesDeLaConsulta = new Date().toISOString();
   try{
-    var cambiados = await sbFetchAll('recaudo', COLUMNAS_RECAUDO_LISTA,
-      'ultima_edicion=gte.'+encodeURIComponent(ultimaCarga)+'&order=ultima_edicion.asc,id.asc');
+    var cambiados = await fetchRecaudo('ultima_edicion=gte.'+encodeURIComponent(ultimaCarga)+'&order=ultima_edicion.asc,id.asc');
     var porId = {};
     dataBancoCompleto.forEach(function(r){ porId[r._id] = r; });
     var nuevos=0, actualizados=0;
@@ -2918,13 +3091,14 @@ function bvCerrar(){
 var _tabActual='registros';
 function goTab(t, sinRender){
   _tabActual=t;
-  ['registros','pendientes','dashboard','reportes','duplicados','importar','config'].forEach(p=>{
+  ['registros','pendientes','terminados','dashboard','reportes','duplicados','importar','config'].forEach(p=>{
     var el=document.getElementById('panel-'+p);
     var tb=document.getElementById('tab-'+p);
     if(el) el.style.display= p===t?'block':'none';
     if(tb) tb.classList.toggle('on', p===t);
   });
   if(t==='pendientes') filtrarPend();
+  if(t==='terminados') filtrarTerm();
   if(t==='dashboard') renderDashboard();
   if(t==='reportes' && !sinRender){ if(_vistaReporteActual==='deudores'){ renderMayoresDeudores(); } else { renderReporte(); } }
   if(t==='duplicados') renderDuplicados();
@@ -3187,8 +3361,8 @@ function getRow(r){ return r; }
 
 // KPIs
 function renderKpis(){
-  var total=dataBanco.length,fin=0,tram=0,pen=0,valor=0;
-  dataBanco.forEach(r=>{
+  var total=dataVigentes.length,fin=0,tram=0,pen=0,valor=0;
+  dataVigentes.forEach(r=>{
     var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     // Un depósito cuenta como EN TRÁMITE/REVISIÓN si alguno de sus estados lo está (trabajo en curso).
     // Como FINALIZADO solo si ambos lados están finalizados o uno finalizado y el otro vacío.
@@ -3204,9 +3378,14 @@ function renderKpis(){
   document.getElementById('k-fin').textContent=fin.toLocaleString('es-CO');
   document.getElementById('k-tram').textContent=tram.toLocaleString('es-CO');
   document.getElementById('k-valor').textContent=fmtM(valor);
-  var kn=document.getElementById('k-nuevos'); if(kn) kn.textContent='—';
+  var valorTerm=0; dataTerminados.forEach(function(r){ valorTerm+=parsearValor(r['Valor del Depóstio']); });
+  var kn=document.getElementById('k-nuevos'); if(kn) kn.textContent=_colsBancoOK?dataTerminados.length.toLocaleString('es-CO'):'—';
   var ki=document.getElementById('k-import-fecha');
-  if(ki) ki.textContent=ultimaSync?('Sync: '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})):'—';
+  if(ki) ki.textContent=!_colsBancoOK?'falta ejecutar el SQL':(_ultimoCorteBanco?(fmtM(valorTerm)+' · corte '+fechaCO(_ultimoCorteBanco)):'sin corte del banco cargado');
+  var kts=document.getElementById('k-total-sub');
+  if(kts) kts.textContent=_ultimoCorteBanco?('al corte del '+fechaCO(_ultimoCorteBanco)):'aún en el banco';
+  var btm=document.getElementById('badge-term');
+  if(btm){ btm.textContent=dataTerminados.length.toLocaleString('es-CO'); btm.style.display=dataTerminados.length?'':'none'; }
   var bt=document.getElementById('badge-total'); if(bt) bt.textContent=total.toLocaleString('es-CO');
   var bp=document.getElementById('badge-pen'); if(bp) bp.textContent=(pen+tram).toLocaleString('es-CO');
   actualizarEtiquetasNav();
@@ -3303,7 +3482,9 @@ function filtrar(){
   var fMonto=parseFloat(document.getElementById('f-monto').value)||0;
   var fExp=document.getElementById('f-expediente').value;
   var fObs=(document.getElementById('f-obs')||{value:''}).value;
-  filtrados=dataBanco.filter(r=>{
+  var fBanco=(document.getElementById('f-banco')||{value:''}).value;
+  filtrados=dataVigentes.filter(r=>{
+    if(fBanco && grupoBanco(r)!==fBanco) return false;
     if(buscar){
       var hay=r._buscable!==undefined?r._buscable:construirBuscable(r);
       if(hay.indexOf(buscar)<0) return false;
@@ -3333,7 +3514,7 @@ function filtrar(){
 // recargas de página y reinicios del navegador (queda por dispositivo/perfil).
 // ════════════════════════════════════════════════════════════
 const FILTROS_KEY='recaudo_filtros_v1';
-const IDS_FILTROS_REGISTROS=['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable','f-monto','f-expediente','f-obs'];
+const IDS_FILTROS_REGISTROS=['f-buscar','f-banco','f-estado-dev','f-estado-apl','f-impuesto','f-responsable','f-monto','f-expediente','f-obs'];
 function guardarFiltrosLocal(){
   try{
     var obj={};
@@ -3389,7 +3570,7 @@ function sortBy(col, th){
   filtrar();
 }
 function limpiarFiltros(){
-  ['f-buscar','f-estado-dev','f-estado-apl','f-impuesto','f-responsable','f-monto','f-expediente','f-obs'].forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
+  IDS_FILTROS_REGISTROS.forEach(id=>{ var el=document.getElementById(id); if(el) el.value=''; });
   filtrar();
 }
 
@@ -3428,7 +3609,7 @@ function renderTabla(){
     var depStr=String(dep);
     return `<tr class="${gestionado?'gestionado':''}" tabindex="0" role="button" onclick="abrirModal('${depStr.replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirModal('${depStr.replace(/'/g,"\\'")}')}">
       <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-dep" data-dep="${eh(depStr)}" ${seleccionados.has(depStr)?'checked':''} onclick="clicCheckboxFila(event, this)"/></td>
-      <td class="mono" style="font-size:13px;white-space:nowrap"><span class="copy-wrap">${eh(dep)}<button class="copy-ico" title="Copiar depósito" onclick="copiarCelda(event,'${eh(depStr)}',this)">⧉</button></span>${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}</td>
+      <td class="mono" style="font-size:13px;white-space:nowrap"><span class="copy-wrap">${eh(dep)}<button class="copy-ico" title="Copiar depósito" onclick="copiarCelda(event,'${eh(depStr)}',this)">⧉</button></span>${tieneNotas?'<span class="nota-dot" title="Tiene notas"></span>':''}${tieneExp}${chipBanco(r,false)}</td>
       <td class="mono" style="white-space:nowrap;font-size:13px;color:var(--soft)">${eh(fecha)}</td>
       <td>${badgeAntiguedad(r)}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">${eh(r['Nombre Demandante.1']||'—')}</td>
@@ -4232,7 +4413,7 @@ function filtrarPend(){
   var fImp=(document.getElementById('fp-impuesto').value||'').toUpperCase();
   var fMonto=parseFloat((document.getElementById('fp-monto')||{}).value)||0;
   var fExp=(document.getElementById('fp-expediente')||{}).value||'';
-  pendFiltrados=dataBanco.filter(r=>{
+  pendFiltrados=dataVigentes.filter(r=>{
     var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
     if(ed==='FINALIZADO'&&ea==='FINALIZADO') return false;
     if(buscar){ var hay=r._buscable!==undefined?r._buscable:construirBuscable(r); if(hay.indexOf(buscar)<0) return false; }
@@ -4351,7 +4532,9 @@ function abrirModal(dep){
   document.getElementById('m-banco-datos').innerHTML=`
     <div class="banco-item"><div class="banco-lbl">Valor depósito</div><div class="banco-val money">${fmt$(valor)}</div></div>
     <div class="banco-item"><div class="banco-lbl">Fecha emisión</div><div class="banco-val">${eh(String(r['Fecha Emisión']||'').substring(0,10))}</div></div>
-    <div class="banco-item"><div class="banco-lbl">Estado depósito</div><div class="banco-val" id="m-banco-estado-dep">${r['Estado del Depósito']!==undefined?eh(r['Estado del Depósito']||'—'):'<span style="color:var(--muted)">cargando…</span>'}</div></div>
+    ${_colsBancoOK?`<div class="banco-item"><div class="banco-lbl">Estado en el banco</div><div class="banco-val">${textoEstadoBanco(r)}${r._fechaCorteBanco?'<div style="font-size:10.5px;color:var(--soft);font-weight:400;margin-top:2px">corte '+eh(fechaCO(r._fechaCorteBanco))+'</div>':''}</div></div>`:''}
+    ${r._fechaPagoBanco?`<div class="banco-item"><div class="banco-lbl">Fecha de pago (banco)</div><div class="banco-val">${eh(fechaCO(r._fechaPagoBanco))}</div></div>`:''}
+    <div class="banco-item"><div class="banco-lbl">Estado (cargue original)</div><div class="banco-val" id="m-banco-estado-dep">${r['Estado del Depósito']!==undefined?eh(r['Estado del Depósito']||'—'):'<span style="color:var(--muted)">cargando…</span>'}</div></div>
     <div class="banco-item"><div class="banco-lbl">Tipo TX</div><div class="banco-val" id="m-banco-tipo-tx">${r['Tipo de TX origen']!==undefined?eh(r['Tipo de TX origen']||'—'):'<span style="color:var(--muted)">cargando…</span>'}</div></div>
     <div class="banco-item"><div class="banco-lbl">N° Proceso banco</div><div class="banco-val" style="font-family:monospace">${eh(String(r['Número del Proceso']||'—').replace(/^0+/,'')||'—')}</div></div>
     <div class="banco-item"><div class="banco-lbl">Nombre Consignante</div><div class="banco-val">${eh(r['Nombre Consignante']||'—')}</div></div>`;
@@ -5472,6 +5655,11 @@ function procesarImport(inp){
     try{
       var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
       var ws=wb.Sheets[wb.SheetNames[0]];
+      if(esReporteAgrario(ws)){
+        document.getElementById('import-resultado').style.display='none';
+        leerArchivosAgrario([f]);
+        return;
+      }
       var json=XLSX.utils.sheet_to_json(ws,{raw:false,defval:''});
       if(!json.length){ showImportResult('warn','El archivo está vacío.'); return; }
       var keys=Object.keys(json[0]);
@@ -5616,7 +5804,7 @@ function exportarExcel(){
     if(!seguir) return;
   }
   var usar=recortado?data.slice(0,TOPE):data;
-  var filas=usar.map(r=>({'Depósito':r['deposito judicial'],'Fecha':r['Fecha Emisión'],'Demandado':r['Nombre Demandante.1'],'Cédula':r['Identificación Demandado'],'Valor':r['Valor del Depóstio'],'Proceso':r['Proceso'],'Est. Devolución':r['ESTADO DEVOLUCION'],'Est. Aplicación':r['ESTADO APLICACIÓN'],'Responsable':r['RESPONSABLE'],'Comp. Egreso':r['COMPROBANTE DE EGRESO'],'Radicado':r['RADICADO DE RESPUESTA'],'Observación':r['Observacion']}));
+  var filas=usar.map(r=>({'Depósito':r['deposito judicial'],'Fecha':r['Fecha Emisión'],'Demandado':r['Nombre Demandante.1'],'Cédula':r['Identificación Demandado'],'Valor':parsearValor(r['Valor del Depóstio']),'Estado banco':r._estadoBanco||'','Fecha pago banco':r._fechaPagoBanco||'','Proceso':r['Proceso'],'Est. Devolución':r['ESTADO DEVOLUCION'],'Est. Aplicación':r['ESTADO APLICACIÓN'],'Responsable':r['RESPONSABLE'],'Comp. Egreso':r['COMPROBANTE DE EGRESO'],'Radicado':r['RADICADO DE RESPUESTA'],'Observación':r['Observacion']}));
   var ws=XLSX.utils.json_to_sheet(filas);
   var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Recaudo');
   var sufijo=(recortado?('_primeros_'+TOPE):'')+sufijoFiltrosActivos();
@@ -5745,7 +5933,11 @@ function renderDashboard(){
     kpiCard('Gestionados', gestionados.toLocaleString('es-CO'), pctGest+'% del total')+
     kpiCard('Sin gestionar', (total-gestionados).toLocaleString('es-CO'), 'por atender')+
     kpiCard('Sin responsable', sinAsignar.toLocaleString('es-CO'), 'sin asignar')+
-    kpiCard('Valor total', fmtM(valorTotal), 'suma de depósitos');
+    kpiCard('Valor total', fmtM(valorTotal), 'suma de depósitos')+
+    (_colsBancoOK && _ultimoCorteBanco ? (
+      kpiCard('Vigentes en el banco', dataVigentes.length.toLocaleString('es-CO'), 'corte '+fechaCO(_ultimoCorteBanco))+
+      kpiCard('Pagados a la Alcaldía', dataTerminados.length.toLocaleString('es-CO'), fmtM(dataTerminados.reduce(function(s,r){ return s+parsearValor(r['Valor del Depóstio']); },0)))
+    ) : '');
 
   var filas=Object.keys(porResp).filter(n=>porResp[n].asignados>0||RESPONSABLES.indexOf(n)>=0)
     .sort((a,b)=>porResp[b].asignados-porResp[a].asignados);
@@ -6998,6 +7190,449 @@ function fallbackCopiar(texto,cb){
 }
 
 // ════════════════════════════════════════════════════════════
+// TÍTULOS TERMINADOS — pagados por el Banco Agrario con abono a la cuenta de la Alcaldía
+// ════════════════════════════════════════════════════════════
+var termFiltrados = [];
+var pagTerm = 1;
+var _debTerm;
+function filtrarTermDebounced(){ clearTimeout(_debTerm); _debTerm=setTimeout(filtrarTerm, 300); }
+
+// "Sin finalizar en Teodoro": el banco ya pagó, pero en la app ni la aplicación ni la
+// devolución están en FINALIZADO. Es el cruce que hay que cerrar con Recaudos y Pagos.
+function gestionFinalizada(r){
+  return normEst(r['ESTADO APLICACIÓN'])==='FINALIZADO' || normEst(r['ESTADO DEVOLUCION'])==='FINALIZADO';
+}
+
+function llenarSelectAniosTerm(){
+  var sel=document.getElementById('ft-anio'); if(!sel) return;
+  var actual=sel.value, anios={};
+  dataTerminados.forEach(function(r){ var a=String(r._fechaPagoBanco||'').substring(0,4); if(/^\d{4}$/.test(a)) anios[a]=(anios[a]||0)+1; });
+  var html='<option value="">📅 Año de pago (todos)</option>';
+  Object.keys(anios).sort().reverse().forEach(function(a){ html+='<option value="'+a+'">'+a+' ('+anios[a].toLocaleString('es-CO')+')</option>'; });
+  sel.innerHTML=html;
+  if(actual && anios[actual]) sel.value=actual;
+}
+
+function renderTermKpis(){
+  var cont=document.getElementById('term-kpis'); if(!cont) return;
+  var valor=0, sinFin=0, valorSinFin=0, ultMes=0, valorUltMes=0, ultPago='';
+  dataTerminados.forEach(function(r){ var f=String(r._fechaPagoBanco||''); if(f>ultPago) ultPago=f; });
+  // "Último mes" = 30 días hacia atrás desde el pago más reciente del reporte
+  var limite='';
+  if(ultPago){ var d=new Date(ultPago+'T00:00:00'); d.setDate(d.getDate()-30); limite=d.toISOString().slice(0,10); }
+  dataTerminados.forEach(function(r){
+    var v=parsearValor(r['Valor del Depóstio']);
+    valor+=v;
+    if(!gestionFinalizada(r)){ sinFin++; valorSinFin+=v; }
+    if(limite && String(r._fechaPagoBanco||'')>limite){ ultMes++; valorUltMes+=v; }
+  });
+  cont.innerHTML=
+    '<div class="kpi green"><div class="kpi-lbl">Títulos terminados</div><div class="kpi-val">'+dataTerminados.length.toLocaleString('es-CO')+'</div><div class="kpi-sub">'+(_ultimoCorteBanco?'corte '+fechaCO(_ultimoCorteBanco):'sin corte cargado')+'</div></div>'
+   +'<div class="kpi purple"><div class="kpi-lbl">Valor pagado a la Alcaldía</div><div class="kpi-val" style="font-size:18px">'+fmt$(valor)+'</div><div class="kpi-sub">suma exacta del banco</div></div>'
+   +'<div class="kpi blue"><div class="kpi-lbl">Pagados en los últimos 30 días</div><div class="kpi-val">'+ultMes.toLocaleString('es-CO')+'</div><div class="kpi-sub">'+fmtM(valorUltMes)+(ultPago?' · hasta '+fechaCO(ultPago):'')+'</div></div>'
+   +'<div class="kpi red term-alerta" onclick="var s=document.getElementById(\'ft-gestion\');s.value=\'sinfin\';filtrarTerm();" title="Clic para ver solo estos"><div class="kpi-lbl">⚠️ Pagados sin finalizar en Teodoro</div><div class="kpi-val">'+sinFin.toLocaleString('es-CO')+'</div><div class="kpi-sub">'+fmtM(valorSinFin)+' · por cerrar la gestión</div></div>';
+}
+
+function filtrarTerm(){
+  var buscar=quitarTildes((document.getElementById('ft-buscar')||{value:''}).value||'').toLowerCase().trim();
+  var fAnio=(document.getElementById('ft-anio')||{value:''}).value;
+  var fGest=(document.getElementById('ft-gestion')||{value:''}).value;
+  var fImp=((document.getElementById('ft-impuesto')||{value:''}).value||'').toUpperCase();
+  termFiltrados=dataTerminados.filter(function(r){
+    if(buscar){ var hay=r._buscable!==undefined?r._buscable:construirBuscable(r); if(hay.indexOf(buscar)<0) return false; }
+    if(fAnio && String(r._fechaPagoBanco||'').substring(0,4)!==fAnio) return false;
+    if(fGest==='sinfin' && gestionFinalizada(r)) return false;
+    if(fGest==='fin' && !gestionFinalizada(r)) return false;
+    if(fImp && grupoImpuesto(impuestoDe(r))!==grupoImpuesto(fImp)) return false;
+    return true;
+  });
+  // Más reciente primero (por fecha de pago del banco)
+  termFiltrados.sort(function(a,b){ return String(b._fechaPagoBanco||'').localeCompare(String(a._fechaPagoBanco||'')) || String(b['deposito judicial']).localeCompare(String(a['deposito judicial'])); });
+  pagTerm=1;
+  llenarSelectAniosTerm();
+  renderTermKpis();
+  renderTerminados();
+}
+function limpiarFiltrosTerm(){
+  ['ft-buscar','ft-anio','ft-gestion','ft-impuesto'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  filtrarTerm();
+}
+
+function renderTerminados(){
+  var tb=document.getElementById('tbody-term'); if(!tb) return;
+  if(!_colsBancoOK){
+    tb.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">🏦</div><p>Para ver los títulos terminados, primero ejecute <b>recaudo_corte_banco.sql</b> en Supabase y luego cargue el corte del Banco Agrario en <b>Importar lote</b>.</p></div></td></tr>';
+    document.getElementById('pag-info-term').textContent='—'; document.getElementById('pag-btns-term').innerHTML='';
+    return;
+  }
+  var ini=(pagTerm-1)*PS, fin=Math.min(ini+PS, termFiltrados.length), pag=termFiltrados.slice(ini,fin);
+  if(!pag.length){
+    var msg=dataTerminados.length?'No hay títulos terminados que coincidan con los filtros.':'Aún no hay títulos terminados. Cargue el reporte "PAGADO CON ABONO A CUENTA" del Banco Agrario en Importar lote.';
+    tb.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">✅</div><p>'+msg+'</p></div></td></tr>';
+    document.getElementById('pag-info-term').textContent='0 títulos';
+    document.getElementById('pag-btns-term').innerHTML='';
+    return;
+  }
+  tb.innerHTML=pag.map(function(r){
+    var dep=String(r['deposito judicial']); var depJs=dep.replace(/'/g,"\\'");
+    var cid=String(r['Identificación Demandado']||'');
+    var imp=impuestoDe(r);
+    var aviso=gestionFinalizada(r)?'':' <span class="bk-chip bk-nore" title="El banco ya pagó este título, pero en Teodoro la aplicación/devolución no está FINALIZADA">sin cerrar</span>';
+    return '<tr tabindex="0" role="button" onclick="abrirModal(\''+depJs+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();abrirModal(\''+depJs+'\')}">'
+      +'<td class="mono" style="font-size:13px;white-space:nowrap"><span class="copy-wrap">'+eh(dep)+'<button class="copy-ico" title="Copiar título" onclick="copiarCelda(event,\''+eh(dep)+'\',this)">⧉</button></span>'+aviso+'</td>'
+      +'<td class="mono" style="font-size:12.5px;color:var(--soft);white-space:nowrap">'+eh(String(r['Fecha Emisión']||'').substring(0,10))+'</td>'
+      +'<td class="mono" style="font-size:12.5px;white-space:nowrap;font-weight:600">'+eh(String(r._fechaPagoBanco||'').substring(0,10)||'—')+'</td>'
+      +'<td style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">'+eh(r['Nombre Demandante.1']||'—')+'</td>'
+      +'<td class="mono" style="font-size:12.5px;white-space:nowrap">'+eh(cid||'—')+'</td>'
+      +'<td class="mono" style="text-align:right;font-weight:700;font-size:14px;color:var(--money)">'+fmt$(parsearValor(r['Valor del Depóstio']))+'</td>'
+      +'<td>'+(imp?'<span class="badge b-imp">'+eh(imp.substring(0,18))+'</span>':'<span class="badge b-vacio">—</span>')+'</td>'
+      +'<td>'+badgeEst(r['ESTADO APLICACIÓN'])+'</td>'
+      +'<td>'+badgeEst(r['ESTADO DEVOLUCION'])+'</td>'
+      +'<td style="font-size:12.5px;color:var(--soft)">'+eh(r['RESPONSABLE']||'—')+'</td>'
+      +'<td onclick="event.stopPropagation()"><button class="btn-gest" onclick="abrirModal(\''+depJs+'\');event.stopPropagation()">Ver</button></td>'
+      +'</tr>';
+  }).join('');
+  document.getElementById('pag-info-term').textContent='Mostrando '+(ini+1)+'–'+fin+' de '+termFiltrados.length.toLocaleString('es-CO')+' títulos terminados';
+  renderPag(termFiltrados.length,'pag-btns-term',pagTerm,function(n){ pagTerm=n; renderTerminados(); });
+}
+
+function exportarTerminadosExcel(){
+  var data=termFiltrados.length?termFiltrados:dataTerminados;
+  if(!data.length){ teoAlert('No hay títulos terminados para exportar.'); return; }
+  if(typeof XLSX==='undefined'){ teoAlert('No se pudo cargar la librería de Excel. Revise su conexión.'); return; }
+  var aoa=[['Título','Fecha emisión','Fecha pago banco','Demandado','Cédula/NIT','Valor','Impuesto','Est. Aplicación','Est. Devolución','Responsable','Comp. Egreso','Radicado resp.','Observación']];
+  data.forEach(function(r){
+    aoa.push([String(r['deposito judicial']||''), String(r['Fecha Emisión']||'').substring(0,10), String(r._fechaPagoBanco||'').substring(0,10),
+      r['Nombre Demandante.1']||'', String(r['Identificación Demandado']||''), parsearValor(r['Valor del Depóstio']), impuestoDe(r)||'',
+      normEst(r['ESTADO APLICACIÓN'])||'', normEst(r['ESTADO DEVOLUCION'])||'', r['RESPONSABLE']||'',
+      r['COMPROBANTE DE EGRESO']||'', r['RADICADO DE RESPUESTA']||'', r['Observacion']||'']);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  for(var i=1;i<aoa.length;i++){
+    var c0=ws[XLSX.utils.encode_cell({r:i,c:0})]; if(c0){ c0.t='s'; }
+    var c4=ws[XLSX.utils.encode_cell({r:i,c:4})]; if(c4){ c4.t='s'; }
+    var c5=ws[XLSX.utils.encode_cell({r:i,c:5})]; if(c5 && c5.t==='n') c5.z='#,##0.00';
+  }
+  ws['!cols']=[{wch:17},{wch:12},{wch:14},{wch:34},{wch:14},{wch:16},{wch:14},{wch:14},{wch:14},{wch:24},{wch:16},{wch:16},{wch:40}];
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Terminados');
+  var g=(document.getElementById('ft-gestion')||{}).value, a=(document.getElementById('ft-anio')||{}).value;
+  XLSX.writeFile(wb,'Titulos_terminados_'+new Date().toISOString().slice(0,10)+(a?'_'+a:'')+(g==='sinfin'?'_sin_cerrar':'')+'.xlsx');
+}
+
+// ════════════════════════════════════════════════════════════
+// IMPORTAR CORTE DEL BANCO AGRARIO — reporte "Títulos por dependencia" (.xls)
+// Estructura del reporte: encabezados en la fila ~12 ("NÚMERO TÍTULO"), estado del
+// reporte en la fila "ESTADO DE LOS DEPOSITOS", rango en "FECHA DE CONSULTA" y una
+// fila final "Total $…". El VALOR se lee como NÚMERO crudo (raw:true): así llegan
+// los centavos exactos (100.222,22 → 100222.22), sin pasar por texto formateado.
+// ════════════════════════════════════════════════════════════
+var _agr = { archivos: [], titulos: {} };
+
+function _normTxt(v){ return quitarTildes(String(v==null?'':v)).toUpperCase().replace(/\s+/g,' ').trim(); }
+
+function esReporteAgrario(ws){
+  try{
+    var filas=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:'',blankrows:true});
+    for(var i=0;i<Math.min(filas.length,40);i++){ if(_normTxt(filas[i][0])==='NUMERO TITULO') return true; }
+  }catch(e){}
+  return false;
+}
+
+// 20210615 (número o texto) / Date / "15/06/2021" → '2021-06-15'
+function _fechaAgr(v){
+  if(v===null || v===undefined || v==='') return null;
+  if(v instanceof Date && !isNaN(v)) return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
+  var s=String(v).trim();
+  if(/^\d{8}(\.0+)?$/.test(s)){ s=s.substring(0,8); return s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8); }
+  var m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+  return null;
+}
+// Número de título / cédula: solo dígitos, sin perder ninguno (15 dígitos caben exactos en un número de JS)
+function _digitos(v){
+  if(v===null || v===undefined || v==='') return '';
+  if(typeof v==='number') return isFinite(v) ? String(Math.round(v)) : '';
+  return String(v).replace(/\.0+$/,'').replace(/\D/g,'');
+}
+function _valorAgr(v){
+  if(typeof v==='number') return Math.round(v*100)/100;
+  var n=parsearValor(v);
+  return Math.round(n*100)/100;
+}
+// "Total $10,743,048,736.42" (formato EE. UU. del reporte)
+function _totalAgr(txt){
+  var m=String(txt).match(/TOTAL\s*\$?\s*([\d.,]+)/i);
+  return m ? Math.round(parsearValor(m[1])*100)/100 : null;
+}
+
+function parsearReporteAgrario(ws, nombre){
+  var filas=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:'',blankrows:true});
+  var hdr=-1, estado='', rango='', total=null;
+  for(var i=0;i<filas.length;i++){
+    var f=filas[i], c0=_normTxt(f[0]);
+    if(c0==='NUMERO TITULO' && hdr<0) hdr=i;
+    if(c0.indexOf('ESTADO DE LOS DEPOSITOS')===0){ for(var j=1;j<f.length;j++){ var t=String(f[j]).trim(); if(t && !/^total de registros/i.test(t)){ estado=_normTxt(t); break; } } }
+    if(c0.indexOf('FECHA DE CONSULTA')===0){ for(var k=1;k<f.length;k++){ if(String(f[k]).trim()){ rango=String(f[k]).trim(); break; } } }
+    for(var q=0;q<f.length;q++){ var cq=_normTxt(f[q]); if(/^TOTAL\s*\$/.test(cq)){ total=_totalAgr(cq); break; } }
+  }
+  if(hdr<0) throw new Error(nombre+': no se encontró la fila de encabezados "NÚMERO TÍTULO".');
+  if(!estado) throw new Error(nombre+': no se encontró el "ESTADO DE LOS DEPOSITOS" del reporte.');
+
+  // Columnas por nombre (el reporte trae celdas combinadas, así que no se asumen posiciones fijas)
+  var H=filas[hdr].map(_normTxt);
+  function col(nom){ var ix=H.indexOf(nom); return ix; }
+  var C={ titulo:col('NUMERO TITULO'), fe:col('FECHA ELABORACION'), fp:col('FECHA PAGO'), concepto:col('CONCEPTO'), valor:col('VALOR'),
+          tipo:col('TIPO IDENTIFICACION DEMANDADO'), ced:col('NUMERO IDENTIFICACION DEMANDADO'), nom:col('NOMBRES DEMANDADO'), ape:col('APELLIDOS DEMANDADO') };
+  if(C.titulo<0 || C.valor<0) throw new Error(nombre+': faltan las columnas NÚMERO TÍTULO o VALOR.');
+
+  // Corte = último día del rango consultado ("10/06/2021-19/11/2026" → 2026-11-19)
+  var corte=null, mr=rango.match(/(\d{1,2}\/\d{1,2}\/\d{4})\s*$/);
+  if(mr) corte=_fechaAgr(mr[1]);
+
+  var titulos=[], suma=0, malos=0;
+  for(var r=hdr+1;r<filas.length;r++){
+    var f2=filas[r];
+    var tit=_digitos(f2[C.titulo]);
+    if(!tit || tit.length<10){ if(String(f2[C.titulo]).trim() && !/^total/i.test(String(f2[C.titulo]))) malos++; continue; }
+    var v=_valorAgr(f2[C.valor]);
+    suma+=v;
+    var nombreDem=[C.nom>=0?f2[C.nom]:'', C.ape>=0?f2[C.ape]:''].map(function(x){ return String(x||'').replace(/\s+/g,' ').trim(); }).filter(Boolean).join(' ');
+    titulos.push({
+      deposito_judicial: tit,
+      estado_banco: estado,
+      valor: v,
+      fecha_elaboracion: C.fe>=0 ? _fechaAgr(f2[C.fe]) : null,
+      fecha_pago: C.fp>=0 ? _fechaAgr(f2[C.fp]) : null,
+      concepto: C.concepto>=0 ? (String(f2[C.concepto]||'').trim()||null) : null,
+      tipo_identificacion: C.tipo>=0 ? (String(f2[C.tipo]||'').trim()||null) : null,
+      identificacion_demandado: C.ced>=0 ? (_digitos(f2[C.ced])||null) : null,
+      nombre_demandado: nombreDem||null
+    });
+  }
+  suma=Math.round(suma*100)/100;
+  return { nombre:nombre, estado:estado, rango:rango, corte:corte, titulos:titulos, suma:suma, total:total,
+           cuadra: total===null ? null : Math.abs(total-suma)<0.005, malos:malos };
+}
+
+function leerArchivosAgrario(files){
+  files=Array.prototype.slice.call(files||[]);
+  if(!files.length) return;
+  if(typeof XLSX==='undefined'){ teoAlert('No se pudo cargar la librería de Excel. Revise su conexión.'); return; }
+  var out=document.getElementById('agr-resultado');
+  out.style.display='block';
+  out.innerHTML='<div class="alerta al-warn" style="display:flex"><div class="spin"></div>&nbsp;Leyendo '+files.length+' archivo(s) del banco…</div>';
+  var leidos=0, errores=[];
+  files.forEach(function(f){
+    var rd=new FileReader();
+    rd.onload=function(e){
+      try{
+        var wb=XLSX.read(e.target.result,{type:'array'});
+        var rep=parsearReporteAgrario(wb.Sheets[wb.SheetNames[0]], f.name);
+        // Si se vuelve a subir un reporte del mismo estado, reemplaza al anterior
+        _agr.archivos=_agr.archivos.filter(function(a){ return a.estado!==rep.estado; });
+        _agr.archivos.push(rep);
+      }catch(err){ errores.push(err.message||String(err)); }
+      leidos++;
+      if(leidos===files.length) pintarPreviaAgrario(errores);
+    };
+    rd.onerror=function(){ errores.push(f.name+': no se pudo leer.'); leidos++; if(leidos===files.length) pintarPreviaAgrario(errores); };
+    rd.readAsArrayBuffer(f);
+  });
+}
+
+function cancelarAgrario(){
+  _agr={archivos:[],titulos:{}};
+  var out=document.getElementById('agr-resultado'); out.style.display='none'; out.innerHTML='';
+}
+
+// Compara el corte contra lo que ya está en Teodoro (en memoria) — no toca la base.
+function pintarPreviaAgrario(errores){
+  var out=document.getElementById('agr-resultado');
+  var html='';
+  if(errores.length) html+='<div class="alerta al-err" style="display:block;margin-bottom:10px">❌ '+errores.map(eh).join('<br>❌ ')+'</div>';
+  if(!_agr.archivos.length){ out.innerHTML=html||''; return; }
+
+  // Unir títulos de todos los reportes cargados
+  var porTit={}, repetidos=0;
+  _agr.archivos.forEach(function(a){ a.titulos.forEach(function(t){ if(porTit[t.deposito_judicial]) repetidos++; porTit[t.deposito_judicial]=t; }); });
+  _agr.titulos=porTit;
+  var cortes={}; _agr.archivos.forEach(function(a){ if(a.corte) cortes[a.corte]=1; });
+  var listaCortes=Object.keys(cortes);
+  var corte=listaCortes.sort().pop()||'';
+  _agr.corte=corte;
+  var estados=_agr.archivos.map(function(a){ return a.estado; });
+  var completo=estados.some(function(e){ return e.indexOf('PENDIENTE')>=0; }) && estados.some(function(e){ return e.indexOf('PAGADO')>=0; });
+
+  // Archivos
+  html+='<div class="agr-files">'+_agr.archivos.map(function(a){
+    var ok=a.cuadra===true?'<span class="agr-ok">✓ cuadra con el total del banco</span>':(a.cuadra===false?'<span class="agr-bad">⚠ no cuadra: banco '+fmt$(a.total)+' vs leído '+fmt$(a.suma)+'</span>':'<span style="color:var(--soft)">sin fila de total para verificar</span>');
+    return '<div class="agr-file"><b>'+(a.estado.indexOf('PAGADO')>=0?'✅':'⏳')+' '+eh(a.estado)+'</b>'
+      +'<span>'+a.titulos.length.toLocaleString('es-CO')+' títulos · '+fmt$(a.suma)+'</span>'
+      +'<span style="color:var(--soft)">corte '+eh(fechaCO(a.corte)||'—')+'</span>'+ok
+      +(a.malos?'<span class="agr-bad">'+a.malos+' fila(s) sin número de título válido</span>':'')
+      +'<span style="margin-left:auto;font-size:11px;color:var(--soft);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+eh(a.nombre)+'">'+eh(a.nombre)+'</span></div>';
+  }).join('')+'</div>';
+
+  if(listaCortes.length>1){
+    html+='<div class="alerta al-err" style="display:block;margin-bottom:10px">❌ Los reportes son de fechas de corte distintas ('+listaCortes.map(fechaCO).join(', ')+'). Descargue los dos del mismo día para que el cruce sea confiable.</div>';
+    html+='<div style="display:flex;gap:8px"><button class="fbtn fbtn-outline" onclick="cancelarAgrario()">✕ Empezar de nuevo</button></div>';
+    out.innerHTML=html; return;
+  }
+  if(!completo){
+    var falta=estados.some(function(e){ return e.indexOf('PAGADO')>=0; })?'PENDIENTE DE PAGO':'PAGADO CON ABONO A CUENTA';
+    html+='<div class="alerta al-warn" style="display:block;margin-bottom:10px">ℹ️ Falta el reporte <b>'+falta+'</b> del mismo corte. Puede agregarlo ahora (arrástrelo arriba) o continuar solo con este; sin los dos no se pueden marcar los títulos que el banco dejó de reportar.</div>';
+  }
+  if(repetidos) html+='<div class="alerta al-warn" style="display:block;margin-bottom:10px">⚠️ '+repetidos+' título(s) aparecen en los dos reportes; se toma el último leído.</div>';
+
+  // Comparación contra Teodoro
+  var idx={};
+  dataBancoCompleto.forEach(function(r){ if(r['anulado']) return; var d=String(r['deposito judicial']||'').trim(); if(d) (idx[d]=idx[d]||[]).push(r); });
+  var coinciden=0, difValor=[], nuevos=0, valorNuevos=0, aPagado=0;
+  Object.keys(porTit).forEach(function(k){
+    var t=porTit[k], ex=idx[k];
+    if(!ex){ nuevos++; valorNuevos+=t.valor; return; }
+    var vApp=parsearValor(ex[0]['Valor del Depóstio']);
+    if(Math.abs(vApp-t.valor)>=0.005) difValor.push({dep:k, app:vApp, banco:t.valor, nombre:ex[0]['Nombre Demandante.1']||t.nombre_demandado||''});
+    else coinciden++;
+    if(t.estado_banco.indexOf('PAGADO')>=0 && !esTerminado(ex[0])) aPagado++;
+  });
+  var noReportados=0;
+  if(completo){
+    dataBanco.forEach(function(r){ var d=String(r['deposito judicial']||'').trim(); if(d && !porTit[d]) noReportados++; });
+  }
+  var difTotal=difValor.reduce(function(s,x){ return s+(x.banco-x.app); },0);
+
+  html+='<div class="agr-kpis">'
+    +'<div class="agr-kpi"><div class="n">'+Object.keys(porTit).length.toLocaleString('es-CO')+'</div><div class="l">títulos en el corte del '+eh(fechaCO(corte))+'</div></div>'
+    +'<div class="agr-kpi"><div class="n" style="color:var(--money)">'+coinciden.toLocaleString('es-CO')+'</div><div class="l">ya están en Teodoro con el valor exacto</div></div>'
+    +'<div class="agr-kpi"><div class="n" style="color:var(--gold2)">'+difValor.length.toLocaleString('es-CO')+'</div><div class="l">valor distinto al del banco (centavos u otro) — se corrigen · diferencia total '+fmt$(difTotal)+'</div></div>'
+    +'<div class="agr-kpi"><div class="n" style="color:#9cc9f5">'+nuevos.toLocaleString('es-CO')+'</div><div class="l">no están con ese número en Teodoro ('+fmtM(valorNuevos)+'): se agregan o se repara el número si es el mismo título mal escrito</div></div>'
+    +'<div class="agr-kpi"><div class="n" style="color:var(--money)">'+aPagado.toLocaleString('es-CO')+'</div><div class="l">pasan a <b>Títulos terminados</b> (pagados a la Alcaldía)</div></div>'
+    +(completo?'<div class="agr-kpi"><div class="n" style="color:var(--warn-txt)">'+noReportados.toLocaleString('es-CO')+'</div><div class="l">están en Teodoro pero no en ninguno de los dos reportes</div></div>':'')
+    +'</div>';
+
+  if(difValor.length){
+    difValor.sort(function(a,b){ return Math.abs(b.banco-b.app)-Math.abs(a.banco-a.app); });
+    var soloCent=difValor.filter(function(x){ return Math.abs(x.banco-x.app)<1; }).length;
+    html+='<div style="font-size:12px;color:var(--soft);margin:4px 0 6px">De los '+difValor.length.toLocaleString('es-CO')+' valores distintos, <b>'+soloCent.toLocaleString('es-CO')+'</b> difieren solo en centavos. Muestra de las diferencias más grandes:</div>'
+      +'<div class="tw" style="max-height:260px"><table><thead><tr><th>#Título</th><th>Demandado</th><th style="text-align:right">Valor en Teodoro</th><th style="text-align:right">Valor del banco</th><th style="text-align:right">Diferencia</th></tr></thead><tbody>'
+      +difValor.slice(0,12).map(function(x){
+        return '<tr><td class="mono" style="font-size:12px">'+eh(x.dep)+'</td><td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eh(x.nombre)+'</td>'
+          +'<td class="mono" style="text-align:right;font-size:12px">'+fmt$(x.app)+'</td><td class="mono" style="text-align:right;font-size:12px;font-weight:700">'+fmt$(x.banco)+'</td>'
+          +'<td class="mono" style="text-align:right;font-size:12px;color:var(--gold2)">'+fmt$(x.banco-x.app)+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+
+  if(!_colsBancoOK){
+    html+='<div class="alerta al-err" style="display:block;margin-top:12px">❌ Antes de aplicar el corte hay que ejecutar <b>recaudo_corte_banco.sql</b> en el SQL Editor de Supabase (crea la columna de valor con centavos, el estado en el banco y las funciones del cruce). Después recargue esta página.</div>';
+    html+='<div style="display:flex;gap:8px;margin-top:12px"><button class="fbtn fbtn-outline" onclick="cancelarAgrario()">✕ Cerrar</button></div>';
+  } else {
+    html+='<div style="font-size:11.5px;color:var(--soft);margin-top:12px;line-height:1.55">Al confirmar: se guarda la foto del corte, se corrigen valores y números, se agregan los títulos nuevos'
+      +(completo?' y se marcan como "no reportados" los que el banco dejó de reportar':'')+'. Cada corrección queda en la bitácora <b>recaudo_ajustes_banco</b>. Estados, responsables, observaciones y comprobantes <b>no se tocan</b>.</div>'
+      +'<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="fbtn fbtn-outline" onclick="cancelarAgrario()">✕ Cancelar</button>'
+      +'<button class="fbtn fbtn-gold" id="agr-btn-aplicar" onclick="aplicarCorteAgrario()">✅ Actualizar Teodoro con el corte del '+eh(fechaCO(corte))+'</button></div>'
+      +'<div id="agr-progreso" style="display:none;margin-top:14px"></div>';
+  }
+  out.innerHTML=html;
+}
+
+function _agrProgreso(pct, txt){
+  var el=document.getElementById('agr-progreso'); if(!el) return;
+  el.style.display='block';
+  el.innerHTML='<div class="agr-prog"><div style="width:'+Math.max(2,Math.min(100,pct))+'%"></div></div><div style="font-size:12px;color:var(--soft)">'+txt+'</div>';
+}
+
+// POST a Supabase con reintentos (renueva el token si venció)
+async function _agrPost(ruta, cuerpo, prefer){
+  var ultimo='';
+  for(var i=0;i<4;i++){
+    try{
+      var hdr={'Content-Type':'application/json'}; if(prefer) hdr.Prefer=prefer;
+      var res=await fetch(SUPABASE_URL+'/rest/v1/'+ruta,{method:'POST',headers:sbHeadersSesion(hdr),body:JSON.stringify(cuerpo)});
+      if(res.ok){ var txt=await res.text(); return txt?JSON.parse(txt):null; }
+      ultimo='HTTP '+res.status+' '+(await res.text()).substring(0,300);
+      if(res.status===401){ await refrescarToken(); continue; }
+      if(res.status>=400 && res.status<500 && res.status!==408 && res.status!==429) break;
+    }catch(e){ ultimo=e.message||String(e); }
+    await new Promise(function(r){ setTimeout(r, 700*(i+1)); });
+  }
+  throw new Error(ultimo||'No se pudo comunicar con Supabase');
+}
+
+async function aplicarCorteAgrario(){
+  if(!USUARIO_ACTIVO){ pedirUsuario(); return; }
+  var corte=_agr.corte, keys=Object.keys(_agr.titulos||{});
+  if(!corte || !keys.length) return;
+  var completo=_agr.archivos.some(function(a){ return a.estado.indexOf('PENDIENTE')>=0; }) && _agr.archivos.some(function(a){ return a.estado.indexOf('PAGADO')>=0; });
+  if(!confirm('Se actualizará Teodoro con el corte del Banco Agrario del '+fechaCO(corte)+' ('+keys.length.toLocaleString('es-CO')+' títulos).\n\nLa gestión del equipo no se modifica. ¿Continuar?')) return;
+  var btn=document.getElementById('agr-btn-aplicar'); if(btn){ btn.disabled=true; btn.textContent='Procesando…'; }
+  var ahora=new Date().toISOString();
+  try{
+    // 1) Subir la foto del corte (upsert por número de título)
+    var BLOQUE=1000;
+    for(var i=0;i<keys.length;i+=BLOQUE){
+      var lote=keys.slice(i,i+BLOQUE).map(function(k){
+        var t=_agr.titulos[k];
+        return { deposito_judicial:t.deposito_judicial, estado_banco:t.estado_banco, valor:t.valor,
+                 fecha_elaboracion:t.fecha_elaboracion, fecha_pago:t.fecha_pago, concepto:t.concepto,
+                 tipo_identificacion:t.tipo_identificacion, identificacion_demandado:t.identificacion_demandado,
+                 nombre_demandado:t.nombre_demandado, fecha_corte:corte, procesado:false, resultado:null,
+                 cargado_en:ahora, cargado_por:USUARIO_ACTIVO };
+      });
+      _agrProgreso(Math.round((i/keys.length)*35), 'Subiendo el corte al servidor… '+Math.min(i+BLOQUE,keys.length).toLocaleString('es-CO')+' de '+keys.length.toLocaleString('es-CO'));
+      await _agrPost('recaudo_corte_banco?on_conflict=deposito_judicial', lote, 'resolution=merge-duplicates,return=minimal');
+    }
+
+    // 2) Procesar por lotes en el servidor (si un lote se demora, se parte en lotes más pequeños)
+    var acum={coinciden:0, valores_corregidos:0, numeros_reparados:0, nuevos:0}, restantes=keys.length, tam=1000, fallos=0;
+    while(restantes>0){
+      var r;
+      try{
+        r=await _agrPost('rpc/procesar_corte_banco', {p_corte:corte, p_lote:tam, p_usuario:USUARIO_ACTIVO});
+        fallos=0;
+      }catch(e){
+        fallos++;
+        if(fallos>4) throw e;
+        tam=Math.max(100, Math.floor(tam/2));
+        continue;
+      }
+      if(!r || r.procesados===0) break;
+      Object.keys(acum).forEach(function(k){ acum[k]+=Number(r[k]||0); });
+      restantes=Number(r.restantes||0);
+      _agrProgreso(35+Math.round(((keys.length-restantes)/keys.length)*55), 'Cruzando con Teodoro… quedan '+restantes.toLocaleString('es-CO')+' títulos');
+    }
+
+    // 3) Marcar los que el banco dejó de reportar (solo con los dos reportes del corte)
+    var noRep=0;
+    if(completo){
+      for(var vueltas=0; vueltas<50; vueltas++){
+        _agrProgreso(92, 'Revisando títulos que ya no aparecen en el banco…');
+        var c=await _agrPost('rpc/cerrar_corte_banco', {p_corte:corte, p_lote:5000, p_usuario:USUARIO_ACTIVO});
+        if(!c || !c.ok || !Number(c.marcados)) break;
+        noRep+=Number(c.marcados);
+      }
+    }
+
+    _agrProgreso(100, 'Listo. Recargando los datos…');
+    var res=document.getElementById('agr-resultado');
+    res.innerHTML='<div class="alerta al-ok" style="display:block;line-height:1.7">✅ <b>Corte del '+eh(fechaCO(corte))+' aplicado.</b><br>'
+      +'• '+acum.coinciden.toLocaleString('es-CO')+' títulos ya coincidían<br>'
+      +'• '+acum.valores_corregidos.toLocaleString('es-CO')+' valores corregidos al valor exacto del banco<br>'
+      +'• '+acum.numeros_reparados.toLocaleString('es-CO')+' números de título reparados<br>'
+      +'• '+acum.nuevos.toLocaleString('es-CO')+' títulos nuevos agregados'
+      +(completo?'<br>• '+noRep.toLocaleString('es-CO')+' marcados como "no reportados" por el banco':'')
+      +'<br><span style="font-size:11px;opacity:.85">Cada corrección quedó registrada en recaudo_ajustes_banco. Si se agregaron títulos de la misma persona, fecha y valor que uno existente, revíselos en la pestaña Duplicados.</span></div>';
+    _agr={archivos:[],titulos:{}};
+    await cargarTodo();
+  }catch(err){
+    var p=document.getElementById('agr-progreso');
+    if(p) p.innerHTML+='<div class="alerta al-err" style="display:block;margin-top:8px">❌ '+eh(err.message||String(err))+'<br><span style="font-size:11px">Lo que alcanzó a procesarse quedó guardado. Puede volver a pulsar el botón: el proceso continúa donde iba sin duplicar nada.</span></div>';
+    if(btn){ btn.disabled=false; btn.textContent='🔁 Reintentar'; }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
 // EXPORTAR RECAUDO → CSV + Excel
 // Baja TODA la tabla `recaudo` directo de Supabase (36 columnas reales,
 // incluidos anulados) reutilizando sbFetchAll(). No usa dataBancoCompleto
@@ -7041,8 +7676,15 @@ function fallbackCopiar(texto,cb){
     ['consignaciones','Consignaciones (JSON)'],
     ['editado_por','Editado Por'],
     ['ultima_edicion','Última Edición'],
-    ['fecha_creacion','Fecha Creación']
+    ['fecha_creacion','Fecha Creación'],
+    ['estado_banco','Estado en el banco'],
+    ['fecha_pago_banco','Fecha pago banco'],
+    ['fecha_corte_banco','Fecha corte banco']
   ];
+  var COLS_SOLO_BANCO = {estado_banco:1, fecha_pago_banco:1, fecha_corte_banco:1};
+  function colsExport(){
+    return EXPORT_COLS.filter(function(c){ return _colsBancoOK || !COLS_SOLO_BANCO[c[0]]; });
+  }
 
   // Columnas que Excel rompe si las trata como número (notación científica /
   // ceros a la izquierda perdidos) → se fuerzan a texto en ambos formatos.
@@ -7052,7 +7694,6 @@ function fallbackCopiar(texto,cb){
     comprobante_egreso:1, radicado_respuesta:1, ci_inicial:1, telefono_contacto:1
   };
 
-  var SELECT_EXPORT = EXPORT_COLS.map(function(c){ return c[0]; }).join(',');
 
   function setBusy(txt){
     var a=document.getElementById('btnExportCSV'),
@@ -7079,10 +7720,11 @@ function fallbackCopiar(texto,cb){
   function armarCSV(filas){
     var SEP=';';
     function esc(s){ return '"' + String(s).replace(/"/g,'""') + '"'; }
-    var out=[ EXPORT_COLS.map(function(c){ return esc(c[1]); }).join(SEP) ];
+    var COLS=colsExport();
+    var out=[ COLS.map(function(c){ return esc(c[1]); }).join(SEP) ];
     for(var i=0;i<filas.length;i++){
       var row=filas[i];
-      var celdas=EXPORT_COLS.map(function(c){
+      var celdas=COLS.map(function(c){
         var key=c[0], v=valorCelda(row,key);
         // fórmula ="..." evita que Excel convierta cédulas/depósitos a número
         if(FORZAR_TEXTO[key] && v!=='') v='="'+String(v).replace(/"/g,'""')+'"';
@@ -7120,15 +7762,21 @@ function fallbackCopiar(texto,cb){
   }
 
   function armarXLSX(XLSX, filas){
-    var aoa=[ EXPORT_COLS.map(function(c){ return c[1]; }) ];
+    var COLS=colsExport();
+    var aoa=[ COLS.map(function(c){ return c[1]; }) ];
     for(var i=0;i<filas.length;i++){
       var row=filas[i];
-      aoa.push(EXPORT_COLS.map(function(c){ return valorCelda(row,c[0]); }));
+      aoa.push(COLS.map(function(c){
+        var v=valorCelda(row,c[0]);
+        // valor como número exacto (no texto) para que Excel sume y cruce con el banco
+        if(c[0]==='valor_deposito' && v!=='') v=Number(v);
+        return v;
+      }));
     }
     var ws=XLSX.utils.aoa_to_sheet(aoa);
     // forzar texto en columnas sensibles
     var idx=[];
-    EXPORT_COLS.forEach(function(c,i){ if(FORZAR_TEXTO[c[0]]) idx.push(i); });
+    COLS.forEach(function(c,i){ if(FORZAR_TEXTO[c[0]]) idx.push(i); });
     for(var k=0;k<idx.length;k++){
       var col=idx[k];
       for(var r=1;r<=filas.length;r++){
@@ -7137,7 +7785,10 @@ function fallbackCopiar(texto,cb){
         if(cell && cell.v!=='' && cell.v!=null){ cell.t='s'; cell.v=String(cell.v); }
       }
     }
-    ws['!cols']=EXPORT_COLS.map(function(c){
+    // formato con 2 decimales en la columna de valor
+    var iVal=-1; COLS.forEach(function(c,i){ if(c[0]==='valor_deposito') iVal=i; });
+    if(iVal>=0){ for(var rr=1;rr<=filas.length;rr++){ var cv=ws[XLSX.utils.encode_cell({r:rr,c:iVal})]; if(cv && cv.t==='n') cv.z='#,##0.00'; } }
+    ws['!cols']=COLS.map(function(c){
       return { wch: Math.min(Math.max(c[1].length+2,12),40) };
     });
     var wb=XLSX.utils.book_new();
@@ -7150,7 +7801,7 @@ function fallbackCopiar(texto,cb){
     try{
       setBusy('Descargando…');
       // sbFetchAll pagina de a 1000 con reintentos; trae TODA la tabla.
-      var filas = await sbFetchAll('recaudo', SELECT_EXPORT, 'order=id.asc');
+      var filas = await sbFetchAll('recaudo', colsExport().map(function(c){ return c[0]; }).join(','), 'order=id.asc');
       if(!filas || !filas.length){ alert('No se encontraron registros para exportar.'); setBusy(null); return; }
 
       if(tipo==='csv'){
