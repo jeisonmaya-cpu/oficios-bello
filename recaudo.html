@@ -265,6 +265,12 @@ td:hover .copy-ico,.copy-wrap:hover .copy-ico{opacity:.75}
   background:linear-gradient(135deg,#0d2550,#132a52);border:1px solid rgba(45,141,232,.4);
   box-shadow:0 14px 36px rgba(0,0,0,.5);font-size:12.5px;color:var(--text)}
 .undo-toast.show{display:flex;animation:undoIn .25s ease both}
+.term-toast{position:fixed;left:50%;bottom:76px;transform:translateX(-50%);z-index:10061;
+  display:none;align-items:center;gap:12px;padding:10px 14px 10px 16px;border-radius:14px;
+  background:linear-gradient(135deg,#0f3b24,#134a2c);border:1px solid rgba(34,197,94,.45);
+  box-shadow:0 14px 36px rgba(0,0,0,.5);font-size:12.5px;color:var(--text)}
+.term-toast.show{display:flex;animation:undoIn .25s ease both}
+.term-toast button{background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.5);color:#bbf7d0;border-radius:9px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
 @keyframes undoIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .sel-total-box{margin-top:6px;padding:14px 16px;border-radius:var(--radius-sm);
   background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);
@@ -930,7 +936,7 @@ html.tema-claro .bk-pend{background:rgba(29,78,137,.1);color:#1d4e89;border-colo
   <nav class="lat-nav">
     <div class="lat-sec">Gestión</div>
       <button class="nav-b" id="tab-registros" data-tab="registros" data-vista="" data-txt="Registros" onclick="irVista('registros')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg><span class="nav-txt">Registros</span><span class="nav-badge azul" id="badge-total">0</span></button>
-      <button class="nav-b" id="tab-pendientes" data-tab="pendientes" data-vista="" data-txt="Pendientes" onclick="irVista('pendientes')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-txt">Pendientes</span><span class="nav-badge" id="badge-pen">0</span></button>
+      <button class="nav-b" id="tab-pendientes" data-tab="pendientes" data-vista="" data-txt="Pendientes" onclick="irVista('pendientes')" style="display:none" title="Reemplazada: Registros ya muestra solo lo pendiente; lo finalizado pasa a Títulos terminados"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-txt">Pendientes</span><span class="nav-badge" id="badge-pen">0</span></button>
       <button class="nav-b" id="tab-terminados" data-tab="terminados" data-vista="" data-txt="Títulos terminados" onclick="irVista('terminados')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.6"/></svg><span class="nav-txt">Títulos terminados</span><span class="nav-badge" id="badge-term" style="display:none">0</span></button>
     <div class="lat-sec">Control</div>
       <button class="nav-b" id="tab-dashboard" data-tab="dashboard" data-vista="" data-txt="Dashboard" onclick="irVista('dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20v-8M11 20V5M16 20v-11M21 20v-5"/></svg><span class="nav-txt">Dashboard</span></button>
@@ -1004,7 +1010,7 @@ html.tema-claro .bk-pend{background:rgba(29,78,137,.1);color:#1d4e89;border-colo
     <div class="kpi green">
       <div class="kpi-lbl">Finalizados</div>
       <div class="kpi-val" id="k-fin">—</div>
-      <div class="kpi-sub">completados</div>
+      <div class="kpi-sub">pasaron a terminados</div>
     </div>
     <div class="kpi orange">
       <div class="kpi-lbl">En trámite</div>
@@ -1134,6 +1140,10 @@ html.tema-claro .bk-pend{background:rgba(29,78,137,.1);color:#1d4e89;border-colo
 
 <!-- Toast de "Deshacer" — global, no depende de qué pestaña esté abierta.
      Se muestra ~10s después de guardar una gestión (individual o en lote). -->
+<div class="term-toast" id="term-toast" role="status" aria-live="polite">
+  <span id="term-toast-msg">✅ Pasó a Títulos terminados</span>
+  <button onclick="ocultarTermToast();irVista('terminados')">Ver terminados</button>
+</div>
 <div class="undo-toast" id="undo-toast">
   <span id="undo-toast-msg">Cambio guardado</span>
   <button class="fbtn fbtn-gold" style="padding:6px 14px;font-size:12px" onclick="deshacerUltimoGuardado()">↩️ Deshacer</button>
@@ -1251,13 +1261,18 @@ html.tema-claro .bk-pend{background:rgba(29,78,137,.1);color:#1d4e89;border-colo
   <div class="kpis" id="term-kpis"></div>
   <div class="card">
     <div class="card-hdr">
-      <div class="card-hdr-title">✅ Títulos terminados <span style="font-size:11px;font-weight:400;color:var(--soft)">— el Banco Agrario los pagó con abono a la cuenta de la Alcaldía</span></div>
+      <div class="card-hdr-title">✅ Títulos terminados <span style="font-size:11px;font-weight:400;color:var(--soft)">— pagados por el Banco Agrario o con la gestión finalizada por el equipo</span></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="tb-btn gold" onclick="exportarTerminadosExcel()" style="font-size:11px;padding:5px 11px">⬇ Excel</button>
       </div>
     </div>
     <div class="filtros">
       <input class="finp search" id="ft-buscar" placeholder="🔍 Buscar título, nombre, cédula..." oninput="filtrarTermDebounced()"/>
+      <select class="finp" id="ft-motivo" onchange="filtrarTerm()">
+        <option value="">Motivo (todos)</option>
+        <option value="banco">🏦 Pagado por el banco</option>
+        <option value="gestion">✅ Finalizado por el equipo (banco sin pagar)</option>
+      </select>
       <select class="finp" id="ft-anio" onchange="filtrarTerm()"><option value="">📅 Año de pago (todos)</option></select>
       <select class="finp" id="ft-gestion" onchange="filtrarTerm()">
         <option value="">Gestión en Teodoro (toda)</option>
@@ -2587,17 +2602,60 @@ function grupoBanco(r){
   if(e.indexOf('NO REPORT')>=0) return 'NO_REPORTADO';
   return 'SIN_DATO';
 }
-function esTerminado(r){ return grupoBanco(r)==='PAGADO'; }
+function esTerminado(r){ return grupoBanco(r)==='PAGADO'; }   // SOLO pagado por el banco (lo usa el corte)
+// Gestión finalizada por el equipo: al menos uno de los dos estados (Devolución o
+// Aplicación) en FINALIZADO y el otro también FINALIZADO o vacío. Si el otro está en
+// trámite, en revisión o pendiente, todavía hay trabajo y el depósito sigue en Registros.
+// Es el MISMO criterio en KPIs, Registros y Títulos terminados.
+function finalizadoGestion(r){
+  var ed=normEst(r['ESTADO DEVOLUCION']), ea=normEst(r['ESTADO APLICACIÓN']);
+  if(ed!=='FINALIZADO' && ea!=='FINALIZADO') return false;
+  return (ed==='FINALIZADO'||ed==='') && (ea==='FINALIZADO'||ea==='');
+}
+// Un título sale de Registros y pasa a Títulos terminados si el banco ya lo pagó
+// O si el equipo finalizó su gestión (aunque el banco todavía no reporte el pago).
+function esCerrado(r){ return esTerminado(r) || finalizadoGestion(r); }
+var _idsCerrados = null;   // ids cerrados en la última separación (para detectar los que acaban de pasar)
+var _recienCerrados = [];  // filas que pasaron a terminados en la última separación
 function separarPorEstadoBanco(){
-  var vig=[], term=[], ult='';
+  var vig=[], term=[], ult='', ids=new Set(), nuevos=[];
   for(var i=0;i<dataBanco.length;i++){
     var r=dataBanco[i];
-    if(esTerminado(r)) term.push(r); else vig.push(r);
+    if(esCerrado(r)){
+      term.push(r); ids.add(r._id);
+      if(_idsCerrados && !_idsCerrados.has(r._id)) nuevos.push(r);
+    } else vig.push(r);
     var fc=String(r._fechaCorteBanco||'');
     if(fc>ult) ult=fc;
   }
   dataVigentes=vig; dataTerminados=term; _ultimoCorteBanco=ult;
+  _idsCerrados=ids; _recienCerrados=nuevos;
 }
+// Se llama desde renderKpis (que corre después de cada guardado individual o en lote,
+// y después de deshacer): reubica las filas y avisa si alguna pasó a terminados por
+// una edición de ESTA sesión (no por cambios de otros traídos con la sincronización).
+var _termToastId=null;
+function reubicarTrasGuardado(){
+  separarPorEstadoBanco();
+  if(!_recienCerrados.length) return;
+  var mov=new Set(_recienCerrados.map(function(r){ return r._id; }));
+  if(Array.isArray(filtrados)) filtrados=filtrados.filter(function(r){ return !mov.has(r._id); });
+  if(typeof renderTabla==='function') renderTabla();
+  if(_tabActual==='terminados' && typeof filtrarTerm==='function') filtrarTerm();
+  var mios=_recienCerrados.filter(function(r){
+    return r._editadoPor===USUARIO_ACTIVO && r._ultimaEdicionISO && r._ultimaEdicionISO>=_sesionDesdeISO;
+  });
+  if(!mios.length) return;
+  var msg = mios.length===1
+    ? '✅ El depósito '+String(mios[0]['deposito judicial'])+' quedó finalizado y pasó a Títulos terminados'
+    : '✅ '+mios.length.toLocaleString('es-CO')+' depósitos quedaron finalizados y pasaron a Títulos terminados';
+  var t=document.getElementById('term-toast'), m=document.getElementById('term-toast-msg');
+  if(m) m.textContent=msg;
+  if(t) t.classList.add('show');
+  if(_termToastId) clearTimeout(_termToastId);
+  _termToastId=setTimeout(ocultarTermToast, 8000);
+}
+function ocultarTermToast(){ var t=document.getElementById('term-toast'); if(t) t.classList.remove('show'); }
 function fechaCO(iso){
   var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? (m[3]+'/'+m[2]+'/'+m[1]) : '';
@@ -3472,25 +3530,25 @@ function getRow(r){ return r; }
 
 // KPIs
 function renderKpis(){
+  reubicarTrasGuardado();
+  // Registros (dataVigentes) ya NO contiene finalizados: esos pasaron a Títulos terminados.
   var total=dataVigentes.length,fin=0,tram=0,pen=0,valor=0;
   dataVigentes.forEach(r=>{
     var ed=normEst(r['ESTADO DEVOLUCION']),ea=normEst(r['ESTADO APLICACIÓN']);
-    // Un depósito cuenta como EN TRÁMITE/REVISIÓN si alguno de sus estados lo está (trabajo en curso).
-    // Como FINALIZADO solo si ambos lados están finalizados o uno finalizado y el otro vacío.
     var enCurso = ed==='EN TRAMITE'||ea==='EN TRAMITE'||ed==='EN REVISION'||ea==='EN REVISION';
-    var algunFin = ed==='FINALIZADO'||ea==='FINALIZADO';
     if(enCurso) tram++;
-    else if(algunFin) fin++;
     else pen++;
     valor+=parsearValor(r['Valor del Depóstio']);
   });
+  // Finalizados por el equipo (mismo criterio que mueve a terminados), estén o no pagados por el banco
+  dataTerminados.forEach(function(r){ if(finalizadoGestion(r)) fin++; });
   document.getElementById('k-total').textContent=total.toLocaleString('es-CO');
   document.getElementById('k-pen').textContent=pen.toLocaleString('es-CO');
   document.getElementById('k-fin').textContent=fin.toLocaleString('es-CO');
   document.getElementById('k-tram').textContent=tram.toLocaleString('es-CO');
   document.getElementById('k-valor').textContent=fmtM(valor);
-  var valorTerm=0; dataTerminados.forEach(function(r){ valorTerm+=parsearValor(r['Valor del Depóstio']); });
-  var kn=document.getElementById('k-nuevos'); if(kn) kn.textContent=_colsBancoOK?dataTerminados.length.toLocaleString('es-CO'):'—';
+  var valorTerm=0, nPagBanco=0; dataTerminados.forEach(function(r){ if(esTerminado(r)){ nPagBanco++; valorTerm+=parsearValor(r['Valor del Depóstio']); } });
+  var kn=document.getElementById('k-nuevos'); if(kn) kn.textContent=_colsBancoOK?nPagBanco.toLocaleString('es-CO'):'—';
   var ki=document.getElementById('k-import-fecha');
   if(ki) ki.textContent=!_colsBancoOK?'falta ejecutar el SQL':(_ultimoCorteBanco?(fmtM(valorTerm)+' · corte '+fechaCO(_ultimoCorteBanco)):'sin corte del banco cargado');
   var kts=document.getElementById('k-total-sub');
@@ -6046,8 +6104,8 @@ function renderDashboard(){
     kpiCard('Sin responsable', sinAsignar.toLocaleString('es-CO'), 'sin asignar')+
     kpiCard('Valor total', fmtM(valorTotal), 'suma de depósitos')+
     (_colsBancoOK && _ultimoCorteBanco ? (
-      kpiCard('Vigentes en el banco', dataVigentes.length.toLocaleString('es-CO'), 'corte '+fechaCO(_ultimoCorteBanco))+
-      kpiCard('Pagados a la Alcaldía', dataTerminados.length.toLocaleString('es-CO'), fmtM(dataTerminados.reduce(function(s,r){ return s+parsearValor(r['Valor del Depóstio']); },0)))
+      kpiCard('Vigentes en el banco', dataBanco.filter(function(r){ return !esTerminado(r); }).length.toLocaleString('es-CO'), 'corte '+fechaCO(_ultimoCorteBanco))+
+      kpiCard('Pagados a la Alcaldía', dataTerminados.filter(esTerminado).length.toLocaleString('es-CO'), fmtM(dataTerminados.reduce(function(s,r){ return s+(esTerminado(r)?parsearValor(r['Valor del Depóstio']):0); },0)))
     ) : '');
 
   var filas=Object.keys(porResp).filter(n=>porResp[n].asignados>0||RESPONSABLES.indexOf(n)>=0)
@@ -7331,14 +7389,17 @@ function renderTermKpis(){
   // "Último mes" = 30 días hacia atrás desde el pago más reciente del reporte
   var limite='';
   if(ultPago){ var d=new Date(ultPago+'T00:00:00'); d.setDate(d.getDate()-30); limite=d.toISOString().slice(0,10); }
+  var nBanco=0, nGest=0;
   dataTerminados.forEach(function(r){
     var v=parsearValor(r['Valor del Depóstio']);
+    if(!esTerminado(r)){ nGest++; return; }   // finalizado por el equipo, el banco aún no lo pagó
+    nBanco++;
     valor+=v;
     if(!gestionFinalizada(r)){ sinFin++; valorSinFin+=v; }
     if(limite && String(r._fechaPagoBanco||'')>limite){ ultMes++; valorUltMes+=v; }
   });
   cont.innerHTML=
-    '<div class="kpi green"><div class="kpi-lbl">Títulos terminados</div><div class="kpi-val">'+dataTerminados.length.toLocaleString('es-CO')+'</div><div class="kpi-sub">'+(_ultimoCorteBanco?'corte '+fechaCO(_ultimoCorteBanco):'sin corte cargado')+'</div></div>'
+    '<div class="kpi green"><div class="kpi-lbl">Títulos terminados</div><div class="kpi-val">'+dataTerminados.length.toLocaleString('es-CO')+'</div><div class="kpi-sub">'+nBanco.toLocaleString('es-CO')+' pagados por el banco · '+nGest.toLocaleString('es-CO')+' finalizados por el equipo</div></div>'
    +'<div class="kpi purple"><div class="kpi-lbl">Valor pagado a la Alcaldía</div><div class="kpi-val" style="font-size:18px">'+fmt$(valor)+'</div><div class="kpi-sub">suma exacta del banco</div></div>'
    +'<div class="kpi blue"><div class="kpi-lbl">Pagados en los últimos 30 días</div><div class="kpi-val">'+ultMes.toLocaleString('es-CO')+'</div><div class="kpi-sub">'+fmtM(valorUltMes)+(ultPago?' · hasta '+fechaCO(ultPago):'')+'</div></div>'
    +'<div class="kpi red term-alerta" onclick="var s=document.getElementById(\'ft-gestion\');s.value=\'sinfin\';filtrarTerm();" title="Clic para ver solo estos"><div class="kpi-lbl">⚠️ Pagados sin finalizar en Teodoro</div><div class="kpi-val">'+sinFin.toLocaleString('es-CO')+'</div><div class="kpi-sub">'+fmtM(valorSinFin)+' · por cerrar la gestión</div></div>';
@@ -7349,7 +7410,10 @@ function filtrarTerm(){
   var fAnio=(document.getElementById('ft-anio')||{value:''}).value;
   var fGest=(document.getElementById('ft-gestion')||{value:''}).value;
   var fImp=((document.getElementById('ft-impuesto')||{value:''}).value||'').toUpperCase();
+  var fMot=(document.getElementById('ft-motivo')||{value:''}).value;
   termFiltrados=dataTerminados.filter(function(r){
+    if(fMot==='banco' && !esTerminado(r)) return false;
+    if(fMot==='gestion' && esTerminado(r)) return false;
     if(buscar){ var hay=r._buscable!==undefined?r._buscable:construirBuscable(r); if(hay.indexOf(buscar)<0) return false; }
     if(fAnio && String(r._fechaPagoBanco||'').substring(0,4)!==fAnio) return false;
     if(fGest==='sinfin' && gestionFinalizada(r)) return false;
@@ -7358,14 +7422,16 @@ function filtrarTerm(){
     return true;
   });
   // Más reciente primero (por fecha de pago del banco)
-  termFiltrados.sort(function(a,b){ return String(b._fechaPagoBanco||'').localeCompare(String(a._fechaPagoBanco||'')) || String(b['deposito judicial']).localeCompare(String(a['deposito judicial'])); });
+  // Más reciente primero: fecha de pago del banco o, si el banco aún no pagó, fecha en que se finalizó la gestión
+  function fechaCierre(r){ return String(r._fechaPagoBanco||'').substring(0,10) || String(r._fechaGestion||r._ultimaEdicionISO||'').substring(0,10); }
+  termFiltrados.sort(function(a,b){ return fechaCierre(b).localeCompare(fechaCierre(a)) || String(b['deposito judicial']).localeCompare(String(a['deposito judicial'])); });
   pagTerm=1;
   llenarSelectAniosTerm();
   renderTermKpis();
   renderTerminados();
 }
 function limpiarFiltrosTerm(){
-  ['ft-buscar','ft-anio','ft-gestion','ft-impuesto'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['ft-buscar','ft-motivo','ft-anio','ft-gestion','ft-impuesto'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   filtrarTerm();
 }
 
@@ -7378,7 +7444,7 @@ function renderTerminados(){
   }
   var ini=(pagTerm-1)*PS, fin=Math.min(ini+PS, termFiltrados.length), pag=termFiltrados.slice(ini,fin);
   if(!pag.length){
-    var msg=dataTerminados.length?'No hay títulos terminados que coincidan con los filtros.':'Aún no hay títulos terminados. Cargue el reporte "PAGADO CON ABONO A CUENTA" del Banco Agrario en Importar lote.';
+    var msg=dataTerminados.length?'No hay títulos terminados que coincidan con los filtros.':'Aún no hay títulos terminados. Aparecen aquí al finalizar la gestión de un depósito o al cargar el reporte "PAGADO CON ABONO A CUENTA" del Banco Agrario en Importar lote.';
     tb.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-ico">✅</div><p>'+msg+'</p></div></td></tr>';
     document.getElementById('pag-info-term').textContent='0 títulos';
     document.getElementById('pag-btns-term').innerHTML='';
@@ -7388,7 +7454,9 @@ function renderTerminados(){
     var dep=String(r['deposito judicial']); var depJs=dep.replace(/'/g,"\\'");
     var cid=String(r['Identificación Demandado']||'');
     var imp=impuestoDe(r);
-    var aviso=gestionFinalizada(r)?'':' <span class="bk-chip bk-nore" title="El banco ya pagó este título, pero en Teodoro la aplicación/devolución no está FINALIZADA">sin cerrar</span>';
+    var aviso=!esTerminado(r)
+      ? ' <span class="bk-chip bk-pend" title="El equipo finalizó la gestión; el Banco Agrario todavía no reporta el pago">✅ finalizado · banco sin pagar</span>'
+      : (gestionFinalizada(r)?'':' <span class="bk-chip bk-nore" title="El banco ya pagó este título, pero en Teodoro la aplicación/devolución no está FINALIZADA">sin cerrar</span>');
     return '<tr tabindex="0" role="button" onclick="abrirModal(\''+depJs+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();abrirModal(\''+depJs+'\')}">'
       +'<td class="mono" style="font-size:13px;white-space:nowrap"><span class="copy-wrap">'+eh(dep)+'<button class="copy-ico" title="Copiar título" onclick="copiarCelda(event,\''+eh(dep)+'\',this)">⧉</button></span>'+aviso+'</td>'
       +'<td class="mono" style="font-size:12.5px;color:var(--soft);white-space:nowrap">'+eh(String(r['Fecha Emisión']||'').substring(0,10))+'</td>'
