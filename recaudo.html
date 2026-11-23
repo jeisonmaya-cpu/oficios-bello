@@ -2703,6 +2703,9 @@ async function cargarTodo(){
     setSS('ok','Sincronizado '+ts);
     renderKpis(); llenarSelectResponsables(); restaurarFiltrosLocal(); restaurarColumnasLocal(); filtrar(); actualizarCfgPanel();
     actualizarPendientesPill(); procesarCola(); actualizarBadgeDuplicados();
+    // Solo se guarda en caché si los 3 conjuntos llegaron completos (si predial o
+    // tránsito fallaron, la próxima apertura vuelve a intentar la carga completa).
+    if(!fallos.length) guardarCacheLocal(true, horaAntesDeLaConsulta);
   }catch(err){
     setSS('error','Error al cargar');
     var tb=document.getElementById('tbody');
@@ -2742,6 +2745,7 @@ async function sincronizarDelta(){
     try{ localStorage.setItem(ULTIMA_CARGA_KEY, horaAntesDeLaConsulta); }catch(e){}
     setSS('ok','Sincronizado '+ultimaSync.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}));
     renderKpis(); llenarSelectResponsables(); filtrar(); actualizarBadgeDuplicados(); actualizarPendientesPill();
+    guardarCacheLocal(false, horaAntesDeLaConsulta);
     return { nuevos:nuevos, actualizados:actualizados, total:cambiados.length };
   }catch(err){
     // Si el delta falla por lo que sea, no dejamos a nadie con datos desactualizados:
@@ -2749,6 +2753,95 @@ async function sincronizarDelta(){
     await cargarTodo();
     return null;
   }
+}
+
+// ════════════════════════════════════════════════════════════
+// CACHÉ LOCAL (IndexedDB) — para NO descargar las ~49.000 filas de recaudo,
+// los expedientes prediales y v_transito_por_cedula cada vez que se abre el módulo.
+// Antes, cada apertura hacía ~100+ peticiones y leía la tabla completa en Supabase
+// (eso agotó el presupuesto de disco el 23-nov-2026). Ahora:
+//  · Primera apertura del día en este PC -> carga completa (como antes) y se guarda aquí.
+//  · Siguientes aperturas del mismo día -> se muestran los datos guardados al instante
+//    y solo se piden a Supabase las filas que cambiaron (sincronizarDelta).
+//  · Cambio de día, error o cierre de sesión -> la caché se descarta.
+// La carga completa diaria cubre lo que el delta no ve (borrados físicos y cambios
+// hechos directo en la base sin tocar ultima_edicion, p. ej. el corte del banco).
+// ════════════════════════════════════════════════════════════
+const CACHE_DB = 'teodoro_recaudo_cache';
+const CACHE_STORE = 'kv';
+const CACHE_KEY = 'datos_v1';
+function _abrirCacheDB(){
+  return new Promise(function(res, rej){
+    if(!window.indexedDB) return rej(new Error('Sin IndexedDB'));
+    var rq = indexedDB.open(CACHE_DB, 1);
+    rq.onupgradeneeded = function(){ rq.result.createObjectStore(CACHE_STORE); };
+    rq.onsuccess = function(){ res(rq.result); };
+    rq.onerror = function(){ rej(rq.error); };
+  });
+}
+async function _cacheOp(modo, valor){
+  var db = await _abrirCacheDB();
+  return new Promise(function(res, rej){
+    var tx = db.transaction(CACHE_STORE, modo==='get' ? 'readonly' : 'readwrite');
+    var st = tx.objectStore(CACHE_STORE);
+    var rq = modo==='get' ? st.get(CACHE_KEY) : modo==='put' ? st.put(valor, CACHE_KEY) : st.delete(CACHE_KEY);
+    rq.onsuccess = function(){ res(rq.result); };
+    rq.onerror = function(){ rej(rq.error); };
+    tx.oncomplete = function(){ db.close(); };
+  });
+}
+function _hoyCO(){ return new Date().toLocaleDateString('en-CA', {timeZone:'America/Bogota'}); } // 'AAAA-MM-DD'
+var _cacheDiaCompleto = '';   // día de la última carga completa que alimenta la caché
+// completa=true: viene de cargarTodo (marca el día). false: viene de un delta (conserva el día).
+function guardarCacheLocal(completa, marcaSync){
+  try{
+    if(completa) _cacheDiaCompleto = _hoyCO();
+    if(!_cacheDiaCompleto) return; // delta sin carga completa de hoy detrás: no guardar
+    _cacheOp('put', {
+      dia: _cacheDiaCompleto,
+      marcaSync: marcaSync,
+      colsBancoOK: _colsBancoOK,
+      filas: dataBancoCompleto,
+      expedientesPorCedula: expedientesPorCedula,
+      transitoPorCedula: transitoPorCedula
+    }).catch(function(e){ console.warn('[caché] No se pudo guardar:', e); });
+  }catch(e){ console.warn('[caché] No se pudo guardar:', e); }
+}
+function borrarCacheLocal(){
+  _cacheDiaCompleto = '';
+  return _cacheOp('delete').catch(function(){});
+}
+// Punto de entrada al abrir el módulo (reemplaza al cargarTodo() directo).
+async function arrancarDatos(){
+  var c = null;
+  try{ c = await _cacheOp('get'); }catch(e){ c = null; }
+  if(!c || c.dia !== _hoyCO() || !Array.isArray(c.filas) || !c.filas.length || !c.marcaSync){
+    if(c) borrarCacheLocal();
+    return await cargarTodo();
+  }
+  try{
+    _cacheDiaCompleto = c.dia;
+    _colsBancoOK = c.colsBancoOK !== false;
+    dataBancoCompleto = c.filas;
+    expedientesPorCedula = c.expedientesPorCedula || {};
+    transitoPorCedula = c.transitoPorCedula || {};
+    reconstruirDataBancoDesdeCompleto();
+    _nombresUnicosCache = null;
+    ultimaSync = new Date(c.marcaSync);
+    try{ localStorage.setItem(ULTIMA_CARGA_KEY, c.marcaSync); }catch(e){}
+    var bannerEl=document.getElementById('banner-datos-incompletos');
+    if(bannerEl){ bannerEl.style.display='none'; bannerEl.innerHTML=''; }
+    setSS('loading','Datos guardados · buscando cambios...');
+    renderKpis(); llenarSelectResponsables(); restaurarFiltrosLocal(); restaurarColumnasLocal(); filtrar(); actualizarCfgPanel();
+    actualizarPendientesPill(); procesarCola(); actualizarBadgeDuplicados();
+  }catch(e){
+    console.warn('[caché] Datos guardados inválidos; se hace carga completa.', e);
+    dataBancoCompleto = [];
+    await borrarCacheLocal();
+    return await cargarTodo();
+  }
+  // Traer solo lo que cambió desde la última vez (si falla, sincronizarDelta cae a cargarTodo).
+  await sincronizarDelta();
 }
 
 async function recargarTodo(){
@@ -2803,6 +2896,7 @@ function saveCfgUsuario(){ try{ localStorage.setItem(CFG_USUARIO_KEY, JSON.strin
 async function cerrarSesion(){
   if(!confirm('¿Cerrar sesión?')) return;
   if(sbAuth){ try{ await sbAuth.auth.signOut(); }catch(e){} }
+  await borrarCacheLocal(); // la caché tiene datos personales (cédulas, teléfonos): no dejarla en PCs compartidos
   location.reload();
 }
 function cambiarUsuario(){ cerrarSesion(); }
@@ -2920,7 +3014,7 @@ async function conectar(){
   USUARIO_ACTIVO = nom;
   pintarUsuarioActivo();
   actualizarCfgPanel();
-  cargarTodo();
+  arrancarDatos();
   intentarMostrarBienvenida();
 }
 
@@ -2949,7 +3043,7 @@ try { loadCfgUsuario(); } catch(e){ cfgUsuario = {}; }
     USUARIO_ACTIVO = cfgUsuario.nombre;
     pintarUsuarioActivo();
     actualizarCfgPanel();
-    cargarTodo();
+    arrancarDatos();
     intentarMostrarBienvenida();
   } else {
     var ov=document.getElementById('wizOverlay');
