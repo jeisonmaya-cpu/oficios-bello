@@ -841,6 +841,11 @@ function esAdmin(){ return PERFIL && (PERFIL.rol === 'admin' || PERFIL.rol === '
 function puedeVerControl(){ return PERFIL && ['admin','revisor','consulta'].indexOf(PERFIL.rol) !== -1; }
 function puedeRadicar(){ return PERFIL && ['admin','revisor','radicador'].indexOf(PERFIL.rol) !== -1; }
 function soloRadica(){ return PERFIL && PERFIL.rol === 'radicador'; }
+/* El Tablero calcula estadísticas pesadas sobre TODA la bandeja (8 vistas a la vez).
+   Para no cargar la base de datos, solo lo ven estos roles. Para abrirlo a más
+   personas, agregue el rol aquí (p. ej. ['admin','revisor']). */
+const TABLERO_ROLES = ['admin'];
+function verTablero(){ return PERFIL && TABLERO_ROLES.indexOf(PERFIL.rol) !== -1; }
 
 /* Confirmación propia, sin el diálogo gris del navegador.
    Devuelve una promesa: await confirmar('¿Seguro?') */
@@ -1063,7 +1068,7 @@ function construirTabs(){
     {id:'historicos', txt:'Resueltas',        sec:null,         ver: !soloRadica()},
     {id:'trasladadas',txt:'Trasladadas',      sec:null,         ver: !soloRadica()},
     {id:'cierresgd',  txt:'Cierres Gest. Doc.',sec:null,        ver: esAdmin()},
-    {id:'tablero',    txt:'Tablero',          sec:'Control',    ver: true},
+    {id:'tablero',    txt:'Tablero',          sec:'Control',    ver: verTablero()},
     {id:'controli',   txt:'Control Interno',  sec:null,         ver: puedeVerControl()},
     {id:'plantillas', txt:'Plantillas',       sec:null,         ver: esAdmin()},
     {id:'personas',   txt:'Personas',         sec:null,         ver: esAdmin()},
@@ -1122,7 +1127,7 @@ function construirTabs(){
       document.getElementById('lat').classList.add('min');
   }catch(e){}
 
-  irA(puedeRadicar() ? 'digitar' : (PERFIL && PERFIL.rol === 'consulta' ? 'tablero' : 'cola'));
+  irA(puedeRadicar() ? 'digitar' : (PERFIL && PERFIL.rol === 'consulta' ? (verTablero() ? 'tablero' : 'bandeja') : 'cola'));
 }
 
 function plegarLateral(){
@@ -1132,6 +1137,7 @@ function plegarLateral(){
 }
 
 function irA(id){
+  if(id === 'tablero' && !verTablero()) id = 'bandeja';
   const paneles = ['digitar','lote','cola','bandeja','historicos','trasladadas','cierresgd','tablero','controli','plantillas','personas','historico'];
   paneles.forEach(function(p){
     const el = document.getElementById('p-' + p);
@@ -1195,9 +1201,17 @@ function llenarAsignar(){
 }
 
 /* Carga viva: cuántas tiene cada abogada sin resolver */
-async function cargarCargasVivas(){
+/* «Carga viva» lee v_pet_productividad, que agrega TODA la bandeja. Antes se pedía
+   después de cada petición guardada (con Ctrl+Enter, cada pocos segundos por
+   radicador). Ahora se refresca como máximo una vez por minuto (los números pueden
+   ir hasta un minuto atrasados mientras se radica en serie). */
+let CARGAS_TS = 0;
+const CARGAS_CADA_MS = 60000;
+async function cargarCargasVivas(forzar){
   const cont = document.getElementById('d-cargas');
   if(!cont) return;
+  if(!forzar && CARGAS_TS && (Date.now() - CARGAS_TS) < CARGAS_CADA_MS) return;
+  CARGAS_TS = Date.now();
   try{
     const filas = await supaFetch('v_pet_productividad?select=abogado,asignado_a,pendientes,vencidas,urgentes');
     CARGAS = filas.filter(function(f){ return f.asignado_a; });
