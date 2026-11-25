@@ -8193,13 +8193,30 @@ function renderBandeja(conservarPagina){
   if(pg) pg.innerHTML = barraPaginacion(rows.length, desde, hasta);
 }
 
-/* ── Traslado en bloque desde la Bandeja ── */
+/* ── Reasignación en bloque desde la Bandeja (a otro abogado o a Sin asignar) ── */
 let SELECCION = false;
+const SIN_ASIGNAR = '__sin_asignar__';
+
+function avisoSinAsignar(){
+  const sin = document.getElementById('bt-abo').value === SIN_ASIGNAR;
+  const av = document.getElementById('bt-aviso');
+  const go = document.getElementById('bt-go');
+  if(av) av.style.display = sin ? 'block' : 'none';
+  if(go) go.textContent = sin ? 'Devolver a Sin asignar' : 'Reasignar seleccionadas';
+}
+
+function terminarSeleccion(){
+  SELECCION = false;
+  document.getElementById('b-sel').textContent = 'Reasignar varias';
+  document.getElementById('b-barra').innerHTML = '';
+  cargarBandeja();
+  cargarCargasVivas();
+}
 
 function modoSeleccion(){
-  if(!esAdmin()){ toast('Solo el administrador puede trasladar.', 'err'); return; }
+  if(!esAdmin()){ toast('Solo el administrador puede reasignar.', 'err'); return; }
   SELECCION = !SELECCION;
-  document.getElementById('b-sel').textContent = SELECCION ? 'Cancelar selección' : 'Trasladar varias';
+  document.getElementById('b-sel').textContent = SELECCION ? 'Cancelar selección' : 'Reasignar varias';
   document.getElementById('b-barra').innerHTML = SELECCION ? barraTraslado() : '';
   renderBandeja();
 }
@@ -8209,21 +8226,29 @@ function barraTraslado(){
   return '<div class="card" style="border-color:rgba(192,132,252,.35);padding:15px 18px;margin-bottom:14px">' +
     '<div style="display:flex;gap:11px;align-items:flex-end;flex-wrap:wrap">' +
       '<div style="flex:1;min-width:170px"><label class="lbl">Pasar a</label>' +
-        '<select id="bt-abo">' + abos.map(function(p){
+        '<select id="bt-abo" onchange="avisoSinAsignar()">' + abos.map(function(p){
           const c = CARGAS.find(function(x){ return x.asignado_a === p.id; });
           return '<option value="' + p.id + '">' + esc(p.nombre) +
                  (c ? ' — ' + c.pendientes + ' en curso' : '') + '</option>';
-        }).join('') + '</select></div>' +
+        }).join('') +
+        '<option disabled>──────────</option>' +
+        '<option value="' + SIN_ASIGNAR + '">Sin asignar (devolver a la bolsa general)</option>' +
+        '</select></div>' +
       '<div style="flex:1;min-width:170px"><label class="lbl">Motivo</label>' +
         '<select id="bt-mot">' +
           (MOTIVOS.length
             ? MOTIVOS.map(function(m){ return '<option value="' + esc(m.codigo) + '">' + esc(m.nombre) + '</option>'; }).join('')
             : '<option value="OTRO">Otro motivo</option>') +
         '</select></div>' +
+      '<div style="flex:1.4;min-width:200px"><label class="lbl">Nota (opcional)</label>' +
+        '<input type="text" id="bt-nota" placeholder="Queda en las notas de gestión"></div>' +
       '<button class="btn btn-ghost" onclick="marcarTodas()">Marcar las visibles</button>' +
-      '<button class="btn btn-primary" onclick="trasladarSeleccion()">Trasladar seleccionadas</button>' +
+      '<button class="btn btn-primary" id="bt-go" onclick="trasladarSeleccion()">Reasignar seleccionadas</button>' +
     '</div>' +
-    '<div class="msg" id="bt-msg" style="margin-top:10px">Marque las peticiones que va a trasladar.</div>' +
+    '<div class="hint" id="bt-aviso" style="display:none;margin-top:8px;color:var(--gold2)">' +
+      'Vuelven a <b>Sin asignar</b> y quedan listas para el reparto. ' +
+      'Las <b>proyectadas</b> no se tocan: ya tienen documento hecho.</div>' +
+    '<div class="msg" id="bt-msg" style="margin-top:10px">Marque las peticiones que va a reasignar.</div>' +
   '</div>';
 }
 
@@ -8239,7 +8264,7 @@ function contarSel(){
   const m = document.getElementById('bt-msg');
   if(m){
     m.className = 'msg';
-    m.textContent = n ? n + ' petición(es) marcada(s).' : 'Marque las peticiones que va a trasladar.';
+    m.textContent = n ? n + ' petición(es) marcada(s).' : 'Marque las peticiones que va a reasignar.';
   }
 }
 
@@ -8250,22 +8275,62 @@ async function trasladarSeleccion(){
   if(!ids.length){ msg.className = 'msg err'; msg.textContent = 'No hay peticiones marcadas.'; return; }
 
   const abo = document.getElementById('bt-abo').value;
-  const mot = document.getElementById('bt-mot').value;
-  const nom = (PERFILES.find(function(p){ return p.id === abo; }) || {}).nombre || '';
-  if(!(await confirmar('Se trasladarán ' + ids.length + ' petición(es) a ' + nom + '. ¿Continuar?'))) return;
+  const motSel = document.getElementById('bt-mot');
+  const mot = motSel.value;
+  const motTxt = motSel.selectedOptions[0] ? motSel.selectedOptions[0].textContent : mot;
+  const notaEl = document.getElementById('bt-nota');
+  const nota = notaEl ? notaEl.value.trim() : '';
 
-  msg.className = 'msg'; msg.textContent = 'Trasladando…';
+  // ── Devolver a Sin asignar ──
+  if(abo === SIN_ASIGNAR){
+    const marcadas = ids.map(function(id){
+      return BANDEJA.find(function(x){ return x.id === id; }) || { id: id };
+    });
+    const proy = marcadas.filter(function(r){ return r.estado === 'PROYECTADA'; }).length;
+    const quienes = {};
+    marcadas.forEach(function(r){
+      if(r.estado !== 'PROYECTADA' && r.asignado_nombre)
+        quienes[r.asignado_nombre] = (quienes[r.asignado_nombre] || 0) + 1;
+    });
+    const detalle = Object.keys(quienes).map(function(k){ return k + ' (' + quienes[k] + ')'; }).join(', ');
+    const aMover = ids.length - proy;
+    if(!aMover){
+      msg.className = 'msg err';
+      msg.textContent = 'Las marcadas están proyectadas: ya tienen documento y no se devuelven a Sin asignar.';
+      return;
+    }
+    if(!(await confirmar(
+      'Se quitarán ' + aMover + ' petición(es) a su abogado' + (detalle ? ': ' + detalle : '') +
+      ' y volverán a Sin asignar.' +
+      (proy ? ' Las ' + proy + ' proyectadas no se tocan.' : '') + ' ¿Continuar?'))) return;
+
+    msg.className = 'msg'; msg.textContent = 'Devolviendo…';
+    try{
+      const n = await rpc('pet_desasignar', { ids: ids, motivo: motTxt, nota: nota || null });
+      const omit = ids.length - n;
+      msg.className = 'msg ok';
+      msg.textContent = n + ' petición(es) devuelta(s) a Sin asignar.' +
+        (omit ? ' ' + omit + ' no se movieron (proyectadas o ya sin abogado).' : '');
+      toast(n + ' devueltas a Sin asignar', 'ok', 4);
+      terminarSeleccion();
+    }catch(err){
+      msg.className = 'msg err'; msg.textContent = 'No se pudo devolver: ' + err.message;
+    }
+    return;
+  }
+
+  // ── Pasar a otro abogado ──
+  const nom = (PERFILES.find(function(p){ return p.id === abo; }) || {}).nombre || '';
+  if(!(await confirmar('Se reasignarán ' + ids.length + ' petición(es) a ' + nom + '. ¿Continuar?'))) return;
+
+  msg.className = 'msg'; msg.textContent = 'Reasignando…';
   try{
-    const n = await rpc('pet_trasladar', { ids: ids, nuevo_abogado: abo, motivo: mot });
-    msg.className = 'msg ok'; msg.textContent = n + ' petición(es) trasladada(s) a ' + nom + '.';
-    toast(n + ' trasladadas a ' + nom, 'ok', 4);
-    SELECCION = false;
-    document.getElementById('b-sel').textContent = 'Trasladar varias';
-    document.getElementById('b-barra').innerHTML = '';
-    cargarBandeja();
-    cargarCargasVivas();
+    const n = await rpc('pet_trasladar', { ids: ids, nuevo_abogado: abo, motivo: mot, nota: nota || null });
+    msg.className = 'msg ok'; msg.textContent = n + ' petición(es) reasignada(s) a ' + nom + '.';
+    toast(n + ' reasignadas a ' + nom, 'ok', 4);
+    terminarSeleccion();
   }catch(err){
-    msg.className = 'msg err'; msg.textContent = 'No se pudo trasladar: ' + err.message;
+    msg.className = 'msg err'; msg.textContent = 'No se pudo reasignar: ' + err.message;
   }
 }
 
@@ -8554,6 +8619,13 @@ async function guardarEdicion(){
     asignado_a: g('ed-abo') || null,
     dias_termino: null
   };
+  // Quitar el abogado: vuelve a Sin asignar (el trigger solo lo hace desde ASIGNADA)
+  if(!patch.asignado_a && r.asignado_a){
+    if(['ASIGNADA','EN_TRAMITE'].indexOf(r.estado) !== -1) patch.estado = 'PENDIENTE';
+    patch.abogado_anterior = r.asignado_a;
+    patch.fecha_asignacion = null;
+    cambios.push('abogado: ' + (r.asignado_nombre || '?') + ' -> sin asignar');
+  }
   if(cambios.length || motivo){
     patch.notas_gestion = (r.notas_gestion ? r.notas_gestion + '\n' : '') +
       '[' + fmtFecha(iso(new Date())) + '] Corrección por ' + (PERFIL ? PERFIL.nombre : '') +
