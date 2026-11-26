@@ -1051,6 +1051,27 @@ html[data-theme="light"] .logo p{color:#b45309}
 /* Móvil: preferencias a la derecha y cajón opaco (el contenido no se transparenta) */
 .topbar-right{margin-left:auto}
 @media(max-width:1000px){.side-nav{background:var(--modal-bg);backdrop-filter:none}}
+
+/* ═══ ACTIVIDAD DE VERÓNICA (solo administradores) ═══ */
+.act-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.act-bar label{font-size:11px;color:var(--muted)}
+.act-nota{font-size:11.5px;color:var(--soft);line-height:1.6;margin-bottom:14px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--panel)}
+.act-sec{font-family:'DM Serif Display',serif;font-size:16px;margin:18px 0 10px;color:var(--text)}
+.act-campos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.act-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--panel);font-size:11.5px;color:var(--muted)}
+.act-chip b{color:var(--gold2);margin-left:4px}
+.act-dias{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px}
+.act-dias th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--border);font-weight:600}
+.act-dias td{padding:7px 10px;border-bottom:1px solid var(--border)}
+.act-item{display:grid;grid-template-columns:62px 1fr;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;background:var(--panel);cursor:pointer;transition:border-color .15s}
+.act-item:hover{border-color:rgba(245,158,11,.45)}
+.act-item .h{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--gold2)}
+.act-item .d{font-size:10px;color:var(--muted);margin-top:2px}
+.act-item .c{font-size:12.5px;font-weight:600;margin-bottom:4px}
+.act-item .c span{font-weight:400;color:var(--muted);font-size:11.5px}
+.act-item .x{font-size:12px;line-height:1.55;color:var(--soft)}
+.act-item .x b{color:var(--text);font-weight:600}
+.act-item.nota{border-left:3px solid rgba(245,158,11,.55)}
 </style>
 <script>/* vr9 · aplica el menú contraído antes de pintar (sin parpadeo) */try{if(localStorage.getItem('tutelas_nav_mini_v1')==='1')document.documentElement.classList.add('nav-mini')}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1200,6 +1221,7 @@ html[data-theme="light"] .logo p{color:#b45309}
     <div class="snav"        id="tab-historico"    onclick="goTab('historico')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>Histórico</div>
     <div class="snav"        id="tab-duplicados"   onclick="goTab('duplicados')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Duplicados <span class="nbadge" id="badge-duplicados" style="background:rgba(239,68,68,.2);color:#f87171">0</span></div>
     <div class="snav"        id="tab-estadisticas" onclick="goTab('estadisticas')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>Estadísticas</div>
+    <div class="snav"        id="tab-actividad"    onclick="goTab('actividad')" title="Lo que modificó Verónica en Teodoro, por día" style="display:none"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Actividad técnica</div>
   </div>
   <div class="side-group">
     <div class="side-label">Sistema Teodoro</div>
@@ -1381,6 +1403,31 @@ html[data-theme="light"] .logo p{color:#b45309}
   </div>
   <div id="dup-resumen" style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:0 2px"></div>
   <div id="body-duplicados"></div>
+</div>
+
+<div class="panel" id="panel-actividad">
+  <div class="act-bar">
+    <div class="ep-btns" id="act-rapidos">
+      <button class="ep-btn on" data-r="hoy" onclick="actRango('hoy')">Hoy</button>
+      <button class="ep-btn" data-r="ayer" onclick="actRango('ayer')">Ayer</button>
+      <button class="ep-btn" data-r="7" onclick="actRango('7')">Últimos 7 días</button>
+      <button class="ep-btn" data-r="mes" onclick="actRango('mes')">Este mes</button>
+    </div>
+    <label>Desde <input type="date" class="fi" id="act-desde" onchange="actRango('libre')"/></label>
+    <label>Hasta <input type="date" class="fi" id="act-hasta" onchange="actRango('libre')"/></label>
+    <button class="btn-refresh" onclick="renderActividad(true)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>Actualizar
+    </button>
+    <button class="btn-refresh" style="margin-left:0;background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.35)" onclick="exportarActividad()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar Excel
+    </button>
+  </div>
+  <div class="act-nota">Lo que <b>Verónica Suárez</b> modificó en Tutelas, tomado del historial de cambios de cada caso y de las notas que escribió. Las acciones del correo automático no se cuentan. Clic en un movimiento para abrir el caso.</div>
+  <div class="est-kpis" id="act-kpis"></div>
+  <div id="act-campos-wrap"></div>
+  <div id="act-dias-wrap"></div>
+  <div class="act-sec">Detalle</div>
+  <div id="act-body"><div class="loader"><div class="spinner"></div></div></div>
 </div>
 
 <footer class="creditos">
@@ -2502,6 +2549,7 @@ function aplicarPermisosUI(){
   // Crear casos a mano y el informe ejecutivo: administración / técnica
   ocultar('[onclick="abrirNuevaTutela()"],[onclick="abrirNuevoIncidente()"]', abogado);
   ocultar('[onclick="generarInformeTutelas()"]', !esAdmin());
+  ocultar('#tab-actividad', !esAdmin()); // Actividad técnica: solo administradores
   const pill=document.getElementById("user-pill");
   if(pill){
     const rolTxt={admin:"Administrador",tecnica:"Gestión técnica",abogado:"Abogado(a)",sinperfil:"Sin perfil"}[PERFIL.rol];
@@ -2644,6 +2692,182 @@ async function verHistorialCaso(){
       return `<div class="hist-item"><div class="q">${esc(cuando)} · ${esc(quien)}</div>${det}</div>`;
     }).join("");
   }catch(e){ body.innerHTML=`<div style="font-size:12px;color:#f87171">No se pudo cargar el historial: ${esc(e.message)}</div>`; }
+}
+
+// ════════ ACTIVIDAD TÉCNICA (Verónica) · solo administradores ════════
+// Lee la bitácora que ya existe (actuaciones_log, migración v5) y las notas
+// (notas_tutela). Solo consulta al abrir la pestaña o cambiar el rango: no entra
+// en la recarga automática de 30 min, así no sube el consumo de Supabase.
+const ACT_EMAIL   = "verosuarez1216@gmail.com";
+const ACT_PATRONES = ["verosuarez","veronica","verónica"]; // por si el log guarda nombre en vez de correo
+const ACT_IGNORAR = ["actualizado_en"];                      // campos técnicos que no son trabajo
+let _actDatos = null;   // { log:[], notas:[], casos:{} }
+let _actClave = "";     // rango consultado (cache simple)
+let _actFilas = [];     // movimientos pintados (para abrir el caso)
+
+function _actISO(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function _actDiaSig(iso){ const [y,m,d]=iso.split("-").map(Number); return _actISO(new Date(y,m-1,d+1)); }
+function _actHora(ts){ return new Date(ts).toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit",hour12:false,timeZone:"America/Bogota"}); }
+function _actDia(ts){ return new Date(ts).toLocaleDateString("en-CA",{timeZone:"America/Bogota"}); } // YYYY-MM-DD
+function _actDiaTxt(iso){ const [y,m,d]=iso.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString("es-CO",{weekday:"short",day:"2-digit",month:"short"}); }
+function _actEtq(c){ const k=MAPA_SB_A_SHEET[c]; return (k && ETQ_CAMPO[k]) || (k ? k.charAt(0)+k.slice(1).toLowerCase() : c); }
+function _actVal(v){ return v===null||v===undefined||v==="" ? "(vacío)" : typeof v==="boolean" ? (v?"sí":"no") : String(v); }
+
+function actRango(r){
+  const hoy=new Date(); let d=null, h=null;
+  if(r==="hoy"){ d=h=_actISO(hoy); }
+  else if(r==="ayer"){ const a=new Date(hoy); a.setDate(a.getDate()-1); d=h=_actISO(a); }
+  else if(r==="7"){ const a=new Date(hoy); a.setDate(a.getDate()-6); d=_actISO(a); h=_actISO(hoy); }
+  else if(r==="mes"){ d=_actISO(new Date(hoy.getFullYear(),hoy.getMonth(),1)); h=_actISO(hoy); }
+  if(d){ document.getElementById("act-desde").value=d; document.getElementById("act-hasta").value=h; }
+  document.querySelectorAll("#act-rapidos .ep-btn").forEach(b=>b.classList.toggle("on", b.dataset.r===r));
+  renderActividad();
+}
+
+async function _actCargar(desde, hasta){
+  const ini=encodeURIComponent(desde+"T00:00:00-05:00");
+  const fin=encodeURIComponent(_actDiaSig(hasta)+"T00:00:00-05:00");
+  const hdr=await getAuthHeaders();
+  const orLog=encodeURIComponent("("+[ "usuario.ilike.*"+ACT_EMAIL+"*", ...ACT_PATRONES.map(p=>"usuario.ilike.*"+p+"*") ].join(",")+")");
+  const urlLog=`${SUPABASE_URL}/rest/v1/actuaciones_log?select=actuacion_id,accion,usuario,cambiado_en,cambios`
+             +`&cambiado_en=gte.${ini}&cambiado_en=lt.${fin}&or=${orLog}&order=cambiado_en.asc&limit=2000`;
+  const orNot=encodeURIComponent("("+[ "autor_email.eq."+ACT_EMAIL, ...ACT_PATRONES.map(p=>"autor.ilike.*"+p+"*") ].join(",")+")");
+  const urlNot=`${SUPABASE_URL}/rest/v1/${SB_TABLA_NOTAS}?select=actuacion_id,texto,autor,creado_en`
+             +`&creado_en=gte.${ini}&creado_en=lt.${fin}&or=${orNot}&order=creado_en.asc&limit=1000`;
+  const [rL,rN]=await Promise.all([fetch(urlLog,{headers:hdr}), fetch(urlNot,{headers:hdr})]);
+  if(rL.status===404) throw new Error("No existe la tabla actuaciones_log (falta la migración v5).");
+  if(!rL.ok) throw new Error("Historial: HTTP "+rL.status);
+  const log=await rL.json();
+  const notas=rN.ok ? await rN.json() : []; // si la tabla de notas no existe, seguimos sin notas
+
+  // Datos de cada caso: primero lo que ya está en memoria; lo que falte se pide (pocos campos).
+  const casos={};
+  const enMem=[...tutelas,...fallos,...incidentes];
+  const ids=[...new Set([...log,...notas].map(x=>x.actuacion_id).filter(v=>v!==null&&v!==undefined))];
+  const faltan=[];
+  ids.forEach(id=>{ const r=enMem.find(x=>String(x._id)===String(id)); if(r) casos[id]=r; else faltan.push(id); });
+  for(let i=0;i<faltan.length;i+=100){
+    const lote=faltan.slice(i,i+100).map(encodeURIComponent).join(",");
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${SB_TABLA}?id=in.(${lote})&select=id,radicado,accionante,tipo`,{headers:hdr});
+    if(res.ok) (await res.json()).forEach(f=>{ casos[f.id]={ _id:f.id, RADICADO:f.radicado, ACCIONANTE:f.accionante, TIPO:f.tipo, _soloLectura:true }; });
+  }
+  return { log, notas, casos };
+}
+
+async function renderActividad(forzar){
+  const body=document.getElementById("act-body"); if(!body) return;
+  if(!esAdmin()){ body.innerHTML=`<div class="empty"><div class="empty-titulo">Solo para administradores</div></div>`; return; }
+  const dEl=document.getElementById("act-desde"), hEl=document.getElementById("act-hasta");
+  if(!dEl.value||!hEl.value){ const h=_actISO(new Date()); dEl.value=dEl.value||h; hEl.value=hEl.value||h; }
+  let desde=dEl.value, hasta=hEl.value;
+  if(desde>hasta){ [desde,hasta]=[hasta,desde]; dEl.value=desde; hEl.value=hasta; }
+  const clave=desde+"|"+hasta;
+  if(forzar || !_actDatos || _actClave!==clave){
+    body.innerHTML=`<div class="loader"><div class="spinner"></div></div>`;
+    setEl("act-kpis",""); setEl("act-campos-wrap",""); setEl("act-dias-wrap","");
+    try{ _actDatos=await _actCargar(desde,hasta); _actClave=clave; }
+    catch(e){ _actDatos=null; body.innerHTML=`<div style="font-size:12px;color:#f87171;padding:10px 2px">No se pudo cargar la actividad: ${esc(e.message)}</div>`; return; }
+  }
+  _actPintar(desde, hasta);
+}
+
+function _actMovimientos(){
+  const {log,notas,casos}=_actDatos, out=[];
+  log.forEach(f=>{
+    const cambios=Object.entries(f.cambios||{}).filter(([c])=>!ACT_IGNORAR.includes(c));
+    if(f.accion!=="creado" && !cambios.length) return; // solo tocó campos técnicos
+    out.push({ ts:f.cambiado_en, id:f.actuacion_id, tipo:f.accion==="creado"?"creado":"cambio", cambios, caso:casos[f.actuacion_id]||null });
+  });
+  notas.forEach(n=>out.push({ ts:n.creado_en, id:n.actuacion_id, tipo:"nota", texto:n.texto||"", caso:casos[n.actuacion_id]||null }));
+  return out.sort((a,b)=>new Date(b.ts)-new Date(a.ts)); // lo más reciente arriba
+}
+
+function _actPintar(desde, hasta){
+  const movs=_actMovimientos(); _actFilas=movs;
+  const body=document.getElementById("act-body");
+  const unDia = desde===hasta;
+  const rangoTxt = unDia ? _actDiaTxt(desde) : `${_actDiaTxt(desde)} – ${_actDiaTxt(hasta)}`;
+
+  if(!movs.length){
+    setEl("act-kpis",""); setEl("act-campos-wrap",""); setEl("act-dias-wrap","");
+    body.innerHTML=`<div class="empty"><div class="empty-icon">🕘</div><div class="empty-titulo">Sin movimientos de Verónica</div>
+      <div class="empty-sub">${esc(rangoTxt)}: no hay cambios ni notas registrados con su usuario.</div></div>`;
+    return;
+  }
+  const cambiosMov=movs.filter(m=>m.tipo!=="nota");
+  const nCampos=cambiosMov.reduce((s,m)=>s+m.cambios.length,0);
+  const nCasos=new Set(movs.map(m=>String(m.id))).size;
+  const nNotif=cambiosMov.filter(m=>m.cambios.some(([c,p])=>c==="notificado" && estaNotificado({NOTIFICADO:p&&p[1]}))).length;
+  const nNotas=movs.filter(m=>m.tipo==="nota").length;
+  const ts=movs.map(m=>new Date(m.ts).getTime());
+  const primera=new Date(Math.min(...ts)), ultima=new Date(Math.max(...ts));
+  const kpi=(n,l,s)=>`<div class="est-kpi"><div class="n">${n}</div><div class="l">${l}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+  setEl("act-kpis",
+      kpi(nCasos,"Casos trabajados",esc(rangoTxt))
+    + kpi(cambiosMov.length,"Guardados",`${nCampos} campos modificados`)
+    + kpi(nNotif,"Notificaciones marcadas","")
+    + kpi(nNotas,"Notas escritas","")
+    + kpi(unDia?_actHora(primera):_actDiaTxt(_actDia(primera)),"Primera acción", unDia?"":_actHora(primera))
+    + kpi(unDia?_actHora(ultima):_actDiaTxt(_actDia(ultima)),"Última acción", unDia?"":_actHora(ultima)));
+
+  // Campos más trabajados
+  const porCampo={};
+  cambiosMov.forEach(m=>m.cambios.forEach(([c])=>{ const e=_actEtq(c); porCampo[e]=(porCampo[e]||0)+1; }));
+  const creados=cambiosMov.filter(m=>m.tipo==="creado").length;
+  if(creados) porCampo["Casos creados"]=creados;
+  const chips=Object.entries(porCampo).sort((a,b)=>b[1]-a[1]).map(([e,n])=>`<span class="act-chip">${esc(e)}<b>${n}</b></span>`).join("");
+  setEl("act-campos-wrap", chips ? `<div class="act-sec">Qué modificó</div><div class="act-campos">${chips}</div>` : "");
+
+  // Resumen por día (solo si el rango tiene más de un día)
+  if(!unDia){
+    const dias={};
+    movs.forEach(m=>{ const d=_actDia(m.ts); const o=dias[d]||(dias[d]={g:0,n:0,casos:new Set(),t:[]}); if(m.tipo==="nota") o.n++; else o.g++; o.casos.add(String(m.id)); o.t.push(new Date(m.ts).getTime()); });
+    const filas=Object.keys(dias).sort().reverse().map(d=>{ const o=dias[d];
+      return `<tr><td>${esc(_actDiaTxt(d))}</td><td>${o.casos.size}</td><td>${o.g}</td><td>${o.n}</td><td>${_actHora(Math.min(...o.t))}</td><td>${_actHora(Math.max(...o.t))}</td></tr>`; }).join("");
+    setEl("act-dias-wrap", `<div class="act-sec">Por día</div><table class="act-dias"><thead><tr><th>Día</th><th>Casos</th><th>Guardados</th><th>Notas</th><th>Primera</th><th>Última</th></tr></thead><tbody>${filas}</tbody></table>`);
+  } else setEl("act-dias-wrap","");
+
+  // Detalle
+  body.innerHTML=movs.map((m,i)=>{
+    const c=m.caso||{};
+    const cab=`${esc(c.RADICADO||"Sin radicado")} <span>· ${esc(abrev(c.ACCIONANTE||"",40))}${c.TIPO?" · "+esc(c.TIPO):""}</span>`;
+    let det;
+    if(m.tipo==="nota") det=`📝 <b>Nota:</b> ${esc(abrev(m.texto,220))}`;
+    else if(m.tipo==="creado") det=`➕ <b>Creó el caso</b>`;
+    else det=m.cambios.map(([k,p])=>`• <b>${esc(_actEtq(k))}</b>: ${esc(abrev(_actVal(p&&p[0]),60))} → ${esc(abrev(_actVal(p&&p[1]),60))}`).join("<br>");
+    return `<div class="act-item${m.tipo==="nota"?" nota":""}" onclick="actAbrirCaso(${i})">
+      <div><div class="h">${_actHora(m.ts)}</div>${unDia?"":`<div class="d">${esc(_actDiaTxt(_actDia(m.ts)))}</div>`}</div>
+      <div><div class="c">${cab}</div><div class="x">${det}</div></div></div>`;
+  }).join("");
+}
+
+function actAbrirCaso(i){
+  const m=_actFilas[i]; if(!m) return;
+  const r=[...tutelas,...fallos,...incidentes].find(x=>String(x._id)===String(m.id));
+  if(!r){ toast("Este caso no está en las listas cargadas (puede estar anulado o fuera de tu vista).","err"); return; }
+  abrirModal(encodeURIComponent(JSON.stringify(r)), r._cat||"tutela");
+}
+
+function exportarActividad(){
+  if(!_actDatos){ toast("⚠️ Primero carga la actividad","err"); return; }
+  const movs=_actMovimientos().slice().reverse(); // en orden cronológico
+  if(!movs.length){ toast("⚠️ No hay movimientos para exportar","err"); return; }
+  const q=v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"';
+  const filas=[];
+  movs.forEach(m=>{
+    const c=m.caso||{}, base=[_actDia(m.ts),_actHora(m.ts),c.RADICADO||"",c.ACCIONANTE||"",c.TIPO||""];
+    if(m.tipo==="nota") filas.push([...base,"Nota","","",m.texto]);
+    else if(m.tipo==="creado") filas.push([...base,"Creó el caso","","",""]);
+    else m.cambios.forEach(([k,p])=>filas.push([...base,"Cambio",_actEtq(k),_actVal(p&&p[0]),_actVal(p&&p[1])]));
+  });
+  const cab=["Fecha","Hora","Radicado","Accionante","Tipo","Acción","Campo","Antes","Después / Nota"];
+  const csv="﻿"+[cab.map(q).join(","),...filas.map(f=>f.map(q).join(","))].join("\n");
+  const [d,h]=_actClave.split("|");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+  a.download=`Actividad_Veronica_${d}${h!==d?"_a_"+h:""}.csv`; a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`📥 Exportado: ${filas.length} filas`,"ok");
 }
 
 // ════════ v5 · FECHAS Y TÉRMINO ════════
@@ -6101,7 +6325,8 @@ const TAB_HINT = {
   historico:    "Casos ya cerrados: finalizados, respondidos, anulados o con hecho superado. Solo consulta.",
   duplicados:   "Posibles registros repetidos (mismo radicado y mismo accionante). Revisa antes de anular.",
   tecnica:      "Pendientes técnicos de los casos activos, del más urgente al menos. Escribe, pulsa Enter y pasa al siguiente.",
-  estadisticas: "Indicadores de gestión: carga por abogado, tiempos de cierre y estados. Solo lectura."
+  estadisticas: "Indicadores de gestión: carga por abogado, tiempos de cierre y estados. Solo lectura.",
+  actividad:    "Lo que Verónica modificó en el día o en el rango elegido: casos, campos, notas y horas. Solo administradores."
 };
 function pintarTabHint(tab){
   const el=document.getElementById("tab-hint");
@@ -6170,7 +6395,7 @@ function _navMiniEtiquetas(){
   _navMiniEtiquetas();
 })();
 function goTab(tab){
-  ["hoy","tecnica","admites","fallos","otros","sanciones","reparto","pqr","historico","estadisticas","duplicados"].forEach(t=>{
+  ["hoy","tecnica","admites","fallos","otros","sanciones","reparto","pqr","historico","estadisticas","duplicados","actividad"].forEach(t=>{
     document.getElementById("tab-"+t).classList.toggle("active",t===tab);
     document.getElementById("panel-"+t).classList.toggle("active",t===tab);
   });
@@ -6185,6 +6410,7 @@ function goTab(tab){
   else if(tab==="hoy")renderCockpit();
   else if(tab==="tecnica")renderBandeja();
   else if(tab==="sanciones"){pagSan=1;renderSanciones();}
+  else if(tab==="actividad")renderActividad();
 }
 
 function setSS(estado,label){
