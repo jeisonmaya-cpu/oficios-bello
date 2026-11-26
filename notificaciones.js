@@ -1,5 +1,5 @@
 /* =====================================================================
-   TEODORO · NOTIFICACIONES · v13
+   TEODORO · NOTIFICACIONES · v14
    - Sesión con Supabase Auth (mismas cuentas de tutelas)
    - Consulta por año de notificación, renta y lote
    - Montar lote: Excel + PDF → verificación página por persona → Supabcase
@@ -448,8 +448,13 @@ function filasNotificacion(o, resol) {
     fila('Fecha de envío', l.medio === 'web' ? '' : fe);
     fila('Publicación web', l.publicado_web ? 'Publicado el ' + fFecha(l.fecha_publicacion_web) + (l.url_publicacion_web ? ' en ' + l.url_publicacion_web : '') : (l.medio === 'web' ? fe : 'No registrada'));
   }
-  var mand = detalleDe(o, 'MANDAMIENTO') || l.mandamiento, fm = aISO(detalleDe(o, 'FECHA MANDAMIENTO')) || l.fecha_mandamiento;
-  if (mand) fila('Mandamiento de pago', mand + (fm ? ' del ' + fFecha(fm) : ''));
+  if (l.medio === 'sin_direccion') {
+    var mands = unicos(comparendosDe(o).map(function (c) { return c.r ? c.r + (c.fr ? ' del ' + c.fr : '') : ''; }));
+    if (mands.length) fila(mands.length > 1 ? 'Mandamientos de pago' : 'Mandamiento de pago', mands.join(', '));
+  } else {
+    var mand = detalleDe(o, 'MANDAMIENTO') || l.mandamiento, fm = aISO(detalleDe(o, 'FECHA MANDAMIENTO')) || l.fecha_mandamiento;
+    if (mand) fila('Mandamiento de pago', mand + (fm ? ' del ' + fFecha(fm) : ''));
+  }
   fila(o.n_referencias > 1 ? 'Referencias (' + o.n_referencias + ')' : 'Referencia', String(o.referencias || '').split(/[,;]+/).map(function (x) { return x.trim(); }).filter(Boolean).join(', '));
   if (o.total != null) fila('Valor notificado', pesos(o.total));
   return f;
@@ -839,7 +844,25 @@ function encabezadoFicha(etiqueta, titulo, sub, mono) {
 }
 function docTxt(a) { return docValido(a.documento) ? 'Documento ' + esc(a.documento) : 'Sin documento válido'; }
 /* Fecha del mandamiento: ya no se pide; se usa la de los datos si existe */
-function fechaMandDato(a) { return aISO(detalleDe(a, 'FECHA MANDAMIENTO')) || (a.notif_lotes && a.notif_lotes.fecha_mandamiento) || ''; }
+/* Lo que digitan los abogados se conserva por deudor mientras la página esté abierta */
+var RES_DIGITADAS = {};
+function camposResolucion(a, comps) {
+  if (!comps.length) return '<p class="sub">Este deudor no tiene comparendos registrados.</p>';
+  var prev = RES_DIGITADAS[a.radicado] || [];
+  return '<div class="res-lista">' + comps.map(function (c, k) {
+    var p = prev[k] || {};
+    return '<div class="res-item"><div class="res-comp"><b class="mono">' + esc(c.c) + '</b>' +
+      '<span class="sub">Mandamiento ' + (c.r ? esc(c.r) + (c.fr ? ' del ' + esc(c.fr) : '') : 'sin registrar') + '</span></div>' +
+      '<div class="res-campos"><input class="input" id="iRes' + k + '" data-res="' + k + '" value="' + esc(p.n || '') + '" placeholder="N.º de resolución" autocomplete="off" aria-label="Número de resolución del comparendo ' + esc(c.c) + '">' +
+      '<input class="input" id="iFRes' + k + '" data-res="' + k + '" type="date" value="' + esc(p.f || '') + '" aria-label="Fecha de la resolución del comparendo ' + esc(c.c) + '" title="Fecha de la resolución (opcional)"></div></div>';
+  }).join('') + '</div>';
+}
+function leerResoluciones(a) {
+  var n = comparendosDe(a).length, r = [];
+  for (var k = 0; k < n; k++) r.push({ n: ($('iRes' + k) && $('iRes' + k).value.trim()) || '', f: ($('iFRes' + k) && $('iFRes' + k).value) || '' });
+  RES_DIGITADAS[a.radicado] = r;
+  return r;
+}
 
 function fichaSinDireccion(a) {
   var l = a.notif_lotes || {}, t = terminoLote(l), comps = comparendosDe(a);
@@ -855,10 +878,9 @@ function fichaSinDireccion(a) {
 
   // 1. Lo principal: la resolución y el aviso
   var fAviso = l.fecha_publicacion_web || l.fecha_envio || '';
-  var mandD = detalleDe(a, 'MANDAMIENTO') || l.mandamiento || '';
   h += '<div class="bloque-doc"><div class="bloque-doc-head"><h4>Resolución de inubicabilidad y aviso</h4><p id="numInfo">Consultando el número de resolución…</p></div>' +
     '<div class="form-grid">' +
-      '<label class="campo todo"><span>N.º del mandamiento de pago (resolución)</span><input class="input" id="iMand" value="' + esc(mandD) + '" placeholder="Número de la resolución del mandamiento" autocomplete="off"></label>' +
+      '<div class="campo todo"><span>Resolución de cada comparendo <em>la digita el abogado</em></span>' + camposResolucion(a, comps) + '</div>' +
       '<label class="campo"><span>Fecha de publicación del aviso</span><input class="input" id="iFAviso" type="date" value="' + esc(fAviso) + '"></label>' +
       '<label class="campo"><span>Desfijación del aviso</span><input class="input" id="iDesf" type="text" value="' + esc(fAviso ? fFecha(addHabiles(aFecha(fAviso), 4)) : '') + '" readonly tabindex="-1" title="Se calcula sola: cuatro días hábiles después de la fijación"></label>' +
       '<label class="campo todo"><span>Constancia de inubicabilidad <em>opcional</em></span><input class="input" id="iConst" value="" placeholder="Déjalo vacío si no hay constancia" autocomplete="off"></label>' +
@@ -872,7 +894,7 @@ function fichaSinDireccion(a) {
   var lista = comps.length ? '<div class="comp-lista">' + comps.map(function (c) {
     var sub = [];
     if (c.f) sub.push('Del ' + esc(c.f));
-    if (c.r) sub.push('Resolución ' + esc(c.r) + (c.fr ? ' del ' + esc(c.fr) : ''));
+    if (c.r) sub.push('Mandamiento ' + esc(c.r) + (c.fr ? ' del ' + esc(c.fr) : ''));
     return '<div class="comp"><div><b class="mono">' + esc(c.c) + '</b><span class="sub">' + (sub.join(' · ') || 'Sin fecha ni resolución') + '</span></div><b class="mono">' + (c.m != null ? pesos(c.m) : '') + '</b></div>';
   }).join('') + '</div>' : '<p class="sub">Este deudor no tiene comparendos registrados.</p>';
   lista += '<div class="totales">' +
@@ -1100,16 +1122,22 @@ function descargarBlob(blob, nombre) {
 }
 
 /* Arma los valores de las dos plantillas para un deudor */
+function unicos(v) { var r = []; v.forEach(function (x) { if (x && r.indexOf(x) < 0) r.push(x); }); return r; }
 function datosInubicabilidad(a, f) {
-  var comps = comparendosDe(a);
+  var comps = comparendosDe(a), res = f.res || [];
   var dAviso = f.fAviso ? aFecha(f.fAviso) : null;
   var dSig = dAviso ? addDias(dAviso, 1) : null;
   var d3 = dSig ? new Date(dSig.getFullYear() + 3, dSig.getMonth(), dSig.getDate()) : null;
   var tM = 0, tI = 0;
-  var filas = comps.map(function (c) {
+  /* Por comparendo: la resolución que trae el dato (c.r) es el MANDAMIENTO de pago;
+     la RESOLUCIÓN la digitan los abogados en la ficha, una por comparendo */
+  var filas = comps.map(function (c, k) {
     var m = Number(c.m || 0), i = Number(c.i || 0); tM += m; tI += i;
+    var rk = res[k] || {};
     return {
-      COMP: c.c, FCOMP: c.f || falta('fecha'), RES: c.r || falta('resolución'), FRES: c.fr || falta('fecha'),
+      COMP: c.c, FCOMP: c.f || falta('fecha'),
+      RES: rk.n || falta('resolución'), FRES: rk.f ? fFecha(rk.f) : (f.pdf ? '' : falta('fecha de la resolución')),
+      MAND: c.r || falta('mandamiento'), FMAND: c.fr || '',
       MULTA: c.m != null ? pesos(m) : '', INT: c.i != null ? pesos(i) : '', TOTAL: c.m != null ? pesos(m + i) : '',
       DESC: c.inf ? 'Infracción ' + c.inf : 'Infracción'
     };
@@ -1120,8 +1148,8 @@ function datosInubicabilidad(a, f) {
     RAD_PETICION: f.radPet || falta('radicado de la petición'),
     COMPARENDOS: lista('COMP', 'comparendos'), FECHAS_COMP: lista('FCOMP', 'fechas'),
     RESOLUCIONES: lista('RES', 'resoluciones'), FECHAS_RES: lista('FRES', 'fechas'),
-    MANDAMIENTO: f.mand || falta('mandamiento de pago'),
-    FECHA_MAND: f.fMand ? fFecha(f.fMand) : '',
+    MANDAMIENTO: unicos(comps.map(function (c) { return c.r; })).join(', ') || falta('mandamiento de pago'),
+    FECHA_MAND: unicos(comps.map(function (c) { return c.fr; })).join(', '),
     CONSTANCIA: f.constancia || '',
     FECHA_AVISO: dAviso ? fLarga(dAviso) : falta('fecha de publicación del aviso'),
     FECHA_SIG: dSig ? fLarga(dSig) : falta('día siguiente a la publicación'),
@@ -1138,15 +1166,19 @@ function generarInubicabilidad(modo) {
   var a = _actoFicha; if (!a) return;
   var out = $('inubRes'), btns = document.querySelectorAll('[data-inubicabilidad]');
   function v(id) { return ($(id) && $(id).value.trim()) || ''; }
-  var f = { mand: v('iMand'), fMand: fechaMandDato(a), fAviso: v('iFAviso'), constancia: v('iConst') };
+  var res = leerResoluciones(a);
+  var f = { res: res, fAviso: v('iFAviso'), constancia: v('iConst'), pdf: modo === 'pdf' };
   var d = datosInubicabilidad(a, f);
   if (!d.filas.length) { out.innerHTML = '<div class="note bad">Este deudor no tiene comparendos registrados.</div>'; return; }
   if (modo === 'pdf') {
-    var req = [['mand', 'el número del mandamiento de pago', 'iMand'], ['fAviso', 'la fecha de publicación del aviso', 'iFAviso']];
-    var vacios = req.filter(function (r) { return !f[r[0]]; });
+    var sinRes = []; res.forEach(function (r, k) { if (!r.n) sinRes.push(k); });
+    var vacios = [];
+    if (sinRes.length) vacios.push(sinRes.length === res.length ? 'el número de resolución de ' + (res.length === 1 ? 'el comparendo' : 'los comparendos') : 'el número de resolución de ' + sinRes.length + (sinRes.length === 1 ? ' comparendo' : ' comparendos'));
+    if (!f.fAviso) vacios.push('la fecha de publicación del aviso');
     if (vacios.length) {
-      out.innerHTML = '<div class="note bad">Para el PDF falta ' + esc(vacios.map(function (r) { return r[1]; }).join(' y ')) + '.</div>';
-      if ($(vacios[0][2])) $(vacios[0][2]).focus();
+      out.innerHTML = '<div class="note bad">Para el PDF falta ' + esc(vacios.join(' y ')) + '.</div>';
+      var foco = sinRes.length ? $('iRes' + sinRes[0]) : $('iFAviso');
+      if (foco) foco.focus();
       return;
     }
   }
@@ -1696,6 +1728,7 @@ document.addEventListener('keydown', function (e) {
 var _tBusca = null;
 document.addEventListener('input', function (e) {
   if (CAMPOS_FORM.indexOf(e.target.id) > -1) guardarForm();
+  if (e.target.dataset && e.target.dataset.res != null && _actoFicha) { leerResoluciones(_actoFicha); return; }
   if (e.target.id === 'iFAviso' && $('iDesf')) { $('iDesf').value = e.target.value ? fFecha(addHabiles(aFecha(e.target.value), 4)) : ''; return; }
   if (e.target.id === 'qGlobal') { clearTimeout(_tGlobal); var vg = e.target.value; _tGlobal = setTimeout(function () { buscarGlobal(vg); }, 450); return; }
   if (e.target.id === 'q') { clearTimeout(_tBusca); var v = e.target.value; _tBusca = setTimeout(function () { S.f.q = v; S.pagina = 1; buscarActos(); }, 400); }
