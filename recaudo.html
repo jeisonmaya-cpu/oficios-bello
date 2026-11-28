@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script src="teo-puerta.js?v=1"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Recaudo Histórico — Alcaldía de Bello</title>
@@ -3111,6 +3112,13 @@ try { loadCfgUsuario(); } catch(e){ cfgUsuario = {}; }
       var r = await sbAuth.auth.getSession();
       haySesion = !!(r && r.data && r.data.session);
       if(haySesion) _sbToken = r.data.session.access_token || '';
+      // Entrada única: si la sesión viene de la portada y aún no hay nombre guardado,
+      // se toma el nombre del perfil de Supabase para no volver a pedir credenciales.
+      if(haySesion && !cfgUsuario.nombre){
+        var md = (r.data.session.user && r.data.session.user.user_metadata) || {};
+        var nomMeta = String(md.nombre || md.full_name || md.name || '').trim();
+        if(nomMeta){ cfgUsuario = { nombre: nomMeta, equipo: cfgUsuario.equipo || '' }; saveCfgUsuario(); }
+      }
     }catch(e){ haySesion = false; }
   }
   if(haySesion && cfgUsuario.nombre){

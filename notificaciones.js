@@ -16,8 +16,6 @@
 var CFG = {
   SUPA_URL: 'https://bmurdtfztsltcgwsfbgf.supabase.co',
   SUPA_KEY: 'sb_publishable_x3Mu7phCEfpJMcKSQYkf8Q_obSOAvfL',
-  SESION_KEY: 'notificaciones_sesion_v1',
-  SESION_HORAS: 8,
   POR_PAGINA: 50,
   LOTE_INSERT: 500,
   LIBS: ['lib/xlsx.full.min.js', 'lib/pdf-lib.min.js', 'lib/pdf.min.js', 'lib/jszip.min.js'],
@@ -124,13 +122,31 @@ function esSinDireccion(l) { return l && l.medio === 'sin_direccion'; }
 function detalleDe(a, clave) { var d = a.detalle || {}; return d[clave] == null ? '' : d[clave]; }
 
 /* =========================================================
-   Sesión (Supabase Auth por REST)
+   Sesión (Supabase Auth por REST) — sesión COMPARTIDA de Teodoro
+   Lee y guarda la misma sesión que supabase-js usa en la portada y en
+   los demás módulos (sb-<ref>-auth-token), con su mismo formato:
+   { access_token, refresh_token, expires_in, expires_at (segundos), token_type, user }.
    ========================================================= */
 var Auth = {
-  leer: function () { try { return JSON.parse(localStorage.getItem(CFG.SESION_KEY)); } catch (e) { return null; } },
-  guardar: function (s) { try { localStorage.setItem(CFG.SESION_KEY, JSON.stringify(s)); } catch (e) { /* sin almacenamiento */ } },
-  email: function () { var s = this.leer(); return s ? s.email : ''; },
-  vigente: function () { var s = this.leer(); return !!(s && s.access_token && Date.now() - s.inicio < CFG.SESION_HORAS * 36e5); },
+  CLAVE: 'sb-bmurdtfztsltcgwsfbgf-auth-token',
+  leer: function () {
+    try {
+      var s = JSON.parse(localStorage.getItem(this.CLAVE));
+      if (s && s.currentSession) s = s.currentSession;
+      return (s && s.access_token) ? s : null;
+    } catch (e) { return null; }
+  },
+  guardar: function (s) { try { localStorage.setItem(this.CLAVE, JSON.stringify(s)); } catch (e) { /* sin almacenamiento */ } },
+  email: function () { var s = this.leer(); return (s && s.user && s.user.email) || ''; },
+  vigente: function () { var s = this.leer(); return !!(s && s.refresh_token); },
+  _formato: function (j, previo) {
+    var exp = j.expires_in || 3600;
+    return {
+      access_token: j.access_token, token_type: j.token_type || 'bearer',
+      expires_in: exp, expires_at: j.expires_at || Math.floor(Date.now() / 1000) + exp,
+      refresh_token: j.refresh_token, user: j.user || (previo && previo.user) || null
+    };
+  },
   login: function (email, pass) {
     var self = this;
     return fetch(CFG.SUPA_URL + '/auth/v1/token?grant_type=password', {
@@ -140,7 +156,7 @@ var Auth = {
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (!r.ok) throw new Error(j.error_description || j.msg || 'Correo o contraseña incorrectos.');
-        var s = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + (j.expires_in || 3600) * 1000, email: (j.user && j.user.email) || email, inicio: Date.now() };
+        var s = self._formato(j);
         self.guardar(s);
         return s;
       });
@@ -155,22 +171,38 @@ var Auth = {
       body: JSON.stringify({ refresh_token: s.refresh_token })
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
-        if (!r.ok) throw new Error('SIN_SESION');
-        s.access_token = j.access_token; s.refresh_token = j.refresh_token;
-        s.expires_at = Date.now() + (j.expires_in || 3600) * 1000;
-        self.guardar(s);
-        return s;
+        if (!r.ok) {
+          // Otra pestaña pudo renovar la sesión mientras tanto: si hay un token más nuevo, se usa ese.
+          var otro = self.leer();
+          if (otro && otro.refresh_token !== s.refresh_token) return otro;
+          throw new Error('SIN_SESION');
+        }
+        var n = self._formato(j, s);
+        self.guardar(n);
+        return n;
       });
     });
   },
   headers: function () {
-    var self = this, s = this.leer();
+    var s = this.leer();
     if (!this.vigente()) { return Promise.reject(new Error('SIN_SESION')); }
-    var p = (s.expires_at - 60000 < Date.now()) ? this.refrescar() : Promise.resolve(s);
+    var vence = (s.expires_at || 0) * 1000;
+    var p = (vence - 60000 < Date.now()) ? this.refrescar() : Promise.resolve(s);
     return p.then(function (ss) { return { apikey: CFG.SUPA_KEY, Authorization: 'Bearer ' + ss.access_token }; });
   },
-  salir: function () { try { localStorage.removeItem(CFG.SESION_KEY); } catch (e) { /* nada */ } }
+  salir: function () {
+    var s = this.leer();
+    if (s && s.access_token) {
+      fetch(CFG.SUPA_URL + '/auth/v1/logout', { method: 'POST', headers: { apikey: CFG.SUPA_KEY, Authorization: 'Bearer ' + s.access_token } }).catch(function () {});
+    }
+    try { localStorage.removeItem(this.CLAVE); localStorage.removeItem('notificaciones_sesion_v1'); } catch (e) { /* nada */ }
+  }
 };
+// Sesión vieja propia del módulo (antes de la entrada única): ya no se usa.
+try { localStorage.removeItem('notificaciones_sesion_v1'); } catch (e) { /* nada */ }
+
+/* Sin sesión → a la entrada única, y de vuelta a este módulo al entrar. */
+function irAEntrada() { location.replace('index.html?volver=notificaciones.html'); }
 
 /* =========================================================
    Acceso a Supabase (REST)
@@ -1713,7 +1745,7 @@ document.addEventListener('click', function (e) {
   if ((el = e.target.closest('[data-oficio]'))) { oficioIndividual(); return; }
   if ((el = e.target.closest('[data-inubicabilidad]'))) { if (!el.disabled) generarInubicabilidad(el.dataset.inubicabilidad); return; }
   if (e.target.id === 'btnGuardar') { guardarLote(); return; }
-  if (e.target.id === 'btnSalir') { Auth.salir(); mostrarLogin(); return; }
+  if (e.target.id === 'btnSalir') { Auth.salir(); location.replace('index.html'); return; }
   if (e.target.id === 'btnRecargar') { recargarTodo().then(function () { toast('Datos actualizados', 'ok'); }); return; }
 });
 document.addEventListener('keydown', function (e) {
@@ -1754,7 +1786,7 @@ function mostrarLogin(msg) {
   $('loginMsg').textContent = msg || '';
   setTimeout(function () { $('loginEmail').focus(); }, 50);
 }
-function sesionVencida() { Auth.salir(); cerrarDrawer(); mostrarLogin('La sesión expiró. Ingresa de nuevo.'); }
+function sesionVencida() { Auth.salir(); cerrarDrawer(); irAEntrada(); }
 function iniciarApp() {
   $('login').hidden = true; $('app').hidden = false;
   $('usuario').textContent = Auth.email();
@@ -1774,4 +1806,4 @@ $('loginForm').addEventListener('submit', function (e) {
 });
 window.addEventListener('beforeunload', function (e) { if (M && M.ocupado) { e.preventDefault(); e.returnValue = ''; } });
 
-if (Auth.vigente()) iniciarApp(); else { Auth.salir(); mostrarLogin(); }
+if (Auth.vigente()) iniciarApp(); else irAEntrada();
