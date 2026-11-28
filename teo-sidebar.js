@@ -1,6 +1,6 @@
 /* ==========================================================================
    teo-sidebar.js — Menú lateral unificado de Sistema Teodoro
-   v1.2 · Desarrollado por Jeison Maya · 2026
+   v1.3 · Desarrollado por Jeison Maya · 2026
 
    USO (una sola línea en cada módulo, justo antes del cierre del body):
      script src="teo-sidebar.js?v=1"   (etiqueta script normal)
@@ -107,11 +107,11 @@
     /* cabecera */
     '.tsb-cab{display:flex;align-items:center;gap:12px;height:64px;padding:0 16px;flex:none;border-bottom:1px solid var(--tsb-borde);}',
     '.tsb-logo{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;',
-    'background:linear-gradient(135deg,#f59e0b,#d97706);color:#0a0f1e;font-family:"DM Serif Display",Georgia,serif;font-size:21px;',
-    'box-shadow:0 4px 14px -4px rgba(245,158,11,.55);text-decoration:none;}',
+    'overflow:hidden;text-decoration:none;}',
+    '.tsb-logo img{width:36px;height:36px;display:block;}',
     '.tsb-marca{display:flex;flex-direction:column;line-height:1.15;white-space:nowrap;}',
     '.tsb-marca b{font-family:"DM Serif Display",Georgia,serif;font-weight:400;font-size:17px;color:#fff;letter-spacing:.2px;}',
-    '.tsb-marca small{font-size:10.5px;color:var(--tsb-txt2);letter-spacing:.4px;text-transform:uppercase;}',
+    '.tsb-marca small{font-size:10px;font-weight:700;color:#e8a020;letter-spacing:.2em;text-transform:uppercase;}',
 
     /* textos que se desvanecen al colapsar */
     '.tsb-fade{opacity:0;transform:translateX(-6px);transition:opacity .2s,transform .3s var(--tsb-ease);pointer-events:none;}',
@@ -194,8 +194,18 @@
   function esMovil() { return window.matchMedia('(max-width:' + (BP_MOVIL - 1) + 'px)').matches; }
 
   function paginaActual() {
-    var f = location.pathname.split('/').pop().toLowerCase();
+    // Cloudflare sirve las páginas sin extensión (/recaudo): se normaliza a recaudo.html
+    var f = location.pathname.replace(/\/+$/, '').split('/').pop().toLowerCase();
+    if (f && f.indexOf('.') === -1) f += '.html';
     return f;
+  }
+  /* Nombre del módulo abierto, para mostrarlo bajo «Teodoro» */
+  function moduloActual() {
+    var pag = paginaActual();
+    for (var g = 0; g < MODULOS.length; g++) for (var i = 0; i < MODULOS[g].items.length; i++) {
+      if (esActivo(MODULOS[g].items[i], pag)) return MODULOS[g].items[i].nombre;
+    }
+    return 'Inicio';
   }
   function esActivo(it, pag) {
     if (it.href.toLowerCase() === pag) return true;
@@ -255,8 +265,8 @@
     aside.setAttribute('aria-label', 'Módulos de Sistema Teodoro');
     aside.innerHTML =
       '<div class="tsb-cab">' +
-        '<a class="tsb-logo" href="index.html" title="Inicio">T</a>' +
-        '<div class="tsb-marca tsb-fade"><b>Teodoro</b><small>Ejecuciones Fiscales</small></div>' +
+        '<a class="tsb-logo" href="index.html" title="Inicio"><img src="teo-simbolo.svg?v=1" alt="Teodoro"></a>' +
+        '<div class="tsb-marca tsb-fade"><b>Teodoro</b><small>' + esc(moduloActual()) + '</small></div>' +
       '</div>' +
       '<div class="tsb-busca"><span>' + ico('search') + '</span>' +
         '<input type="search" placeholder="Buscar módulo…" aria-label="Buscar módulo" class="tsb-fade"></div>' +
