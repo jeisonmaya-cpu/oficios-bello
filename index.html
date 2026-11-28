@@ -19,6 +19,14 @@
   if(t==="light") document.documentElement.setAttribute("data-theme","light");
 }catch(e){}})();
 </script>
+<script>
+// Entrada única: decidir antes de pintar si se muestra la puerta (evita ver el portal un instante).
+(function(){try{
+  var s=JSON.parse(localStorage.getItem("sb-bmurdtfztsltcgwsfbgf-auth-token")||"null");
+  if(s&&s.currentSession) s=s.currentSession;
+  if(!(s&&s.refresh_token)) document.documentElement.classList.add("teo-sin-sesion");
+}catch(e){document.documentElement.classList.add("teo-sin-sesion");}})();
+</script>
 <style>
 /* ═══════════════════════════════════════════
    TOKENS — Teodoro (navy + dorado)
@@ -395,9 +403,175 @@ footer strong{color:var(--muted);font-weight:600}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition:none!important;animation:none!important}
 }
+/* ═══════════════════════════════════════════
+   ENTRADA ÚNICA (puerta) — v1 · Desarrollado por Jeison Maya · 2026
+   ═══════════════════════════════════════════ */
+.puerta{display:none}
+html.teo-sin-sesion .puerta{display:flex}
+html.teo-sin-sesion .wrap, html.teo-sin-sesion > body > footer, html.teo-sin-sesion .teo-fab, html.teo-sin-sesion .teo-panel{display:none !important}
+html.teo-sin-sesion body{background:#061428}
+.puerta{position:fixed;inset:0;z-index:2000;overflow-y:auto;flex-direction:column;font-family:"DM Sans",system-ui,sans-serif;color:#f3f6fb;
+  background-color:#061428;background-image:radial-gradient(900px 520px at 18% 30%,rgba(232,160,32,.10),transparent 65%),radial-gradient(1000px 700px at 85% 110%,rgba(30,78,150,.45),transparent 60%),linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:auto,auto,56px 56px,56px 56px}
+.pt-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:28px clamp(20px,5vw,72px)}
+.pt-marca{display:flex;align-items:center;gap:12px}
+.pt-marca-txt{display:flex;flex-direction:column;line-height:1.15}
+.pt-nombre{font-family:"DM Serif Display",serif;font-size:22px}
+.pt-sub-marca{font-size:12px;color:#9fb1cb;letter-spacing:.4px}
+.pt-estado{display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(255,255,255,.10);border-radius:999px;background:rgba(255,255,255,.04);font-size:13px;color:#b9c7db}
+.pt-punto{width:8px;height:8px;border-radius:50%;background:#e8a020;display:inline-block}
+.pt-punto.ok{background:#3ecf8e;animation:ptPulso 2s ease-in-out infinite}
+.pt-punto.err{background:#f87171}
+.pt-main{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:48px;padding:8px clamp(20px,5vw,72px) 40px;max-width:1360px;width:100%;box-sizing:border-box;margin:0 auto}
+.pt-izq{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:32px}
+.pt-etiqueta{align-self:flex-start;padding:6px 12px;border-radius:999px;background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.30);color:#f0b544;font-size:12.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+.pt-titulo{margin:0;font-family:"DM Serif Display",serif;font-weight:400;font-size:clamp(36px,4.6vw,64px);line-height:1.05;letter-spacing:-.5px;max-width:660px;color:#f3f6fb}
+.pt-titulo em{color:#e8a020}
+.pt-texto{margin:0;font-size:18px;line-height:1.6;color:#b9c7db;max-width:560px}
+.pt-teo-fila{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
+.pt-teo{animation:ptFlota 5s ease-in-out infinite}
+.pt-ojo{transform-box:fill-box;transform-origin:center;animation:ptParpadea 4.5s infinite}
+.pt-vivo{animation:ptPulso 2s ease-in-out infinite}
+.pt-burbuja{margin-bottom:70px;padding:14px 18px;border-radius:16px 16px 16px 4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);max-width:300px;font-size:15px;line-height:1.5;color:#e4ebf5}
+.pt-burbuja strong{color:#f0b544;font-weight:600}
+.pt-modulos{display:flex;flex-wrap:wrap;gap:10px}
+.pt-modulos span{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);color:#b9c7db;font-size:14px}
+.pt-modulos span::before{content:"";width:6px;height:6px;border-radius:2px;background:#e8a020}
+.pt-der{flex:1 1 400px;max-width:460px;min-width:0;margin:0 auto}
+.pt-form{position:relative;display:flex;flex-direction:column;gap:20px;padding:40px;border-radius:24px;background:linear-gradient(180deg,rgba(20,44,82,.85),rgba(10,31,61,.92));border:1px solid rgba(255,255,255,.10);box-shadow:0 30px 80px -20px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(14px)}
+.pt-form::before{content:"";position:absolute;top:0;left:40px;right:40px;height:2px;background:linear-gradient(90deg,transparent,#e8a020,transparent)}
+.pt-form h2{margin:0;font-family:"DM Serif Display",serif;font-weight:400;font-size:32px;color:#f3f6fb}
+.pt-form-sub{margin:6px 0 0;font-size:14.5px;color:#9fb1cb}
+.pt-label{display:flex;flex-direction:column;gap:8px;font-size:13.5px;font-weight:600;color:#cfd9e8}
+.pt-campo{display:flex;align-items:center;gap:10px;height:50px;padding:0 8px 0 16px;border-radius:12px;background:rgba(4,14,30,.55);border:1px solid rgba(255,255,255,.12);transition:border-color .15s,box-shadow .15s}
+.pt-campo:focus-within{border-color:#e8a020;box-shadow:0 0 0 4px rgba(232,160,32,.14)}
+.pt-campo input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:400 15px "DM Sans",system-ui,sans-serif;color:#f3f6fb;height:100%}
+.pt-campo input::placeholder{color:#6f84a3}
+.pt-mostrar{border:0;background:transparent;cursor:pointer;padding:8px 10px;border-radius:8px;font:600 13px "DM Sans",sans-serif;color:#e8a020}
+.pt-mostrar:focus-visible,.pt-olvido:focus-visible,.pt-entrar:focus-visible{outline:2px solid #e8a020;outline-offset:2px}
+.pt-fila{display:flex;justify-content:flex-end;font-size:14px}
+.pt-olvido{border:0;background:transparent;cursor:pointer;padding:4px 0;font:500 14px "DM Sans",sans-serif;color:#e8a020}
+.pt-olvido:hover{color:#f5b942}
+.pt-entrar{height:52px;border:0;border-radius:12px;background:#e8a020;color:#0a1f3d;font:700 16px "DM Sans",sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 10px 30px -8px rgba(232,160,32,.55);transition:background .18s,transform .18s}
+.pt-entrar:hover{background:#f5b942;transform:translateY(-1px)}
+.pt-entrar[disabled]{opacity:.7;cursor:wait;transform:none}
+.pt-msg{display:none;padding:11px 14px;border-radius:12px;font-size:13.5px;line-height:1.45}
+.pt-msg.err{display:block;background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.35);color:#fecaca}
+.pt-msg.ok{display:block;background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.3);color:#bbf7d0}
+.pt-seguro{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:rgba(62,207,142,.07);border:1px solid rgba(62,207,142,.18);font-size:13px;line-height:1.45;color:#b9d9c9}
+.pt-pie{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:20px clamp(20px,5vw,72px) 28px;border-top:1px solid rgba(255,255,255,.06);font-size:13px;color:#8ea2bf}
+.pt-pie strong{color:#e8a020;font-weight:600}
+.pt-teo-mini{display:none}
+@keyframes ptFlota{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes ptParpadea{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes ptPulso{0%,100%{opacity:1}50%{opacity:.35}}
+@media (max-width:760px){
+  .pt-top{padding:20px}
+  .pt-estado,.pt-etiqueta,.pt-texto,.pt-teo-fila,.pt-modulos{display:none}
+  .pt-teo-mini{display:block}
+  .pt-main{padding:4px 20px 24px;gap:20px}
+  .pt-izq{gap:0}
+  .pt-titulo{font-size:30px;line-height:1.1}
+  .pt-form{padding:24px 20px;gap:14px;border-radius:20px}
+  .pt-form h2{font-size:26px}
+  .pt-pie{flex-direction:column;align-items:center;text-align:center;padding:16px 20px 22px}
+}
+@media (prefers-reduced-motion:reduce){.pt-teo,.pt-ojo,.pt-vivo,.pt-punto.ok{animation:none}}
+.pill-salir{cursor:pointer}
 </style>
 </head>
 <body>
+
+<!-- ═══════ ENTRADA ÚNICA (se muestra solo sin sesión) ═══════ -->
+<div class="puerta" id="puerta" role="main" aria-labelledby="pt-titulo-login">
+  <header class="pt-top">
+    <div class="pt-marca">
+      <svg width="38" height="38" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0f2d5e"/><rect x="6" y="13" width="2.5" height="9" rx="1" fill="#f3f6fb"/><rect x="10.5" y="13" width="2.5" height="9" rx="1" fill="#f3f6fb"/><rect x="15" y="13" width="2.5" height="9" rx="1" fill="#f3f6fb"/><rect x="19.5" y="13" width="2.5" height="9" rx="1" fill="#f3f6fb"/><rect x="24" y="13" width="2.5" height="9" rx="1" fill="#f3f6fb"/><rect x="5" y="22.5" width="22" height="2.5" rx="1" fill="#f3f6fb"/><polygon points="16,5 5,12 27,12" fill="#e8a020"/></svg>
+      <div class="pt-marca-txt">
+        <span class="pt-nombre">Teodoro</span>
+        <span class="pt-sub-marca">Ejecuciones Fiscales · Alcaldía de Bello</span>
+      </div>
+    </div>
+    <div class="pt-estado" role="status" aria-live="polite"><span class="pt-punto" id="pt-sys-dot"></span><span id="pt-sys-txt">Comprobando conexión…</span></div>
+    <svg class="pt-teo pt-teo-mini" width="46" height="58" viewBox="0 0 190 240" aria-hidden="true">
+      <rect x="48" y="118" width="94" height="74" rx="20" fill="#0d2648" stroke="#3a6bb0" stroke-width="3"/>
+      <circle cx="95" cy="68" r="56" fill="#102b52" stroke="#3a6bb0" stroke-width="3"/>
+      <line x1="95" y1="12" x2="95" y2="25" stroke="#6f97d2" stroke-width="3"/><circle cx="95" cy="10" r="7" fill="#e8a020"/>
+      <rect x="62" y="50" width="24" height="24" rx="7" fill="#f3f6fb"/><rect x="104" y="50" width="24" height="24" rx="7" fill="#f3f6fb"/>
+      <path d="M76 90 Q95 102 114 90" fill="none" stroke="#e8a020" stroke-width="6" stroke-linecap="round"/><circle cx="95" cy="150" r="9" fill="#e8a020"/>
+    </svg>
+  </header>
+
+  <div class="pt-main">
+    <section class="pt-izq">
+      <span class="pt-etiqueta">Dirección Administrativa de Ejecuciones Fiscales</span>
+      <h1 class="pt-titulo">Todo el cobro coactivo de Bello, <em>en un solo lugar.</em></h1>
+      <p class="pt-texto">Expedientes, notificaciones, recaudo, tutelas y peticiones con una sola cuenta. Entre una vez y muévase entre módulos sin volver a iniciar sesión.</p>
+      <div class="pt-teo-fila">
+        <svg class="pt-teo" width="120" height="150" viewBox="0 0 190 240" role="img" aria-label="Teo, el asistente de Teodoro">
+          <ellipse cx="95" cy="234" rx="52" ry="6" fill="rgba(0,0,0,.35)"/>
+          <rect x="65" y="188" width="22" height="34" rx="11" fill="#12305c" stroke="#2f5b9a"/>
+          <rect x="103" y="188" width="22" height="34" rx="11" fill="#12305c" stroke="#2f5b9a"/>
+          <rect x="48" y="118" width="94" height="74" rx="20" fill="#0d2648" stroke="#3a6bb0" stroke-width="1.5"/>
+          <rect x="63" y="130" width="64" height="40" rx="9" fill="rgba(232,160,32,.08)" stroke="rgba(232,160,32,.35)"/>
+          <circle class="pt-vivo" cx="75" cy="146" r="5" fill="#e8a020"/><circle cx="95" cy="146" r="5" fill="#f5b942"/><circle class="pt-vivo" cx="115" cy="146" r="5" fill="#e8a020"/>
+          <rect x="22" y="120" width="24" height="54" rx="12" fill="#0d2648" stroke="#2f5b9a"/>
+          <rect x="144" y="120" width="24" height="54" rx="12" fill="#0d2648" stroke="#2f5b9a"/>
+          <rect x="82" y="107" width="26" height="15" rx="7" fill="#12305c" stroke="#2f5b9a"/>
+          <circle cx="95" cy="68" r="56" fill="#102b52" stroke="#3a6bb0" stroke-width="1.5"/>
+          <line x1="95" y1="12" x2="95" y2="25" stroke="#6f97d2" stroke-width="1.5"/>
+          <circle class="pt-vivo" cx="95" cy="10" r="5" fill="#e8a020"/>
+          <rect class="pt-ojo" x="62" y="50" width="24" height="24" rx="7" fill="#f3f6fb"/>
+          <rect class="pt-ojo" x="104" y="50" width="24" height="24" rx="7" fill="#f3f6fb"/>
+          <rect x="69" y="57" width="11" height="11" rx="3" fill="#0a1f3d"/><rect x="111" y="57" width="11" height="11" rx="3" fill="#0a1f3d"/>
+          <path d="M76 90 Q95 102 114 90" fill="none" stroke="#e8a020" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+        <div class="pt-burbuja"><strong id="pt-saludo">Hola.</strong> Soy Teo. Ingrese con su correo autorizado y le abro todo el sistema.</div>
+      </div>
+      <nav class="pt-modulos" aria-label="Módulos de Teodoro">
+        <span>Expedientes</span><span>Notificaciones</span><span>Seguimiento</span><span>Recaudo</span><span>Embargos</span><span>Tutelas</span><span>Peticiones</span>
+      </nav>
+    </section>
+
+    <section class="pt-der">
+      <form class="pt-form" id="pt-form" novalidate>
+        <div>
+          <h2 id="pt-titulo-login">Iniciar sesión</h2>
+          <p class="pt-form-sub">Una sola cuenta para todos los módulos.</p>
+        </div>
+        <label class="pt-label" for="pt-correo">Correo autorizado
+          <span class="pt-campo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7f93b1" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input id="pt-correo" type="email" placeholder="nombre@correo.com" autocomplete="username" required>
+          </span>
+        </label>
+        <label class="pt-label" for="pt-clave">Contraseña
+          <span class="pt-campo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7f93b1" stroke-width="1.8" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="pt-clave" type="password" placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="pt-mostrar" id="pt-mostrar" aria-controls="pt-clave" aria-pressed="false">Mostrar</button>
+          </span>
+        </label>
+        <div class="pt-fila"><button type="button" class="pt-olvido" id="pt-olvido">¿Olvidó su contraseña?</button></div>
+        <div class="pt-msg" id="pt-msg" role="alert"></div>
+        <button type="submit" class="pt-entrar" id="pt-entrar">
+          <span id="pt-entrar-txt">Entrar a Teodoro</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <div class="pt-seguro">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" stroke-width="1.8" aria-hidden="true" style="flex-shrink:0"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+          Acceso solo para personal autorizado de la Dirección. Conexión cifrada.
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <footer class="pt-pie">
+    <span>Dirección Administrativa de Ejecuciones Fiscales · Alcaldía de Bello, Antioquia</span>
+    <span>Sistema Teodoro · Desarrollado por <strong>Jeison Maya</strong> · 2026</span>
+  </footer>
+</div>
+
 
 <div class="wrap">
 
@@ -430,6 +604,7 @@ footer strong{color:var(--muted);font-weight:600}
       <span class="pill" id="sys" role="status" aria-live="polite"><span class="dot" id="sys-dot"></span><span id="sys-txt">Comprobando conexión…</span></span>
       <button class="pill" id="btn-tema" type="button" aria-label="Cambiar entre modo claro y oscuro">Modo claro</button>
       <span class="pill pill-user" id="user-pill">Sin sesión</span>
+      <button class="pill pill-salir" id="btn-salir" type="button" hidden>Salir</button>
     </div>
   </header>
 
@@ -663,7 +838,7 @@ footer strong{color:var(--muted);font-weight:600}
 // CONFIGURACIÓN
 // ═══════════════════════════════════════════
 var CONFIG = {
-  version: "v3.0",
+  version: "v3.1",
   supaUrl: "https://bmurdtfztsltcgwsfbgf.supabase.co",
   supaRef: "bmurdtfztsltcgwsfbgf"
 };
@@ -1027,6 +1202,9 @@ var MODS = [
 function ponerEstado(clase, texto){
   $("sys-dot").className = "dot " + clase;
   $("sys-txt").textContent = texto;
+  var pd = $("pt-sys-dot"), pt = $("pt-sys-txt");
+  if (pd) pd.className = "pt-punto" + (clase === "ok" ? " ok" : (clase === "err" ? " err" : ""));
+  if (pt) pt.textContent = clase === "ok" ? "Sistema en línea" : texto;
 }
 function verificarSistema(){
   if (navigator.onLine === false) { ponerEstado("err", "Sin internet"); return; }
@@ -1213,6 +1391,125 @@ construirParaHoy();
 estadoTarjetas();
 pintarFavoritos();
 verificarSistema();
+</script>
+<!-- ═══════ ENTRADA ÚNICA — lógica (Supabase Auth compartido por todos los módulos) ═══════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  "use strict";
+  var PT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtdXJkdGZ6dHNsdGNnd3NmYmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjU2NzYsImV4cCI6MjA5NjcwMTY3Nn0.2Md6ymram4kv82Lirk2ICl9ZOXUsI5Gve02q7FUCHvs";
+  var html = document.documentElement;
+  var sb = null;
+
+  // Solo se acepta volver a una página de este mismo sitio (evita redirecciones abiertas).
+  function volverSeguro(){
+    try {
+      var v = new URLSearchParams(location.search).get("volver");
+      return (v && /^[a-z0-9_]+\.html$/i.test(v) && v.toLowerCase() !== "index.html") ? v : null;
+    } catch(e){ return null; }
+  }
+  function mostrarPuerta(){
+    html.classList.add("teo-sin-sesion");
+    setTimeout(function(){ var c = $("pt-correo"); if (c && !c.value) c.focus(); }, 60);
+  }
+  function ocultarPuerta(){ html.classList.remove("teo-sin-sesion"); }
+  function msg(tipo, texto){
+    var m = $("pt-msg"); if (!m) return;
+    m.className = "pt-msg" + (tipo ? " " + tipo : "");
+    m.textContent = texto || "";
+  }
+  function traducir(e){
+    var t = String((e && (e.message || e.error_description)) || "").toLowerCase();
+    if (t.indexOf("invalid login") >= 0 || t.indexOf("invalid credentials") >= 0) return "Correo o contraseña incorrectos.";
+    if (t.indexOf("not confirmed") >= 0) return "Su correo aún no está confirmado. Pida al administrador que active su cuenta.";
+    if (t.indexOf("rate") >= 0 || t.indexOf("too many") >= 0) return "Demasiados intentos seguidos. Espere un minuto e intente de nuevo.";
+    if (t.indexOf("fetch") >= 0 || t.indexOf("network") >= 0) return "No hay conexión con la base de datos. Revise su internet e intente de nuevo.";
+    return "No se pudo iniciar sesión. " + ((e && e.message) || "Intente de nuevo.");
+  }
+  function ocupado(si, texto){
+    var b = $("pt-entrar"); if (!b) return;
+    b.disabled = !!si;
+    $("pt-entrar-txt").textContent = texto || "Entrar a Teodoro";
+  }
+
+  // Saludo según la hora
+  (function(){
+    var h = new Date().getHours();
+    var s = $("pt-saludo"); if (s) s.textContent = (h < 12 ? "Buenos días" : (h < 19 ? "Buenas tardes" : "Buenas noches")) + ".";
+  })();
+
+  // Mostrar / ocultar contraseña
+  var btnVer = $("pt-mostrar");
+  if (btnVer) btnVer.addEventListener("click", function(){
+    var c = $("pt-clave"), ver = c.type === "password";
+    c.type = ver ? "text" : "password";
+    btnVer.textContent = ver ? "Ocultar" : "Mostrar";
+    btnVer.setAttribute("aria-pressed", ver ? "true" : "false");
+  });
+
+  // Cliente de Supabase
+  if (!window.supabase || !window.supabase.createClient) {
+    if (html.classList.contains("teo-sin-sesion")) {
+      msg("err", "No se pudo cargar el acceso. Recargue la página con Ctrl + F5. Si sigue igual, puede que la red esté bloqueando el servicio.");
+      ocupado(true, "Acceso no disponible");
+    }
+    return;
+  }
+  sb = window.supabase.createClient(CONFIG.supaUrl, PT_KEY);
+
+  // ¿Ya hay sesión válida? (getSession renueva el token si hace falta)
+  sb.auth.getSession().then(function(r){
+    var ses = r && r.data && r.data.session;
+    if (ses) {
+      var v = volverSeguro();
+      if (v) { location.replace(v); return; }
+      ocultarPuerta();
+      var bs = $("btn-salir"); if (bs) bs.hidden = false;
+    } else {
+      mostrarPuerta();
+    }
+  }).catch(function(){ mostrarPuerta(); });
+
+  // Iniciar sesión
+  $("pt-form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var correo = $("pt-correo").value.trim(), clave = $("pt-clave").value;
+    if (!correo || correo.indexOf("@") < 1) { msg("err", "Escriba su correo autorizado."); $("pt-correo").focus(); return; }
+    if (!clave) { msg("err", "Escriba su contraseña."); $("pt-clave").focus(); return; }
+    msg("", ""); ocupado(true, "Entrando…");
+    sb.auth.signInWithPassword({ email: correo, password: clave }).then(function(r){
+      if (r.error) throw r.error;
+      try { localStorage.setItem("teo_sesion_inicio", String(Date.now())); } catch(e){}
+      ocupado(true, "Abriendo Teodoro…");
+      var v = volverSeguro();
+      if (v) location.replace(v); else location.replace(location.pathname);
+    }).catch(function(e){
+      ocupado(false); msg("err", traducir(e)); $("pt-clave").select();
+    });
+  });
+
+  // Recuperar contraseña (mismo flujo que Tutelas: el enlace abre Tutelas para crear la nueva clave)
+  $("pt-olvido").addEventListener("click", function(){
+    var correo = $("pt-correo").value.trim();
+    if (!correo || correo.indexOf("@") < 1) { msg("err", "Escriba primero su correo en el campo de arriba y vuelva a tocar «¿Olvidó su contraseña?»."); $("pt-correo").focus(); return; }
+    var destino = location.href.split(/[?#]/)[0].replace(/[^\/]*$/, "") + "tutelas_v2.html";
+    msg("", "");
+    sb.auth.resetPasswordForEmail(correo, { redirectTo: destino }).then(function(r){
+      if (r.error) throw r.error;
+      msg("ok", "Listo. Si " + correo + " está autorizado, le llegará un enlace para crear una nueva contraseña. Revise también el correo no deseado.");
+    }).catch(function(e){ msg("err", traducir(e)); });
+  });
+
+  // Cerrar sesión desde el portal
+  var salir = $("btn-salir");
+  if (salir) salir.addEventListener("click", function(){
+    salir.disabled = true;
+    sb.auth.signOut().catch(function(){}).then(function(){
+      try { localStorage.removeItem("teo_sesion_inicio"); } catch(e){}
+      location.replace(location.pathname);
+    });
+  });
+})();
 </script>
 </body>
 </html>
