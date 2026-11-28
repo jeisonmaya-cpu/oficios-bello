@@ -1,6 +1,6 @@
 /* ==========================================================================
    teo-sidebar.js — Menú lateral unificado de Sistema Teodoro
-   v1.0 · Desarrollado por Jeison Maya · 2026
+   v1.1 · Desarrollado por Jeison Maya · 2026
 
    USO (una sola línea en cada módulo, justo antes del cierre del body):
      script src="teo-sidebar.js?v=1"   (etiqueta script normal)
@@ -86,8 +86,8 @@
      ------------------------------------------------------------------------ */
   var CSS = [
     ':root{--tsb-min:' + ANCHO_MIN + 'px;--tsb-max:' + ANCHO_MAX + 'px;--tsb-w:var(--tsb-min);',
-    '--tsb-bg:rgba(10,15,30,.86);--tsb-borde:rgba(255,255,255,.07);--tsb-txt:#c9d2e3;--tsb-txt2:#7f8aa3;',
-    '--tsb-hover:rgba(255,255,255,.06);--tsb-acento:#f59e0b;--tsb-acento-bg:rgba(245,158,11,.14);',
+    '--tsb-bg:rgba(10,31,61,.90);--tsb-borde:rgba(255,255,255,.07);--tsb-txt:#c9d2e3;--tsb-txt2:#7f8aa3;',
+    '--tsb-hover:rgba(255,255,255,.06);--tsb-acento:#e8a020;--tsb-acento-bg:rgba(232,160,32,.14);',
     '--tsb-sombra:0 20px 50px -12px rgba(0,0,0,.6);--tsb-ease:cubic-bezier(.32,.72,0,1);}',
     'html.tema-claro{--tsb-bg:rgba(70,51,31,.97);--tsb-borde:rgba(255,255,255,.10);--tsb-txt:#f3ead8;--tsb-txt2:#cdb896;',
     '--tsb-hover:rgba(255,255,255,.08);--tsb-acento:#e8b04a;--tsb-acento-bg:rgba(232,176,74,.18);--tsb-sombra:0 20px 50px -12px rgba(70,51,31,.45);}',
@@ -356,11 +356,14 @@
       btnTema.innerHTML = ico(claro ? 'moon' : 'sun');
     }
     var temaGuardado = ls(LS_TEMA);
-    if (temaGuardado === 'claro') document.documentElement.classList.add('tema-claro');
+    var soloOscuro = document.documentElement.hasAttribute('data-teo-solo-oscuro');
+    if (soloOscuro) { btnTema.style.display = 'none'; document.documentElement.classList.remove('tema-claro'); }
+    else if (temaGuardado === 'claro') document.documentElement.classList.add('tema-claro');
     pintarTema();
     btnTema.addEventListener('click', function () {
       var claro = document.documentElement.classList.toggle('tema-claro');
       ls(LS_TEMA, claro ? 'claro' : 'oscuro');
+      ls('app_tema', claro ? 'light' : 'dark'); ls('tutelas_tema', claro ? 'light' : 'dark');
       pintarTema();
       window.dispatchEvent(new CustomEvent('teo-tema', { detail: { claro: claro } }));
     });

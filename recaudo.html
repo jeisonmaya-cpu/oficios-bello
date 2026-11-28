@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <script src="teo-puerta.js?v=2"></script>
+<script src="teo-tema.js?v=1"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Recaudo Histórico — Alcaldía de Bello</title>
@@ -5716,7 +5717,7 @@ function aplicarTema(t){
 }
 function toggleTema(){
   var nuevo = esTemaClaro() ? 'oscuro' : 'claro';
-  try{ localStorage.setItem(TEMA_KEY, nuevo); }catch(e){}
+  try{ localStorage.setItem(TEMA_KEY, nuevo); localStorage.setItem('app_tema', nuevo==='claro'?'light':'dark'); localStorage.setItem('tutelas_tema', nuevo==='claro'?'light':'dark'); }catch(e){}
   aplicarTema(nuevo);
   // Los gráficos tienen los colores "horneados" al crearse: redibujar si el dashboard está visible
   if(typeof refrescarDashboardSiVisible==='function') refrescarDashboardSiVisible();
@@ -8010,6 +8011,6 @@ async function aplicarCorteAgrario(){
 })();
 
 </script>
-  <script src="teo-sidebar.js?v=3"></script>
+  <script src="teo-sidebar.js?v=4"></script>
 </body>
 </html>

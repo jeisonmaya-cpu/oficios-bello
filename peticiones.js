@@ -5394,7 +5394,7 @@ function docInterior(r){
         if(!c) return '';
         const esSug = sug.indexOf(k) !== -1;
         return '<button class="btn btn-of btn-ic" ' +
-          (esSug ? 'style="border-color:rgba(245,158,11,.55);color:var(--gold)" ' : '') +
+          (esSug ? 'style="border-color:rgba(232,160,32,.55);color:var(--gold)" ' : '') +
           'onclick="abrirRespuesta(\'' + k + '\')">' +
           ICONO.sobre + esc(c.titulo) + (esSug ? ' ★' : '') + '</button>';
       }).join('');
@@ -6060,7 +6060,7 @@ function plPintar(){
 
   const faltanFAQ = plFaltanFAQ();
   const avisoFAQ = faltanFAQ.length
-    ? '<div class="card" style="border-color:rgba(245,158,11,.45);padding:15px 18px;margin-bottom:14px;' +
+    ? '<div class="card" style="border-color:rgba(232,160,32,.45);padding:15px 18px;margin-bottom:14px;' +
       'display:flex;gap:14px;align-items:center;flex-wrap:wrap">' +
         '<div style="flex:1;min-width:240px;font-size:var(--t-sm);line-height:1.55">' +
           '<b>' + faltanFAQ.length + ' preguntas frecuentes</b> ya funcionan en la cola con el texto del modelo, ' +
@@ -11078,7 +11078,7 @@ async function traerCasoOficio(id){
     });
     const detalle = Object.keys(porAbogado).sort(function(a, b){ return porAbogado[b] - porAbogado[a]; })
       .map(function(n){ return esc(n) + ' (' + porAbogado[n] + ')'; }).join(' · ');
-    const tarjeta = '<div class="card" style="border-color:rgba(245,158,11,.35);padding:14px 18px;margin-bottom:10px">' +
+    const tarjeta = '<div class="card" style="border-color:rgba(232,160,32,.35);padding:14px 18px;margin-bottom:10px">' +
       '<div style="font-weight:700;color:var(--acento);font-size:14px">' + lista.length +
         (lista.length === 1 ? ' resolución sin oficio' : ' resoluciones sin oficio') +
         (viejas.length ? ' · ' + viejas.length + ' con más de 2 días' : '') + '</div>' +
