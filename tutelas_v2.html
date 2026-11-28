@@ -3,6 +3,7 @@
 <head>
 <script src="teo-puerta.js?v=2"></script>
 <script src="teo-tema.js?v=1"></script>
+<script src="teo-modulos.js?v=1"></script>
 <link rel="stylesheet" href="teodoro-tema.css?v=2">
 <link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
   <meta charset="UTF-8"/>
@@ -1230,8 +1231,15 @@ html[data-theme="light"] .logo p{color:#b45309}
   </div>
   <div class="side-group">
     <div class="side-label">Sistema Teodoro</div>
-    <a href="index.html" class="snav snav-link"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>Inicio</a>
-    <a href="oficios.html" class="snav snav-link"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>Oficios</a>
+    <div id="teo-otros-modulos"></div>
+    <script>
+    (function(){ // Otros módulos: lista oficial de teo-modulos.js
+      var c=document.getElementById('teo-otros-modulos'); if(!c||!window.TEO) return;
+      c.outerHTML=TEO.otrosModulos('tutelas').map(function(m){
+        return '<a href="'+m.href+'" class="snav snav-link">'+TEO.icono(m.icono,'ico')+'<span>'+m.nombre+'</span></a>';
+      }).join('');
+    })();
+    </script>
   </div>
   <div class="side-pie"><button type="button" class="snav snav-colapsar" id="snav-colapsar" onclick="toggleSideNav()"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>Contraer menú</button></div>
 </nav>

@@ -1,6 +1,6 @@
 /* ==========================================================================
    teo-sidebar.js — Menú lateral unificado de Sistema Teodoro
-   v1.3 · Desarrollado por Jeison Maya · 2026
+   v1.4 · Desarrollado por Jeison Maya · 2026
 
    USO (una sola línea en cada módulo, justo antes del cierre del body):
      script src="teo-sidebar.js?v=1"   (etiqueta script normal)
@@ -27,27 +27,9 @@
   /* ------------------------------------------------------------------------
      1. CONFIGURACIÓN — edite aquí para agregar, quitar o reordenar módulos
      ------------------------------------------------------------------------ */
-  var MODULOS = [
-    { grupo: null, items: [
-      { id: 'inicio', nombre: 'Inicio', href: 'index.html', icono: 'home', alias: ['home.html', ''] }
-    ]},
-    { grupo: 'Gestión jurídica', items: [
-      { id: 'tutelas',     nombre: 'Tutelas',          href: 'tutelas_v2.html',  icono: 'shield' },
-      { id: 'peticiones',  nombre: 'Peticiones',       href: 'peticiones.html',  icono: 'inbox' },
-      { id: 'desembargos', nombre: 'Desembargos',      href: 'desembargos.html', icono: 'unlock' },
-      { id: 'oficios',     nombre: 'Central Jurídica', href: 'oficios.html',     icono: 'file' },
-      { id: 'biblioteca',  nombre: 'Biblioteca',       href: 'biblioteca.html',  icono: 'book', alias: ['modelos.html'] }
-    ]},
-    { grupo: 'Cobro coactivo', items: [
-      { id: 'expedientes',    nombre: 'Expedientes',    href: 'expedientes.html',    icono: 'folder' },
-      { id: 'notificaciones', nombre: 'Notificaciones', href: 'notificaciones.html', icono: 'send' },
-      { id: 'seguimiento',    nombre: 'Seguimiento',    href: 'seguimiento.html',    icono: 'chart' },
-      { id: 'recaudo',        nombre: 'Recaudo',        href: 'recaudo.html',        icono: 'coins' },
-      { id: 'acuerdos',       nombre: 'Acuerdos de pago', href: 'acuerdos.html',     icono: 'handshake' }
-    ]},
-    { grupo: 'Consulta', items: [
-      { id: 'buscador', nombre: 'Buscador de guías', href: 'buscador.html', icono: 'search' }
-    ]}
+  // La lista oficial vive en teo-modulos.js (una sola para todos los menús).
+  var MODULOS = (window.TEO_MODULOS && window.TEO_MODULOS.length) ? window.TEO_MODULOS : [
+    { grupo: null, items: [ { id: 'inicio', nombre: 'Inicio', href: 'index.html', icono: 'home', alias: ['home.html', ''] } ] }
   ];
 
   var LS_ESTADO = 'teo_sidebar_v1';     // 'abierto' | 'cerrado'
