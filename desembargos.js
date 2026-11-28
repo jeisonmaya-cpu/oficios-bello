@@ -452,6 +452,13 @@ try {
   if(sbAuth){
     try{ const { data } = await sbAuth.auth.getSession(); sesion = data && data.session; }catch(e){ sesion = null; }
   }
+  // Entrada única: si la sesión viene de la portada y el perfil trae el nombre,
+  // se toma de ahí y se entra directo (antes había que confirmarlo con un clic).
+  if(sesion && !cfg.nombre){
+    const md0 = (sesion.user && sesion.user.user_metadata) || {};
+    const nom0 = String(md0.nombre || md0.full_name || md0.name || '').trim();
+    if(nom0){ cfg.nombre = nom0; try{ saveCfg(); }catch(e){} }
+  }
   if(sesion && cfg.nombre){
     try { iniciarApp(); } catch(e){ console.error('Error en iniciarApp:', e); }
     return;

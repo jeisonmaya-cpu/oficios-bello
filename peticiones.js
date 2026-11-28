@@ -1052,12 +1052,17 @@ const NAV_IC = {
 };
 
 /* Otros módulos del sistema. Para agregar uno más, basta una línea aquí. */
-const MODULOS = [
-  {id:'home',    txt:'Inicio',  url:'index.html',       ic:'inicio',
-   desc:'Portada del sistema, con todos los módulos'},
-  {id:'tutelas', txt:'Tutelas', url:'tutelas_v2.html', ic:'tutelas',
-   desc:'Gestión de tutelas, fallos e incidentes de desacato'}
-];
+const MODULOS = (window.TEO && TEO.otrosModulos)
+  // Lista oficial de teo-modulos.js (la misma de todos los menús de Teodoro)
+  ? TEO.otrosModulos('peticiones').map(function(m){
+      return { id: m.id, txt: m.nombre, url: m.href, svg: TEO.icono(m.icono, null, 18) };
+    })
+  : [
+    {id:'home',    txt:'Inicio',  url:'index.html',       ic:'inicio',
+     desc:'Portada del sistema, con todos los módulos'},
+    {id:'tutelas', txt:'Tutelas', url:'tutelas_v2.html', ic:'tutelas',
+     desc:'Gestión de tutelas, fallos e incidentes de desacato'}
+  ];
 
 function construirTabs(){
   const defs = [
@@ -1109,7 +1114,7 @@ function construirTabs(){
     a.href = m.url;
     a.setAttribute('data-txt', m.txt);
     a.title = m.desc || m.txt;
-    a.innerHTML = (NAV_IC[m.ic] || '') + '<span class="nav-txt">' + esc(m.txt) + '</span>' + NAV_IC.sale;
+    a.innerHTML = (m.svg || NAV_IC[m.ic] || '') + '<span class="nav-txt">' + esc(m.txt) + '</span>' + NAV_IC.sale;
     cont.appendChild(a);
   });
 

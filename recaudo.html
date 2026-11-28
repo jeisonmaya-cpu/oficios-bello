@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <script src="teo-puerta.js?v=2"></script>
+<script src="teo-modulos.js?v=1"></script>
 <script src="teo-tema.js?v=1"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
@@ -42,7 +43,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--navy);color:var(--text);m
 .tb-brand{display:flex;align-items:center;gap:10px}
 .tb-icon{width:32px;height:32px;border-radius:8px;
   background:linear-gradient(135deg,#1a6fc4,#e8a020);
-  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:#fff}
 .tb-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;letter-spacing:-.01em}
 .tb-sub{font-size:10px;color:var(--soft);margin-top:1px}
 .tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -822,11 +823,10 @@ html.tema-claro .copy-btn{background:rgba(20,45,81,.08);border-color:rgba(20,45,
   backdrop-filter:blur(12px);transition:width .22s ease;z-index:110}
 #lat.min{width:62px}
 .lat-hd{padding:12px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;min-height:56px}
-.lat-logo{width:31px;height:31px;border-radius:9px;flex-shrink:0;text-decoration:none;
-  background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a1f3d;
-  display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:14px}
-.lat-tit{font-family:'Syne',sans-serif;font-weight:800;font-size:13.5px;line-height:1.25;white-space:nowrap;overflow:hidden;letter-spacing:.02em}
-.lat-tit span{color:var(--gold);display:block;font-size:11.5px;font-weight:600;letter-spacing:0}
+.lat-logo{width:32px;height:32px;border-radius:9px;flex-shrink:0;text-decoration:none;overflow:hidden;display:flex}
+.lat-logo img{width:32px;height:32px;display:block}
+.lat-tit{font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:18px;line-height:1.1;white-space:nowrap;overflow:hidden;letter-spacing:.2px}
+.lat-tit span{color:var(--gold);display:block;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-top:2px}
 #lat.min .lat-tit,#lat.min .nav-txt,#lat.min .lat-yo,#lat.min .lat-sec{display:none}
 #lat.min .lat-hd{justify-content:center;padding:12px 8px}
 .lat-nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 9px}
@@ -932,8 +932,8 @@ html.tema-claro .bk-pend{background:rgba(29,78,137,.1);color:#1d4e89;border-colo
 <!-- ══ MENÚ LATERAL (patrón Peticiones) ══ -->
 <aside id="lat" aria-label="Menú de Recaudo">
   <div class="lat-hd">
-    <a class="lat-logo" href="index.html" title="Ir al inicio de Teodoro">T</a>
-    <div class="lat-tit">TEODORO<span>Recaudo</span></div>
+    <a class="lat-logo" href="index.html" title="Ir al inicio de Teodoro"><img src="teo-simbolo.svg?v=1" alt="Teodoro" width="32" height="32"></a>
+    <div class="lat-tit">Teodoro<span>Recaudo</span></div>
   </div>
   <nav class="lat-nav">
     <div class="lat-sec">Gestión</div>
@@ -953,8 +953,16 @@ html.tema-claro .bk-pend{background:rgba(29,78,137,.1);color:#1d4e89;border-colo
     </div>
     <div class="lat-sep"></div>
     <div class="lat-sec">Sistema Teodoro</div>
-    <a class="nav-b nav-ext" href="index.html" data-txt="Inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="nav-txt">Inicio</span><svg class="sale" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
-    <a class="nav-b nav-ext" href="desembargos.html" data-txt="Desembargos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 6a3 3 0 0 0 6 0zM19 7l-3 6a3 3 0 0 0 6 0z"/></svg><span class="nav-txt">Desembargos</span><svg class="sale" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+    <div id="teo-otros-modulos"></div>
+    <script>
+    (function(){ // Otros módulos: lista oficial de teo-modulos.js (la misma de todos los menús)
+      var c=document.getElementById('teo-otros-modulos'); if(!c||!window.TEO) return;
+      var sale='<svg class="sale" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>';
+      c.outerHTML=TEO.otrosModulos('recaudo').map(function(m){
+        return '<a class="nav-b nav-ext" href="'+m.href+'" data-txt="'+m.nombre+'">'+TEO.icono(m.icono)+'<span class="nav-txt">'+m.nombre+'</span>'+sale+'</a>';
+      }).join('');
+    })();
+    </script>
   </nav>
   <div class="lat-pie">
     <div class="lat-yo"><b id="usuario-activo">Sin identificar</b><span id="lat-rol">Recaudo</span></div>
@@ -970,7 +978,7 @@ html.tema-claro .bk-pend{background:rgba(29,78,137,.1);color:#1d4e89;border-colo
 <!-- ── TOPBAR ── -->
 <div class="topbar">
   <div class="tb-brand">
-    <div class="tb-icon">🏦</div>
+    <div class="tb-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v4c0 1.7 2.7 3 6 3s6-1.3 6-3V7"/><path d="M9 14v3c0 1.7 2.7 3 6 3s6-1.3 6-3v-4c0-1.6-2.4-2.9-5.5-3"/></svg></div>
     <div>
       <div class="tb-title">Recaudo Histórico</div>
       <div class="tb-sub">Depósitos judiciales · Alcaldía de Bello</div>
@@ -8011,6 +8019,5 @@ async function aplicarCorteAgrario(){
 })();
 
 </script>
-  <script src="teo-sidebar.js?v=6"></script>
 </body>
 </html>
