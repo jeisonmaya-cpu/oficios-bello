@@ -36,7 +36,7 @@
       { id: 'peticiones',  nombre: 'Peticiones',       href: 'peticiones.html',  icono: 'inbox' },
       { id: 'desembargos', nombre: 'Desembargos',      href: 'desembargos.html', icono: 'unlock' },
       { id: 'oficios',     nombre: 'Central Jurídica', href: 'oficios.html',     icono: 'file' },
-      { id: 'modelos',     nombre: 'Modelos',          href: 'modelos.html',     icono: 'book' }
+      { id: 'biblioteca',  nombre: 'Biblioteca',       href: 'biblioteca.html',  icono: 'book', alias: ['modelos.html'] }
     ]},
     { grupo: 'Cobro coactivo', items: [
       { id: 'expedientes',    nombre: 'Expedientes',    href: 'expedientes.html',    icono: 'folder' },
