@@ -1,6 +1,6 @@
 /* ==========================================================================
    teo-sidebar.js — Menú lateral unificado de Sistema Teodoro
-   v1.1 · Desarrollado por Jeison Maya · 2026
+   v1.2 · Desarrollado por Jeison Maya · 2026
 
    USO (una sola línea en cada módulo, justo antes del cierre del body):
      script src="teo-sidebar.js?v=1"   (etiqueta script normal)
@@ -89,8 +89,8 @@
     '--tsb-bg:rgba(10,31,61,.90);--tsb-borde:rgba(255,255,255,.07);--tsb-txt:#c9d2e3;--tsb-txt2:#7f8aa3;',
     '--tsb-hover:rgba(255,255,255,.06);--tsb-acento:#e8a020;--tsb-acento-bg:rgba(232,160,32,.14);',
     '--tsb-sombra:0 20px 50px -12px rgba(0,0,0,.6);--tsb-ease:cubic-bezier(.32,.72,0,1);}',
-    'html.tema-claro{--tsb-bg:rgba(70,51,31,.97);--tsb-borde:rgba(255,255,255,.10);--tsb-txt:#f3ead8;--tsb-txt2:#cdb896;',
-    '--tsb-hover:rgba(255,255,255,.08);--tsb-acento:#e8b04a;--tsb-acento-bg:rgba(232,176,74,.18);--tsb-sombra:0 20px 50px -12px rgba(70,51,31,.45);}',
+    'html.tema-claro{--tsb-bg:rgba(19,41,75,.97);--tsb-borde:rgba(255,255,255,.10);--tsb-txt:#eef2f8;--tsb-txt2:#b4c3d9;',
+    '--tsb-hover:rgba(255,255,255,.08);--tsb-acento:#f0b544;--tsb-acento-bg:rgba(232,160,32,.18);--tsb-sombra:0 20px 50px -12px rgba(15,45,94,.40);}',
 
     /* empuje del contenido */
     'body.tsb-on:not([data-teo-push="none"]){padding-left:var(--tsb-w)!important;transition:padding-left .45s var(--tsb-ease);}',
